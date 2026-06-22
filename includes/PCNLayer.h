@@ -42,12 +42,12 @@ namespace Deep
 
         /// @brief Calculates prediction and returns it.
         /// @return prediction
-        void CalcPrediction() noexcept;
+        void CalcPrediction(size_t batchSize) noexcept;
         /// @brief Gets error; note, prediction must be ran before this.
         /// @attention x must be set
-        void CalcStepError(const float *x) noexcept;
+        void CalcStepError(const float *x, size_t batchSize) noexcept;
         /// @brief Updates z, one inference step
-        void UpdateBeliefs() noexcept;
+        void UpdateBeliefs(size_t batchSize) noexcept;
         /// @brief Runs an inference loop (learns z)
         /// @attention some inputs may be remaining; ensure you run `Flush()` after.
         /// @param x Input
@@ -56,20 +56,28 @@ namespace Deep
         void Flush() noexcept;
         /// @brief Updates weights using the learning rule `W += lr * e * z^T`
         /// @attention This assumes error has already been calculated
-        void UpdateWeights() noexcept;
+        void UpdateWeights(size_t batchSize) noexcept;
         /// @brief Attches the layer to a pre-allocated, 64-byte aligned memory arena.
         /// @param ptr Starting address for the buffer
         void Attach(float *ptr) noexcept;
 
         /// @brief Runs prediction all `stepSize` times, including error calculation and belief updating. Updates weights at the end as well.
         /// @param x Input
-        void RunBatchedPrediction(const float *x) noexcept;
+        void RunBatchedPrediction(const float *x, size_t batchSize) noexcept;
 
         // @internal GETTERS
-        float *GetPrediction() const noexcept { return arr + pBegin; }
-        float *GetInferenceError() const noexcept { return arr + errBegin; }
-        float *GetBeliefs() const noexcept { return arr + zBegin; }
-        float *GetWeights() const noexcept { return arr; }
+        const float *GetPrediction() const noexcept { return arr + pBegin; }
+        float *GetPrediction() noexcept { return arr + pBegin; }
+
+        const float *GetInferenceError() const noexcept { return arr + errBegin; }
+        float *GetInferenceError() noexcept { return arr + errBegin; }
+
+        const float *GetBeliefs() const noexcept { return arr + zBegin; }
+        float *GetBeliefs() noexcept { return arr + zBegin; }
+
+        float *GetWeights() noexcept { return arr; }
+        const float *GetWeights() const noexcept { return arr; }
+
         float GetLR() const noexcept { return lr; }
         float GetIR() const noexcept { return ir; }
         size_t GetInputSize() const noexcept { return inputSize; }
@@ -87,7 +95,7 @@ namespace Deep
         size_t inputSize = 0;
         size_t outputSize = 0;
         // Batch size - defaults to 64.
-        size_t B = 64;
+        size_t B = 4;
 
         // @internal PARAMS
         float lr = 0.0f; // learning rate
@@ -96,10 +104,10 @@ namespace Deep
         ActivationFn activation;
 
         // @internal MEMBERS
-        float *arr; // Weights
+        float *arr; // Contiguous arena
         // This tells the layer that it owns its own array, as opposed to being in a network's.
         bool ownsArr = true;
-        // @internal the following are used to reduce cache misses:
+        // @internal the following are used to reduce cache misses contiguously:
         size_t zBegin;
         size_t pBegin;
         size_t errBegin;

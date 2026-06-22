@@ -23,7 +23,7 @@ void PCNetwork::Compile() noexcept
     {
         arenaSize += layer.GetTotalSize();
     }
-    
+
     masterArena = new (std::align_val_t{64}) float[arenaSize];
     std::fill(masterArena, masterArena + arenaSize, 0.0f);
 
@@ -42,14 +42,10 @@ void PCNetwork::Compile() noexcept
 
 void PCNetwork::InferenceStep(float *x)
 {
-    if (layers.empty())
+    if (layers.empty() || x == nullptr)
         return;
 
-    // Feed the input directly to the bottom layer
-    if (x != nullptr)
-    {
-        layers.front().RunPrediction(x);
-    }
+    layers.front().RunPrediction(x);
 
     // Track the batch to cascade data upwards
     pendingInferenceCount++;
@@ -62,7 +58,7 @@ void PCNetwork::InferenceStep(float *x)
         {
             float *z_out = layers[l].GetBeliefs();
 
-            layers[l + 1].RunBatchedPrediction(z_out);
+            layers[l + 1].RunBatchedPrediction(z_out, B);
         }
         pendingInferenceCount = 0; // Reset for the next batch
     }

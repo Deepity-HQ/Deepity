@@ -39,9 +39,13 @@ else()
         $<$<CONFIG:Release>:-O3 -march=x86-64-v3>
         $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
         $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+    )
+    
+    # Make sanitizers PUBLIC so targets linking Deepity inherit them
+    target_compile_options(Deepity PUBLIC
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
-    target_link_options(Deepity PRIVATE
+    target_link_options(Deepity PUBLIC
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
 endif()
@@ -65,7 +69,7 @@ set_target_properties(deepity PROPERTIES
 )
 
 # --- Test executable ---
-add_executable(DeepityTests tests/tNetwork.cpp)
+add_executable(DeepityTests tests/tBatches.cpp)
 target_link_libraries(DeepityTests PRIVATE Deepity)
 set_target_properties(DeepityTests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
