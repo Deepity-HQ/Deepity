@@ -1,29 +1,29 @@
-cmake_minimum_required(VERSION 4.3.0)
+cmake_minimum_required(VERSION 3.16)
 project(deepity CXX)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
-find_path(CBLAS_INCLUDE_DIR
-    cblas.h
-    PATH_SUFFIXES openblas
-    REQUIRED
-)
+set(PYBIND11_FINDPYTHON ON)
+find_package(pybind11 REQUIRED)
 
 include(FetchContent)
+
 FetchContent_Declare(
   benchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG v1.9.1
 )
 
-set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(benchmark)
 
+# ---------------- Core library ----------------
 add_library(Deepity STATIC
     src/PCLayer.cpp
     src/RBLayer.cpp
@@ -32,7 +32,6 @@ add_library(Deepity STATIC
 
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/includes
-    ${CBLAS_INCLUDE_DIR}
 )
 
 target_link_libraries(Deepity PUBLIC
@@ -40,19 +39,18 @@ target_link_libraries(Deepity PUBLIC
     OpenMP::OpenMP_CXX
 )
 
-if(MSVC)
-    target_compile_options(Deepity PRIVATE
-        $<$<CONFIG:Release>:/O2 /arch:AVX2>
-        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /arch:AVX2>
-        $<$<CONFIG:Debug>:/Od /Zi>
-    )
-else()
-    target_compile_options(Deepity PRIVATE
-        $<$<CONFIG:Release>:-O3 -march=native>
-        $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
-        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
-    )
+# ---------------- Compile flags ----------------
+target_compile_options(Deepity PRIVATE
+    $<$<CONFIG:Release>:-O3 -march=native>
+    $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
+    $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+)
 
+target_compile_definitions(Deepity PUBLIC
+    $<$<CONFIG:Debug>:_DEBUG>
+)
+
+if(NOT MSVC)
     target_compile_options(Deepity PUBLIC
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
@@ -61,27 +59,28 @@ else()
     )
 endif()
 
-target_compile_definitions(Deepity PUBLIC
-    $<$<CONFIG:Debug>:_DEBUG>
-)
-
+# ---------------- Output dirs ----------------
 set_target_properties(Deepity PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
-    POSITION_INDEPENDENT_CODE on
+    POSITION_INDEPENDENT_CODE ON
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-find_package(pybind11 REQUIRED)
-
+# ---------------- Python binding ----------------
 pybind11_add_module(deepity pybind/binding.cpp)
+
 target_link_libraries(deepity PRIVATE Deepity)
+
 set_target_properties(deepity PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
+# ---------------- Tests ----------------
 add_executable(DeepityTests
-    tests/tNetwork.cpp # Change based on test
+    tests/tNetwork.cpp
 )
+
 target_link_libraries(DeepityTests PRIVATE Deepity benchmark::benchmark)
+
 set_target_properties(DeepityTests PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )

@@ -1,7 +1,7 @@
 #include "PCLayer.h"
 #include <iostream>
 #include <chrono>
-#include <cblas.h>
+#include <openblas/cblas.h>
 #include <omp.h>
 #include <cstring>
 
@@ -48,8 +48,8 @@ namespace Deep
           layerAbove(nullptr), layerBelow(nullptr),
           activation(other.activation), activationDerivative(other.activationDerivative)
     {
-        this->size = size;
-        this->nextSize = nextSize;
+        this->size = other.size;
+        this->nextSize = other.nextSize;
         size_t allocSize = ALIGN64(batchSize * size * sizeof(float));
         z = (float *)std::aligned_alloc(64, allocSize);
         e = (float *)std::aligned_alloc(64, allocSize);
@@ -305,6 +305,7 @@ namespace Deep
                 W_below, layerBelow->nextSize,
                 0.0f, bottom_up, size);
 
+            #pragma omp simd
             for (size_t i = 0; i < N; i++)
             {
                 dz_dt[i] += bottom_up[i] * sigma_prime[i];

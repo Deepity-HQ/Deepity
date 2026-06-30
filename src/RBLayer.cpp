@@ -1,5 +1,5 @@
 #include "RBLayer.h"
-#include <cblas.h>
+#include <openblas/cblas.h>
 #include <iostream>
 #include <random>
 
