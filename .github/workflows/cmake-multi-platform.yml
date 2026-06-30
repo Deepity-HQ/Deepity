@@ -14,7 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Testing Ubuntu, Windows, and an Intel-based Mac (to bypass the arm64 immintrin.h issue)
+        os: [ubuntu-latest, windows-latest, macos-13]
 
     runs-on: ${{ matrix.os }}
 
@@ -38,14 +39,27 @@ jobs:
       run: |
         brew install openblas libomp pybind11 ninja
 
+    - name: Install dependencies (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        # Use vcpkg to seamlessly install openblas and pybind11 on Windows
+        vcpkg install openblas:x64-windows pybind11:x64-windows
+
     - name: Configure CMake
       run: |
-        # If on macOS, tell CMake where Homebrew installed libomp
+        # macOS specific configuration logic
         if [ "$RUNNER_OS" == "macOS" ]; then
           export CMAKE_PREFIX_PATH="$(brew --prefix libomp):$CMAKE_PREFIX_PATH"
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+          
+        # Windows specific configuration logic (integrating vcpkg toolchain)
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          
+        # Linux standard configuration
+        else
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
         fi
-        
-        cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
       shell: bash
 
     - name: Build
@@ -53,15 +67,24 @@ jobs:
 
     - name: Run benchmark
       run: |
-        # Dynamically calculate CPU cores for both Linux (nproc) and macOS (sysctl)
-        export OMP_NUM_THREADS=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        # Calculate core count across Linux, macOS, and Windows
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          export OMP_NUM_THREADS=$NUMBER_OF_PROCESSORS
+        else
+          export OMP_NUM_THREADS=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+        fi
         export OPENBLAS_NUM_THREADS=$OMP_NUM_THREADS
-        export OMP_PROC_BIND=close
-        export OMP_PLACES=cores
         
-        ./build/bin/DeepityTests
+        # Windows builds multi-config by default, executable sits in /Release/
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          ./build/bin/Release/DeepityTests.exe
+        else
+          export OMP_PROC_BIND=close
+          export OMP_PLACES=cores
+          ./build/bin/DeepityTests
+        fi
       shell: bash
 
     - name: Test (CTest)
       working-directory: build
-      run: ctest --output-on-failure
+      run: ctest --output-on-failure -C ${{env.BUILD_TYPE}}

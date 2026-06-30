@@ -9,11 +9,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
 
-# modern Python locator
+# Use modern Python locator
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
 
-# Find cblas.h cross-platform (Fedora/macOS use 'openblas', Ubuntu uses 'x86_64-linux-gnu' or default)
+# Find cblas.h cross-platform
 find_path(BLAS_INCLUDE_DIR 
     NAMES cblas.h 
     PATH_SUFFIXES openblas x86_64-linux-gnu
@@ -49,17 +49,22 @@ target_link_libraries(Deepity PUBLIC
 )
 
 # ---------------- Compile flags ----------------
-target_compile_options(Deepity PRIVATE
-    $<$<CONFIG:Release>:-O3 -march=native>
-    $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
-    $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
-)
-
-target_compile_definitions(Deepity PUBLIC
-    $<$<CONFIG:Debug>:_DEBUG>
-)
-
-if(NOT MSVC)
+if(MSVC)
+    # Windows/MSVC specific flags
+    target_compile_options(Deepity PRIVATE
+        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi>
+        $<$<CONFIG:Debug>:/Od /Zi /W4>
+    )
+else()
+    # Linux (GCC) and macOS (Clang) flags
+    target_compile_options(Deepity PRIVATE
+        $<$<CONFIG:Release>:-O3 -march=native>
+        $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
+        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+    )
+    
+    # Enable Sanitizers for non-MSVC debug builds
     target_compile_options(Deepity PUBLIC
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
@@ -67,6 +72,10 @@ if(NOT MSVC)
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
 endif()
+
+target_compile_definitions(Deepity PUBLIC
+    $<$<CONFIG:Debug>:_DEBUG>
+)
 
 # ---------------- Output dirs ----------------
 set_target_properties(Deepity PROPERTIES
