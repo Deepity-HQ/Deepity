@@ -1,0 +1,306 @@
+\doxysection{Deep::\+RBLayer Class Reference}
+\hypertarget{classDeep_1_1RBLayer}{}\label{classDeep_1_1RBLayer}\index{Deep::RBLayer@{Deep::RBLayer}}
+
+
+Restricted Boltzmann-\/style Predictive Coding (PC) \doxylink{classDeep_1_1Layer}{Layer}.  
+
+
+
+
+{\ttfamily \+\#include $<$RBLayer.\+h$>$}
+
+Inheritance diagram for Deep::\+RBLayer:\+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classDeep_1_1RBLayer}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6}{RBLayer}} (size\+\_\+t in\+Size, size\+\_\+t out\+Size, float var=1.\+0f, float var\+\_\+td=10.\+0f, float k\+\_\+1=1e-\/3f, float k\+\_\+2=1e-\/5f, float lmbda=1e-\/6f, float alpha=1.\+0f, size\+\_\+t batch\+Size=64, int step\+Size=30, Activation\+Fn act=\doxymbox{\hyperlink{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}{relu}}, Activation\+Fn d\+Act=d\+Relu)
+\begin{DoxyCompactList}\small\item\em Constructs an \doxylink{classDeep_1_1RBLayer}{RBLayer} with specified dimensions and hyperparameters. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_ab330434bcc4cf32574e23508f714891b}\label{classDeep_1_1RBLayer_ab330434bcc4cf32574e23508f714891b} 
+void {\bfseries Run\+Prediction} (const float \texorpdfstring{$\ast$}{*}input, size\+\_\+t current\+Batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Executes a forward pass prediction without updating internal beliefs. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_ad1fcdf0468974b1af5c7e778e91b2ebf}\label{classDeep_1_1RBLayer_ad1fcdf0468974b1af5c7e778e91b2ebf} 
+void {\bfseries Run\+Inference\+Step} (const float \texorpdfstring{$\ast$}{*}input, const float \texorpdfstring{$\ast$}{*}top\+Down, size\+\_\+t current\+Batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Executes a single bidirectional inference step integrating bottom-\/up and top-\/down signals. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_a025abc761fcbe169c099e505437d3c25}\label{classDeep_1_1RBLayer_a025abc761fcbe169c099e505437d3c25} 
+void {\bfseries Calc\+Error} (const float \texorpdfstring{$\ast$}{*}bottom\+Up, const float \texorpdfstring{$\ast$}{*}top\+Down, size\+\_\+t current\+Batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Computes the precision-\/weighted prediction errors. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a5b570e93bdcfb61173523378d0009de7}{Update\+Beliefs}} (const float \texorpdfstring{$\ast$}{*}bottom\+Up, const float \texorpdfstring{$\ast$}{*}top\+Down, size\+\_\+t current\+Batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Updates internal state beliefs via gradient descent on the prediction error. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a500c18f5ba9df30dda7cb2dfa26f4370}{Update\+Weights}} (size\+\_\+t current\+Batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Applies batched gradients to update the synaptic weights. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1RBLayer_af3f0482e4caeda2e3bce0c0723649705}{Calculate\+State}} () noexcept override
+\begin{DoxyCompactList}\small\item\em Calculates the total layer energy state. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755}{Update\+State}} () noexcept override
+\begin{DoxyCompactList}\small\item\em Computes the state derivatives and applies them to current beliefs. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{Update\+Weights}} () noexcept override
+\begin{DoxyCompactList}\small\item\em Parameter-\/less override for generic layer weight updates. \end{DoxyCompactList}\item 
+const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb}{Get\+Errors}} () const noexcept override
+\begin{DoxyCompactList}\small\item\em Should return errors {\ttfamily e}. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_a743571cb2fde273c62b820d90c618c66}\label{classDeep_1_1RBLayer_a743571cb2fde273c62b820d90c618c66} 
+size\+\_\+t {\bfseries Get\+Total\+Size} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns the total byte size required by this layer for flat allocation. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_ac82d646502e6faf7031c9ff04bf4f972}\label{classDeep_1_1RBLayer_ac82d646502e6faf7031c9ff04bf4f972} 
+void {\bfseries Attach} (float \texorpdfstring{$\ast$}{*}ptr) noexcept
+\begin{DoxyCompactList}\small\item\em Attaches the layer to a pre-\/allocated, 64-\/byte aligned memory block. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_a716d52f7ba8028e9276e4e8a61191a9b}\label{classDeep_1_1RBLayer_a716d52f7ba8028e9276e4e8a61191a9b} 
+float \texorpdfstring{$\ast$}{*} {\bfseries Get\+Weights} () const noexcept
+\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6}{Get\+Batch\+Size}} () const noexcept override
+\begin{DoxyCompactList}\small\item\em Should return batch size. \end{DoxyCompactList}\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1RBLayer_ad50379af7001257495455d96b7a5e7e9}{Get\+Input\+Size}} () const noexcept override
+\begin{DoxyCompactList}\small\item\em Should return input size. \end{DoxyCompactList}\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1RBLayer_a563d7ef929d3ef37359c0c2c6f87cc02}{Get\+Output\+Size}} () const noexcept override
+\begin{DoxyCompactList}\small\item\em Should return output size. \end{DoxyCompactList}\item 
+float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1RBLayer_a0a37d411bef0cba234593ce5956a5227}{Get\+Beliefs}} () noexcept override
+\begin{DoxyCompactList}\small\item\em Should return belief state {\ttfamily z}. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1RBLayer_a23cb469a779702cc89c110cb33143f3f}\label{classDeep_1_1RBLayer_a23cb469a779702cc89c110cb33143f3f} 
+const float \texorpdfstring{$\ast$}{*} {\bfseries Get\+Inference\+Error} () const noexcept
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}}
+\begin{DoxyCompactItemize}
+\item 
+virtual void \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}{Flush}} () noexcept
+\begin{DoxyCompactList}\small\item\em Flushes remaining batches. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t {\bfseries size}
+\begin{DoxyCompactList}\small\item\em Size of input. \end{DoxyCompactList}\item 
+size\+\_\+t {\bfseries next\+Size}
+\begin{DoxyCompactList}\small\item\em Size of output. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Restricted Boltzmann-\/style Predictive Coding (PC) \doxylink{classDeep_1_1Layer}{Layer}. 
+
+\begin{DoxySeeAlso}{See also}
+\href{https://www.nature.com/articles/nn0199_79.pdf}{\texttt{https:\+/\+/\+www.\+nature.\+com/\+articles/\+nn0199\+\_\+79.\+pdf}} 
+\end{DoxySeeAlso}
+
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1RBLayer_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6}\index{Deep::RBLayer@{Deep::RBLayer}!RBLayer@{RBLayer}}
+\index{RBLayer@{RBLayer}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{RBLayer()}{RBLayer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6} 
+RBLayer::\+\+RBLayer (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{in\+Size}{, }\item[{size\+\_\+t}]{out\+Size}{, }\item[{float}]{var}{ = {\ttfamily 1.0f}, }\item[{float}]{var\+\_\+td}{ = {\ttfamily 10.0f}, }\item[{float}]{k\+\_\+1}{ = {\ttfamily 1e-\/3f}, }\item[{float}]{k\+\_\+2}{ = {\ttfamily 1e-\/5f}, }\item[{float}]{lmbda}{ = {\ttfamily 1e-\/6f}, }\item[{float}]{alpha}{ = {\ttfamily 1.0f}, }\item[{size\+\_\+t}]{batch\+Size}{ = {\ttfamily 64}, }\item[{int}]{step\+Size}{ = {\ttfamily 30}, }\item[{Activation\+Fn}]{act}{ = {\ttfamily \doxymbox{\hyperlink{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}{relu}}}, }\item[{Activation\+Fn}]{d\+Act}{ = {\ttfamily dRelu}}\end{DoxyParamCaption})}
+
+
+
+Constructs an \doxylink{classDeep_1_1RBLayer}{RBLayer} with specified dimensions and hyperparameters. 
+
+
+\begin{DoxyItemize}
+\item 
+\begin{DoxyParams}{Parameters}
+{\em in\+Size} & Dimension of the bottom-\/up input. \\
+\hline
+{\em out\+Size} & Dimension of the top-\/down output (layer state size). \\
+\hline
+{\em var} & Bottom-\/up variance (precision inverse). \\
+\hline
+{\em var\+\_\+td} & Top-\/down variance (precision inverse). \\
+\hline
+{\em k\+\_\+1} & Forward integration time constant. \\
+\hline
+{\em k\+\_\+2} & Backward integration time constant. \\
+\hline
+{\em lmbda} & Weight decay (L2 regularization) coefficient. \\
+\hline
+{\em alpha} & Learning rate for weight updates. \\
+\hline
+{\em batch\+Size} & Number of parallel sequences to process. \\
+\hline
+{\em step\+Size} & Number of inference iterations per state update. \\
+\hline
+{\em act} & Forward activation function (SIMD optimized). \\
+\hline
+{\em d\+Act} & Derivative of the activation function (SIMD optimized). \\
+\hline
+\end{DoxyParams}
+
+\end{DoxyItemize}
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1RBLayer_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1RBLayer_af3f0482e4caeda2e3bce0c0723649705}\index{Deep::RBLayer@{Deep::RBLayer}!CalculateState@{CalculateState}}
+\index{CalculateState@{CalculateState}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{CalculateState()}{CalculateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_af3f0482e4caeda2e3bce0c0723649705} 
+float RBLayer::\+\+Calculate\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Calculates the total layer energy state. 
+
+Computes the sum of squared bottom-\/up prediction errors:\+   \[E = \frac{1}{2} ||e_{bu}||^2 = \frac{1}{2} \sum (I - rU)^2
+\] 
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6}\index{Deep::RBLayer@{Deep::RBLayer}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6} 
+size\+\_\+t RBLayer::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return batch size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_aa76875cc43cfa3bf24fdb8b949fb8f9e}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a0a37d411bef0cba234593ce5956a5227}\index{Deep::RBLayer@{Deep::RBLayer}!GetBeliefs@{GetBeliefs}}
+\index{GetBeliefs@{GetBeliefs}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{GetBeliefs()}{GetBeliefs()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a0a37d411bef0cba234593ce5956a5227} 
+float \texorpdfstring{$\ast$}{*} RBLayer::\+\+Get\+Beliefs (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return belief state {\ttfamily z}. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_a0c6f2e33fd61bd6dd5907875affe8b57}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb}\index{Deep::RBLayer@{Deep::RBLayer}!GetErrors@{GetErrors}}
+\index{GetErrors@{GetErrors}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{GetErrors()}{GetErrors()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb} 
+const float \texorpdfstring{$\ast$}{*} Deep::\+\+RBLayer::\+\+Get\+Errors (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return errors {\ttfamily e}. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7f636}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_ad50379af7001257495455d96b7a5e7e9}\index{Deep::RBLayer@{Deep::RBLayer}!GetInputSize@{GetInputSize}}
+\index{GetInputSize@{GetInputSize}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{GetInputSize()}{GetInputSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_ad50379af7001257495455d96b7a5e7e9} 
+size\+\_\+t RBLayer::\+\+Get\+Input\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return input size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4ef375}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a563d7ef929d3ef37359c0c2c6f87cc02}\index{Deep::RBLayer@{Deep::RBLayer}!GetOutputSize@{GetOutputSize}}
+\index{GetOutputSize@{GetOutputSize}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{GetOutputSize()}{GetOutputSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a563d7ef929d3ef37359c0c2c6f87cc02} 
+size\+\_\+t RBLayer::\+\+Get\+Output\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [nodiscard]}, {\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return output size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96b745}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a5b570e93bdcfb61173523378d0009de7}\index{Deep::RBLayer@{Deep::RBLayer}!UpdateBeliefs@{UpdateBeliefs}}
+\index{UpdateBeliefs@{UpdateBeliefs}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{UpdateBeliefs()}{UpdateBeliefs()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a5b570e93bdcfb61173523378d0009de7} 
+void RBLayer::\+\+Update\+Beliefs (\begin{DoxyParamCaption}\item[{const float \texorpdfstring{$\ast$}{*}}]{bottom\+Up}{, }\item[{const float \texorpdfstring{$\ast$}{*}}]{top\+Down}{, }\item[{size\+\_\+t}]{current\+Batch\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Updates internal state beliefs via gradient descent on the prediction error. 
+
+Integrates the state dynamics using the forward error, backward error, and a Gaussian prior (decay):\+   \[r \leftarrow r + k_1 \left( \frac{1}{\sigma^2} (I - rU)U^T + \frac{1}{\sigma^2_{td}}(td - r) - \alpha r \right)
+\] 
+\begin{DoxyParams}{Parameters}
+{\em bottom\+Up} & The input data $ I $ from the layer below. \\
+\hline
+{\em top\+Down} & The target data $ td $ from the layer above (can be nullptr). \\
+\hline
+{\em current\+Batch\+Size} & The active batch dimension. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755}\index{Deep::RBLayer@{Deep::RBLayer}!UpdateState@{UpdateState}}
+\index{UpdateState@{UpdateState}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{UpdateState()}{UpdateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755} 
+void RBLayer::\+\+Update\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Computes the state derivatives and applies them to current beliefs. 
+
+Wrapper for {\ttfamily \doxylink{classDeep_1_1RBLayer_a5b570e93bdcfb61173523378d0009de7}{Update\+Beliefs()}} using the internally cached input batch.   \[r \leftarrow r + k_1 \left( \frac{1}{\sigma^2} (I - rU)U^T - \alpha r \right)
+\] 
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}\index{Deep::RBLayer@{Deep::RBLayer}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd} 
+void RBLayer::\+\+Update\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Parameter-\/less override for generic layer weight updates. 
+
+Wrapper for the batched {\ttfamily \doxylink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{Update\+Weights()}} using the internally cached input batch.   \[\Delta U = \frac{k_2}{\sigma^2} r^T \left( (I - f(rU)) \odot f\textnormal{\textquotesingle}(rU) \right) - k_2 \lambda U
+\] 
+
+Implements \doxymbox{\hyperlink{classDeep_1_1Layer_a60d66aa85fc0f7ad5ea82f24340a9b96}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a500c18f5ba9df30dda7cb2dfa26f4370}\index{Deep::RBLayer@{Deep::RBLayer}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a500c18f5ba9df30dda7cb2dfa26f4370} 
+void RBLayer::\+\+Update\+Weights (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{current\+Batch\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Applies batched gradients to update the synaptic weights. 
+
+Computes the weight update using the non-\/linear prediction error, applies L2 weight decay, and projects the rows of the weight matrix back to a unit norm:\+   \[\Delta U = \frac{k_2}{\sigma^2} r^T \left( (I - f(rU)) \odot f\textnormal{\textquotesingle}(rU) \right) - k_2 \lambda U
+\] 
+\begin{DoxyParams}{Parameters}
+{\em current\+Batch\+Size} & The active batch dimension. \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+includes/\+\doxymbox{\hyperlink{RBLayer_8h}{RBLayer.\+h}}\item 
+src/\+RBLayer.\+cpp\end{DoxyCompactItemize}

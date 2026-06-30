@@ -73,14 +73,28 @@ namespace Deep
         /// @return Moved layer
         PCLayer &operator=(PCLayer &&other);
 
-        /// @brief Calculates $E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2$
-        /// @return E
+        /// @brief Calculates the total network energy state.
+        ///
+        /// \f[
+        /// E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
+        /// \f]
         float CalculateState() noexcept override;
-        /// @brief Calculates $dz^{(l)}/dt = -e^{(l)} + (W^{(l-1)})^T e^{(l-1)} \odot \sigma'(W^{(l-1)}z^{(l)})$
+
+        /// @brief Computes the state derivatives for inference.
+        ///
+        /// \f[
+        /// \frac{dz^{(l)}}{dt} = -e^{(l)} + (W^{(l-1)})^T e^{(l-1)} \odot \sigma'(W^{(l-1)}z^{(l)})
+        /// \f]
         void UpdateState() noexcept override;
-        /// @brief Calculates $\Delta W^{(l)} = -\eta e^{(l)} (z^{(l+1)})^T$
+
+        /// @brief Computes weight updates via gradient descent.
+        ///
+        /// \f[
+        /// \Delta W^{(l)} = -\eta e^{(l)} (z^{(l+1)})^T
+        /// \f]
         void UpdateWeights() noexcept override;
 
+        /// @brief Does nothing; exists for class extension.
         void Flush() noexcept override {} // no buffer
 
         /// @brief Clamps the layer to the input data
@@ -89,15 +103,31 @@ namespace Deep
         /// @brief Unclamps the layer to the input data
         void UnclampState() noexcept;
 
+        /// @brief Returns beliefs
+        /// @return float *z
         float *GetBeliefs() noexcept override { return z; }
+        /// @brief Returns errors
+        /// @return float *e
         const float *GetErrors() const noexcept override { return e; }
+        /// @brief Returns size (input size)
+        /// @return size_t size
         size_t GetInputSize() const noexcept override { return size; }
+        /// @brief Returns nextSize (output size)
+        /// @return size_t nextSize
         size_t GetOutputSize() const noexcept override { return nextSize; }
+        /// @brief Returns batchSize
+        /// @return size_t batchSize
         size_t GetBatchSize() const noexcept override { return batchSize; }
 
+        /// @brief Returns a read-only version of the stored weights
+        /// @return const float *W
         const float *GetWeights() const noexcept { return W; }
 
+        /// @brief Ties this layer to one above it
+        /// @param above PCLayer*
         void SetLayerAbove(PCLayer *above) noexcept { layerAbove = above; }
+        /// @brief Ties this layer to one below it
+        /// @param below PCLayer*
         void SetLayerBelow(PCLayer *below) noexcept { layerBelow = below; }
 
         /// @brief Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.
@@ -112,6 +142,7 @@ namespace Deep
         /// @brief Internal state
         float *z;
 
+        /// @brief Used for `cblas_sgemm` optimization
         int batchSize;
 
         // @internal --- For inference ---

@@ -1,0 +1,42 @@
+\doxysection{PCNetwork.\+h}
+\hypertarget{PCNetwork_8h_source}{}\label{PCNetwork_8h_source}\index{includes/PCNetwork.h@{includes/PCNetwork.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{PCLayer_8h}{PCLayer.h}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Optimize_8h}{Optimize.h}}"{}}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00027\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00028\ \{}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1PCNetwork_ac58749c87edbfbb78e676cf72c551c5b}{PCNetwork}}}
+\DoxyCodeLine{00033\ \ \ \ \ \{}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ std::vector<PCLayer\ *>\ layers;}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ autoSize\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_ac58749c87edbfbb78e676cf72c551c5b}{PCNetwork}}()\ :\ batchSize(0),\ autoSize(true)\ \{\}}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_aa643a69b87ed4abd74cb7551fa8b31b1}{PCNetwork}}(\textcolor{keywordtype}{int}\ batchSize)\ :\ batchSize(batchSize),\ autoSize(false)\ \{\}}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_a55366a089e6fdec8abc680b29dee416c}{\string~PCNetwork}}();}
+\DoxyCodeLine{00051\ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_a671ef2c066d69a0c147c01e800ec0a4d}{AddLayer}}(\textcolor{keywordtype}{int}\ size,\ \textcolor{keywordtype}{int}\ nextSize,\ \textcolor{keywordtype}{float}\ lr,}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t}),\ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t}));}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_ae9d91a1ea5a25050b25136e11090a01f}{RandomizeWeights}}(std::mt19937\ \&rng);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_af070ec475891770c6bbf964dc5f81ec6}{Clamp}}(\textcolor{keyword}{const}\ std::vector<float>\ \&input);}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_a90bae97434d7ccc573a76c200860a0d8}{CalculateState}}();}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_a1e72f895a1340de7e8d05946a70865db}{UpdateState}}();}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_afe91131c651073df3051ed649fc99e0f}{UpdateWeights}}();}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1PCNetwork_ad9974955354494f93d8ca762c1b7668e}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00082\ \ \ \ \ \};}
+\DoxyCodeLine{00083\ \}}
+
+\end{DoxyCode}

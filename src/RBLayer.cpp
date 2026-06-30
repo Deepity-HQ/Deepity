@@ -78,7 +78,7 @@ void RBLayer::Attach(float *ptr) noexcept
         U[i] = dist(rng);
 }
 
-// --- CORE EXECUTION ---
+// CORE EXECUTION
 void RBLayer::RunPrediction(const float *input, size_t currentBatchSize) noexcept
 {
     // FAST PATH: full batch, buffer empty

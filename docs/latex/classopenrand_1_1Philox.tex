@@ -1,0 +1,118 @@
+\doxysection{openrand::\+Philox Class Reference}
+\hypertarget{classopenrand_1_1Philox}{}\label{classopenrand_1_1Philox}\index{openrand::Philox@{openrand::Philox}}
+
+
+\doxylink{classopenrand_1_1Philox}{Philox} generator.  
+
+
+
+
+{\ttfamily \+\#include $<$philox.\+h$>$}
+
+Inheritance diagram for openrand::\+Philox:\+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classopenrand_1_1Philox}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+OPENRAND\+\_\+\+DEVICE \doxymbox{\hyperlink{classopenrand_1_1Philox_afaf1249678b220a2b82f014650c05bcf}{Philox}} (uint64\+\_\+t seed, uint32\+\_\+t ctr, uint32\+\_\+t global\+\_\+seed=openrand::\+\+DEFAULT\+\_\+\+GLOBAL\+\_\+\+SEED, uint32\+\_\+t ctr1=0x12345)
+\begin{DoxyCompactList}\small\item\em Construct a new \doxylink{classopenrand_1_1Philox}{Philox} generator. \end{DoxyCompactList}\item 
+\Hypertarget{classopenrand_1_1Philox_a71a89b051f8f3a452c0b799588629fcd}\label{classopenrand_1_1Philox_a71a89b051f8f3a452c0b799588629fcd} 
+{\footnotesize template$<$typename T = uint32\+\_\+t$>$ }\\OPENRAND\+\_\+\+DEVICE T {\bfseries draw} ()
+\item 
+\Hypertarget{classopenrand_1_1Philox_a56e9b4d33dc50e845b3e2fe75770ec2c}\label{classopenrand_1_1Philox_a56e9b4d33dc50e845b3e2fe75770ec2c} 
+OPENRAND\+\_\+\+DEVICE openrand::\+uint4 {\bfseries draw\+\_\+int4} ()
+\item 
+\Hypertarget{classopenrand_1_1Philox_aacb03f11619ff5b496a82fcaa181c886}\label{classopenrand_1_1Philox_aacb03f11619ff5b496a82fcaa181c886} 
+OPENRAND\+\_\+\+DEVICE openrand::\+float4 {\bfseries draw\+\_\+float4} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Philox $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+OPENRAND\+\_\+\+DEVICE result\+\_\+type \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_ad283954b2c4cbeb8627cdf17b2518712}{operator()}} ()
+\begin{DoxyCompactList}\small\item\em Generates a 32 bit unsigned integer from a uniform distribution. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a35640e3524fefedf7bef54c62bd78533}{rand}} ()
+\begin{DoxyCompactList}\small\item\em Generates a random number from a uniform distribution between 0 and 1. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a57b712058a8b7324ff071b86f515f161}{uniform}} (const T low, const T high)
+\begin{DoxyCompactList}\small\item\em Generates a number from a uniform distribution between a and b. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE void {\bfseries fill\+\_\+random} (T \texorpdfstring{$\ast$}{*}array, const int N)
+\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_acc7f05700552684942651da2303c0d74}{randn}} ()
+\begin{DoxyCompactList}\small\item\em Generates a random number from a normal distribution with mean 0 and std 1. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE \doxymbox{\hyperlink{structopenrand_1_1vec2}{vec2}}$<$ T $>$ \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_af88bf6a5f3c39d4dd8960110a3ac469b}{randn2}} ()
+\begin{DoxyCompactList}\small\item\em More efficient version of \doxylink{classopenrand_1_1BaseRNG_acc7f05700552684942651da2303c0d74}{randn}, returns two values at once. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a7591a16760b3f08d7666e443d1c2a21b}{range}} (const T N)
+\begin{DoxyCompactList}\small\item\em Generates a random integer of certain range. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_ac544861a04bf0917768d3d3c89aa59e2}{gamma}} (T alpha, T b)
+\begin{DoxyCompactList}\small\item\em Generates a random number from a gamma distribution with shape alpha and scale b. \end{DoxyCompactList}\item 
+std::\+enable\+\_\+if\+\_\+t$<$ \doxymbox{\hyperlink{structopenrand_1_1has__counter}{has\+\_\+counter}}$<$ T $>$::\+value, \doxymbox{\hyperlink{classopenrand_1_1Philox}{Philox}} $>$ \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a922e8bd760e69aa77c22648cb3e8af4d}{forward\+\_\+state}} (int n) const
+\begin{DoxyCompactList}\small\item\em Returns a new generator with the internal state forwarded by a given number. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classopenrand_1_1Philox_a69f52093b6dbf72df7e97a8397139d15}\label{classopenrand_1_1Philox_a69f52093b6dbf72df7e97a8397139d15} 
+uint32\+\_\+t {\bfseries \+\_\+ctr} = 0
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Public Types inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Philox $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+using {\bfseries result\+\_\+type}
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Philox $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static constexpr result\+\_\+type {\bfseries min} ()
+\item 
+static constexpr result\+\_\+type {\bfseries max} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Philox $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+OPENRAND\+\_\+\+DEVICE Ftype {\bfseries u01} (const Utype in) const
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\doxylink{classopenrand_1_1Philox}{Philox} generator. 
+
+\begin{DoxyNote}{Note}
+This is a modified version of \doxylink{classopenrand_1_1Philox}{Philox} generator from Random123 library. This uses 4x 32-\/bit counter, 2x 32-\/bit key along with 10 rounds. 
+\end{DoxyNote}
+
+
+\label{doc-constructors}
+\Hypertarget{classopenrand_1_1Philox_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classopenrand_1_1Philox_afaf1249678b220a2b82f014650c05bcf}\index{openrand::Philox@{openrand::Philox}!Philox@{Philox}}
+\index{Philox@{Philox}!openrand::Philox@{openrand::Philox}}
+\doxysubsubsection{\texorpdfstring{Philox()}{Philox()}}
+{\footnotesize\ttfamily \label{classopenrand_1_1Philox_afaf1249678b220a2b82f014650c05bcf} 
+OPENRAND\+\_\+\+DEVICE openrand::\+\+Philox::\+\+Philox (\begin{DoxyParamCaption}\item[{uint64\+\_\+t}]{seed}{, }\item[{uint32\+\_\+t}]{ctr}{, }\item[{uint32\+\_\+t}]{global\+\_\+seed}{ = {\ttfamily openrand:\+:\+DEFAULT\+\_\+GLOBAL\+\_\+SEED}, }\item[{uint32\+\_\+t}]{ctr1}{ = {\ttfamily 0x12345}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Construct a new \doxylink{classopenrand_1_1Philox}{Philox} generator. 
+
+\begin{DoxyNote}{Note}
+Internally, global\+\_\+seed is treated in the same way as other counters, and can be treated as such depending on the application needs.
+\end{DoxyNote}
+
+\begin{DoxyParams}{Parameters}
+{\em seed} & 64-\/bit seed \\
+\hline
+{\em ctr} & 32-\/bit counter \\
+\hline
+{\em global\+\_\+seed} & (Optional) 32-\/bit global seed. \\
+\hline
+{\em ctr1} & (Optional) Another 32-\/bit counter exposed for advanced use. \\
+\hline
+\end{DoxyParams}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+includes/\+openrand/\+philox.\+h\end{DoxyCompactItemize}

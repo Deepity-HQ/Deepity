@@ -2,18 +2,11 @@
 
 Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-overhead, ultra-low variance inference and learning. It is aggressively CPU-optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.
 
-<p align="center">
-<img src="resources/LayerCPUMetrics.png" alt="PCN Layer CPU Metrics" width="300">
-</p>
+![PCN Layer CPU Metrics](resources/LayerCPUMetrics.png)
 
 ---
 
-<p align="center">
-  <img src="resources/pcn_profile.svg"
-       alt="PCN Profiler"
-       class="svg-icon"
-       width="800">
-</p>
+![PCN Profiler](resources/pcn_profile.svg)
 
 ## 🚀 Performance at a Glance
 
@@ -31,9 +24,7 @@ $$\frac{144.4\text{ GFLOPs}}{1.24379\text{ s}}\approx 116.1\text{ GFLOPS}$$
 
 By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running **~3.5× faster** than an equivalent, highly vectorized NumPy implementation.
 
-<p align="center">
-<img src="resources/PyTest.png" alt="Python Benchmark Results" width="400">
-</p>
+![Python Benchmark Results](resources/PyTest.png)
 
 | Implementation | Avg (ms) | Min (ms) | Max (ms) |
 | :--- | ---: | ---: | ---: |
@@ -54,9 +45,7 @@ We bypass standard C++ library bottlenecks by implementing highly optimized acti
 **Rational Polynomial Tanh**
 Deepity avoids expensive `expf` instruction calls by utilizing a highly tuned Padé rational polynomial approximation. This yields up to a 40% speedup over `std::tanh` without sacrificing necessary precision.
 
-<p align="center">
-<img src="resources/ActivationCPUMetrics.png" alt="Activation CPU Metrics" width="200">
-</p>
+![Activation CPU Metrics](resources/ActivationCPUMetrics.png)
 
 **Saturated Vectorized ReLU**
 The ReLU implementation processes up to 16 floats per clock cycle, completely saturating standard single-core RAM bandwidth limits (~15.8 GB/s).

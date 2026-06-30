@@ -1,0 +1,146 @@
+\doxysection{includes/\+\+Activations.h File Reference}
+\hypertarget{Activations_8h}{}\label{Activations_8h}\index{includes/Activations.h@{includes/Activations.h}}
+
+
+Defines the activation functions of a predictive coding model.  
+
+
+{\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$cmath$>$}\newline
+{\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}{MAX}}(a,  b)
+\item 
+\Hypertarget{Activations_8h_af09b50acd5a5564417673be65960c0ea}\label{Activations_8h_af09b50acd5a5564417673be65960c0ea} 
+\+\#define {\bfseries TANH\+\_\+\+TINYLIMIT}~0.\+000244140625f
+\item 
+\Hypertarget{Activations_8h_ac245f863ccdf620e12419737387cfc96}\label{Activations_8h_ac245f863ccdf620e12419737387cfc96} 
+\+\#define {\bfseries TANH\+\_\+\+BIGLIMIT}~9.\+0f
+\item 
+\Hypertarget{Activations_8h_ad86bc04f7f667b1bdced8a0f06d96861}\label{Activations_8h_ad86bc04f7f667b1bdced8a0f06d96861} 
+\+\#define {\bfseries p1}~-\/0.\+3333328194f
+\item 
+\Hypertarget{Activations_8h_a938e6a2861f684cc1f7e2de661446e35}\label{Activations_8h_a938e6a2861f684cc1f7e2de661446e35} 
+\+\#define {\bfseries p2}~-\/0.\+0015662060f
+\item 
+\Hypertarget{Activations_8h_ac4ca304cd28414de1f88d44c0d2c1706}\label{Activations_8h_ac4ca304cd28414de1f88d44c0d2c1706} 
+\+\#define {\bfseries p3}~-\/0.\+0001658424f
+\item 
+\Hypertarget{Activations_8h_a2727b8084704029433d23fb39cd41e0a}\label{Activations_8h_a2727b8084704029433d23fb39cd41e0a} 
+\+\#define {\bfseries q1}~0.\+6031357917f
+\item 
+\Hypertarget{Activations_8h_af3dba398bf5802642ccbd218a3f8284b}\label{Activations_8h_af3dba398bf5802642ccbd218a3f8284b} 
+\+\#define {\bfseries q2}~0.\+0146431154f
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \doxymbox{\hyperlink{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}{Deep::\+relu}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\begin{DoxyCompactList}\small\item\em RELU(x) = MAX(0, x) for all x. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{Activations_8h_a43ab557c1577418971f7241698a530b2}{Deep::\+tanh}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\begin{DoxyCompactList}\small\item\em TANH(x) = (exp(x) -\/ exp(-\/x))/\+(exp(x) + exp(-\/x)). \end{DoxyCompactList}\item 
+\Hypertarget{Activations_8h_abf2cdde9211fc480d9d0b31c6eea7e40}\label{Activations_8h_abf2cdde9211fc480d9d0b31c6eea7e40} 
+void {\bfseries Deep::\+d\+Tanh} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\item 
+\Hypertarget{Activations_8h_a2195b5d7b26f13aadad0f89d906436ea}\label{Activations_8h_a2195b5d7b26f13aadad0f89d906436ea} 
+void {\bfseries Deep::\+d\+Relu} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\item 
+void \doxymbox{\hyperlink{Activations_8h_a37699e92460d5886b74de24746e6df97}{Deep::\+sigmoid}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Defines the activation functions of a predictive coding model. 
+
+This header includes implementations of Re\+LU and TanH.
+
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{Activations_8h}{Activations.\+h}\texorpdfstring{$>$}{>}
+
+Example:\+ Deep::\+tanh(array, arraysize)
+
+\begin{DoxyNote}{Note}
+Separate implementations exist for AVX512F, AVX2, SSE, and naive. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/21 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}
+
+
+\label{doc-define-members}
+\Hypertarget{Activations_8h_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}\index{Activations.h@{Activations.h}!MAX@{MAX}}
+\index{MAX@{MAX}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{MAX}{MAX}}
+{\footnotesize\ttfamily \label{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f} 
+\+\#define MAX(\begin{DoxyParamCaption}\item[{}]{a}{, }\item[{}]{b}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(((a)\ >\ (b))\ ?\ (a)\ :\ (b))}
+
+\end{DoxyCode}
+
+
+\label{doc-func-members}
+\Hypertarget{Activations_8h_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}\index{Activations.h@{Activations.h}!relu@{relu}}
+\index{relu@{relu}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{relu()}{relu()}}
+{\footnotesize\ttfamily \label{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d} 
+void Deep::\+relu (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+RELU(x) = MAX(0, x) for all x. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
+\hline
+{\em n} & x length \\
+\hline
+\end{DoxyParams}
+\Hypertarget{Activations_8h_a37699e92460d5886b74de24746e6df97}\index{Activations.h@{Activations.h}!sigmoid@{sigmoid}}
+\index{sigmoid@{sigmoid}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{sigmoid()}{sigmoid()}}
+{\footnotesize\ttfamily \label{Activations_8h_a37699e92460d5886b74de24746e6df97} 
+void Deep::\+sigmoid (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
+\hline
+{\em n} & x length \\
+\hline
+\end{DoxyParams}
+\Hypertarget{Activations_8h_a43ab557c1577418971f7241698a530b2}\index{Activations.h@{Activations.h}!tanh@{tanh}}
+\index{tanh@{tanh}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{tanh()}{tanh()}}
+{\footnotesize\ttfamily \label{Activations_8h_a43ab557c1577418971f7241698a530b2} 
+void Deep::\+tanh (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+TANH(x) = (exp(x) -\/ exp(-\/x))/\+(exp(x) + exp(-\/x)). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
+\hline
+{\em n} & x length \\
+\hline
+\end{DoxyParams}

@@ -1,0 +1,204 @@
+\doxysection{Deep::\+Layer Class Reference}
+\hypertarget{classDeep_1_1Layer}{}\label{classDeep_1_1Layer}\index{Deep::Layer@{Deep::Layer}}
+
+
+A deepity layer virtual class.  
+
+
+
+
+{\ttfamily \+\#include $<$Layer.\+h$>$}
+
+Inheritance diagram for Deep::\+Layer:\+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classDeep_1_1Layer}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+virtual float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1Layer_a0c6f2e33fd61bd6dd5907875affe8b57}{Get\+Beliefs}} () noexcept=0
+\begin{DoxyCompactList}\small\item\em Should return belief state {\ttfamily z}. \end{DoxyCompactList}\item 
+virtual const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7f636}{Get\+Errors}} () const noexcept=0
+\begin{DoxyCompactList}\small\item\em Should return errors {\ttfamily e}. \end{DoxyCompactList}\item 
+virtual size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4ef375}{Get\+Input\+Size}} () const noexcept=0
+\begin{DoxyCompactList}\small\item\em Should return input size. \end{DoxyCompactList}\item 
+virtual size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96b745}{Get\+Output\+Size}} () const noexcept=0
+\begin{DoxyCompactList}\small\item\em Should return output size. \end{DoxyCompactList}\item 
+virtual size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1Layer_aa76875cc43cfa3bf24fdb8b949fb8f9e}{Get\+Batch\+Size}} () const noexcept=0
+\begin{DoxyCompactList}\small\item\em Should return batch size. \end{DoxyCompactList}\item 
+virtual float \doxymbox{\hyperlink{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}{Calculate\+State}} () noexcept=0
+\begin{DoxyCompactList}\small\item\em Calculates the internal state of the layer. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7}{Update\+State}} () noexcept=0
+\begin{DoxyCompactList}\small\item\em Updates the states after calculation. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classDeep_1_1Layer_a60d66aa85fc0f7ad5ea82f24340a9b96}{Update\+Weights}} () noexcept=0
+\begin{DoxyCompactList}\small\item\em Updates the weights after state updates. \end{DoxyCompactList}\item 
+virtual void \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}{Flush}} () noexcept
+\begin{DoxyCompactList}\small\item\em Flushes remaining batches. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}\label{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d} 
+size\+\_\+t {\bfseries size}
+\begin{DoxyCompactList}\small\item\em Size of input. \end{DoxyCompactList}\item 
+\Hypertarget{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}\label{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0} 
+size\+\_\+t {\bfseries next\+Size}
+\begin{DoxyCompactList}\small\item\em Size of output. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A deepity layer virtual class. 
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1Layer_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}\index{Deep::Layer@{Deep::Layer}!CalculateState@{CalculateState}}
+\index{CalculateState@{CalculateState}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{CalculateState()}{CalculateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe} 
+virtual float Deep::\+\+Layer::\+\+Calculate\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Calculates the internal state of the layer. 
+
+\begin{DoxyReturn}{Returns}
+energy used 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_a61b31f7447140c535123f793db549ac5}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_af3f0482e4caeda2e3bce0c0723649705}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}\index{Deep::Layer@{Deep::Layer}!Flush@{Flush}}
+\index{Flush@{Flush}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{Flush()}{Flush()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d} 
+virtual void Deep::\+\+Layer::\+\+Flush (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Flushes remaining batches. 
+
+
+
+Reimplemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_ad593a7fd723f5d79e8d3498514b1fddd}{Deep::\+\+PCLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_aa76875cc43cfa3bf24fdb8b949fb8f9e}\index{Deep::Layer@{Deep::Layer}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_aa76875cc43cfa3bf24fdb8b949fb8f9e} 
+virtual size\+\_\+t Deep::\+\+Layer::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return batch size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_af54b2893a55e208c2d13779f7a757302}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_a0c6f2e33fd61bd6dd5907875affe8b57}\index{Deep::Layer@{Deep::Layer}!GetBeliefs@{GetBeliefs}}
+\index{GetBeliefs@{GetBeliefs}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{GetBeliefs()}{GetBeliefs()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_a0c6f2e33fd61bd6dd5907875affe8b57} 
+virtual float \texorpdfstring{$\ast$}{*} Deep::\+\+Layer::\+\+Get\+Beliefs (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return belief state {\ttfamily z}. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_a05b8f68a1b3e1d2316a64b42ae6208a9}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_a0a37d411bef0cba234593ce5956a5227}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7f636}\index{Deep::Layer@{Deep::Layer}!GetErrors@{GetErrors}}
+\index{GetErrors@{GetErrors}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{GetErrors()}{GetErrors()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7f636} 
+virtual const float \texorpdfstring{$\ast$}{*} Deep::\+\+Layer::\+\+Get\+Errors (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return errors {\ttfamily e}. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_ab3f6678f4fb739aba3ab204a79c0c8e6}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4ef375}\index{Deep::Layer@{Deep::Layer}!GetInputSize@{GetInputSize}}
+\index{GetInputSize@{GetInputSize}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{GetInputSize()}{GetInputSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4ef375} 
+virtual size\+\_\+t Deep::\+\+Layer::\+\+Get\+Input\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return input size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_ae4a6b076c3c256aa162a55883522ed8e}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_ad50379af7001257495455d96b7a5e7e9}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96b745}\index{Deep::Layer@{Deep::Layer}!GetOutputSize@{GetOutputSize}}
+\index{GetOutputSize@{GetOutputSize}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{GetOutputSize()}{GetOutputSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96b745} 
+virtual size\+\_\+t Deep::\+\+Layer::\+\+Get\+Output\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Should return output size. 
+
+\begin{DoxyReturn}{Returns}
+? = 0 
+\end{DoxyReturn}
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_a688439331733d5df07a2848f663ab072}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_a563d7ef929d3ef37359c0c2c6f87cc02}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7}\index{Deep::Layer@{Deep::Layer}!UpdateState@{UpdateState}}
+\index{UpdateState@{UpdateState}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{UpdateState()}{UpdateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7} 
+virtual void Deep::\+\+Layer::\+\+Update\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Updates the states after calculation. 
+
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_a375092aaa22c17a0c1822da96a112e3a}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755}{Deep::\+\+RBLayer}}.
+
+\Hypertarget{classDeep_1_1Layer_a60d66aa85fc0f7ad5ea82f24340a9b96}\index{Deep::Layer@{Deep::Layer}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::Layer@{Deep::Layer}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1Layer_a60d66aa85fc0f7ad5ea82f24340a9b96} 
+virtual void Deep::\+\+Layer::\+\+Update\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Updates the weights after state updates. 
+
+
+
+Implemented in \doxymbox{\hyperlink{classDeep_1_1PCLayer_afe6a1b75f8ada9f5a1d9640573058c86}{Deep::\+\+PCLayer}}, and \doxymbox{\hyperlink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{Deep::\+\+RBLayer}}.
+
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+includes/\+\doxymbox{\hyperlink{Layer_8h}{Layer.\+h}}\end{DoxyCompactItemize}

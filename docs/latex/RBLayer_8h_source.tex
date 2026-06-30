@@ -1,0 +1,109 @@
+\doxysection{RBLayer.\+h}
+\hypertarget{RBLayer_8h_source}{}\label{RBLayer_8h_source}\index{includes/RBLayer.h@{includes/RBLayer.h}}
+\doxymbox{\hyperlink{RBLayer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Layer_8h}{Layer.h}}"{}}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{Activations.h}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <cstddef>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00023\ \{}
+\DoxyCodeLine{00024\ \ \ \ \ \textcolor{comment}{//\ Function\ pointer\ alias\ for\ SIMD-\/accelerated\ activation\ functions}}
+\DoxyCodeLine{00025\ \ \ \ \ \textcolor{keyword}{using\ }ActivationFn\ =\ void\ (*)(\textcolor{keywordtype}{float}\ *,\ size\_t);}
+\DoxyCodeLine{00026\ }
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6}{RBLayer}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}}
+\DoxyCodeLine{00031\ \ \ \ \ \{}
+\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6}{RBLayer}}(\textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize,}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ var\ =\ 1.0f,\ \textcolor{keywordtype}{float}\ var\_td\ =\ 10.0f,}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ k\_1\ =\ 1e-\/3f,\ \textcolor{keywordtype}{float}\ k\_2\ =\ 1e-\/5f,}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/6f,\ \textcolor{keywordtype}{float}\ alpha\ =\ 1.0f,}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ batchSize\ =\ 64,\ \textcolor{keywordtype}{int}\ stepSize\ =\ 30,}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ ActivationFn\ act\ =\ \doxymbox{\hyperlink{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}{relu}},\ ActivationFn\ dAct\ =\ dRelu);}
+\DoxyCodeLine{00054\ }
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ae82b8a57117ca477221e2b56bd65a4b6}{\string~RBLayer}}()\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ab330434bcc4cf32574e23508f714891b}{RunPrediction}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *input,\ \textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ad1fcdf0468974b1af5c7e778e91b2ebf}{RunInferenceStep}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *input,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *topDown,\ \textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a025abc761fcbe169c099e505437d3c25}{CalcError}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *bottomUp,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *topDown,\ \textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Core\ Execution\ (Predictive\ Coding\ Dynamics)}}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/-\/}}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a5b570e93bdcfb61173523378d0009de7}{UpdateBeliefs}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *bottomUp,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *topDown,\ \textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{UpdateWeights}}(\textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_af3f0482e4caeda2e3bce0c0723649705}{CalculateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755}{UpdateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{UpdateWeights}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb}{GetErrors}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ e\_bu;\ \}}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a743571cb2fde273c62b820d90c618c66}{GetTotalSize}}()\ const\ noexcept;}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ac82d646502e6faf7031c9ff04bf4f972}{Attach}}(\textcolor{keywordtype}{float}\ *ptr)\ noexcept;}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{float}\ *GetWeights()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ U;\ \}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6}{GetBatchSize}}()\ const\ noexcept\ override;}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_ad50379af7001257495455d96b7a5e7e9}{GetInputSize}}()\ const\ noexcept\ override;}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1RBLayer_a563d7ef929d3ef37359c0c2c6f87cc02}{GetOutputSize}}()\ const\ noexcept\ override;}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ [[nodiscard]]\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1RBLayer_a0a37d411bef0cba234593ce5956a5227}{GetBeliefs}}()\ noexcept\ override;}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ [[nodiscard]]\ const\ \textcolor{keywordtype}{float}\ *GetInferenceError()\ const\ noexcept;}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00132\ \textcolor{preprocessor}{\#ifdef\ \_DEBUG}}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ DebugStats(\textcolor{keywordtype}{int}\ layerIndex)\ \textcolor{keyword}{const\ override};}
+\DoxyCodeLine{00135\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00137\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ CacheInput(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *input,\ \textcolor{keywordtype}{size\_t}\ currentBatchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00140\ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/-\/-\/\ Hyperparameters\ -\/-\/-\/}}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ var;}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ var\_td;}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ k\_1;}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ k\_2;}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lmbda;}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ alpha;}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ stepSize;}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Batch\ Tracking}}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ batchSize;}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ cachedBatchSize\ =\ 0;}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *cachedInput\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ SIMD\ Activation}}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ ActivationFn\ act;}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ ActivationFn\ dAct;}
+\DoxyCodeLine{00158\ }
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Arena\ Memory\ Pointers}}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *r\ =\ \textcolor{keyword}{nullptr};\ \ \ \ }
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *U\ =\ \textcolor{keyword}{nullptr};\ \ \ \ }
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e\_bu\ =\ \textcolor{keyword}{nullptr};\ }
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e\_td\ =\ \textcolor{keyword}{nullptr};\ }
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ BLAS\ Temporary\ Buffers}}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ std::unique\_ptr<float[]>\ inputBuffer;}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ pendingCount\ =\ 0;}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ ownsMemory\ =\ \textcolor{keyword}{false};}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *tmpBelief\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *tmpWeight1\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *tmpWeight2\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *tmpWeight3\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *tmpWeight4\ =\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00175\ \ \ \ \ \};}
+\DoxyCodeLine{00176\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+
+\end{DoxyCode}

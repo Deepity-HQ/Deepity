@@ -1,0 +1,60 @@
+\doxysection{includes/\+\+PCLayer.h File Reference}
+\hypertarget{PCLayer_8h}{}\label{PCLayer_8h}\index{includes/PCLayer.h@{includes/PCLayer.h}}
+
+
+Defines the single-\/layer implementation of a PC model.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include "{}Activations.\+h"{}}\newline
+{\ttfamily \+\#include "{}Layer.\+h"{}}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1PCLayer}{Deep::\+\+PCLayer}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Defines the single-\/layer implementation of a PC model. 
+
+Defines the network-\/level implementation of a PC model.
+
+This header includes implementations of state calculation, state updates, and learning.
+
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{PCLayer_8h}{PCLayer.\+h}\texorpdfstring{$>$}{>}
+
+Example:\+ \doxylink{classDeep_1_1Layer}{Deep::\+\+Layer} layer(2, 3, 1, 1e-\/6); layer.\+Clamp\+State(\{ 0.\+1f, 0.\+75f \}); layer.\+Calculate\+State();
+
+\begin{DoxyNote}{Note}
+All members are stored as pointers except for the input itself. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose
+\end{DoxyAuthor}
+This header includes implementations of PC layer-\/to-\/layer interaction.
+
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{PCNetwork_8h_source}{PCNetwork.\+h}\texorpdfstring{$>$}{>}
+
+Example:\+ \doxylink{classDeep_1_1PCNetwork}{Deep::\+\+PCNetwork} network(1); network.\+add\+Layer(\{...\}); network.\+Clamp(input); network.\+Calculate\+State();
+
+\begin{DoxyNote}{Note}
+All layers are stored in a vector. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

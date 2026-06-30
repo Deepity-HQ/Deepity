@@ -1,0 +1,61 @@
+\doxysection{openrand::\+Tyche Class Reference}
+\hypertarget{classopenrand_1_1Tyche}{}\label{classopenrand_1_1Tyche}\index{openrand::Tyche@{openrand::Tyche}}
+Inheritance diagram for openrand::\+Tyche:\+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classopenrand_1_1Tyche}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classopenrand_1_1Tyche_a81fd18434d95114e2224bb1007fe1cdd}\label{classopenrand_1_1Tyche_a81fd18434d95114e2224bb1007fe1cdd} 
+OPENRAND\+\_\+\+DEVICE {\bfseries Tyche} (uint64\+\_\+t seed, uint32\+\_\+t ctr, uint32\+\_\+t global\+\_\+seed=openrand::\+\+DEFAULT\+\_\+\+GLOBAL\+\_\+\+SEED)
+\item 
+\Hypertarget{classopenrand_1_1Tyche_a3c9fac29c3a38f419316b5075dfb3085}\label{classopenrand_1_1Tyche_a3c9fac29c3a38f419316b5075dfb3085} 
+{\footnotesize template$<$typename T = uint32\+\_\+t$>$ }\\OPENRAND\+\_\+\+DEVICE T {\bfseries draw} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Tyche $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+OPENRAND\+\_\+\+DEVICE result\+\_\+type \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_ad283954b2c4cbeb8627cdf17b2518712}{operator()}} ()
+\begin{DoxyCompactList}\small\item\em Generates a 32 bit unsigned integer from a uniform distribution. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a35640e3524fefedf7bef54c62bd78533}{rand}} ()
+\begin{DoxyCompactList}\small\item\em Generates a random number from a uniform distribution between 0 and 1. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a57b712058a8b7324ff071b86f515f161}{uniform}} (const T low, const T high)
+\begin{DoxyCompactList}\small\item\em Generates a number from a uniform distribution between a and b. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE void {\bfseries fill\+\_\+random} (T \texorpdfstring{$\ast$}{*}array, const int N)
+\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_acc7f05700552684942651da2303c0d74}{randn}} ()
+\begin{DoxyCompactList}\small\item\em Generates a random number from a normal distribution with mean 0 and std 1. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE \doxymbox{\hyperlink{structopenrand_1_1vec2}{vec2}}$<$ T $>$ \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_af88bf6a5f3c39d4dd8960110a3ac469b}{randn2}} ()
+\begin{DoxyCompactList}\small\item\em More efficient version of \doxylink{classopenrand_1_1BaseRNG_acc7f05700552684942651da2303c0d74}{randn}, returns two values at once. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a7591a16760b3f08d7666e443d1c2a21b}{range}} (const T N)
+\begin{DoxyCompactList}\small\item\em Generates a random integer of certain range. \end{DoxyCompactList}\item 
+OPENRAND\+\_\+\+DEVICE T \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_ac544861a04bf0917768d3d3c89aa59e2}{gamma}} (T alpha, T b)
+\begin{DoxyCompactList}\small\item\em Generates a random number from a gamma distribution with shape alpha and scale b. \end{DoxyCompactList}\item 
+std::\+enable\+\_\+if\+\_\+t$<$ \doxymbox{\hyperlink{structopenrand_1_1has__counter}{has\+\_\+counter}}$<$ T $>$::\+value, \doxymbox{\hyperlink{classopenrand_1_1Tyche}{Tyche}} $>$ \doxymbox{\hyperlink{classopenrand_1_1BaseRNG_a922e8bd760e69aa77c22648cb3e8af4d}{forward\+\_\+state}} (int n) const
+\begin{DoxyCompactList}\small\item\em Returns a new generator with the internal state forwarded by a given number. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Additional Inherited Members}
+\doxysubsection*{Public Types inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Tyche $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+using {\bfseries result\+\_\+type}
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Tyche $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+static constexpr result\+\_\+type {\bfseries min} ()
+\item 
+static constexpr result\+\_\+type {\bfseries max} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions inherited from \doxymbox{\hyperlink{classopenrand_1_1BaseRNG}{openrand::\+\+Base\+RNG$<$ Tyche $>$}}}
+\begin{DoxyCompactItemize}
+\item 
+OPENRAND\+\_\+\+DEVICE Ftype {\bfseries u01} (const Utype in) const
+\end{DoxyCompactItemize}
+
+
+The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+includes/\+openrand/\+tyche.\+h\end{DoxyCompactItemize}

@@ -1,0 +1,31 @@
+\doxysection{Layer.\+h}
+\hypertarget{Layer_8h_source}{}\label{Layer_8h_source}\index{includes/Layer.h@{includes/Layer.h}}
+\doxymbox{\hyperlink{Layer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstddef>}}
+\DoxyCodeLine{00003\ }
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00013\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00014\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}\ \{}
+\DoxyCodeLine{00017\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \textcolor{keyword}{virtual}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{\string~Layer}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \textcolor{keyword}{virtual}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1Layer_a0c6f2e33fd61bd6dd5907875affe8b57}{GetBeliefs}}()\ noexcept\ =\ 0;}
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ virtual\ const\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7f636}{GetErrors}}()\ const\ noexcept\ =\ 0;}
+\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4ef375}{GetInputSize}}()\ const\ noexcept\ =\ 0;}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96b745}{GetOutputSize}}()\ const\ noexcept\ =\ 0;}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1Layer_aa76875cc43cfa3bf24fdb8b949fb8f9e}{GetBatchSize}}()\ const\ noexcept\ =\ 0;}
+\DoxyCodeLine{00035\ }
+\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}{CalculateState}}()\ noexcept\ =\ 0;}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7}{UpdateState}}()\ noexcept\ =\ 0;}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a60d66aa85fc0f7ad5ea82f24340a9b96}{UpdateWeights}}()\ noexcept\ =\ 0;}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ virtual\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}{Flush}}()\ noexcept\ \{\}}
+\DoxyCodeLine{00045\ \ \ \ \ \textcolor{keyword}{protected}:}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}};}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}};}
+\DoxyCodeLine{00050\ \ \ \ \ \};}
+\DoxyCodeLine{00051\ \}}
+
+\end{DoxyCode}

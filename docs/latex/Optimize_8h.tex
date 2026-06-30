@@ -1,0 +1,41 @@
+\doxysection{includes/\+\+Optimize.h File Reference}
+\hypertarget{Optimize_8h}{}\label{Optimize_8h}\index{includes/Optimize.h@{includes/Optimize.h}}
+
+
+Defines useful optimization functions of a PC model.  
+
+
+{\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{Optimize_8h_a1f6c92c5abb579ef6bf96a0047d54342}\label{Optimize_8h_a1f6c92c5abb579ef6bf96a0047d54342} 
+size\+\_\+t {\bfseries Deep::\+\+Get\+L2\+Cache\+Bytes} ()
+\item 
+\Hypertarget{Optimize_8h_a94bef4184e1ca26cb5f79296395b4004}\label{Optimize_8h_a94bef4184e1ca26cb5f79296395b4004} 
+size\+\_\+t {\bfseries Deep::\+\+Auto\+Batch\+Size} (size\+\_\+t in\+Size, size\+\_\+t out\+Size)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Defines useful optimization functions of a PC model. 
+
+This header currently only includes implementation of an L2 Cache size lookup.
+
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{Optimize_8h}{Optimize.\+h}\texorpdfstring{$>$}{>}
+
+Example:\+ size\+\_\+t sizeof\+L2 = Get\+L2\+Cache\+Bytes();
+
+\begin{DoxyNote}{Note}
+Separate versions exist for Windows VS. Linux. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/21 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}
