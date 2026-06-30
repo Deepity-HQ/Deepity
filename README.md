@@ -17,24 +17,35 @@ Deepity is a Predictive Coding (PC) model library designed for ultra-low varianc
 
 ## 🚀 Performance at a Glance
 
-When running on optimized hardware (*a Dell Inc. Inspiron 16 Plus 7620 with a 12th Gen Intel® Core™ i7-12700H × 20*), Deepity hits a sustained execution speed that rivals embedded hardware:
+When running on a **Dell Inspiron 16 Plus 7620** equipped with a **12th Gen Intel® Core™ i7-12700H (20 logical processors)**, Deepity sustains approximately **116 GFLOPS** during predictive-coding inference and learning.
+
+For the benchmark configuration:
+
+- **Network:** 784 → 512 → 256 → 64 → 10
+- **Batch size:** 256
+- **Iterations:** 157
+- **Average runtime:** 1.244 s
+
+The dominant computation consists of batched single-precision matrix multiplications (`SGEMM`), corresponding to approximately **144.4 GFLOPs** of floating-point work:
 
 $$
-\frac{180\text{ GigaFLOPs}}{1.18956\text{ s}} \approx 151.32\text{ GFLOPS}
+\frac{144.4\text{ GFLOPs}}{1.24379\text{ s}}
+\approx
+116.1\text{ GFLOPS}
 $$
 
-The Python bindings maintain this performance with negligible overhead — benchmarked at **3.5× faster** than an equivalent NumPy implementation:
+The Python bindings maintain this performance with negligible overhead, benchmarking **approximately 3.5× faster** than an equivalent NumPy implementation.
 
 <p align="center">
 <img src="resources/PyTest.png" alt="Python Benchmark Results" width="400">
 </p>
 
 | Implementation | Avg (ms) | Min (ms) | Max (ms) |
-| --- | --- | --- | --- |
+| --- | ---: | ---: | ---: |
 | **Deepity (Python)** | **1201.6** | **1200.3** | **1205.3** |
 | NumPy (naive) | 4201.6 | 4147.5 | 4281.3 |
 
-*For reference, performing similar operations using standard academic libraries like `ngc-learn` typically yields under 15 GFLOPS due to high-level language memory overhead.*
+*In our experiments, Deepity substantially outperformed an equivalent NumPy implementation, while high-level research frameworks typically incur additional overhead from Python execution and tensor abstractions.*
 
 ---
 
@@ -45,28 +56,29 @@ The Python bindings maintain this performance with negligible overhead — bench
 Getting a predictive coding layer up and running in Deepity is straightforward:
 
 ```cpp
-#include "PCNLayer.h"
+#include "PCLayer.h"
 #include "Activations.h"
 #include <vector>
 
-int main(void) {
-
-    // Initialize a layer: 1000 inputs, 100 outputs
-    // Defaults: stepSize=30, activation=Deep::relu,
-    // learning rate = inference rate = 1e-6
+int main(void)
+{
     Deep::PCLayer pc(1000, 100);
 
-    // Your input data (must match pc.GetInputSize())
     std::vector<float> input_sample(1000, 0.5f);
+    
+    pc.ClampState(input_sample);
 
-    // Run inference and update beliefs/weights
-    pc.RunPrediction(input_sample.data());
+    for (int i = 0; i < 157; ++i)
+    {
+        pc.CalculateState();
+        pc.UpdateState();
+    }
 
-    // Flush any remaining partial batch
-    pc.Flush();
+    pc.UpdateWeights();
+    pc.UnclampState();
 
     #ifdef _DEBUG
-    pc.DebugStats(); // Inspect layer health, NaNs, and statistics
+    pc.DebugStats();
     #endif
 
     return 0;
@@ -82,18 +94,29 @@ import deepity as deep
 import numpy as np
 
 net = deep.PCNetwork()
-net.add_layer(784, 256, lr=1e-4, ir=1e-4, step_size=30, act="relu")
-net.add_layer(256, 64)
-net.add_layer(64, 10)
-net.compile()
 
-# Feed an input bottom-up
+# Build network
+net.add_layer(784, 256, lr=1e-4, act="relu", dact="drelu")
+net.add_layer(256, 64,  lr=1e-4, act="relu", dact="drelu")
+net.add_layer(64, 10,   lr=1e-4, act="relu", dact="drelu")
+
+net.randomize_weights()
+
+# Input
 x = np.random.uniform(0.0, 1.0, 784).astype(np.float32)
-net.inference_step(x)
-net.flush_inference()
 
-print("Energy:", net.total_energy())
-net.save("model.bin")
+# Clamp input
+net.clamp(x)
+
+# Inference loop
+for _ in range(50):
+    energy = net.calculate_state()
+    net.update_state()
+
+# Learning step (if desired)
+net.update_weights()
+
+print("Final energy:", energy)
 ```
 
 ---
@@ -139,7 +162,7 @@ Batching provides massive performance scaling. A batch size of **256** proved to
 
 ### 2. Random Number Generation
 
-We compared `OpenRAND` against the standard C++ `std::mt19937` generator. Results were within a 5% margin of error, so OpenRAND was chosen for its parallelism-friendly design.
+We compared `OpenRAND` against the standard C++ `std::mt19937` generator. Results were within a 5% margin of error, so MT was chosen for its std-friendly design.
 
 | Generator | Time (ms) |
 | --- | --- |
@@ -172,8 +195,8 @@ Packing all layer attributes into a single flat array showed zero performance pe
 ## 🏗️ Project Structure
 
 ```
-includes/       # Public headers (PCNLayer.h, PCNNetwork.h, Activations.h, Optimize.h)
-src/            # C++ source (PCNLayer.cpp, PCNNetwork.cpp)
+includes/       # Public headers (PCLayer.h, PCNetwork.h, Activations.h, Optimize.h)
+src/            # C++ source (PCLayer.cpp, PCNetwork.cpp)
 pybind/         # Python bindings (binding.cpp)
 tests/          # C++ and Python test suites
 bin/            # Build outputs (library, executables, Python .so)

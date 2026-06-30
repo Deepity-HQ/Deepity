@@ -9,7 +9,7 @@ int main(void)
 
     constexpr int NUM_RUNS = 10;
     constexpr float LEARNING_RATE = 0.01f;
-    constexpr int BATCH_SIZE = 64;
+    constexpr int BATCH_SIZE = 256;
 
     double totalTimeMs = 0.0;
     long long totalIterations = 0;
