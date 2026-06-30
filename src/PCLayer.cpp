@@ -1,7 +1,7 @@
 #include "PCLayer.h"
 #include <iostream>
 #include <chrono>
-#include <openblas/cblas.h>
+#include <cblas.h>
 #include <omp.h>
 #include <cstring>
 

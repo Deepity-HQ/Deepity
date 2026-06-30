@@ -5,22 +5,30 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# ---------------- Dependencies ----------------
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
+
+# modern Python locator
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
 
-include(FetchContent)
+# Find cblas.h cross-platform (Fedora/macOS use 'openblas', Ubuntu uses 'x86_64-linux-gnu' or default)
+find_path(BLAS_INCLUDE_DIR 
+    NAMES cblas.h 
+    PATH_SUFFIXES openblas x86_64-linux-gnu
+    REQUIRED 
+)
 
+# Fetch Google Benchmark
+include(FetchContent)
 FetchContent_Declare(
   benchmark
   GIT_REPOSITORY https://github.com/google/benchmark.git
   GIT_TAG v1.9.1
 )
-
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
-
 FetchContent_MakeAvailable(benchmark)
 
 # ---------------- Core library ----------------
@@ -32,6 +40,7 @@ add_library(Deepity STATIC
 
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/includes
+    ${BLAS_INCLUDE_DIR}
 )
 
 target_link_libraries(Deepity PUBLIC
