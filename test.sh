@@ -1,1 +1,4 @@
-perf stat -e cycles,instructions,cache-misses,cache-references ./bin/Deepity
+
+perf record -g ./bin/DeepityTests
+
+perf report

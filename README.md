@@ -8,6 +8,13 @@ Deepity is a Predictive Coding (PC) model library designed for ultra-low varianc
 
 ---
 
+<p align="center">
+  <img src="resources/pcn_profile.svg"
+       alt="PCN Profiler"
+       class="svg-icon"
+       width="800">
+</p>
+
 ## 🚀 Performance at a Glance
 
 When running on optimized hardware (*a Dell Inc. Inspiron 16 Plus 7620 with a 12th Gen Intel® Core™ i7-12700H × 20*), Deepity hits a sustained execution speed that rivals embedded hardware:

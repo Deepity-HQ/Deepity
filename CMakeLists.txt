@@ -12,10 +12,22 @@ find_path(CBLAS_INCLUDE_DIR
     REQUIRED
 )
 
-# --- Library ---
+include(FetchContent)
+FetchContent_Declare(
+  benchmark
+  GIT_REPOSITORY https://github.com/google/benchmark.git
+  GIT_TAG v1.9.1
+)
+
+set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(benchmark)
+
 add_library(Deepity STATIC
-    src/PCNLayer.cpp
-    src/PCNNetwork.cpp
+    src/PCLayer.cpp
+    src/RBLayer.cpp
+    src/PCNetwork.cpp
 )
 
 target_include_directories(Deepity PUBLIC
@@ -36,12 +48,11 @@ if(MSVC)
     )
 else()
     target_compile_options(Deepity PRIVATE
-        $<$<CONFIG:Release>:-O3 -march=x86-64-v3>
+        $<$<CONFIG:Release>:-O3 -march=native>
         $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
         $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
     )
-    
-    # Make sanitizers PUBLIC so targets linking Deepity inherit them
+
     target_compile_options(Deepity PUBLIC
         $<$<CONFIG:Debug>:-fsanitize=address,undefined>
     )
@@ -50,7 +61,7 @@ else()
     )
 endif()
 
-target_compile_definitions(Deepity PRIVATE
+target_compile_definitions(Deepity PUBLIC
     $<$<CONFIG:Debug>:_DEBUG>
 )
 
@@ -59,7 +70,6 @@ set_target_properties(Deepity PROPERTIES
     POSITION_INDEPENDENT_CODE on
 )
 
-# --- Pybindings ---
 find_package(pybind11 REQUIRED)
 
 pybind11_add_module(deepity pybind/binding.cpp)
@@ -68,9 +78,10 @@ set_target_properties(deepity PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )
 
-# --- Test executable ---
-add_executable(DeepityTests tests/tBatches.cpp)
-target_link_libraries(DeepityTests PRIVATE Deepity)
+add_executable(DeepityTests
+    tests/tNetwork.cpp # Change based on test
+)
+target_link_libraries(DeepityTests PRIVATE Deepity benchmark::benchmark)
 set_target_properties(DeepityTests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin
 )

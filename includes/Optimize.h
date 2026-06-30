@@ -53,13 +53,24 @@ namespace Deep
     inline size_t AutoBatchSize(size_t inSize, size_t outSize)
     {
         size_t l2 = GetL2CacheBytes();
+
         size_t wSize = inSize * outSize * sizeof(float);
+        size_t bytesPerBatch = (outSize + inSize + inSize) * sizeof(float);
+
         size_t remaining = (l2 > wSize) ? l2 - wSize : l2 / 2;
-        size_t B = remaining / ((inSize + outSize) * sizeof(float));
+        size_t B = remaining / bytesPerBatch;
+
         // Round down to nearest power of 2
         size_t pow2 = 1;
         while (pow2 * 2 <= B)
             pow2 *= 2;
+
+        if (pow2 < 64)
+            pow2 = 64;
+
+        if (pow2 > 512)
+            pow2 = 512;
+
         return pow2;
     }
 }

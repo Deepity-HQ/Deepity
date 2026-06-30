@@ -1,128 +1,76 @@
-#include "PCNNetwork.h"
 #include <iostream>
-#include <vector>
-#include <random>
-#include <numeric>
-#include <cmath>
-#include <algorithm>
+#include <chrono>
+#include "PCNetwork.h"
 
-// Generates a noisy one-hot vector of size `classes`
-static std::vector<float> MakeTarget(int label, int classes, std::mt19937 &rng, float noise = 0.05f)
+int main(void)
 {
-    std::uniform_real_distribution<float> jitter(-noise, noise);
-    std::vector<float> t(classes, 0.0f);
-    t[label] = 1.0f;
-    for (auto &v : t) v += jitter(rng);
-    return t;
-}
+    std::cout << "Starting Predictive Coding Test." << std::endl;
+    using namespace Deep;
 
-// Generates a random "MNIST-like" input (784 values in [0, 1])
-static std::vector<float> MakeInput(std::mt19937 &rng)
-{
+    constexpr int NUM_RUNS = 10;
+    constexpr float LEARNING_RATE = 0.01f;
+    constexpr int BATCH_SIZE = 64;
+
+    double totalTimeMs = 0.0;
+    long long totalIterations = 0;
+
+    std::mt19937 mt(11);
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    std::vector<float> x(784);
-    for (auto &v : x) v = dist(rng);
-    return x;
-}
 
-// Returns the index of the maximum value (argmax)
-static int Argmax(const float *data, size_t size)
-{
-    return static_cast<int>(std::max_element(data, data + size) - data);
-}
-
-int main()
-{
-    std::cout << "[Deepity] Booting...\n";
-
-    Deep::PCNetwork net;
-    net.AddLayer(784, 256, 1e-4f, 1e-4f, 30);
-    net.AddLayer(256, 64,  1e-4f, 1e-4f, 30);
-    net.AddLayer(64,  10,  1e-4f, 1e-4f, 30);
-    net.Compile();
-
-    std::mt19937 rng(42);
-
-    // --- INFERENCE PASS: feed inputs bottom-up, watch energy settle ---
-
-    std::cout << "\n[Deepity] -- INFERENCE PASS --\n";
-
-    const int NUM_SAMPLES    = 200;
-    const int REPORT_EVERY   = 50;
-
-    for (int i = 0; i < NUM_SAMPLES; ++i)
+    for (int run = 0; run < NUM_RUNS; ++run)
     {
-        auto input = MakeInput(rng);
-        net.InferenceStep(input.data());
+        PCNetwork net(BATCH_SIZE);
+        net.AddLayer(784, 512, LEARNING_RATE, tanh, dTanh);
+        net.AddLayer(512, 256, LEARNING_RATE, tanh, dTanh);
+        net.AddLayer(256, 64,  LEARNING_RATE, tanh, dTanh);
+        net.AddLayer(64,  10,  LEARNING_RATE, tanh, dTanh);
+        net.AddLayer(10,  0,   LEARNING_RATE, tanh, dTanh);
 
-        if ((i + 1) % REPORT_EVERY == 0)
-            std::cout << "  [Step " << (i + 1) << "] Energy: " << net.GetTotalEnergy() << '\n';
-    }
+        net.RandomizeWeights(mt);
 
-    net.FlushInference();
-    std::cout << "  [Post-flush] Energy: " << net.GetTotalEnergy() << '\n';
+        std::vector<float> inputObservation(784);
+        for (float &x : inputObservation)
+            x = dist(mt);
 
-    // --- GENERATION PASS: feed targets top-down for each class label ---
+        net.Clamp(inputObservation);
 
-    std::cout << "\n[Deepity] -- GENERATIVE PASS (per class) --\n";
+        float prevEnergy = 1e9f;
+        float currentEnergy = 0.0f;
+        int iteration = 0;
 
-    const int NUM_CLASSES    = 10;
-    const int GEN_SAMPLES    = 100;
+        auto start = std::chrono::high_resolution_clock::now();
 
-    for (int label = 0; label < NUM_CLASSES; ++label)
-    {
-        // Reset to a fresh network state per label by just running the pass;
-        // energy difference between labels is the signal we care about
-        for (int i = 0; i < GEN_SAMPLES; ++i)
+        while (iteration < 157)
         {
-            auto target = MakeTarget(label, NUM_CLASSES, rng);
-            net.GenerationStep(target.data());
+            currentEnergy = net.CalculateState();
+
+            if (std::abs(prevEnergy - currentEnergy) < 1e-3f)
+                break;
+
+            net.UpdateState();
+            net.UpdateWeights();
+
+            prevEnergy = currentEnergy;
+            ++iteration;
         }
-        net.FlushGeneration();
 
-        std::cout << "  [Label " << label << "] Energy after generative pass: "
-                  << net.GetTotalEnergy() << '\n';
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> elapsed = end - start;
+
+        totalTimeMs += elapsed.count();
+        totalIterations += iteration;
     }
 
-    // --- BIDIRECTIONAL: interleave inference and generative steps ---
-    std::cout << "\n[Deepity] -- BIDIRECTIONAL PASS --\n";
+    std::cout << "=========================================" << std::endl;
+    std::cout << "Network: 784 -> 512 -> 256 -> 64 -> 10"  << std::endl;
+    std::cout << "Runs: "             << NUM_RUNS           << std::endl;
+    std::cout << "Average inference time: "
+              << totalTimeMs / NUM_RUNS << " ms"            << std::endl;
+    std::cout << "Average iterations: "
+              << static_cast<double>(totalIterations) / NUM_RUNS << std::endl;
+    std::cout << "Batch size: "       << BATCH_SIZE         << std::endl;
+    std::cout << "=========================================" << std::endl;
+    std::cout << "> Note: This network will not converge, since it is random." << std::endl;
 
-    const int BIDI_STEPS = 200;
-
-    for (int i = 0; i < BIDI_STEPS; ++i)
-    {
-        int label  = rng() % NUM_CLASSES;
-        auto input  = MakeInput(rng);
-        auto target = MakeTarget(label, NUM_CLASSES, rng);
-
-        net.InferenceStep(input.data());
-        net.GenerationStep(target.data());
-
-        if ((i + 1) % REPORT_EVERY == 0)
-            std::cout << "  [Step " << (i + 1) << "] Energy: " << net.GetTotalEnergy() << '\n';
-    }
-
-    net.FlushInference();
-    net.FlushGeneration();
-    std::cout << "  [Post-flush] Energy: " << net.GetTotalEnergy() << '\n';
-
-    // --- SAVE / LOAD round-trip sanity check ---
-    std::cout << "\n[Deepity] -- SAVE/LOAD ROUND-TRIP --\n";
-
-    const char *model_path = "/tmp/deepity_test.bin";
-    float energy_before = net.GetTotalEnergy();
-    net.SaveModel(model_path);
-    net.LoadModel(model_path);
-    float energy_after = net.GetTotalEnergy();
-
-    std::cout << "  Energy before save : " << energy_before << '\n';
-    std::cout << "  Energy after load  : " << energy_after  << '\n';
-    std::cout << "  Round-trip " << (std::fabs(energy_before - energy_after) < 1e-4f ? "PASSED" : "FAILED") << '\n';
-
-#ifdef _DEBUG
-    net.DebugStats();
-#endif
-
-    std::cout << "\n[Deepity] Done.\n";
     return 0;
 }

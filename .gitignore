@@ -1,3 +1,4 @@
-.vscode/
+.vscode/*
 build/*
+bin/*
 pyrightconfig.json

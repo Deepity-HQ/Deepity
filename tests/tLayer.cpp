@@ -1,70 +1,131 @@
 #include <iostream>
-#include <chrono>
-#include "PCNLayer.h"
 #include <random>
 #include <vector>
-#include <memory>
+#include <cmath>
+#include <numeric>
+#include <RBLayer.h>
+#include <iomanip>
 #include <algorithm>
+
+float MeanReconstructionError(const float *e_bu, size_t batchSize, size_t inSize)
+{
+    float total = 0.0f;
+    for (size_t b = 0; b < batchSize; b++)
+    {
+        float norm = 0.0f;
+        for (size_t i = 0; i < inSize; i++)
+        {
+            float v = e_bu[b * inSize + i];
+            norm += v * v;
+        }
+        total += std::sqrt(norm / inSize);
+    }
+    return total / batchSize;
+}
+
+float EvalOnFixedSet(Deep::RBLayer &layer, const std::vector<float> &dataset,
+                     size_t numSamples, size_t inputDim, size_t outputDim, size_t B)
+{
+    float totalErr = 0.0f;
+    size_t count = 0;
+
+    for (size_t i = 0; i + B <= numSamples; i += B)
+    {
+        const float *batch = dataset.data() + i * inputDim;
+
+        // Zero r and converge
+        std::fill(layer.GetBeliefs(), layer.GetBeliefs() + B * outputDim, 0.0f);
+        for (int s = 0; s < 100; s++)
+        {
+            layer.CalcError(batch, nullptr, B);
+            layer.UpdateBeliefs(batch, nullptr, B);
+        }
+        layer.CalcError(batch, nullptr, B);
+        totalErr += MeanReconstructionError(layer.GetInferenceError(), B, inputDim);
+        count++;
+    }
+    return totalErr / count;
+}
 
 int main(void)
 {
-    Deep::PCLayer pc(1000, 100); // uses stepSize=30, f() = relu, and ir=lr=1e-6 by default
-    
-    std::mt19937 rng(42);
-    std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
+    const size_t INPUT_DIM = 64;
+    const size_t OUTPUT_DIM = 32;
+    const size_t NUM_PATTERNS = 256;
+    const size_t ITERS = 100000;
+    const size_t LOG_EVERY = 5000;
 
-    const int RUNS = 5;
-    const size_t ITERS = 10000;
-    size_t inputDim = pc.GetInputSize();
+    auto linear = [](float *, size_t) {};   // no-op: f(x) = x
+    auto dLinear = [](float *x, size_t n) { // f'(x) = 1
+        std::fill(x, x + n, 1.0f);
+    };
 
-    // Generate a large, distinct streaming dataset in a contiguous block
-    // This forces the CPU to constantly pull fresh input elements from RAM.
-    std::cout << "Generating mock dataset of " << ITERS << " distinct inputs..." << std::endl;
-    std::vector<float> large_dataset(ITERS * inputDim);
-    for (size_t i = 0; i < large_dataset.size(); i++) {
-        large_dataset[i] = dist(rng);
-    }
+    Deep::RBLayer layer(INPUT_DIM, OUTPUT_DIM,
+                    /*var=*/1.0f, /*var_td=*/10.0f, /*alpha=*/0.01f,
+                    /*k_1=*/0.001f, /*k_2=*/0.0001f, /*lmbda=*/0.0f,
+                    /*batchSize=*/64, /*stepSize=*/30,
+                    /*act=*/linear, /*dAct=*/dLinear);
 
-    // Warmup
-    std::cout << "Running warmup iterations..." << std::endl;
-    for (size_t i = 0; i < 256; i++) {
-        float* warmup_ptr = large_dataset.data() + ((i * inputDim) % large_dataset.size());
-        pc.RunPrediction(warmup_ptr);
-    }
-    pc.Flush();
+    size_t B = layer.GetBatchSize();
 
-    // Multiple timed production runs
-    std::cout << "Running " << ITERS << " inputs over " << RUNS << " runs." << std::endl;
-    double times[RUNS];
-
-    for (int r = 0; r < RUNS; r++) {
-        auto start = std::chrono::high_resolution_clock::now();
-        for (size_t i = 0; i < ITERS; i++) {
-            float* current_input = large_dataset.data() + (i * inputDim);
-            pc.RunPrediction(current_input);
+    std::vector<float> fixedDataset(NUM_PATTERNS * INPUT_DIM);
+    for (size_t p = 0; p < NUM_PATTERNS; p++)
+    {
+        float freq = 1.0f + (p % 16);
+        float phase = (p / 16) * (M_PI / 8.0f);
+        for (size_t i = 0; i < INPUT_DIM; i++)
+        {
+            fixedDataset[p * INPUT_DIM + i] = std::sin(freq * i * 2.0f * M_PI / INPUT_DIM + phase);
         }
-        pc.Flush();
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        times[r] = std::chrono::duration<double, std::milli>(end - start).count();
     }
 
-    #ifdef _DEBUG
-    pc.DebugStats();
-    #endif
+    std::mt19937 rng(42);
+    std::vector<size_t> indices(NUM_PATTERNS);
+    std::iota(indices.begin(), indices.end(), 0);
 
-    double sum = 0;
-    double minT = times[0], maxT = times[0];
-    for (int r = 0; r < RUNS; r++) {
-        sum += times[r];
-        minT = std::min(minT, times[r]);
-        maxT = std::max(maxT, times[r]);
+    std::vector<float> batch(B * INPUT_DIM);
+
+    std::cout << "Fixed dataset: " << NUM_PATTERNS << " sinusoid patterns\n";
+    std::cout << "Layer: " << INPUT_DIM << " -> " << OUTPUT_DIM << "\n";
+    std::cout << "Task: layer should reconstruct all patterns from the fixed set\n\n";
+
+    float baseline = EvalOnFixedSet(layer, fixedDataset, NUM_PATTERNS, INPUT_DIM, OUTPUT_DIM, B);
+    std::cout << "Baseline error (untrained): " << baseline << "\n\n";
+
+    std::cout << "Iter       | Train Error | vs Baseline | U norm\n";
+    std::cout << "-----------+-------------+-------------+-------\n";
+
+    float *U = layer.GetWeights();
+
+    for (size_t iter = 0; iter < ITERS; iter++)
+    {
+        std::shuffle(indices.begin(), indices.end(), rng);
+        for (size_t b = 0; b < B; b++)
+        {
+            size_t p = indices[b % NUM_PATTERNS];
+            std::copy(fixedDataset.data() + p * INPUT_DIM,
+                      fixedDataset.data() + p * INPUT_DIM + INPUT_DIM,
+                      batch.data() + b * INPUT_DIM);
+        }
+
+        layer.RunInferenceStep(batch.data(), nullptr, B);
+
+        if (iter % LOG_EVERY == 0)
+        {
+            float err = EvalOnFixedSet(layer, fixedDataset, NUM_PATTERNS, INPUT_DIM, OUTPUT_DIM, B);
+            float pct = 100.0f * (baseline - err) / baseline;
+
+            float uNorm = 0.0f;
+            for (size_t i = 0; i < INPUT_DIM * OUTPUT_DIM; i++)
+                uNorm += U[i] * U[i];
+
+            std::cout << std::setw(10) << iter << " | "
+                      << std::fixed << std::setprecision(6) << err << " | "
+                      << std::setprecision(1) << pct << "% better"
+                      << " | U norm: " << std::setprecision(4) << std::sqrt(uNorm) << "\n";
+        }
     }
 
-    std::cout << "\n================= RESULTS =================\n";
-    std::cout << "Avg: " << sum / RUNS << " ms  "
-              << "Min: " << minT << " ms  "
-              << "Max: " << maxT << " ms" << std::endl;
-              
+    std::cout << "\nDone.\n";
     return 0;
 }

@@ -269,6 +269,93 @@ namespace Deep
         }
     }
 
+    inline void dTanh(float *x, size_t n)
+    {
+        tanh(x, n);
+        size_t i = 0;
+        size_t simd_end;
+
+#if defined(__AVX512F__)
+        __m512 n_ones = _mm512_set1_ps(-1.0f);
+        simd_end = n - (n % 16);
+        for (; i < simd_end; i += 16)
+        {
+            __m512 x_512 = _mm512_load_ps(x + i);
+            __m512 res = _mm512_fmadd_ps(x_512, x_512, n_ones);
+            _mm512_store_ps(x + i, res);
+        }
+#elif defined(__AVX2__)
+        __m256 n_ones = _mm256_set1_ps(-1.0f);
+        simd_end = n - (n % 8);
+        for (; i < simd_end; i += 8)
+        {
+            __m256 x_256 = _mm256_load_ps(x + i);
+            __m256 res = _mm256_fmadd_ps(x_256, x_256, n_ones);
+            _mm256_store_ps(x + i, res);
+        }
+#elif defined(__SSE4_1__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 n_ones = _mm_set1_ps(-1.0f);
+        simd_end = n - (n % 4);
+        for (; i < simd_end; i += 4)
+        {
+            __m128 x_128 = _mm_load_ps(x + i);
+#ifdef __FMA__
+            __m128 res = _mm_fmadd_ps(x_128, x_128, n_ones);
+#else
+            __m128 res = _mm_mul_ps(x_128, x_128);
+            res = _mm_add_ps(res, n_ones);
+#endif
+            _mm_store_ps(x + i, res);
+        }
+#endif
+        for (; i < n; i++)
+        {
+            x[i] = 1 - x[i] * x[i];
+        }
+    }
+
+    inline void dRelu(float *x, size_t n)
+    {
+        size_t i = 0;
+#if defined(__AVX512F__)
+        __m512 ones = _mm512_set1_ps(1.0f);
+        __m512 zeros = _mm512_setzero_ps();
+        size_t simd_end = n - (n % 16);
+        for (; i < simd_end; i += 16)
+        {
+            __m512 x_512 = _mm512_load_ps(x + i);
+            __mmask16 mask = _mm512_cmp_ps_mask(x_512, zeros, _CMP_GT_OQ);
+            __m512 result = _mm512_mask_blend_ps(mask, zeros, ones);
+            _mm512_store_ps(x + i, result);
+        }
+#elif defined(__AVX2__)
+        __m256 ones = _mm256_set1_ps(1.0f);
+        __m256 zeros = _mm256_setzero_ps();
+        size_t simd_end = n - (n % 16);
+        for (; i < simd_end; i += 8)
+        {
+            __m256 x_256 = _mm256_load_ps(x + i);
+            __mmask8 mask = _mm256_cmp_ps_mask(x_256, zeros, _CMP_GT_OQ);
+            __m256 result = _mm256_mask_blend_ps(mask, zeros, ones);
+            _mm256_store_ps(x + i, result);
+        }
+#elif defined(__SSE4_1__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 ones = _mm_set1_ps(1.0f);
+        __m128 zeros = _mm_setzero_ps();
+        size_t simd_end = n - (n % 4);
+        for (; i < simd_end; i += 4)
+        {
+            __m128 x_128 = _mm_load_ps(x + i);
+            __mmask8 mask = _mm_cmp_ps_mask(x_128, zeros, CMP_GT_OQ);
+            _mm_store_ps(x + i, result);
+        }
+#endif
+        for (; i < n; i++)
+        {
+            x[i] = (x[i] > 0.0f) ? 1.0f : 0.0f;
+        }
+    }
+
     /// @brief Implements the \em Elliot \em Sigmoid approximation, i.e. `S(x) = (1/2)((x / (1 + |x|)) + 1)`
     /// @param x array, \em assumed to be 64-bit aligned!
     /// @param n x length

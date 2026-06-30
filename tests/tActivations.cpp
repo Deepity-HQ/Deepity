@@ -24,6 +24,12 @@ void naive_relu(float *arr, size_t n) {
     }
 }
 
+void naive_sigmoid(float *arr, size_t n) {
+    for (size_t i=0; i < n; i++) {
+        arr[i] = 1.0f / (1.0f + expf(-arr[i]));
+    }
+}
+
 void std_tanh_bench(float *arr, size_t n) {
     for (size_t i = 0; i < n; i++) {
         arr[i] = std::tanh(arr[i]);
@@ -100,6 +106,10 @@ int main(void)
         run_benchmark("Standard std::max   ", baseline, n, std_relu_bench);
         run_benchmark("Custom ReLU         ", baseline, n, Deep::relu);
         std::cout << "\n";
+
+        std::cout << "\n--- Sigmoid Performance ---\n";
+        run_benchmark("Naive Sigmoid    ", baseline, n, naive_sigmoid);
+        run_benchmark("Custom Sigmoid   ", baseline, n, Deep::sigmoid);
 
         std::free(baseline);
     }
