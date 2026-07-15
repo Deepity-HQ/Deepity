@@ -139,6 +139,8 @@ void&#160;</td><td class="memItemRight"><b>CalcError</b> (const float *bottomUp,
 <tr class="memdesc:a386066e86ed987fd00d1c0b5f0510755"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the state derivatives and applies them to current beliefs.  <br /></td></tr>
 <tr class="memitem:a1a1d6e8cd0114fc0cad24027e437d8bd" id="r_a1a1d6e8cd0114fc0cad24027e437d8bd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1a1d6e8cd0114fc0cad24027e437d8bd">UpdateWeights</a> () noexcept override</td></tr>
 <tr class="memdesc:a1a1d6e8cd0114fc0cad24027e437d8bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parameter-less override for generic layer weight updates.  <br /></td></tr>
+<tr class="memitem:a5cef7ef9caec43df0f7496c5363e07aa" id="r_a5cef7ef9caec43df0f7496c5363e07aa"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5cef7ef9caec43df0f7496c5363e07aa">Flush</a> () noexcept override</td></tr>
+<tr class="memdesc:a5cef7ef9caec43df0f7496c5363e07aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flushes remaining batches.  <br /></td></tr>
 <tr class="memitem:a142cba3bec26565888d16900bbc95ffb" id="r_a142cba3bec26565888d16900bbc95ffb"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a142cba3bec26565888d16900bbc95ffb">GetErrors</a> () const noexcept override</td></tr>
 <tr class="memdesc:a142cba3bec26565888d16900bbc95ffb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return errors <span class="tt">e</span>.  <br /></td></tr>
 <tr class="memitem:a743571cb2fde273c62b820d90c618c66" id="r_a743571cb2fde273c62b820d90c618c66"><td class="memItemLeft"><a id="a743571cb2fde273c62b820d90c618c66" name="a743571cb2fde273c62b820d90c618c66"></a>
@@ -159,9 +161,6 @@ float *&#160;</td><td class="memItemRight"><b>GetWeights</b> () const noexcept</
 <tr class="memdesc:a0a37d411bef0cba234593ce5956a5227"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return belief state <span class="tt">z</span>.  <br /></td></tr>
 <tr class="memitem:a23cb469a779702cc89c110cb33143f3f" id="r_a23cb469a779702cc89c110cb33143f3f"><td class="memItemLeft"><a id="a23cb469a779702cc89c110cb33143f3f" name="a23cb469a779702cc89c110cb33143f3f"></a>
 const float *&#160;</td><td class="memItemRight"><b>GetInferenceError</b> () const noexcept</td></tr>
-<tr class="inherit_header pub_methods_classDeep_1_1Layer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classDeep_1_1Layer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td></tr>
-<tr class="memitem:aa25f07b8ffa01f5de94cd96edbcd103d inherit pub_methods_classDeep_1_1Layer" id="r_aa25f07b8ffa01f5de94cd96edbcd103d"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#aa25f07b8ffa01f5de94cd96edbcd103d">Flush</a> () noexcept</td></tr>
-<tr class="memdesc:aa25f07b8ffa01f5de94cd96edbcd103d inherit pub_methods_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flushes remaining batches.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -301,6 +300,35 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 </p>
  
 <p>Implements <a class="el" href="classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe">Deep::Layer</a>.</p>
+
+</div>
+</div>
+<a id="a5cef7ef9caec43df0f7496c5363e07aa" name="a5cef7ef9caec43df0f7496c5363e07aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cef7ef9caec43df0f7496c5363e07aa">&#9670;&#160;</a></span>Flush()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RBLayer::Flush </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Flushes remaining batches. </p>
+
+<p>Reimplemented from <a class="el" href="classDeep_1_1Layer.html#aa25f07b8ffa01f5de94cd96edbcd103d">Deep::Layer</a>.</p>
 
 </div>
 </div>

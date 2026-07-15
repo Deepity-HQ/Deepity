@@ -39,6 +39,8 @@ void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a386066e86ed987fd00d1c0b5f0510755
 \begin{DoxyCompactList}\small\item\em Computes the state derivatives and applies them to current beliefs. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a1a1d6e8cd0114fc0cad24027e437d8bd}{Update\+Weights}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Parameter-\/less override for generic layer weight updates. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1RBLayer_a5cef7ef9caec43df0f7496c5363e07aa}{Flush}} () noexcept override
+\begin{DoxyCompactList}\small\item\em Flushes remaining batches. \end{DoxyCompactList}\item 
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1RBLayer_a142cba3bec26565888d16900bbc95ffb}{Get\+Errors}} () const noexcept override
 \begin{DoxyCompactList}\small\item\em Should return errors {\ttfamily e}. \end{DoxyCompactList}\item 
 \Hypertarget{classDeep_1_1RBLayer_a743571cb2fde273c62b820d90c618c66}\label{classDeep_1_1RBLayer_a743571cb2fde273c62b820d90c618c66} 
@@ -61,11 +63,6 @@ float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1RBLayer_a0a37
 \Hypertarget{classDeep_1_1RBLayer_a23cb469a779702cc89c110cb33143f3f}\label{classDeep_1_1RBLayer_a23cb469a779702cc89c110cb33143f3f} 
 const float \texorpdfstring{$\ast$}{*} {\bfseries Get\+Inference\+Error} () const noexcept
 \end{DoxyCompactItemize}
-\doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}}
-\begin{DoxyCompactItemize}
-\item 
-virtual void \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}{Flush}} () noexcept
-\begin{DoxyCompactList}\small\item\em Flushes remaining batches. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsubsection*{Additional Inherited Members}
 \doxysubsection*{Protected Attributes inherited from \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}}
 \begin{DoxyCompactItemize}
@@ -146,6 +143,20 @@ Computes the sum of squared bottom-\/up prediction errors:\+   \[E = \frac{1}{2}
 \] 
 
 Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}{Deep::\+\+Layer}}.
+
+\Hypertarget{classDeep_1_1RBLayer_a5cef7ef9caec43df0f7496c5363e07aa}\index{Deep::RBLayer@{Deep::RBLayer}!Flush@{Flush}}
+\index{Flush@{Flush}!Deep::RBLayer@{Deep::RBLayer}}
+\doxysubsubsection{\texorpdfstring{Flush()}{Flush()}}
+{\footnotesize\ttfamily \label{classDeep_1_1RBLayer_a5cef7ef9caec43df0f7496c5363e07aa} 
+void RBLayer::\+\+Flush (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}, {\ttfamily [noexcept]}}
+
+
+
+Flushes remaining batches. 
+
+
+
+Reimplemented from \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94cd96edbcd103d}{Deep::\+\+Layer}}.
 
 \Hypertarget{classDeep_1_1RBLayer_aa506bb782dcfba7a578c697302723fb6}\index{Deep::RBLayer@{Deep::RBLayer}!GetBatchSize@{GetBatchSize}}
 \index{GetBatchSize@{GetBatchSize}!Deep::RBLayer@{Deep::RBLayer}}

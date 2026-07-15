@@ -53,9 +53,10 @@ namespace Deep
         /// @param size input size
         /// @param nextSize output size
         /// @param lr learning rate for beliefs
+        /// @param ir learning rate for weights
         /// @param act activation function
         /// @param dAct derivative of previous activation function
-        void AddLayer(int size, int nextSize, float lr,
+        void AddLayer(int size, int nextSize, float lr, float ir,
                       void (*act)(float *, size_t), void (*dAct)(float *, size_t));
         
         /// @brief Randomizes the weights of each layer
@@ -75,6 +76,8 @@ namespace Deep
 
         /// @brief Updates each layer's weights
         void UpdateWeights();
+
+        const std::vector<PCLayer*> &GetLayers() const noexcept { return layers; }
 
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cblas.h>
 #include <omp.h>
+#include <algorithm>
 #include <cstring>
 
 #define ALIGN64(n) (((n) + 63) & ~63)
@@ -10,10 +11,11 @@
 namespace Deep
 {
 
-    PCLayer::PCLayer(int size, int nextSize, int batchSize, float learningRate,
-                 void (*act)(float *, size_t),
-                 void (*dAct)(float *, size_t))
-        : lr(learningRate), isClamped(false), batchSize(batchSize),
+    PCLayer::PCLayer(int size, int nextSize, int batchSize,
+        float learningRate, float inferenceRate,
+                     void (*act)(float *, size_t),
+                     void (*dAct)(float *, size_t))
+        : lr(learningRate), ir(inferenceRate), isClamped(false), batchSize(batchSize),
           layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct)
     {
         this->size = size;
@@ -27,6 +29,15 @@ namespace Deep
         sigma_prime = (float *)(std::aligned_alloc(64, ALIGN64(allocSize)));
         dz_dt = (float *)(std::aligned_alloc(64, ALIGN64(allocSize)));
         bottom_up = (float *)(std::aligned_alloc(64, ALIGN64(allocSize)));
+
+        std::memset(z, 0, ALIGN64(allocSize));
+        std::memset(e, 0, ALIGN64(allocSize));
+        std::memset(mu, 0, ALIGN64(allocSize));
+        std::memset(sigma_prime, 0, ALIGN64(allocSize));
+        std::memset(dz_dt, 0, ALIGN64(allocSize));
+        std::memset(bottom_up, 0, ALIGN64(allocSize));
+        // W is intentionally left uninitialized here — RandomizeWeights()
+        // is expected to be called before first use.
     }
 
     PCLayer::~PCLayer()
@@ -44,7 +55,7 @@ namespace Deep
 
     // Copy constructor
     PCLayer::PCLayer(const PCLayer &other)
-        : lr(other.lr), isClamped(other.isClamped), batchSize(other.batchSize),
+        : lr(other.lr), ir(other.ir), isClamped(other.isClamped), batchSize(other.batchSize),
           layerAbove(nullptr), layerBelow(nullptr),
           activation(other.activation), activationDerivative(other.activationDerivative)
     {
@@ -94,6 +105,7 @@ namespace Deep
             std::free(W);
 
         lr = other.lr;
+        ir = other.ir;
         isClamped = other.isClamped;
         size = other.size;
         nextSize = other.nextSize;
@@ -134,7 +146,7 @@ namespace Deep
 
     // Move constructor
     PCLayer::PCLayer(PCLayer &&other)
-        : lr(other.lr), isClamped(other.isClamped), batchSize(other.batchSize),
+        : lr(other.lr), ir(other.ir), isClamped(other.isClamped), batchSize(other.batchSize),
           layerAbove(nullptr), layerBelow(nullptr),
           activation(other.activation), activationDerivative(other.activationDerivative),
           z(other.z), e(other.e), W(other.W), mu(other.mu),
@@ -162,6 +174,7 @@ namespace Deep
             std::free(W);
 
         lr = other.lr;
+        ir = other.ir;
         isClamped = other.isClamped;
         size = other.size;
         nextSize = other.nextSize;
@@ -189,15 +202,15 @@ namespace Deep
     {
         std::uniform_int_distribution<uint32_t> seedDist;
         size_t Wsz = size * nextSize;
+        float limit = std::sqrt(6.0f / (size + nextSize)); // Xavier/Glorot Uniform
 
         std::vector<uint32_t> seeds(omp_get_max_threads());
         for (auto &s : seeds)
             s = seedDist(seedGenerator);
-
 #pragma omp parallel
         {
             std::mt19937 rng(seeds[omp_get_thread_num()]);
-            std::uniform_real_distribution<float> dist(0.0f, 0.1f);
+std::uniform_real_distribution<float> dist(-limit, limit);
 
 #pragma omp for
             for (size_t i = 0; i < Wsz; ++i)
@@ -238,6 +251,8 @@ namespace Deep
         //         mu[i] += W[i * nextSize + j] * z_above[j];
         //     }
         // }
+
+        cblas_scopy(N, mu, 1, sigma_prime, 1); // <- Derivative for update
         activation(mu, N);
 
         // Calculate Error and Energy
@@ -254,35 +269,16 @@ namespace Deep
 
     void PCLayer::UpdateState() noexcept
     {
+        size_t N = size * batchSize;
+
+        if (layerAbove != nullptr && nextSize > 0)
+            activationDerivative(sigma_prime, N);
+        else
+            std::fill_n(sigma_prime, N, 1.0f);
+
         // If clamped, the state is fixed to the input data; do not update.
         if (isClamped)
             return;
-
-        size_t N = size * batchSize;
-
-        // Compute the Pre-Activation Projection (mu = W * z_above)
-        // Use to compute the derivative of the activation function.
-        if (layerAbove != nullptr && nextSize > 0)
-        {
-            const float *z_above = layerAbove->GetBeliefs();
-
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasTrans,
-                batchSize, size, nextSize,
-                1.0f, z_above, nextSize,
-                W, nextSize,
-                0.0f, mu, size);
-            // for (size_t i = 0; i < size; ++i)
-            // {
-            //     for (size_t j = 0; j < layerAbove->size; ++j)
-            //     {
-            //         mu[i] += W[i * nextSize +j] * z_above[j];
-            //     }
-            // }
-        }
-
-        cblas_scopy(N, mu, 1, sigma_prime, 1); // <- Derivative
-        activationDerivative(sigma_prime, N);
 
         // Initialize dz_dt with top-down force (-e)
         memset(dz_dt, 0, N * sizeof(float));
@@ -297,23 +293,31 @@ namespace Deep
         {
             const float *W_below = layerBelow->GetWeights();
             const float *e_below = layerBelow->GetErrors();
+            size_t N_below = layerBelow->GetInputSize() * batchSize;
+
+            // layerBelow->sigma_prime already holds act'(pre_below) — layerBelow's
+            // UpdateState() ran earlier this sweep (front-to-back iteration).
+            float *e_below_scaled = layerBelow->bottom_up; // reuse as scratch
+
+#pragma omp simd
+            for (size_t j = 0; j < N_below; j++)
+                e_below_scaled[j] = e_below[j] * layerBelow->sigma_prime[j];
 
             cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasTrans,
-                batchSize, size, layerBelow->nextSize,
-                1.0f, e_below, layerBelow->nextSize,
-                W_below, layerBelow->nextSize,
+                CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                batchSize, size, layerBelow->GetInputSize(),
+                1.0f,
+                e_below_scaled, layerBelow->GetInputSize(),
+                W_below, size,
                 0.0f, bottom_up, size);
 
-            #pragma omp simd
+#pragma omp simd
             for (size_t i = 0; i < N; i++)
-            {
-                dz_dt[i] += bottom_up[i] * sigma_prime[i];
-            }
+                dz_dt[i] += bottom_up[i]; // derivative already folded in above
         }
-
+        
         // Update latent state
-        cblas_saxpy(N, lr, dz_dt, 1, z, 1);
+        cblas_saxpy(N, ir, dz_dt, 1, z, 1);
         // for (size_t i = 0; i < size; ++i)
         // {
         //     z[i] += lr * dz_dt[i];
@@ -325,13 +329,20 @@ namespace Deep
         if (layerAbove == nullptr || nextSize == 0)
             return;
 
+        size_t N = size * batchSize;
         const float *z_above = layerAbove->GetBeliefs();
+        float *e_scaled = bottom_up;
+
+        #pragma omp simd
+        for (size_t i=0; i < N; i++) {
+            e_scaled[i] = e[i] * sigma_prime[i];
+        }
 
         cblas_sgemm(
             CblasRowMajor, CblasTrans, CblasNoTrans,
             size, nextSize, batchSize,
-            -lr,
-            e, size,
+            lr / batchSize,
+            e_scaled, size,
             z_above, nextSize,
             1.0f, W, nextSize);
 

@@ -273,7 +273,7 @@ namespace Deep
     {
         tanh(x, n);
         size_t i = 0;
-        size_t simd_end;
+        [[maybe_unused]] size_t simd_end;
 
 #if defined(__AVX512F__)
         __m512 n_ones = _mm512_set1_ps(-1.0f);

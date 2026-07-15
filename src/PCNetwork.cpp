@@ -8,7 +8,7 @@ namespace Deep
             delete l;
     }
 
-    void PCNetwork::AddLayer(int size, int nextSize, float lr,
+    void PCNetwork::AddLayer(int size, int nextSize, float lr, float ir,
                              void (*act)(float *, size_t), void (*dAct)(float *, size_t))
     {
         if (autoSize && layers.empty())
@@ -16,7 +16,7 @@ namespace Deep
             batchSize = (int)Deep::AutoBatchSize(size, nextSize);
             autoSize = false;
         }
-        PCLayer *l = new PCLayer(size, nextSize, batchSize, lr, act, dAct);
+        PCLayer *l = new PCLayer(size, nextSize, batchSize, lr, ir, act, dAct);
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);

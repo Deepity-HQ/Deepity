@@ -112,6 +112,8 @@ namespace Deep
         /// \f]
         void UpdateWeights() noexcept override;
 
+        void Flush() noexcept override;
+
         [[nodiscard]] const float *GetErrors() const noexcept override { return e_bu; }
 
         /// @brief Returns the total byte size required by this layer for flat allocation.
@@ -131,7 +133,7 @@ namespace Deep
 
 #ifdef _DEBUG
         /// @brief Dumps internal layer statistics to stdout for profiling.
-        void DebugStats(int layerIndex) const override;
+        void DebugStats(int layerIndex) const;
 #endif
 
     private:

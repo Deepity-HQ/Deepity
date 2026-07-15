@@ -83,8 +83,8 @@ set_target_properties(Deepity PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-# ---------------- Python binding ----------------
-pybind11_add_module(deepity pybind/binding.cpp)
+# ---------------- bindings ----------------
+pybind11_add_module(deepity bindings/pybinding.cpp)
 
 target_link_libraries(deepity PRIVATE Deepity)
 
@@ -94,7 +94,7 @@ set_target_properties(deepity PROPERTIES
 
 # ---------------- Tests ----------------
 add_executable(DeepityTests
-    tests/tNetwork.cpp
+    tests/tSimple.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE Deepity benchmark::benchmark)

@@ -4,6 +4,7 @@ var classDeep_1_1RBLayer =
     [ "Attach", "classDeep_1_1RBLayer.html#ac82d646502e6faf7031c9ff04bf4f972", null ],
     [ "CalcError", "classDeep_1_1RBLayer.html#a025abc761fcbe169c099e505437d3c25", null ],
     [ "CalculateState", "classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705", null ],
+    [ "Flush", "classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa", null ],
     [ "GetBatchSize", "classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6", null ],
     [ "GetBeliefs", "classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227", null ],
     [ "GetErrors", "classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb", null ],

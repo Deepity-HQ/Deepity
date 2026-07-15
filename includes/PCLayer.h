@@ -48,10 +48,12 @@ namespace Deep
         /// @param size Size of layer
         /// @param nextSize Size of next layer (used for row size of W)
         /// @param batchSize Batch size (default to 1 for simplicity)
-        /// @param learningRate Learning rate to update state
+        /// @param learningRate Learning rate to update weights
+        /// @param inferenceRate Learning rate to update state
         /// @param act Activation function
         /// @param dAct Derivative of Activation function
-        PCLayer(int size, int nextSize, int batchSize = 1, float learningRate = 1e-6,
+        PCLayer(int size, int nextSize, int batchSize = 1,
+            float learningRate = 1e-6, float inferenceRate = 0.1f,
               void (*act)(float *, size_t) = relu,
               void (*dAct)(float *, size_t) = dRelu);
 
@@ -152,10 +154,12 @@ namespace Deep
         float *bottom_up;
         // ------
 
-        /// @brief Learning rate for internal state
+        /// @brief Learning rate for weights
         float lr;
+        /// @brief Learning rate for internal state
+        float ir;
         /// @brief Flag to tell if `ClampState` was called.
-        bool isClamped;
+        bool isClamped = false;
 
         /// @brief Pointer to next layer (or `nullptr` if last one)
         PCLayer *layerAbove;
