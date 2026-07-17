@@ -1,19 +1,19 @@
 #pragma once
 #include <vector>
-#include "PCLayer.h"
+#include "DiscriminativePCLayer.h"
 #include "Optimize.h"
 
 /**
- * @file PCLayer.h
+ * @file DiscriminativePCLayer.h
  * @brief Defines the network-level implementation of a PC model.
  *
  * This header includes implementations of PC layer-to-layer interaction.
  *
  * Usage:
- *  #include <PCNetwork.h>
+ *  #include <DiscriminativePCNetwork.h>
  *
  * Example:
- *  Deep::PCNetwork network(1);
+ *  Deep::DiscriminativePCNetwork network(1);
  *  network.addLayer({...});
  *  network.Clamp(input);
  *  network.CalculateState();
@@ -26,12 +26,12 @@
 
 namespace Deep
 {
-    /// @brief An abstracted class for an array of `PCLayer`
+    /// @brief An abstracted class for an array of `DiscriminativePCLayer`
     ///
     /// @see https://arxiv.org/pdf/2506.06332
-    class PCNetwork
+    class DiscriminativePCNetwork
     {
-        std::vector<PCLayer *> layers;
+        std::vector<DiscriminativePCLayer *> layers;
         int batchSize;
         bool autoSize = true;
 
@@ -39,15 +39,15 @@ namespace Deep
         /// @brief Default constructor
         ///
         /// Initializes the network with auto-batch size detection.
-        PCNetwork() : batchSize(0), autoSize(true) {}
+        DiscriminativePCNetwork() : batchSize(0), autoSize(true) {}
         /// @brief Batched constructor
         /// @param batchSize Batch size
         /// 
         /// Initializes the network with a predetermined batch size.
-        PCNetwork(int batchSize) : batchSize(batchSize), autoSize(false) {}
+        DiscriminativePCNetwork(int batchSize) : batchSize(batchSize), autoSize(false) {}
 
         /// @brief Default constructor; deletes each layer.
-        ~PCNetwork();
+        ~DiscriminativePCNetwork();
 
         /// @brief Adds a layer to the network.
         /// @param size input size
@@ -77,7 +77,7 @@ namespace Deep
         /// @brief Updates each layer's weights
         void UpdateWeights();
 
-        const std::vector<PCLayer*> &GetLayers() const noexcept { return layers; }
+        const std::vector<DiscriminativePCLayer*> &GetLayers() const noexcept { return layers; }
 
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize

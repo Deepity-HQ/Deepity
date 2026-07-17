@@ -33,9 +33,9 @@ FetchContent_MakeAvailable(benchmark)
 
 # ---------------- Core library ----------------
 add_library(Deepity STATIC
-    src/PCLayer.cpp
+    src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
-    src/PCNetwork.cpp
+    src/DiscriminativePCNetwork.cpp
 )
 
 target_include_directories(Deepity PUBLIC

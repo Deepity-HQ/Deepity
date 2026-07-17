@@ -2,3 +2,4 @@
 build/*
 bin/*
 pyrightconfig.json
+/CLAUDE.md

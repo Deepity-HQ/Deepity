@@ -1,6 +1,6 @@
 #include <iostream>
 #include <vector>
-#include "PCNetwork.h"
+#include "DiscriminativePCNetwork.h"
 
 using namespace Deep;
 
@@ -10,14 +10,14 @@ using namespace Deep;
 //
 // Returns the final energy and prints the learned output vs target so we
 // can see convergence directly, without any Python/pybind11 involved.
-float TrainOnExample(PCNetwork &net,
+float TrainOnExample(DiscriminativePCNetwork &net,
                       const std::vector<float> &input,
                       const std::vector<float> &target,
                       int iterations)
 {
     net.Clamp(input);
     auto &layers = net.GetLayers();
-    PCLayer *outputLayer = static_cast<PCLayer *>(layers.back());
+    DiscriminativePCLayer *outputLayer = static_cast<DiscriminativePCLayer *>(layers.back());
     outputLayer->ClampState(target);
 
     float energy = 0.0f;
@@ -36,14 +36,14 @@ float TrainOnExample(PCNetwork &net,
 
 // Reads out a prediction by clamping only the input and letting the
 // terminal layer settle freely (not clamped to any target).
-std::vector<float> Predict(PCNetwork &net,
+std::vector<float> Predict(DiscriminativePCNetwork &net,
                            const std::vector<float> &input,
                            int iterations)
 {
     net.Clamp(input);
 
     auto &layers = net.GetLayers();
-    PCLayer *outputLayer = static_cast<PCLayer *>(layers.back());
+    DiscriminativePCLayer *outputLayer = static_cast<DiscriminativePCLayer *>(layers.back());
 
     for (int i = 0; i < iterations; ++i)
     {
@@ -65,7 +65,7 @@ int main()
 
     std::mt19937 mt(42);
 
-    PCNetwork net(BATCH_SIZE);
+    DiscriminativePCNetwork net(BATCH_SIZE);
     net.AddLayer(2, 4, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh);
     net.AddLayer(4, 1, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh);
     net.AddLayer(1, 0, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh); // terminal layer, matches tNetwork.cpp pattern
@@ -96,7 +96,7 @@ int main()
         if (epoch % 200 == 0)
         {
             auto &layers = net.GetLayers();
-            const float *w = static_cast<PCLayer *>(layers[0])->GetWeights();
+            const float *w = static_cast<DiscriminativePCLayer *>(layers[0])->GetWeights();
             float w0norm = 0.0f;
             for (size_t k = 0; k < 2 * 4; ++k)
                 w0norm += w[k] * w[k];

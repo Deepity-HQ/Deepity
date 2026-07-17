@@ -6,7 +6,7 @@
 using namespace Deep;
 
 RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k_1, float k_2, float lmbda, float alpha, size_t batchSize, int stepSize, ActivationFn act, ActivationFn dAct)
-    : var(var), var_td(var_td), k_1(k_1), k_2(k_2), lmbda(lmbda), alpha(alpha), batchSize(batchSize), stepSize(stepSize), act(act), dAct(dAct)
+    : var(var), var_td(var_td), k_1(k_1), k_2(k_2), lmbda(lmbda), alpha(alpha), stepSize(stepSize), batchSize(batchSize), act(act), dAct(dAct)
 {
     this->size = inSize;
     this->nextSize = outSize;

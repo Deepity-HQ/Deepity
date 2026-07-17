@@ -7,13 +7,13 @@
 #include "Layer.h"
 
 /**
- * @file PCLayer.h
+ * @file DiscriminativePCLayer.h
  * @brief Defines the single-layer implementation of a PC model.
  *
  * This header includes implementations of state calculation, state updates, and learning.
  *
  * Usage:
- *  #include <PCLayer.h>
+ *  #include <DiscriminativePCLayer.h>
  *
  * Example:
  *  Deep::Layer layer(2, 3, 1, 1e-6);
@@ -41,7 +41,7 @@ namespace Deep
      * 6. (For learning): Call UpdateWeights() on all layers simultaneously
      * once the states have fully settled.
      */
-    class PCLayer : public Layer
+    class DiscriminativePCLayer : public Layer
     {
     public:
         /// @brief Constructor for a Deepity Layer
@@ -52,28 +52,28 @@ namespace Deep
         /// @param inferenceRate Learning rate to update state
         /// @param act Activation function
         /// @param dAct Derivative of Activation function
-        PCLayer(int size, int nextSize, int batchSize = 1,
+        DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
             float learningRate = 1e-6, float inferenceRate = 0.1f,
               void (*act)(float *, size_t) = relu,
               void (*dAct)(float *, size_t) = dRelu);
 
         /// @brief Destructor
-        ~PCLayer() override;
+        ~DiscriminativePCLayer() override;
 
         /// @brief Copy constructor
         /// @param other Layer to copy from
-        PCLayer(const PCLayer &other);
+        DiscriminativePCLayer(const DiscriminativePCLayer &other);
         /// @brief Copy assignment
         /// @param other Layer to copy from
         /// @return Copied layer
-        PCLayer &operator=(const PCLayer &other);
+        DiscriminativePCLayer &operator=(const DiscriminativePCLayer &other);
         /// @brief Move constructor
         /// @param other Layer to move from
-        PCLayer(PCLayer &&other);
+        DiscriminativePCLayer(DiscriminativePCLayer &&other) noexcept;
         /// @brief Move assignment
         /// @param other Layer to move from
         /// @return Moved layer
-        PCLayer &operator=(PCLayer &&other);
+        DiscriminativePCLayer &operator=(DiscriminativePCLayer &&other);
 
         /// @brief Calculates the total network energy state.
         ///
@@ -126,11 +126,11 @@ namespace Deep
         const float *GetWeights() const noexcept { return W; }
 
         /// @brief Ties this layer to one above it
-        /// @param above PCLayer*
-        void SetLayerAbove(PCLayer *above) noexcept { layerAbove = above; }
+        /// @param above DiscriminativePCLayer*
+        void SetLayerAbove(DiscriminativePCLayer *above) noexcept { layerAbove = above; }
         /// @brief Ties this layer to one below it
-        /// @param below PCLayer*
-        void SetLayerBelow(PCLayer *below) noexcept { layerBelow = below; }
+        /// @param below DiscriminativePCLayer*
+        void SetLayerBelow(DiscriminativePCLayer *below) noexcept { layerBelow = below; }
 
         /// @brief Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.
         /// @param twister The classic Mersenne Twister
@@ -162,9 +162,9 @@ namespace Deep
         bool isClamped = false;
 
         /// @brief Pointer to next layer (or `nullptr` if last one)
-        PCLayer *layerAbove;
+        DiscriminativePCLayer *layerAbove;
         /// @brief Pointer to previous layer (or `nullptr` if first one)
-        PCLayer *layerBelow;
+        DiscriminativePCLayer *layerBelow;
         /// @brief Activation function, with parameters `(float *array, size_t arraysize)`
         void (*activation)(float *, size_t);
         /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize)`

@@ -5,9 +5,9 @@
 #include <memory>
 
 #include "Layer.h"
-#include "PCLayer.h"
+#include "DiscriminativePCLayer.h"
 #include "RBLayer.h"
-#include "PCNetwork.h"
+#include "DiscriminativePCNetwork.h"
 #include "Activations.h"
 
 namespace py = pybind11;
@@ -36,11 +36,11 @@ PYBIND11_MODULE(deepity, m)
     Abstract base class for all Predictive Coding layers.
 )pbdoc");
 
-    py::class_<Deep::PCNetwork>(m, "PCNetwork",
+    py::class_<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork",
                                 R"pbdoc(
         Predictive Coding Network.
 
-        A network composed of one or more PCLayers. Layers are connected
+        A network composed of one or more DiscriminativePCLayers. Layers are connected
         automatically as they are added.
     )pbdoc")
         .def(py::init<>(),
@@ -52,7 +52,7 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "add_layer",
-            [](Deep::PCNetwork &self,
+            [](Deep::DiscriminativePCNetwork &self,
                int size,
                int next_size,
                float lr,
@@ -80,7 +80,7 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "randomize_weights",
-            [](Deep::PCNetwork &self)
+            [](Deep::DiscriminativePCNetwork &self)
             {
                 std::random_device rd;
                 std::mt19937 rng(rd());
@@ -90,7 +90,7 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "clamp_input",
-            [](Deep::PCNetwork &self,
+            [](Deep::DiscriminativePCNetwork &self,
                py::array_t<float,
                            py::array::c_style | py::array::forcecast>
                    input)
@@ -108,26 +108,26 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "calculate_state",
-            &Deep::PCNetwork::CalculateState,
+            &Deep::DiscriminativePCNetwork::CalculateState,
             "Compute the total network energy.")
 
         .def(
             "update_state",
-            &Deep::PCNetwork::UpdateState,
+            &Deep::DiscriminativePCNetwork::UpdateState,
             "Run one inference step.")
 
         .def(
             "update_weights",
-            &Deep::PCNetwork::UpdateWeights,
+            &Deep::DiscriminativePCNetwork::UpdateWeights,
             "Apply weight updates to every layer.")
 
         .def_property_readonly(
             "batch_size",
-            &Deep::PCNetwork::GetBatchSize)
+            &Deep::DiscriminativePCNetwork::GetBatchSize)
 
         .def_property_readonly(
             "layers",
-            [](Deep::PCNetwork &self)
+            [](Deep::DiscriminativePCNetwork &self)
             {
                 py::list result;
 
@@ -141,18 +141,18 @@ PYBIND11_MODULE(deepity, m)
 
                 return result;
             },
-            "List of PCLayer objects owned by the network.")
+            "List of DiscriminativePCLayer objects owned by the network.")
 
         .def(
             "__len__",
-            [](const Deep::PCNetwork &self)
+            [](const Deep::DiscriminativePCNetwork &self)
             {
                 return self.GetLayers().size();
             })
 
         .def(
             "__getitem__",
-            [](Deep::PCNetwork &self, ssize_t index)
+            [](Deep::DiscriminativePCNetwork &self, ssize_t index)
             {
                 auto &layers = self.GetLayers();
 
@@ -169,9 +169,9 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "__repr__",
-            [](const Deep::PCNetwork &self)
+            [](const Deep::DiscriminativePCNetwork &self)
             {
-                return "<PCNetwork layers=" +
+                return "<DiscriminativePCNetwork layers=" +
                        std::to_string(self.GetLayers().size()) +
                        " batch_size=" +
                        std::to_string(self.GetBatchSize()) +
@@ -293,7 +293,7 @@ PYBIND11_MODULE(deepity, m)
                       std::to_string(self.GetBatchSize()) +
                       ">"; });
 
-    py::class_<Deep::PCLayer, Deep::Layer>(m, "PCLayer",
+    py::class_<Deep::DiscriminativePCLayer, Deep::Layer>(m, "DiscriminativePCLayer",
                                            R"pbdoc(
         Predictive Coding layer.
     )pbdoc")
@@ -306,7 +306,7 @@ PYBIND11_MODULE(deepity, m)
                           float inference_rate,
                           const std::string &activation,
                           const std::string &activation_deriv)
-                      { return std::make_unique<Deep::PCLayer>(
+                      { return std::make_unique<Deep::DiscriminativePCLayer>(
                             size,
                             next_size,
                             batch_size,
@@ -323,18 +323,18 @@ PYBIND11_MODULE(deepity, m)
              py::arg("activation_deriv") = "drelu")
 
         .def("calculate_state",
-             &Deep::PCLayer::CalculateState)
+             &Deep::DiscriminativePCLayer::CalculateState)
 
         .def("update_state",
-             &Deep::PCLayer::UpdateState)
+             &Deep::DiscriminativePCLayer::UpdateState)
 
         .def("update_weights",
-             &Deep::PCLayer::UpdateWeights)
+             &Deep::DiscriminativePCLayer::UpdateWeights)
 
         .def("flush",
-             &Deep::PCLayer::Flush)
+             &Deep::DiscriminativePCLayer::Flush)
 
-        .def("clamp_state", [](Deep::PCLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
+        .def("clamp_state", [](Deep::DiscriminativePCLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
              {
             auto buf = input.request();
 
@@ -344,47 +344,47 @@ PYBIND11_MODULE(deepity, m)
 
             self.ClampState(values); }, py::arg("input"))
 
-        .def("unclamp_state", &Deep::PCLayer::UnclampState)
+        .def("unclamp_state", &Deep::DiscriminativePCLayer::UnclampState)
 
-        .def("randomize_weights", [](Deep::PCLayer &self)
+        .def("randomize_weights", [](Deep::DiscriminativePCLayer &self)
              {
             std::random_device rd;
             std::mt19937 rng(rd());
             self.RandomizeWeights(rng); })
 
-        .def("set_layer_above", &Deep::PCLayer::SetLayerAbove, py::return_value_policy::reference)
+        .def("set_layer_above", &Deep::DiscriminativePCLayer::SetLayerAbove, py::return_value_policy::reference)
 
-        .def("set_layer_below", &Deep::PCLayer::SetLayerBelow, py::return_value_policy::reference)
+        .def("set_layer_below", &Deep::DiscriminativePCLayer::SetLayerBelow, py::return_value_policy::reference)
 
-        .def_property_readonly("beliefs", [](Deep::PCLayer &self)
+        .def_property_readonly("beliefs", [](Deep::DiscriminativePCLayer &self)
                                { return py::array_t<float>(
                                      {(py::ssize_t)self.GetBatchSize(),
                                       (py::ssize_t)self.GetInputSize()},
                                      self.GetBeliefs(),
                                      py::cast(&self)); })
 
-        .def_property_readonly("errors", [](Deep::PCLayer &self)
+        .def_property_readonly("errors", [](Deep::DiscriminativePCLayer &self)
                                { return py::array_t<float>(
                                      {(py::ssize_t)self.GetBatchSize(),
                                       (py::ssize_t)self.GetInputSize()},
                                      self.GetErrors(),
                                      py::cast(&self)); })
 
-        .def_property_readonly("weights", [](Deep::PCLayer &self)
+        .def_property_readonly("weights", [](Deep::DiscriminativePCLayer &self)
                                { return py::array_t<float>(
                                      {(py::ssize_t)self.GetInputSize(),
                                       (py::ssize_t)self.GetOutputSize()},
                                      self.GetWeights(),
                                      py::cast(&self)); })
 
-        .def_property_readonly("batch_size", &Deep::PCLayer::GetBatchSize)
+        .def_property_readonly("batch_size", &Deep::DiscriminativePCLayer::GetBatchSize)
 
-        .def_property_readonly("input_size", &Deep::PCLayer::GetInputSize)
+        .def_property_readonly("input_size", &Deep::DiscriminativePCLayer::GetInputSize)
 
-        .def_property_readonly("output_size", &Deep::PCLayer::GetOutputSize)
+        .def_property_readonly("output_size", &Deep::DiscriminativePCLayer::GetOutputSize)
 
-        .def("__repr__", [](const Deep::PCLayer &self)
-             { return "<PCLayer in=" +
+        .def("__repr__", [](const Deep::DiscriminativePCLayer &self)
+             { return "<DiscriminativePCLayer in=" +
                       std::to_string(self.GetInputSize()) +
                       ", out=" +
                       std::to_string(self.GetOutputSize()) +
@@ -395,8 +395,16 @@ PYBIND11_MODULE(deepity, m)
     // --- Activations ---
     m.def("relu", [](py::array_t<float> x)
           { Deep::relu(x.mutable_data(), x.size()); });
+    m.def("drelu", [](py::array_t<float> x)
+          { Deep::dRelu(x.mutable_data(), x.size()); }); // Add this
+
     m.def("tanh", [](py::array_t<float> x)
           { Deep::tanh(x.mutable_data(), x.size()); });
+    m.def("dtanh", [](py::array_t<float> x)
+          { Deep::dTanh(x.mutable_data(), x.size()); }); // Add this
+
     m.def("sigmoid", [](py::array_t<float> x)
           { Deep::sigmoid(x.mutable_data(), x.size()); });
+    m.def("dsigmoid", [](py::array_t<float> x)
+          { Deep::dSigmoid(x.mutable_data(), x.size()); }); // Add this
 }
