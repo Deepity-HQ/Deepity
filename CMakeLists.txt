@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
+set(CMAKE_C_COMPILER clang) # Specify gcc/msvc/clang
+set(CMAKE_CXX_COMPILER clang++) # Specify g++/msvc/clang++
 
 project(deepity CXX)
 
@@ -67,6 +69,13 @@ FetchContent_MakeAvailable(sleef)
 # Google Benchmark
 # --------------------------------------------------------------------
 
+# Suppress the C2y extension warning/error on Clang for the benchmark build
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wno-c2y-extensions)
+endif()
+
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+set(BENCHMARK_ENABLE_PEDANTIC OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
 
@@ -77,7 +86,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(benchmark)
-
 
 # --------------------------------------------------------------------
 # Deepity library
@@ -118,8 +126,8 @@ if(MSVC)
 else()
 
     target_compile_options(Deepity PRIVATE
-        $<$<CONFIG:Release>:-O3 -march=native>
-        $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native>
+        $<$<CONFIG:Release>:-O3 -march=native -ffast-math -fvectorize -fslp-vectorize>
+        $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native -ffast-math -fvectorize -fslp-vectorize>
         $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
     )
 
@@ -167,7 +175,7 @@ set_target_properties(deepity PROPERTIES
 # --------------------------------------------------------------------
 
 add_executable(DeepityTests
-    tests/tSimple.cpp
+    tests/tBenchmark.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE
