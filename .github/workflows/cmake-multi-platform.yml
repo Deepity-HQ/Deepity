@@ -54,7 +54,7 @@ jobs:
           
         # Windows specific configuration logic (integrating vcpkg toolchain)
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          cmake -B build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
           
         # Linux standard configuration
         else
