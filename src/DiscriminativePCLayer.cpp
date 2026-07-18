@@ -13,7 +13,7 @@ namespace Deep
     DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
                                                  float learningRate, float inferenceRate, float lmbda,
                                                  void (*act)(float *, size_t),
-                                                 void (*dAct)(float *, size_t))
+                                                 void (*dAct)(float *, size_t, bool))
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda), isClamped(false),
           layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct)
     {
@@ -21,7 +21,7 @@ namespace Deep
         this->nextSize = nextSize;
 
         size_t allocOwn = (size_t)batchSize * size * sizeof(float);     // z, e, dz_dt
-        size_t allocOut = (size_t)batchSize * nextSize * sizeof(float); // mu, sigma_prime, scratch
+        size_t allocOut = (size_t)batchSize * nextSize * sizeof(float); // mu, scratch
         size_t allocBias = nextSize * sizeof(float);                    // b
 
         z = (float *)std::aligned_alloc(64, ALIGN64(allocOwn));
@@ -36,12 +36,10 @@ namespace Deep
             W = (float *)std::aligned_alloc(64, ALIGN64((size_t)nextSize * size * sizeof(float)));
             b = (float *)std::aligned_alloc(64, ALIGN64(allocBias));
             mu = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
-            sigma_prime = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
             bottom_up = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
 
             std::memset(b, 0, ALIGN64(allocBias));
             std::memset(mu, 0, ALIGN64(allocOut));
-            std::memset(sigma_prime, 0, ALIGN64(allocOut));
             std::memset(bottom_up, 0, ALIGN64(allocOut));
             // W left uninitialized -- RandomizeWeights() must run first.
         }
@@ -50,7 +48,6 @@ namespace Deep
             W = nullptr;
             b = nullptr;
             mu = nullptr;
-            sigma_prime = nullptr;
             bottom_up = nullptr;
         }
     }
@@ -65,7 +62,6 @@ namespace Deep
             std::free(W);
             std::free(b);
             std::free(mu);
-            std::free(sigma_prime);
             std::free(bottom_up);
         }
     }
@@ -96,13 +92,11 @@ namespace Deep
             W = (float *)std::aligned_alloc(64, wSize);
             b = (float *)std::aligned_alloc(64, bSize);
             mu = (float *)std::aligned_alloc(64, allocOut);
-            sigma_prime = (float *)std::aligned_alloc(64, allocOut);
             bottom_up = (float *)std::aligned_alloc(64, allocOut);
 
             memcpy(W, other.W, wSize);
             memcpy(b, other.b, bSize);
             memcpy(mu, other.mu, allocOut);
-            memcpy(sigma_prime, other.sigma_prime, allocOut);
             memcpy(bottom_up, other.bottom_up, allocOut);
         }
         else
@@ -110,7 +104,6 @@ namespace Deep
             W = nullptr;
             b = nullptr;
             mu = nullptr;
-            sigma_prime = nullptr;
             bottom_up = nullptr;
         }
     }
@@ -129,7 +122,6 @@ namespace Deep
             std::free(W);
             std::free(b);
             std::free(mu);
-            std::free(sigma_prime);
             std::free(bottom_up);
         }
 
@@ -162,13 +154,11 @@ namespace Deep
             W = (float *)std::aligned_alloc(64, wSize);
             b = (float *)std::aligned_alloc(64, bSize);
             mu = (float *)std::aligned_alloc(64, allocOut);
-            sigma_prime = (float *)std::aligned_alloc(64, allocOut);
             bottom_up = (float *)std::aligned_alloc(64, allocOut);
 
             memcpy(W, other.W, wSize);
             memcpy(b, other.b, bSize);
             memcpy(mu, other.mu, allocOut);
-            memcpy(sigma_prime, other.sigma_prime, allocOut);
             memcpy(bottom_up, other.bottom_up, allocOut);
         }
         else
@@ -176,7 +166,6 @@ namespace Deep
             W = nullptr;
             b = nullptr;
             mu = nullptr;
-            sigma_prime = nullptr;
             bottom_up = nullptr;
         }
 
@@ -190,7 +179,6 @@ namespace Deep
           z(other.z),
           batchSize(other.batchSize),
           mu(other.mu),
-          sigma_prime(other.sigma_prime),
           dz_dt(other.dz_dt),
           bottom_up(other.bottom_up),
           lr(other.lr),
@@ -210,7 +198,6 @@ namespace Deep
         other.e = nullptr;
         other.z = nullptr;
         other.mu = nullptr;
-        other.sigma_prime = nullptr;
         other.dz_dt = nullptr;
         other.bottom_up = nullptr;
     }
@@ -228,7 +215,6 @@ namespace Deep
             std::free(W);
             std::free(b);
             std::free(mu);
-            std::free(sigma_prime);
             std::free(bottom_up);
         }
 
@@ -249,12 +235,10 @@ namespace Deep
         W = other.W;
         b = other.b;
         mu = other.mu;
-        sigma_prime = other.sigma_prime;
         dz_dt = other.dz_dt;
         bottom_up = other.bottom_up;
 
         other.z = other.e = other.W = other.b = other.mu = nullptr;
-        other.sigma_prime = other.dz_dt = other.bottom_up = nullptr;
 
         return *this;
     }
@@ -316,8 +300,6 @@ namespace Deep
             {
                 cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
             }
-
-            cblas_scopy(Nout, mu, 1, sigma_prime, 1); // stash RAW pre-activation
             activation(mu, Nout);
         }
 
@@ -331,7 +313,7 @@ namespace Deep
         if (nextSize > 0)
         {
             size_t Nout = (size_t)batchSize * nextSize;
-            activationDerivative(sigma_prime, Nout); // raw pre-activation -> f'(pre), in place
+            activationDerivative(mu, Nout, true); // raw activation -> f'(), in place
         }
 
         if (isClamped)
@@ -347,7 +329,7 @@ namespace Deep
 
 #pragma omp simd
             for (size_t i = 0; i < Nout; i++)
-                bottom_up[i] = e_above[i] * sigma_prime[i];
+                bottom_up[i] = e_above[i] * mu[i];
 
             // dz_dt(batch,size) += local_grad(batch,nextSize) @ W(nextSize,size)
             cblas_sgemm(
@@ -373,7 +355,7 @@ namespace Deep
 
 #pragma omp simd
         for (size_t i = 0; i < Nout; i++)
-            local_grad[i] = e_above[i] * sigma_prime[i];
+            local_grad[i] = e_above[i] * mu[i];
 
         // L2 weight decay: W *= (1 - lmbda)
         if (lmbda > 0.0f)

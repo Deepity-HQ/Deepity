@@ -40,7 +40,7 @@ void dlinear_act(float *x, size_t n)
 // ---------------------------------------------------------
 // Main
 // ---------------------------------------------------------
-int main()
+int main(void)
 {
     // 1. Setup the Network
     // Pass batchSize=1 to the Network constructor

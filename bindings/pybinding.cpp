@@ -16,15 +16,26 @@ static void (*resolveAct(const std::string &act))(float *, size_t)
 {
     if (act == "tanh")
         return Deep::tanh;
-    if (act == "dtanh")
-        return Deep::dTanh;
     if (act == "sigmoid")
         return Deep::sigmoid;
-    if (act == "drelu")
-        return Deep::dRelu;
     if (act == "relu")
         return Deep::relu;
+    if (act == "linear")
+        return Deep::linear;
     return Deep::relu;
+}
+
+static void (*resolveDAct(const std::string &act))(float *, size_t, bool)
+{
+    if (act == "dtanh")
+        return Deep::dTanh;
+    if (act == "dsigmoid")
+        return Deep::dSigmoid;
+    if (act == "dRelu")
+        return Deep::dRelu;
+    if (act == "dLinear")
+        return Deep::dLinear;
+    return Deep::dRelu;
 }
 
 PYBIND11_MODULE(deepity, m)
@@ -68,7 +79,7 @@ PYBIND11_MODULE(deepity, m)
                     ir,
                     lmbda,
                     resolveAct(activation),
-                    resolveAct(activation_deriv));
+                    resolveDAct(activation_deriv));
             },
             py::arg("size"),
             py::arg("next_size"),
@@ -210,7 +221,7 @@ PYBIND11_MODULE(deepity, m)
                             batch_size,
                             step_size,
                             resolveAct(activation),
-                            resolveAct(activation_deriv)); }),
+                            resolveDAct(activation_deriv)); }),
              py::arg("in_size"),
              py::arg("out_size"),
              py::arg("var") = 1.0f,
@@ -318,7 +329,7 @@ PYBIND11_MODULE(deepity, m)
                             inference_rate,
                             lmbda,
                             resolveAct(activation),
-                            resolveAct(activation_deriv)); }),
+                            resolveDAct(activation_deriv)); }),
              py::arg("size"),
              py::arg("next_size"),
              py::arg("batch_size") = 1,

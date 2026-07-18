@@ -192,12 +192,12 @@ Random Number Generation</h2>
 <h2 class="doxsection"><a class="anchor" id="autotoc_md12"></a>
 C++</h2>
 <p>Running a Predictive Coding layer in Deepity is built to be straightforward and explicit.</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="PCLayer_8h.html">PCLayer.h</a>&quot;</span></div>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;PCLayer.h&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Activations_8h.html">Activations.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> main() {</div>
-<div class="line">    <a class="code hl_class" href="classDeep_1_1PCLayer.html">Deep::PCLayer</a> pc(1000, 100);</div>
+<div class="line">    Deep::PCLayer pc(1000, 100);</div>
 <div class="line">    std::vector&lt;float&gt; input_sample(1000, 0.5f);</div>
 <div class="line">    </div>
 <div class="line">    pc.ClampState(input_sample);</div>
@@ -217,8 +217,6 @@ C++</h2>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
 <div class="ttc" id="aActivations_8h_html"><div class="ttname"><a href="Activations_8h.html">Activations.h</a></div><div class="ttdoc">Defines the activation functions of a predictive coding model.</div></div>
-<div class="ttc" id="aPCLayer_8h_html"><div class="ttname"><a href="PCLayer_8h.html">PCLayer.h</a></div><div class="ttdoc">Defines the single-layer implementation of a PC model.</div></div>
-<div class="ttc" id="aclassDeep_1_1PCLayer_html"><div class="ttname"><a href="classDeep_1_1PCLayer.html">Deep::PCLayer</a></div><div class="ttdef"><b>Definition</b> PCLayer.h:45</div></div>
 </div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="autotoc_md13"></a>
 Python</h2>
 <p>Deepity ships with lightweight Python bindings that accept standard NumPy arrays.</p>

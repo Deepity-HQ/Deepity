@@ -115,12 +115,12 @@ Running a Predictive Coding layer in Deepity is built to be straightforward and 
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{PCLayer_8h}{PCLayer.h}}"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}PCLayer.h"{}}}
 \DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{Activations.h}}"{}}}
 \DoxyCodeLine{\textcolor{preprocessor}{\#include\ <vector>}}
 \DoxyCodeLine{}
 \DoxyCodeLine{\textcolor{keywordtype}{int}\ main()\ \{}
-\DoxyCodeLine{\ \ \ \ \doxymbox{\hyperlink{classDeep_1_1PCLayer}{Deep::PCLayer}}\ pc(1000,\ 100);}
+\DoxyCodeLine{\ \ \ \ Deep::PCLayer\ pc(1000,\ 100);}
 \DoxyCodeLine{\ \ \ \ std::vector<float>\ input\_sample(1000,\ 0.5f);}
 \DoxyCodeLine{\ \ \ \ }
 \DoxyCodeLine{\ \ \ \ pc.ClampState(input\_sample);}

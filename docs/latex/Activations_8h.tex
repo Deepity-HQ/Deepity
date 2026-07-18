@@ -6,49 +6,73 @@ Defines the activation functions of a predictive coding model.
 
 
 {\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$cassert$>$}\newline
 {\ttfamily \+\#include $<$cmath$>$}\newline
 {\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
+{\ttfamily \+\#include $<$sleef.\+h$>$}\newline
 \doxysubsubsection*{Macros}
 \begin{DoxyCompactItemize}
+\item 
+\Hypertarget{Activations_8h_aae3356b63849abbe8789dd41648ee90a}\label{Activations_8h_aae3356b63849abbe8789dd41648ee90a} 
+\+\#define {\bfseries RESTRICT}~\+\_\+\+\_\+restrict\+\_\+\+\_\+
 \item 
 \+\#define \doxymbox{\hyperlink{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}{MAX}}(a,  b)
 \item 
 \Hypertarget{Activations_8h_af09b50acd5a5564417673be65960c0ea}\label{Activations_8h_af09b50acd5a5564417673be65960c0ea} 
 \+\#define {\bfseries TANH\+\_\+\+TINYLIMIT}~0.\+000244140625f
 \item 
+\Hypertarget{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65}\label{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65} 
+\+\#define {\bfseries TANH\+\_\+\+POLY\+\_\+\+LIMIT}~0.\+625f
+\item 
 \Hypertarget{Activations_8h_ac245f863ccdf620e12419737387cfc96}\label{Activations_8h_ac245f863ccdf620e12419737387cfc96} 
-\+\#define {\bfseries TANH\+\_\+\+BIGLIMIT}~9.\+0f
+\+\#define {\bfseries TANH\+\_\+\+BIGLIMIT}~6.\+0f
 \item 
-\Hypertarget{Activations_8h_ad86bc04f7f667b1bdced8a0f06d96861}\label{Activations_8h_ad86bc04f7f667b1bdced8a0f06d96861} 
-\+\#define {\bfseries p1}~-\/0.\+3333328194f
+\Hypertarget{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a}\label{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a} 
+\+\#define {\bfseries P0}~-\/0.\+9643991794f
 \item 
-\Hypertarget{Activations_8h_a938e6a2861f684cc1f7e2de661446e35}\label{Activations_8h_a938e6a2861f684cc1f7e2de661446e35} 
-\+\#define {\bfseries p2}~-\/0.\+0015662060f
+\Hypertarget{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce}\label{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce} 
+\+\#define {\bfseries P1}~-\/99.\+28772310f
 \item 
-\Hypertarget{Activations_8h_ac4ca304cd28414de1f88d44c0d2c1706}\label{Activations_8h_ac4ca304cd28414de1f88d44c0d2c1706} 
-\+\#define {\bfseries p3}~-\/0.\+0001658424f
+\Hypertarget{Activations_8h_ae00a52dba55d31948c377fa85d385b87}\label{Activations_8h_ae00a52dba55d31948c377fa85d385b87} 
+\+\#define {\bfseries P2}~-\/1614.\+687684f
 \item 
-\Hypertarget{Activations_8h_a2727b8084704029433d23fb39cd41e0a}\label{Activations_8h_a2727b8084704029433d23fb39cd41e0a} 
-\+\#define {\bfseries q1}~0.\+6031357917f
+\Hypertarget{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c}\label{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c} 
+\+\#define {\bfseries Q0}~112.\+8116785f
 \item 
-\Hypertarget{Activations_8h_af3dba398bf5802642ccbd218a3f8284b}\label{Activations_8h_af3dba398bf5802642ccbd218a3f8284b} 
-\+\#define {\bfseries q2}~0.\+0146431154f
+\Hypertarget{Activations_8h_a0f32727853a3ac3d848701803c3b8688}\label{Activations_8h_a0f32727853a3ac3d848701803c3b8688} 
+\+\#define {\bfseries Q1}~2235.\+488391f
+\item 
+\Hypertarget{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7}\label{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7} 
+\+\#define {\bfseries Q2}~4844.\+063053f
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
-void \doxymbox{\hyperlink{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}{Deep::\+relu}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\Hypertarget{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea}\label{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea} 
+void {\bfseries Deep::\+expf\+\_\+v} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\item 
+void \doxymbox{\hyperlink{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}{Deep::\+relu}} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
 \begin{DoxyCompactList}\small\item\em RELU(x) = MAX(0, x) for all x. \end{DoxyCompactList}\item 
-void \doxymbox{\hyperlink{Activations_8h_a43ab557c1577418971f7241698a530b2}{Deep::\+tanh}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
-\begin{DoxyCompactList}\small\item\em TANH(x) = (exp(x) -\/ exp(-\/x))/\+(exp(x) + exp(-\/x)). \end{DoxyCompactList}\item 
-\Hypertarget{Activations_8h_abf2cdde9211fc480d9d0b31c6eea7e40}\label{Activations_8h_abf2cdde9211fc480d9d0b31c6eea7e40} 
-void {\bfseries Deep::\+d\+Tanh} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\Hypertarget{Activations_8h_aa22935f3602295ed65f1c96c9ebc116d}\label{Activations_8h_aa22935f3602295ed65f1c96c9ebc116d} 
+void {\bfseries Deep::\+d\+Relu} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
 \item 
-\Hypertarget{Activations_8h_a2195b5d7b26f13aadad0f89d906436ea}\label{Activations_8h_a2195b5d7b26f13aadad0f89d906436ea} 
-void {\bfseries Deep::\+d\+Relu} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\Hypertarget{Activations_8h_a3b6e5a79dbdc6d83a08bf1027aea69cb}\label{Activations_8h_a3b6e5a79dbdc6d83a08bf1027aea69cb} 
+void {\bfseries Deep::\+tanh} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
 \item 
-void \doxymbox{\hyperlink{Activations_8h_a37699e92460d5886b74de24746e6df97}{Deep::\+sigmoid}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
-\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\Hypertarget{Activations_8h_a58dc5a679bdb3c89ca0136bf3e7f5e8d}\label{Activations_8h_a58dc5a679bdb3c89ca0136bf3e7f5e8d} 
+void {\bfseries Deep::\+d\+Tanh} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
+\item 
+void \doxymbox{\hyperlink{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38}{Deep::\+sigmoid}} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
+\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\item 
+\Hypertarget{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d}\label{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d} 
+void {\bfseries Deep::\+d\+Sigmoid} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
+\item 
+\Hypertarget{Activations_8h_a19001e487160e36e1a7e4b178d15bd5b}\label{Activations_8h_a19001e487160e36e1a7e4b178d15bd5b} 
+void {\bfseries Deep::\+linear} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n) noexcept
+\item 
+\Hypertarget{Activations_8h_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2}\label{Activations_8h_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2} 
+void {\bfseries Deep::\+d\+Linear} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n, bool activated=false) noexcept
+\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -93,11 +117,11 @@ Jack Rose
 \label{doc-func-members}
 \Hypertarget{Activations_8h_doc-func-members}
 \doxysubsection{Function Documentation}
-\Hypertarget{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d}\index{Activations.h@{Activations.h}!relu@{relu}}
+\Hypertarget{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}\index{Activations.h@{Activations.h}!relu@{relu}}
 \index{relu@{relu}!Activations.h@{Activations.h}}
 \doxysubsubsection{\texorpdfstring{relu()}{relu()}}
-{\footnotesize\ttfamily \label{Activations_8h_aad76a867fc08b3a5cf07e2385c30fc8d} 
-void Deep::\+relu (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+{\footnotesize\ttfamily \label{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6} 
+void Deep::\+relu (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}RESTRICT}]{x}{, }\item[{const size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
 
 
@@ -110,32 +134,15 @@ RELU(x) = MAX(0, x) for all x.
 {\em n} & x length \\
 \hline
 \end{DoxyParams}
-\Hypertarget{Activations_8h_a37699e92460d5886b74de24746e6df97}\index{Activations.h@{Activations.h}!sigmoid@{sigmoid}}
+\Hypertarget{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38}\index{Activations.h@{Activations.h}!sigmoid@{sigmoid}}
 \index{sigmoid@{sigmoid}!Activations.h@{Activations.h}}
 \doxysubsubsection{\texorpdfstring{sigmoid()}{sigmoid()}}
-{\footnotesize\ttfamily \label{Activations_8h_a37699e92460d5886b74de24746e6df97} 
-void Deep::\+sigmoid (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+{\footnotesize\ttfamily \label{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38} 
+void Deep::\+sigmoid (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}RESTRICT}]{x}{, }\item[{const size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
 
 
 Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. 
-
-
-\begin{DoxyParams}{Parameters}
-{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
-\hline
-{\em n} & x length \\
-\hline
-\end{DoxyParams}
-\Hypertarget{Activations_8h_a43ab557c1577418971f7241698a530b2}\index{Activations.h@{Activations.h}!tanh@{tanh}}
-\index{tanh@{tanh}!Activations.h@{Activations.h}}
-\doxysubsubsection{\texorpdfstring{tanh()}{tanh()}}
-{\footnotesize\ttfamily \label{Activations_8h_a43ab557c1577418971f7241698a530b2} 
-void Deep::\+tanh (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
-
-
-
-TANH(x) = (exp(x) -\/ exp(-\/x))/\+(exp(x) + exp(-\/x)). 
 
 
 \begin{DoxyParams}{Parameters}

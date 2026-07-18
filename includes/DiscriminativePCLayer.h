@@ -54,9 +54,9 @@ namespace Deep
         /// @param act Activation function
         /// @param dAct Derivative of Activation function
         DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
-            float learningRate = 1e-6, float inferenceRate = 0.1f, float lmbda = 1e-2f,
-              void (*act)(float *, size_t) = relu,
-              void (*dAct)(float *, size_t) = dRelu);
+                              float learningRate = 1e-6, float inferenceRate = 0.1f, float lmbda = 1e-2f,
+                              void (*act)(float *, size_t) = relu,
+                              void (*dAct)(float *, size_t, bool) = dRelu);
 
         /// @brief Destructor
         ~DiscriminativePCLayer() override;
@@ -133,9 +133,14 @@ namespace Deep
         /// @param below DiscriminativePCLayer*
         void SetLayerBelow(DiscriminativePCLayer *below) noexcept { layerBelow = below; }
 
+        /// @brief Resets 'z' (beliefs) to 0.
         void ResetState() noexcept;
 
+        /// @brief Gets const pointer to layer above
+        /// @return layerAbove
         const DiscriminativePCLayer &GetLayerAbove() const noexcept { return *layerAbove; }
+        /// @brief Gets const pointer to layer below
+        /// @return layerBelow
         const DiscriminativePCLayer &GetLayerBelow() const noexcept { return *layerBelow; }
 
         /// @brief Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.
@@ -157,7 +162,6 @@ namespace Deep
 
         // @internal --- For inference ---
         float *mu;
-        float *sigma_prime;
         float *dz_dt;
         float *bottom_up;
         // ------
@@ -178,7 +182,7 @@ namespace Deep
         /// @brief Activation function, with parameters `(float *array, size_t arraysize)`
         void (*activation)(float *, size_t);
         /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize)`
-        void (*activationDerivative)(float *, size_t);
+        void (*activationDerivative)(float *, size_t, bool);
     };
 
 } // namespace Deep

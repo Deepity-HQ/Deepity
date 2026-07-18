@@ -9,7 +9,7 @@ namespace Deep
     }
 
     void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                                           void (*act)(float *, size_t), void (*dAct)(float *, size_t))
+                                           void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
         if (autoSize && layers.empty())
         {

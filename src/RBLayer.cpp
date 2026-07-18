@@ -5,7 +5,7 @@
 
 using namespace Deep;
 
-RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k_1, float k_2, float lmbda, float alpha, size_t batchSize, int stepSize, ActivationFn act, ActivationFn dAct)
+RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k_1, float k_2, float lmbda, float alpha, size_t batchSize, int stepSize,  void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     : var(var), var_td(var_td), k_1(k_1), k_2(k_2), lmbda(lmbda), alpha(alpha), stepSize(stepSize), batchSize(batchSize), act(act), dAct(dAct)
 {
     this->size = inSize;
@@ -223,7 +223,7 @@ void RBLayer::UpdateWeights(size_t currentBatchSize) noexcept
     if (act)
         act(tmpWeight2, currentBatchSize * size); // tmp2 = f(Ur)
     if (dAct)
-        dAct(tmpWeight3, currentBatchSize * size); // tmp3 = f'(Ur)
+        dAct(tmpWeight3, currentBatchSize * size, false); // tmp3 = f'(Ur)
 
     // tmp1 = I - f(Ur)
     cblas_saxpy(currentBatchSize * size, -1.0f, tmpWeight2, 1, tmpWeight1, 1);

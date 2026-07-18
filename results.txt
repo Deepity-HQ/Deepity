@@ -1,0 +1,142 @@
+rose0@fedora:~/Projects/deepity$ ./build/Release/bin/DeepityTests
+2026-07-18T18:03:45-04:00
+Running ./build/Release/bin/DeepityTests
+Run on (20 X 3498.86 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 0.58, 0.64, 0.63
+----------------------------------------------------------------------------------------
+Benchmark                              Time             CPU   Iterations UserCounters...
+----------------------------------------------------------------------------------------
+BM_Tanh/32                          52.9 ns         52.9 ns     13737482 items_per_second=605.447M/s
+BM_Tanh/256                          411 ns          411 ns      1711848 items_per_second=623.455M/s
+BM_Tanh/1024                        1630 ns         1627 ns       429625 items_per_second=629.262M/s
+BM_Tanh/4096                        6503 ns         6493 ns       106935 items_per_second=630.878M/s
+BM_Tanh/16384                      26037 ns        25995 ns        26876 items_per_second=630.287M/s
+BM_dTanh/32                          139 ns          139 ns      5039368 items_per_second=230.546M/s
+BM_dTanh/256                        1110 ns         1108 ns       635293 items_per_second=231.117M/s
+BM_dTanh/1024                       4361 ns         4354 ns       160705 items_per_second=235.212M/s
+BM_dTanh/4096                      17418 ns        17384 ns        40227 items_per_second=235.616M/s
+BM_dTanh/16384                     70773 ns        70642 ns         9891 items_per_second=231.93M/s
+BM_ReLU/32                          2.52 ns         2.52 ns    278649647 items_per_second=12.7061G/s
+BM_ReLU/256                         16.6 ns         16.6 ns     41529690 items_per_second=15.4159G/s
+BM_ReLU/1024                        63.6 ns         63.5 ns     10970684 items_per_second=16.1319G/s
+BM_ReLU/4096                         228 ns          227 ns      3117688 items_per_second=18.0265G/s
+BM_ReLU/16384                       1005 ns         1003 ns       664073 items_per_second=16.3417G/s
+BM_dReLU/32                         2.84 ns         2.84 ns    247691882 items_per_second=11.2815G/s
+BM_dReLU/256                        22.8 ns         21.9 ns     34555940 items_per_second=11.6669G/s
+BM_dReLU/1024                       86.9 ns         83.3 ns      8819938 items_per_second=12.2985G/s
+BM_dReLU/4096                        336 ns          327 ns      2338702 items_per_second=12.5267G/s
+BM_dReLU/16384                      1234 ns         1231 ns       513891 items_per_second=13.3109G/s
+BM_Sigmoid/32                       6.66 ns         6.52 ns    108783992 items_per_second=4.90815G/s
+BM_Sigmoid/256                      45.1 ns         44.9 ns     15563078 items_per_second=5.69588G/s
+BM_Sigmoid/1024                      178 ns          178 ns      3939761 items_per_second=5.76243G/s
+BM_Sigmoid/4096                      724 ns          722 ns      1007740 items_per_second=5.67089G/s
+BM_Sigmoid/16384                    2849 ns         2842 ns       247987 items_per_second=5.76443G/s
+BM_dSigmoid/32                      9.98 ns         9.95 ns     68789414 items_per_second=3.21463G/s
+BM_dSigmoid/256                     54.1 ns         53.9 ns     13220065 items_per_second=4.74795G/s
+BM_dSigmoid/1024                     277 ns          275 ns      2691132 items_per_second=3.72378G/s
+BM_dSigmoid/4096                    1050 ns         1046 ns       700166 items_per_second=3.91558G/s
+BM_dSigmoid/16384                   4392 ns         4354 ns       153084 items_per_second=3.76263G/s
+BM_Linear/32                       0.220 ns        0.220 ns   3184301879 items_per_second=145.485G/s
+BM_Linear/256                      0.224 ns        0.223 ns   3198775925 items_per_second=1.14681T/s
+BM_Linear/1024                     0.222 ns        0.222 ns   3117875529 items_per_second=4.61551T/s
+BM_Linear/4096                     0.221 ns        0.221 ns   3167891598 items_per_second=18.5703T/s
+BM_Linear/16384                    0.222 ns        0.222 ns   3131075587 items_per_second=73.8256T/s
+BM_dLinear/32                      17296 ns         6428 ns       107390 items_per_second=4.97819M/s
+BM_dLinear/256                     19049 ns         6669 ns       109865 items_per_second=38.3862M/s
+BM_dLinear/1024                    18931 ns         6566 ns       102186 items_per_second=155.96M/s
+BM_dLinear/4096                    20473 ns         6768 ns        98744 items_per_second=605.174M/s
+BM_dLinear/16384                   16916 ns         6461 ns       107240 items_per_second=2.53574G/s
+BM_Layer_ResetState/8               1.12 ns         1.12 ns    598810371
+BM_Layer_ResetState/32              1.38 ns         1.38 ns    527709558
+BM_Layer_ResetState/64              1.65 ns         1.65 ns    428116005
+BM_Layer_ResetState/128             2.32 ns         2.31 ns    302487059
+BM_Layer_ResetState/256             4.40 ns         4.14 ns    165754439
+BM_Layer_CalculateState/8           83.4 ns         83.2 ns      8853436
+BM_Layer_CalculateState/32           358 ns          357 ns      1817451
+BM_Layer_CalculateState/64          1186 ns         1183 ns       586292
+BM_Layer_CalculateState/128         5270 ns         5249 ns       100000
+BM_Layer_CalculateState/256        22210 ns        21010 ns        35870
+BM_Layer_UpdateState/8              21.1 ns         20.3 ns     34761774
+BM_Layer_UpdateState/32             19.5 ns         19.4 ns     36542817
+BM_Layer_UpdateState/64             25.1 ns         24.1 ns     30134613
+BM_Layer_UpdateState/128            33.3 ns         33.2 ns     21312806
+BM_Layer_UpdateState/256            52.6 ns         52.4 ns     13953910
+BM_Layer_UpdateWeights/8            1.25 ns         1.24 ns    545605555
+BM_Layer_UpdateWeights/32           1.27 ns         1.27 ns    559619893
+BM_Layer_UpdateWeights/64           1.26 ns         1.25 ns    539018909
+BM_Layer_UpdateWeights/128          1.25 ns         1.24 ns    565165792
+BM_Layer_UpdateWeights/256          1.30 ns         1.29 ns    519924707
+BM_Network_ResetState/8             8.92 ns         8.76 ns     82011740
+BM_Network_ResetState/16            8.70 ns         8.68 ns     75696593
+BM_Network_ResetState/32            10.1 ns         10.0 ns     70808805
+BM_Network_ResetState/64            9.39 ns         9.37 ns     67726991
+BM_Network_ResetState/128           9.80 ns         9.78 ns     70418672
+BM_Network_Clamp/8                  2.17 ns         2.16 ns    325391690
+BM_Network_Clamp/16                 2.19 ns         2.18 ns    325278794
+BM_Network_Clamp/32                 2.18 ns         2.18 ns    317652257
+BM_Network_Clamp/64                 2.18 ns         2.18 ns    317550268
+BM_Network_Clamp/128                2.15 ns         2.15 ns    328609327
+BM_Network_CalculateState/8          182 ns          181 ns      3697982
+BM_Network_CalculateState/16         229 ns          228 ns      3072435
+BM_Network_CalculateState/32         310 ns          309 ns      2328205
+BM_Network_CalculateState/64         490 ns          489 ns      1491436
+BM_Network_CalculateState/128        779 ns          777 ns       863026
+BM_Network_UpdateState/8            82.3 ns         82.1 ns      8545114
+BM_Network_UpdateState/16           87.3 ns         87.1 ns      8099852
+BM_Network_UpdateState/32           86.3 ns         86.1 ns      8050182
+BM_Network_UpdateState/64           90.1 ns         89.9 ns      7503531
+BM_Network_UpdateState/128           105 ns          105 ns      6604629
+BM_Network_UpdateWeights/8           215 ns          214 ns      4838242
+BM_Network_UpdateWeights/16          290 ns          289 ns      4378911
+BM_Network_UpdateWeights/32          432 ns          432 ns      3315732
+BM_Network_UpdateWeights/64          665 ns          658 ns      2295038
+BM_Network_UpdateWeights/128         868 ns          866 ns      1413062
+BM_Network_Inference/8             14330 ns        14289 ns        50259 items_per_second=3.49929M/s
+BM_Network_Inference/16            16562 ns        15960 ns        43990 items_per_second=3.13278M/s
+BM_Network_Inference/32            19855 ns        19821 ns        35983 items_per_second=2.52264M/s
+BM_Network_Inference/64            28532 ns        28472 ns        24663 items_per_second=1.75612M/s
+BM_Network_Inference/128           48143 ns        47225 ns        15250 items_per_second=1.05877M/s
+BM_Network_TrainSample/8           14011 ns        13042 ns        52974 items_per_second=76.6772k/s
+BM_Network_TrainSample/16          15952 ns        15459 ns        42857 items_per_second=64.6882k/s
+BM_Network_TrainSample/32          18428 ns        18376 ns        36321 items_per_second=54.419k/s
+BM_Network_TrainSample/64          25263 ns        25191 ns        25042 items_per_second=39.6961k/s
+BM_Network_TrainSample/128         41338 ns        41245 ns        15871 items_per_second=24.2455k/s
+BM_Network_TrainEpoch/8            56322 ns        56177 ns        12431 items_per_second=71.2039k/s
+BM_Network_TrainEpoch/16           64703 ns        64539 ns        10164 items_per_second=61.9777k/s
+BM_Network_TrainEpoch/32           77483 ns        77262 ns         8392 items_per_second=51.772k/s
+BM_Network_TrainEpoch/64          103113 ns       102876 ns         6231 items_per_second=38.8817k/s
+BM_Network_TrainEpoch/128         166919 ns       166488 ns         3954 items_per_second=24.0257k/s
+BM_Scaling_Inference/8              6992 ns         6974 ns        96751
+BM_Scaling_Inference/16            11310 ns        11278 ns        62119
+BM_Scaling_Inference/32            21947 ns        21872 ns        31786
+BM_Scaling_Inference/64            63090 ns        62932 ns        11068
+BM_Scaling_Inference/128          252735 ns       252104 ns         2851
+BM_Scaling_Inference/256         1033666 ns      1030789 ns          678
+BM_Scaling_Inference/512         4135759 ns      4121527 ns          169
+BM_Scaling_Inference_BigO          15.78 N^2       15.72 N^2  
+BM_Scaling_Inference_RMS               1 %             1 %    
+BM_Scaling_Training/8               6863 ns         6846 ns       102236
+BM_Scaling_Training/16             10218 ns        10192 ns        68204
+BM_Scaling_Training/32             20845 ns        20796 ns        32852
+BM_Scaling_Training/64             65251 ns        65036 ns        10988
+BM_Scaling_Training/128           255785 ns       254914 ns         2738
+BM_Scaling_Training/256          1058640 ns      1055316 ns          659
+BM_Scaling_Training/512          4351457 ns      4335947 ns          160
+BM_Scaling_Training_BigO           16.57 N^2       16.51 N^2  
+BM_Scaling_Training_RMS                2 %             2 %    
+BM_RandomizeWeights/8              96381 ns        34514 ns        18989
+BM_RandomizeWeights/16            104179 ns        36231 ns        19768
+BM_RandomizeWeights/32             89114 ns        33095 ns        20740
+BM_RandomizeWeights/64             96595 ns        35626 ns        20464
+BM_RandomizeWeights/128           116263 ns        37558 ns        18876
+BM_RandomizeWeights/256           114569 ns        39013 ns        18200
+BM_Predict/8                       16310 ns        14990 ns        46205 items_per_second=66.7097k/s
+BM_Predict/16                      19018 ns        17848 ns        40602 items_per_second=56.0284k/s
+BM_Predict/32                      21751 ns        21597 ns        32362 items_per_second=46.3017k/s
+BM_Predict/64                      29304 ns        29228 ns        23355 items_per_second=34.214k/s
+BM_Predict/128                     50524 ns        50340 ns        14283 items_per_second=19.8649k/s

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['layer_2eh_0',['Layer.h',['../Layer_8h.html',1,'']]]
+  ['discriminativepclayer_2eh_0',['DiscriminativePCLayer.h',['../DiscriminativePCLayer_8h.html',1,'']]]
 ];

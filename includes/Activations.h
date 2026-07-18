@@ -11,6 +11,7 @@
 #define RESTRICT __restrict__
 #endif
 
+
 /**
  * @file Activations.h
  * @brief Defines the activation functions of a predictive coding model.
@@ -35,53 +36,53 @@
 
 namespace Deep
 {
-inline void expf_v(float *x, size_t n)
-{
-    size_t i = 0;
+    inline void expf_v(float *x, size_t n)
+    {
+        size_t i = 0;
 
 #if defined(__AVX512F__)
-    size_t simd_end = n - (n % 16);
+        size_t simd_end = n - (n % 16);
 
-    for (; i < simd_end; i += 16)
-    {
-        __m512 x_512 = _mm512_load_ps(x + i);
+        for (; i < simd_end; i += 16)
+        {
+            __m512 x_512 = _mm512_load_ps(x + i);
 
-        __m512 res = Sleef_expf16_u10avx512f(x_512);
+            __m512 res = Sleef_expf16_u10avx512f(x_512);
 
-        _mm512_store_ps(x + i, res);
-    }
+            _mm512_store_ps(x + i, res);
+        }
 
 #elif defined(__AVX2__)
-    size_t simd_end = n - (n % 8);
+        size_t simd_end = n - (n % 8);
 
-    for (; i < simd_end; i += 8)
-    {
-        __m256 x_256 = _mm256_load_ps(x + i);
+        for (; i < simd_end; i += 8)
+        {
+            __m256 x_256 = _mm256_load_ps(x + i);
 
-        __m256 res = Sleef_expf8_u10avx2(x_256);
+            __m256 res = Sleef_expf8_u10avx2(x_256);
 
-        _mm256_store_ps(x + i, res);
-    }
+            _mm256_store_ps(x + i, res);
+        }
 
 #elif defined(__SSE2__)
-    size_t simd_end = n - (n % 4);
+        size_t simd_end = n - (n % 4);
 
-    for (; i < simd_end; i += 4)
-    {
-        __m128 x_128 = _mm_load_ps(x + i);
+        for (; i < simd_end; i += 4)
+        {
+            __m128 x_128 = _mm_load_ps(x + i);
 
-        __m128 res = Sleef_expf4_u10sse2(x_128);
+            __m128 res = Sleef_expf4_u10sse2(x_128);
 
-        _mm_store_ps(x + i, res);
-    }
+            _mm_store_ps(x + i, res);
+        }
 
 #endif
 
-    for (; i < n; ++i)
-    {
-        x[i] = Sleef_expf_u10(x[i]);
+        for (; i < n; ++i)
+        {
+            x[i] = Sleef_expf_u10(x[i]);
+        }
     }
-}
 #pragma region relu
     /// @brief RELU(x) = MAX(0, x) for all x
     /// @param x array, \em assumed to be 64-bit aligned!
@@ -129,7 +130,8 @@ inline void expf_v(float *x, size_t n)
             x[i] = MAX(0.0f, x[i]);
         }
     }
-    inline void dRelu(float *RESTRICT x, const size_t n) noexcept
+
+    inline void dRelu(float *RESTRICT x, const size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -404,12 +406,13 @@ inline void expf_v(float *x, size_t n)
             }
         }
     }
-    inline void dTanh(float *RESTRICT x, const size_t n) noexcept
+    inline void dTanh(float *RESTRICT x, const size_t n, bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
 
-        tanh(x, n);
+        if (!activated)
+            tanh(x, n);
 
         size_t i = 0;
         [[maybe_unused]] size_t simd_end;
@@ -539,12 +542,13 @@ inline void expf_v(float *x, size_t n)
         }
     }
 
-    inline void dSigmoid(float *RESTRICT x, const size_t n) noexcept
+    inline void dSigmoid(float *RESTRICT x, const size_t n, bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
 
-        sigmoid(x, n);
+        if (!activated)
+            sigmoid(x, n);
         size_t i = 0;
 
 #if defined(__AVX512F__)
@@ -594,9 +598,9 @@ inline void expf_v(float *x, size_t n)
     }
 #pragma endregion
 
-    inline void linear(float *x, size_t n) {}
+    inline void linear(float *x, size_t n) noexcept {}
 
-    inline void dLinear(float *x, size_t n)
+    inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
 #pragma omp parallel for
         for (size_t i = 0; i < n; i++)

@@ -58,7 +58,7 @@ namespace Deep
         /// @param act activation function
         /// @param dAct derivative of previous activation function
         void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                      void (*act)(float *, size_t), void (*dAct)(float *, size_t));
+                      void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool));
 
         /// @brief Randomizes the weights of each layer
         /// @param rng The classic Mersenne Twister

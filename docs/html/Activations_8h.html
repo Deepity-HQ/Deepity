@@ -105,41 +105,57 @@ $(function(){initNavTree('Activations_8h.html','',''); });
 <p>Defines the activation functions of a predictive coding model.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;cstddef&gt;</code><br />
+<code>#include &lt;cassert&gt;</code><br />
 <code>#include &lt;cmath&gt;</code><br />
 <code>#include &lt;immintrin.h&gt;</code><br />
+<code>#include &lt;sleef.h&gt;</code><br />
 </div>
 <p><a href="Activations_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:aae3356b63849abbe8789dd41648ee90a" id="r_aae3356b63849abbe8789dd41648ee90a"><td class="memItemLeft"><a id="aae3356b63849abbe8789dd41648ee90a" name="aae3356b63849abbe8789dd41648ee90a"></a>
+#define&#160;</td><td class="memItemRight"><b>RESTRICT</b>&#160;&#160;&#160;__restrict__</td></tr>
 <tr class="memitem:afa99ec4acc4ecb2dc3c2d05da15d0e3f" id="r_afa99ec4acc4ecb2dc3c2d05da15d0e3f"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#afa99ec4acc4ecb2dc3c2d05da15d0e3f">MAX</a>(a,  b)</td></tr>
 <tr class="memitem:af09b50acd5a5564417673be65960c0ea" id="r_af09b50acd5a5564417673be65960c0ea"><td class="memItemLeft"><a id="af09b50acd5a5564417673be65960c0ea" name="af09b50acd5a5564417673be65960c0ea"></a>
 #define&#160;</td><td class="memItemRight"><b>TANH_TINYLIMIT</b>&#160;&#160;&#160;0.000244140625f</td></tr>
+<tr class="memitem:a7ec15aed34c551c8e43a3f0ec25b7c65" id="r_a7ec15aed34c551c8e43a3f0ec25b7c65"><td class="memItemLeft"><a id="a7ec15aed34c551c8e43a3f0ec25b7c65" name="a7ec15aed34c551c8e43a3f0ec25b7c65"></a>
+#define&#160;</td><td class="memItemRight"><b>TANH_POLY_LIMIT</b>&#160;&#160;&#160;0.625f</td></tr>
 <tr class="memitem:ac245f863ccdf620e12419737387cfc96" id="r_ac245f863ccdf620e12419737387cfc96"><td class="memItemLeft"><a id="ac245f863ccdf620e12419737387cfc96" name="ac245f863ccdf620e12419737387cfc96"></a>
-#define&#160;</td><td class="memItemRight"><b>TANH_BIGLIMIT</b>&#160;&#160;&#160;9.0f</td></tr>
-<tr class="memitem:ad86bc04f7f667b1bdced8a0f06d96861" id="r_ad86bc04f7f667b1bdced8a0f06d96861"><td class="memItemLeft"><a id="ad86bc04f7f667b1bdced8a0f06d96861" name="ad86bc04f7f667b1bdced8a0f06d96861"></a>
-#define&#160;</td><td class="memItemRight"><b>p1</b>&#160;&#160;&#160;-0.3333328194f</td></tr>
-<tr class="memitem:a938e6a2861f684cc1f7e2de661446e35" id="r_a938e6a2861f684cc1f7e2de661446e35"><td class="memItemLeft"><a id="a938e6a2861f684cc1f7e2de661446e35" name="a938e6a2861f684cc1f7e2de661446e35"></a>
-#define&#160;</td><td class="memItemRight"><b>p2</b>&#160;&#160;&#160;-0.0015662060f</td></tr>
-<tr class="memitem:ac4ca304cd28414de1f88d44c0d2c1706" id="r_ac4ca304cd28414de1f88d44c0d2c1706"><td class="memItemLeft"><a id="ac4ca304cd28414de1f88d44c0d2c1706" name="ac4ca304cd28414de1f88d44c0d2c1706"></a>
-#define&#160;</td><td class="memItemRight"><b>p3</b>&#160;&#160;&#160;-0.0001658424f</td></tr>
-<tr class="memitem:a2727b8084704029433d23fb39cd41e0a" id="r_a2727b8084704029433d23fb39cd41e0a"><td class="memItemLeft"><a id="a2727b8084704029433d23fb39cd41e0a" name="a2727b8084704029433d23fb39cd41e0a"></a>
-#define&#160;</td><td class="memItemRight"><b>q1</b>&#160;&#160;&#160;0.6031357917f</td></tr>
-<tr class="memitem:af3dba398bf5802642ccbd218a3f8284b" id="r_af3dba398bf5802642ccbd218a3f8284b"><td class="memItemLeft"><a id="af3dba398bf5802642ccbd218a3f8284b" name="af3dba398bf5802642ccbd218a3f8284b"></a>
-#define&#160;</td><td class="memItemRight"><b>q2</b>&#160;&#160;&#160;0.0146431154f</td></tr>
+#define&#160;</td><td class="memItemRight"><b>TANH_BIGLIMIT</b>&#160;&#160;&#160;6.0f</td></tr>
+<tr class="memitem:a1583b00a62bc1138f99bbfcd8ef81a6a" id="r_a1583b00a62bc1138f99bbfcd8ef81a6a"><td class="memItemLeft"><a id="a1583b00a62bc1138f99bbfcd8ef81a6a" name="a1583b00a62bc1138f99bbfcd8ef81a6a"></a>
+#define&#160;</td><td class="memItemRight"><b>P0</b>&#160;&#160;&#160;-0.9643991794f</td></tr>
+<tr class="memitem:a6c2a9f7efd46f0160f3037869924d6ce" id="r_a6c2a9f7efd46f0160f3037869924d6ce"><td class="memItemLeft"><a id="a6c2a9f7efd46f0160f3037869924d6ce" name="a6c2a9f7efd46f0160f3037869924d6ce"></a>
+#define&#160;</td><td class="memItemRight"><b>P1</b>&#160;&#160;&#160;-99.28772310f</td></tr>
+<tr class="memitem:ae00a52dba55d31948c377fa85d385b87" id="r_ae00a52dba55d31948c377fa85d385b87"><td class="memItemLeft"><a id="ae00a52dba55d31948c377fa85d385b87" name="ae00a52dba55d31948c377fa85d385b87"></a>
+#define&#160;</td><td class="memItemRight"><b>P2</b>&#160;&#160;&#160;-1614.687684f</td></tr>
+<tr class="memitem:ab137e2ab3b44c3f8ee86bce6497ed14c" id="r_ab137e2ab3b44c3f8ee86bce6497ed14c"><td class="memItemLeft"><a id="ab137e2ab3b44c3f8ee86bce6497ed14c" name="ab137e2ab3b44c3f8ee86bce6497ed14c"></a>
+#define&#160;</td><td class="memItemRight"><b>Q0</b>&#160;&#160;&#160;112.8116785f</td></tr>
+<tr class="memitem:a0f32727853a3ac3d848701803c3b8688" id="r_a0f32727853a3ac3d848701803c3b8688"><td class="memItemLeft"><a id="a0f32727853a3ac3d848701803c3b8688" name="a0f32727853a3ac3d848701803c3b8688"></a>
+#define&#160;</td><td class="memItemRight"><b>Q1</b>&#160;&#160;&#160;2235.488391f</td></tr>
+<tr class="memitem:af5bca4c32f8c6886a3d8c526d2e3e9a7" id="r_af5bca4c32f8c6886a3d8c526d2e3e9a7"><td class="memItemLeft"><a id="af5bca4c32f8c6886a3d8c526d2e3e9a7" name="af5bca4c32f8c6886a3d8c526d2e3e9a7"></a>
+#define&#160;</td><td class="memItemRight"><b>Q2</b>&#160;&#160;&#160;4844.063053f</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aad76a867fc08b3a5cf07e2385c30fc8d" id="r_aad76a867fc08b3a5cf07e2385c30fc8d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aad76a867fc08b3a5cf07e2385c30fc8d">Deep::relu</a> (float *x, size_t n)</td></tr>
-<tr class="memdesc:aad76a867fc08b3a5cf07e2385c30fc8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">RELU(x) = MAX(0, x) for all x.  <br /></td></tr>
-<tr class="memitem:a43ab557c1577418971f7241698a530b2" id="r_a43ab557c1577418971f7241698a530b2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a43ab557c1577418971f7241698a530b2">Deep::tanh</a> (float *x, size_t n)</td></tr>
-<tr class="memdesc:a43ab557c1577418971f7241698a530b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">TANH(x) = (exp(x) - exp(-x))/(exp(x) + exp(-x)).  <br /></td></tr>
-<tr class="memitem:abf2cdde9211fc480d9d0b31c6eea7e40" id="r_abf2cdde9211fc480d9d0b31c6eea7e40"><td class="memItemLeft"><a id="abf2cdde9211fc480d9d0b31c6eea7e40" name="abf2cdde9211fc480d9d0b31c6eea7e40"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dTanh</b> (float *x, size_t n)</td></tr>
-<tr class="memitem:a2195b5d7b26f13aadad0f89d906436ea" id="r_a2195b5d7b26f13aadad0f89d906436ea"><td class="memItemLeft"><a id="a2195b5d7b26f13aadad0f89d906436ea" name="a2195b5d7b26f13aadad0f89d906436ea"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *x, size_t n)</td></tr>
-<tr class="memitem:a37699e92460d5886b74de24746e6df97" id="r_a37699e92460d5886b74de24746e6df97"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a37699e92460d5886b74de24746e6df97">Deep::sigmoid</a> (float *x, size_t n)</td></tr>
-<tr class="memdesc:a37699e92460d5886b74de24746e6df97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
+<tr class="memitem:aec8c8f0e5bfec6a4b15cbdb2143eb0ea" id="r_aec8c8f0e5bfec6a4b15cbdb2143eb0ea"><td class="memItemLeft"><a id="aec8c8f0e5bfec6a4b15cbdb2143eb0ea" name="aec8c8f0e5bfec6a4b15cbdb2143eb0ea"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::expf_v</b> (float *x, size_t n)</td></tr>
+<tr class="memitem:ac04542a67acf45ce4d7257d9c72d84c6" id="r_ac04542a67acf45ce4d7257d9c72d84c6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac04542a67acf45ce4d7257d9c72d84c6">Deep::relu</a> (float *RESTRICT x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:ac04542a67acf45ce4d7257d9c72d84c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">RELU(x) = MAX(0, x) for all x.  <br /></td></tr>
+<tr class="memitem:aa22935f3602295ed65f1c96c9ebc116d" id="r_aa22935f3602295ed65f1c96c9ebc116d"><td class="memItemLeft"><a id="aa22935f3602295ed65f1c96c9ebc116d" name="aa22935f3602295ed65f1c96c9ebc116d"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memitem:a3b6e5a79dbdc6d83a08bf1027aea69cb" id="r_a3b6e5a79dbdc6d83a08bf1027aea69cb"><td class="memItemLeft"><a id="a3b6e5a79dbdc6d83a08bf1027aea69cb" name="a3b6e5a79dbdc6d83a08bf1027aea69cb"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::tanh</b> (float *RESTRICT x, const size_t n) noexcept</td></tr>
+<tr class="memitem:a58dc5a679bdb3c89ca0136bf3e7f5e8d" id="r_a58dc5a679bdb3c89ca0136bf3e7f5e8d"><td class="memItemLeft"><a id="a58dc5a679bdb3c89ca0136bf3e7f5e8d" name="a58dc5a679bdb3c89ca0136bf3e7f5e8d"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::dTanh</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memitem:a91ebb69ce7bf80e16bdbbc5eef5dcb38" id="r_a91ebb69ce7bf80e16bdbbc5eef5dcb38"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a91ebb69ce7bf80e16bdbbc5eef5dcb38">Deep::sigmoid</a> (float *RESTRICT x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a91ebb69ce7bf80e16bdbbc5eef5dcb38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
+<tr class="memitem:a26b8b58c35c5eae83bc5e6f4e8554a5d" id="r_a26b8b58c35c5eae83bc5e6f4e8554a5d"><td class="memItemLeft"><a id="a26b8b58c35c5eae83bc5e6f4e8554a5d" name="a26b8b58c35c5eae83bc5e6f4e8554a5d"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::dSigmoid</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memitem:a19001e487160e36e1a7e4b178d15bd5b" id="r_a19001e487160e36e1a7e4b178d15bd5b"><td class="memItemLeft"><a id="a19001e487160e36e1a7e4b178d15bd5b" name="a19001e487160e36e1a7e4b178d15bd5b"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::linear</b> (float *x, size_t n) noexcept</td></tr>
+<tr class="memitem:ab0cc70d32e0e5d4c2fd3aa96ec76a4d2" id="r_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2"><td class="memItemLeft"><a id="ab0cc70d32e0e5d4c2fd3aa96ec76a4d2" name="ab0cc70d32e0e5d4c2fd3aa96ec76a4d2"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::dLinear</b> (float *x, size_t n, bool activated=false) noexcept</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines the activation functions of a predictive coding model. </p>
@@ -174,8 +190,8 @@ void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *x, size_t n)<
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="aad76a867fc08b3a5cf07e2385c30fc8d" name="aad76a867fc08b3a5cf07e2385c30fc8d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad76a867fc08b3a5cf07e2385c30fc8d">&#9670;&#160;</a></span>relu()</h2>
+<a id="ac04542a67acf45ce4d7257d9c72d84c6" name="ac04542a67acf45ce4d7257d9c72d84c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac04542a67acf45ce4d7257d9c72d84c6">&#9670;&#160;</a></span>relu()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -186,17 +202,17 @@ void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *x, size_t n)<
         <tr>
           <td class="memname">void Deep::relu </td>
           <td>(</td>
-          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+          <td class="paramtype">float *RESTRICT</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -212,8 +228,8 @@ void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *x, size_t n)<
 
 </div>
 </div>
-<a id="a37699e92460d5886b74de24746e6df97" name="a37699e92460d5886b74de24746e6df97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37699e92460d5886b74de24746e6df97">&#9670;&#160;</a></span>sigmoid()</h2>
+<a id="a91ebb69ce7bf80e16bdbbc5eef5dcb38" name="a91ebb69ce7bf80e16bdbbc5eef5dcb38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91ebb69ce7bf80e16bdbbc5eef5dcb38">&#9670;&#160;</a></span>sigmoid()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -224,60 +240,22 @@ void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *x, size_t n)<
         <tr>
           <td class="memname">void Deep::sigmoid </td>
           <td>(</td>
-          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+          <td class="paramtype">float *RESTRICT</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
 
 <p>Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">x</td><td>array, <em>assumed</em> to be 64-bit aligned! </td></tr>
-    <tr><td class="paramname">n</td><td>x length </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a43ab557c1577418971f7241698a530b2" name="a43ab557c1577418971f7241698a530b2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43ab557c1577418971f7241698a530b2">&#9670;&#160;</a></span>tanh()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Deep::tanh </td>
-          <td>(</td>
-          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>TANH(x) = (exp(x) - exp(-x))/(exp(x) + exp(-x)). </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">x</td><td>array, <em>assumed</em> to be 64-bit aligned! </td></tr>

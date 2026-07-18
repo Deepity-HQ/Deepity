@@ -112,8 +112,8 @@ Inheritance diagram for Deep::Layer:</div>
  <div class="center">
   <img src="classDeep_1_1Layer.png" usemap="#Deep_3A_3ALayer_map" alt=""/>
   <map id="Deep_3A_3ALayer_map" name="Deep_3A_3ALayer_map">
-<area href="classDeep_1_1PCLayer.html" alt="Deep::PCLayer" shape="rect" coords="0,56,98,80"/>
-<area href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer." alt="Deep::RBLayer" shape="rect" coords="108,56,206,80"/>
+<area href="classDeep_1_1DiscriminativePCLayer.html" alt="Deep::DiscriminativePCLayer" shape="rect" coords="0,56,177,80"/>
+<area href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer." alt="Deep::RBLayer" shape="rect" coords="187,56,364,80"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -176,7 +176,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Calculates the internal state of the layer. </p>
 <dl class="section return"><dt>Returns</dt><dd>energy used </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#a61b31f7447140c535123f793db549ac5">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4d50660fe8014f93db31e3478f98ee07">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -205,7 +205,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 <p>Flushes remaining batches. </p>
 
-<p>Reimplemented in <a class="el" href="classDeep_1_1PCLayer.html#ad593a7fd723f5d79e8d3498514b1fddd">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa">Deep::RBLayer</a>.</p>
+<p>Reimplemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a6d31245ccb390d8279da33f9d4014eda">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -235,7 +235,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Should return batch size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#af54b2893a55e208c2d13779f7a757302">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#affd51aeca6e09f395de07b0d167d28c4">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -265,7 +265,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Should return belief state <span class="tt">z</span>. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#a05b8f68a1b3e1d2316a64b42ae6208a9">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#ac5cf3c7da1032b64442ea4317876ad15">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -295,7 +295,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Should return errors <span class="tt">e</span>. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#ab3f6678f4fb739aba3ab204a79c0c8e6">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a274953fef6f8bbed0c30e50891b5acaf">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Should return input size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#ae4a6b076c3c256aa162a55883522ed8e">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a814d862eae4b8bce835f119b75d9900e">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -355,7 +355,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <p>Should return output size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#a688439331733d5df07a2848f663ab072">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4f0e865011258493e4e2fa1dc4621b89">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -384,7 +384,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 <p>Updates the states after calculation. </p>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#a375092aaa22c17a0c1822da96a112e3a">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a40f4dbeedd94bdc369d45091bbbdf559">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">Deep::RBLayer</a>.</p>
 
 </div>
 </div>
@@ -413,7 +413,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 <p>Updates the weights after state updates. </p>
 
-<p>Implemented in <a class="el" href="classDeep_1_1PCLayer.html#afe6a1b75f8ada9f5a1d9640573058c86">Deep::PCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">Deep::RBLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a39631620cf0d84cc97977b619fac2e9f">Deep::DiscriminativePCLayer</a>, and <a class="el" href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">Deep::RBLayer</a>.</p>
 
 </div>
 </div>

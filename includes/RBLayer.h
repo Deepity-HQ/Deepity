@@ -21,9 +21,6 @@
 
 namespace Deep
 {
-    // Function pointer alias for SIMD-accelerated activation functions
-    using ActivationFn = void (*)(float *, size_t);
-
     /// @brief Restricted Boltzmann-style Predictive Coding (PC) Layer.
     ///
     /// @see https://www.nature.com/articles/nn0199_79.pdf
@@ -50,7 +47,7 @@ namespace Deep
                 float k_1 = 1e-3f, float k_2 = 1e-5f,
                 float lmbda = 1e-6f, float alpha = 1.0f,
                 size_t batchSize = 64, int stepSize = 30,
-                ActivationFn act = relu, ActivationFn dAct = dRelu);
+                void(*act)(float *, size_t) = relu, void(*dAct)(float *, size_t, bool) = dRelu);
 
         ~RBLayer() override;
 
@@ -155,8 +152,8 @@ namespace Deep
         const float *cachedInput = nullptr;
 
         // SIMD Activation
-        ActivationFn act;
-        ActivationFn dAct;
+        void (*act)(float *, size_t);
+        void (*dAct)(float *, size_t, bool);
 
         // Arena Memory Pointers
         float *r = nullptr;    /// Beliefs/states array
