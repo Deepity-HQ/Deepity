@@ -10,28 +10,47 @@ Deepity is a Predictive Coding (PC) library engineered from the ground up for ze
 
 ## 🚀 Performance at a Glance
 
-Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **116 GFLOPS** during predictive-coding inference and learning.
+Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **119 GFLOPS** during predictive-coding inference and learning when compiled with Clang (LLVM).
 
 **Benchmark Configuration:**
 * **Architecture:** 784 → 512 → 256 → 64 → 10
 * **Batch size:** 256
 * **Iterations:** 157
-* **Average runtime:** 1.244 s
+* **Average runtime:** ~1.210 s
 
 The dominant computation consists of batched single-precision matrix multiplications (`SGEMM`), corresponding to roughly 144.4 GFLOPs of floating-point work:
 
-$$\frac{144.4\text{ GFLOPs}}{1.24379\text{ s}}\approx 116.1\text{ GFLOPS}$$
+$$\frac{144.4 \text{ GFLOPs}}{1.210 \text{ s}} \approx 119.3 \text{ GFLOPS}$$
 
-By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running **~3.5× faster** than an equivalent, highly vectorized NumPy implementation.
+By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running significantly faster than an equivalent, highly vectorized NumPy implementation. 
 
 ![Python Benchmark Results](resources/PyTest.png)
 
 | Implementation | Avg (ms) | Min (ms) | Max (ms) |
 | :--- | ---: | ---: | ---: |
-| **Deepity (Python)** | **1201.6** | **1200.3** | **1205.3** |
+| **Deepity (Python/Clang)** | **1169.1** | **1167.8** | **1172.5** |
 | NumPy (Naive) | 4201.6 | 4147.5 | 4281.3 |
 
 *Note: High-level research frameworks routinely incur heavy penalties from Python execution and tensor abstractions. Deepity bypasses this by keeping the entire inference loop in native C++ memory.*
+
+---
+
+## ⚔️ GCC vs. Clang (LLVM) Performance
+
+Recent benchmarking indicates that compiling Deepity with Clang (LLVM) provides measurable speedups across core neural network workloads compared to GCC. Because Clang handles our heavily vectorized SIMD micro-kernels more efficiently, it is the officially recommended compiler for maximum throughput.
+
+*   **Weight Updates:** Clang nearly halves the execution time for layer weight updates, dropping the CPU time for a size 128 layer from 1.24 ns (GCC) to 0.671 ns.
+*   **End-to-End Training:** A full training epoch (`BM_Network_TrainEpoch/128`) completes in 161,998 ns under Clang, a measurable improvement over GCC's 166,488 ns.
+*   **Inference Speed:** Network inference (`BM_Network_Inference/128`) executes in 44,791 ns with Clang, compared to 47,225 ns with GCC.
+
+| Benchmark Workload (Size 128) | Clang CPU Time | GCC CPU Time |
+| :--- | :--- | :--- |
+| `BM_Network_Inference` | **44,791 ns** | 47,225 ns |
+| `BM_Network_TrainSample` | **38,094 ns** | 41,245 ns |
+| `BM_Network_TrainEpoch` | **161,998 ns** | 166,488 ns |
+| `BM_Layer_UpdateWeights` | **0.671 ns** | 1.24 ns |
+
+*(Note: GCC retains a slight edge in linear derivative calculations and weight randomization, but Clang wins heavily in the primary training loop).*
 
 ---
 
@@ -119,53 +138,21 @@ int main() {
 }
 ```
 
-### Python
-
-Deepity ships with lightweight Python bindings that accept standard NumPy arrays.
-
-```python
-import deepity as deep
-import numpy as np
-
-# Build network
-net = deep.PCNetwork()
-net.add_layer(784, 256, lr=1e-4, act="relu", dact="drelu")
-net.add_layer(256, 64,  lr=1e-4, act="relu", dact="drelu")
-net.add_layer(64, 10,   lr=1e-4, act="relu", dact="drelu")
-
-net.randomize_weights()
-
-# Clamp input
-x = np.random.uniform(0.0, 1.0, 784).astype(np.float32)
-net.clamp(x)
-
-# Inference loop
-for _ in range(50):
-    energy = net.calculate_state()
-    net.update_state()
-
-# Learning step
-net.update_weights()
-print(f"Final energy: {energy:.4f}")
-```
-
----
-
 ## 📅 Roadmap
 
-- [x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
-- [x] Contiguous flat-memory buffers
-- [x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
-- [x] Python bindings (pybind11 + NumPy support)
-- [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
-- [ ] Java port
-- [ ] API reference documentation (Doxygen)
-
----
+[x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
+[x] Contiguous flat-memory buffers
+[x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
+[x] Python bindings (pybind11 + NumPy support)
+[x] API reference documentation (Doxygen)
+[ ] Multithreading and Precision Metrics
+[ ] File IO Support
+[ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
+[ ] Java port
 
 ## 🏗️ Project Structure
 
-```text
+```plaintext
 includes/       # Public headers (PCLayer.h, PCNetwork.h, Activations.h)
 src/            # C++ source (PCLayer.cpp, PCNetwork.cpp)
 pybind/         # Python bindings (binding.cpp)
@@ -174,5 +161,6 @@ bin/            # Build outputs (library, executables, Python .so)
 resources/      # Images and benchmark assets
 ```
 
----
-*Ra4ster (Jack R) @ 2026 ❤️*
+<small><i>
+Ra4ster (Jack R) @ 2026 ❤️
+</i></small>
