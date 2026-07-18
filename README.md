@@ -140,15 +140,15 @@ int main() {
 
 ## 📅 Roadmap
 
-[x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
-[x] Contiguous flat-memory buffers
-[x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
-[x] Python bindings (pybind11 + NumPy support)
-[x] API reference documentation (Doxygen)
-[ ] Multithreading and Precision Metrics
-[ ] File IO Support
-[ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
-[ ] Java port
+- [x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
+- [x] Contiguous flat-memory buffers
+- [x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
+- [x] Python bindings (pybind11 + NumPy support)
+- [x] API reference documentation (Doxygen)
+- [ ] Multithreading and Precision Metrics
+- [ ] File IO Support
+- [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
+- [ ] Java port
 
 ## 🏗️ Project Structure
 
