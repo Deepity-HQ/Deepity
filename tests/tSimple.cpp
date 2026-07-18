@@ -1,118 +1,146 @@
 #include <iostream>
 #include <vector>
+#include <cmath>
+#include <random>
+#include <iomanip>
+#include <algorithm>
 #include "DiscriminativePCNetwork.h"
+#include "Activations.h"
 
-using namespace Deep;
-
-// Trains on a single (input, target) pair for a fixed number of iterations,
-// interleaving CalculateState -> UpdateState -> UpdateWeights each step,
-// matching the pattern used in tNetwork.cpp's benchmark loop.
-//
-// Returns the final energy and prints the learned output vs target so we
-// can see convergence directly, without any Python/pybind11 involved.
-float TrainOnExample(DiscriminativePCNetwork &net,
-                      const std::vector<float> &input,
-                      const std::vector<float> &target,
-                      int iterations)
+// ---------------------------------------------------------
+// Activation Functions
+// ---------------------------------------------------------
+void tanh_act(float *x, size_t n)
 {
-    net.Clamp(input);
-    auto &layers = net.GetLayers();
-    DiscriminativePCLayer *outputLayer = static_cast<DiscriminativePCLayer *>(layers.back());
-    outputLayer->ClampState(target);
-
-    float energy = 0.0f;
-    for (int i = 0; i < iterations; ++i)
-    {
-        energy = net.CalculateState();
-        net.UpdateState();          // settle only — no weight update yet
-    }
-
-    net.UpdateWeights();            // single update, after settling
-    energy = net.CalculateState();  // re-measure post-update
-
-    outputLayer->UnclampState();
-    return energy;
+    for (size_t i = 0; i < n; i++)
+        x[i] = std::tanh(x[i]);
 }
 
-// Reads out a prediction by clamping only the input and letting the
-// terminal layer settle freely (not clamped to any target).
-std::vector<float> Predict(DiscriminativePCNetwork &net,
-                           const std::vector<float> &input,
-                           int iterations)
+void dtanh_act(float *x, size_t n)
 {
-    net.Clamp(input);
-
-    auto &layers = net.GetLayers();
-    DiscriminativePCLayer *outputLayer = static_cast<DiscriminativePCLayer *>(layers.back());
-
-    for (int i = 0; i < iterations; ++i)
+    // Reconstructs tanh from the RAW pre-activation stored in sigma_prime
+    for (size_t i = 0; i < n; i++)
     {
-        net.CalculateState();
-        net.UpdateState();
+        float t = std::tanh(x[i]);
+        x[i] = 1.0f - t * t;
     }
-
-    float *beliefs = outputLayer->GetBeliefs();
-    return std::vector<float>(beliefs, beliefs + outputLayer->GetInputSize());
 }
 
+void linear_act(float *x, size_t /*n*/)
+{
+    // Identity -- no-op
+}
+
+void dlinear_act(float *x, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+        x[i] = 1.0f;
+}
+
+// ---------------------------------------------------------
+// Main
+// ---------------------------------------------------------
 int main()
 {
-    constexpr float INFERENCE_RATE = 0.01f;
-    constexpr float LEARNING_RATE = 1e-5;
-    constexpr int BATCH_SIZE = 1;
-    constexpr int INFERENCE_STEPS = 50;
-    constexpr int EPOCHS = 20000;
+    // 1. Setup the Network
+    // Pass batchSize=1 to the Network constructor
+    Deep::DiscriminativePCNetwork net(1);
 
-    std::mt19937 mt(42);
+    // AddLayer(size, nextSize, lr, ir, lmbda, act, dAct)
+    // Note: lr=0.05 (weights), ir=0.3 (fast inference)
+    net.AddLayer(2, 8, 0.05f, 0.3f, 0.0001f, Deep::tanh, Deep::dTanh);
+    net.AddLayer(8, 1, 0.05f, 0.3f, 0.0001f, Deep::tanh, Deep::dTanh);
+    net.AddLayer(1, 0, 0.05f, 0.3f, 0.0001f, Deep::linear, Deep::dLinear);
 
-    DiscriminativePCNetwork net(BATCH_SIZE);
-    net.AddLayer(2, 4, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh);
-    net.AddLayer(4, 1, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh);
-    net.AddLayer(1, 0, LEARNING_RATE, INFERENCE_RATE, tanh, dTanh); // terminal layer, matches tNetwork.cpp pattern
-    net.RandomizeWeights(mt);
+    std::mt19937 rng(42);
+    net.RandomizeWeights(rng);
 
-    // AND gate, scaled into tanh's [-1, 1] range.
-    std::vector<std::vector<float>> inputs = {
+    // 2. Data
+    std::vector<std::vector<float>> X = {
         {-1.0f, -1.0f},
-        {-1.0f, 1.0f},
-        {1.0f, -1.0f},
-        {1.0f, 1.0f},
-    };
-    std::vector<std::vector<float>> targets = {
-        {-1.0f},
-        {-1.0f},
-        {-1.0f},
-        {1.0f},
-    };
+        {-1.0f, +1.0f},
+        {+1.0f, -1.0f},
+        {+1.0f, +1.0f}};
 
-    std::cout << "Training on AND gate (2 -> 4 -> 1 -> [1,0])..." << std::endl;
+    // Soft targets: Prevents the hidden tanh derivatives from vanishing
+    std::vector<std::vector<float>> Y = {
+        {-1.0f},
+        {+1.0f},
+        {+1.0f},
+        {-1.0f}};
 
-    for (int epoch = 0; epoch < EPOCHS; ++epoch)
+    // 3. Training Loop
+    int epochs = 5000;
+    int inferenceSteps = 50;
+    int reportEvery = 500;
+
+    std::cout << "Starting Discriminative PC XOR Test...\n";
+
+    for (int epoch = 0; epoch < epochs; epoch++)
     {
-        float lastEnergy = 0.0f;
-        for (size_t i = 0; i < inputs.size(); ++i)
-            lastEnergy = TrainOnExample(net, inputs[i], targets[i], INFERENCE_STEPS);
+        float totalEnergy = 0.0f;
 
-        if (epoch % 200 == 0)
+        // Shuffle training order each epoch to prevent oscillation
+        std::vector<int> order = {0, 1, 2, 3};
+        std::shuffle(order.begin(), order.end(), rng);
+
+        for (int idx : order)
         {
-            auto &layers = net.GetLayers();
-            const float *w = static_cast<DiscriminativePCLayer *>(layers[0])->GetWeights();
-            float w0norm = 0.0f;
-            for (size_t k = 0; k < 2 * 4; ++k)
-                w0norm += w[k] * w[k];
-            std::cout << "Epoch " << epoch << "  last energy=" << lastEnergy
-                      << "  layer0 W norm=" << std::sqrt(w0norm) << std::endl;
+            // Zero out hidden z from previous sample so inference starts neutral
+            net.ResetState();
+
+            net.Clamp(X[idx]);
+            net.GetTerminalLayer()->ClampState(Y[idx]);
+
+            // Inference
+            for (int t = 0; t < inferenceSteps; t++)
+            {
+                totalEnergy += net.CalculateState();
+                net.UpdateState();
+            }
+
+            // Weight update
+            net.UpdateWeights();
+            net.GetTerminalLayer()->UnclampState();
+        }
+
+        if (epoch % reportEvery == 0)
+        {
+            float avgEnergy = totalEnergy / (4 * inferenceSteps);
+            std::cout << "Epoch " << std::setw(5) << epoch 
+                      << " | Energy: " << std::fixed << std::setprecision(4) << avgEnergy << "\n";
         }
     }
 
-    std::cout << "\nFinal predictions:" << std::endl;
-    for (size_t i = 0; i < inputs.size(); ++i)
+    // 4. Testing
+    std::cout << "\n=== Predictions ===\n";
+    int correct = 0;
+
+    for (size_t i = 0; i < X.size(); i++)
     {
-        auto pred = Predict(net, inputs[i], INFERENCE_STEPS);
-        std::cout << "  input (" << inputs[i][0] << ", " << inputs[i][1]
-                  << ") -> predicted " << pred[0]
-                  << "   (target " << targets[i][0] << ")" << std::endl;
+        net.ResetState();
+        net.Clamp(X[i]);
+
+        // Free inference (no target clamped)
+        for (int t = 0; t < inferenceSteps; t++)
+        {
+            net.CalculateState();
+            net.UpdateState();
+        }
+
+        float pred = net.GetTerminalLayer()->GetBeliefs()[0];
+        float target = Y[i][0];
+        bool signCorrect = (pred > 0 && target > 0) || (pred < 0 && target < 0);
+        if (signCorrect) correct++;
+
+        std::cout << "Input: [" << std::setw(2) << X[i][0] << ", " << std::setw(2) << X[i][1] << "]"
+                  << " | Target: " << std::showpos << target
+                  << " | Pred: " << std::setprecision(4) << pred
+                  << (signCorrect ? " OK" : " WRONG") << "\n";
     }
+
+    std::cout << "\nAccuracy: " << correct << "/4\n";
+    std::cout << (correct == 4 ? "XOR LEARNED SUCCESSFULLY!" : "XOR NOT FULLY LEARNED.") << "\n";
 
     return 0;
 }

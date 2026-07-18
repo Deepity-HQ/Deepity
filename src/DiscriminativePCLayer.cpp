@@ -11,10 +11,10 @@
 namespace Deep
 {
     DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
-                                                 float learningRate, float inferenceRate,
+                                                 float learningRate, float inferenceRate, float lmbda,
                                                  void (*act)(float *, size_t),
                                                  void (*dAct)(float *, size_t))
-        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), isClamped(false),
+        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda), isClamped(false),
           layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct)
     {
         this->size = size;
@@ -22,6 +22,7 @@ namespace Deep
 
         size_t allocOwn = (size_t)batchSize * size * sizeof(float);     // z, e, dz_dt
         size_t allocOut = (size_t)batchSize * nextSize * sizeof(float); // mu, sigma_prime, scratch
+        size_t allocBias = nextSize * sizeof(float);                    // b
 
         z = (float *)std::aligned_alloc(64, ALIGN64(allocOwn));
         e = (float *)std::aligned_alloc(64, ALIGN64(allocOwn));
@@ -32,17 +33,13 @@ namespace Deep
 
         if (nextSize > 0)
         {
-            // W stored (nextSize, size) row-major: maps FROM this layer's
-            // own activity TO a prediction of the layer above (standard
-            // feedforward/discriminative direction).
             W = (float *)std::aligned_alloc(64, ALIGN64((size_t)nextSize * size * sizeof(float)));
+            b = (float *)std::aligned_alloc(64, ALIGN64(allocBias));
             mu = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
             sigma_prime = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
-            // NOTE: 'bottom_up' is reused as generic scratch here (holds
-            // e_above * sigma_prime_own) -- no longer literally a
-            // "bottom-up" signal, kept only to avoid a header rename.
             bottom_up = (float *)std::aligned_alloc(64, ALIGN64(allocOut));
 
+            std::memset(b, 0, ALIGN64(allocBias));
             std::memset(mu, 0, ALIGN64(allocOut));
             std::memset(sigma_prime, 0, ALIGN64(allocOut));
             std::memset(bottom_up, 0, ALIGN64(allocOut));
@@ -51,6 +48,7 @@ namespace Deep
         else
         {
             W = nullptr;
+            b = nullptr;
             mu = nullptr;
             sigma_prime = nullptr;
             bottom_up = nullptr;
@@ -65,6 +63,7 @@ namespace Deep
         if (nextSize > 0)
         {
             std::free(W);
+            std::free(b);
             std::free(mu);
             std::free(sigma_prime);
             std::free(bottom_up);
@@ -73,7 +72,7 @@ namespace Deep
 
     // Copy constructor
     DiscriminativePCLayer::DiscriminativePCLayer(const DiscriminativePCLayer &other)
-        : batchSize(other.batchSize), lr(other.lr), ir(other.ir), isClamped(other.isClamped),
+        : batchSize(other.batchSize), lr(other.lr), ir(other.ir), lmbda(other.lmbda), isClamped(other.isClamped),
           layerAbove(nullptr), layerBelow(nullptr),
           activation(other.activation), activationDerivative(other.activationDerivative)
     {
@@ -91,14 +90,17 @@ namespace Deep
         if (nextSize > 0)
         {
             size_t wSize = ALIGN64((size_t)nextSize * size * sizeof(float));
+            size_t bSize = ALIGN64(nextSize * sizeof(float));
             size_t allocOut = ALIGN64((size_t)batchSize * nextSize * sizeof(float));
 
             W = (float *)std::aligned_alloc(64, wSize);
+            b = (float *)std::aligned_alloc(64, bSize);
             mu = (float *)std::aligned_alloc(64, allocOut);
             sigma_prime = (float *)std::aligned_alloc(64, allocOut);
             bottom_up = (float *)std::aligned_alloc(64, allocOut);
 
             memcpy(W, other.W, wSize);
+            memcpy(b, other.b, bSize);
             memcpy(mu, other.mu, allocOut);
             memcpy(sigma_prime, other.sigma_prime, allocOut);
             memcpy(bottom_up, other.bottom_up, allocOut);
@@ -106,6 +108,7 @@ namespace Deep
         else
         {
             W = nullptr;
+            b = nullptr;
             mu = nullptr;
             sigma_prime = nullptr;
             bottom_up = nullptr;
@@ -124,6 +127,7 @@ namespace Deep
         if (nextSize > 0)
         {
             std::free(W);
+            std::free(b);
             std::free(mu);
             std::free(sigma_prime);
             std::free(bottom_up);
@@ -131,6 +135,7 @@ namespace Deep
 
         lr = other.lr;
         ir = other.ir;
+        lmbda = other.lmbda;
         isClamped = other.isClamped;
         size = other.size;
         nextSize = other.nextSize;
@@ -151,14 +156,17 @@ namespace Deep
         if (nextSize > 0)
         {
             size_t wSize = ALIGN64((size_t)nextSize * size * sizeof(float));
+            size_t bSize = ALIGN64(nextSize * sizeof(float));
             size_t allocOut = ALIGN64((size_t)batchSize * nextSize * sizeof(float));
 
             W = (float *)std::aligned_alloc(64, wSize);
+            b = (float *)std::aligned_alloc(64, bSize);
             mu = (float *)std::aligned_alloc(64, allocOut);
             sigma_prime = (float *)std::aligned_alloc(64, allocOut);
             bottom_up = (float *)std::aligned_alloc(64, allocOut);
 
             memcpy(W, other.W, wSize);
+            memcpy(b, other.b, bSize);
             memcpy(mu, other.mu, allocOut);
             memcpy(sigma_prime, other.sigma_prime, allocOut);
             memcpy(bottom_up, other.bottom_up, allocOut);
@@ -166,6 +174,7 @@ namespace Deep
         else
         {
             W = nullptr;
+            b = nullptr;
             mu = nullptr;
             sigma_prime = nullptr;
             bottom_up = nullptr;
@@ -176,6 +185,7 @@ namespace Deep
 
     DiscriminativePCLayer::DiscriminativePCLayer(DiscriminativePCLayer &&other) noexcept
         : W(other.W),
+          b(other.b),
           e(other.e),
           z(other.z),
           batchSize(other.batchSize),
@@ -185,6 +195,7 @@ namespace Deep
           bottom_up(other.bottom_up),
           lr(other.lr),
           ir(other.ir),
+          lmbda(other.lmbda),
           isClamped(other.isClamped),
           layerAbove(nullptr),
           layerBelow(nullptr),
@@ -195,6 +206,7 @@ namespace Deep
         this->nextSize = other.nextSize;
 
         other.W = nullptr;
+        other.b = nullptr;
         other.e = nullptr;
         other.z = nullptr;
         other.mu = nullptr;
@@ -203,7 +215,6 @@ namespace Deep
         other.bottom_up = nullptr;
     }
 
-    // Move assignment (pure pointer transfer -- unaffected by the direction change)
     DiscriminativePCLayer &DiscriminativePCLayer::operator=(DiscriminativePCLayer &&other)
     {
         if (this == &other)
@@ -215,6 +226,7 @@ namespace Deep
         if (nextSize > 0)
         {
             std::free(W);
+            std::free(b);
             std::free(mu);
             std::free(sigma_prime);
             std::free(bottom_up);
@@ -222,6 +234,7 @@ namespace Deep
 
         lr = other.lr;
         ir = other.ir;
+        lmbda = other.lmbda;
         isClamped = other.isClamped;
         size = other.size;
         nextSize = other.nextSize;
@@ -234,12 +247,13 @@ namespace Deep
         z = other.z;
         e = other.e;
         W = other.W;
+        b = other.b;
         mu = other.mu;
         sigma_prime = other.sigma_prime;
         dz_dt = other.dz_dt;
         bottom_up = other.bottom_up;
 
-        other.z = other.e = other.W = other.mu = nullptr;
+        other.z = other.e = other.W = other.b = other.mu = nullptr;
         other.sigma_prime = other.dz_dt = other.bottom_up = nullptr;
 
         return *this;
@@ -247,8 +261,6 @@ namespace Deep
 
     void DiscriminativePCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
     {
-        // Total element count (size*nextSize) is unchanged by the storage
-        // orientation flip; Xavier limit is symmetric in size/nextSize.
         std::uniform_int_distribution<uint32_t> seedDist;
         size_t Wsz = (size_t)size * nextSize;
         float limit = std::sqrt(6.0f / (size + nextSize));
@@ -260,47 +272,37 @@ namespace Deep
 #pragma omp parallel
         {
             std::mt19937 rng(seeds[omp_get_thread_num()]);
-            std::uniform_real_distribution<float> dist(-limit, limit);
+            std::normal_distribution<float> dist(0.0f, 1.0f);
 
 #pragma omp for
             for (size_t i = 0; i < Wsz; ++i)
                 W[i] = dist(rng);
         }
+
+        // Biases are kept at zero initially, so we don't randomize them here.
     }
 
     float DiscriminativePCLayer::CalculateState() noexcept
     {
         size_t N = (size_t)batchSize * size;
 
-        // Step 1: this layer's OWN error, from the prediction supplied by
-        // the layer BELOW (feedforward direction: below predicts above).
         if (layerBelow == nullptr)
         {
-            // Input layer: nothing predicts it. Trivial boundary; in normal
-            // usage this layer is always clamped, so this rarely matters.
-            cblas_scopy(N, z, 1, e, 1);
+            std::memset(e, 0, N * sizeof(float));
         }
         else
         {
-            // layerBelow already computed its own outgoing prediction (mu,
-            // sized batch x size, since layerBelow->nextSize == this->size)
-            // earlier THIS SAME sweep -- PCNetwork::CalculateState() walks
-            // layers front-to-back (input first), so layerBelow is always
-            // processed before this layer.
             cblas_scopy(N, z, 1, e, 1);
-            cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1); // e = z - mu_incoming
+            cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
         }
 
         float totalEnergy = 0.5f * cblas_sdot(N, e, 1, e, 1);
 
-        // Step 2: this layer's OWN outgoing prediction, targeting the layer
-        // above -- only if this layer owns an outgoing weight.
         if (nextSize > 0)
         {
             size_t Nout = (size_t)batchSize * nextSize;
 
             // pre(batch,nextSize) = z(batch,size) @ W^T(size,nextSize)
-            // W stored (nextSize, size) row-major.
             cblas_sgemm(
                 CblasRowMajor, CblasNoTrans, CblasTrans,
                 batchSize, nextSize, size,
@@ -308,6 +310,12 @@ namespace Deep
                 z, size,
                 W, size,
                 0.0f, mu, nextSize);
+
+            // Add the bias vector (b) to every row of the batch
+            for (int batch = 0; batch < batchSize; batch++)
+            {
+                cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+            }
 
             cblas_scopy(Nout, mu, 1, sigma_prime, 1); // stash RAW pre-activation
             activation(mu, Nout);
@@ -329,13 +337,9 @@ namespace Deep
         if (isClamped)
             return;
 
-        // Pull toward matching the incoming prediction from below.
         std::memset(dz_dt, 0, N * sizeof(float));
         cblas_saxpy(N, -1.0f, e, 1, dz_dt, 1);
 
-        // Feedback from layerAbove -- uses ONLY this layer's own W and
-        // sigma_prime, plus layerAbove's already-finalized public error.
-        // No cross-layer scratch-buffer dependency needed anymore.
         if (layerAbove != nullptr && nextSize > 0)
         {
             size_t Nout = (size_t)batchSize * nextSize;
@@ -343,10 +347,9 @@ namespace Deep
 
 #pragma omp simd
             for (size_t i = 0; i < Nout; i++)
-                bottom_up[i] = e_above[i] * sigma_prime[i]; // local_grad, using scratch buffer
+                bottom_up[i] = e_above[i] * sigma_prime[i];
 
             // dz_dt(batch,size) += local_grad(batch,nextSize) @ W(nextSize,size)
-            // W used directly, NO transpose (unlike step 2 in CalculateState).
             cblas_sgemm(
                 CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 batchSize, size, nextSize,
@@ -372,6 +375,10 @@ namespace Deep
         for (size_t i = 0; i < Nout; i++)
             local_grad[i] = e_above[i] * sigma_prime[i];
 
+        // L2 weight decay: W *= (1 - lmbda)
+        if (lmbda > 0.0f)
+            cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W, 1);
+
         // W(nextSize,size) += (lr/batch) * local_grad^T(nextSize,batch) @ z(batch,size)
         cblas_sgemm(
             CblasRowMajor, CblasTrans, CblasNoTrans,
@@ -380,14 +387,24 @@ namespace Deep
             local_grad, nextSize,
             z, size,
             1.0f, W, size);
+
+        float lr_batch = lr / batchSize;
+        for (int batch = 0; batch < batchSize; batch++)
+        {
+            cblas_saxpy(nextSize, lr_batch, local_grad + batch * nextSize, 1, b, 1);
+        }
+    }
+
+    void DiscriminativePCLayer::ResetState() noexcept
+    {
+        size_t N = (size_t)batchSize * size;
+        std::memset(z, 0, N * sizeof(float));
     }
 
     void DiscriminativePCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
-        // Unchanged -- still tiles a single vector across all batch slots
-        // (a known, separate pre-existing issue; out of scope here).
-        for (int b = 0; b < batchSize; b++)
-            memcpy(z + b * size, inputData.data(),
+        for (int b_idx = 0; b_idx < batchSize; b_idx++)
+            memcpy(z + b_idx * size, inputData.data(),
                    std::min(inputData.size(), (size_t)size) * sizeof(float));
         isClamped = true;
     }

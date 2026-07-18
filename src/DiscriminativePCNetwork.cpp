@@ -8,15 +8,15 @@ namespace Deep
             delete l;
     }
 
-    void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir,
-                             void (*act)(float *, size_t), void (*dAct)(float *, size_t))
+    void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
+                                           void (*act)(float *, size_t), void (*dAct)(float *, size_t))
     {
         if (autoSize && layers.empty())
         {
             batchSize = (int)Deep::AutoBatchSize(size, nextSize);
             autoSize = false;
         }
-        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, act, dAct);
+        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);
@@ -31,6 +31,12 @@ namespace Deep
             l->RandomizeWeights(rng);
     }
 
+    void DiscriminativePCNetwork::ResetState() noexcept
+    {
+        for (auto l : layers)
+            l->ResetState();
+    }
+
     void DiscriminativePCNetwork::Clamp(const std::vector<float> &input)
     {
         layers.front()->ClampState(input);
@@ -39,8 +45,8 @@ namespace Deep
     float DiscriminativePCNetwork::CalculateState()
     {
         float e = 0.0f;
-        for (auto l : layers)
-            e += l->CalculateState();
+        for (size_t i = 0; i < layers.size(); i++)
+            e += layers[i]->CalculateState();
         return e;
     }
 

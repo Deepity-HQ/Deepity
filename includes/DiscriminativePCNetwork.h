@@ -42,7 +42,7 @@ namespace Deep
         DiscriminativePCNetwork() : batchSize(0), autoSize(true) {}
         /// @brief Batched constructor
         /// @param batchSize Batch size
-        /// 
+        ///
         /// Initializes the network with a predetermined batch size.
         DiscriminativePCNetwork(int batchSize) : batchSize(batchSize), autoSize(false) {}
 
@@ -54,11 +54,12 @@ namespace Deep
         /// @param nextSize output size
         /// @param lr learning rate for beliefs
         /// @param ir learning rate for weights
+        /// @param lmbda weight decay (L2 regularization) coefficient
         /// @param act activation function
         /// @param dAct derivative of previous activation function
-        void AddLayer(int size, int nextSize, float lr, float ir,
+        void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                       void (*act)(float *, size_t), void (*dAct)(float *, size_t));
-        
+
         /// @brief Randomizes the weights of each layer
         /// @param rng The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &rng);
@@ -70,17 +71,26 @@ namespace Deep
         /// @brief Calculates the state of each layer
         /// @return Returns total energy
         float CalculateState();
-        
+
         /// @brief Updates each layer's state
         void UpdateState();
 
         /// @brief Updates each layer's weights
         void UpdateWeights();
 
-        const std::vector<DiscriminativePCLayer*> &GetLayers() const noexcept { return layers; }
+        void ResetState() noexcept;
+
+        const std::vector<DiscriminativePCLayer *> &GetLayers() const noexcept { return layers; }
 
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize
         int GetBatchSize() const noexcept { return batchSize; }
+
+        DiscriminativePCLayer *GetTerminalLayer() const
+        {
+            if (layers.empty())
+                return nullptr;
+            return layers.back();
+        }
     };
 }

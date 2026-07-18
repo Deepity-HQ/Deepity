@@ -1,118 +1,150 @@
-#include <chrono>
-#include <cmath>
-#include <string>
-#include <vector>
-#include <random>
-#include <iostream>
-#include <algorithm> // For std::max
-#include <cstring>   // For std::memcpy
-
+#include <math.h>
+#include <float.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "Activations.h"
 
-void naive_tanh(float *arr, size_t n) {
-    for (size_t i=0; i < n; i++) {
-        float po = expf(arr[i]);
-        float ne = expf(-arr[i]);
-        arr[i] = (po - ne) / (po + ne);
+typedef struct {
+    double max_abs;
+    double max_rel;
+    double rms;
+    float worst_x;
+    float expected;
+    float actual;
+} Stats;
+
+static Stats test_tanh(size_t n)
+{
+    float *input = (float *)malloc(n * sizeof(float));
+    float *test  = (float *)malloc(n * sizeof(float));
+
+    if (!input || !test) {
+        fprintf(stderr, "Allocation failed\n");
+        exit(1);
     }
-}
 
-void naive_relu(float *arr, size_t n) {
-    for (size_t i=0; i < n; i++) {
-        // Safe ternary replacement for MAX macro
-        arr[i] = (arr[i] > 0.0f) ? arr[i] : 0.0f;
+    Stats s = {0};
+
+    double sum_sq = 0.0;
+
+    for (size_t i = 0; i < n; ++i) {
+
+        // Uniformly sample [-10,10]
+        float x = -10.0f + 20.0f * (float)i / (float)(n - 1);
+
+        input[i] = x;
+        test[i] = x;
     }
-}
 
-void naive_sigmoid(float *arr, size_t n) {
-    for (size_t i=0; i < n; i++) {
-        arr[i] = 1.0f / (1.0f + expf(-arr[i]));
+    Deep::tanh(test, n);
+
+    for (size_t i = 0; i < n; ++i) {
+
+        float expected = tanhf(input[i]);
+        float actual   = test[i];
+
+        double abs_err = fabs((double)actual - expected);
+        double rel_err = abs_err / fmax(fabs(expected), 1e-30);
+
+        sum_sq += abs_err * abs_err;
+
+        if (abs_err > s.max_abs) {
+            s.max_abs = abs_err;
+            s.worst_x = input[i];
+            s.expected = expected;
+            s.actual = actual;
+        }
+
+        if (rel_err > s.max_rel)
+            s.max_rel = rel_err;
     }
+
+    s.rms = sqrt(sum_sq / n);
+
+    free(input);
+    free(test);
+
+    return s;
 }
 
-void std_tanh_bench(float *arr, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        arr[i] = std::tanh(arr[i]);
+static Stats test_dtanh(size_t n)
+{
+    float *input = (float *)malloc(n * sizeof(float));
+    float *test  = (float *)malloc(n * sizeof(float));
+
+    if (!input || !test) {
+        fprintf(stderr, "Allocation failed\n");
+        exit(1);
     }
-}
 
-void std_relu_bench(float *arr, size_t n) {
-    for (size_t i = 0; i < n; i++) {
-        arr[i] = std::max(0.0f, arr[i]);
+    Stats s = {0};
+
+    double sum_sq = 0.0;
+
+    for (size_t i = 0; i < n; ++i) {
+
+        float x = -10.0f + 20.0f * (float)i / (float)(n - 1);
+
+        input[i] = x;
+        test[i] = x;
     }
-}
 
-void do_not_optimize(float* arr, size_t n) {
-#if defined(__GNUC__) || defined(__clang__)
-    // This tells the compiler that the memory pointed to by 'arr' 
-    // has been read and modified, forcing it to execute all writes.
-    asm volatile("" : : "g"(arr) : "memory");
-#else
-    volatile float sink1 = arr[0];
-    volatile float sink2 = arr[n - 1];
-    (void)sink1; (void)sink2;
-#endif
-}
+    Deep::dTanh(test, n);
 
-template<typename Func>
-void run_benchmark(const std::string& name, const float *baseline, size_t n, Func func) {
-    // 1. Correctly allocate 64-bit (8-byte) aligned scratch memory for this specific run
-    // Note: n * sizeof(float) must be a multiple of the alignment (8), which your sizes are.
-    float *working_data = static_cast<float*>(std::aligned_alloc(64, n * sizeof(float)));
-    
-    // 2. Deep copy the original baseline data so the function gets fresh inputs
-    std::memcpy(working_data, baseline, n * sizeof(float));
-    
-    auto start = std::chrono::high_resolution_clock::now();
-    
-    func(working_data, n);
-    do_not_optimize(working_data, n);
-    
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> duration = end - start;
-    
-    std::cout << "  " << name << ": " << duration.count() << " ms\n";
-    
-    // 3. Clean up the scratch memory
-    std::free(working_data);
+    for (size_t i = 0; i < n; ++i) {
+
+        float t = tanhf(input[i]);
+        float expected = 1.0f - t * t;
+        float actual   = test[i];
+
+        double abs_err = fabs((double)actual - expected);
+        double rel_err = abs_err / fmax(fabs(expected), 1e-30);
+
+        sum_sq += abs_err * abs_err;
+
+        if (abs_err > s.max_abs) {
+            s.max_abs = abs_err;
+            s.max_rel = rel_err;
+            s.worst_x = input[i];
+            s.expected = expected;
+            s.actual = actual;
+        }
+
+        if (rel_err > s.max_rel)
+            s.max_rel = rel_err;
+    }
+
+    s.rms = sqrt(sum_sq / n);
+
+    free(input);
+    free(test);
+
+    return s;
 }
 
 int main(void)
 {
-    std::vector<size_t> sizes = {10'048, 1'000'064, 50'000'064};
-    
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dis(-3.0f, 3.0f);
+    const size_t N = 1000000;
 
-    for (size_t n : sizes) {
-        std::cout << "========================================\n";
-        std::cout << "Testing Size N = " << n << " (" << (n * sizeof(float)) / (1024.0 * 1024.0) << " MB)\n";
-        std::cout << "========================================\n";
-        
-        // Allocate baseline on an 8-byte boundary
-        float *baseline = static_cast<float*>(std::aligned_alloc(8, n * sizeof(float)));
-        for (size_t i = 0; i < n; ++i) {
-            baseline[i] = dis(gen);
-        }
+    Stats t = test_tanh(N);
+    Stats d = test_dtanh(N);
 
-        std::cout << "--- Tanh Performance ---\n";
-        run_benchmark("Naive Tanh (2x expf)", baseline, n, naive_tanh);
-        run_benchmark("Standard std::tanh  ", baseline, n, std_tanh_bench);
-        run_benchmark("Custom Tanh         ", baseline, n, Deep::tanh);
+    printf("===== tanh =====\n");
+    printf("Max abs error : %.9e\n", t.max_abs);
+    printf("Max rel error : %.9e\n", t.max_rel);
+    printf("RMS error     : %.9e\n", t.rms);
+    printf("Worst x       : %f\n", t.worst_x);
+    printf("Expected      : %.9f\n", t.expected);
+    printf("Actual        : %.9f\n\n", t.actual);
 
-        std::cout << "\n--- ReLU Performance ---\n";
-        run_benchmark("Naive ReLU (MAX)    ", baseline, n, naive_relu);
-        run_benchmark("Standard std::max   ", baseline, n, std_relu_bench);
-        run_benchmark("Custom ReLU         ", baseline, n, Deep::relu);
-        std::cout << "\n";
-
-        std::cout << "\n--- Sigmoid Performance ---\n";
-        run_benchmark("Naive Sigmoid    ", baseline, n, naive_sigmoid);
-        run_benchmark("Custom Sigmoid   ", baseline, n, Deep::sigmoid);
-
-        std::free(baseline);
-    }
+    printf("===== dTanh =====\n");
+    printf("Max abs error : %.9e\n", d.max_abs);
+    printf("Max rel error : %.9e\n", d.max_rel);
+    printf("RMS error     : %.9e\n", d.rms);
+    printf("Worst x       : %f\n", d.worst_x);
+    printf("Expected      : %.9f\n", d.expected);
+    printf("Actual        : %.9f\n", d.actual);
 
     return 0;
 }

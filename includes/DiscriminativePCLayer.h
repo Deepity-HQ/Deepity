@@ -50,10 +50,11 @@ namespace Deep
         /// @param batchSize Batch size (default to 1 for simplicity)
         /// @param learningRate Learning rate to update weights
         /// @param inferenceRate Learning rate to update state
+        /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param act Activation function
         /// @param dAct Derivative of Activation function
         DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
-            float learningRate = 1e-6, float inferenceRate = 0.1f,
+            float learningRate = 1e-6, float inferenceRate = 0.1f, float lmbda = 1e-2f,
               void (*act)(float *, size_t) = relu,
               void (*dAct)(float *, size_t) = dRelu);
 
@@ -89,10 +90,10 @@ namespace Deep
         /// \f]
         void UpdateState() noexcept override;
 
-        /// @brief Computes weight updates via gradient descent.
+        /// @brief Computes weight updates via gradient descent, with L2 weight decay.
         ///
         /// \f[
-        /// \Delta W^{(l)} = -\eta e^{(l)} (z^{(l+1)})^T
+        /// W^{(l)} \leftarrow (1 - \lambda) W^{(l)} - \eta e^{(l)} (z^{(l+1)})^T
         /// \f]
         void UpdateWeights() noexcept override;
 
@@ -132,6 +133,11 @@ namespace Deep
         /// @param below DiscriminativePCLayer*
         void SetLayerBelow(DiscriminativePCLayer *below) noexcept { layerBelow = below; }
 
+        void ResetState() noexcept;
+
+        const DiscriminativePCLayer &GetLayerAbove() const noexcept { return *layerAbove; }
+        const DiscriminativePCLayer &GetLayerBelow() const noexcept { return *layerBelow; }
+
         /// @brief Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.
         /// @param twister The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &twister) noexcept;
@@ -139,6 +145,8 @@ namespace Deep
     private:
         /// @brief Weights
         float *W;
+        /// @brief Biases
+        float *b;
         /// @brief Errors
         float *e;
         /// @brief Internal state
@@ -158,6 +166,8 @@ namespace Deep
         float lr;
         /// @brief Learning rate for internal state
         float ir;
+        /// @brief Weight decay (L2 regularization) coefficient
+        float lmbda;
         /// @brief Flag to tell if `ClampState` was called.
         bool isClamped = false;
 
