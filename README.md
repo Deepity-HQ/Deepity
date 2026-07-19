@@ -102,7 +102,7 @@ By sweeping the batch sizes, we identified the exact mathematical break-even poi
 | --- | --- | ---: | --- |
 | 16-256 | 1 | ~2.6k | Single-thread dominates |
 | 16-256 | 4 | ~2.5k | Multithreading penalizes performance |
-| 1024 | Max | ~11.7k | The Ignition Point (4.5x Speedup) |
+| **1024** | **Max** | **~11.7k** | **The Ignition Point (4.5x Speedup)** |
 | 16384 | Max | ~14.3k | Peak multi-threaded scaling |
 
 ### Memory Layout: Contiguous vs. Separate
