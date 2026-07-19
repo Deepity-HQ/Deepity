@@ -73,4 +73,27 @@ namespace Deep
 
         return pow2;
     }
+
+    static inline float hsum256_ps(__m256 x)
+    {
+        __m128 lo = _mm256_castps256_ps128(x);
+        __m128 hi = _mm256_extractf128_ps(x, 1);
+        lo = _mm_add_ps(lo, hi);
+
+        __m128 shuf = _mm_movehdup_ps(lo);
+        __m128 sums = _mm_add_ps(lo, shuf);
+        shuf = _mm_movehl_ps(shuf, sums);
+        sums = _mm_add_ss(sums, shuf);
+
+        return _mm_cvtss_f32(sums);
+    }
+
+    static inline float hsum128_ps(__m128 x)
+    {
+        __m128 shuf = _mm_movehdup_ps(x);
+        __m128 sums = _mm_add_ps(x, shuf);
+        shuf = _mm_movehl_ps(shuf, sums);
+        sums = _mm_add_ss(sums, shuf);
+        return _mm_cvtss_f32(sums);
+    }
 }

@@ -9,6 +9,7 @@
 #include "RBLayer.h"
 #include "DiscriminativePCNetwork.h"
 #include "Activations.h"
+#include "Optimize.h"
 
 namespace py = pybind11;
 
@@ -126,10 +127,22 @@ PYBIND11_MODULE(deepity, m)
             "Compute the total network energy.")
 
         .def(
+            "get_terminal_layer",
+            &Deep::DiscriminativePCNetwork::GetTerminalLayer,
+            "Return the last layer."
+        )
+
+        .def(
             "update_state",
             &Deep::DiscriminativePCNetwork::UpdateState,
             "Run one inference step.")
 
+        .def(
+            "reset_state",
+            &Deep::DiscriminativePCNetwork::ResetState,
+            "Resets the beliefs 'z'"
+        )
+        
         .def(
             "update_weights",
             &Deep::DiscriminativePCNetwork::UpdateWeights,
@@ -408,6 +421,9 @@ PYBIND11_MODULE(deepity, m)
                       ", batch=" +
                       std::to_string(self.GetBatchSize()) +
                       ">"; });
+
+    m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes);
+    m.def("auto_batch_size", &Deep::AutoBatchSize);
 
     // --- Activations ---
     m.def("relu", [](py::array_t<float> x)

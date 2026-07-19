@@ -4,13 +4,13 @@
 #include <cmath>
 #include <immintrin.h>
 #include <sleef.h>
+#include <omp.h>
 
 #if defined(_MSC_VER)
 #define RESTRICT __restrict
 #else
 #define RESTRICT __restrict__
 #endif
-
 
 /**
  * @file Activations.h
@@ -36,6 +36,94 @@
 
 namespace Deep
 {
+    using ActivationFn = void (*)(float *, size_t);
+    using DerivativeFn = void (*)(float *, size_t, bool);
+
+    enum class ActivationType : uint8_t
+    {
+        RELU,
+        dRELU,
+        SIGMOID,
+        dSIGMOID,
+        TANH,
+        dTANH,
+        LINEAR,
+        dLINEAR,
+        NONE
+    };
+
+    static inline void relu(float *, size_t) noexcept;
+    static inline void sigmoid(float *, size_t) noexcept;
+    static inline void tanh(float *, size_t) noexcept;
+    static inline void linear(float *, size_t) noexcept;
+
+    static inline void dRelu(float *, size_t, bool) noexcept;
+    static inline void dSigmoid(float *, size_t, bool) noexcept;
+    static inline void dTanh(float *, size_t, bool) noexcept;
+    static inline void dLinear(float *, size_t, bool) noexcept;
+
+    static inline ActivationFn To_Fn(ActivationType type)
+    {
+        switch (type)
+        {
+        case ActivationType::RELU:
+            return relu;
+        case ActivationType::SIGMOID:
+            return sigmoid;
+        case ActivationType::TANH:
+            return tanh;
+        case ActivationType::LINEAR:
+            return linear;
+        case ActivationType::NONE:
+        default:
+            return nullptr;
+        }
+    }
+
+    static inline DerivativeFn To_dFn(ActivationType dType)
+    {
+        switch (dType)
+        {
+        case ActivationType::dRELU:
+            return dRelu;
+        case ActivationType::dSIGMOID:
+            return dSigmoid;
+        case ActivationType::dTANH:
+            return dTanh;
+        case ActivationType::dLINEAR:
+            return dLinear;
+        case ActivationType::NONE:
+        default:
+            return nullptr;
+        }
+    }
+
+    static inline ActivationType To_AType(ActivationFn fn)
+    {
+        if (fn == relu)
+            return ActivationType::RELU;
+        if (fn == sigmoid)
+            return ActivationType::SIGMOID;
+        if (fn == tanh)
+            return ActivationType::TANH;
+        if (fn == linear)
+            return ActivationType::LINEAR;
+        return ActivationType::NONE;
+    }
+
+    static inline ActivationType To_AType(DerivativeFn dfn)
+    {
+        if (dfn == dRelu)
+            return ActivationType::dRELU;
+        if (dfn == dSigmoid)
+            return ActivationType::dSIGMOID;
+        if (dfn == dTanh)
+            return ActivationType::dTANH;
+        if (dfn == dLinear)
+            return ActivationType::dLINEAR;
+        return ActivationType::NONE;
+    }
+
     inline void expf_v(float *x, size_t n)
     {
         size_t i = 0;
@@ -83,6 +171,53 @@ namespace Deep
             x[i] = Sleef_expf_u10(x[i]);
         }
     }
+
+    inline void logf_v(float *x, size_t n)
+    {
+        size_t i = 0;
+
+#if defined(__AVX512F__)
+        size_t simd_end = n - (n % 16);
+
+        for (; i < simd_end; i += 16)
+        {
+            __m512 x_512 = _mm512_load_ps(x + i);
+
+            __m512 res = Sleef_logf16_u10avx512f(x_512);
+
+            _mm512_store_ps(x + i, res);
+        }
+
+#elif defined(__AVX2__)
+        size_t simd_end = n - (n % 8);
+
+        for (; i < simd_end; i += 8)
+        {
+            __m256 x_256 = _mm256_load_ps(x + i);
+
+            __m256 res = Sleef_logf8_u10avx2(x_256);
+
+            _mm256_store_ps(x + i, res);
+        }
+
+#elif defined(__SSE2__)
+        size_t simd_end = n - (n % 4);
+
+        for (; i < simd_end; i += 4)
+        {
+            __m128 x_128 = _mm_load_ps(x + i);
+
+            __m128 res = Sleef_logf4_u10sse2(x_128);
+
+            _mm_store_ps(x + i, res);
+        }
+#endif
+        for (; i < n; ++i)
+        {
+            x[i] = Sleef_logf_u10(x[i]);
+        }
+    }
+
 #pragma region relu
     /// @brief RELU(x) = MAX(0, x) for all x
     /// @param x array, \em assumed to be 64-bit aligned!

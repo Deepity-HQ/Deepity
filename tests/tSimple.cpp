@@ -101,6 +101,7 @@ int main(void)
 
             // Weight update
             net.UpdateWeights();
+            net.UpdatePrecision();
             net.GetTerminalLayer()->UnclampState();
         }
 

@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include "DiscriminativePCLayer.h"
 #include "Optimize.h"
@@ -78,6 +79,8 @@ namespace Deep
         /// @brief Updates each layer's weights
         void UpdateWeights();
 
+        void UpdatePrecision();
+
         void ResetState() noexcept;
 
         const std::vector<DiscriminativePCLayer *> &GetLayers() const noexcept { return layers; }
@@ -92,5 +95,8 @@ namespace Deep
                 return nullptr;
             return layers.back();
         }
+
+        bool Save(const std::string &filename) const noexcept;
+        bool Load(const std::string &filename) noexcept;
     };
 }

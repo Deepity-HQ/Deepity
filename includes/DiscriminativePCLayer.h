@@ -3,6 +3,8 @@
 #include <vector>
 #include <stdexcept>
 #include <random>
+#include <memory>
+#include <cstdlib>
 #include "Activations.h"
 #include "Layer.h"
 
@@ -58,24 +60,6 @@ namespace Deep
                               void (*act)(float *, size_t) = relu,
                               void (*dAct)(float *, size_t, bool) = dRelu);
 
-        /// @brief Destructor
-        ~DiscriminativePCLayer() override;
-
-        /// @brief Copy constructor
-        /// @param other Layer to copy from
-        DiscriminativePCLayer(const DiscriminativePCLayer &other);
-        /// @brief Copy assignment
-        /// @param other Layer to copy from
-        /// @return Copied layer
-        DiscriminativePCLayer &operator=(const DiscriminativePCLayer &other);
-        /// @brief Move constructor
-        /// @param other Layer to move from
-        DiscriminativePCLayer(DiscriminativePCLayer &&other) noexcept;
-        /// @brief Move assignment
-        /// @param other Layer to move from
-        /// @return Moved layer
-        DiscriminativePCLayer &operator=(DiscriminativePCLayer &&other);
-
         /// @brief Calculates the total network energy state.
         ///
         /// \f[
@@ -97,6 +81,8 @@ namespace Deep
         /// \f]
         void UpdateWeights() noexcept override;
 
+        void UpdatePrecision() noexcept;
+
         /// @brief Does nothing; exists for class extension.
         void Flush() noexcept override {} // no buffer
 
@@ -108,10 +94,10 @@ namespace Deep
 
         /// @brief Returns beliefs
         /// @return float *z
-        float *GetBeliefs() noexcept override { return z; }
+        float *GetBeliefs() noexcept override { return z.get(); }
         /// @brief Returns errors
         /// @return float *e
-        const float *GetErrors() const noexcept override { return e; }
+        const float *GetErrors() const noexcept override { return e.get(); }
         /// @brief Returns size (input size)
         /// @return size_t size
         size_t GetInputSize() const noexcept override { return size; }
@@ -124,7 +110,16 @@ namespace Deep
 
         /// @brief Returns a read-only version of the stored weights
         /// @return const float *W
-        const float *GetWeights() const noexcept { return W; }
+        const float *GetWeights() const noexcept { return W.get(); }
+        float *GetWeights() noexcept { return W.get(); }
+        /// @brief Returns a read-only version of the stored biases
+        /// @return const float *b
+        const float *GetBiases() const noexcept { return b.get(); }
+        float *GetBiases() noexcept { return b.get(); }
+
+        float GetLearningRate() const noexcept { return lr; }
+        float GetInferenceRate() const noexcept { return ir; }
+        float GetLambda() const noexcept { return lmbda; }
 
         /// @brief Ties this layer to one above it
         /// @param above DiscriminativePCLayer*
@@ -147,29 +142,40 @@ namespace Deep
         /// @param twister The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
+        ActivationType GetActivationType() const noexcept { return To_AType(activation); }
+        ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
+
     private:
+        using AlignedBuffer = std::unique_ptr<float[], decltype(&std::free)>;
+
         /// @brief Weights
-        float *W;
+        AlignedBuffer W{nullptr, std::free};
         /// @brief Biases
-        float *b;
+        AlignedBuffer b{nullptr, std::free};
         /// @brief Errors
-        float *e;
+        AlignedBuffer e{nullptr, std::free};
         /// @brief Internal state
-        float *z;
+        AlignedBuffer z{nullptr, std::free};
+        /// @brief Precision
+        AlignedBuffer p{nullptr, std::free};
+        /// @brief Log of Precision
+        AlignedBuffer log_p{nullptr, std::free};
 
         /// @brief Used for `cblas_sgemm` optimization
         int batchSize;
 
         // @internal --- For inference ---
-        float *mu;
-        float *dz_dt;
-        float *bottom_up;
+        AlignedBuffer mu{nullptr, std::free};
+        AlignedBuffer dz_dt{nullptr, std::free};
+        AlignedBuffer bottom_up{nullptr, std::free};
         // ------
 
         /// @brief Learning rate for weights
         float lr;
         /// @brief Learning rate for internal state
         float ir;
+        ///@brief Learning rate for precision
+        float pr;
         /// @brief Weight decay (L2 regularization) coefficient
         float lmbda;
         /// @brief Flag to tell if `ClampState` was called.
@@ -180,9 +186,9 @@ namespace Deep
         /// @brief Pointer to previous layer (or `nullptr` if first one)
         DiscriminativePCLayer *layerBelow;
         /// @brief Activation function, with parameters `(float *array, size_t arraysize)`
-        void (*activation)(float *, size_t);
-        /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize)`
-        void (*activationDerivative)(float *, size_t, bool);
+        ActivationFn activation;
+        /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize, bool activated)`
+        DerivativeFn activationDerivative;
     };
 
 } // namespace Deep
