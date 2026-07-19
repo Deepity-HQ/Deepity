@@ -25,34 +25,8 @@ namespace Deep
         this->nextSize = nextSize;
         DynamicThread(batchSize);
 
-        size_t allocOwn = (size_t)batchSize * size * sizeof(float);     // z, e, dz_dt
-        size_t allocOut = (size_t)batchSize * nextSize * sizeof(float); // mu, scratch
-        size_t allocBias = nextSize * sizeof(float);                    // b
-        size_t allocPrecision = size * sizeof(float);                   // p
-
-        z.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocOwn))));
-        e.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocOwn))));
-        p.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocPrecision))));
-        log_p.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocPrecision))));
-        dz_dt.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocOwn))));
-        std::memset(z.get(), 0, ALIGN64(allocOwn));
-        std::memset(e.get(), 0, ALIGN64(allocOwn));
-        std::fill_n(p.get(), size, 1.0f);
-        std::fill_n(log_p.get(), size, 0.0f);
-        std::memset(dz_dt.get(), 0, ALIGN64(allocOwn));
-
-        if (nextSize > 0)
-        {
-            W.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64((size_t)nextSize * size * sizeof(float)))));
-            b.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocBias))));
-            mu.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocOut))));
-            bottom_up.reset(static_cast<float *>(std::aligned_alloc(64, ALIGN64(allocOut))));
-
-            std::memset(b.get(), 0, ALIGN64(allocBias));
-            std::memset(mu.get(), 0, ALIGN64(allocOut));
-            std::memset(bottom_up.get(), 0, ALIGN64(allocOut));
-            // W left uninitialized -- RandomizeWeights() must run first.
-        }
+        localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
+        BindMemory(*localArena);
     }
 
     void DiscriminativePCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
@@ -72,7 +46,7 @@ namespace Deep
 
 #pragma omp for
             for (size_t i = 0; i < Wsz; ++i)
-                W.get()[i] = dist(rng);
+                W[i] = dist(rng);
         }
 
         // Biases are kept at zero initially, so we don't randomize them here.
@@ -84,17 +58,17 @@ namespace Deep
 
         if (layerBelow == nullptr)
         {
-            std::memset(e.get(), 0, N * sizeof(float));
+            std::memset(e, 0, N * sizeof(float));
         }
         else
         {
-            cblas_scopy(N, z.get(), 1, e.get(), 1);
-            cblas_saxpy(N, -1.0f, layerBelow->mu.get(), 1, e.get(), 1);
+            cblas_scopy(N, z, 1, e, 1);
+            cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
         }
 
         float totalEnergy = 0.0f;
 
-#pragma omp parallel for schedule(static) reduction(+:totalEnergy)
+#pragma omp parallel for schedule(static) reduction(+ : totalEnergy)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const size_t offset = (size_t)batch * size;
@@ -202,20 +176,20 @@ namespace Deep
                 nextSize,
                 size,
                 1.0f,
-                z.get(),
+                z,
                 size,
-                W.get(),
+                W,
                 size,
                 0.0f,
-                mu.get(),
+                mu,
                 nextSize);
 
             for (int batch = 0; batch < batchSize; ++batch)
                 cblas_saxpy(nextSize, 1.0f,
-                            b.get(), 1,
-                            mu.get() + batch * nextSize, 1);
+                            b, 1,
+                            mu + batch * nextSize, 1);
 
-            activation(mu.get(), Nout);
+            activation(mu, Nout);
         }
 
         return totalEnergy;
@@ -228,7 +202,7 @@ namespace Deep
         if (nextSize > 0)
         {
             size_t Nout = (size_t)batchSize * nextSize;
-            activationDerivative(mu.get(), Nout, true); // raw activation -> f'(), in place
+            activationDerivative(mu, Nout, true); // raw activation -> f'(), in place
         }
 
         if (isClamped)
@@ -321,19 +295,19 @@ namespace Deep
             }
 #endif
             for (size_t i = simd_end; i < Nout; ++i)
-                bottom_up.get()[i] = e_above[i] * mu.get()[i];
+                bottom_up[i] = e_above[i] * mu[i];
 
             // dz_dt(batch,size) += local_grad(batch,nextSize) @ W(nextSize,size)
             cblas_sgemm(
                 CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 batchSize, size, nextSize,
                 1.0f,
-                bottom_up.get(), nextSize,
-                W.get(), size,
-                1.0f, dz_dt.get(), size); // beta=1: accumulate directly
+                bottom_up, nextSize,
+                W, size,
+                1.0f, dz_dt, size); // beta=1: accumulate directly
         }
 
-        cblas_saxpy(N, ir, dz_dt.get(), 1, z.get(), 1);
+        cblas_saxpy(N, ir, dz_dt, 1, z, 1);
     }
 
     void DiscriminativePCLayer::UpdateWeights() noexcept
@@ -343,7 +317,7 @@ namespace Deep
 
         size_t Nout = (size_t)batchSize * nextSize;
         const float *e_above = layerAbove->GetErrors();
-        float *local_grad = bottom_up.get(); // scratch, same buffer as UpdateState's feedback term
+        float *local_grad = bottom_up; // scratch, same buffer as UpdateState's feedback term
 
         size_t simd_end = 0;
 #if defined(__AVX512F__)
@@ -379,11 +353,11 @@ namespace Deep
 #endif
 
         for (size_t i = simd_end; i < Nout; i++)
-            local_grad[i] = e_above[i] * mu.get()[i];
+            local_grad[i] = e_above[i] * mu[i];
 
         // L2 weight decay: W *= (1 - lmbda)
         if (lmbda > 0.0f)
-            cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W.get(), 1);
+            cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W, 1);
 
         // W(nextSize,size) += (lr/batch) * local_grad^T(nextSize,batch) @ z(batch,size)
         cblas_sgemm(
@@ -391,13 +365,13 @@ namespace Deep
             nextSize, size, batchSize,
             lr / batchSize,
             local_grad, nextSize,
-            z.get(), size,
-            1.0f, W.get(), size);
+            z, size,
+            1.0f, W, size);
 
         float lr_batch = lr / batchSize;
         for (int batch = 0; batch < batchSize; batch++)
         {
-            cblas_saxpy(nextSize, lr_batch, local_grad + batch * nextSize, 1, b.get(), 1);
+            cblas_saxpy(nextSize, lr_batch, local_grad + batch * nextSize, 1, b, 1);
         }
     }
 
@@ -405,7 +379,7 @@ namespace Deep
     {
         if (layerBelow == nullptr)
             return;
-        
+
         size_t simd_end = 0;
 
 #if defined(__AVX512F__)
@@ -556,19 +530,81 @@ namespace Deep
     void DiscriminativePCLayer::ResetState() noexcept
     {
         size_t N = (size_t)batchSize * size;
-        std::memset(z.get(), 0, N * sizeof(float));
+        std::memset(z, 0, N * sizeof(float));
     }
 
     void DiscriminativePCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
         // Safely copy the entire batched array directly into memory in one shot
         size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
-        memcpy(z.get(), inputData.data(), copySize);
+        memcpy(z, inputData.data(), copySize);
         isClamped = true;
     }
 
     void DiscriminativePCLayer::UnclampState() noexcept
     {
         isClamped = false;
+    }
+
+    size_t DiscriminativePCLayer::GetRequiredFloats() const noexcept
+    {
+        size_t total = 0;
+
+        // Base states (z, e, dz_dt)
+        total += ((size_t)batchSize * size) * 3;
+
+        // Precision states (p, log_p)
+        total += (size_t)size * 2;
+
+        if (nextSize > 0)
+        {
+            // Weights (W) and Biases (b)
+            total += ((size_t)size * nextSize) + nextSize;
+
+            // Forward/Backward feedback buffers (mu, bottom_up)
+            total += ((size_t)batchSize * nextSize) * 2;
+        }
+
+        return total;
+    }
+
+    void DiscriminativePCLayer::BindMemory(MemoryArena &arena)
+    {
+        size_t own_state_size = (size_t)batchSize * size;
+        size_t out_state_size = (size_t)batchSize * nextSize;
+
+        // Allocate local states
+        z = arena.AllocateFloats(own_state_size);
+        e = arena.AllocateFloats(own_state_size);
+        dz_dt = arena.AllocateFloats(own_state_size);
+        p = arena.AllocateFloats(size);
+        log_p = arena.AllocateFloats(size);
+
+        // Initialize local states
+        std::memset(z, 0, own_state_size * sizeof(float));
+        std::memset(e, 0, own_state_size * sizeof(float));
+        std::memset(dz_dt, 0, own_state_size * sizeof(float));
+        std::fill_n(p, size, 1.0f);
+        std::fill_n(log_p, size, 0.0f);
+
+        // Allocate and initialize projection states
+        if (nextSize > 0)
+        {
+            W = arena.AllocateFloats((size_t)size * nextSize);
+            b = arena.AllocateFloats(nextSize);
+            mu = arena.AllocateFloats(out_state_size);
+            bottom_up = arena.AllocateFloats(out_state_size);
+
+            std::memset(b, 0, nextSize * sizeof(float));
+            std::memset(mu, 0, out_state_size * sizeof(float));
+            std::memset(bottom_up, 0, out_state_size * sizeof(float));
+        }
+
+        // If a Network is overriding the memory with a global arena,
+        // release the local standalone arena to prevent memory leaks.
+        if (localArena && localArena.get() != &arena)
+        {
+            localArena.reset();
+        }
     }
 }

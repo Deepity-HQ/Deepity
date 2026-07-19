@@ -50,6 +50,9 @@ namespace Deep
         /// @brief Default constructor; deletes each layer.
         ~DiscriminativePCNetwork();
 
+        DiscriminativePCNetwork(DiscriminativePCNetwork &&other) noexcept = default;
+        DiscriminativePCNetwork &operator=(DiscriminativePCNetwork &&other) noexcept = default;
+
         /// @brief Adds a layer to the network.
         /// @param size input size
         /// @param nextSize output size
@@ -96,7 +99,7 @@ namespace Deep
                 return nullptr;
             return layers.back();
         }
-        
+
         /// @brief Runs a complete training step (clamp, settle, update, unclamp)
         /// @param x The batched input data
         /// @param y The batched target data
@@ -112,5 +115,10 @@ namespace Deep
 
         bool Save(const std::string &filename) const noexcept;
         bool Load(const std::string &filename) noexcept;
+
+        void Compile();
+
+    private:
+        std::unique_ptr<MemoryArena> arena;
     };
 }

@@ -255,4 +255,24 @@ namespace Deep
 
         return in.good();
     }
+
+    void DiscriminativePCNetwork::Compile()
+    {
+        size_t total_floats_needed = 0;
+
+        // 1. Calculate the exact footprint of the entire network
+        for (auto *layer : layers)
+        {
+            total_floats_needed += layer->GetRequiredFloats();
+        }
+
+        // 2. Allocate the single contiguous block of memory
+        arena = std::make_unique<MemoryArena>(total_floats_needed);
+
+        // 3. Bind every layer sequentially into the arena
+        for (auto *layer : layers)
+        {
+            layer->BindMemory(*arena);
+        }
+    }
 }

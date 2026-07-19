@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include "Activations.h"
 #include "Layer.h"
+#include "MemoryArena.h"
 
 /**
  * @file DiscriminativePCLayer.h
@@ -95,10 +96,10 @@ namespace Deep
 
         /// @brief Returns beliefs
         /// @return float *z
-        float *GetBeliefs() noexcept override { return z.get(); }
+        float *GetBeliefs() noexcept override { return z; }
         /// @brief Returns errors
         /// @return float *e
-        const float *GetErrors() const noexcept override { return e.get(); }
+        const float *GetErrors() const noexcept override { return e; }
         /// @brief Returns size (input size)
         /// @return size_t size
         size_t GetInputSize() const noexcept override { return size; }
@@ -111,12 +112,12 @@ namespace Deep
 
         /// @brief Returns a read-only version of the stored weights
         /// @return const float *W
-        const float *GetWeights() const noexcept { return W.get(); }
-        float *GetWeights() noexcept { return W.get(); }
+        const float *GetWeights() const noexcept { return W; }
+        float *GetWeights() noexcept { return W; }
         /// @brief Returns a read-only version of the stored biases
         /// @return const float *b
-        const float *GetBiases() const noexcept { return b.get(); }
-        float *GetBiases() noexcept { return b.get(); }
+        const float *GetBiases() const noexcept { return b; }
+        float *GetBiases() noexcept { return b; }
 
         float GetLearningRate() const noexcept { return lr; }
         float GetInferenceRate() const noexcept { return ir; }
@@ -147,29 +148,36 @@ namespace Deep
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
         ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
 
-    private:
-        using AlignedBuffer = std::unique_ptr<float[], decltype(&std::free)>;
+        /// @brief Calculates exact float count required by this layer's architecture
+        size_t GetRequiredFloats() const noexcept;
 
+        /// @brief Binds all tensor pointers to the contiguous memory block
+        void BindMemory(MemoryArena &arena);
+
+    private:
+    
+        /// @brief Local fallback memory for standalone layer instantiation
+        std::unique_ptr<MemoryArena> localArena;
         /// @brief Weights
-        AlignedBuffer W{nullptr, std::free};
+        float *W;
         /// @brief Biases
-        AlignedBuffer b{nullptr, std::free};
+        float *b;
         /// @brief Errors
-        AlignedBuffer e{nullptr, std::free};
+        float *e;
         /// @brief Internal state
-        AlignedBuffer z{nullptr, std::free};
+        float *z;
         /// @brief Precision
-        AlignedBuffer p{nullptr, std::free};
+        float *p;
         /// @brief Log of Precision
-        AlignedBuffer log_p{nullptr, std::free};
+        float *log_p;
 
         /// @brief Used for `cblas_sgemm` optimization
         int batchSize;
 
         // @internal --- For inference ---
-        AlignedBuffer mu{nullptr, std::free};
-        AlignedBuffer dz_dt{nullptr, std::free};
-        AlignedBuffer bottom_up{nullptr, std::free};
+        float *mu;
+        float *dz_dt;
+        float *bottom_up;
         // ------
 
         /// @brief Learning rate for weights

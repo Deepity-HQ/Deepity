@@ -10,17 +10,17 @@ Deepity is a Predictive Coding (PC) library engineered from the ground up for ze
 
 ## 🚀 Performance at a Glance
 
-Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **119 GFLOPS** during predictive-coding inference and learning when compiled with Clang (LLVM).
+Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **123 GFLOPS** during predictive-coding inference and learning when compiled with Clang (LLVM).
 
 **Benchmark Configuration:**
 * **Architecture:** 784 → 512 → 256 → 64 → 10
 * **Batch size:** 256
 * **Iterations:** 157
-* **Average runtime:** ~1.210 s
+* **Average runtime:** ~1.175 s (CPU time)
 
 The dominant computation consists of batched single-precision matrix multiplications (`SGEMM`), corresponding to roughly 144.4 GFLOPs of floating-point work:
 
-$$\frac{144.4 \text{ GFLOPs}}{1.210 \text{ s}} \approx 119.3 \text{ GFLOPS}$$
+$$ \frac{144.4 \text{ GFLOPs}}{1.175 \text{ s}} \approx 122.89 \text{ GFLOPS} $$
 
 By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running significantly faster than an equivalent, highly vectorized NumPy implementation. 
 
@@ -43,12 +43,11 @@ Recent benchmarking indicates that compiling Deepity with Clang (LLVM) provides 
 *   **End-to-End Training:** A full training epoch (`BM_Network_TrainEpoch/128`) completes in 161,998 ns under Clang, a measurable improvement over GCC's 166,488 ns.
 *   **Inference Speed:** Network inference (`BM_Network_Inference/128`) executes in 44,791 ns with Clang, compared to 47,225 ns with GCC.
 
-| Benchmark Workload (Size 128) | Clang CPU Time | GCC CPU Time |
+| Benchmark Workload (Size 128) | Deepity v2 (MemoryArena) | Deepity v1 (Legacy) |
 | :--- | :--- | :--- |
-| `BM_Network_Inference` | **44,791 ns** | 47,225 ns |
-| `BM_Network_TrainSample` | **38,094 ns** | 41,245 ns |
-| `BM_Network_TrainEpoch` | **161,998 ns** | 166,488 ns |
-| `BM_Layer_UpdateWeights` | **0.671 ns** | 1.24 ns |
+| `BM_Network_Inference` | **11,245 ns** | 44,791 ns |
+| `BM_Network_TrainSample` | **12,988 ns** | 38,094 ns |
+| `BM_Layer_UpdateWeights` | **0.665 ns** | 0.671 ns |
 
 *(Note: GCC retains a slight edge in linear derivative calculations and weight randomization, but Clang wins heavily in the primary training loop).*
 
@@ -122,34 +121,45 @@ We tested `OpenRAND` against the standard `std::mt19937` generator. Because the 
 
 ### C++
 
-Running a Predictive Coding layer in Deepity is built to be straightforward and explicit.
+Running a Predictive Coding network in Deepity is built to be straightforward and explicit. The `DiscriminativePCNetwork` abstraction automatically manages layer hierarchies, bidirectionality, and dynamic thread scaling based on batch size.
 
 ```cpp
-#include "PCLayer.h"
+#include "DiscriminativePCNetwork.h"
 #include "Activations.h"
 #include <vector>
+#include <random>
+#include <iostream>
 
 int main() {
-    Deep::PCLayer pc(1000, 100);
-    std::vector<float> input_sample(1000, 0.5f);
-    
-    pc.ClampState(input_sample);
+    // Initialize a network with a batch size of 4 (e.g., for XOR)
+    Deep::DiscriminativePCNetwork net(4);
 
-    for (int i = 0; i < 157; ++i) {
-        pc.CalculateState();
-        pc.UpdateState();
+    // Architecture: Input(2) -> Hidden(8) -> Terminal(1)
+    // AddLayer(in, out, lr, ir, pr, lmbda, activation, derivative)
+    net.AddLayer(2, 8, 0.05f, 0.3f, 0.00f, 0.0001f, Deep::tanh, Deep::dTanh);
+    net.AddLayer(8, 1, 0.05f, 0.3f, 0.00f, 0.0001f, Deep::linear, Deep::dLinear);
+
+    std::mt19937 rng(42);
+    net.RandomizeWeights(rng);
+
+    // Flattened, row-major input/target data
+    std::vector<float> X = {-1,-1, -1,1, 1,-1, 1,1};
+    std::vector<float> Y = {-1, 1, 1, -1};
+
+    // Train using the clean TrainStep API (150 relaxation steps per epoch)
+    for (int epoch = 0; epoch < 1500; ++epoch) {
+        float energy = net.TrainStep(X, Y, 150);
     }
 
-    pc.UpdateWeights();
-    pc.UnclampState();
+    // Run inference using the Predict API
+    std::vector<float> predictions = net.Predict(X, 150);
 
-    #ifdef _DEBUG
-    pc.DebugStats();
-    #endif
+    for (float pred : predictions) {
+        std::cout << "Prediction: " << pred << "\n";
+    }
 
     return 0;
 }
-```
 
 ## 📅 Roadmap
 
@@ -159,7 +169,8 @@ int main() {
 - [x] Python bindings (pybind11 + NumPy support)
 - [x] API reference documentation (Doxygen)
 - [x] Multithreading and Precision Metrics
-- [ ] File IO Support
+- [x] Memory Arena Contiguity
+- [-] File IO Support
 - [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
 - [ ] Java port
 
