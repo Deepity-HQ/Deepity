@@ -96,6 +96,19 @@ namespace Deep
                 return nullptr;
             return layers.back();
         }
+        
+        /// @brief Runs a complete training step (clamp, settle, update, unclamp)
+        /// @param x The batched input data
+        /// @param y The batched target data
+        /// @param inferenceSteps The number of relaxation iterations
+        /// @return The final energy state of the network before weight updates
+        float TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+
+        /// @brief Runs a forward prediction pass (clamp, settle, read)
+        /// @param x The batched input data
+        /// @param inferenceSteps The number of relaxation iterations
+        /// @return A vector containing the batched predictions
+        std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
         bool Save(const std::string &filename) const noexcept;
         bool Load(const std::string &filename) noexcept;

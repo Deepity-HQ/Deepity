@@ -1,11 +1,17 @@
 #pragma once
 #include <cstddef>
 #include <memory>
+#include <omp.h>
 #ifdef __linux__
 #include <fstream>
 #elif defined(_WIN32)
 #include <windows.h>
 #endif
+
+extern "C"
+{
+    void openblas_set_num_threads(int num_threads);
+}
 
 /**
  * @file Optimize.h
@@ -72,6 +78,22 @@ namespace Deep
             pow2 = 512;
 
         return pow2;
+    }
+
+    static inline void DynamicThread(int batchSize) noexcept
+    {
+        static int currentThreads = -1;
+
+        // Threshold found during benchmarking.
+        const int THRESHOLD = 512;
+        int targetThreads = (batchSize < THRESHOLD) ? 1 : omp_get_num_procs();
+
+        if (currentThreads != targetThreads)
+        {
+            omp_set_num_threads(targetThreads);
+            openblas_set_num_threads(targetThreads);
+            currentThreads = targetThreads;
+        }
     }
 
     static inline float hsum256_ps(__m256 x)

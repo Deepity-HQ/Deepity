@@ -175,7 +175,7 @@ set_target_properties(deepity PROPERTIES
 # --------------------------------------------------------------------
 
 add_executable(DeepityTests
-    tests/tSimple.cpp
+    tests/tBenchmark.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE

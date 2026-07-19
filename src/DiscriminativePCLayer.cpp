@@ -23,6 +23,7 @@ namespace Deep
     {
         this->size = size;
         this->nextSize = nextSize;
+        DynamicThread(batchSize);
 
         size_t allocOwn = (size_t)batchSize * size * sizeof(float);     // z, e, dz_dt
         size_t allocOut = (size_t)batchSize * nextSize * sizeof(float); // mu, scratch

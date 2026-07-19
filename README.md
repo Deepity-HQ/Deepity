@@ -92,6 +92,19 @@ Batching provides massive scaling. A batch size of **256** proved to be the swee
 | **256** | **2233** |
 | 512 | 2265 |
 
+### Dynamic Thread Scheduling
+
+During the implementation of OpenMP and OpenBLAS multithreading, benchmarking revealed a severe performance trap: **oversubscription and thread spin-up overhead**. For smaller batch sizes, the CPU spent more time waking up threads and managing locks than performing the actual matrix math, causing multi-threaded runs to perform worse than single-threaded execution.
+
+By sweeping the batch sizes, we identified the exact mathematical break-even point where matrix payloads outgrow OS thread latency.
+
+| Batch Size | Threads | Throughput (Items/sec) | Verdict |
+| --- | --- | ---: | --- |
+| 16-256 | 1 | ~2.6k | Single-thread dominates |
+| 16-256 | 4 | ~2.5k | Multithreading penalizes performance |
+| 1024 | Max | ~11.7k | The Ignition Point (4.5x Speedup) |
+| 16384 | Max | ~14.3k | Peak multi-threaded scaling |
+
 ### Memory Layout: Contiguous vs. Separate
 Packing all layer attributes into a single flat array showed zero performance penalty over separate heap allocations, while providing vastly simpler alignment guarantees and predictable cache behavior.
 
@@ -145,7 +158,7 @@ int main() {
 - [x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
 - [x] Python bindings (pybind11 + NumPy support)
 - [x] API reference documentation (Doxygen)
-- [ ] Multithreading and Precision Metrics
+- [x] Multithreading and Precision Metrics
 - [ ] File IO Support
 - [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
 - [ ] Java port

@@ -19,7 +19,7 @@ float WeightNorm(Deep::DiscriminativePCLayer *layer, size_t count)
 
 int main(void)
 {
-    Deep::DiscriminativePCNetwork net(4); // batchSize=4, all 4 XOR examples trained together
+    Deep::DiscriminativePCNetwork net(4); 
     Timer timer;
 
     net.AddLayer(2, 8, 0.05f, 0.3f, 0.000f, 0.0001f, Deep::tanh, Deep::dTanh);
@@ -34,7 +34,6 @@ int main(void)
     auto *layer1 = static_cast<Deep::DiscriminativePCLayer *>(layers[1]);
     float initialW0Norm = WeightNorm(layer0, 2 * 8);
 
-    // Flattened, row-major: 4 examples x 2 inputs / x 1 target
     std::vector<float> flatX = {
         -1.0f, -1.0f,
         -1.0f, +1.0f,
@@ -48,26 +47,15 @@ int main(void)
 
     int epochs = 5000;
     int inferenceSteps = 50;
-    int reportEvery = 100; // dense enough to catch a cliff, not just its aftermath
+    int reportEvery = 100; 
 
-    std::cout << "Starting Discriminative PC XOR Test (batched, instrumented)...\n";
+    std::cout << "Starting Discriminative PC XOR Test (Clean API)...\n";
 
     double start = timer.elapsed();
     for (int epoch = 0; epoch < epochs; epoch++)
     {
-        net.ResetState();
-        net.Clamp(flatX);
-        net.GetTerminalLayer()->ClampState(flatY);
-
-        float energy = 0.0f;
-        for (int t = 0; t < inferenceSteps; t++)
-        {
-            energy = net.CalculateState();
-            net.UpdateState();
-        }
-
-        net.UpdateWeights();
-        net.GetTerminalLayer()->UnclampState();
+        // One clean method to handle the entire training step
+        float energy = net.TrainStep(flatX, flatY, inferenceSteps);
 
         if (epoch % reportEvery == 0)
         {
@@ -83,31 +71,20 @@ int main(void)
 
             if (w0norm > 10.0f * initialW0Norm && w0norm > 20.0f)
             {
-                std::cout << "  *** WARNING: W0 norm jumped far beyond init scale ("
-                           << initialW0Norm << " -> " << w0norm << "). "
-                           << "Possible instability/cliff at this epoch. ***\n";
+                std::cout << "  *** WARNING: W0 norm jumped far beyond init scale ***\n";
             }
         }
     }
 
-    // Testing -- one batched forward pass, read out all 4 rows
     std::cout << "\n=== Predictions ===\n";
 
-    net.ResetState();
-    net.Clamp(flatX);
-
-    for (int t = 0; t < inferenceSteps; t++)
-    {
-        net.CalculateState();
-        net.UpdateState();
-    }
-
-    float *beliefs = net.GetTerminalLayer()->GetBeliefs();
+    // Effortless prediction API
+    auto preds = net.Predict(flatX, inferenceSteps);
+    
     int correct = 0;
-
     for (int i = 0; i < 4; i++)
     {
-        float pred = beliefs[i];
+        float pred = preds[i];
         float target = flatY[i];
         bool signCorrect = (pred > 0 && target > 0) || (pred < 0 && target < 0);
         if (signCorrect) correct++;

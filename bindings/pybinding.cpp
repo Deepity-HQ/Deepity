@@ -437,6 +437,7 @@ PYBIND11_MODULE(deepity, m)
 
     m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes);
     m.def("auto_batch_size", &Deep::AutoBatchSize);
+    m.def("dynamic_thread", &Deep::DynamicThread, py::arg("batch_size"));
 
     // --- Activations ---
     m.def("relu", [](py::array_t<float> x)
