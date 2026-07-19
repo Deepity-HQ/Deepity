@@ -15,10 +15,10 @@
 namespace Deep
 {
     DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
-                                                 float learningRate, float inferenceRate, float lmbda,
+                                                 float learningRate, float inferenceRate, float precisionRate, float lmbda,
                                                  void (*act)(float *, size_t),
                                                  void (*dAct)(float *, size_t, bool))
-        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda), isClamped(false),
+        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
           layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct)
     {
         this->size = size;
@@ -93,6 +93,7 @@ namespace Deep
 
         float totalEnergy = 0.0f;
 
+#pragma omp parallel for schedule(static) reduction(+:totalEnergy)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const size_t offset = (size_t)batch * size;
@@ -232,6 +233,7 @@ namespace Deep
         if (isClamped)
             return;
 
+#pragma omp parallel for schedule(static)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             size_t offset = (size_t)batch * size;
@@ -279,12 +281,12 @@ namespace Deep
         {
             size_t Nout = (size_t)batchSize * nextSize;
             const float *e_above = layerAbove->GetErrors();
-
-            size_t i = 0;
+            size_t simd_end = 0;
 #if defined(__AVX512F__)
             size_t r = Nout % 16;
-            size_t simd_end = Nout - r;
-            for (; i < simd_end; i += 16)
+            simd_end = Nout - r;
+#pragma omp parallel for schedule(static)
+            for (size_t i = 0; i < simd_end; i += 16)
             {
                 __m512 e_above512 = _mm512_load_ps(e_above + i);
                 __m512 mu512 = _mm512_load_ps(&mu[i]);
@@ -294,8 +296,9 @@ namespace Deep
             }
 #elif defined(__AVX2__) || defined(__AVX__)
             size_t r = Nout % 8;
-            size_t simd_end = Nout - r;
-            for (; i < simd_end; i += 8)
+            simd_end = Nout - r;
+#pragma omp parallel for schedule(static)
+            for (size_t i = 0; i < simd_end; i += 8)
             {
                 __m256 e_above256 = _mm256_load_ps(e_above + i);
                 __m256 mu256 = _mm256_load_ps(&mu[i]);
@@ -305,8 +308,9 @@ namespace Deep
             }
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
             size_t r = Nout % 4;
-            size_t simd_end = Nout - r;
-            for (; i < simd_end; i += 4)
+            simd_end = Nout - r;
+#pragma omp parallel for schedule(static)
+            for (size_t i = 0; i < simd_end; i += 4)
             {
                 __m128 e_above128 = _mm_load_ps(e_above + i);
                 __m128 mu128 = _mm_load_ps(&mu[i]);
@@ -315,7 +319,7 @@ namespace Deep
                     _mm_mul_ps(e_above128, mu128));
             }
 #endif
-            for (; i < Nout; ++i)
+            for (size_t i = simd_end; i < Nout; ++i)
                 bottom_up.get()[i] = e_above[i] * mu.get()[i];
 
             // dz_dt(batch,size) += local_grad(batch,nextSize) @ W(nextSize,size)
@@ -340,8 +344,40 @@ namespace Deep
         const float *e_above = layerAbove->GetErrors();
         float *local_grad = bottom_up.get(); // scratch, same buffer as UpdateState's feedback term
 
-#pragma omp simd
-        for (size_t i = 0; i < Nout; i++)
+        size_t simd_end = 0;
+#if defined(__AVX512F__)
+        simd_end = Nout - (Nout % 16);
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 16)
+        {
+            __m512 e512 = _mm512_load_ps(&e_above[i]);
+            __m512 mu512 = _mm512_load_ps(&mu[i]);
+            __m512 lgrad512 = _mm512_mul_ps(e512, mu512);
+            _mm512_store_ps(local_grad + i, lgrad512);
+        }
+#elif defined(__AVX2__) || defined(__AVX__)
+        simd_end = Nout - (Nout % 8);
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 8)
+        {
+            __m256 e256 = _mm256_load_ps(&e_above[i]);
+            __m256 mu256 = _mm256_load_ps(&mu[i]);
+            __m256 lgrad256 = _mm256_mul_ps(e256, mu256);
+            _mm256_store_ps(local_grad + i, lgrad256);
+        }
+#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
+        simd_end = Nout - (Nout % 4);
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 4)
+        {
+            __m128 e128 = _mm_load_ps(&e_above[i]);
+            __m128 mu128 = _mm_load_ps(&mu[i]);
+            __m128 lgrad128 = _mm_mul_ps(e128, mu128);
+            _mm_store_ps(local_grad + i, lgrad128);
+        }
+#endif
+
+        for (size_t i = simd_end; i < Nout; i++)
             local_grad[i] = e_above[i] * mu.get()[i];
 
         // L2 weight decay: W *= (1 - lmbda)
@@ -366,10 +402,127 @@ namespace Deep
 
     void DiscriminativePCLayer::UpdatePrecision() noexcept
     {
-        for (int i = 0; i < size; ++i)
+        if (layerBelow == nullptr)
+            return;
+        
+        size_t simd_end = 0;
+
+#if defined(__AVX512F__)
+        __m512 neg_one = _mm512_set1_ps(-1.0f);
+        __m512 half = _mm512_set1_ps(0.5f);
+
+        float pr_inv_bs = pr / static_cast<float>(batchSize);
+        __m512 pr_inv_bs512 = _mm512_set1_ps(pr_inv_bs);
+
+        size_t r = size % 16;
+        simd_end = size - r;
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 16)
+        {
+            __m512 grad = _mm512_setzero_ps();
+            __m512 p512 = _mm512_load_ps(&p[i]);
+            __m512 logp512 = _mm512_load_ps(&log_p[i]);
+
+            for (int batch = 0; batch < batchSize; batch++)
+            {
+                __m512 e512 = _mm512_loadu_ps(&e[(size_t)batch * size + i]);
+
+                __m512 err_sq = _mm512_mul_ps(e512, e512);
+                __m512 p_err_sq_minus_1 = _mm512_fmadd_ps(p512, err_sq, neg_one);
+                // grad += 0.5 * (p * err * err - 1.0)
+                grad = _mm512_fmadd_ps(half, p_err_sq_minus_1, grad);
+            }
+
+            // log_p -= (pr / batchSize) * grad
+            logp512 = _mm512_fnmadd_ps(pr_inv_bs512, grad, logp512);
+
+            p512 = Sleef_expf16_u10avx512f(logp512);
+
+            _mm512_store_ps(&p[i], p512);
+            _mm512_store_ps(&log_p[i], logp512);
+        }
+#elif defined(__AVX2__) || defined(__AVX__)
+        __m256 neg_one = _mm256_set1_ps(-1.0f);
+        __m256 half = _mm256_set1_ps(0.5f);
+
+        float pr_inv_bs = pr / static_cast<float>(batchSize);
+        __m256 pr_inv_bs256 = _mm256_set1_ps(pr_inv_bs);
+
+        size_t r = size % 8;
+        simd_end = size - r;
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 8)
+        {
+            __m256 grad = _mm256_setzero_ps();
+            __m256 p256 = _mm256_load_ps(&p[i]);
+            __m256 logp256 = _mm256_load_ps(&log_p[i]);
+
+            for (int batch = 0; batch < batchSize; batch++)
+            {
+                __m256 e256 = _mm256_loadu_ps(&e[(size_t)batch * size + i]);
+
+                __m256 err_sq = _mm256_mul_ps(e256, e256);
+                __m256 p_err_sq_minus_1 = _mm256_fmadd_ps(p256, err_sq, neg_one);
+                // grad += 0.5 * (p * err * err - 1.0)
+                grad = _mm256_fmadd_ps(half, p_err_sq_minus_1, grad);
+            }
+
+            // log_p -= (pr / batchSize) * grad
+            logp256 = _mm256_fnmadd_ps(pr_inv_bs256, grad, logp256);
+
+            p256 = Sleef_expf8_u10avx2(logp256);
+
+            _mm256_store_ps(&p[i], p256);
+            _mm256_store_ps(&log_p[i], logp256);
+        }
+#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 neg_one = _mm_set1_ps(-1.0f);
+        __m128 half = _mm_set1_ps(0.5f);
+
+        float pr_inv_bs = pr / static_cast<float>(batchSize);
+        __m128 pr_inv_bs128 = _mm_set1_ps(pr_inv_bs);
+
+        size_t r = size % 4;
+        simd_end = size - r;
+#pragma omp parallel for schedule(static)
+        for (size_t i = 0; i < simd_end; i += 4)
+        {
+            __m128 grad = _mm_setzero_ps();
+            __m128 p128 = _mm_load_ps(&p[i]);
+            __m128 logp128 = _mm_load_ps(&log_p[i]);
+
+            for (int batch = 0; batch < batchSize; batch++)
+            {
+                __m128 e128 = _mm_loadu_ps(&e[(size_t)batch * size + i]);
+
+                __m128 err_sq = _mm_mul_ps(e128, e128);
+#ifdef __FMA__
+                __m128 p_err_sq_minus_1 = _mm_fmadd_ps(p128, err_sq, neg_one);
+                // grad += 0.5 * (p * err * err - 1.0)
+                grad = _mm_fmadd_ps(half, p_err_sq_minus_1, grad);
+#else
+                __m128 p_err_sq_minus_1 = _mm_add_ps(_mm_mul_ps(p128, err_sq), neg_one);
+                grad = _mm_add_ps(_mm_mul_ps(half, p_err_sq_minus_1), grad);
+#endif
+            }
+
+#ifdef __FMA__
+            // log_p -= (pr / batchSize) * grad
+            logp128 = _mm_fnmadd_ps(pr_inv_bs128, grad, logp128);
+#else
+            logp128 = _mm_sub_ps(logp128, _mm_mul_ps(pr_inv_bs128, grad));
+#endif
+
+            p128 = Sleef_expf4_u10(logp128);
+
+            _mm_store_ps(&p[i], p128);
+            _mm_store_ps(&log_p[i], logp128);
+        }
+#endif
+
+        for (size_t i = simd_end; i < size; i++)
         {
             float grad = 0.0f;
-
             for (int batch = 0; batch < batchSize; ++batch)
             {
                 float err = e[(size_t)batch * size + i];
@@ -377,10 +530,26 @@ namespace Deep
             }
 
             grad /= batchSize;
-
             log_p[i] -= pr * grad;
             p[i] = std::exp(log_p[i]);
         }
+
+        /// SUMMARY: What this code is doing
+        // for (int i = 0; i < size; ++i)
+        // {
+        //     float grad = 0.0f;
+
+        //     for (int batch = 0; batch < batchSize; ++batch)
+        //     {
+        //         float err = e[(size_t)batch * size + i];
+        //         grad += 0.5f * (p[i] * err * err - 1.0f);
+        //     }
+
+        //     grad /= batchSize;
+
+        //     log_p[i] -= pr * grad;
+        //     p[i] = std::exp(log_p[i]);
+        // }
     }
 
     void DiscriminativePCLayer::ResetState() noexcept

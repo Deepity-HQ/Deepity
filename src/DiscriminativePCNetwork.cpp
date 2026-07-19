@@ -11,7 +11,7 @@ namespace Deep
         layers.clear();
     }
 
-    void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
+    void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                                            void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
         if (autoSize && layers.empty())
@@ -19,7 +19,7 @@ namespace Deep
             batchSize = (int)Deep::AutoBatchSize(size, nextSize);
             autoSize = false;
         }
-        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
+        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, act, dAct);
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);
@@ -93,6 +93,7 @@ namespace Deep
 
             float lr = layer->GetLearningRate();
             float ir = layer->GetInferenceRate();
+            float pr = layer->GetPrecisionRate();
             float lambda = layer->GetLambda();
 
             ActivationType activation = layer->GetActivationType();
@@ -103,6 +104,7 @@ namespace Deep
 
             of.write(reinterpret_cast<const char *>(&lr), sizeof(lr));
             of.write(reinterpret_cast<const char *>(&ir), sizeof(ir));
+            of.write(reinterpret_cast<const char *>(&pr), sizeof(pr));
             of.write(reinterpret_cast<const char *>(&lambda), sizeof(lambda));
 
             of.write(reinterpret_cast<const char *>(&activation), sizeof(activation));
@@ -158,6 +160,7 @@ namespace Deep
 
             float lr;
             float ir;
+            float pr;
             float lambda;
 
             ActivationType activation;
@@ -168,6 +171,7 @@ namespace Deep
 
             in.read(reinterpret_cast<char *>(&lr), sizeof(lr));
             in.read(reinterpret_cast<char *>(&ir), sizeof(ir));
+            in.read(reinterpret_cast<char *>(&pr), sizeof(pr));
             in.read(reinterpret_cast<char *>(&lambda), sizeof(lambda));
 
             in.read(reinterpret_cast<char *>(&activation), sizeof(activation));
@@ -177,6 +181,7 @@ namespace Deep
                 outputSize,
                 lr,
                 ir,
+                pr,
                 lambda,
                 To_Fn(activation),
                 To_dFn(activation));

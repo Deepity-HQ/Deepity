@@ -69,6 +69,7 @@ PYBIND11_MODULE(deepity, m)
                int next_size,
                float lr,
                float ir,
+               float pr,
                float lmbda,
                const std::string &activation,
                const std::string &activation_deriv)
@@ -78,6 +79,7 @@ PYBIND11_MODULE(deepity, m)
                     next_size,
                     lr,
                     ir,
+                    pr,
                     lmbda,
                     resolveAct(activation),
                     resolveDAct(activation_deriv));
@@ -86,6 +88,7 @@ PYBIND11_MODULE(deepity, m)
             py::arg("next_size"),
             py::arg("lr") = 1e-6f,
             py::arg("ir") = 0.1f,
+            py::arg("pr") = 0.01f,
             py::arg("lmbda") = 1e-2f,
             py::arg("activation") = "relu",
             py::arg("activation_deriv") = "drelu",
@@ -147,6 +150,10 @@ PYBIND11_MODULE(deepity, m)
             "update_weights",
             &Deep::DiscriminativePCNetwork::UpdateWeights,
             "Apply weight updates to every layer.")
+
+        .def("update_precision",
+            &Deep::DiscriminativePCNetwork::UpdatePrecision,
+            "Apply precision updates to every layer.")
 
         .def_property_readonly(
             "batch_size",
@@ -331,6 +338,7 @@ PYBIND11_MODULE(deepity, m)
                           int batch_size,
                           float learning_rate,
                           float inference_rate,
+                          float precision_rate,
                           float lmbda,
                           const std::string &activation,
                           const std::string &activation_deriv)
@@ -340,6 +348,7 @@ PYBIND11_MODULE(deepity, m)
                             batch_size,
                             learning_rate,
                             inference_rate,
+                            precision_rate,
                             lmbda,
                             resolveAct(activation),
                             resolveDAct(activation_deriv)); }),
@@ -348,6 +357,7 @@ PYBIND11_MODULE(deepity, m)
              py::arg("batch_size") = 1,
              py::arg("learning_rate") = 1e-6f,
              py::arg("inference_rate") = 0.01f,
+             py::arg("precision_rate") = 0.01f,
              py::arg("lmbda") = 1e-2f,
              py::arg("activation") = "relu",
              py::arg("activation_deriv") = "drelu")
@@ -360,6 +370,9 @@ PYBIND11_MODULE(deepity, m)
 
         .def("update_weights",
              &Deep::DiscriminativePCLayer::UpdateWeights)
+
+        .def("update_precision",
+             &Deep::DiscriminativePCLayer::UpdatePrecision)
 
         .def("flush",
              &Deep::DiscriminativePCLayer::Flush)

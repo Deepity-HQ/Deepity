@@ -52,11 +52,12 @@ namespace Deep
         /// @param batchSize Batch size (default to 1 for simplicity)
         /// @param learningRate Learning rate to update weights
         /// @param inferenceRate Learning rate to update state
+        /// @param precisionRate Precition weight to update precision
         /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param act Activation function
         /// @param dAct Derivative of Activation function
         DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
-                              float learningRate = 1e-6, float inferenceRate = 0.1f, float lmbda = 1e-2f,
+                              float learningRate = 1e-6, float inferenceRate = 0.1f, float precisionRate = 0.01f, float lmbda = 1e-2f,
                               void (*act)(float *, size_t) = relu,
                               void (*dAct)(float *, size_t, bool) = dRelu);
 
@@ -119,6 +120,7 @@ namespace Deep
 
         float GetLearningRate() const noexcept { return lr; }
         float GetInferenceRate() const noexcept { return ir; }
+        float GetPrecisionRate() const noexcept { return pr; }
         float GetLambda() const noexcept { return lmbda; }
 
         /// @brief Ties this layer to one above it

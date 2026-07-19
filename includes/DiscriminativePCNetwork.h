@@ -55,10 +55,11 @@ namespace Deep
         /// @param nextSize output size
         /// @param lr learning rate for beliefs
         /// @param ir learning rate for weights
+        /// @param pr learning rate for precision
         /// @param lmbda weight decay (L2 regularization) coefficient
         /// @param act activation function
         /// @param dAct derivative of previous activation function
-        void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
+        void AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                       void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool));
 
         /// @brief Randomizes the weights of each layer
