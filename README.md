@@ -6,7 +6,7 @@ Deepity is a Predictive Coding (PC) library engineered from the ground up for ze
 
 ---
 
-![PCN Profiler](resources/pcn_profile.svg)
+![PCN Profiler](resources/perf.svg)
 
 ## 🚀 Performance at a Glance
 
