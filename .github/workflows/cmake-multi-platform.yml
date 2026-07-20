@@ -42,8 +42,8 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Use vcpkg to seamlessly install openblas and pybind11 on Windows
-        vcpkg install openblas:x64-windows pybind11:x64-windows
+        # Use vcpkg to install the BLAS, Python bindings, and the OpenMP runtime required by the C++ code.
+        vcpkg install openblas:x64-windows pybind11:x64-windows libomp:x64-windows
 
     - name: Configure CMake
       run: |
