@@ -95,6 +95,7 @@ add_library(Deepity STATIC
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/DiscriminativePCNetwork.cpp
+    src/ModelIO.cpp
 )
 
 target_include_directories(Deepity PUBLIC
