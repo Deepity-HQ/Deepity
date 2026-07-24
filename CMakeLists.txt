@@ -187,9 +187,15 @@ target_link_libraries(deepity PRIVATE
 )
 
 set_target_properties(deepity PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/pydeepity
 )
 
+add_custom_command(
+    TARGET deepity POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/bindings/__init__.py
+        $<TARGET_FILE_DIR:deepity>/__init__.py
+)
 
 # --------------------------------------------------------------------
 # Tests
