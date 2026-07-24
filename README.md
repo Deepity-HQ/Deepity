@@ -63,7 +63,7 @@ Deepity achieves its low-variance execution times through strict memory manageme
 We bypass standard C++ library bottlenecks by implementing highly optimized activation functions using raw AVX2 and AVX-512 intrinsics. 
 
 **Rational Polynomial Tanh**
-Deepity avoids expensive `expf` instruction calls by utilizing a highly tuned Padé rational polynomial approximation. This yields up to a 40% speedup over `std::tanh` without sacrificing necessary precision.
+Deepity avoids expensive `expf` instruction calls by utilizing a highly tuned Elliot Sigmoid approximation. This yields up to a 11000% speedup over a standard library version without sacrificing necessary precision.
 
 ![Activation CPU Metrics](resources/ActivationCPUMetrics.png)
 
