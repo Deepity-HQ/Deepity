@@ -155,6 +155,9 @@ PYBIND11_MODULE(deepity, m)
              &Deep::DiscriminativePCNetwork::SetLambda,
              "Sets lambda of each layer.",
              py::arg("l"))
+        
+        .def("save", &Deep::DiscriminativePCNetwork::Save, "Saves the network architecture and weights to a structured directory.", py::arg("dir_path"))
+        .def("load", &Deep::DiscriminativePCNetwork::Load, "Loads network weights from a structured directory into the compiled MemoryArena.", py::arg("dir_path"))
 
         .def(
             "update_state",

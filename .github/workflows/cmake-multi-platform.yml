@@ -1,14 +1,11 @@
 name: Deepity Multi-Platform CI
-
 on:
   push:
     branches: ["main"]
   pull_request:
     branches: ["main"]
-
 env:
   BUILD_TYPE: Release
-
 jobs:
   build:
     strategy:
@@ -16,9 +13,7 @@ jobs:
       matrix:
         # Testing Ubuntu, Windows, and an Intel-based Mac (to bypass the arm64 immintrin.h issue)
         os: [ubuntu-latest, windows-latest, macos-13]
-
     runs-on: ${{ matrix.os }}
-
     steps:
     - uses: actions/checkout@v4
 
@@ -42,8 +37,21 @@ jobs:
     - name: Install dependencies (Windows)
       if: runner.os == 'Windows'
       run: |
-        # Use vcpkg to install the BLAS, Python bindings, and the OpenMP runtime required by the C++ code.
-        vcpkg install openblas:x64-windows pybind11:x64-windows libomp:x64-windows
+        # NOTE: libomp is NOT a real vcpkg port for MSVC builds -- MSVC ships
+        # its own OpenMP runtime (vcomp) bundled with the compiler, found
+        # automatically via find_package(OpenMP) once /openmp is passed.
+        # Only install what vcpkg actually provides here.
+        vcpkg install openblas:x64-windows pybind11:x64-windows
+
+    - name: Show compiler info
+      run: |
+        cmake --version
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          cl 2>&1 | head -n 1 || true
+        else
+          ${CXX:-c++} --version
+        fi
+      shell: bash
 
     - name: Configure CMake
       run: |
@@ -51,11 +59,11 @@ jobs:
         if [ "$RUNNER_OS" == "macOS" ]; then
           export CMAKE_PREFIX_PATH="$(brew --prefix libomp):$CMAKE_PREFIX_PATH"
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
-          
+
         # Windows specific configuration logic (integrating vcpkg toolchain)
         elif [ "$RUNNER_OS" == "Windows" ]; then
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
-          
+
         # Linux standard configuration
         else
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -74,7 +82,7 @@ jobs:
           export OMP_NUM_THREADS=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
         fi
         export OPENBLAS_NUM_THREADS=$OMP_NUM_THREADS
-        
+
         # Windows builds multi-config by default, executable sits in /Release/
         if [ "$RUNNER_OS" == "Windows" ]; then
           ./build/bin/Release/DeepityTests.exe

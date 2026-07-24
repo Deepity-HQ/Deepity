@@ -123,11 +123,31 @@ if(MSVC)
         $<$<CONFIG:Debug>:/Od /Zi /W4>
     )
 
-else()
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
+    # -fvectorize / -fslp-vectorize are Clang-only spellings; GCC has no
+    # flags by these names at all and errors outright on them.
     target_compile_options(Deepity PRIVATE
         $<$<CONFIG:Release>:-O3 -march=native -ffast-math -fvectorize -fslp-vectorize>
         $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native -ffast-math -fvectorize -fslp-vectorize>
+        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+    )
+
+    target_compile_options(Deepity PUBLIC
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+
+    target_link_options(Deepity PUBLIC
+        $<$<CONFIG:Debug>:-fsanitize=address,undefined>
+    )
+
+else() # GNU and other non-MSVC, non-Clang compilers
+
+    # GCC's equivalent auto-vectorization flags -- different spelling than
+    # Clang's. -O3 already implies both; stated explicitly to mirror intent.
+    target_compile_options(Deepity PRIVATE
+        $<$<CONFIG:Release>:-O3 -march=native -ffast-math -ftree-vectorize -ftree-slp-vectorize>
+        $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native -ffast-math -ftree-vectorize -ftree-slp-vectorize>
         $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
     )
 
