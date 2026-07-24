@@ -7,95 +7,120 @@
 \DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <vector>}}
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
 \DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <random>}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{Activations.h}}"{}}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Layer_8h}{Layer.h}}"{}}}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00028\ }
-\DoxyCodeLine{00029\ \textcolor{keyword}{namespace\ }Deep}
-\DoxyCodeLine{00030\ \{}
-\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}}
-\DoxyCodeLine{00045\ \ \ \ \ \{}
-\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}(\textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}},\ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}},\ \textcolor{keywordtype}{int}\ batchSize\ =\ 1,}
-\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ learningRate\ =\ 1e-\/6,\ \textcolor{keywordtype}{float}\ inferenceRate\ =\ 0.1f,\ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/2f,}
-\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ =\ \doxymbox{\hyperlink{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}{relu}},}
-\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ =\ dRelu);}
-\DoxyCodeLine{00060\ }
-\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a9b19bff76fb89254a69bdafcbe95691d}{\string~DiscriminativePCLayer}}()\ \textcolor{keyword}{override};}
-\DoxyCodeLine{00063\ }
-\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&other);}
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a1bde55eca0c3ac5d5063550eff8e9637}{operator=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&other);}
-\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\&other)\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a1bde55eca0c3ac5d5063550eff8e9637}{operator=}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\&other);}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdlib>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{Activations.h}}"{}}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Layer_8h}{Layer.h}}"{}}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ "{}MemoryArena.h"{}}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00031\ }
+\DoxyCodeLine{00032\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00033\ \{}
+\DoxyCodeLine{00047\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}}
+\DoxyCodeLine{00048\ \ \ \ \ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}(\textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}},\ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}},\ \textcolor{keywordtype}{int}\ batchSize\ =\ 1,}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ learningRate\ =\ 1e-\/6,\ \textcolor{keywordtype}{float}\ inferenceRate\ =\ 0.1f,\ \textcolor{keywordtype}{float}\ precisionRate\ =\ 0.01f,\ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/2f,}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ =\ relu,}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ =\ dRelu);}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4d50660fe8014f93db31e3478f98ee07}{CalculateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a40f4dbeedd94bdc369d45091bbbdf559}{UpdateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
 \DoxyCodeLine{00078\ }
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4d50660fe8014f93db31e3478f98ee07}{CalculateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a39631620cf0d84cc97977b619fac2e9f}{UpdateWeights}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
 \DoxyCodeLine{00085\ }
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a40f4dbeedd94bdc369d45091bbbdf559}{UpdateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
-\DoxyCodeLine{00092\ }
-\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a39631620cf0d84cc97977b619fac2e9f}{UpdateWeights}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
-\DoxyCodeLine{00099\ }
-\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a6d31245ccb390d8279da33f9d4014eda}{Flush}}()\ noexcept\textcolor{keyword}{\ override\ }\{\}\ \textcolor{comment}{//\ no\ buffer}}
-\DoxyCodeLine{00102\ }
-\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a1eeec84533bb61ccab53f105a0ced2f1}{ClampState}}(\textcolor{keyword}{const}\ std::vector<float>\ \&inputData)\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_addc7e21589e6731c96652e31bcea9562}{UnclampState}}()\ noexcept;}
-\DoxyCodeLine{00108\ }
-\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ac5cf3c7da1032b64442ea4317876ad15}{GetBeliefs}}()\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ z;\ \}}
-\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a274953fef6f8bbed0c30e50891b5acaf}{GetErrors}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ e;\ \}}
-\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a814d862eae4b8bce835f119b75d9900e}{GetInputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}};\ \}}
-\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4f0e865011258493e4e2fa1dc4621b89}{GetOutputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}};\ \}}
-\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_affd51aeca6e09f395de07b0d167d28c4}{GetBatchSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
-\DoxyCodeLine{00124\ }
-\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ae35bfeb5649e0869051495b5f35673b6}{GetWeights}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a93d1fa602e1f5e824f87c9882807d7a3}{UpdatePrecision}}()\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a6d31245ccb390d8279da33f9d4014eda}{Flush}}()\ noexcept\textcolor{keyword}{\ override\ }\{\}\ \textcolor{comment}{//\ no\ buffer}}
+\DoxyCodeLine{00090\ }
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a1eeec84533bb61ccab53f105a0ced2f1}{ClampState}}(\textcolor{keyword}{const}\ std::vector<float>\ \&inputData)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_addc7e21589e6731c96652e31bcea9562}{UnclampState}}()\ noexcept;}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ac5cf3c7da1032b64442ea4317876ad15}{GetBeliefs}}()\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ z;\ \}}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a274953fef6f8bbed0c30e50891b5acaf}{GetErrors}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ e;\ \}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a814d862eae4b8bce835f119b75d9900e}{GetInputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}};\ \}}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4f0e865011258493e4e2fa1dc4621b89}{GetOutputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}};\ \}}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_affd51aeca6e09f395de07b0d167d28c4}{GetBatchSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00112\ }
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ae35bfeb5649e0869051495b5f35673b6}{GetWeights}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ae35bfeb5649e0869051495b5f35673b6}{GetWeights}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_af2a3a028661dd0f93a31a8da34aeeedf}{GetBiases}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_af2a3a028661dd0f93a31a8da34aeeedf}{GetBiases}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}*\ GetPrecisions()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ p;\ \}}
+\DoxyCodeLine{00123\ }
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ GetLearningRate()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lr;\ \}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ GetInferenceRate()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ ir;\ \}}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ GetPrecisionRate()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ pr;\ \}}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ GetLambda()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lmbda;\ \}}
 \DoxyCodeLine{00128\ }
-\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a76ea705b1fd38a4e2ed0b4f6404fb7ee}{SetLayerAbove}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ *above)\ \textcolor{keyword}{noexcept}\ \{\ layerAbove\ =\ above;\ \}}
-\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_abede165ae677fd873e41f4948ac8f11d}{SetLayerBelow}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ *below)\ \textcolor{keyword}{noexcept}\ \{\ layerBelow\ =\ below;\ \}}
-\DoxyCodeLine{00135\ }
-\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a7e5a803f047a9724fd50b7862cd443ad}{ResetState}}()\ noexcept;}
-\DoxyCodeLine{00138\ }
-\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ const\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_adc685e5c392fbad4ecd02a0798181ea7}{GetLayerAbove}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerAbove;\ \}}
-\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd42c61cb5bdd700a2d0465911ab967f}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4f33d0cb0a2816d050a35e224fee3408}{GetLayerBelow}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerBelow;\ \}}
-\DoxyCodeLine{00145\ }
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ac0487aab6d212d0d35421ae3182f1fbe}{RandomizeWeights}}(std::mt19937\ \&twister)\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00149\ }
-\DoxyCodeLine{00150\ \ \ \ \ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *W;}
-\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *b;}
-\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e;}
-\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *z;}
-\DoxyCodeLine{00159\ }
-\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
-\DoxyCodeLine{00162\ }
-\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ @internal\ -\/-\/-\/\ For\ inference\ -\/-\/-\/}}
-\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *mu;}
-\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *dz\_dt;}
-\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *bottom\_up;}
-\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/}}
-\DoxyCodeLine{00168\ }
-\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr;}
-\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ ir;}
-\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lmbda;}
-\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ isClamped\ =\ \textcolor{keyword}{false};}
-\DoxyCodeLine{00177\ }
-\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *layerAbove;}
-\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *layerBelow;}
-\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ void\ (*activation)(\textcolor{keywordtype}{float}\ *,\ size\_t);}
-\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ void\ (*activationDerivative)(\textcolor{keywordtype}{float}\ *,\ size\_t,\ bool);}
-\DoxyCodeLine{00186\ \ \ \ \ \};}
-\DoxyCodeLine{00187\ }
-\DoxyCodeLine{00188\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetLearningRate(\textcolor{keywordtype}{float}\ lr)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lr=lr;\ \}}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetInferenceRate(\textcolor{keywordtype}{float}\ ir)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>ir=ir;\ \}}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetPrecisionRate(\textcolor{keywordtype}{float}\ pr)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>pr=pr;\ \}}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetLambda(\textcolor{keywordtype}{float}\ l)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lmbda=l;\ \}}
+\DoxyCodeLine{00133\ }
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a76ea705b1fd38a4e2ed0b4f6404fb7ee}{SetLayerAbove}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ *above)\ \textcolor{keyword}{noexcept}\ \{\ layerAbove\ =\ above;\ \}}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_abede165ae677fd873e41f4948ac8f11d}{SetLayerBelow}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ *below)\ \textcolor{keyword}{noexcept}\ \{\ layerBelow\ =\ below;\ \}}
+\DoxyCodeLine{00140\ }
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a7e5a803f047a9724fd50b7862cd443ad}{ResetState}}()\ noexcept;}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ const\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_adc685e5c392fbad4ecd02a0798181ea7}{GetLayerAbove}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerAbove;\ \}}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4f33d0cb0a2816d050a35e224fee3408}{GetLayerBelow}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerBelow;\ \}}
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ac0487aab6d212d0d35421ae3182f1fbe}{RandomizeWeights}}(std::mt19937\ \&twister)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ ActivationType\ GetActivationType()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activation);\ \}}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ ActivationType\ GetDerivativeType()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activationDerivative);\ \}}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd81ca54308b168546917a652043b5a9}{GetRequiredFloats}}()\ const\ noexcept;}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_acc0fa51c4675373a68e80fbeafe81867}{BindMemory}}(MemoryArena\ \&arena);}
+\DoxyCodeLine{00163\ }
+\DoxyCodeLine{00164\ \ \ \ \ private:}
+\DoxyCodeLine{00165\ \ \ \ \ }
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ std::unique\_ptr<MemoryArena>\ localArena;}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *W;}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *b;}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e;}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *z;}
+\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *p;}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *log\_p;}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ @internal\ -\/-\/-\/\ For\ inference\ -\/-\/-\/}}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *mu;}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *dz\_dt;}
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *bottom\_up;}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ -\/-\/-\/-\/-\/-\/}}
 \DoxyCodeLine{00189\ }
-\DoxyCodeLine{00190\ \textcolor{comment}{/*}}
-\DoxyCodeLine{00191\ \textcolor{comment}{\ *\ MHSA\ USING\ PCNs:}}
-\DoxyCodeLine{00192\ \textcolor{comment}{\ *\ In\ a\ standard\ Transformer,\ Multi-\/Head\ Self-\/Attention\ (MHSA)\ computes\ Queries,\ Keys,}}
-\DoxyCodeLine{00193\ \textcolor{comment}{\ *\ and\ Values\ in\ a\ rigid,\ one-\/shot\ forward\ pass\ to\ route\ token\ context.\ If\ implemented}}
-\DoxyCodeLine{00194\ \textcolor{comment}{\ *\ using\ a\ PCN,\ the\ attention\ scores\ and\ context\ vectors\ would\ become\ dynamic\ latent}}
-\DoxyCodeLine{00195\ \textcolor{comment}{\ *\ states\ (z).\ When\ a\ sequence\ is\ input,\ the\ attention\ routing\ wouldn't\ be\ calculated}}
-\DoxyCodeLine{00196\ \textcolor{comment}{\ *\ instantly;\ instead,\ it\ would\ iteratively\ settle\ over\ artificial\ time.\ The\ network}}
-\DoxyCodeLine{00197\ \textcolor{comment}{\ *\ would\ adjust\ its\ attention\ states\ to\ minimize\ the\ prediction\ error\ between\ the}}
-\DoxyCodeLine{00198\ \textcolor{comment}{\ *\ bottom-\/up\ token\ data\ and\ the\ top-\/down\ expectations\ from\ higher\ layers.\ The\ Q,\ K,}}
-\DoxyCodeLine{00199\ \textcolor{comment}{\ *\ and\ V\ projection\ matrices\ would\ serve\ as\ the\ local\ weights\ (W)\ for\ this\ mechanism,}}
-\DoxyCodeLine{00200\ \textcolor{comment}{\ *\ and\ would\ be\ updated\ entirely\ in\ parallel\ via\ local\ Hebbian\ rules\ once\ the\ attention}}
-\DoxyCodeLine{00201\ \textcolor{comment}{\ *\ routing\ reached\ its\ minimum-\/energy\ equilibrium.}}
-\DoxyCodeLine{00202\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr;}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ ir;}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ pr;}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lmbda;}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ isClamped\ =\ false;}
+\DoxyCodeLine{00200\ }
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ *layerAbove;}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{DiscriminativePCLayer}}\ *layerBelow;}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ ActivationFn\ activation;}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ DerivativeFn\ activationDerivative;}
+\DoxyCodeLine{00209\ \ \ \ \ \};}
+\DoxyCodeLine{00210\ }
+\DoxyCodeLine{00211\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00213\ \textcolor{comment}{/*}}
+\DoxyCodeLine{00214\ \textcolor{comment}{\ *\ MHSA\ USING\ PCNs:}}
+\DoxyCodeLine{00215\ \textcolor{comment}{\ *\ In\ a\ standard\ Transformer,\ Multi-\/Head\ Self-\/Attention\ (MHSA)\ computes\ Queries,\ Keys,}}
+\DoxyCodeLine{00216\ \textcolor{comment}{\ *\ and\ Values\ in\ a\ rigid,\ one-\/shot\ forward\ pass\ to\ route\ token\ context.\ If\ implemented}}
+\DoxyCodeLine{00217\ \textcolor{comment}{\ *\ using\ a\ PCN,\ the\ attention\ scores\ and\ context\ vectors\ would\ become\ dynamic\ latent}}
+\DoxyCodeLine{00218\ \textcolor{comment}{\ *\ states\ (z).\ When\ a\ sequence\ is\ input,\ the\ attention\ routing\ wouldn't\ be\ calculated}}
+\DoxyCodeLine{00219\ \textcolor{comment}{\ *\ instantly;\ instead,\ it\ would\ iteratively\ settle\ over\ artificial\ time.\ The\ network}}
+\DoxyCodeLine{00220\ \textcolor{comment}{\ *\ would\ adjust\ its\ attention\ states\ to\ minimize\ the\ prediction\ error\ between\ the}}
+\DoxyCodeLine{00221\ \textcolor{comment}{\ *\ bottom-\/up\ token\ data\ and\ the\ top-\/down\ expectations\ from\ higher\ layers.\ The\ Q,\ K,}}
+\DoxyCodeLine{00222\ \textcolor{comment}{\ *\ and\ V\ projection\ matrices\ would\ serve\ as\ the\ local\ weights\ (W)\ for\ this\ mechanism,}}
+\DoxyCodeLine{00223\ \textcolor{comment}{\ *\ and\ would\ be\ updated\ entirely\ in\ parallel\ via\ local\ Hebbian\ rules\ once\ the\ attention}}
+\DoxyCodeLine{00224\ \textcolor{comment}{\ *\ routing\ reached\ its\ minimum-\/energy\ equilibrium.}}
+\DoxyCodeLine{00225\ \textcolor{comment}{\ */}}
 
 \end{DoxyCode}

@@ -49,7 +49,7 @@ PYBIND11_MODULE(deepity, m)
 )pbdoc");
 
     py::class_<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork",
-                                R"pbdoc(
+                                              R"pbdoc(
         Predictive Coding Network.
 
         A network composed of one or more DiscriminativePCLayers. Layers are connected
@@ -124,6 +124,11 @@ PYBIND11_MODULE(deepity, m)
             py::arg("input"),
             "Clamp the first layer to the supplied input.")
 
+	.def(
+	   "compile",
+	    &Deep::DiscriminativePCNetwork::Compile,
+	    "Compiles all layers into a contiguous block.")
+
         .def(
             "calculate_state",
             &Deep::DiscriminativePCNetwork::CalculateState,
@@ -132,8 +137,24 @@ PYBIND11_MODULE(deepity, m)
         .def(
             "get_terminal_layer",
             &Deep::DiscriminativePCNetwork::GetTerminalLayer,
-            "Return the last layer."
-        )
+            "Return the last layer.")
+
+        .def("set_inference_rate",
+             &Deep::DiscriminativePCNetwork::SetInferenceRate,
+             "Sets the inference rate of each layer.",
+             py::arg("ir"))
+        .def("set_learning_rate",
+             &Deep::DiscriminativePCNetwork::SetLearningRate,
+             "Sets the learning rate of each layer.",
+             py::arg("lr"))
+        .def("set_precision_rate",
+             &Deep::DiscriminativePCNetwork::SetPrecisionRate,
+             "Sets the precision rate of each layer.",
+             py::arg("pr"))
+        .def("set_lambda",
+             &Deep::DiscriminativePCNetwork::SetLambda,
+             "Sets lambda of each layer.",
+             py::arg("l"))
 
         .def(
             "update_state",
@@ -143,17 +164,16 @@ PYBIND11_MODULE(deepity, m)
         .def(
             "reset_state",
             &Deep::DiscriminativePCNetwork::ResetState,
-            "Resets the beliefs 'z'"
-        )
-        
+            "Resets the beliefs 'z'")
+
         .def(
             "update_weights",
             &Deep::DiscriminativePCNetwork::UpdateWeights,
             "Apply weight updates to every layer.")
 
         .def("update_precision",
-            &Deep::DiscriminativePCNetwork::UpdatePrecision,
-            "Apply precision updates to every layer.")
+             &Deep::DiscriminativePCNetwork::UpdatePrecision,
+             "Apply precision updates to every layer.")
 
         .def_property_readonly(
             "batch_size",
@@ -328,7 +348,7 @@ PYBIND11_MODULE(deepity, m)
                       ">"; });
 
     py::class_<Deep::DiscriminativePCLayer, Deep::Layer>(m, "DiscriminativePCLayer",
-                                           R"pbdoc(
+                                                         R"pbdoc(
         Predictive Coding layer.
     )pbdoc")
 
@@ -398,6 +418,11 @@ PYBIND11_MODULE(deepity, m)
         .def("set_layer_above", &Deep::DiscriminativePCLayer::SetLayerAbove, py::return_value_policy::reference)
 
         .def("set_layer_below", &Deep::DiscriminativePCLayer::SetLayerBelow, py::return_value_policy::reference)
+
+        .def("set_learning_rate", &Deep::DiscriminativePCLayer::SetLearningRate, py::arg("lr"))
+        .def("set_inference_rate", &Deep::DiscriminativePCLayer::SetInferenceRate, py::arg("ir"))
+        .def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, py::arg("pr"))
+        .def("set_lambda", &Deep::DiscriminativePCLayer::SetLambda, py::arg("l"))
 
         .def_property_readonly("beliefs", [](Deep::DiscriminativePCLayer &self)
                                { return py::array_t<float>(

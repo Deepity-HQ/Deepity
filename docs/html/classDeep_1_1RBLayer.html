@@ -118,7 +118,7 @@ Inheritance diagram for Deep::RBLayer:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab22f28aa6c0049bfcff6769fe4ea4cdd" id="r_ab22f28aa6c0049bfcff6769fe4ea4cdd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab22f28aa6c0049bfcff6769fe4ea4cdd">RBLayer</a> (size_t inSize, size_t outSize, float var=1.0f, float var_td=10.0f, float k_1=1e-3f, float k_2=1e-5f, float lmbda=1e-6f, float alpha=1.0f, size_t batchSize=64, int stepSize=30, void(*act)(float *, size_t)=<a class="el" href="Activations_8h.html#ac04542a67acf45ce4d7257d9c72d84c6">relu</a>, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
+<tr class="memitem:ab22f28aa6c0049bfcff6769fe4ea4cdd" id="r_ab22f28aa6c0049bfcff6769fe4ea4cdd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab22f28aa6c0049bfcff6769fe4ea4cdd">RBLayer</a> (size_t inSize, size_t outSize, float var=1.0f, float var_td=10.0f, float k_1=1e-3f, float k_2=1e-5f, float lmbda=1e-6f, float alpha=1.0f, size_t batchSize=64, int stepSize=30, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
 <tr class="memdesc:ab22f28aa6c0049bfcff6769fe4ea4cdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an <a class="el" href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer.">RBLayer</a> with specified dimensions and hyperparameters.  <br /></td></tr>
 <tr class="memitem:ab330434bcc4cf32574e23508f714891b" id="r_ab330434bcc4cf32574e23508f714891b"><td class="memItemLeft"><a id="ab330434bcc4cf32574e23508f714891b" name="ab330434bcc4cf32574e23508f714891b"></a>
 void&#160;</td><td class="memItemRight"><b>RunPrediction</b> (const float *input, size_t currentBatchSize) noexcept</td></tr>
@@ -235,7 +235,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="Activations_8h.html#ac04542a67acf45ce4d7257d9c72d84c6">relu</a></span>, </td>
+          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval">relu</span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

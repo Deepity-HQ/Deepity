@@ -27,6 +27,7 @@
 
 namespace Deep
 {
+    class PCNDiagnostics;
     /// @brief An abstracted class for an array of `DiscriminativePCLayer`
     ///
     /// @see https://arxiv.org/pdf/2506.06332
@@ -100,6 +101,11 @@ namespace Deep
             return layers.back();
         }
 
+        void SetLearningRate(float lr) { for (auto layer : layers) layer->SetLearningRate(lr); }
+        void SetInferenceRate(float ir) { for (auto layer : layers) layer->SetLearningRate(ir); }
+        void SetPrecisionRate(float pr) { for (auto layer : layers) layer->SetPrecisionRate(pr); }
+        void SetLambda(float l) { for (auto layer : layers) layer->SetLambda(l); }
+
         /// @brief Runs a complete training step (clamp, settle, update, unclamp)
         /// @param x The batched input data
         /// @param y The batched target data
@@ -120,5 +126,6 @@ namespace Deep
 
     private:
         std::unique_ptr<MemoryArena> arena;
+    friend class PCNDiagnostics;
     };
 }

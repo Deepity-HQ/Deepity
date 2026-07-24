@@ -1,0 +1,30 @@
+\doxysection{Timer.\+h}
+\hypertarget{Timer_8h_source}{}\label{Timer_8h_source}\index{includes/Timer.h@{includes/Timer.h}}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <chrono>}}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classTimer}{Timer}}}
+\DoxyCodeLine{00007\ \{}
+\DoxyCodeLine{00008\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00009\ \ \ \ \ \textcolor{keyword}{using\ }Clock\ =\ std::chrono::steady\_clock;}
+\DoxyCodeLine{00010\ \ \ \ \ \textcolor{keyword}{using\ }Second\ =\ std::chrono::duration<double,\ std::ratio<1>\ >;}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \ \ \ \ std::chrono::time\_point<Clock>\ m\_beg\ \{\ Clock::now()\ \};}
+\DoxyCodeLine{00013\ }
+\DoxyCodeLine{00014\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keywordtype}{void}\ reset()}
+\DoxyCodeLine{00016\ \ \ \ \ \{}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ m\_beg\ =\ Clock::now();}
+\DoxyCodeLine{00018\ \ \ \ \ \}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \ \ \ \ \textcolor{keywordtype}{double}\ elapsed()\textcolor{keyword}{\ const}}
+\DoxyCodeLine{00021\ \textcolor{keyword}{\ \ \ \ }\{}
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ std::chrono::duration\_cast<Second>(Clock::now()\ -\/\ m\_beg).count();}
+\DoxyCodeLine{00023\ \ \ \ \ \}}
+\DoxyCodeLine{00024\ \};}
+
+\end{DoxyCode}

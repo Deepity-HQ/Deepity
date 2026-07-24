@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['flush_0',['Flush',['../classDeep_1_1DiscriminativePCLayer.html#a6d31245ccb390d8279da33f9d4014eda',1,'Deep::DiscriminativePCLayer::Flush()'],['../classDeep_1_1Layer.html#aa25f07b8ffa01f5de94cd96edbcd103d',1,'Deep::Layer::Flush()'],['../classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa',1,'Deep::RBLayer::Flush()']]]
+  ['discriminativepclayer_0',['DiscriminativePCLayer',['../classDeep_1_1DiscriminativePCLayer.html#a20876cd300c0c080085a48e36498cc3c',1,'Deep::DiscriminativePCLayer']]],
+  ['discriminativepcnetwork_1',['DiscriminativePCNetwork',['../classDeep_1_1DiscriminativePCNetwork.html#a3b3ba3c36d6dcb7c16bb353236ec830c',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork()'],['../classDeep_1_1DiscriminativePCNetwork.html#aa5f7d2e72477a8a3b59a11ae2bc23215',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork(int batchSize)']]]
 ];

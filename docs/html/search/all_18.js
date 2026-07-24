@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🚀_20performance_20at_20a_20glance_0',['🚀 Performance at a Glance',['../index.html#autotoc_md2',1,'']]]
+  ['🛠️_20example_20usage_0',['🛠️ Example Usage',['../index.html#autotoc_md14',1,'']]]
 ];

@@ -3,51 +3,74 @@
 
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
-\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <vector>}}
-\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{DiscriminativePCLayer_8h}{DiscriminativePCLayer.h}}"{}}}
-\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Optimize_8h}{Optimize.h}}"{}}}
-\DoxyCodeLine{00005\ }
-\DoxyCodeLine{00026\ }
-\DoxyCodeLine{00027\ \textcolor{keyword}{namespace\ }Deep}
-\DoxyCodeLine{00028\ \{}
-\DoxyCodeLine{00032\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{DiscriminativePCNetwork}}}
-\DoxyCodeLine{00033\ \ \ \ \ \{}
-\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ std::vector<DiscriminativePCLayer\ *>\ layers;}
-\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
-\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ autoSize\ =\ \textcolor{keyword}{true};}
-\DoxyCodeLine{00037\ }
-\DoxyCodeLine{00038\ \ \ \ \ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{DiscriminativePCNetwork}}()\ :\ batchSize(0),\ autoSize(true)\ \{\}}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aa5f7d2e72477a8a3b59a11ae2bc23215}{DiscriminativePCNetwork}}(\textcolor{keywordtype}{int}\ batchSize)\ :\ batchSize(batchSize),\ autoSize(false)\ \{\}}
-\DoxyCodeLine{00048\ }
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaa4eadf99e0cf9e0aa669b549ce89189}{\string~DiscriminativePCNetwork}}();}
-\DoxyCodeLine{00051\ }
-\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a825baff96cf29809ff9529ee79631438}{AddLayer}}(\textcolor{keywordtype}{int}\ size,\ \textcolor{keywordtype}{int}\ nextSize,\ \textcolor{keywordtype}{float}\ lr,\ \textcolor{keywordtype}{float}\ ir,\ \textcolor{keywordtype}{float}\ lmbda,}
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t}),\ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool}));}
-\DoxyCodeLine{00062\ }
-\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ad7b33441b523389418b95d305d1e42ac}{RandomizeWeights}}(std::mt19937\ \&rng);}
-\DoxyCodeLine{00066\ }
-\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aad6a69dcf213a6d2dfaa345995cb3d84}{Clamp}}(\textcolor{keyword}{const}\ std::vector<float>\ \&input);}
-\DoxyCodeLine{00070\ }
-\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ada98c8dee041f772b32ef874edaff8c8}{CalculateState}}();}
-\DoxyCodeLine{00074\ }
-\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab4b28b777621923bec73aa1429548d0f}{UpdateState}}();}
-\DoxyCodeLine{00077\ }
-\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaad5c950048825e4795ac73c23b218a2}{UpdateWeights}}();}
-\DoxyCodeLine{00080\ }
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ ResetState()\ noexcept;}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{DiscriminativePCLayer_8h}{DiscriminativePCLayer.h}}"{}}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Optimize_8h}{Optimize.h}}"{}}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00029\ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{DiscriminativePCNetwork}}}
+\DoxyCodeLine{00034\ \ \ \ \ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ std::vector<DiscriminativePCLayer\ *>\ layers;}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ autoSize\ =\ \textcolor{keyword}{true};}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{DiscriminativePCNetwork}}()\ :\ batchSize(0),\ autoSize(true)\ \{\}}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aa5f7d2e72477a8a3b59a11ae2bc23215}{DiscriminativePCNetwork}}(\textcolor{keywordtype}{int}\ batchSize)\ :\ batchSize(batchSize),\ autoSize(false)\ \{\}}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaa4eadf99e0cf9e0aa669b549ce89189}{\string~DiscriminativePCNetwork}}();}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{DiscriminativePCNetwork}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{DiscriminativePCNetwork}}\ \&\&other)\ \textcolor{keyword}{noexcept}\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{DiscriminativePCNetwork}}\ \&operator=(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{DiscriminativePCNetwork}}\ \&\&other)\ \textcolor{keyword}{noexcept}\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a671f20780865ad65050178fc8852cd6d}{AddLayer}}(\textcolor{keywordtype}{int}\ size,\ \textcolor{keywordtype}{int}\ nextSize,\ \textcolor{keywordtype}{float}\ lr,\ \textcolor{keywordtype}{float}\ ir,\ \textcolor{keywordtype}{float}\ pr,\ \textcolor{keywordtype}{float}\ lmbda,}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t}),\ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool}));}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ad7b33441b523389418b95d305d1e42ac}{RandomizeWeights}}(std::mt19937\ \&rng);}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aad6a69dcf213a6d2dfaa345995cb3d84}{Clamp}}(\textcolor{keyword}{const}\ std::vector<float>\ \&input);}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ada98c8dee041f772b32ef874edaff8c8}{CalculateState}}();}
+\DoxyCodeLine{00079\ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab4b28b777621923bec73aa1429548d0f}{UpdateState}}();}
 \DoxyCodeLine{00082\ }
-\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ const\ std::vector<\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *>\ \&GetLayers()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
-\DoxyCodeLine{00084\ }
-\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab96c81ab2171d59dc4c3bc7d1e02dd08}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
-\DoxyCodeLine{00088\ }
-\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *GetTerminalLayer()\textcolor{keyword}{\ const}}
-\DoxyCodeLine{00090\ \textcolor{keyword}{\ \ \ \ \ \ \ \ }\{}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (layers.empty())}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ layers.back();}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00095\ \ \ \ \ \};}
-\DoxyCodeLine{00096\ \}}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaad5c950048825e4795ac73c23b218a2}{UpdateWeights}}();}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ UpdatePrecision();}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ ResetState()\ noexcept;}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ const\ std::vector<\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *>\ \&GetLayers()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab96c81ab2171d59dc4c3bc7d1e02dd08}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00095\ }
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{DiscriminativePCLayer}}\ *GetTerminalLayer()\textcolor{keyword}{\ const}}
+\DoxyCodeLine{00097\ \textcolor{keyword}{\ \ \ \ \ \ \ \ }\{}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (layers.empty())}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ layers.back();}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00102\ }
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetLearningRate(\textcolor{keywordtype}{float}\ lr)\ \{\ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ layer\ :\ layers)\ layer-\/>SetLearningRate(lr);\ \}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetInferenceRate(\textcolor{keywordtype}{float}\ ir)\ \{\ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ layer\ :\ layers)\ layer-\/>SetLearningRate(ir);\ \}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetPrecisionRate(\textcolor{keywordtype}{float}\ pr)\ \{\ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ layer\ :\ layers)\ layer-\/>SetPrecisionRate(pr);\ \}}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ SetLambda(\textcolor{keywordtype}{float}\ l)\ \{\ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ layer\ :\ layers)\ layer-\/>SetLambda(l);\ \}}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{TrainStep}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keyword}{const}\ std::vector<float>\ \&y,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
+\DoxyCodeLine{00114\ }
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ std::vector<float>\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a4b9bfb6b75743cb26253f4c0ed2451e8}{Predict}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00121\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ Save(\textcolor{keyword}{const}\ std::string\ \&filename)\ \textcolor{keyword}{const}\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ Load(\textcolor{keyword}{const}\ std::string\ \&filename)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00123\ }
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ Compile();}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00126\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ std::unique\_ptr<MemoryArena>\ arena;}
+\DoxyCodeLine{00128\ \ \ \ \ \};}
+\DoxyCodeLine{00129\ \}}
 
 \end{DoxyCode}

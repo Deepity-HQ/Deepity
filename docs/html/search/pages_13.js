@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['🏗️_20project_20structure_0',['🏗️ Project Structure',['../index.html#autotoc_md17',1,'']]]
+  ['⚡_20core_20architecture_20optimizations_0',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md6',1,'']]]
 ];

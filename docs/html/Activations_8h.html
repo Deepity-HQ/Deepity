@@ -109,6 +109,7 @@ $(function(){initNavTree('Activations_8h.html','',''); });
 <code>#include &lt;cmath&gt;</code><br />
 <code>#include &lt;immintrin.h&gt;</code><br />
 <code>#include &lt;sleef.h&gt;</code><br />
+<code>#include &lt;omp.h&gt;</code><br />
 </div>
 <p><a href="Activations_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -136,10 +137,36 @@ Macros</h2></td></tr>
 <tr class="memitem:af5bca4c32f8c6886a3d8c526d2e3e9a7" id="r_af5bca4c32f8c6886a3d8c526d2e3e9a7"><td class="memItemLeft"><a id="af5bca4c32f8c6886a3d8c526d2e3e9a7" name="af5bca4c32f8c6886a3d8c526d2e3e9a7"></a>
 #define&#160;</td><td class="memItemRight"><b>Q2</b>&#160;&#160;&#160;4844.063053f</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:afa1dea57980a3726b01372a204121e16" id="r_afa1dea57980a3726b01372a204121e16"><td class="memItemLeft"><a id="afa1dea57980a3726b01372a204121e16" name="afa1dea57980a3726b01372a204121e16"></a>
+using&#160;</td><td class="memItemRight"><b>Deep::ActivationFn</b> = void (*)(float *, size_t)</td></tr>
+<tr class="memitem:aac769fa213f2bba46034c471e75d58fa" id="r_aac769fa213f2bba46034c471e75d58fa"><td class="memItemLeft"><a id="aac769fa213f2bba46034c471e75d58fa" name="aac769fa213f2bba46034c471e75d58fa"></a>
+using&#160;</td><td class="memItemRight"><b>Deep::DerivativeFn</b> = void (*)(float *, size_t, bool)</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:a4b7606ca838be34029bd134f319e0f61" id="r_a4b7606ca838be34029bd134f319e0f61"><td class="memItemLeft"><a id="a4b7606ca838be34029bd134f319e0f61" name="a4b7606ca838be34029bd134f319e0f61"></a>enum class &#160;</td><td class="memItemRight"><b>ActivationType</b> : uint8_t { <br />
+&#160;&#160;<b>RELU</b>
+, <b>dRELU</b>
+, <b>SIGMOID</b>
+, <b>dSIGMOID</b>
+, <br />
+&#160;&#160;<b>TANH</b>
+, <b>dTANH</b>
+, <b>LINEAR</b>
+, <b>dLINEAR</b>
+, <br />
+&#160;&#160;<b>NONE</b>
+<br />
+ }</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aec8c8f0e5bfec6a4b15cbdb2143eb0ea" id="r_aec8c8f0e5bfec6a4b15cbdb2143eb0ea"><td class="memItemLeft"><a id="aec8c8f0e5bfec6a4b15cbdb2143eb0ea" name="aec8c8f0e5bfec6a4b15cbdb2143eb0ea"></a>
 void&#160;</td><td class="memItemRight"><b>Deep::expf_v</b> (float *x, size_t n)</td></tr>
+<tr class="memitem:afca3df42a9f8d541c51cf729a4c8b89b" id="r_afca3df42a9f8d541c51cf729a4c8b89b"><td class="memItemLeft"><a id="afca3df42a9f8d541c51cf729a4c8b89b" name="afca3df42a9f8d541c51cf729a4c8b89b"></a>
+void&#160;</td><td class="memItemRight"><b>Deep::logf_v</b> (float *x, size_t n)</td></tr>
 <tr class="memitem:ac04542a67acf45ce4d7257d9c72d84c6" id="r_ac04542a67acf45ce4d7257d9c72d84c6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac04542a67acf45ce4d7257d9c72d84c6">Deep::relu</a> (float *RESTRICT x, const size_t n) noexcept</td></tr>
 <tr class="memdesc:ac04542a67acf45ce4d7257d9c72d84c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">RELU(x) = MAX(0, x) for all x.  <br /></td></tr>
 <tr class="memitem:aa22935f3602295ed65f1c96c9ebc116d" id="r_aa22935f3602295ed65f1c96c9ebc116d"><td class="memItemLeft"><a id="aa22935f3602295ed65f1c96c9ebc116d" name="aa22935f3602295ed65f1c96c9ebc116d"></a>
@@ -152,10 +179,6 @@ void&#160;</td><td class="memItemRight"><b>Deep::dTanh</b> (float *RESTRICT x, c
 <tr class="memdesc:a91ebb69ce7bf80e16bdbbc5eef5dcb38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
 <tr class="memitem:a26b8b58c35c5eae83bc5e6f4e8554a5d" id="r_a26b8b58c35c5eae83bc5e6f4e8554a5d"><td class="memItemLeft"><a id="a26b8b58c35c5eae83bc5e6f4e8554a5d" name="a26b8b58c35c5eae83bc5e6f4e8554a5d"></a>
 void&#160;</td><td class="memItemRight"><b>Deep::dSigmoid</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
-<tr class="memitem:a19001e487160e36e1a7e4b178d15bd5b" id="r_a19001e487160e36e1a7e4b178d15bd5b"><td class="memItemLeft"><a id="a19001e487160e36e1a7e4b178d15bd5b" name="a19001e487160e36e1a7e4b178d15bd5b"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::linear</b> (float *x, size_t n) noexcept</td></tr>
-<tr class="memitem:ab0cc70d32e0e5d4c2fd3aa96ec76a4d2" id="r_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2"><td class="memItemLeft"><a id="ab0cc70d32e0e5d4c2fd3aa96ec76a4d2" name="ab0cc70d32e0e5d4c2fd3aa96ec76a4d2"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dLinear</b> (float *x, size_t n, bool activated=false) noexcept</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines the activation functions of a predictive coding model. </p>

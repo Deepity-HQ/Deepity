@@ -31,6 +31,7 @@
 
 namespace Deep
 {
+    class PCNDiagnostics;
     /**
      * Represents a single layer in a Predictive Coding Network.
      * * To perform inference (prediction):
@@ -119,10 +120,17 @@ namespace Deep
         const float *GetBiases() const noexcept { return b; }
         float *GetBiases() noexcept { return b; }
 
+        const float* GetPrecisions() const { return p; }
+
         float GetLearningRate() const noexcept { return lr; }
         float GetInferenceRate() const noexcept { return ir; }
         float GetPrecisionRate() const noexcept { return pr; }
         float GetLambda() const noexcept { return lmbda; }
+
+        void SetLearningRate(float lr) noexcept { this->lr=lr; }
+        void SetInferenceRate(float ir) noexcept { this->ir=ir; }
+        void SetPrecisionRate(float pr) noexcept { this->pr=pr; }
+        void SetLambda(float l) noexcept { this->lmbda=l; }
 
         /// @brief Ties this layer to one above it
         /// @param above DiscriminativePCLayer*
@@ -199,9 +207,11 @@ namespace Deep
         ActivationFn activation;
         /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize, bool activated)`
         DerivativeFn activationDerivative;
+
+   friend class PCNDiagnostics;
     };
 
-} // namespace Deep
+ } // namespace Deep
 
 /*
  * MHSA USING PCNs:

@@ -10,6 +10,7 @@ Defines the activation functions of a predictive coding model.
 {\ttfamily \+\#include $<$cmath$>$}\newline
 {\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
 {\ttfamily \+\#include $<$sleef.\+h$>$}\newline
+{\ttfamily \+\#include $<$omp.\+h$>$}\newline
 \doxysubsubsection*{Macros}
 \begin{DoxyCompactItemize}
 \item 
@@ -45,11 +46,41 @@ Defines the activation functions of a predictive coding model.
 \Hypertarget{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7}\label{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7} 
 \+\#define {\bfseries Q2}~4844.\+063053f
 \end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{Activations_8h_afa1dea57980a3726b01372a204121e16}\label{Activations_8h_afa1dea57980a3726b01372a204121e16} 
+using {\bfseries Deep::\+\+Activation\+Fn} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)
+\item 
+\Hypertarget{Activations_8h_aac769fa213f2bba46034c471e75d58fa}\label{Activations_8h_aac769fa213f2bba46034c471e75d58fa} 
+using {\bfseries Deep::\+\+Derivative\+Fn} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{Activations_8h_a4b7606ca838be34029bd134f319e0f61}\label{Activations_8h_a4b7606ca838be34029bd134f319e0f61} 
+enum class {\bfseries Activation\+Type} :\+ uint8\+\_\+t \{ \newline
+{\bfseries RELU}
+, {\bfseries d\+RELU}
+, {\bfseries SIGMOID}
+, {\bfseries d\+SIGMOID}
+, \newline
+{\bfseries TANH}
+, {\bfseries d\+TANH}
+, {\bfseries LINEAR}
+, {\bfseries d\+LINEAR}
+, \newline
+{\bfseries NONE}
+ \}
+\end{DoxyCompactItemize}
 \doxysubsubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
 \Hypertarget{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea}\label{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea} 
 void {\bfseries Deep::\+expf\+\_\+v} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\item 
+\Hypertarget{Activations_8h_afca3df42a9f8d541c51cf729a4c8b89b}\label{Activations_8h_afca3df42a9f8d541c51cf729a4c8b89b} 
+void {\bfseries Deep::\+logf\+\_\+v} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
 \item 
 void \doxymbox{\hyperlink{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}{Deep::\+relu}} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
 \begin{DoxyCompactList}\small\item\em RELU(x) = MAX(0, x) for all x. \end{DoxyCompactList}\item 
@@ -66,12 +97,6 @@ void \doxymbox{\hyperlink{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38}{Deep
 \begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\item 
 \Hypertarget{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d}\label{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d} 
 void {\bfseries Deep::\+d\+Sigmoid} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
-\item 
-\Hypertarget{Activations_8h_a19001e487160e36e1a7e4b178d15bd5b}\label{Activations_8h_a19001e487160e36e1a7e4b178d15bd5b} 
-void {\bfseries Deep::\+linear} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n) noexcept
-\item 
-\Hypertarget{Activations_8h_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2}\label{Activations_8h_ab0cc70d32e0e5d4c2fd3aa96ec76a4d2} 
-void {\bfseries Deep::\+d\+Linear} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n, bool activated=false) noexcept
 \end{DoxyCompactItemize}
 
 

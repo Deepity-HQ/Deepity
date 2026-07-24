@@ -115,25 +115,15 @@ Inheritance diagram for Deep::DiscriminativePCLayer:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:afd42c61cb5bdd700a2d0465911ab967f" id="r_afd42c61cb5bdd700a2d0465911ab967f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float lmbda=1e-2f, void(*act)(float *, size_t)=<a class="el" href="Activations_8h.html#ac04542a67acf45ce4d7257d9c72d84c6">relu</a>, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
-<tr class="memdesc:afd42c61cb5bdd700a2d0465911ab967f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a Deepity <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>.  <br /></td></tr>
-<tr class="memitem:a9b19bff76fb89254a69bdafcbe95691d" id="r_a9b19bff76fb89254a69bdafcbe95691d"><td class="memItemLeft"><a id="a9b19bff76fb89254a69bdafcbe95691d" name="a9b19bff76fb89254a69bdafcbe95691d"></a>
-&#160;</td><td class="memItemRight"><b>~DiscriminativePCLayer</b> () override</td></tr>
-<tr class="memdesc:a9b19bff76fb89254a69bdafcbe95691d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
-<tr class="memitem:a1211d0f28e1a1095e33516dadb4dbc08" id="r_a1211d0f28e1a1095e33516dadb4dbc08"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a1211d0f28e1a1095e33516dadb4dbc08">DiscriminativePCLayer</a> (const DiscriminativePCLayer &amp;other)</td></tr>
-<tr class="memdesc:a1211d0f28e1a1095e33516dadb4dbc08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor.  <br /></td></tr>
-<tr class="memitem:a1bde55eca0c3ac5d5063550eff8e9637" id="r_a1bde55eca0c3ac5d5063550eff8e9637"><td class="memItemLeft"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a1bde55eca0c3ac5d5063550eff8e9637">operator=</a> (const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;other)</td></tr>
-<tr class="memdesc:a1bde55eca0c3ac5d5063550eff8e9637"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy assignment.  <br /></td></tr>
-<tr class="memitem:ae366d7341a60dba8d535c4836d66cc0e" id="r_ae366d7341a60dba8d535c4836d66cc0e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ae366d7341a60dba8d535c4836d66cc0e">DiscriminativePCLayer</a> (DiscriminativePCLayer &amp;&amp;other) noexcept</td></tr>
-<tr class="memdesc:ae366d7341a60dba8d535c4836d66cc0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor.  <br /></td></tr>
-<tr class="memitem:aa7ea8b95c856c32402b63b52fcddde0b" id="r_aa7ea8b95c856c32402b63b52fcddde0b"><td class="memItemLeft"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#aa7ea8b95c856c32402b63b52fcddde0b">operator=</a> (<a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&amp;other)</td></tr>
-<tr class="memdesc:aa7ea8b95c856c32402b63b52fcddde0b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment.  <br /></td></tr>
+<tr class="memitem:a20876cd300c0c080085a48e36498cc3c" id="r_a20876cd300c0c080085a48e36498cc3c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float precisionRate=0.01f, float lmbda=1e-2f, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
+<tr class="memdesc:a20876cd300c0c080085a48e36498cc3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a Deepity <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>.  <br /></td></tr>
 <tr class="memitem:a4d50660fe8014f93db31e3478f98ee07" id="r_a4d50660fe8014f93db31e3478f98ee07"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a4d50660fe8014f93db31e3478f98ee07">CalculateState</a> () noexcept override</td></tr>
 <tr class="memdesc:a4d50660fe8014f93db31e3478f98ee07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state.  <br /></td></tr>
 <tr class="memitem:a40f4dbeedd94bdc369d45091bbbdf559" id="r_a40f4dbeedd94bdc369d45091bbbdf559"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a40f4dbeedd94bdc369d45091bbbdf559">UpdateState</a> () noexcept override</td></tr>
 <tr class="memdesc:a40f4dbeedd94bdc369d45091bbbdf559"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the state derivatives for inference.  <br /></td></tr>
 <tr class="memitem:a39631620cf0d84cc97977b619fac2e9f" id="r_a39631620cf0d84cc97977b619fac2e9f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a39631620cf0d84cc97977b619fac2e9f">UpdateWeights</a> () noexcept override</td></tr>
 <tr class="memdesc:a39631620cf0d84cc97977b619fac2e9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes weight updates via gradient descent, with L2 weight decay.  <br /></td></tr>
+<tr class="memitem:a93d1fa602e1f5e824f87c9882807d7a3" id="r_a93d1fa602e1f5e824f87c9882807d7a3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93d1fa602e1f5e824f87c9882807d7a3">UpdatePrecision</a> () noexcept</td></tr>
 <tr class="memitem:a6d31245ccb390d8279da33f9d4014eda" id="r_a6d31245ccb390d8279da33f9d4014eda"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6d31245ccb390d8279da33f9d4014eda">Flush</a> () noexcept override</td></tr>
 <tr class="memdesc:a6d31245ccb390d8279da33f9d4014eda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does nothing; exists for class extension.  <br /></td></tr>
 <tr class="memitem:a1eeec84533bb61ccab53f105a0ced2f1" id="r_a1eeec84533bb61ccab53f105a0ced2f1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1eeec84533bb61ccab53f105a0ced2f1">ClampState</a> (const std::vector&lt; float &gt; &amp;inputData) noexcept</td></tr>
@@ -153,19 +143,53 @@ void&#160;</td><td class="memItemRight"><b>UnclampState</b> () noexcept</td></tr
 <tr class="memdesc:affd51aeca6e09f395de07b0d167d28c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns batchSize.  <br /></td></tr>
 <tr class="memitem:ae35bfeb5649e0869051495b5f35673b6" id="r_ae35bfeb5649e0869051495b5f35673b6"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#ae35bfeb5649e0869051495b5f35673b6">GetWeights</a> () const noexcept</td></tr>
 <tr class="memdesc:ae35bfeb5649e0869051495b5f35673b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only version of the stored weights.  <br /></td></tr>
-<tr class="memitem:a76ea705b1fd38a4e2ed0b4f6404fb7ee" id="r_a76ea705b1fd38a4e2ed0b4f6404fb7ee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a76ea705b1fd38a4e2ed0b4f6404fb7ee">SetLayerAbove</a> (<a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> *above) noexcept</td></tr>
+<tr class="memitem:abab65746562b3d62181266a938585de7" id="r_abab65746562b3d62181266a938585de7"><td class="memItemLeft"><a id="abab65746562b3d62181266a938585de7" name="abab65746562b3d62181266a938585de7"></a>
+float *&#160;</td><td class="memItemRight"><b>GetWeights</b> () noexcept</td></tr>
+<tr class="memitem:af2a3a028661dd0f93a31a8da34aeeedf" id="r_af2a3a028661dd0f93a31a8da34aeeedf"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#af2a3a028661dd0f93a31a8da34aeeedf">GetBiases</a> () const noexcept</td></tr>
+<tr class="memdesc:af2a3a028661dd0f93a31a8da34aeeedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only version of the stored biases.  <br /></td></tr>
+<tr class="memitem:a75f6be3a401be268422e5faebcb20f97" id="r_a75f6be3a401be268422e5faebcb20f97"><td class="memItemLeft"><a id="a75f6be3a401be268422e5faebcb20f97" name="a75f6be3a401be268422e5faebcb20f97"></a>
+float *&#160;</td><td class="memItemRight"><b>GetBiases</b> () noexcept</td></tr>
+<tr class="memitem:a4b745a7170681aabb7eff4ac8945a632" id="r_a4b745a7170681aabb7eff4ac8945a632"><td class="memItemLeft"><a id="a4b745a7170681aabb7eff4ac8945a632" name="a4b745a7170681aabb7eff4ac8945a632"></a>
+const float *&#160;</td><td class="memItemRight"><b>GetPrecisions</b> () const</td></tr>
+<tr class="memitem:a44cceb7cb7b6c506ac605240b1c2385f" id="r_a44cceb7cb7b6c506ac605240b1c2385f"><td class="memItemLeft"><a id="a44cceb7cb7b6c506ac605240b1c2385f" name="a44cceb7cb7b6c506ac605240b1c2385f"></a>
+float&#160;</td><td class="memItemRight"><b>GetLearningRate</b> () const noexcept</td></tr>
+<tr class="memitem:a587257ae27496b95823485b10b65dd8c" id="r_a587257ae27496b95823485b10b65dd8c"><td class="memItemLeft"><a id="a587257ae27496b95823485b10b65dd8c" name="a587257ae27496b95823485b10b65dd8c"></a>
+float&#160;</td><td class="memItemRight"><b>GetInferenceRate</b> () const noexcept</td></tr>
+<tr class="memitem:a4c20694219bec114a09bc43192db6cd6" id="r_a4c20694219bec114a09bc43192db6cd6"><td class="memItemLeft"><a id="a4c20694219bec114a09bc43192db6cd6" name="a4c20694219bec114a09bc43192db6cd6"></a>
+float&#160;</td><td class="memItemRight"><b>GetPrecisionRate</b> () const noexcept</td></tr>
+<tr class="memitem:ae2c3689fdc9ad5e24a881d668fecf4db" id="r_ae2c3689fdc9ad5e24a881d668fecf4db"><td class="memItemLeft"><a id="ae2c3689fdc9ad5e24a881d668fecf4db" name="ae2c3689fdc9ad5e24a881d668fecf4db"></a>
+float&#160;</td><td class="memItemRight"><b>GetLambda</b> () const noexcept</td></tr>
+<tr class="memitem:af814ef60c24e2e9ec54d157a5ec3454e" id="r_af814ef60c24e2e9ec54d157a5ec3454e"><td class="memItemLeft"><a id="af814ef60c24e2e9ec54d157a5ec3454e" name="af814ef60c24e2e9ec54d157a5ec3454e"></a>
+void&#160;</td><td class="memItemRight"><b>SetLearningRate</b> (float lr) noexcept</td></tr>
+<tr class="memitem:ab19e152ef3075ddc9a53171d96beae8d" id="r_ab19e152ef3075ddc9a53171d96beae8d"><td class="memItemLeft"><a id="ab19e152ef3075ddc9a53171d96beae8d" name="ab19e152ef3075ddc9a53171d96beae8d"></a>
+void&#160;</td><td class="memItemRight"><b>SetInferenceRate</b> (float ir) noexcept</td></tr>
+<tr class="memitem:aa67aebb3e24a80b16887f6628b18775f" id="r_aa67aebb3e24a80b16887f6628b18775f"><td class="memItemLeft"><a id="aa67aebb3e24a80b16887f6628b18775f" name="aa67aebb3e24a80b16887f6628b18775f"></a>
+void&#160;</td><td class="memItemRight"><b>SetPrecisionRate</b> (float pr) noexcept</td></tr>
+<tr class="memitem:a0af93749baa70dbcebdd3c95d0e4e523" id="r_a0af93749baa70dbcebdd3c95d0e4e523"><td class="memItemLeft"><a id="a0af93749baa70dbcebdd3c95d0e4e523" name="a0af93749baa70dbcebdd3c95d0e4e523"></a>
+void&#160;</td><td class="memItemRight"><b>SetLambda</b> (float l) noexcept</td></tr>
+<tr class="memitem:a76ea705b1fd38a4e2ed0b4f6404fb7ee" id="r_a76ea705b1fd38a4e2ed0b4f6404fb7ee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a76ea705b1fd38a4e2ed0b4f6404fb7ee">SetLayerAbove</a> (<a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *above) noexcept</td></tr>
 <tr class="memdesc:a76ea705b1fd38a4e2ed0b4f6404fb7ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ties this layer to one above it.  <br /></td></tr>
-<tr class="memitem:abede165ae677fd873e41f4948ac8f11d" id="r_abede165ae677fd873e41f4948ac8f11d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abede165ae677fd873e41f4948ac8f11d">SetLayerBelow</a> (<a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> *below) noexcept</td></tr>
+<tr class="memitem:abede165ae677fd873e41f4948ac8f11d" id="r_abede165ae677fd873e41f4948ac8f11d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abede165ae677fd873e41f4948ac8f11d">SetLayerBelow</a> (<a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *below) noexcept</td></tr>
 <tr class="memdesc:abede165ae677fd873e41f4948ac8f11d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ties this layer to one below it.  <br /></td></tr>
 <tr class="memitem:a7e5a803f047a9724fd50b7862cd443ad" id="r_a7e5a803f047a9724fd50b7862cd443ad"><td class="memItemLeft"><a id="a7e5a803f047a9724fd50b7862cd443ad" name="a7e5a803f047a9724fd50b7862cd443ad"></a>
 void&#160;</td><td class="memItemRight"><b>ResetState</b> () noexcept</td></tr>
 <tr class="memdesc:a7e5a803f047a9724fd50b7862cd443ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets 'z' (beliefs) to 0. <br /></td></tr>
-<tr class="memitem:adc685e5c392fbad4ecd02a0798181ea7" id="r_adc685e5c392fbad4ecd02a0798181ea7"><td class="memItemLeft">const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#adc685e5c392fbad4ecd02a0798181ea7">GetLayerAbove</a> () const noexcept</td></tr>
+<tr class="memitem:adc685e5c392fbad4ecd02a0798181ea7" id="r_adc685e5c392fbad4ecd02a0798181ea7"><td class="memItemLeft">const <a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#adc685e5c392fbad4ecd02a0798181ea7">GetLayerAbove</a> () const noexcept</td></tr>
 <tr class="memdesc:adc685e5c392fbad4ecd02a0798181ea7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets const pointer to layer above.  <br /></td></tr>
-<tr class="memitem:a4f33d0cb0a2816d050a35e224fee3408" id="r_a4f33d0cb0a2816d050a35e224fee3408"><td class="memItemLeft">const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a4f33d0cb0a2816d050a35e224fee3408">GetLayerBelow</a> () const noexcept</td></tr>
+<tr class="memitem:a4f33d0cb0a2816d050a35e224fee3408" id="r_a4f33d0cb0a2816d050a35e224fee3408"><td class="memItemLeft">const <a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a4f33d0cb0a2816d050a35e224fee3408">GetLayerBelow</a> () const noexcept</td></tr>
 <tr class="memdesc:a4f33d0cb0a2816d050a35e224fee3408"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gets const pointer to layer below.  <br /></td></tr>
 <tr class="memitem:ac0487aab6d212d0d35421ae3182f1fbe" id="r_ac0487aab6d212d0d35421ae3182f1fbe"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac0487aab6d212d0d35421ae3182f1fbe">RandomizeWeights</a> (std::mt19937 &amp;twister) noexcept</td></tr>
 <tr class="memdesc:ac0487aab6d212d0d35421ae3182f1fbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.  <br /></td></tr>
+<tr class="memitem:a19c60f114c24e1acfe656bb457bd2fbf" id="r_a19c60f114c24e1acfe656bb457bd2fbf"><td class="memItemLeft"><a id="a19c60f114c24e1acfe656bb457bd2fbf" name="a19c60f114c24e1acfe656bb457bd2fbf"></a>
+ActivationType&#160;</td><td class="memItemRight"><b>GetActivationType</b> () const noexcept</td></tr>
+<tr class="memitem:aef19aa4132fdcc53eec41a3aec0df17f" id="r_aef19aa4132fdcc53eec41a3aec0df17f"><td class="memItemLeft"><a id="aef19aa4132fdcc53eec41a3aec0df17f" name="aef19aa4132fdcc53eec41a3aec0df17f"></a>
+ActivationType&#160;</td><td class="memItemRight"><b>GetDerivativeType</b> () const noexcept</td></tr>
+<tr class="memitem:afd81ca54308b168546917a652043b5a9" id="r_afd81ca54308b168546917a652043b5a9"><td class="memItemLeft"><a id="afd81ca54308b168546917a652043b5a9" name="afd81ca54308b168546917a652043b5a9"></a>
+size_t&#160;</td><td class="memItemRight"><b>GetRequiredFloats</b> () const noexcept</td></tr>
+<tr class="memdesc:afd81ca54308b168546917a652043b5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates exact float count required by this layer's architecture. <br /></td></tr>
+<tr class="memitem:acc0fa51c4675373a68e80fbeafe81867" id="r_acc0fa51c4675373a68e80fbeafe81867"><td class="memItemLeft"><a id="acc0fa51c4675373a68e80fbeafe81867" name="acc0fa51c4675373a68e80fbeafe81867"></a>
+void&#160;</td><td class="memItemRight"><b>BindMemory</b> (<a class="el" href="classDeep_1_1MemoryArena.html">MemoryArena</a> &amp;arena)</td></tr>
+<tr class="memdesc:acc0fa51c4675373a68e80fbeafe81867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds all tensor pointers to the contiguous memory block. <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
@@ -190,8 +214,8 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <li>(For learning): Call <a class="el" href="#a39631620cf0d84cc97977b619fac2e9f" title="Computes weight updates via gradient descent, with L2 weight decay.">UpdateWeights()</a> on all layers simultaneously once the states have fully settled. </li>
 </ol>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afd42c61cb5bdd700a2d0465911ab967f" name="afd42c61cb5bdd700a2d0465911ab967f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd42c61cb5bdd700a2d0465911ab967f">&#9670;&#160;</a></span>DiscriminativePCLayer() <span class="overload">[1/3]</span></h2>
+<a id="a20876cd300c0c080085a48e36498cc3c" name="a20876cd300c0c080085a48e36498cc3c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a20876cd300c0c080085a48e36498cc3c">&#9670;&#160;</a></span>DiscriminativePCLayer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -224,12 +248,17 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">float</td>          <td class="paramname"><span class="paramname"><em>precisionRate</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0.01f</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">float</td>          <td class="paramname"><span class="paramname"><em>lmbda</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1e-2f</span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="Activations_8h.html#ac04542a67acf45ce4d7257d9c72d84c6">relu</a></span>, </td>
+          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval">relu</span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -247,67 +276,10 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
     <tr><td class="paramname">batchSize</td><td>Batch size (default to 1 for simplicity) </td></tr>
     <tr><td class="paramname">learningRate</td><td>Learning rate to update weights </td></tr>
     <tr><td class="paramname">inferenceRate</td><td>Learning rate to update state </td></tr>
+    <tr><td class="paramname">precisionRate</td><td>Precition weight to update precision </td></tr>
     <tr><td class="paramname">lmbda</td><td>Weight decay (L2 regularization) coefficient </td></tr>
     <tr><td class="paramname">act</td><td>Activation function </td></tr>
     <tr><td class="paramname">dAct</td><td>Derivative of Activation function </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="a1211d0f28e1a1095e33516dadb4dbc08" name="a1211d0f28e1a1095e33516dadb4dbc08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1211d0f28e1a1095e33516dadb4dbc08">&#9670;&#160;</a></span>DiscriminativePCLayer() <span class="overload">[2/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Deep::DiscriminativePCLayer::DiscriminativePCLayer </td>
-          <td>(</td>
-          <td class="paramtype">const DiscriminativePCLayer &amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Copy constructor. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">other</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> to copy from </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ae366d7341a60dba8d535c4836d66cc0e" name="ae366d7341a60dba8d535c4836d66cc0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae366d7341a60dba8d535c4836d66cc0e">&#9670;&#160;</a></span>DiscriminativePCLayer() <span class="overload">[3/3]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">Deep::DiscriminativePCLayer::DiscriminativePCLayer </td>
-          <td>(</td>
-          <td class="paramtype">DiscriminativePCLayer &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Move constructor. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">other</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> to move from </td></tr>
   </table>
   </dd>
 </dl>
@@ -470,6 +442,34 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 </div>
 </div>
+<a id="af2a3a028661dd0f93a31a8da34aeeedf" name="af2a3a028661dd0f93a31a8da34aeeedf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af2a3a028661dd0f93a31a8da34aeeedf">&#9670;&#160;</a></span>GetBiases()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float * Deep::DiscriminativePCLayer::GetBiases </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a read-only version of the stored biases. </p>
+<dl class="section return"><dt>Returns</dt><dd>const float *b </dd></dl>
+
+</div>
+</div>
 <a id="a274953fef6f8bbed0c30e50891b5acaf" name="a274953fef6f8bbed0c30e50891b5acaf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a274953fef6f8bbed0c30e50891b5acaf">&#9670;&#160;</a></span>GetErrors()</h2>
 
@@ -540,7 +540,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::GetLayerAbove </td>
+          <td class="memname">const <a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::GetLayerAbove </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -568,7 +568,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::GetLayerBelow </td>
+          <td class="memname">const <a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::GetLayerBelow </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -644,58 +644,6 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 </div>
 </div>
-<a id="a1bde55eca0c3ac5d5063550eff8e9637" name="a1bde55eca0c3ac5d5063550eff8e9637"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bde55eca0c3ac5d5063550eff8e9637">&#9670;&#160;</a></span>operator=() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::operator= </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Copy assignment. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">other</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> to copy from </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Copied layer </dd></dl>
-
-</div>
-</div>
-<a id="aa7ea8b95c856c32402b63b52fcddde0b" name="aa7ea8b95c856c32402b63b52fcddde0b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7ea8b95c856c32402b63b52fcddde0b">&#9670;&#160;</a></span>operator=() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp; Deep::DiscriminativePCLayer::operator= </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>other</em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Move assignment. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">other</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> to move from </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Moved layer </dd></dl>
-
-</div>
-</div>
 <a id="ac0487aab6d212d0d35421ae3182f1fbe" name="ac0487aab6d212d0d35421ae3182f1fbe"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac0487aab6d212d0d35421ae3182f1fbe">&#9670;&#160;</a></span>RandomizeWeights()</h2>
 
@@ -741,7 +689,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
         <tr>
           <td class="memname">void Deep::DiscriminativePCLayer::SetLayerAbove </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>above</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>above</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -774,7 +722,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
         <tr>
           <td class="memname">void Deep::DiscriminativePCLayer::SetLayerBelow </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="#afd42c61cb5bdd700a2d0465911ab967f">DiscriminativePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>below</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>below</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -792,6 +740,32 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a93d1fa602e1f5e824f87c9882807d7a3" name="a93d1fa602e1f5e824f87c9882807d7a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93d1fa602e1f5e824f87c9882807d7a3">&#9670;&#160;</a></span>UpdatePrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DiscriminativePCLayer::UpdatePrecision </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<p>SUMMARY: What this code is doing</p>
 
 </div>
 </div>

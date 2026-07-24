@@ -175,7 +175,7 @@ set_target_properties(deepity PROPERTIES
 # --------------------------------------------------------------------
 
 add_executable(DeepityTests
-    tests/tReadme.cpp
+    src/PCNDiagnostics.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE

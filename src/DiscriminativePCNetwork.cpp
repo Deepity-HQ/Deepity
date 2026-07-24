@@ -1,6 +1,8 @@
 #include "DiscriminativePCNetwork.h"
 #include "Optimize.h"
 #include <cstring>
+#include <cmath>
+#include <limits>
 
 namespace Deep
 {
@@ -74,19 +76,28 @@ namespace Deep
     }
 
     float DiscriminativePCNetwork::TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
+
     {
+
         ResetState();
+
         Clamp(x);
+
         GetTerminalLayer()->ClampState(y);
 
         float finalEnergy = 0.0f;
+
         for (int t = 0; t < inferenceSteps; t++)
+
         {
+
             finalEnergy = CalculateState();
+
             UpdateState();
         }
 
         UpdateWeights();
+
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;
@@ -94,19 +105,26 @@ namespace Deep
 
     std::vector<float> DiscriminativePCNetwork::Predict(const std::vector<float> &x, int inferenceSteps)
     {
+
         ResetState();
+
         Clamp(x);
 
         for (int t = 0; t < inferenceSteps; t++)
+
         {
+
             CalculateState();
+
             UpdateState();
         }
 
         DiscriminativePCLayer *terminal = GetTerminalLayer();
+
         const float *beliefs = terminal->GetBeliefs();
 
         // The terminal layer's 'size' is its output dimension. Total elements = batchSize * size.
+
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
         return std::vector<float>(beliefs, beliefs + count);

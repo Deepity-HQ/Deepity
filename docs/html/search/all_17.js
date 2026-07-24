@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['📊_20design_20decisions_20benchmarks_0',['📊 Design Decisions &amp;amp; Benchmarks',['../index.html#autotoc_md6',1,'']]]
+  ['🚀_20performance_20at_20a_20glance_0',['🚀 Performance at a Glance',['../index.html#autotoc_md2',1,'']]]
 ];

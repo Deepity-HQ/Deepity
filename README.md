@@ -2,13 +2,15 @@
 
 Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-overhead, ultra-low variance inference and learning. It is aggressively CPU-optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.
 
-![PCN Layer CPU Metrics](resources/LayerCPUMetrics.png)
+### See it train MNIST on the CPU in under an hour:
+
+![PCN Layer CPU Metrics](resources/MNIST_results.png)
 
 ---
 
-![PCN Profiler](resources/perf.svg)
-
 ## 🚀 Performance at a Glance
+
+![PCN Profiler](resources/perf.svg)
 
 Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **123 GFLOPS** during predictive-coding inference and learning when compiled with Clang (LLVM).
 
@@ -160,6 +162,7 @@ int main() {
 
     return 0;
 }
+```
 
 ## 📅 Roadmap
 
@@ -179,9 +182,9 @@ int main() {
 ```plaintext
 includes/       # Public headers (PCLayer.h, PCNetwork.h, Activations.h)
 src/            # C++ source (PCLayer.cpp, PCNetwork.cpp)
-pybind/         # Python bindings (binding.cpp)
+bindings/       # Python bindings (binding.cpp)
 tests/          # C++ and Python test suites
-bin/            # Build outputs (library, executables, Python .so)
+build/            # Build outputs (library, executables (bin), Python .so)
 resources/      # Images and benchmark assets
 ```
 

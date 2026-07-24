@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['⚡_20core_20architecture_20optimizations_0',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md4',1,'']]]
+  ['⚔️_20gcc_20vs_20clang_20llvm_20performance_0',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md4',1,'']]]
 ];
