@@ -173,7 +173,7 @@ int main() {
 - [x] API reference documentation (Doxygen)
 - [x] Multithreading and Precision Metrics
 - [x] Memory Arena Contiguity
-- [-] File IO Support
+- 🚧 File IO Support
 - [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
 - [ ] Java port
 
