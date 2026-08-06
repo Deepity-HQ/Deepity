@@ -19,8 +19,24 @@ namespace Deep
                                                  void (*act)(float *, size_t),
                                                  void (*dAct)(float *, size_t, bool))
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
-          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct)
+          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct), activationType(ActivationType::RELU)
     {
+        this->size = size;
+        this->nextSize = nextSize;
+        DynamicThread(batchSize);
+
+        localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
+        BindMemory(*localArena);
+    }
+
+    DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
+                                                 float learningRate, float inferenceRate, float precisionRate, float lmbda,
+                                                 ActivationType aType, ActivationType dType)
+        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
+          layerAbove(nullptr), layerBelow(nullptr), activationType(aType)
+    {
+        this->activation = Deep::ActivationFn(aType);
+        this->activationDerivative = Deep::DerivativeFn(aType);
         this->size = size;
         this->nextSize = nextSize;
         DynamicThread(batchSize);

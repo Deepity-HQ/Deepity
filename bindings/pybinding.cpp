@@ -32,11 +32,25 @@ static void (*resolveDAct(const std::string &act))(float *, size_t, bool)
         return Deep::dTanh;
     if (act == "dsigmoid")
         return Deep::dSigmoid;
-    if (act == "dRelu")
+    if (act == "drelu")
         return Deep::dRelu;
     if (act == "dLinear")
         return Deep::dLinear;
     return Deep::dRelu;
+}
+
+static Deep::ActivationType resolveActEnum(const std::string &act)
+{
+    if (act == "tanh" || act == "dtanh") 
+        return Deep::ActivationType::TANH;
+    if (act == "sigmoid" || act == "dsigmoid") 
+        return Deep::ActivationType::SIGMOID;
+    if (act == "relu" || act == "drelu") 
+        return Deep::ActivationType::RELU;
+    if (act == "linear" || act == "dlinear" || act == "dLinear") 
+        return Deep::ActivationType::LINEAR;
+
+    return Deep::ActivationType::RELU;
 }
 
 PYBIND11_MODULE(deepity, m)
@@ -62,7 +76,7 @@ PYBIND11_MODULE(deepity, m)
              py::arg("batch_size"),
              "Construct a network with a fixed batch size.")
 
-        .def(
+             .def(
             "add_layer",
             [](Deep::DiscriminativePCNetwork &self,
                int size,
@@ -74,6 +88,7 @@ PYBIND11_MODULE(deepity, m)
                const std::string &activation,
                const std::string &activation_deriv)
             {
+                Deep::ActivationType actType = resolveActEnum(activation);
                 self.AddLayer(
                     size,
                     next_size,
@@ -81,8 +96,8 @@ PYBIND11_MODULE(deepity, m)
                     ir,
                     pr,
                     lmbda,
-                    resolveAct(activation),
-                    resolveDAct(activation_deriv));
+                    actType,
+                    actType);
             },
             py::arg("size"),
             py::arg("next_size"),
@@ -124,10 +139,10 @@ PYBIND11_MODULE(deepity, m)
             py::arg("input"),
             "Clamp the first layer to the supplied input.")
 
-	.def(
-	   "compile",
-	    &Deep::DiscriminativePCNetwork::Compile,
-	    "Compiles all layers into a contiguous block.")
+        .def(
+            "compile",
+            &Deep::DiscriminativePCNetwork::Compile,
+            "Compiles all layers into a contiguous block.")
 
         .def(
             "calculate_state",
@@ -155,7 +170,7 @@ PYBIND11_MODULE(deepity, m)
              &Deep::DiscriminativePCNetwork::SetLambda,
              "Sets lambda of each layer.",
              py::arg("l"))
-        
+
         .def("save", &Deep::DiscriminativePCNetwork::Save, "Saves the network architecture and weights to a structured directory.", py::arg("dir_path"))
         .def("load", &Deep::DiscriminativePCNetwork::Load, "Loads network weights from a structured directory into the compiled MemoryArena.", py::arg("dir_path"))
 

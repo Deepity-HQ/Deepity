@@ -62,6 +62,11 @@ namespace Deep
                               float learningRate = 1e-6, float inferenceRate = 0.1f, float precisionRate = 0.01f, float lmbda = 1e-2f,
                               void (*act)(float *, size_t) = relu,
                               void (*dAct)(float *, size_t, bool) = dRelu);
+        
+         DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
+                              float learningRate = 1e-6, float inferenceRate = 0.1f, float precisionRate = 0.01f, float lmbda = 1e-2f,
+                              ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
+        
 
         /// @brief Calculates the total network energy state.
         ///
@@ -207,6 +212,8 @@ namespace Deep
         ActivationFn activation;
         /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize, bool activated)`
         DerivativeFn activationDerivative;
+
+        ActivationType activationType;
 
    friend class PCNDiagnostics;
     };

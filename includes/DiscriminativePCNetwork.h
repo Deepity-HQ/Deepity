@@ -66,6 +66,9 @@ namespace Deep
         void AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                       void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool));
 
+        void AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
+                      Deep::ActivationType aType, Deep::ActivationType dType);
+
         /// @brief Randomizes the weights of each layer
         /// @param rng The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &rng);

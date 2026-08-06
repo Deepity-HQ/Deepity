@@ -215,10 +215,11 @@ set_target_properties(Deepity PROPERTIES
 # --------------------------------------------------------------------
 # Python bindings
 # --------------------------------------------------------------------
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-pybind11_add_module(deepity
-    bindings/pybinding.cpp
-)
+    pybind11_add_module(deepity
+        bindings/pybinding.cpp
+    )
 
 target_link_libraries(deepity PRIVATE
     Deepity
@@ -228,17 +229,18 @@ if(WIN32)
     target_compile_definitions(deepity PRIVATE NOMINMAX)
 endif()
 
-set_target_properties(deepity PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/pydeepity
-)
+    set_target_properties(deepity PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/pydeepity
+    )
 
-add_custom_command(
-    TARGET deepity POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/bindings/__init__.py
-        $<TARGET_FILE_DIR:deepity>/__init__.py
-)
+    add_custom_command(
+        TARGET deepity POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/bindings/__init__.py
+            $<TARGET_FILE_DIR:deepity>/__init__.py
+    )
 
+endif()
 # --------------------------------------------------------------------
 # Tests
 # --------------------------------------------------------------------

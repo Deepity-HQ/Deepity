@@ -125,7 +125,7 @@ namespace Deep
         return ActivationType::NONE;
     }
 
-    inline void expf_v(float *x, size_t n)
+    static inline void expf_v(float *x, size_t n)
     {
         size_t simd_end = 0;
 
@@ -222,7 +222,7 @@ namespace Deep
     /// @brief RELU(x) = MAX(0, x) for all x
     /// @param x array, \em assumed to be properly aligned
     /// @param n x length
-    inline void relu(float *RESTRICT x, const size_t n) noexcept
+    static inline void relu(float *RESTRICT x, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -323,7 +323,7 @@ namespace Deep
         }
     }
 
-    inline void dRelu(float *RESTRICT x, const size_t n, [[maybe_unused]] bool activated = false) noexcept
+    static inline void dRelu(float *RESTRICT x, const size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -445,7 +445,7 @@ namespace Deep
 #define Q2 4844.063053f
 
 #pragma region tanh
-    inline void tanh(float *RESTRICT x, const size_t n) noexcept
+    static inline void tanh(float *RESTRICT x, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -496,7 +496,7 @@ namespace Deep
         }
     }
 
-    inline void dTanh(float *RESTRICT x, const size_t n, bool activated = false) noexcept
+    static inline void dTanh(float *RESTRICT x, const size_t n, bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -565,7 +565,7 @@ namespace Deep
     /// @brief Implements the \em Logistic \em Sigmoid approximation, i.e. `S(x) = 1 / (1 + e^(-x))`
     /// @param x array, \em assumed to be 64-bit aligned!
     /// @param n x length
-    inline void sigmoid(float *RESTRICT x, const size_t n) noexcept
+    static inline void sigmoid(float *RESTRICT x, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -696,7 +696,7 @@ namespace Deep
         }
     }
 
-    inline void dSigmoid(float *RESTRICT x, const size_t n, bool activated = false) noexcept
+    static inline void dSigmoid(float *RESTRICT x, const size_t n, bool activated = false) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");
@@ -752,9 +752,9 @@ namespace Deep
     }
 #pragma endregion
 
-    inline void linear(float *x, size_t n) noexcept {}
+    static inline void linear(float *x, size_t n) noexcept {}
 
-    inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
+    static inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
         std::fill_n(x, n, 1.0f);
     }

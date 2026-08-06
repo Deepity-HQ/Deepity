@@ -13,11 +13,16 @@ namespace Deep
     {
         switch (type)
         {
-            case ActivationType::TANH: return "tanh";
-            case ActivationType::SIGMOID: return "sigmoid";
-            case ActivationType::RELU: return "relu";
-            case ActivationType::LINEAR: return "linear";
-            default: return "relu";
+        case ActivationType::TANH:
+            return "tanh";
+        case ActivationType::SIGMOID:
+            return "sigmoid";
+        case ActivationType::RELU:
+            return "relu";
+        case ActivationType::LINEAR:
+            return "linear";
+        default:
+            return "relu";
         }
     }
 
@@ -29,8 +34,8 @@ namespace Deep
             fs::create_directories(dirPath);
 
             fs::path manifestPath = fs::path(dirPath) / "manifest.json";
-            fs::path weightsPath  = fs::path(dirPath) / "weights.bin";
-            fs::path readmePath   = fs::path(dirPath) / "README.md";
+            fs::path weightsPath = fs::path(dirPath) / "weights.bin";
+            fs::path readmePath = fs::path(dirPath) / "README.md";
 
             const auto &layers = net.GetLayers();
             uint64_t totalParameters = 0;
@@ -39,7 +44,8 @@ namespace Deep
             // A. WRITE BINARY WEIGHTS (High-Speed Sequential Stream)
             // -------------------------------------------------------------
             std::ofstream wStream(weightsPath, std::ios::binary);
-            if (!wStream) return false;
+            if (!wStream)
+                return false;
 
             // Large 1MB buffer to prevent OS context switching during multi-GB offloading
             constexpr size_t BUFFER_SIZE = 1024 * 1024;
@@ -48,7 +54,7 @@ namespace Deep
 
             for (const auto *layer : layers)
             {
-                size_t inputSize  = layer->GetInputSize();
+                size_t inputSize = layer->GetInputSize();
                 size_t outputSize = layer->GetOutputSize();
 
                 // Dump Precisions (size floats)
@@ -72,7 +78,8 @@ namespace Deep
             // B. WRITE MANIFEST (JSON Metadata)
             // -------------------------------------------------------------
             std::ofstream mStream(manifestPath);
-            if (!mStream) return false;
+            if (!mStream)
+                return false;
 
             mStream << "{\n";
             mStream << "  \"format\": \"DeepityCheckpoint\",\n";
@@ -104,7 +111,8 @@ namespace Deep
             // C. WRITE HUMAN-READABLE README.md
             // -------------------------------------------------------------
             std::ofstream rStream(readmePath);
-            if (!rStream) return false;
+            if (!rStream)
+                return false;
 
             double footprintMB = static_cast<double>(totalParameters * sizeof(float)) / (1024.0 * 1024.0);
 
@@ -145,19 +153,18 @@ namespace Deep
         fs::path weightsPath = fs::path(dirPath) / "weights.bin";
 
         std::ifstream wStream(weightsPath, std::ios::binary);
-        if (!wStream) return false;
+        if (!wStream)
+            return false;
 
         constexpr size_t BUFFER_SIZE = 1024 * 1024;
         std::vector<char> readBuffer(BUFFER_SIZE);
         wStream.rdbuf()->pubsetbuf(readBuffer.data(), BUFFER_SIZE);
 
-        // Read binary weight buffers directly into pre-allocated layer memory
         for (auto *layer : net.GetLayers())
         {
-            size_t inputSize  = layer->GetInputSize();
+            size_t inputSize = layer->GetInputSize();
             size_t outputSize = layer->GetOutputSize();
 
-            // Read Precisions
             wStream.read(reinterpret_cast<char *>(const_cast<float *>(layer->GetPrecisions())), sizeof(float) * inputSize);
 
             if (outputSize > 0)
@@ -165,12 +172,10 @@ namespace Deep
                 size_t wCount = inputSize * outputSize;
                 size_t bCount = outputSize;
 
-                // Stream directly into contiguous layer pointers
-                wStream.read(reinterpret_cast<char *>(layer->GetWeights()), sizeof(float) * wCount);
-                wStream.read(reinterpret_cast<char *>(layer->GetBiases()), sizeof(float) * bCount);
+                wStream.read(reinterpret_cast<char *>(const_cast<float *>(layer->GetWeights())), sizeof(float) * wCount);
+                wStream.read(reinterpret_cast<char *>(const_cast<float *>(layer->GetBiases())), sizeof(float) * bCount);
             }
         }
-
         return wStream.good() || wStream.eof();
     }
 }

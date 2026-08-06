@@ -24,7 +24,31 @@ namespace Deep
             autoSize = false;
             DynamicThread(batchSize);
         }
+        
+        // Pass raw pointers directly to Constructor 2
         DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, act, dAct);
+        
+        if (!layers.empty())
+        {
+            layers.back()->SetLayerAbove(l);
+            l->SetLayerBelow(layers.back());
+        }
+        layers.push_back(l);
+    }
+
+    void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
+                                           Deep::ActivationType aType, Deep::ActivationType dType)
+    {
+        if (autoSize && layers.empty())
+        {
+            batchSize = (int)Deep::AutoBatchSize(size, nextSize);
+            autoSize = false;
+            DynamicThread(batchSize);
+        }
+        
+        // Pass enums directly to Constructor 1
+        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, aType, dType);
+        
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);

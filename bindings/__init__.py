@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
-import deepity as dy
+from . import deepity as dy
 
 class SequentialPCN(dy.DiscriminativePCNetwork):
     """
