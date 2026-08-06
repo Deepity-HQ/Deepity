@@ -209,15 +209,15 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "__getitem__",
-            [](Deep::DiscriminativePCNetwork &self, ssize_t index)
+            [](Deep::DiscriminativePCNetwork &self, std::ptrdiff_t index)
             {
                 auto &layers = self.GetLayers();
 
                 if (index < 0)
-                    index += static_cast<ssize_t>(layers.size());
+                    index += static_cast<std::ptrdiff_t>(layers.size());
 
                 if (index < 0 ||
-                    index >= static_cast<ssize_t>(layers.size()))
+                    index >= static_cast<std::ptrdiff_t>(layers.size()))
                     throw py::index_error();
 
                 return layers[index];

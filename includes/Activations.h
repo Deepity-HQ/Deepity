@@ -5,6 +5,7 @@
 #include <immintrin.h>
 #include <sleef.h>
 #include <omp.h>
+#include <algorithm>
 
 #if defined(_MSC_VER)
 #define RESTRICT __restrict
@@ -231,7 +232,7 @@ namespace Deep
 #if defined(__AVX512F__)
         __m512 zeros = _mm512_setzero_ps();
         size_t simd_end4 = n - (n % 64);
-        
+
 #pragma omp parallel for schedule(static) if (n > 65536)
         for (size_t i = 0; i < simd_end4; i += 64)
         {
@@ -250,7 +251,7 @@ namespace Deep
             _mm512_store_ps(x + i + 32, x2);
             _mm512_store_ps(x + i + 48, x3);
         }
-        
+
         simd_end = n - (n % 16);
         for (size_t i = simd_end4; i < simd_end; i += 16)
         {
@@ -279,7 +280,7 @@ namespace Deep
             _mm256_store_ps(x + i + 16, x2);
             _mm256_store_ps(x + i + 24, x3);
         }
-        
+
         simd_end = n - (n % 8);
         for (size_t i = simd_end4; i < simd_end; i += 8)
         {
@@ -308,7 +309,7 @@ namespace Deep
             _mm_store_ps(x + i + 8, x2);
             _mm_store_ps(x + i + 12, x3);
         }
-        
+
         simd_end = n - (n % 4);
         for (size_t i = simd_end4; i < simd_end; i += 4)
         {
@@ -333,7 +334,7 @@ namespace Deep
         __m512 ones = _mm512_set1_ps(1.0f);
         __m512 zeros = _mm512_setzero_ps();
         size_t simd_end4 = n - (n % 64);
-        
+
 #pragma omp parallel for schedule(static) if (n > 65536)
         for (size_t i = 0; i < simd_end4; i += 64)
         {
@@ -347,7 +348,7 @@ namespace Deep
             __mmask16 m2 = _mm512_cmp_ps_mask(x2, zeros, _CMP_GT_OQ);
             __mmask16 m3 = _mm512_cmp_ps_mask(x3, zeros, _CMP_GT_OQ);
 
-            _mm512_store_ps(x + i,      _mm512_mask_blend_ps(m0, zeros, ones));
+            _mm512_store_ps(x + i, _mm512_mask_blend_ps(m0, zeros, ones));
             _mm512_store_ps(x + i + 16, _mm512_mask_blend_ps(m1, zeros, ones));
             _mm512_store_ps(x + i + 32, _mm512_mask_blend_ps(m2, zeros, ones));
             _mm512_store_ps(x + i + 48, _mm512_mask_blend_ps(m3, zeros, ones));
@@ -561,10 +562,69 @@ namespace Deep
 
 #pragma region sigmoid
 
-    /// @brief Implements the \em Elliot \em Sigmoid approximation, i.e. `S(x) = (1/2)((x / (1 + |x|)) + 1)`
+    /// @brief Implements the \em Logistic \em Sigmoid approximation, i.e. `S(x) = 1 / (1 + e^(-x))`
     /// @param x array, \em assumed to be 64-bit aligned!
     /// @param n x length
     inline void sigmoid(float *RESTRICT x, const size_t n) noexcept
+    {
+        assert(n != 0 && "n must not be 0.");
+        assert(x != nullptr && "x must not be null.");
+
+        size_t i = 0;
+
+#if defined(__AVX512F__)
+        __m512 one = _mm512_set1_ps(1.0f);
+        __m512 neg_one = _mm512_set1_ps(-1.0f);
+        size_t r = n % 16;
+        size_t simd_end = n - r;
+        for (; i < simd_end; i += 16)
+        {
+            __m512 x_512 = _mm512_load_ps(x + i);
+            __m512 neg_x = _mm512_mul_ps(x_512, neg_one);
+            __m512 exp_neg_x = Sleef_expf16_u10avx512f(neg_x);
+            __m512 den = _mm512_add_ps(exp_neg_x, one);
+            __m512 sig = _mm512_div_ps(one, den);
+            _mm512_store_ps(x + i, sig);
+        }
+#elif defined(__AVX2__)
+        __m256 one = _mm256_set1_ps(1.0f);
+        __m256 neg_one = _mm256_set1_ps(-1.0f);
+        size_t r = n % 8;
+        size_t simd_end = n - r;
+        for (; i < simd_end; i += 8)
+        {
+            __m256 x_256 = _mm256_load_ps(x + i);
+            __m256 neg_x = _mm256_mul_ps(x_256, neg_one);
+            __m256 exp_neg_x = Sleef_expf8_u10avx2(neg_x);
+            __m256 den = _mm256_add_ps(exp_neg_x, one);
+            __m256 sig = _mm256_div_ps(one, den);
+            _mm256_store_ps(x + i, sig);
+        }
+#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 one = _mm_set1_ps(1.0f);
+        __m128 neg_one = _mm_set1_ps(-1.0f);
+        size_t r = n % 4;
+        size_t simd_end = n - r;
+        for (; i < simd_end; i += 4)
+        {
+            __m128 x_128 = _mm_load_ps(x + i);
+            __m128 neg_x = _mm_mul_ps(x_128, neg_one);
+            __m128 exp_neg_x = Sleef_expf4_u10(neg_x);
+            __m128 den = _mm_add_ps(exp_neg_x, one);
+            __m128 sig = _mm_div_ps(one, den);
+            _mm_store_ps(x + i, sig);
+        }
+#endif
+        for (; i < n; i++)
+        {
+            x[i] = 1.0f / (1.0f + std::exp(-x[i]));
+        }
+    }
+
+    /// @brief Implements the \em Elliot \em Sigmoid approximation, i.e. `S(x) = (1/2)((x / (1 + |x|)) + 1)`
+    /// @param x array, \em assumed to be 64-bit aligned!
+    /// @param n x length
+    inline void e_sigmoid(float *RESTRICT x, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");
         assert(x != nullptr && "x must not be null.");

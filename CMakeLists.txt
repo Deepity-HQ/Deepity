@@ -10,6 +10,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # --------------------------------------------------------------------
+# Helper Functions
+# --------------------------------------------------------------------
+
+function(deploy_runtime_deps target)
+    if(WIN32)
+        add_custom_command(
+            TARGET ${target} POST_BUILD
+            COMMAND "C:/vcpkg/vcpkg.exe z-applocal
+                --target-binary=$<TARGET_FILE:${target}>
+                --installed-bin-dir=C:/vcpkg/installed/x64-windows/bin"
+        )
+    endif()
+endfunction()
+
+# --------------------------------------------------------------------
 # Dependencies
 # --------------------------------------------------------------------
 
@@ -111,6 +126,10 @@ target_link_libraries(Deepity PUBLIC
     sleef
 )
 
+target_compile_definitions(Deepity PUBLIC
+    SLEEF_STATIC_LIBS
+)
+
 
 # --------------------------------------------------------------------
 # Compiler flags
@@ -167,6 +186,9 @@ target_compile_definitions(Deepity PUBLIC
     $<$<CONFIG:Debug>:_DEBUG>
 )
 
+if(WIN32)
+    target_compile_definitions(Deepity PUBLIC NOMINMAX)
+endif()
 
 set_target_properties(Deepity PROPERTIES
     POSITION_INDEPENDENT_CODE ON
@@ -185,6 +207,10 @@ pybind11_add_module(deepity
 target_link_libraries(deepity PRIVATE
     Deepity
 )
+
+if(WIN32)
+    target_compile_definitions(deepity PRIVATE NOMINMAX)
+endif()
 
 set_target_properties(deepity PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/pydeepity

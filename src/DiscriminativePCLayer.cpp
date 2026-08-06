@@ -76,7 +76,7 @@ namespace Deep
             size_t i = 0;
 
 #if defined(__AVX512F__)
-            __m512 small = _mm512_set1_ps(1e-8f);
+            __m512 epsFloor = _mm512_set1_ps(1e-8f);
             __m512 half = _mm512_set1_ps(0.5f);
             __m512 energy = _mm512_setzero_ps();
 
@@ -86,7 +86,7 @@ namespace Deep
             {
                 __m512 p512 = _mm512_load_ps(&p[i]);
                 __m512 e512 = _mm512_loadu_ps(&e[offset + i]);
-                __m512 precision = _mm512_max_ps(p512, small);
+                __m512 precision = _mm512_max_ps(p512, epsFloor);
 
                 __m512 m1 = _mm512_mul_ps(
                     half,
@@ -99,7 +99,7 @@ namespace Deep
             totalEnergy += _mm512_reduce_add_ps(energy);
 
 #elif defined(__AVX2__) || defined(__AVX__)
-            __m256 small = _mm256_set1_ps(1e-8f);
+            __m256 epsFloor = _mm256_set1_ps(1e-8f);
             __m256 half = _mm256_set1_ps(0.5f);
             __m256 energy = _mm256_setzero_ps();
 
@@ -109,7 +109,7 @@ namespace Deep
             {
                 __m256 p256 = _mm256_load_ps(&p[i]);
                 __m256 e256 = _mm256_loadu_ps(&e[offset + i]);
-                __m256 precision = _mm256_max_ps(p256, small);
+                __m256 precision = _mm256_max_ps(p256, epsFloor);
 
                 __m256 m1 = _mm256_mul_ps(
                     half,
@@ -122,7 +122,7 @@ namespace Deep
             totalEnergy += hsum256_ps(energy);
 
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-            __m128 small = _mm_set1_ps(1e-8f);
+            __m128 epsFloor = _mm_set1_ps(1e-8f);
             __m128 half = _mm_set1_ps(0.5f);
             __m128 energy = _mm_setzero_ps();
 
@@ -132,7 +132,7 @@ namespace Deep
             {
                 __m128 p256 = _mm_load_ps(&p[i]);
                 __m128 e256 = _mm_loadu_ps(&e[offset + i]);
-                __m128 precision = _mm_max_ps(p256, small);
+                __m128 precision = _mm_max_ps(p256, epsFloor);
 
                 __m128 m1 = _mm_mul_ps(
                     half,
