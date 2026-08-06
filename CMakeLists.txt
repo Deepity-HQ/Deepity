@@ -17,10 +17,23 @@ function(deploy_runtime_deps target)
     if(WIN32)
         add_custom_command(
             TARGET ${target} POST_BUILD
-            COMMAND "C:/vcpkg/vcpkg.exe z-applocal
+            COMMAND "C:/vcpkg/vcpkg.exe" z-applocal
                 --target-binary=$<TARGET_FILE:${target}>
-                --installed-bin-dir=C:/vcpkg/installed/x64-windows/bin"
+                --installed-bin-dir=C:/vcpkg/installed/x64-windows/bin
         )
+        add_custom_command(
+            TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "C:/Program Files/LLVM/bin/libomp.dll"
+                $<TARGET_FILE_DIR:${target}>
+        )
+        file(GLOB CUDA_RUNTIME_DLLS "${CUDAToolkit_BIN_DIR}/cublas64_*.dll" "${CUDAToolkit_BIN_DIR}/cudart64_*.dll")
+        foreach(dll ${CUDA_RUNTIME_DLLS})
+            add_custom_command(
+                TARGET ${target} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dll}" $<TARGET_FILE_DIR:${target}>
+            )
+        endforeach()
     endif()
 endfunction()
 
@@ -30,6 +43,7 @@ endfunction()
 
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
+find_package(CUDAToolkit REQUIRED)
 
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
@@ -124,6 +138,8 @@ target_link_libraries(Deepity PUBLIC
     ${BLAS_LIBRARIES}
     OpenMP::OpenMP_CXX
     sleef
+    CUDA::cublas
+    CUDA::cudart
 )
 
 target_compile_definitions(Deepity PUBLIC
@@ -228,7 +244,7 @@ add_custom_command(
 # --------------------------------------------------------------------
 
 add_executable(DeepityTests
-    tests/tActivations.cpp
+    tests/tBenchmark.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE
