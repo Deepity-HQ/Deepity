@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 # set(CMAKE_CXX_COMPILER clang++) # Specify g++/msvc/clang++
 
 project(deepity CXX)
+option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,13 +28,21 @@ function(deploy_runtime_deps target)
                 "C:/Program Files/LLVM/bin/libomp.dll"
                 $<TARGET_FILE_DIR:${target}>
         )
-        file(GLOB CUDA_RUNTIME_DLLS "${CUDAToolkit_BIN_DIR}/cublas64_*.dll" "${CUDAToolkit_BIN_DIR}/cudart64_*.dll")
-        foreach(dll ${CUDA_RUNTIME_DLLS})
-            add_custom_command(
-                TARGET ${target} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "${dll}" $<TARGET_FILE_DIR:${target}>
-            )
+        if(CUDAToolkit_FOUND)
+    file(GLOB CUDA_RUNTIME_DLLS
+        "${CUDAToolkit_BIN_DIR}/cublas64_*.dll"
+        "${CUDAToolkit_BIN_DIR}/cudart64_*.dll"
+    )
+
+    foreach(dll ${CUDA_RUNTIME_DLLS})
+        add_custom_command(
+            TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${dll}"
+                $<TARGET_FILE_DIR:${target}>
+        )
         endforeach()
+    endif()
     endif()
 endfunction()
 
@@ -43,7 +52,15 @@ endfunction()
 
 find_package(OpenMP REQUIRED)
 find_package(BLAS REQUIRED)
-find_package(CUDAToolkit REQUIRED)
+if(DEEPITY_ENABLE_CUDA)
+    find_package(CUDAToolkit QUIET)
+
+    if(CUDAToolkit_FOUND)
+        message(STATUS "CUDA support enabled.")
+    else()
+        message(STATUS "CUDA toolkit not found. Building CPU-only.")
+    endif()
+endif()
 
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
@@ -138,9 +155,16 @@ target_link_libraries(Deepity PUBLIC
     ${BLAS_LIBRARIES}
     OpenMP::OpenMP_CXX
     sleef
-    CUDA::cublas
-    CUDA::cudart
 )
+
+if(CUDAToolkit_FOUND)
+    target_link_libraries(Deepity PUBLIC
+        CUDA::cublas
+        CUDA::cudart
+    )
+
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
+endif()
 
 target_compile_definitions(Deepity PUBLIC
     SLEEF_STATIC_LIBS
