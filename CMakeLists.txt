@@ -190,7 +190,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(Deepity PRIVATE
         $<$<CONFIG:Release>:-O3 -march=native -ffast-math -fvectorize -fslp-vectorize>
         $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native -ffast-math -fvectorize -fslp-vectorize>
-        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic -march=native>
     )
 
     target_compile_options(Deepity PUBLIC
@@ -208,7 +208,7 @@ else() # GNU and other non-MSVC, non-Clang compilers
     target_compile_options(Deepity PRIVATE
         $<$<CONFIG:Release>:-O3 -march=native -ffast-math -ftree-vectorize -ftree-slp-vectorize>
         $<$<CONFIG:RelWithDebInfo>:-O3 -g -march=native -ffast-math -ftree-vectorize -ftree-slp-vectorize>
-        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic>
+        $<$<CONFIG:Debug>:-O0 -g3 -Wall -Wextra -Wpedantic -march=native>
     )
 
     target_compile_options(Deepity PUBLIC
@@ -270,7 +270,7 @@ endif()
 # --------------------------------------------------------------------
 
 add_executable(DeepityTests
-    tests/tBenchmark.cpp
+    tests/tAsan.cpp
 )
 
 target_link_libraries(DeepityTests PRIVATE

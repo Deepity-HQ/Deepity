@@ -31,12 +31,12 @@ namespace Deep
 
     DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
                                                  float learningRate, float inferenceRate, float precisionRate, float lmbda,
-                                                 ActivationType aType, ActivationType dType)
+                                                 ActivationType aType, [[maybe_unused]] ActivationType dType)
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
           layerAbove(nullptr), layerBelow(nullptr), activationType(aType)
     {
-        this->activation = Deep::ActivationFn(aType);
-        this->activationDerivative = Deep::DerivativeFn(aType);
+        this->activation = To_Fn(aType);
+        this->activationDerivative = To_dFn(dType);
         this->size = size;
         this->nextSize = nextSize;
         DynamicThread(batchSize);

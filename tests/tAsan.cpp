@@ -3,16 +3,16 @@
 #include <random>
 #include "DiscriminativePCNetwork.h"
 
-int main() 
+int main(void) 
 {
     std::cout << "[ASan] Initializing PCNetwork (Batch Size: 32)..." << std::endl;
     Deep::DiscriminativePCNetwork net(32);
 
     std::cout << "[ASan] Adding Layers..." << std::endl;
     // 64 -> 32
-    net.AddLayer(64, 32, 0.06f, 0.08f, 0.0f, 0.0001f, Deep::ActivationType::TANH, Deep::ActivationType::TANH);
+    net.AddLayer(64, 32, 0.06f, 0.08f, 0.0f, 0.0001f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
     // 32 -> 10
-    net.AddLayer(32, 10, 0.06f, 0.08f, 0.0f, 0.0001f, Deep::ActivationType::TANH, Deep::ActivationType::TANH);
+    net.AddLayer(32, 10, 0.06f, 0.08f, 0.0f, 0.0001f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
     // 10 -> 0 (Terminal)
     net.AddLayer(10, 0, 0.06f, 0.08f, 0.0f, 0.0001f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
 

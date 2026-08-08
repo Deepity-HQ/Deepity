@@ -752,7 +752,7 @@ namespace Deep
     }
 #pragma endregion
 
-    static inline void linear(float *x, size_t n) noexcept {}
+    static inline void linear([[maybe_unused]] float *x, [[maybe_unused]] size_t n) noexcept {}
 
     static inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
