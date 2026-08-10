@@ -46,6 +46,7 @@ namespace Deep
         dRELU,
         SIGMOID,
         dSIGMOID,
+        eSIGMOID,
         TANH,
         dTANH,
         LINEAR,
@@ -55,6 +56,7 @@ namespace Deep
 
     static inline void relu(float *, size_t) noexcept;
     static inline void sigmoid(float *, size_t) noexcept;
+    static inline void e_sigmoid(float *, size_t) noexcept;
     static inline void tanh(float *, size_t) noexcept;
     static inline void linear(float *, size_t) noexcept;
 
@@ -71,6 +73,8 @@ namespace Deep
             return relu;
         case ActivationType::SIGMOID:
             return sigmoid;
+        case ActivationType::eSIGMOID:
+            return e_sigmoid;
         case ActivationType::TANH:
             return tanh;
         case ActivationType::LINEAR:
@@ -105,6 +109,8 @@ namespace Deep
             return ActivationType::RELU;
         if (fn == sigmoid)
             return ActivationType::SIGMOID;
+        if (fn == e_sigmoid)
+            return ActivationType::eSIGMOID;
         if (fn == tanh)
             return ActivationType::TANH;
         if (fn == linear)

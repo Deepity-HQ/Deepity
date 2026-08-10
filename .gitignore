@@ -1,5 +1,7 @@
 .vscode/*
 build/*
 bin/*
+__pycache__/*
+MNIST/*
 pyrightconfig.json
 /CLAUDE.md

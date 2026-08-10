@@ -41,16 +41,15 @@ static void (*resolveDAct(const std::string &act))(float *, size_t, bool)
 
 static Deep::ActivationType resolveActEnum(const std::string &act)
 {
-    if (act == "tanh" || act == "dtanh") 
-        return Deep::ActivationType::TANH;
-    if (act == "sigmoid" || act == "dsigmoid") 
-        return Deep::ActivationType::SIGMOID;
-    if (act == "relu" || act == "drelu") 
-        return Deep::ActivationType::RELU;
-    if (act == "linear" || act == "dlinear" || act == "dLinear") 
-        return Deep::ActivationType::LINEAR;
-
-    return Deep::ActivationType::RELU;
+    if (act == "tanh") return Deep::ActivationType::TANH;
+    if (act == "dtanh") return Deep::ActivationType::dTANH;
+    if (act == "relu") return Deep::ActivationType::RELU;
+    if (act == "drelu") return Deep::ActivationType::dRELU;
+    if (act == "sigmoid") return Deep::ActivationType::SIGMOID;
+    if (act == "dsigmoid") return Deep::ActivationType::dSIGMOID;
+    if (act == "esigmoid") return Deep::ActivationType::eSIGMOID;
+    if (act == "dlinear") return Deep::ActivationType::dLINEAR;
+    else return Deep::ActivationType::LINEAR;
 }
 
 PYBIND11_MODULE(deepity, m)
@@ -89,6 +88,7 @@ PYBIND11_MODULE(deepity, m)
                const std::string &activation_deriv)
             {
                 Deep::ActivationType actType = resolveActEnum(activation);
+                Deep::ActivationType dActType = resolveActEnum(activation_deriv);
                 self.AddLayer(
                     size,
                     next_size,
@@ -97,7 +97,7 @@ PYBIND11_MODULE(deepity, m)
                     pr,
                     lmbda,
                     actType,
-                    actType);
+                    dActType);
             },
             py::arg("size"),
             py::arg("next_size"),

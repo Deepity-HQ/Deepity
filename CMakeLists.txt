@@ -268,10 +268,13 @@ endif()
 # --------------------------------------------------------------------
 # Tests
 # --------------------------------------------------------------------
-
 add_executable(DeepityTests
-    tests/tAsan.cpp
+    tests/tNetwork.cpp
 )
+
+# target_compile_definitions(Deepity PRIVATE PCN_PROFILE)
+# target_compile_definitions(DeepityTests PRIVATE PCN_PROFILE)
+
 
 target_link_libraries(DeepityTests PRIVATE
     Deepity
