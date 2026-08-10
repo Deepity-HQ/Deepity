@@ -1,0 +1,96 @@
+rose0  ~/Projects/deepitytest  ❯ python test.py
+Fetching full MNIST dataset (70,000 images)...
+
+Starting Full Batched MNIST PCN Training (60000 samples, Batch Size: 256)...
+  Epoch 1/1 | LR: 0.060000 | Batch 200/234 | Avg Batch Energy: 2439.7594 | Time: 34.81990 sec
+
+=== Evaluating on Full Test Set ===
+Test Accuracy: 7944/9984 (79.57%)
+rose0  ~/Projects/deepitytest  ❯ python test.py
+Fetching full MNIST dataset (70,000 images)...
+
+Starting MNIST PCN Step-Tuning Experiment (60000 samples, Batch Size: 256)...
+Running 1 epoch(s) per configuration to find the optimal relaxation steps.
+
+=== Testing configuration: 1 relaxation steps ===
+Done in 1.43s | Test Accuracy: 11.25%
+
+=== Testing configuration: 5 relaxation steps ===
+Done in 4.14s | Test Accuracy: 52.70%
+
+=== Testing configuration: 10 relaxation steps ===
+Done in 7.11s | Test Accuracy: 66.19%
+
+=== Testing configuration: 20 relaxation steps ===
+Done in 13.39s | Test Accuracy: 45.02%
+
+=== Testing configuration: 40 relaxation steps ===
+Done in 27.10s | Test Accuracy: 57.11%
+
+=== Testing configuration: 60 relaxation steps ===
+Done in 42.17s | Test Accuracy: 85.59%
+
+==================================================
+Steps      | Epoch Time (s)  | Accuracy (%)   
+--------------------------------------------------
+1          | 1.43            | 11.25          
+5          | 4.14            | 52.70          
+10         | 7.11            | 66.19          
+20         | 13.39           | 45.02          
+40         | 27.10           | 57.11          
+60         | 42.17           | 85.59          
+==================================================
+rose0  ~/Projects/deepitytest  ❯ python test.py
+Fetching full MNIST dataset (70,000 images)...
+
+Starting MNIST PCN Step-Tuning Experiment (60000 samples, Batch Size: 256)...
+Running 1 epoch(s) per configuration to find the optimal relaxation steps.
+
+=== Testing configuration: 10 relaxation steps ===
+Done in 7.25s | Test Accuracy: 69.56%
+
+=== Testing configuration: 15 relaxation steps ===
+Done in 10.36s | Test Accuracy: 59.55%
+
+=== Testing configuration: 20 relaxation steps ===
+Done in 13.65s | Test Accuracy: 69.60%
+
+=== Testing configuration: 25 relaxation steps ===
+Done in 18.81s | Test Accuracy: 41.81%
+
+=== Testing configuration: 30 relaxation steps ===
+Done in 23.16s | Test Accuracy: 65.51%
+
+=== Testing configuration: 35 relaxation steps ===
+Done in 26.05s | Test Accuracy: 50.81%
+
+=== Testing configuration: 40 relaxation steps ===
+Done in 30.09s | Test Accuracy: 78.01%
+
+=== Testing configuration: 45 relaxation steps ===
+Done in 35.46s | Test Accuracy: 65.61%
+
+=== Testing configuration: 50 relaxation steps ===
+Done in 36.31s | Test Accuracy: 67.81%
+
+=== Testing configuration: 55 relaxation steps ===
+Done in 41.15s | Test Accuracy: 72.35%
+
+=== Testing configuration: 60 relaxation steps ===
+Done in 45.69s | Test Accuracy: 85.59%
+
+==================================================
+Steps      | Epoch Time (s)  | Accuracy (%)   
+--------------------------------------------------
+10         | 7.25            | 69.56          
+15         | 10.36           | 59.55          
+20         | 13.65           | 69.60          
+25         | 18.81           | 41.81          
+30         | 23.16           | 65.51          
+35         | 26.05           | 50.81          
+40         | 30.09           | 78.01          
+45         | 35.46           | 65.61          
+50         | 36.31           | 67.81          
+55         | 41.15           | 72.35          
+60         | 45.69           | 85.59          
+==================================================

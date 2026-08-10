@@ -1,0 +1,57 @@
+rose0@fedora:~/Projects/deepitytest$ python test.py
+Fetching full MNIST dataset (70,000 images)...
+
+Starting Full Batched MNIST PCN Training (60000 samples, Batch Size: 256)...
+  Epoch 1/50 | LR: 0.060000 | Batch 200/234 | Avg Batch Energy: 2621.1348 | Time: 63.72576 sec
+  Epoch 2/50 | LR: 0.058800 | Batch 200/234 | Avg Batch Energy: 1492.7306 | Time: 64.99248 sec
+  Epoch 3/50 | LR: 0.057624 | Batch 200/234 | Avg Batch Energy: 1194.5054 | Time: 61.17026 sec
+  Epoch 4/50 | LR: 0.056472 | Batch 200/234 | Avg Batch Energy: 1031.7386 | Time: 58.66720 sec
+  Epoch 5/50 | LR: 0.055342 | Batch 200/234 | Avg Batch Energy: 983.9116 | Time: 57.78906 sec
+  Epoch 6/50 | LR: 0.054235 | Batch 200/234 | Avg Batch Energy: 847.0551 | Time: 55.02448 sec
+  Epoch 7/50 | LR: 0.053151 | Batch 200/234 | Avg Batch Energy: 829.7652 | Time: 54.19589 sec
+  Epoch 8/50 | LR: 0.052088 | Batch 200/234 | Avg Batch Energy: 743.2756 | Time: 54.02360 sec
+  Epoch 9/50 | LR: 0.051046 | Batch 200/234 | Avg Batch Energy: 693.4940 | Time: 55.08620 sec
+  Epoch 10/50 | LR: 0.050025 | Batch 200/234 | Avg Batch Energy: 752.5950 | Time: 55.29173 sec
+  Epoch 11/50 | LR: 0.049024 | Batch 200/234 | Avg Batch Energy: 613.2090 | Time: 52.56695 sec
+  Epoch 12/50 | LR: 0.048044 | Batch 200/234 | Avg Batch Energy: 504.7356 | Time: 51.67273 sec
+  Epoch 13/50 | LR: 0.047083 | Batch 200/234 | Avg Batch Energy: 501.4094 | Time: 51.10183 sec
+  Epoch 14/50 | LR: 0.046141 | Batch 200/234 | Avg Batch Energy: 511.8660 | Time: 50.40040 sec
+  Epoch 15/50 | LR: 0.045219 | Batch 200/234 | Avg Batch Energy: 446.1115 | Time: 47.67877 sec
+  Epoch 16/50 | LR: 0.044314 | Batch 200/234 | Avg Batch Energy: 415.2539 | Time: 47.91657 sec
+  Epoch 17/50 | LR: 0.043428 | Batch 200/234 | Avg Batch Energy: 376.4767 | Time: 47.11852 sec
+  Epoch 18/50 | LR: 0.042559 | Batch 200/234 | Avg Batch Energy: 368.5430 | Time: 49.87624 sec
+  Epoch 19/50 | LR: 0.041708 | Batch 200/234 | Avg Batch Energy: 325.9405 | Time: 49.63881 sec
+  Epoch 20/50 | LR: 0.040874 | Batch 200/234 | Avg Batch Energy: 323.6370 | Time: 49.74329 sec
+  Epoch 21/50 | LR: 0.040056 | Batch 200/234 | Avg Batch Energy: 298.8842 | Time: 49.25112 sec
+  Epoch 22/50 | LR: 0.039255 | Batch 200/234 | Avg Batch Energy: 278.8836 | Time: 49.31174 sec
+  Epoch 23/50 | LR: 0.038470 | Batch 200/234 | Avg Batch Energy: 276.0820 | Time: 46.83296 sec
+  Epoch 24/50 | LR: 0.037701 | Batch 200/234 | Avg Batch Energy: 260.2145 | Time: 46.82856 sec
+  Epoch 25/50 | LR: 0.036947 | Batch 200/234 | Avg Batch Energy: 251.4918 | Time: 46.77760 sec
+  Epoch 26/50 | LR: 0.036208 | Batch 200/234 | Avg Batch Energy: 243.9763 | Time: 46.69295 sec
+  Epoch 27/50 | LR: 0.035484 | Batch 200/234 | Avg Batch Energy: 239.1437 | Time: 46.87114 sec
+  Epoch 28/50 | LR: 0.034774 | Batch 200/234 | Avg Batch Energy: 231.1686 | Time: 46.65665 sec
+  Epoch 29/50 | LR: 0.034079 | Batch 200/234 | Avg Batch Energy: 224.5660 | Time: 46.82609 sec
+  Epoch 30/50 | LR: 0.033397 | Batch 200/234 | Avg Batch Energy: 217.9281 | Time: 46.78437 sec
+  Epoch 31/50 | LR: 0.032729 | Batch 200/234 | Avg Batch Energy: 212.8896 | Time: 46.72667 sec
+  Epoch 32/50 | LR: 0.032074 | Batch 200/234 | Avg Batch Energy: 208.1796 | Time: 46.85282 sec
+  Epoch 33/50 | LR: 0.031433 | Batch 200/234 | Avg Batch Energy: 204.3728 | Time: 46.83034 sec
+  Epoch 34/50 | LR: 0.030804 | Batch 200/234 | Avg Batch Energy: 199.0045 | Time: 46.67544 sec
+  Epoch 35/50 | LR: 0.030188 | Batch 200/234 | Avg Batch Energy: 195.4769 | Time: 46.60032 sec
+  Epoch 36/50 | LR: 0.029584 | Batch 200/234 | Avg Batch Energy: 191.7853 | Time: 46.94628 sec
+  Epoch 37/50 | LR: 0.028993 | Batch 200/234 | Avg Batch Energy: 188.6303 | Time: 46.57753 sec
+  Epoch 38/50 | LR: 0.028413 | Batch 200/234 | Avg Batch Energy: 184.9957 | Time: 46.62233 sec
+  Epoch 39/50 | LR: 0.027845 | Batch 200/234 | Avg Batch Energy: 182.5664 | Time: 92.99764 sec
+  Epoch 40/50 | LR: 0.027288 | Batch 200/234 | Avg Batch Energy: 180.3000 | Time: 91.61747 sec
+  Epoch 41/50 | LR: 0.026742 | Batch 200/234 | Avg Batch Energy: 177.9083 | Time: 91.54620 sec
+  Epoch 42/50 | LR: 0.026207 | Batch 200/234 | Avg Batch Energy: 175.6195 | Time: 91.05145 sec
+  Epoch 43/50 | LR: 0.025683 | Batch 200/234 | Avg Batch Energy: 174.0099 | Time: 90.27195 sec
+  Epoch 44/50 | LR: 0.025169 | Batch 200/234 | Avg Batch Energy: 172.0475 | Time: 89.09563 sec
+  Epoch 45/50 | LR: 0.024666 | Batch 200/234 | Avg Batch Energy: 170.5594 | Time: 93.24988 sec
+  Epoch 46/50 | LR: 0.024173 | Batch 200/234 | Avg Batch Energy: 169.7826 | Time: 94.90939 sec
+  Epoch 47/50 | LR: 0.023689 | Batch 200/234 | Avg Batch Energy: 168.1409 | Time: 90.74702 sec
+  Epoch 48/50 | LR: 0.023215 | Batch 200/234 | Avg Batch Energy: 167.3214 | Time: 87.15882 sec
+  Epoch 49/50 | LR: 0.022751 | Batch 200/234 | Avg Batch Energy: 166.1691 | Time: 83.30885 sec
+  Epoch 50/50 | LR: 0.022296 | Batch 200/234 | Avg Batch Energy: 165.3567 | Time: 83.80578 sec
+
+=== Evaluating on Full Test Set ===
+Test Accuracy: 9227/9984 (92.42%)

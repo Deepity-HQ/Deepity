@@ -1,0 +1,39 @@
+{
+  "format": "DeepityCheckpoint",
+  "version": 1,
+  "batch_size": 32,
+  "layer_count": 3,
+  "total_parameters": 2410,
+  "layers": [
+    {
+      "index": 0,
+      "input_size": 64,
+      "output_size": 32,
+      "learning_rate": 0.0452185,
+      "inference_rate": 0.08,
+      "precision_rate": 0,
+      "lambda": 0.0001,
+      "activation": "relu"
+    },
+    {
+      "index": 1,
+      "input_size": 32,
+      "output_size": 10,
+      "learning_rate": 0.0452185,
+      "inference_rate": 0.08,
+      "precision_rate": 0,
+      "lambda": 0.0001,
+      "activation": "relu"
+    },
+    {
+      "index": 2,
+      "input_size": 10,
+      "output_size": 0,
+      "learning_rate": 0.0452185,
+      "inference_rate": 0.08,
+      "precision_rate": 0,
+      "lambda": 0.0001,
+      "activation": "relu"
+    }
+  ]
+}

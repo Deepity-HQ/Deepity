@@ -1,0 +1,23 @@
+Most engineers know how standard neural networks learn: backpropagation. But there is another, biologically-inspired way: Predictive Coding.
+
+It's an incredibly promising alternative, but it comes with a massive catch: training these architectures from scratch on a CPU is painfully slow. Here is how I fixed that. 👇
+
+Instead of relying on a global error signal, Predictive Coding networks learn by minimizing local prediction errors (energy) across layers. Even for standard models, CPU training typically sits in the "minutes to hours per epoch" range depending on batch size and complexity.
+
+I wanted to see if I could push a Predictive Coding network to its absolute limits on standard hardware. I built Deepity, a custom PC library engineered from the ground up in C++ to extract maximum throughput from modern hardware.
+
+As the convergence chart below shows, the math works—and the engine flies. Deepity trained MNIST for 50 epochs at a blistering pace of ~1 minute per epoch on a standard laptop CPU.
+
+To sustain over 120 GFLOPS on a standard i7 processor without a GPU, I had to get aggressive with the optimizations:
+
+⋅ Zero-Overhead Python: I used pybind11 to keep the entire inference loop strictly in native C++ memory, running significantly faster than highly vectorized NumPy implementations.
+
+⋅ Custom SIMD Micro-Kernels: I bypassed standard C++ libraries entirely using raw AVX2 and AVX-512 intrinsics. I even implemented a custom Padé rational polynomial approximation for the tanh activation to dodge expensive expf instructions (yielding a 40% speedup over the standard library!).
+
+⋅ Contiguous Memory Arenas: Every layer buffer is packed into a single, contiguous flat-memory block. This maximizes L1/L2 cache locality and completely eliminates pointer-chasing overhead across the network hierarchy.
+
+⋅ Dynamic Threading: Oversubscription is a real performance killer on smaller batches. Deepity analyzes batch sizes to find the exact mathematical break-even point before igniting OpenMP/OpenBLAS threads, avoiding severe thread spin-up latency.
+
+The code, C++ engine, and full benchmark breakdowns are completely open-source. If you want to check out the SIMD micro-kernels or run a PC network yourself, check out the repo here: https://github.com/Ra4ster/Deepity
+
+#MachineLearning #CPlusPlus #PerformanceEngineering #SIMD #PredictiveCoding #AI
