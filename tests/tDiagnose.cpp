@@ -1,18 +1,20 @@
-// tDiagnose.cpp
+// tConvDiagnose.cpp
 //
-// Diagnostic harness for DiscriminativePCNetwork, aimed at answering:
-// "why is accuracy capped, and is it the algorithm or the task?"
+// Synthetic floor test for ConvPCNetwork, mirroring tDiagnose.cpp's
+// approach for the discriminative network: a task with a KNOWN, easy
+// answer, so if the network can't solve it, the shortfall is architectural,
+// not "the real dataset is just hard."
 //
-// Strategy: train on a SYNTHETIC classification task with a known, easy
-// answer (well-separated Gaussian blobs) instead of MNIST. If this network
-// can't get near 100% on an easy task, the shortfall is architectural/
-// algorithmic, not MNIST-specific difficulty. We also directly inspect
-// per-unit precision and activation variance, instead of reading one
-// aggregate energy number.
+// Unlike tDiagnose.cpp's flat Gaussian blobs, this task has genuine SPATIAL
+// structure (a class-specific patch placed at a distinct location in a
+// small image) -- something a flat/dense network could still solve by
+// memorizing pixel positions, but that specifically exercises convolution's
+// actual mechanism (Im2Col/Col2Im, spatial weight sharing) rather than just
+// being a relabeled flat-vector problem.
 //
-// Runs two conditions back-to-back with identical seed/data: precision OFF
-// (pr=0) and precision ON (pr>0), so we can see directly whether precision
-// helps, hurts, or is neutral for actual classification accuracy.
+// Architecture collapses spatial dims to 1x1 by the second conv layer, so
+// the terminal layer's flattened size is exactly N_CLASSES -- same
+// one-hot/argmax readout pattern used in every earlier gate/blob test.
 
 #include <iostream>
 #include <vector>
@@ -20,213 +22,145 @@
 #include <random>
 #include <iomanip>
 #include <algorithm>
-#include <numeric>
-#include "DiscriminativePCNetwork.h"
+#include "ConvPCNetwork.h"
 
 using namespace Deep;
 
-// ---------------------------------------------------------------------------
-// Synthetic dataset: N_CLASSES well-separated Gaussian blobs in INPUT_DIM
-// dimensions. A linear classifier can solve this near-perfectly, so this is
-// a floor test: if the PCN can't get close to 100%, something is wrong
-// independent of MNIST's real difficulty.
-//
-// NOTE: dimensions padded to multiples of 16 (N_CLASSES=16, BATCH_SIZE=48)
-// to avoid a MemoryArena capacity-vs-alignment-padding mismatch -- see
-// CONTRIBUTING.md, rule 5 in "Numerical / algorithmic gotchas", and the
-// Compile() ordering note.
-// ---------------------------------------------------------------------------
-
-constexpr int N_TRAIN = 500;
-constexpr int N_TEST = 200;
-constexpr int INPUT_DIM = 32;  // multiple of 16
-constexpr int N_CLASSES = 16;  // padded from 5 -- extra classes unused
-constexpr int HIDDEN = 64;     // multiple of 16
-constexpr int BATCH_SIZE = 48; // multiple of 16
+constexpr int IMG = 12;        // input image is IMG x IMG, 1 channel
+constexpr int N_CLASSES = 5;
+constexpr int N_TRAIN = 400;
+constexpr int N_TEST = 100;
+constexpr int BATCH_SIZE = 25;
 
 struct Dataset
 {
-    std::vector<float> X; // N * INPUT_DIM, row-major, tanh-range
+    std::vector<float> X; // N * 1 * IMG * IMG, row-major, tanh-range
     std::vector<float> Y; // N * N_CLASSES, soft one-hot
     std::vector<int> labels;
     int n;
 };
 
-Dataset MakeBlobs(int n, std::mt19937 &rng)
+Dataset MakeSpatialBlobs(int n, std::mt19937 &rng)
 {
     Dataset d;
     d.n = n;
-    d.X.resize((size_t)n * INPUT_DIM);
+    d.X.assign((size_t)n * IMG * IMG, -0.8f); // background
     d.Y.resize((size_t)n * N_CLASSES);
     d.labels.resize(n);
 
-    // Fixed, well-separated class centers (unit-ish vectors, spread out)
-    static std::vector<std::vector<float>> centers;
-    if (centers.empty())
+    // Fixed, well-separated patch locations per class -- spread across the
+    // image so classes are trivially distinguishable BY POSITION, which is
+    // exactly what convolution's spatial structure should exploit.
+    static std::vector<std::pair<int, int>> patchOrigin;
+    if (patchOrigin.empty())
     {
-        std::mt19937 centerRng(7);
-        std::uniform_real_distribution<float> u(-0.8f, 0.8f);
-        for (int c = 0; c < N_CLASSES; c++)
-        {
-            std::vector<float> center(INPUT_DIM);
-            for (float &v : center)
-                v = u(centerRng);
-            centers.push_back(center);
-        }
+        // 5 classes -> 5 non-overlapping 3x3 patch locations in a 12x12 image.
+        patchOrigin = {{1, 1}, {1, 8}, {8, 1}, {8, 8}, {4, 4}};
     }
 
-    std::normal_distribution<float> noise(0.0f, 0.15f); // small noise, easy separation
+    std::normal_distribution<float> noise(0.0f, 0.1f);
     std::uniform_int_distribution<int> classPick(0, N_CLASSES - 1);
 
     for (int i = 0; i < n; i++)
     {
         int cls = classPick(rng);
         d.labels[i] = cls;
-        for (int j = 0; j < INPUT_DIM; j++)
-        {
-            float v = centers[cls][j] + noise(rng);
-            d.X[(size_t)i * INPUT_DIM + j] = std::clamp(v, -1.0f, 1.0f);
-        }
+
+        float *img = d.X.data() + (size_t)i * IMG * IMG;
+        for (int p = 0; p < IMG * IMG; p++)
+            img[p] = std::clamp(-0.8f + noise(rng), -1.0f, 1.0f);
+
+        auto [r0, c0] = patchOrigin[cls];
+        for (int dr = 0; dr < 3; dr++)
+            for (int dc = 0; dc < 3; dc++)
+                img[(r0 + dr) * IMG + (c0 + dc)] = std::clamp(0.9f + noise(rng), -1.0f, 1.0f);
+
         for (int c = 0; c < N_CLASSES; c++)
             d.Y[(size_t)i * N_CLASSES + c] = (c == cls) ? 0.9f : -0.9f;
     }
     return d;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-std::vector<float> Slice(const std::vector<float> &flat, int stride, int start, int count)
+std::vector<float> SliceImages(const std::vector<float> &flat, int start, int count)
 {
-    return std::vector<float>(flat.begin() + (size_t)start * stride,
-                               flat.begin() + (size_t)(start + count) * stride);
+    return std::vector<float>(flat.begin() + (size_t)start * IMG * IMG,
+                               flat.begin() + (size_t)(start + count) * IMG * IMG);
 }
 
-// Precision distribution stats for one layer: mean/stddev/min/max of log(p).
-// p = exp(log_p) exactly, so log(p[i]) reconstructs log_p without needing a
-// raw accessor.
-void ReportPrecisionStats(const std::string &name, DiscriminativePCLayer *layer, int size)
+std::vector<float> SliceLabels(const std::vector<float> &flat, int start, int count)
 {
-    const float *p = layer->GetPrecisions();
-    std::vector<float> logp(size);
-    for (int i = 0; i < size; i++)
-        logp[i] = std::log(MAX(p[i], 1e-8f));
-
-    float mean = std::accumulate(logp.begin(), logp.end(), 0.0f) / size;
-    float sqsum = 0.0f;
-    for (float v : logp)
-        sqsum += (v - mean) * (v - mean);
-    float stddev = std::sqrt(sqsum / size);
-    auto [lo, hi] = std::minmax_element(logp.begin(), logp.end());
-
-    std::cout << "  [" << name << "] log(p): mean=" << mean << " stddev=" << stddev
-               << " min=" << *lo << " max=" << *hi << "\n";
+    return std::vector<float>(flat.begin() + (size_t)start * N_CLASSES,
+                               flat.begin() + (size_t)(start + count) * N_CLASSES);
 }
 
-// Dead-unit check: for the hidden layer, how many units have near-zero
-// variance in their belief (z) across the batch -- i.e. respond almost
-// identically regardless of which input was presented. A healthy hidden
-// layer should have most units varying meaningfully across a diverse batch.
-void ReportDeadUnits(const std::string &name, DiscriminativePCLayer *layer, int size, int batchSize)
+int main()
 {
-    const float *z = layer->GetBeliefs(); // batchSize x size, row-major
-    int dead = 0;
-    for (int unit = 0; unit < size; unit++)
-    {
-        float mean = 0.0f;
-        for (int b = 0; b < batchSize; b++)
-            mean += z[(size_t)b * size + unit];
-        mean /= batchSize;
+    std::mt19937 dataRng(123);
+    Dataset train = MakeSpatialBlobs(N_TRAIN, dataRng);
+    Dataset test = MakeSpatialBlobs(N_TEST, dataRng);
 
-        float var = 0.0f;
-        for (int b = 0; b < batchSize; b++)
-        {
-            float d = z[(size_t)b * size + unit] - mean;
-            var += d * d;
-        }
-        var /= batchSize;
+    std::cout << "Synthetic task: " << N_CLASSES << " classes, each a distinct 3x3 patch\n";
+    std::cout << "location in a " << IMG << "x" << IMG << " image (spatially separable).\n";
+    std::cout << "A working ConvPCNetwork should reach ~90-100% here.\n\n";
 
-        if (var < 1e-6f)
-            dead++;
-    }
-    std::cout << "  [" << name << "] dead/near-constant units: " << dead << " / " << size << "\n";
-}
+    std::mt19937 netRng(42);
+    ConvPCNetwork net(BATCH_SIZE);
 
-// Trains + evaluates one configuration, returns test accuracy.
-float RunCondition(const std::string &label, float pr, int epochs,
-                    const Dataset &train, const Dataset &test)
-{
-    std::cout << "\n=== " << label << " (pr=" << pr << ") ===\n";
+    // Layer 0: 1x12x12 -> conv 5x5 stride2 -> 8 channels, 4x4
+    net.AddLayer(1, 8, IMG, IMG, 5, 5, 2, 2, 0, 0,
+                 0.02f, 0.2f, 0.0f, 0.0001f,
+                 ActivationType::TANH, ActivationType::dTANH);
 
-    std::mt19937 mt(42); // same seed across conditions -- isolates pr's effect
-    DiscriminativePCNetwork net(BATCH_SIZE);
-    net.AddLayer(INPUT_DIM, HIDDEN, 0.02f, 0.2f, pr, 0.0001f, tanh, dTanh);
-    net.AddLayer(HIDDEN, N_CLASSES, 0.02f, 0.2f, pr, 0.0001f, tanh, dTanh);
-    net.AddLayer(N_CLASSES, 0, 0.02f, 0.2f, pr, 0.0001f, tanh, dTanh);
+    // Layer 1: 8x4x4 -> conv 4x4 stride1 -> N_CLASSES channels, 1x1
+    // (collapses all remaining spatial extent -- effectively a
+    // fully-connected layer expressed as a convolution)
+    net.AddLayer(8, N_CLASSES, 4, 4, 4, 4, 1, 1, 0, 0,
+                 0.02f, 0.2f, 0.0f, 0.0001f,
+                 ActivationType::TANH, ActivationType::dTANH);
+
+    // Layer 2 (terminal): N_CLASSES x 1 x 1 -> flattened size = N_CLASSES exactly
+    net.AddLayer(N_CLASSES, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+                 0.02f, 0.2f, 0.0f, 0.0001f,
+                 ActivationType::LINEAR, ActivationType::dLINEAR);
+
     net.Compile();
-    net.RandomizeWeights(mt);
+    net.RandomizeWeights(netRng);
 
-    auto &layers = net.GetLayers();
-    auto *hidden = static_cast<DiscriminativePCLayer *>(layers[1]);
-    int hiddenSize = (int)hidden->GetInputSize();
+    const int INFERENCE_STEPS = 30;
+    const int EPOCHS = 40;
+    const int nBatches = N_TRAIN / BATCH_SIZE;
 
-    int inferenceSteps = 30;
-    int nBatches = train.n / BATCH_SIZE;
-
-    for (int epoch = 0; epoch < epochs; epoch++)
+    std::cout << "Training...\n";
+    for (int epoch = 0; epoch < EPOCHS; epoch++)
     {
+        float epochEnergy = 0.0f;
         for (int b = 0; b < nBatches; b++)
         {
-            auto xb = Slice(train.X, INPUT_DIM, b * BATCH_SIZE, BATCH_SIZE);
-            auto yb = Slice(train.Y, N_CLASSES, b * BATCH_SIZE, BATCH_SIZE);
-
-            net.ResetState();
-            net.Clamp(xb);
-            net.GetTerminalLayer()->ClampState(yb);
-
-            for (int t = 0; t < inferenceSteps; t++)
-            {
-                net.CalculateState();
-                net.UpdateState();
-            }
-
-            net.UpdateWeights();
-            if (pr > 0.0f)
-                net.UpdatePrecision();
-
-            net.GetTerminalLayer()->UnclampState();
+            auto xb = SliceImages(train.X, b * BATCH_SIZE, BATCH_SIZE);
+            auto yb = SliceLabels(train.Y, b * BATCH_SIZE, BATCH_SIZE);
+            epochEnergy += net.TrainStep(xb, yb, INFERENCE_STEPS);
         }
+        if (epoch % 5 == 0 || epoch == EPOCHS - 1)
+            std::cout << "  Epoch " << std::setw(3) << epoch
+                       << "  avg energy=" << std::fixed << std::setprecision(4)
+                       << (epochEnergy / nBatches) << "\n";
     }
 
-    // Diagnostics on final state (post-training, using last training batch's
-    // settled activity for the dead-unit check).
-    ReportPrecisionStats("hidden", hidden, hiddenSize);
-    ReportDeadUnits("hidden", hidden, hiddenSize, BATCH_SIZE);
-
-    // Evaluation on held-out synthetic test set
+    std::cout << "\nEvaluating on held-out test set...\n";
     int correct = 0;
-    int nTestBatches = test.n / BATCH_SIZE;
+    int nTestBatches = N_TEST / BATCH_SIZE;
     for (int b = 0; b < nTestBatches; b++)
     {
-        auto xb = Slice(test.X, INPUT_DIM, b * BATCH_SIZE, BATCH_SIZE);
+        auto xb = SliceImages(test.X, b * BATCH_SIZE, BATCH_SIZE);
+        auto preds = net.Predict(xb, INFERENCE_STEPS); // BATCH_SIZE x N_CLASSES flattened
 
-        net.ResetState();
-        net.Clamp(xb);
-        for (int t = 0; t < inferenceSteps; t++)
-        {
-            net.CalculateState();
-            net.UpdateState();
-        }
-
-        const float *out = net.GetTerminalLayer()->GetBeliefs(); // BATCH_SIZE x N_CLASSES
         for (int i = 0; i < BATCH_SIZE; i++)
         {
             int predicted = 0;
             float best = -1e9f;
             for (int c = 0; c < N_CLASSES; c++)
             {
-                float v = out[(size_t)i * N_CLASSES + c];
+                float v = preds[(size_t)i * N_CLASSES + c];
                 if (v > best) { best = v; predicted = c; }
             }
             int trueLabel = test.labels[b * BATCH_SIZE + i];
@@ -236,47 +170,21 @@ float RunCondition(const std::string &label, float pr, int epochs,
     }
 
     float acc = 100.0f * correct / (nTestBatches * BATCH_SIZE);
-    std::cout << "  Held-out test accuracy: " << correct << "/" << (nTestBatches * BATCH_SIZE)
-               << " (" << std::fixed << std::setprecision(2) << acc << "%)\n";
-    std::cout << std::defaultfloat << std::setprecision(6); // reset
-    return acc;
-}
+    std::cout << "Held-out test accuracy: " << correct << "/" << (nTestBatches * BATCH_SIZE)
+               << " (" << std::fixed << std::setprecision(2) << acc << "%)\n\n";
 
-int main(void)
-{
-    std::mt19937 dataRng(123);
-    Dataset train = MakeBlobs(N_TRAIN, dataRng);
-    Dataset test = MakeBlobs(N_TEST, dataRng);
-
-    std::cout << "Synthetic task: " << N_CLASSES << " well-separated Gaussian blobs, "
-               << INPUT_DIM << "-dim, low noise.\n";
-    std::cout << "A working classifier should reach ~95-100% here. If this network\n";
-    std::cout << "can't, the shortfall is architectural, not MNIST-specific.\n";
-
-    int epochs = 40;
-
-    float accNoPrecision = RunCondition("Precision OFF", 0.0f, epochs, train, test);
-    float accWithPrecision = RunCondition("Precision ON", 0.001f, epochs, train, test);
-
-    std::cout << "\n========================================\n";
-    std::cout << "Precision OFF: " << accNoPrecision << "%\n";
-    std::cout << "Precision ON:  " << accWithPrecision << "%\n";
-    std::cout << "========================================\n";
-
-    if (accNoPrecision < 85.0f && accWithPrecision < 85.0f)
-        std::cout << "\nBoth conditions underperform on an EASY synthetic task.\n"
-                   << "-> Shortfall is likely architectural/algorithmic, not data-specific.\n"
-                   << "   Check dead-unit counts above; if high, capacity or inference\n"
-                   << "   steps/rates are the next thing to investigate.\n";
-    else if (std::abs(accNoPrecision - accWithPrecision) > 5.0f)
-        std::cout << "\nPrecision measurably changes accuracy on this easy task.\n"
-                   << "-> Precision weighting has a real effect on learning dynamics here,\n"
-                   << "   worth tuning 'pr' deliberately rather than treating it as inert.\n";
+    if (acc >= 90.0f)
+        std::cout << "PASS -- ConvPCNetwork solves an easy, spatially-separable task.\n"
+                   << "The architecture and Im2Col/Col2Im wiring are sound end-to-end.\n";
+    else if (acc >= 50.0f)
+        std::cout << "PARTIAL -- better than chance (" << (100.0f / N_CLASSES)
+                   << "% baseline) but not solving cleanly.\n"
+                   << "Worth checking epochs/inference steps/learning rate before\n"
+                   << "suspecting a correctness bug -- gradient checks already passed.\n";
     else
-        std::cout << "\nBoth conditions solve the easy task well and similarly.\n"
-                   << "-> The algorithm itself is sound at this scale; MNIST's accuracy\n"
-                   << "   ceiling is more likely about capacity/training budget/steps at\n"
-                   << "   MNIST's larger scale, not a lurking correctness bug.\n";
+        std::cout << "FAIL -- at or near chance level. Something is wrong beyond\n"
+                   << "hyperparameters; worth re-checking the network wiring\n"
+                   << "(layer shapes, AddLayer order) before MNIST.\n";
 
-    return 0;
+    return acc >= 90.0f ? 0 : 1;
 }

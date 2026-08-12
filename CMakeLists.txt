@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-# set(CMAKE_C_COMPILER clang) # Specify gcc/msvc/clang
-# set(CMAKE_CXX_COMPILER clang++) # Specify g++/msvc/clang++
+set(CMAKE_C_COMPILER gcc) # Specify gcc/msvc/clang
+set(CMAKE_CXX_COMPILER g++) # Specify g++/msvc/clang++
 
 project(deepity CXX)
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
+option(DEEPITY_BUILD_TESTS "Build the DeepityTests target" OFF)
+option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -140,7 +142,9 @@ FetchContent_MakeAvailable(benchmark)
 add_library(Deepity STATIC
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
+    src/ConvPCLayer.cpp
     src/DiscriminativePCNetwork.cpp
+    src/ConvPCNetwork.cpp    
     src/ModelIO.cpp
 )
 
@@ -269,7 +273,7 @@ endif()
 # Tests
 # --------------------------------------------------------------------
 add_executable(DeepityTests
-    tests/tNetwork.cpp
+    tests/tConvGradCheck.cpp
 )
 
 # target_compile_definitions(Deepity PRIVATE PCN_PROFILE)

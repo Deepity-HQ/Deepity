@@ -94,6 +94,9 @@ namespace Deep
         /// @brief Does nothing; exists for class extension.
         void Flush() noexcept override {} // no buffer
 
+	/// @brief Recomputes log of precision if it falls behind.
+	void ResyncLogPrecision() noexcept;
+
         /// @brief Clamps the layer to the input data
         /// @param inputData Input
         void ClampState(const std::vector<float> &inputData) noexcept;
