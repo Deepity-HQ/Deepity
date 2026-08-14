@@ -1,0 +1,14 @@
+# CMake/build artifacts
+build/
+out/
+
+# Generated Doxygen documentation
+docs/
+
+# Repomix's own output
+repomix-output.xml
+
+# Generated result files
+results.json
+results_GCC.txt
+results_LLVM.txt

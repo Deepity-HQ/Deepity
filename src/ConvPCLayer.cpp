@@ -62,9 +62,9 @@ namespace Deep
             total += pad16(outStateSize);                    // mu
             total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
             total += pad16(outStateSize);                    // bottom_up_cols
-            total += pad16((size_t)batchSize * colSize);      // colsRepacked (same total size as colBuffer)
-            total += pad16(outStateSize);                     // lgRepacked (same total size as bottom_up_cols)
-            total += pad16(outStateSize);                     // muRepacked (same total size as mu)
+            total += pad16((size_t)batchSize * colSize);     // colsRepacked (same total size as colBuffer)
+            total += pad16(outStateSize);                    // lgRepacked (same total size as bottom_up_cols)
+            total += pad16(outStateSize);                    // muRepacked (same total size as mu)
         }
 
         return total;
@@ -254,16 +254,10 @@ namespace Deep
         if (isClamped)
             return;
 
-#pragma omp parallel for schedule(static) collapse(2)
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            for (size_t i = 0; i < ownSize; ++i)
-            {
-                size_t idx = (size_t)batch * ownSize + i;
-                dz_dt[idx] = -p[i] * e[idx];
-            }
-        }
+        // 1. Bulletproof initialization
+        std::memset(dz_dt, 0, ownStateSize * sizeof(float));
 
+        // 2. Compute top-down feedback into dz_dt FIRST
         if (layerAbove != nullptr && outChannels > 0)
         {
             const float *e_above = layerAbove->GetErrors();
@@ -280,20 +274,6 @@ namespace Deep
                 }
             }
 
-            // feedback_cols(colRows, colCols) = W^T(colRows, outC) @ local_grad(outC, colCols)
-            // Written into feedbackScratch -- NOT colBuffer. colBuffer still
-            // holds CalculateState()'s im2col result, untouched, for
-            // UpdateWeights() to use whenever it's called (no ordering
-            // dependency on this function running first, or at all).
-            //
-            // *** FIX APPLIED HERE: this loop previously had NO #pragma omp
-            // at all -- 256 fully serial iterations, each doing a real GEMM
-            // + Col2Im scatter, called 150x per batch (once per inference
-            // step). This was very likely the single largest contributor to
-            // the ~11x per-epoch slowdown vs DiscriminativePCLayer. Safe to
-            // parallelize: scratch_item and dz_item are both disjoint
-            // per-batch slices, same pattern as the loops immediately above
-            // and below that already worked correctly. ***
 #pragma omp parallel for schedule(static)
             for (int batch = 0; batch < batchSize; ++batch)
             {
@@ -316,9 +296,19 @@ namespace Deep
             }
         }
 
+        // 3. Now SUBTRACT the own term (-p * e) safely
+#pragma omp parallel for schedule(static) collapse(2)
+        for (int batch = 0; batch < batchSize; ++batch)
+        {
+            for (size_t i = 0; i < ownSize; ++i)
+            {
+                size_t idx = (size_t)batch * ownSize + i;
+                dz_dt[idx] -= p[i] * e[idx];
+            }
+        }
+
         cblas_saxpy((int)ownStateSize, ir, dz_dt, 1, z, 1);
     }
-
     void ConvPCLayer::UpdateWeights() noexcept
     {
         if (layerAbove == nullptr || outChannels == 0)

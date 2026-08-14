@@ -43,15 +43,24 @@ static void (*resolveDAct(const std::string &act))(float *, size_t, bool)
 
 static Deep::ActivationType resolveActEnum(const std::string &act)
 {
-    if (act == "tanh") return Deep::ActivationType::TANH;
-    if (act == "dtanh") return Deep::ActivationType::dTANH;
-    if (act == "relu") return Deep::ActivationType::RELU;
-    if (act == "drelu") return Deep::ActivationType::dRELU;
-    if (act == "sigmoid") return Deep::ActivationType::SIGMOID;
-    if (act == "dsigmoid") return Deep::ActivationType::dSIGMOID;
-    if (act == "esigmoid") return Deep::ActivationType::eSIGMOID;
-    if (act == "dlinear") return Deep::ActivationType::dLINEAR;
-    else return Deep::ActivationType::LINEAR;
+    if (act == "tanh")
+        return Deep::ActivationType::TANH;
+    if (act == "dtanh")
+        return Deep::ActivationType::dTANH;
+    if (act == "relu")
+        return Deep::ActivationType::RELU;
+    if (act == "drelu")
+        return Deep::ActivationType::dRELU;
+    if (act == "sigmoid")
+        return Deep::ActivationType::SIGMOID;
+    if (act == "dsigmoid")
+        return Deep::ActivationType::dSIGMOID;
+    if (act == "esigmoid")
+        return Deep::ActivationType::eSIGMOID;
+    if (act == "dlinear")
+        return Deep::ActivationType::dLINEAR;
+    else
+        return Deep::ActivationType::LINEAR;
 }
 
 PYBIND11_MODULE(deepity, m)
@@ -77,7 +86,7 @@ PYBIND11_MODULE(deepity, m)
              py::arg("batch_size"),
              "Construct a network with a fixed batch size.")
 
-             .def(
+        .def(
             "add_layer",
             [](Deep::DiscriminativePCNetwork &self,
                int size,
@@ -457,14 +466,12 @@ PYBIND11_MODULE(deepity, m)
                                       (py::ssize_t)self.GetInputSize()},
                                      self.GetErrors(),
                                      py::cast(&self)); })
-
         .def_property_readonly("weights", [](Deep::DiscriminativePCLayer &self)
                                { return py::array_t<float>(
-                                     {(py::ssize_t)self.GetInputSize(),
-                                      (py::ssize_t)self.GetOutputSize()},
+                                     {(py::ssize_t)self.GetOutputSize(),
+                                      (py::ssize_t)self.GetInputSize()},
                                      self.GetWeights(),
                                      py::cast(&self)); })
-
         .def_property_readonly("batch_size", &Deep::DiscriminativePCLayer::GetBatchSize)
 
         .def_property_readonly("input_size", &Deep::DiscriminativePCLayer::GetInputSize)

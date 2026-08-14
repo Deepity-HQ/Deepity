@@ -22,6 +22,8 @@
 
 namespace Deep
 {
+    class PCNDiagnostics;
+
     class ConvPCNetwork
     {
     public:
@@ -86,5 +88,6 @@ namespace Deep
         std::vector<ConvPCLayer *> layers;
         std::unique_ptr<MemoryArena> arena;
         int batchSize;
+        friend class PCNDiagnostics;
     };
 } // namespace Deep

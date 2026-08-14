@@ -273,7 +273,7 @@ endif()
 # Tests
 # --------------------------------------------------------------------
 add_executable(DeepityTests
-    tests/tConvGradCheck.cpp
+    tests/tClamp.cpp
 )
 
 # target_compile_definitions(Deepity PRIVATE PCN_PROFILE)
