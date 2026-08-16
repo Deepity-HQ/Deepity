@@ -143,6 +143,7 @@ add_library(Deepity STATIC
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/ConvPCLayer.cpp
+    src/SimpleConvPCLayer.cpp
     src/SimplePCLayer.cpp
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp    

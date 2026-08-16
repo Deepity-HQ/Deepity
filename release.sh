@@ -19,3 +19,7 @@ echo "Building the project..."
 cmake --build "$BUILD_DIR" -j "$(nproc)"
 
 echo "Done!"
+
+
+# Run test
+./build/Release/bin/DeepityTests

@@ -68,13 +68,16 @@ namespace Deep
                     ActivationType aType = ActivationType::RELU,
                     ActivationType dType = ActivationType::dRELU);
 
-        // --- Weight-gradient path verified; feedback term NOT YET verified
-        // -- see file-level warning above ---
+        /// @brief Calculate energy/prediction errors for this layer.
+        /// @warning Weight-gradient path verified; feedback term NOT YET verified—see file-level warning.
         float CalculateState() noexcept override;
+        /// @brief Update latent beliefs (z/r) via inference gradient.
+        /// @warning Feedback term not yet verified—see file-level warning.
         void UpdateState() noexcept override;
+        /// @brief Hebbian/gradient weight update.
+        /// @warning Weight-gradient path verified; feedback term NOT YET verified—see file-level warning.
         void UpdateWeights() noexcept override;
         void UpdatePrecision() noexcept;
-        // -------------------------------------------------------------
 
         void Flush() noexcept override {}
 
@@ -125,7 +128,6 @@ namespace Deep
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
         ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
 
-        // --- Conv-specific shape accessors (no DiscriminativePCLayer equivalent) ---
         int GetInChannels() const noexcept { return inChannels; }
         int GetOutChannels() const noexcept { return outChannels; }
         int GetInHeight() const noexcept { return inHeight; }
@@ -141,7 +143,8 @@ namespace Deep
     private:
         std::unique_ptr<MemoryArena> localArena;
 
-        // Shape
+        /// @name Tensor shape parameters
+        /// @{
         int inChannels, outChannels;
         int inHeight, inWidth;
         int outHeight, outWidth;
@@ -149,58 +152,49 @@ namespace Deep
         int strideH, strideW;
         int padH, padW;
         int batchSize;
+        /// @}
 
-        // Weights: (outChannels, inChannels*kernelH*kernelW) flattened.
-        float *W;
-        float *b; // (outChannels)
+        /// @name Weight and bias buffers
+        /// @{
+        float *W;  ///< Weights: (outChannels, inChannels*kernelH*kernelW)
+        float *b;  ///< Biases: (outChannels)
 
-        // State -- per batch item, (inChannels, inHeight, inWidth) flattened
-        float *z;
-        float *e;
-        float *dz_dt;
-        float *p;
-        float *log_p;
+        float *z;      ///< Beliefs/activations: (outChannels, outHeight, outWidth) per batch item
+        float *e;      ///< Prediction errors: (outChannels, outHeight, outWidth) per batch item
+        float *dz_dt;  ///< State derivatives: (outChannels, outHeight, outWidth) per batch item
+        float *p;      ///< Precisions: (outChannels,)
+        float *log_p;  ///< Log-precisions: (outChannels,)
+        /// @}
 
-        // Outgoing prediction -- per batch item, (outChannels, outHeight, outWidth)
+        /// @brief Predictions from above (incoming error feedback)
         float *mu;
 
-        // im2col scratch -- (inChannels*kernelH*kernelW, outHeight*outWidth)
-        // per batch item. Holds THIS layer's own im2col(z) result, computed
-        // in CalculateState() and consumed LATER by UpdateWeights() for the
-        // weight-gradient GEMM. MUST NOT be overwritten by anything in
-        // between (see feedbackScratch below, which exists specifically to
-        // avoid the earlier design's footgun of reusing this buffer for
-        // UpdateState()'s feedback term too).
+        /// @name Scratch buffers for convolution operations
+        /// @{
+        /// Im2Col intermediate: (inChannels*kernelH*kernelW, outHeight*outWidth) per batch item.
+        /// Holds this layer's im2col(z) result computed in CalculateState().
+        /// Reused by UpdateWeights() for weight-gradient GEMM.
+        /// Must NOT be overwritten between CalculateState() and UpdateWeights().
         float *colBuffer;
 
-        // Scratch for UpdateState()'s feedback term ONLY -- holds the
-        // transposed-GEMM result (colRows x colCols) before the Col2Im
-        // scatter into dz_dt. Separate from colBuffer specifically so
-        // UpdateState() and UpdateWeights() no longer have a hard ordering
-        // dependency on which runs first / whether colBuffer's contents are
-        // still valid -- each function now owns its own scratch space.
+        /// Feedback term scratch: holds transposed-GEMM result before Col2Im scatter into dz_dt.
+        /// Separate from colBuffer to avoid ordering dependencies between UpdateState() and UpdateWeights().
         float *feedbackScratch;
 
-        // local_grad scratch -- (outChannels, outHeight*outWidth) per batch
-        // item, holds (e_above * p_above * mu(f')). Recomputed independently
-        // in both UpdateState() and UpdateWeights() (cheap elementwise pass,
-        // not worth caching across the two calls).
+        /// Bottom-up error modulation: (outChannels, outHeight*outWidth) per batch item.
+        /// Holds (e_above * p_above * mu(f')). Recomputed independently in both
+        /// UpdateState() and UpdateWeights() (cheap elementwise, not cached).
         float *bottom_up_cols;
 
-        // Repacked scratch for the forward pass's and UpdateWeights()'s
-        // single-batched-GEMM paths (see conversation notes: sum_b(A_b @
-        // B_b^T) == A_stacked @ B_stacked^T for UpdateWeights; for the
-        // forward pass, W @ COLS_stacked computes ALL batch items'
-        // independent predictions in one call, since GEMM only sums over
-        // rows, never across columns -- no cross-batch mixing occurs).
-        // colBuffer/bottom_up_cols are batch-major (batch, row, col);
-        // these hold the SAME data repacked row-major (row, batch, col).
-        // Dedicated buffers, deliberately NOT reusing feedbackScratch or
-        // any other existing buffer, to avoid recreating the cross-function
-        // buffer-reuse fragility that was fixed earlier this session.
+        /// Repacked column buffer: row-major layout (row, batch, col) for single-batched GEMM.
+        /// Holds colBuffer's data transposed from batch-major to enable efficient GEMM operations.
+        /// Separate buffer to avoid buffer-reuse fragility across UpdateState() and UpdateWeights().
         float *colsRepacked;
+        /// Repacked bottom-up gradient: row-major layout for efficient GEMM operations.
         float *lgRepacked;
-        float *muRepacked; // (outChannels, batchSize*colCols) -- forward pass GEMM output, before scatter back to mu
+        /// Forward-pass GEMM output: (outChannels, batchSize*colCols), scattered back to mu.
+        float *muRepacked;
+        /// @}
 
         float lr, ir, pr, lmbda;
         bool isClamped = false;
@@ -216,28 +210,38 @@ namespace Deep
 
 } // namespace Deep
 
-/*
- * DESIGN NOTES -- conv energy/state/weight derivation, adapted from
- * DiscriminativePCLayer's already-verified formulas:
+/**
+ * @page ConvPCLayer_math ConvPCLayer Mathematical Derivation
  *
- * DiscriminativePCLayer (dense):
- *   mu       = f(z @ W^T + b)                    -- GEMM
- *   e        = z_this - mu_incoming(from below)
- *   dz_dt   += -p*e  (own term)
- *              + (e_above * p_above) @ W (feedback, GEMM, no transpose)
- *   dW      += lr * (e_above * p_above)^T @ z     -- GEMM
+ * @section design_notes Design Notes
  *
- * ConvPCLayer (conv):
- *   cols     = Im2Col(z)                          -- (inC*kH*kW, outH*outW)
- *              stored in colBuffer, REUSED LATER by UpdateWeights()
- *   mu       = f(W_flat @ cols + b)                -- GEMM, same as dense
- *   e        = z_this - mu_incoming(from below)    -- UNCHANGED, elementwise
- *   feedback_cols = W_flat^T @ (e_above * p_above) -- GEMM, written to
- *              feedbackScratch (NOT colBuffer)
- *   dz_dt   += -p*e (own term, UNCHANGED)
- *              + Col2Im(feedback_cols)             -- scatter back to (inC,H,W)
- *   dW_flat += lr * (e_above * p_above) @ cols^T   -- GEMM, using colBuffer
- *              as saved by CalculateState() this same step
+ * Conv energy/state/weight derivation, adapted from DiscriminativePCLayer's
+ * already-verified formulas:
+ *
+ * @subsection dense_formulas DiscriminativePCLayer (dense)
+ * \f[
+ * \begin{align}
+ *   \mu &= f(z \cdot W^T + b) && \text{GEMM} \\
+ *   e &= z_{this} - \mu_{incoming}(\text{from below}) \\
+ *   \frac{dz}{dt} &+= -p \cdot e && \text{(own term)} \\
+ *   &+ (e_{above} \cdot p_{above}) \cdot W && \text{(feedback, GEMM, no transpose)} \\
+ *   dW &+= lr \cdot (e_{above} \cdot p_{above})^T \cdot z && \text{GEMM}
+ * \end{align}
+ * \f]
+ *
+ * @subsection conv_formulas ConvPCLayer (conv)
+ * \f[
+ * \begin{align}
+ *   cols &= \text{Im2Col}(z) && (inC \cdot kH \cdot kW, outH \cdot outW) \\
+ *   &\text{stored in colBuffer, REUSED LATER by UpdateWeights()} \\
+ *   \mu &= f(W_{flat} \cdot cols + b) && \text{GEMM, same as dense} \\
+ *   e &= z_{this} - \mu_{incoming}(\text{from below}) && \text{UNCHANGED, elementwise} \\
+ *   feedback\_cols &= W_{flat}^T \cdot (e_{above} \cdot p_{above}) && \text{GEMM, written to feedbackScratch (NOT colBuffer)} \\
+ *   \frac{dz}{dt} &+= -p \cdot e && \text{(own term, UNCHANGED)} \\
+ *   &+ \text{Col2Im}(feedback\_cols) && \text{(scatter back to $(inC,H,W)$)} \\
+ *   dW_{flat} &+= lr \cdot (e_{above} \cdot p_{above}) \cdot cols^T && \text{GEMM, using colBuffer saved by CalculateState()} \\
+ * \end{align}
+ * \f]
  *
  * The forward GEMM and the feedback GEMM are transposes of the SAME weight
  * matrix, mirroring how DiscriminativePCLayer's forward and feedback GEMMs

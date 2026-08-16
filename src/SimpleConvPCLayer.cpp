@@ -1,4 +1,4 @@
-#include "ConvPCLayer.h"
+#include "SimpleConvPCLayer.h"
 #include <cblas.h>
 #include <omp.h>
 #include <cstring>
@@ -7,22 +7,22 @@
 
 namespace Deep
 {
-    ConvPCLayer::ConvPCLayer(int inChannels, int outChannels,
-                             int inHeight, int inWidth,
-                             int kernelH, int kernelW,
-                             int strideH, int strideW,
-                             int padH, int padW,
-                             int batchSize,
-                             float learningRate, float inferenceRate,
-                             float precisionRate, float lmbda,
-                             ActivationType aType, ActivationType dType)
+    SimpleConvPCLayer::SimpleConvPCLayer(int inChannels, int outChannels,
+                                         int inHeight, int inWidth,
+                                         int kernelH, int kernelW,
+                                         int strideH, int strideW,
+                                         int padH, int padW,
+                                         int batchSize,
+                                         float learningRate, float inferenceRate,
+                                         float lmbda,
+                                         ActivationType aType, ActivationType dType)
         : inChannels(inChannels), outChannels(outChannels),
           inHeight(inHeight), inWidth(inWidth),
           kernelH(kernelH), kernelW(kernelW),
           strideH(strideH), strideW(strideW),
           padH(padH), padW(padW),
           batchSize(batchSize),
-          lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda),
+          lr(learningRate), ir(inferenceRate), lmbda(lmbda),
           layerAbove(nullptr), layerBelow(nullptr), activationType(aType)
     {
         outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
@@ -35,10 +35,8 @@ namespace Deep
         BindMemory(*localArena);
     }
 
-    size_t ConvPCLayer::GetRequiredFloats() const noexcept
+    size_t SimpleConvPCLayer::GetRequiredFloats() const noexcept
     {
-        // Same 16-float rounding MemoryArena::AllocateFloats() applies per
-        // call -- see the analogous fix in DiscriminativePCLayer.cpp.
         auto pad16 = [](size_t n)
         { return (n + 15) & ~(size_t)15; };
 
@@ -46,8 +44,7 @@ namespace Deep
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
 
-        total += pad16(ownStateSize) * 3; // z, e, dz_dt
-        total += pad16(ownSize) * 2;      // p, log_p
+        total += pad16(ownStateSize) * 3; // z, e, dz_dt -- NO p/log_p at all
 
         if (outChannels > 0)
         {
@@ -56,21 +53,28 @@ namespace Deep
             size_t colRows = (size_t)inChannels * kernelH * kernelW;
             size_t colCols = (size_t)outHeight * outWidth;
             size_t colSize = colRows * colCols;
+            size_t Wsize = (size_t)outChannels * colRows;
 
-            total += pad16((size_t)outChannels * colRows);   // W
-            total += pad16((size_t)outChannels);             // b
-            total += pad16(outStateSize);                    // mu
-            total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
-            total += pad16(outStateSize);                    // bottom_up_cols
-            total += pad16((size_t)batchSize * colSize);     // colsRepacked (same total size as colBuffer)
-            total += pad16(outStateSize);                    // lgRepacked (same total size as bottom_up_cols)
-            total += pad16(outStateSize);                    // muRepacked (same total size as mu)
+            total += pad16(Wsize);                            // W
+            total += pad16((size_t)outChannels);              // b
+            total += pad16(outStateSize);                     // mu
+            total += pad16((size_t)batchSize * colSize) * 2;  // colBuffer, feedbackScratch
+            total += pad16(outStateSize);                     // bottom_up_cols
+            total += pad16((size_t)batchSize * colSize);      // colsRepacked
+            total += pad16(outStateSize);                     // lgRepacked
+            total += pad16(outStateSize);                     // muRepacked
+
+            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
+            {
+                total += pad16(Wsize) * 3;             // grad_W, m_W, v_W
+                total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
+            }
         }
 
         return total;
     }
 
-    void ConvPCLayer::BindMemory(MemoryArena &arena)
+    void SimpleConvPCLayer::BindMemory(MemoryArena &arena)
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
@@ -78,14 +82,10 @@ namespace Deep
         z = arena.AllocateFloats(ownStateSize);
         e = arena.AllocateFloats(ownStateSize);
         dz_dt = arena.AllocateFloats(ownStateSize);
-        p = arena.AllocateFloats(ownSize);
-        log_p = arena.AllocateFloats(ownSize);
 
         std::memset(z, 0, ownStateSize * sizeof(float));
         std::memset(e, 0, ownStateSize * sizeof(float));
         std::memset(dz_dt, 0, ownStateSize * sizeof(float));
-        std::fill_n(p, ownSize, 1.0f);
-        std::fill_n(log_p, ownSize, 0.0f);
 
         if (outChannels > 0)
         {
@@ -93,8 +93,9 @@ namespace Deep
             size_t colCols = (size_t)outHeight * outWidth;
             size_t outStateSize = (size_t)batchSize * outChannels * colCols;
             size_t colSize = (size_t)batchSize * colRows * colCols;
+            size_t Wsize = (size_t)outChannels * colRows;
 
-            W = arena.AllocateFloats((size_t)outChannels * colRows);
+            W = arena.AllocateFloats(Wsize);
             b = arena.AllocateFloats(outChannels);
             mu = arena.AllocateFloats(outStateSize);
             colBuffer = arena.AllocateFloats(colSize);
@@ -112,32 +113,43 @@ namespace Deep
             std::memset(colsRepacked, 0, colSize * sizeof(float));
             std::memset(lgRepacked, 0, outStateSize * sizeof(float));
             std::memset(muRepacked, 0, outStateSize * sizeof(float));
+
+            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
+            {
+                grad_W = arena.AllocateFloats(Wsize);
+                m_W = arena.AllocateFloats(Wsize);
+                v_W = arena.AllocateFloats(Wsize);
+                grad_b = arena.AllocateFloats(outChannels);
+                m_b = arena.AllocateFloats(outChannels);
+                v_b = arena.AllocateFloats(outChannels);
+
+                std::memset(m_W, 0, Wsize * sizeof(float));
+                std::memset(v_W, 0, Wsize * sizeof(float));
+                std::memset(m_b, 0, outChannels * sizeof(float));
+                std::memset(v_b, 0, outChannels * sizeof(float));
+                std::memset(grad_W, 0, Wsize * sizeof(float));
+                std::memset(grad_b, 0, outChannels * sizeof(float));
+            }
         }
         else
         {
-            W = nullptr;
-            b = nullptr;
-            mu = nullptr;
-            colBuffer = nullptr;
-            feedbackScratch = nullptr;
-            bottom_up_cols = nullptr;
-            colsRepacked = nullptr;
-            lgRepacked = nullptr;
-            muRepacked = nullptr;
+            W = nullptr; b = nullptr; mu = nullptr;
+            colBuffer = nullptr; feedbackScratch = nullptr; bottom_up_cols = nullptr;
+            colsRepacked = nullptr; lgRepacked = nullptr; muRepacked = nullptr;
         }
 
         if (localArena && localArena.get() != &arena)
             localArena.reset();
     }
 
-    void ConvPCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
+    void SimpleConvPCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
     {
         if (outChannels == 0)
             return;
 
         size_t colRows = (size_t)inChannels * kernelH * kernelW;
         size_t Wsz = (size_t)outChannels * colRows;
-        float limit = std::sqrt(2.0f / (float)colRows); // He-style, fan-in = true receptive-field fan-in
+        float limit = std::sqrt(2.0f / (float)colRows);
 
         std::uniform_int_distribution<uint32_t> seedDist;
         std::vector<uint32_t> seeds(omp_get_max_threads());
@@ -154,7 +166,7 @@ namespace Deep
         }
     }
 
-    float ConvPCLayer::CalculateState() noexcept
+    float SimpleConvPCLayer::CalculateState() noexcept
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
@@ -169,16 +181,15 @@ namespace Deep
             cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
         }
 
+        // No precision weighting: E = 0.5*sum(e^2), plain SSE.
         float totalEnergy = 0.0f;
 #pragma omp parallel for schedule(static) reduction(+ : totalEnergy) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             for (size_t i = 0; i < ownSize; ++i)
             {
-                float precision = std::max(p[i], 1e-8f);
                 float err = e[(size_t)batch * ownSize + i];
-                totalEnergy += 0.5f * precision * err * err;
-                totalEnergy -= 0.5f * std::log(precision);
+                totalEnergy += 0.5f * err * err;
             }
         }
 
@@ -187,20 +198,6 @@ namespace Deep
             size_t colRows = (size_t)inChannels * kernelH * kernelW;
             size_t colCols = (size_t)outHeight * outWidth;
 
-            // REVERTED to the original per-batch-item loop (2025 session
-            // note): a repack-then-single-GEMM version of this forward pass
-            // was tried and measured SLOWER (554s vs 300s/epoch) than this
-            // version. Unlike UpdateState()'s feedback loop (which had ZERO
-            // parallelization and got a genuine free win from adding it),
-            // this loop was ALREADY parallelized from the start -- the only
-            // remaining lever was reducing GEMM call-count via repacking,
-            // and for these data sizes (e.g. layer with colRows=400,
-            // colCols=49, batchSize=256 needs a ~19.6MB repack buffer,
-            // copied twice per call) the repack/scatter memory-bandwidth
-            // cost exceeded the GEMM-count savings. Do not re-attempt this
-            // exact restructure without first profiling to confirm repack
-            // cost vs GEMM-count savings actually favors batching at the
-            // specific shapes involved.
 #pragma omp parallel for schedule(static)
             for (int batch = 0; batch < batchSize; ++batch)
             {
@@ -216,11 +213,8 @@ namespace Deep
                 cblas_sgemm(
                     CblasRowMajor, CblasNoTrans, CblasNoTrans,
                     outChannels, (int)colCols, (int)colRows,
-                    1.0f,
-                    W, (int)colRows,
-                    cols_item, (int)colCols,
-                    0.0f,
-                    mu_item, (int)colCols);
+                    1.0f, W, (int)colRows, cols_item, (int)colCols,
+                    0.0f, mu_item, (int)colCols);
 
                 for (int oc = 0; oc < outChannels; ++oc)
                 {
@@ -238,7 +232,7 @@ namespace Deep
         return totalEnergy;
     }
 
-    void ConvPCLayer::UpdateState() noexcept
+    void SimpleConvPCLayer::UpdateState() noexcept
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
@@ -254,14 +248,13 @@ namespace Deep
         if (isClamped)
             return;
 
-        // 1. Bulletproof initialization
         std::memset(dz_dt, 0, ownStateSize * sizeof(float));
 
-        // 2. Compute top-down feedback into dz_dt FIRST
+        // Top-down feedback -- NO p_above multiply (was e_above*p_above*mu;
+        // p_above=1 always made that a no-op).
         if (layerAbove != nullptr && outChannels > 0)
         {
             const float *e_above = layerAbove->GetErrors();
-            const float *p_above = layerAbove->GetPrecisions();
             size_t outSize = (size_t)outChannels * colCols;
 
 #pragma omp parallel for schedule(static) collapse(2)
@@ -270,7 +263,7 @@ namespace Deep
                 for (size_t f = 0; f < outSize; ++f)
                 {
                     size_t idx = (size_t)batch * outSize + f;
-                    bottom_up_cols[idx] = e_above[idx] * p_above[f] * mu[idx];
+                    bottom_up_cols[idx] = e_above[idx] * mu[idx];
                 }
             }
 
@@ -283,11 +276,8 @@ namespace Deep
                 cblas_sgemm(
                     CblasRowMajor, CblasTrans, CblasNoTrans,
                     (int)colRows, (int)colCols, outChannels,
-                    1.0f,
-                    W, (int)colRows,
-                    lg_item, (int)colCols,
-                    0.0f,
-                    scratch_item, (int)colCols);
+                    1.0f, W, (int)colRows, lg_item, (int)colCols,
+                    0.0f, scratch_item, (int)colCols);
 
                 float *dz_item = dz_dt + (size_t)batch * ownSize;
                 Col2Im(scratch_item, inChannels, inHeight, inWidth,
@@ -296,20 +286,21 @@ namespace Deep
             }
         }
 
-        // 3. Now SUBTRACT the own term (-p * e) safely
+        // Own term: dz_dt -= e (was -p*e; p=1 always made this a no-op multiply).
 #pragma omp parallel for schedule(static) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             for (size_t i = 0; i < ownSize; ++i)
             {
                 size_t idx = (size_t)batch * ownSize + i;
-                dz_dt[idx] -= p[i] * e[idx];
+                dz_dt[idx] -= e[idx];
             }
         }
 
         cblas_saxpy((int)ownStateSize, ir, dz_dt, 1, z, 1);
     }
-    void ConvPCLayer::UpdateWeights() noexcept
+
+    void SimpleConvPCLayer::UpdateWeights() noexcept
     {
         if (layerAbove == nullptr || outChannels == 0)
             return;
@@ -317,35 +308,22 @@ namespace Deep
         size_t colRows = (size_t)inChannels * kernelH * kernelW;
         size_t colCols = (size_t)outHeight * outWidth;
         size_t outSize = (size_t)outChannels * colCols;
+        size_t Wsize = (size_t)outChannels * colRows;
 
         const float *e_above = layerAbove->GetErrors();
-        const float *p_above = layerAbove->GetPrecisions();
 
+        // local_grad = e_above * mu(f') -- NO p_above multiply.
 #pragma omp parallel for schedule(static) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             for (size_t f = 0; f < outSize; ++f)
             {
                 size_t idx = (size_t)batch * outSize + f;
-                bottom_up_cols[idx] = e_above[idx] * p_above[f] * mu[idx];
+                bottom_up_cols[idx] = e_above[idx] * mu[idx];
             }
         }
 
-        if (lmbda > 0.0f)
-            cblas_sscal((int)((size_t)outChannels * colRows), 1.0f - lmbda, W, 1);
-
-        float lr_batch = lr / batchSize;
-
-        // Repack colBuffer (batch-major: batch,row,col) into colsRepacked
-        // (row,batch,col), and bottom_up_cols into lgRepacked the same way
-        // -- this is what lets a SINGLE GEMM compute what used to be 256
-        // separate small GEMM calls, via the identity sum_b(A_b @ B_b^T)
-        // == A_stacked @ B_stacked^T. Restored here explicitly: an earlier
-        // version of this function relied on CalculateState() producing
-        // colsRepacked directly, but that forward-pass restructure was
-        // reverted (see CalculateState()'s comment -- it regressed
-        // performance), so this function must repack colBuffer itself
-        // again, or it would silently read stale data.
+        // Repack (shared by both optimizer paths -- identical to ConvPCLayer's).
 #pragma omp parallel for schedule(static) collapse(2)
         for (size_t row = 0; row < colRows; ++row)
         {
@@ -356,7 +334,6 @@ namespace Deep
                 std::memcpy(dst, src, colCols * sizeof(float));
             }
         }
-
 #pragma omp parallel for schedule(static) collapse(2)
         for (int oc = 0; oc < outChannels; ++oc)
         {
@@ -368,65 +345,90 @@ namespace Deep
             }
         }
 
-        // dW(outC,colRows) += lr_batch * LG(outC, batchSize*colCols) @ COLS(colRows, batchSize*colCols)^T
-        // ONE GEMM replaces the previous 256-iteration serial loop.
         size_t M = (size_t)batchSize * colCols;
-        cblas_sgemm(
-            CblasRowMajor, CblasNoTrans, CblasTrans,
-            outChannels, (int)colRows, (int)M,
-            lr_batch,
-            lgRepacked, (int)M,
-            colsRepacked, (int)M,
-            1.0f, // accumulate onto existing W
-            W, (int)colRows);
 
-        // Bias gradient: unchanged -- a cheap reduction, not a GEMM, was
-        // never the bottleneck. Reads from the original (unrepacked)
-        // bottom_up_cols directly.
-        for (int batch = 0; batch < batchSize; ++batch)
+        switch (opt)
         {
-            const float *lg_item = bottom_up_cols + (size_t)batch * outSize;
-            for (int oc = 0; oc < outChannels; ++oc)
-            {
-                const float *row = lg_item + (size_t)oc * colCols;
-                float sum = 0.0f;
-                for (size_t j = 0; j < colCols; ++j)
-                    sum += row[j];
-                b[oc] += lr_batch * sum;
-            }
-        }
-    }
-
-    void ConvPCLayer::UpdatePrecision() noexcept
-    {
-        if (layerBelow == nullptr)
-            return;
-
-        size_t ownSize = (size_t)inChannels * inHeight * inWidth;
-
-#pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < ownSize; ++i)
+        case OptimizerType::SGD:
         {
-            float grad = 0.0f;
+            if (lmbda > 0.0f)
+                cblas_sscal((int)Wsize, 1.0f - lmbda, W, 1);
+
+            float lr_batch = lr / batchSize;
+
+            cblas_sgemm(
+                CblasRowMajor, CblasNoTrans, CblasTrans,
+                outChannels, (int)colRows, (int)M,
+                lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
+                1.0f, W, (int)colRows);
+
             for (int batch = 0; batch < batchSize; ++batch)
             {
-                float err = e[(size_t)batch * ownSize + i];
-                grad += 0.5f * (p[i] * err * err - 1.0f);
+                const float *lg_item = bottom_up_cols + (size_t)batch * outSize;
+                for (int oc = 0; oc < outChannels; ++oc)
+                {
+                    const float *row = lg_item + (size_t)oc * colCols;
+                    float sum = 0.0f;
+                    for (size_t j = 0; j < colCols; ++j)
+                        sum += row[j];
+                    b[oc] += lr_batch * sum;
+                }
             }
-            grad /= batchSize;
-            log_p[i] -= pr * grad;
-            log_p[i] = std::max(-5.0f, std::min(log_p[i], 5.0f));
-            p[i] = std::exp(log_p[i]);
+            break;
+        }
+        case OptimizerType::ADAM:
+        case OptimizerType::ADAMW:
+        {
+            t++;
+
+            // NEGATIVE scale, matching SimplePCLayer's confirmed sign fix:
+            // this GEMM's un-negated form was verified (via the SGD path
+            // above, and ConvPCLayer's own gradient check) to compute a
+            // quantity that's already the NEGATIVE of the true dE/dW --
+            // AdamWUpdate/AdamUpdate expect the TRUE (positive) gradient,
+            // so this needs the explicit sign flip SimplePCLayer's AdamW
+            // integration needed. NOT yet independently re-verified for
+            // conv specifically -- see file-level warning.
+            float grad_scale = -1.0f / batchSize;
+
+            cblas_sgemm(
+                CblasRowMajor, CblasNoTrans, CblasTrans,
+                outChannels, (int)colRows, (int)M,
+                grad_scale, lgRepacked, (int)M, colsRepacked, (int)M,
+                0.0f, grad_W, (int)colRows);
+
+            std::memset(grad_b, 0, outChannels * sizeof(float));
+            for (int batch = 0; batch < batchSize; ++batch)
+            {
+                const float *lg_item = bottom_up_cols + (size_t)batch * outSize;
+                for (int oc = 0; oc < outChannels; ++oc)
+                {
+                    const float *row = lg_item + (size_t)oc * colCols;
+                    float sum = 0.0f;
+                    for (size_t j = 0; j < colCols; ++j)
+                        sum += row[j];
+                    grad_b[oc] += grad_scale * sum;
+                }
+            }
+
+            if (opt == OptimizerType::ADAMW)
+                Deep::AdamWUpdate(W, grad_W, m_W, v_W, Wsize, t, lr, lmbda);
+            else
+                Deep::AdamUpdate(W, grad_W, m_W, v_W, Wsize, t, lr);
+
+            Deep::AdamUpdate(b, grad_b, m_b, v_b, outChannels, t, lr);
+            break;
+        }
         }
     }
 
-    void ConvPCLayer::ResetState() noexcept
+    void SimpleConvPCLayer::ResetState() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * inChannels * inHeight * inWidth;
         std::memset(z, 0, ownStateSize * sizeof(float));
     }
 
-    void ConvPCLayer::ClampState(const std::vector<float> &inputData) noexcept
+    void SimpleConvPCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
         size_t ownStateSize = (size_t)batchSize * inChannels * inHeight * inWidth;
         size_t copySize = std::min(inputData.size(), ownStateSize) * sizeof(float);
@@ -434,15 +436,8 @@ namespace Deep
         isClamped = true;
     }
 
-    void ConvPCLayer::UnclampState() noexcept
+    void SimpleConvPCLayer::UnclampState() noexcept
     {
         isClamped = false;
-    }
-
-    void ConvPCLayer::ResyncLogPrecision() noexcept
-    {
-        size_t ownSize = (size_t)inChannels * inHeight * inWidth;
-        for (size_t i = 0; i < ownSize; ++i)
-            log_p[i] = std::log(std::max(p[i], 1e-8f));
     }
 }
