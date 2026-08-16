@@ -1,5 +1,7 @@
 #pragma once
 #include <cstddef>
+#include <sleef.h>
+#include <cblas.h>
 
 /**
  * @file Layer.h
@@ -10,10 +12,17 @@
  * @author Jack Rose
  */
 
+// Adam:
+#define ALPHA 0.001
+#define BETA1 0.9
+#define BETA2 0.999
+#define EPS 1e-8
+
 namespace Deep
 {
     /// @brief A deepity layer virtual class.
-    class Layer {
+    class Layer
+    {
     public:
         virtual ~Layer() = default;
 
@@ -42,6 +51,7 @@ namespace Deep
         virtual void UpdateWeights() noexcept = 0;
         /// @brief Flushes remaining batches.
         virtual void Flush() noexcept {}
+
     protected:
         /// @brief Size of input
         size_t size;

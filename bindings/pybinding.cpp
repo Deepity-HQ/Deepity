@@ -6,12 +6,15 @@
 
 #include "Layer.h"
 #include "DiscriminativePCLayer.h"
+#include "SimplePCLayer.h"
+#include "SimplePCNetwork.h"
 #include "RBLayer.h"
 #include "DiscriminativePCNetwork.h"
 #include "ConvPCLayer.h"
 #include "ConvPCNetwork.h"
 #include "Activations.h"
 #include "Optimize.h"
+#include "StreamAlignedBatcher.h"
 
 namespace py = pybind11;
 
@@ -63,68 +66,96 @@ static Deep::ActivationType resolveActEnum(const std::string &act)
         return Deep::ActivationType::LINEAR;
 }
 
-PYBIND11_MODULE(deepity, m)
+// ============================================================================
+// Shared helpers -- de-duplicates binding code that was previously
+// copy-pasted per class (randomize_weights' rd/rng dance, clamp_state's
+// numpy-buffer-to-vector conversion, clamp_input's identical body on every
+// network class). Applied to DiscriminativePCLayer/SimplePCLayer (which
+// share an identical binding surface -- SimplePCLayer is precision-stripped
+// DiscriminativePCLayer, nothing else differs) and to all three network
+// classes. Deliberately NOT applied to ConvPCLayer/RBLayer -- their shapes,
+// extra accessors, and constructors differ enough that forcing them into
+// the same template would risk changing already-verified behavior for no
+// real benefit.
+// ============================================================================
+
+template <typename LayerT>
+static void RandomizeWeightsHelper(LayerT &self)
 {
-    m.doc() = "Deepity: A high-performance Predictive Coding library.";
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    self.RandomizeWeights(rng);
+}
 
-    py::class_<Deep::Layer>(m, "Layer",
-                            R"pbdoc(
-    Abstract base class for all Predictive Coding layers.
-)pbdoc");
+template <typename LayerT>
+static void ClampStateHelper(LayerT &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
+{
+    auto buf = input.request();
+    std::vector<float> values(static_cast<float *>(buf.ptr), static_cast<float *>(buf.ptr) + buf.size);
+    self.ClampState(values);
+}
 
-    py::class_<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork",
-                                              R"pbdoc(
-        Predictive Coding Network.
+/// @brief Binds the subset of the layer API that's IDENTICAL between
+/// DiscriminativePCLayer and SimplePCLayer (everything except
+/// precision-related methods, which only DiscriminativePCLayer has).
+/// Caller adds any class-specific bindings (e.g. update_precision,
+/// set_precision_rate) afterward.
+template <typename LayerT>
+static void BindCommonPCLayer(py::class_<LayerT, Deep::Layer> &cls, const char *className)
+{
+    cls.def("calculate_state", &LayerT::CalculateState)
+        .def("update_state", &LayerT::UpdateState)
+        .def("update_weights", &LayerT::UpdateWeights)
+        .def("flush", &LayerT::Flush)
+        .def("clamp_state", &ClampStateHelper<LayerT>, py::arg("input"))
+        .def("unclamp_state", &LayerT::UnclampState)
+        .def("randomize_weights", &RandomizeWeightsHelper<LayerT>)
+        .def("set_layer_above", &LayerT::SetLayerAbove, py::return_value_policy::reference)
+        .def("set_layer_below", &LayerT::SetLayerBelow, py::return_value_policy::reference)
+        .def("set_learning_rate", &LayerT::SetLearningRate, py::arg("lr"))
+        .def("set_inference_rate", &LayerT::SetInferenceRate, py::arg("ir"))
+        .def("set_lambda", &LayerT::SetLambda, py::arg("l"))
+        .def_property_readonly("beliefs", [](LayerT &self)
+                               { return py::array_t<float>(
+                                     {(py::ssize_t)self.GetBatchSize(), (py::ssize_t)self.GetInputSize()},
+                                     self.GetBeliefs(), py::cast(&self)); })
+        .def_property_readonly("errors", [](LayerT &self)
+                               { return py::array_t<float>(
+                                     {(py::ssize_t)self.GetBatchSize(), (py::ssize_t)self.GetInputSize()},
+                                     self.GetErrors(), py::cast(&self)); })
+        // (output_size, input_size) -- matches the true GEMM memory layout
+        // (W stored as (nextSize, size)); this was a real bug earlier this
+        // session when the shape was declared as (input,output) instead.
+        .def_property_readonly("weights", [](LayerT &self)
+                               { return py::array_t<float>(
+                                     {(py::ssize_t)self.GetOutputSize(), (py::ssize_t)self.GetInputSize()},
+                                     self.GetWeights(), py::cast(&self)); })
+        .def_property_readonly("batch_size", &LayerT::GetBatchSize)
+        .def_property_readonly("input_size", &LayerT::GetInputSize)
+        .def_property_readonly("output_size", &LayerT::GetOutputSize)
+        .def("__repr__", [className](const LayerT &self)
+             { return "<" + std::string(className) + " in=" +
+                      std::to_string(self.GetInputSize()) + ", out=" +
+                      std::to_string(self.GetOutputSize()) + ", batch=" +
+                      std::to_string(self.GetBatchSize()) + ">"; });
+}
 
-        A network composed of one or more DiscriminativePCLayers. Layers are connected
-        automatically as they are added.
-    )pbdoc")
-        .def(py::init<>(),
-             "Construct a network with automatic batch-size detection.")
-
-        .def(py::init<int>(),
-             py::arg("batch_size"),
-             "Construct a network with a fixed batch size.")
-
-        .def(
-            "add_layer",
-            [](Deep::DiscriminativePCNetwork &self,
-               int size,
-               int next_size,
-               float lr,
-               float ir,
-               float pr,
-               float lmbda,
-               const std::string &activation,
-               const std::string &activation_deriv)
-            {
-                Deep::ActivationType actType = resolveActEnum(activation);
-                Deep::ActivationType dActType = resolveActEnum(activation_deriv);
-                self.AddLayer(
-                    size,
-                    next_size,
-                    lr,
-                    ir,
-                    pr,
-                    lmbda,
-                    actType,
-                    dActType);
-            },
-            py::arg("size"),
-            py::arg("next_size"),
-            py::arg("lr") = 1e-6f,
-            py::arg("ir") = 0.1f,
-            py::arg("pr") = 0.01f,
-            py::arg("lmbda") = 1e-2f,
-            py::arg("activation") = "relu",
-            py::arg("activation_deriv") = "drelu",
-            R"pbdoc(
-            Add a layer to the network.
-        )pbdoc")
+/// @brief Binds the subset of the network API that's IDENTICAL across
+/// DiscriminativePCNetwork, ConvPCNetwork, and SimplePCNetwork:
+/// construction, clamp_input, randomize_weights, compile, calculate_state,
+/// update_state, update_weights, reset_state, get_terminal_layer, and the
+/// layers/__len__/__getitem__/batch_size/repr surface. Caller adds any
+/// class-specific bindings afterward (network-wide setters, save/load,
+/// update_precision, train_step/predict, etc. -- these genuinely differ
+/// between the three classes and are NOT forced into this template).
+template <typename NetT>
+static void BindCommonPCNetwork(py::class_<NetT> &cls, const char *className)
+{
+    cls.def(py::init<int>(), py::arg("batch_size"), "Construct a network with a fixed batch size.")
 
         .def(
             "randomize_weights",
-            [](Deep::DiscriminativePCNetwork &self)
+            [](NetT &self)
             {
                 std::random_device rd;
                 std::mt19937 rng(rd());
@@ -134,132 +165,246 @@ PYBIND11_MODULE(deepity, m)
 
         .def(
             "clamp_input",
-            [](Deep::DiscriminativePCNetwork &self,
-               py::array_t<float,
-                           py::array::c_style | py::array::forcecast>
-                   input)
+            [](NetT &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
             {
                 auto buf = input.request();
-
-                std::vector<float> values(
-                    static_cast<float *>(buf.ptr),
-                    static_cast<float *>(buf.ptr) + buf.size);
-
+                std::vector<float> values(static_cast<float *>(buf.ptr), static_cast<float *>(buf.ptr) + buf.size);
                 self.Clamp(values);
             },
-            py::arg("input"),
-            "Clamp the first layer to the supplied input.")
+            py::arg("input"), "Clamp the first (input) layer to the supplied, flattened batch.")
 
-        .def(
-            "compile",
-            &Deep::DiscriminativePCNetwork::Compile,
-            "Compiles all layers into a contiguous block.")
+        .def("compile", &NetT::Compile, "Compiles all layers into a contiguous block.")
+        .def("calculate_state", &NetT::CalculateState, "Compute the total network energy.")
+        .def("update_state", &NetT::UpdateState, "Run one inference step.")
+        .def("update_weights", &NetT::UpdateWeights, "Apply weight updates to every layer.")
+        .def("reset_state", &NetT::ResetState, "Resets the beliefs 'z' on every layer.")
 
-        .def(
-            "calculate_state",
-            &Deep::DiscriminativePCNetwork::CalculateState,
-            "Compute the total network energy.")
+        .def("get_terminal_layer", &NetT::GetTerminalLayer,
+             py::return_value_policy::reference, "Return the last layer.")
 
-        .def(
-            "get_terminal_layer",
-            &Deep::DiscriminativePCNetwork::GetTerminalLayer,
-            "Return the last layer.")
-
-        .def("set_inference_rate",
-             &Deep::DiscriminativePCNetwork::SetInferenceRate,
-             "Sets the inference rate of each layer.",
-             py::arg("ir"))
-        .def("set_learning_rate",
-             &Deep::DiscriminativePCNetwork::SetLearningRate,
-             "Sets the learning rate of each layer.",
-             py::arg("lr"))
-        .def("set_precision_rate",
-             &Deep::DiscriminativePCNetwork::SetPrecisionRate,
-             "Sets the precision rate of each layer.",
-             py::arg("pr"))
-        .def("set_lambda",
-             &Deep::DiscriminativePCNetwork::SetLambda,
-             "Sets lambda of each layer.",
-             py::arg("l"))
-
-        .def("save", &Deep::DiscriminativePCNetwork::Save, "Saves the network architecture and weights to a structured directory.", py::arg("dir_path"))
-        .def("load", &Deep::DiscriminativePCNetwork::Load, "Loads network weights from a structured directory into the compiled MemoryArena.", py::arg("dir_path"))
-
-        .def(
-            "update_state",
-            &Deep::DiscriminativePCNetwork::UpdateState,
-            "Run one inference step.")
-
-        .def(
-            "reset_state",
-            &Deep::DiscriminativePCNetwork::ResetState,
-            "Resets the beliefs 'z'")
-
-        .def(
-            "update_weights",
-            &Deep::DiscriminativePCNetwork::UpdateWeights,
-            "Apply weight updates to every layer.")
-
-        .def("update_precision",
-             &Deep::DiscriminativePCNetwork::UpdatePrecision,
-             "Apply precision updates to every layer.")
-
-        .def_property_readonly(
-            "batch_size",
-            &Deep::DiscriminativePCNetwork::GetBatchSize)
+        .def_property_readonly("batch_size", &NetT::GetBatchSize)
 
         .def_property_readonly(
             "layers",
-            [](Deep::DiscriminativePCNetwork &self)
+            [](NetT &self)
             {
                 py::list result;
-
                 for (auto *layer : self.GetLayers())
-                {
-                    result.append(
-                        py::cast(
-                            layer,
-                            py::return_value_policy::reference));
-                }
-
+                    result.append(py::cast(layer, py::return_value_policy::reference));
                 return result;
             },
-            "List of DiscriminativePCLayer objects owned by the network.")
+            "List of layer objects owned by the network.")
 
-        .def(
-            "__len__",
-            [](const Deep::DiscriminativePCNetwork &self)
-            {
-                return self.GetLayers().size();
-            })
+        .def("__len__", [](const NetT &self)
+             { return self.GetLayers().size(); })
 
         .def(
             "__getitem__",
-            [](Deep::DiscriminativePCNetwork &self, std::ptrdiff_t index)
+            [](NetT &self, std::ptrdiff_t index)
             {
                 auto &layers = self.GetLayers();
-
                 if (index < 0)
                     index += static_cast<std::ptrdiff_t>(layers.size());
-
-                if (index < 0 ||
-                    index >= static_cast<std::ptrdiff_t>(layers.size()))
+                if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size()))
                     throw py::index_error();
-
                 return layers[index];
             },
             py::return_value_policy::reference_internal)
 
+        .def("__repr__", [className](const NetT &self)
+             { return "<" + std::string(className) + " layers=" +
+                      std::to_string(self.GetLayers().size()) + " batch_size=" +
+                      std::to_string(self.GetBatchSize()) + ">"; });
+}
+
+PYBIND11_MODULE(deepity, m)
+{
+    m.doc() = "Deepity: A high-performance Predictive Coding library.";
+
+    py::class_<Deep::Layer>(m, "Layer",
+                            R"pbdoc(
+    Abstract base class for all Predictive Coding layers.
+)pbdoc");
+
+    // ------------------------------------------------------------------
+    // DiscriminativePCLayer -- common surface via BindCommonPCLayer, then
+    // its own precision-related additions (the one thing SimplePCLayer
+    // doesn't have) appended below.
+    // ------------------------------------------------------------------
+    auto discLayerCls = py::class_<Deep::DiscriminativePCLayer, Deep::Layer>(m, "DiscriminativePCLayer",
+                                                                              R"pbdoc(
+        Predictive Coding layer.
+    )pbdoc")
+        .def(py::init([](
+                          int size,
+                          int next_size,
+                          int batch_size,
+                          float learning_rate,
+                          float inference_rate,
+                          float precision_rate,
+                          float lmbda,
+                          const std::string &activation,
+                          const std::string &activation_deriv)
+                      { return std::make_unique<Deep::DiscriminativePCLayer>(
+                            size,
+                            next_size,
+                            batch_size,
+                            learning_rate,
+                            inference_rate,
+                            precision_rate,
+                            lmbda,
+                            resolveAct(activation),
+                            resolveDAct(activation_deriv)); }),
+             py::arg("size"),
+             py::arg("next_size"),
+             py::arg("batch_size") = 1,
+             py::arg("learning_rate") = 1e-6f,
+             py::arg("inference_rate") = 0.01f,
+             py::arg("precision_rate") = 0.01f,
+             py::arg("lmbda") = 1e-2f,
+             py::arg("activation") = "relu",
+             py::arg("activation_deriv") = "drelu");
+
+    BindCommonPCLayer<Deep::DiscriminativePCLayer>(discLayerCls, "DiscriminativePCLayer");
+
+    discLayerCls
+        .def("update_precision", &Deep::DiscriminativePCLayer::UpdatePrecision)
+        .def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, py::arg("pr"));
+
+    // ------------------------------------------------------------------
+    // SimplePCLayer -- DiscriminativePCLayer with precision entirely
+    // removed (found this session to be an unused cost: every real run
+    // used pr=0.0, precision inert, yet still paid for the p/log_p
+    // buffers and the extra multiply/log terms on every call). Same
+    // common surface, no precision-related additions at all.
+    // ------------------------------------------------------------------
+    auto simpleLayerCls = py::class_<Deep::SimplePCLayer, Deep::Layer>(m, "SimplePCLayer",
+                                                                        R"pbdoc(
+        Predictive Coding layer without precision weighting -- see
+        SimplePCLayer.h for why precision was removed. Not yet
+        independently gradient-checked (direct strip-down of
+        DiscriminativePCLayer's already-verified math, but the removal
+        itself hasn't been re-verified via finite-difference check).
+    )pbdoc")
+        .def(py::init([](
+                          int size,
+                          int next_size,
+                          int batch_size,
+                          float learning_rate,
+                          float inference_rate,
+                          float lmbda,
+                          const std::string &activation,
+                          const std::string &activation_deriv)
+                      { return std::make_unique<Deep::SimplePCLayer>(
+                            size,
+                            next_size,
+                            batch_size,
+                            learning_rate,
+                            inference_rate,
+                            lmbda,
+                            resolveAct(activation),
+                            resolveDAct(activation_deriv)); }),
+             py::arg("size"),
+             py::arg("next_size"),
+             py::arg("batch_size") = 1,
+             py::arg("learning_rate") = 1e-6f,
+             py::arg("inference_rate") = 0.01f,
+             py::arg("lmbda") = 1e-2f,
+             py::arg("activation") = "relu",
+             py::arg("activation_deriv") = "drelu");
+
+    BindCommonPCLayer<Deep::SimplePCLayer>(simpleLayerCls, "SimplePCLayer");
+
+    simpleLayerCls.def_property_readonly("biases", [](Deep::SimplePCLayer &self)
+                                          { return py::array_t<float>(
+                                                {(py::ssize_t)self.GetOutputSize()},
+                                                self.GetBiases(), py::cast(&self)); });
+
+    // ------------------------------------------------------------------
+    // DiscriminativePCNetwork -- common surface via BindCommonPCNetwork,
+    // then its own network-wide setters, save/load, and update_precision
+    // appended (none of which exist on ConvPCNetwork/SimplePCNetwork).
+    // ------------------------------------------------------------------
+    auto discNetCls = py::class_<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork",
+                                                                  R"pbdoc(
+        Predictive Coding Network.
+
+        A network composed of one or more DiscriminativePCLayers. Layers are connected
+        automatically as they are added.
+    )pbdoc");
+
+    BindCommonPCNetwork<Deep::DiscriminativePCNetwork>(discNetCls, "DiscriminativePCNetwork");
+
+    discNetCls
+        .def(py::init<>(), "Construct a network with automatic batch-size detection.")
+
         .def(
-            "__repr__",
-            [](const Deep::DiscriminativePCNetwork &self)
+            "add_layer",
+            [](Deep::DiscriminativePCNetwork &self,
+               int size, int next_size, float lr, float ir, float pr, float lmbda,
+               const std::string &activation, const std::string &activation_deriv)
             {
-                return "<DiscriminativePCNetwork layers=" +
-                       std::to_string(self.GetLayers().size()) +
-                       " batch_size=" +
-                       std::to_string(self.GetBatchSize()) +
-                       ">";
-            });
+                self.AddLayer(size, next_size, lr, ir, pr, lmbda,
+                              resolveActEnum(activation), resolveActEnum(activation_deriv));
+            },
+            py::arg("size"), py::arg("next_size"),
+            py::arg("lr") = 1e-6f, py::arg("ir") = 0.1f, py::arg("pr") = 0.01f, py::arg("lmbda") = 1e-2f,
+            py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu",
+            "Add a layer to the network.")
+
+        .def("set_inference_rate", &Deep::DiscriminativePCNetwork::SetInferenceRate,
+             "Sets the inference rate of each layer.", py::arg("ir"))
+        .def("set_learning_rate", &Deep::DiscriminativePCNetwork::SetLearningRate,
+             "Sets the learning rate of each layer.", py::arg("lr"))
+        .def("set_precision_rate", &Deep::DiscriminativePCNetwork::SetPrecisionRate,
+             "Sets the precision rate of each layer.", py::arg("pr"))
+        .def("set_lambda", &Deep::DiscriminativePCNetwork::SetLambda,
+             "Sets lambda of each layer.", py::arg("l"))
+
+        .def("save", &Deep::DiscriminativePCNetwork::Save,
+             "Saves the network architecture and weights to a structured directory.", py::arg("dir_path"))
+        .def("load", &Deep::DiscriminativePCNetwork::Load,
+             "Loads network weights from a structured directory into the compiled MemoryArena.", py::arg("dir_path"))
+
+        .def("update_precision", &Deep::DiscriminativePCNetwork::UpdatePrecision,
+             "Apply precision updates to every layer.");
+
+    // ------------------------------------------------------------------
+    // SimplePCNetwork -- common surface only. No network-wide setters
+    // (SimplePCNetwork.h doesn't have them -- same "loop over layers in
+    // Python" pattern ConvolutionalPCN already uses), no save/load (not
+    // yet implemented, same status as ConvPCNetwork), no update_precision
+    // (doesn't exist -- the whole point of this class).
+    // ------------------------------------------------------------------
+    auto simpleNetCls = py::class_<Deep::SimplePCNetwork>(m, "SimplePCNetwork",
+                                                            R"pbdoc(
+        Predictive Coding Network built from SimplePCLayers (no precision).
+
+        No network-wide set_learning_rate()/set_inference_rate()/etc at the
+        C++ level -- loop over net.layers and call each layer's own setter
+        from Python, matching ConvolutionalPCN's existing pattern.
+    )pbdoc");
+
+    BindCommonPCNetwork<Deep::SimplePCNetwork>(simpleNetCls, "SimplePCNetwork");
+
+    simpleNetCls.def(
+        "add_layer",
+        [](Deep::SimplePCNetwork &self,
+           int size, int next_size, float lr, float ir, float lmbda,
+           const std::string &activation, const std::string &activation_deriv)
+        {
+            self.AddLayer(size, next_size, lr, ir, lmbda,
+                          resolveActEnum(activation), resolveActEnum(activation_deriv));
+        },
+        py::arg("size"), py::arg("next_size"),
+        py::arg("lr") = 1e-6f, py::arg("ir") = 0.1f, py::arg("lmbda") = 1e-2f,
+        py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu",
+        "Add a layer to the network.");
+
+    // ------------------------------------------------------------------
+    // RBLayer -- left exactly as-is, structurally unrelated to the common
+    // templates (different constructor shape, different method surface).
+    // ------------------------------------------------------------------
     py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer",
                                            R"pbdoc(
         Restricted Boltzmann-style Predictive Coding layer.
@@ -376,119 +521,11 @@ PYBIND11_MODULE(deepity, m)
                       std::to_string(self.GetBatchSize()) +
                       ">"; });
 
-    py::class_<Deep::DiscriminativePCLayer, Deep::Layer>(m, "DiscriminativePCLayer",
-                                                         R"pbdoc(
-        Predictive Coding layer.
-    )pbdoc")
-
-        .def(py::init([](
-                          int size,
-                          int next_size,
-                          int batch_size,
-                          float learning_rate,
-                          float inference_rate,
-                          float precision_rate,
-                          float lmbda,
-                          const std::string &activation,
-                          const std::string &activation_deriv)
-                      { return std::make_unique<Deep::DiscriminativePCLayer>(
-                            size,
-                            next_size,
-                            batch_size,
-                            learning_rate,
-                            inference_rate,
-                            precision_rate,
-                            lmbda,
-                            resolveAct(activation),
-                            resolveDAct(activation_deriv)); }),
-             py::arg("size"),
-             py::arg("next_size"),
-             py::arg("batch_size") = 1,
-             py::arg("learning_rate") = 1e-6f,
-             py::arg("inference_rate") = 0.01f,
-             py::arg("precision_rate") = 0.01f,
-             py::arg("lmbda") = 1e-2f,
-             py::arg("activation") = "relu",
-             py::arg("activation_deriv") = "drelu")
-
-        .def("calculate_state",
-             &Deep::DiscriminativePCLayer::CalculateState)
-
-        .def("update_state",
-             &Deep::DiscriminativePCLayer::UpdateState)
-
-        .def("update_weights",
-             &Deep::DiscriminativePCLayer::UpdateWeights)
-
-        .def("update_precision",
-             &Deep::DiscriminativePCLayer::UpdatePrecision)
-
-        .def("flush",
-             &Deep::DiscriminativePCLayer::Flush)
-
-        .def("clamp_state", [](Deep::DiscriminativePCLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
-             {
-            auto buf = input.request();
-
-            std::vector<float> values(
-                static_cast<float *>(buf.ptr),
-                static_cast<float *>(buf.ptr) + buf.size);
-
-            self.ClampState(values); }, py::arg("input"))
-
-        .def("unclamp_state", &Deep::DiscriminativePCLayer::UnclampState)
-
-        .def("randomize_weights", [](Deep::DiscriminativePCLayer &self)
-             {
-            std::random_device rd;
-            std::mt19937 rng(rd());
-            self.RandomizeWeights(rng); })
-
-        .def("set_layer_above", &Deep::DiscriminativePCLayer::SetLayerAbove, py::return_value_policy::reference)
-
-        .def("set_layer_below", &Deep::DiscriminativePCLayer::SetLayerBelow, py::return_value_policy::reference)
-
-        .def("set_learning_rate", &Deep::DiscriminativePCLayer::SetLearningRate, py::arg("lr"))
-        .def("set_inference_rate", &Deep::DiscriminativePCLayer::SetInferenceRate, py::arg("ir"))
-        .def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, py::arg("pr"))
-        .def("set_lambda", &Deep::DiscriminativePCLayer::SetLambda, py::arg("l"))
-
-        .def_property_readonly("beliefs", [](Deep::DiscriminativePCLayer &self)
-                               { return py::array_t<float>(
-                                     {(py::ssize_t)self.GetBatchSize(),
-                                      (py::ssize_t)self.GetInputSize()},
-                                     self.GetBeliefs(),
-                                     py::cast(&self)); })
-
-        .def_property_readonly("errors", [](Deep::DiscriminativePCLayer &self)
-                               { return py::array_t<float>(
-                                     {(py::ssize_t)self.GetBatchSize(),
-                                      (py::ssize_t)self.GetInputSize()},
-                                     self.GetErrors(),
-                                     py::cast(&self)); })
-        .def_property_readonly("weights", [](Deep::DiscriminativePCLayer &self)
-                               { return py::array_t<float>(
-                                     {(py::ssize_t)self.GetOutputSize(),
-                                      (py::ssize_t)self.GetInputSize()},
-                                     self.GetWeights(),
-                                     py::cast(&self)); })
-        .def_property_readonly("batch_size", &Deep::DiscriminativePCLayer::GetBatchSize)
-
-        .def_property_readonly("input_size", &Deep::DiscriminativePCLayer::GetInputSize)
-
-        .def_property_readonly("output_size", &Deep::DiscriminativePCLayer::GetOutputSize)
-
-        .def("__repr__", [](const Deep::DiscriminativePCLayer &self)
-             { return "<DiscriminativePCLayer in=" +
-                      std::to_string(self.GetInputSize()) +
-                      ", out=" +
-                      std::to_string(self.GetOutputSize()) +
-                      ", batch=" +
-                      std::to_string(self.GetBatchSize()) +
-                      ">"; });
-
     // ------------------------------------------------------------------
-    // ConvPCLayer / ConvPCNetwork
+    // ConvPCLayer / ConvPCNetwork -- left exactly as-is, structurally
+    // different enough (4D shapes, extra shape accessors, C++-level
+    // train_step/predict) that templating them in would risk changing
+    // already-verified behavior for no real benefit.
     //
     // NOTE: ConvPCNetwork has no Save/Load binding -- ConvPCNetwork.cpp
     // does not implement persistence yet (deliberately deferred; see
@@ -581,10 +618,6 @@ PYBIND11_MODULE(deepity, m)
         .def("set_precision_rate", &Deep::ConvPCLayer::SetPrecisionRate, py::arg("pr"))
         .def("set_lambda", &Deep::ConvPCLayer::SetLambda, py::arg("l"))
 
-        // beliefs/errors given a genuine (batch, channels, H, W) shape --
-        // more useful for image data than DiscriminativePCLayer's flat
-        // (batch, size), though the underlying memory layout is identical
-        // (row-major, contiguous per channel per batch item).
         .def_property_readonly("beliefs", [](Deep::ConvPCLayer &self)
                                { return py::array_t<float>(
                                      {(py::ssize_t)self.GetBatchSize(),
@@ -603,10 +636,6 @@ PYBIND11_MODULE(deepity, m)
                                      self.GetErrors(),
                                      py::cast(&self)); })
 
-        // weights given shape (outChannels, inChannels, kernelH, kernelW) --
-        // W is stored flat as (outChannels, inChannels*kernelH*kernelW),
-        // which factors cleanly into this 4D shape without any reshaping
-        // of the underlying data.
         .def_property_readonly("weights", [](Deep::ConvPCLayer &self)
                                { return py::array_t<float>(
                                      {(py::ssize_t)self.GetOutChannels(),
@@ -818,7 +847,48 @@ PYBIND11_MODULE(deepity, m)
                       " batch_size=" + std::to_string(self.GetBatchSize()) +
                       ">"; });
 
-    m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes);
+    py::class_<Deep::StreamAlignedBatcher>(m, "StreamAlignedBatcher",
+                                           R"pbdoc(
+        Builds batches with a fixed number of examples per class, grouped
+        together -- required for I_avg's per-class averaging. Does NOT own
+        the dataset; X/Y/labels must stay alive for the batcher's lifetime.
+    )pbdoc")
+        .def(py::init([](
+                          py::array_t<float, py::array::c_style | py::array::forcecast> X,
+                          py::array_t<float, py::array::c_style | py::array::forcecast> Y,
+                          py::array_t<int, py::array::c_style | py::array::forcecast> labels,
+                          size_t x_stride, size_t y_stride,
+                          int num_classes, int per_class, unsigned seed)
+                      {
+                          auto xbuf = X.request();
+                          auto ybuf = Y.request();
+                          auto lbuf = labels.request();
+                          size_t num_samples = (size_t)xbuf.shape[0];
+                          return std::make_unique<Deep::StreamAlignedBatcher>(
+                              static_cast<float *>(xbuf.ptr),
+                              static_cast<float *>(ybuf.ptr),
+                              static_cast<int *>(lbuf.ptr),
+                              num_samples, x_stride, y_stride,
+                              num_classes, per_class, seed);
+                      }),
+             py::arg("X"), py::arg("Y"), py::arg("labels"),
+             py::arg("x_stride"), py::arg("y_stride"),
+             py::arg("num_classes"), py::arg("per_class"), py::arg("seed") = 42,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>())
+
+        .def("num_batches_per_epoch", &Deep::StreamAlignedBatcher::NumBatchesPerEpoch)
+        .def_property_readonly("batch_size", &Deep::StreamAlignedBatcher::GetBatchSize)
+
+        .def("get_batch", [](Deep::StreamAlignedBatcher &self)
+             {
+                 int bsz = self.GetBatchSize();
+                 py::array_t<float> X_out({(py::ssize_t)bsz, (py::ssize_t)self.GetXStride()});
+                 py::array_t<float> Y_out({(py::ssize_t)bsz, (py::ssize_t)self.GetYStride()});
+                 py::array_t<int> labels_out(bsz);
+                 self.GetBatch(X_out.mutable_data(), Y_out.mutable_data(), labels_out.mutable_data());
+                 return py::make_tuple(X_out, Y_out, labels_out);
+             });
+
     m.def("auto_batch_size", &Deep::AutoBatchSize);
     m.def("dynamic_thread", &Deep::DynamicThread, py::arg("batch_size"));
 
@@ -826,15 +896,15 @@ PYBIND11_MODULE(deepity, m)
     m.def("relu", [](py::array_t<float> x)
           { Deep::relu(x.mutable_data(), x.size()); });
     m.def("drelu", [](py::array_t<float> x)
-          { Deep::dRelu(x.mutable_data(), x.size()); }); // Add this
+          { Deep::dRelu(x.mutable_data(), x.size()); });
 
     m.def("tanh", [](py::array_t<float> x)
           { Deep::tanh(x.mutable_data(), x.size()); });
     m.def("dtanh", [](py::array_t<float> x)
-          { Deep::dTanh(x.mutable_data(), x.size()); }); // Add this
+          { Deep::dTanh(x.mutable_data(), x.size()); });
 
     m.def("sigmoid", [](py::array_t<float> x)
           { Deep::sigmoid(x.mutable_data(), x.size()); });
     m.def("dsigmoid", [](py::array_t<float> x)
-          { Deep::dSigmoid(x.mutable_data(), x.size()); }); // Add this
+          { Deep::dSigmoid(x.mutable_data(), x.size()); });
 }

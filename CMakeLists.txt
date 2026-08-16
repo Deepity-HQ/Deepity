@@ -143,9 +143,12 @@ add_library(Deepity STATIC
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/ConvPCLayer.cpp
+    src/SimplePCLayer.cpp
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp    
+    src/SimplePCNetwork.cpp
     src/ModelIO.cpp
+    src/StreamAlignedBatcher.cpp
 )
 
 target_include_directories(Deepity PUBLIC
@@ -273,7 +276,7 @@ endif()
 # Tests
 # --------------------------------------------------------------------
 add_executable(DeepityTests
-    tests/tClamp.cpp
+    tests/tResearch.cpp
 )
 
 # target_compile_definitions(Deepity PRIVATE PCN_PROFILE)
