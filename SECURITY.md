@@ -47,7 +47,7 @@ issues instead so they get triaged through the normal process.
 
 **Please do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, email **[rose.05.ra4@outlook.com](mailto:rose.05.ra4@outlook.com)**
+Instead, email **[rose.05.ra4@outlook.com](mailto:jackrose2335@outlook.com)**
 with:
 
 - A description of the vulnerability and its potential impact.
