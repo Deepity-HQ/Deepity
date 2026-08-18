@@ -64,21 +64,21 @@ Raw benchmark output for both compilers is checked into [`logs/results_GCC.txt`]
 
 Deepity achieves its low-variance execution times through strict memory management and custom hardware intrinsics.
 
-**Custom SIMD Micro-Kernels**:
+**Custom SIMD Micro-Kernels**
 We bypass standard C++ library bottlenecks by implementing highly optimized activation functions using raw AVX2 and AVX-512 intrinsics.
 
-**Rational Polynomial Tanh**:
+**Rational Polynomial Tanh**
 Deepity avoids expensive `expf` instruction calls by utilizing a highly tuned Elliot Sigmoid approximation. This yields up to a 11000% speedup over a standard library version without sacrificing necessary precision.
 
 ![Activation CPU Metrics](resources/ActivationCPUMetrics.png)
 
-**Saturated Vectorized ReLU**:
+**Saturated Vectorized ReLU**
 The ReLU implementation processes up to 16 floats per clock cycle, completely saturating standard single-core RAM bandwidth limits (~15.8 GB/s).
 
-**Strict 64-Byte Alignment**:
+**Strict 64-Byte Alignment**
 To prevent hardware exceptions and segmentation faults when loading wide 256-bit or 512-bit registers, Deepity enforces strict 64-byte memory boundaries (`std::align_val_t{64}`) for all internal sequential sub-buffers.
 
-**Contiguous Arena Allocator**:
+**Contiguous Arena Allocator**
 All layer buffers in a network are packed into a single contiguous memory block. This maximizes L1/L2 cache locality and eliminates pointer-chasing overhead across the layer hierarchy.
 
 ---
@@ -232,14 +232,27 @@ doxygen Doxyfile
 
 ## ✅ Testing
 
-The C++ test/benchmark suite lives under [`tests/`](tests/) and is built automatically by `build.py`:
+The `DeepityTests` executable, built automatically by `build.py`, currently
+compiles a single source file: [`tests/tResearch.cpp`](tests/tResearch.cpp).
+That's the suite CI actually runs.
+
+The rest of [`tests/`](tests/) contains additional test/benchmark source
+files that are **not currently wired into the `DeepityTests` target** in
+`CMakeLists.txt` (`add_executable(DeepityTests tests/tResearch.cpp)` lists
+only the one file) — they exist in the tree but aren't compiled or run as
+part of a normal build:
 
 - `tNetwork.cpp`, `tSimple.cpp`, `tDiagnose.cpp` — core network correctness
 - `tConvGradCheck.cpp` — gradient checking for convolutional layers
 - `tActivations.cpp`, `tClamp.cpp` — activation/utility kernel correctness
 - `tBenchmark.cpp`, `tProfile.cpp` — throughput and profiling benchmarks
 - `tAsan.cpp` — AddressSanitizer coverage
-- `tResearch.cpp`, `tReadme.cpp` — exploratory tests and README-example verification
+- `tReadme.cpp` — README-example verification
+
+If you want to build and run one of these, add it to the `DeepityTests`
+sources in `CMakeLists.txt` (or create a separate `add_executable` target for
+it) — see [CONTRIBUTING.md](CONTRIBUTING.md) for the CMake target-ordering
+gotchas that apply when doing so.
 
 Research and long-running experiments (checkpoints, MNIST training runs, step-tuning sweeps, LinkedIn write-ups, etc.) live separately under [`experiments/`](experiments/) and are not part of the core build.
 
