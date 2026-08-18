@@ -175,8 +175,12 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install pyright
-        run: pip install pyright
+      - name: Install dependencies
+        # requirements-dev.txt covers everything examples/ imports, plus
+        # rich (for build.py's optional dashboard) and pyright itself - see
+        # that file for details. experiments/ is intentionally excluded in
+        # pyrightconfig.json instead, so its deps aren't required here.
+        run: pip install -r requirements-dev.txt
 
       - name: Run pyright
         run: pyright

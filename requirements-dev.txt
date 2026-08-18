@@ -1,0 +1,25 @@
+# Development dependencies for Deepity - NOT required to build or use the
+# compiled deepity/pydeepity extension itself (see CMakeLists.txt for that).
+#
+# This covers what examples/ actually imports, plus rich (used by build.py's
+# optional dashboard - see build.py's RICH_AVAILABLE handling) and pyright
+# (used by CI's typecheck job and CONTRIBUTING.md's pre-push checklist).
+#
+# Install with:
+#   pip install -r requirements-dev.txt
+#
+# experiments/ has a heavier, overlapping set of imports (torch, sklearn,
+# pandas) already covered below; that directory is intentionally excluded
+# from pyright in pyrightconfig.json (see the comment there), so none of
+# this is strictly required just to pass CI - only to actually run those
+# scripts locally.
+
+numpy
+torch
+torchvision
+scikit-learn
+matplotlib
+pandas
+rich
+setuptools
+pyright

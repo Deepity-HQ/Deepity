@@ -1,3 +1,21 @@
 {
-    "extraPaths": ["tests/python"]
+    "extraPaths": ["tests/python"],
+
+    "exclude": [
+        "**/__pycache__",
+        "build",
+        "docs",
+        "experiments", "**/node_modules", "**/.*", ".venv"
+    ],
+
+    "executionEnvironments": [
+        {
+            "root": "bindings",
+            "reportAttributeAccessIssue": "none"
+        },
+        {
+            "root": "pydeepity",
+            "reportAttributeAccessIssue": "none"
+        }
+    ]
 }
