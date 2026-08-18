@@ -4,6 +4,85 @@ This document exists mainly to save the next person (possibly future-you) from
 re-discovering a long list of cross-platform build gotchas the hard way. If
 you hit a build error that looks like it should be obvious, check here first.
 
+## Development Workflow
+
+### Before you start
+
+- For anything beyond a small fix (typo, obvious bug, doc correction), open an
+  issue first describing what you want to change and why. This avoids
+  duplicate work and lets us flag design concerns — especially around
+  performance-sensitive code (SIMD kernels, `MemoryArena`, layer update
+  ordering) — before you've sunk time into an implementation.
+- Check [`README.md`](README.md) first. If what you want to build is already
+  listed there, say so in your issue; it may already be in progress or have
+  design constraints attached that aren't obvious from the code alone.
+
+### Branching
+
+- Fork the repository and branch off `main`.
+- Name branches by type and short description, e.g. `fix/aligned-alloc-mingw`,
+  `feat/cuda-gemm-backend`, `docs/contributing-workflow`. This isn't enforced
+  by tooling, just a convention that makes the branch list and PR history
+  easier to scan.
+
+### Commit messages
+
+- Write commit subjects in the imperative mood ("Fix alignment on MinGW", not
+  "Fixed" or "Fixes"), under ~72 characters, with further detail in the body
+  if the change isn't self-explanatory.
+- Prefer several small, focused commits over one large one where practical —
+  it makes `git bisect` and review meaningfully easier, especially for
+  numerically-sensitive changes where isolating _which_ change affected
+  training dynamics matters.
+
+### Before you push
+
+- **Build both configurations you touched.** At minimum, run
+  `python build.py Release` (and `Debug` if you changed anything
+  correctness-sensitive, since Debug enables additional checks). This also
+  runs the `DeepityTests` suite automatically — see
+  [`logs/build.log`](logs/build.log) for full output if anything fails.
+- **Run `pyright`** if you touched `bindings/`, `pydeepity/`, or anything
+  under `examples/`/`experiments/` — see [`pyrightconfig.json`](pyrightconfig.json)
+  for the project's type-checking configuration. A change that fails
+  type-checking will fail CI in the same way.
+- **Match existing formatting.** There's no enforced formatter yet, so please
+  mirror the style of the surrounding code (brace placement, naming, header
+  organization) rather than introducing a new convention in one file.
+- **Update [`CHANGELOG.md`](CHANGELOG.md)** for any user-facing change —
+  new features, behavior changes, bug fixes, or removals. Add an entry under
+  the `[Unreleased]` section in the appropriate category (Added / Changed /
+  Deprecated / Removed / Fixed / Security). Purely internal changes (refactors
+  with no observable behavior difference, CI/tooling tweaks) don't need an
+  entry.
+
+### Opening the pull request
+
+Include in the PR description:
+
+- What the change does and why (link the issue if one exists).
+- Which build configuration(s) and platform(s) you tested on.
+- For anything performance-sensitive: before/after numbers. This codebase
+  tracks throughput closely (see the README's benchmark tables), so a
+  regression that isn't caught by a functional test can still be a real
+  problem — a quick before/after from `tests/tBenchmark.cpp` or
+  `tests/tProfile.cpp` output is enough, it doesn't need to be a formal
+  writeup.
+- Anything you're unsure about or deliberately left out of scope. Flagging
+  this yourself saves a review round-trip.
+
+### Review
+
+- CI must pass before merge (build + test suite, and type-checking where
+  applicable).
+- Please respond to review comments rather than force-pushing over them
+  silently — it makes it hard to follow what changed in response to what
+  feedback. Squashing at merge time is fine and is generally handled by the
+  person merging.
+- If a review comment references one of the portability rules or numerical
+  gotchas below, that's usually not a style nitpick — it's very likely a past
+  real bug being flagged again.
+
 ## Build prerequisites
 
 - CMake >= 3.16, Ninja
@@ -132,7 +211,7 @@ after already building, you need a clean rebuild (`rm -rf build` /
 On Windows, `vcpkg install`ed libraries (OpenBLAS, Python, etc.) live in
 vcpkg's own tree, which isn't on the default DLL search path. Each
 executable/shared-module target that depends on them needs its own
-deployment step, or it'll build and link fine but fail at *runtime* with a
+deployment step, or it'll build and link fine but fail at _runtime_ with a
 vague, unhelpful error (e.g. `0xc0000279`, "the application was unable to
 start correctly") and no further detail.
 
@@ -149,7 +228,7 @@ If you add a new executable or Python module target, remember to call this
 for it too — nothing enforces it automatically, and a missing call produces
 a build that looks completely successful but a binary that won't start.
 
-**Separately**, any dependency installed *outside* vcpkg (e.g. a manually
+**Separately**, any dependency installed _outside_ vcpkg (e.g. a manually
 installed LLVM's `libomp.dll`) is invisible to `vcpkg z-applocal` entirely,
 since it only knows about vcpkg's own tracked install tree. Either add that
 tool's `bin` directory to `PATH`, or extend the deployment step to copy it
@@ -157,7 +236,7 @@ explicitly.
 
 ### 8. `-march=native` is not reproducible across machines
 
-It compiles for whatever CPU the *build machine* has, which can differ
+It compiles for whatever CPU the _build machine_ has, which can differ
 between your local machine, CI runners, and end users. This has been
 directly load-bearing for correctness in this codebase — AVX2 vs AVX512
 dispatch has changed which code path actually executes for precision-related
@@ -190,7 +269,7 @@ Separate from build portability, but equally worth knowing before touching
 
 - **A layer's own `sigma_prime`/`p`/`log_p` buffers should only ever be
   written by that layer's own methods.** Several past bugs in this codebase
-  involved one layer reading or writing a *neighboring* layer's buffer under
+  involved one layer reading or writing a _neighboring_ layer's buffer under
   a mistaken assumption about ordering or ownership. If you're adding new
   cross-layer logic, be explicit about which layer's `UpdateState()`/
   `CalculateState()` is guaranteed to have already run in the same sweep

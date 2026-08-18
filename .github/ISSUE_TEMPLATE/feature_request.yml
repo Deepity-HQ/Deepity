@@ -1,0 +1,58 @@
+name: Feature Request
+description: Propose a new feature, layer type, optimizer, or other enhancement.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check [`Roadmap.md`](../../Roadmap.md) first - your idea may
+        already be planned, in progress, or have design constraints attached
+        that aren't obvious from the code alone.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What are you trying to do that Deepity doesn't currently support?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Roughly how would this work? API sketch, new layer/header, CLI flag, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you're currently using, or other approaches you ruled out.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Core C++ library (layers/networks)
+        - Python bindings (pydeepity)
+        - Build system (CMake / build.py)
+        - CUDA backend
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked Roadmap.md and this isn't already tracked there.
+          required: true
+        - label: I'm willing to help implement this (optional, just helps with prioritization).
+          required: false

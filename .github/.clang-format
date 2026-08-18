@@ -1,0 +1,58 @@
+---
+# Deepity clang-format configuration.
+#
+# Based on the style already used in the codebase (see the C++ example in
+# README.md): 4-space indentation, braces attached to the same line, and
+# left-aligned pointers/references.
+#
+# This has NOT yet been run against the existing codebase - before enabling
+# this in CI or a pre-commit hook, run `clang-format -i` across src/ and
+# include/ once, review the diff, and adjust settings here (rather than
+# hand-fixing every file) until the diff is essentially style-only noise.
+
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+AccessModifierOffset: -4
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+NamespaceIndentation: None
+
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+
+BinPackArguments: true
+BinPackParameters: true
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: true
+
+SortIncludes: CaseSensitive
+IncludeBlocks: Preserve
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpaceAfterTemplateKeyword: true
+
+FixNamespaceComments: true
+
+# Wide SIMD intrinsic lines and the templated activation kernels in this
+# codebase can get long even at ColumnLimit: 100 - clang-format will wrap
+# them as best it can, but don't fight it too hard with manual line breaks
+# that will just get re-flowed on the next format pass.

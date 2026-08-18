@@ -1,3 +1,5 @@
+[](https://github.com/<owner>/<repo>/actions/workflows/ci.yml)
+
 # ![Deepity](resources/Deepity.png)
 
 Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-overhead, ultra-low variance inference and learning. It is aggressively CPU-optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.

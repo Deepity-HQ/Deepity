@@ -1,0 +1,98 @@
+name: Bug Report
+description: Something is crashing, failing to build, or producing incorrect results.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. If this is a **security
+        vulnerability** (memory corruption, malicious model/image files that
+        crash the loader, etc.), please follow [`SECURITY.md`](../../SECURITY.md)
+        instead of filing a public issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps or a minimal code snippet that triggers the issue.
+      placeholder: |
+        1. Configure with `python build.py Release`
+        2. Run `...`
+        3. Observe `...`
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build-type
+    attributes:
+      label: Build type
+      options:
+        - Release
+        - Debug
+        - Both
+    validations:
+      required: true
+
+  - type: dropdown
+    id: compiler
+    attributes:
+      label: Compiler
+      options:
+        - Clang (LLVM)
+        - GCC
+        - MSVC
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: e.g. Ubuntu 24.04, Windows 11 23H2, macOS 15
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version (if relevant to the `pydeepity` bindings)
+      placeholder: e.g. 3.11.4
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >
+        Paste relevant output from `logs/build.log`, a stack trace, or (for
+        performance regressions) `tests/tBenchmark.cpp` / `tests/tProfile.cpp`
+        output. This will be automatically formatted as code, no need for
+        backticks.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I checked the [portability rules and known gotchas in CONTRIBUTING.md](../../CONTRIBUTING.md) and this isn't one of them.
+          required: true
+        - label: I searched existing issues and this hasn't already been reported.
+          required: true

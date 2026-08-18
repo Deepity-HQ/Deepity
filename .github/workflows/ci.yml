@@ -1,0 +1,182 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  build-and-test:
+    name: build-and-test (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Both compilers are exercised in CI since this project's behavior
+        # (SIMD dispatch, precision) has measurably differed between them -
+        # see CONTRIBUTING.md and the README's GCC vs. Clang benchmarks.
+        include:
+          - compiler: gcc
+            cc: gcc
+            cxx: g++
+          - compiler: clang
+            cc: clang
+            cxx: clang++
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install system dependencies
+        # NOTE: per CMakeLists.txt, SLEEF and Google Benchmark are fetched
+        # from source via FetchContent at configure time - they are NOT
+        # system packages, so they are deliberately absent here.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            libopenblas-dev \
+            pybind11-dev \
+            python3-dev \
+            ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
+
+      - name: Install Python build dependencies
+        # pybind11's CMake config package is needed even though libpybind11-dev
+        # is installed above, in case find_package(pybind11) resolves via pip's
+        # copy instead - installing both covers either path.
+        run: pip install pybind11
+
+      - name: Build and test (Release)
+        run: python build.py Release
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.compiler }}
+          path: logs/build.log
+          if-no-files-found: warn
+
+  build-and-test-windows:
+    name: build-and-test (windows, clang)
+    runs-on: windows-latest
+    # NOTE: unlike the Linux job above, this one does NOT go through
+    # build.py. build.py's configure step is hardcoded to
+    # `-DCMAKE_BUILD_TYPE=... -DDEEPITY_BUILD_TESTS=ON` with no way to pass
+    # extra defines, but Windows+Clang needs several more (OpenMP_libomp_
+    # LIBRARY, CMAKE_TOOLCHAIN_FILE, BLA_VENDOR). Those live in the
+    # "windows-clang" preset in CMakePresets.json, which this job invokes
+    # directly via `cmake --preset` - see the Configure step below. If
+    # build.py grows support for passthrough CMake args or preset selection,
+    # this job should switch to using it, the same as the Linux job.
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Set up MSVC developer environment
+        # Clang on Windows still links via the MSVC toolchain (link.exe,
+        # the Windows SDK, and the vcpkg-built libraries below all expect
+        # this), so this needs to be active for every step after it.
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install Ninja
+        run: choco install ninja -y --no-progress
+
+      - name: Install LLVM/Clang
+        # Installed via choco (which uses the official LLVM Windows
+        # installer), so it lands at the same C:\Program Files\LLVM path
+        # CONTRIBUTING.md documents - including libomp.lib, which the
+        # configure step below points at explicitly.
+        run: choco install llvm -y --no-progress
+
+      - name: Cache vcpkg
+        id: vcpkg-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:/vcpkg
+            !C:/vcpkg/buildtrees
+            !C:/vcpkg/packages
+            !C:/vcpkg/downloads
+          key: vcpkg-windows-openblas-pybind11-v1
+
+      - name: Bootstrap vcpkg
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/microsoft/vcpkg C:/vcpkg
+          C:/vcpkg/bootstrap-vcpkg.bat
+
+      - name: Install vcpkg dependencies
+        # Mirrors CMakeLists.txt: only OpenBLAS and pybind11 come from
+        # vcpkg. SLEEF and Google Benchmark are fetched from source by CMake
+        # itself (see FetchContent_Declare in CMakeLists.txt) and need no
+        # package manager step at all.
+        run: C:/vcpkg/vcpkg.exe install openblas pybind11 --triplet x64-windows
+
+      - name: Install Python build dependencies
+        run: pip install pybind11
+
+      - name: Configure (CMake, using the windows-clang preset)
+        # Uses CMakePresets.json's "windows-clang" preset directly, rather
+        # than retyping the same flags here, so CI exercises the exact
+        # preset a human would run locally - if the preset breaks, CI
+        # catches it instead of it silently rotting.
+        run: cmake --preset windows-clang 2>&1 | Tee-Object -FilePath windows-configure.log
+
+      - name: Build
+        run: cmake --build build/Release --config Release --parallel 2>&1 | Tee-Object -FilePath windows-build.log
+
+      - name: Run tests
+        run: |
+          $exe = Get-ChildItem -Path build/Release -Recurse -Filter "DeepityTests.exe" | Select-Object -First 1
+          if (-not $exe) {
+            throw "DeepityTests.exe not found under build/Release - check windows-build.log"
+          }
+          & $exe.FullName
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-windows
+          path: |
+            windows-configure.log
+            windows-build.log
+          if-no-files-found: ignore
+
+  typecheck:
+    name: typecheck (pyright)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pyright
+        run: pip install pyright
+
+      - name: Run pyright
+        run: pyright

@@ -3,9 +3,20 @@
   "configurePresets": [
     {
       "name": "windows-clang",
+      "displayName": "Windows (Clang + vcpkg)",
+      "description": "Known-working Clang/libomp/vcpkg configuration - kept in sync with the 'Configuring locally' section of CONTRIBUTING.md.",
       "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/Release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "DEEPITY_BUILD_TESTS": "ON",
         "OpenMP_CXX_FLAGS": "-fopenmp=libomp",
         "OpenMP_CXX_LIB_NAMES": "libomp",
         "OpenMP_libomp_LIBRARY": "C:/Program Files/LLVM/lib/libomp.lib",

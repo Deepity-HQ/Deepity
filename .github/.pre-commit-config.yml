@@ -1,0 +1,49 @@
+# Install with:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Run against all files once (recommended the first time, and after editing
+# .clang-format):
+#   pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+        # ISSUE_TEMPLATE/*.yml use GitHub's issue-forms schema, which
+        # standard YAML checkers parse fine - no exclusion needed.
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-case-conflict
+      - id: check-merge-conflict
+
+  # C++ formatting - see .clang-format for the style configuration.
+  # NOTE: run `pre-commit run clang-format --all-files` once after adding
+  # this and review the resulting diff before relying on it in CI.
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v18.1.8
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+        files: ^(include|src|bindings|tests)/.*\.(h|hpp|hxx|c|cc|cpp|cxx)$
+
+  # Python type-checking for the bindings/examples, using this repo's own
+  # pyrightconfig.json. Kept local (not a hosted mirror) since pyright needs
+  # the project's actual dependencies installed to type-check meaningfully.
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright
+        entry: pyright
+        language: system
+        types: [python]
+        pass_filenames: false
+
+default_language_version:
+  python: python3
