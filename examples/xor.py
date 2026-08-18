@@ -1,14 +1,14 @@
 import numpy as np
-from deepitybind.sequential_pcn import SequentialPCN
+from pydeepity import SequentialPCN
 
 def main():
     # 1. Setup the Network
     net = SequentialPCN(batch_size=1)
     
     # Using the abstracted add_layer (automatically handles 'd' + act)
-    net.add_layer(2, 8, lr=0.05, ir=0.3, act="tanh", lmbda=0.0001)
-    net.add_layer(8, 1, lr=0.05, ir=0.3, act="tanh", lmbda=0.0001)
-    net.add_layer(1, 0, lr=0.05, ir=0.3, act="linear", lmbda=0.0001)
+    net.add_layer(2, 8, lr=0.05, ir=0.3, pr=0.0, act="tanh", lmbda=0.0001)
+    net.add_layer(8, 1, lr=0.05, ir=0.3, pr=0.0, act="tanh", lmbda=0.0001)
+    net.add_layer(1, 0, lr=0.05, ir=0.3, pr=0.0, act="linear", lmbda=0.0001)
 
     net.randomize_weights()
 

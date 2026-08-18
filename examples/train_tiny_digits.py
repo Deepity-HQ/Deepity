@@ -1,12 +1,22 @@
+from typing import cast
 import numpy as np
+import numpy.typing as npt
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
+from sklearn.utils import Bunch
 from pydeepity import SequentialPCN
 from time import perf_counter
 
-def load_tiny_digits():
+def load_tiny_digits() -> tuple[
+    npt.NDArray[np.float32], npt.NDArray[np.float32],
+    npt.NDArray[np.float32], npt.NDArray[np.int64],
+]:
     print("Loading tiny 8x8 Digits dataset (1,797 images)...")
-    digits = load_digits()
+    # load_digits()'s stub return type is an unconditional Union covering
+    # both the Bunch and (X, y) tuple shapes regardless of arguments, so
+    # pyright can't narrow it on its own; cast to the shape we actually get
+    # at runtime here (no return_X_y passed -> Bunch).
+    digits = cast(Bunch, load_digits())
     
     # Digits are 0-16 natively. Scale to [-1.0, 1.0] for tanh
     X = (digits.data.astype(np.float32) / 8.0) - 1.0 
@@ -20,7 +30,10 @@ def load_tiny_digits():
         X, Y_bipolar, y, test_size=0.2, stratify=y, random_state=42
     )
     
-    return X_train, Y_train, X_test, y_test_labels
+    return cast(
+        "tuple[npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.float32], npt.NDArray[np.int64]]",
+        (X_train, Y_train, X_test, y_test_labels),
+    )
 
 def main():
     X_train, Y_train, X_test, y_test_labels = load_tiny_digits()

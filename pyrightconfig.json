@@ -5,7 +5,8 @@
         "**/__pycache__",
         "build",
         "docs",
-        "experiments", "**/node_modules", "**/.*", ".venv"
+        "experiments",
+        "examples/test_pcn_torch.py", "**/node_modules", "**/.*", ".venv"
     ],
 
     "executionEnvironments": [

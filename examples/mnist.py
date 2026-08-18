@@ -1,4 +1,4 @@
-import deepity
+from pydeepity import deepity
 import numpy as np
 import torch
 from torchvision import datasets, transforms
@@ -132,6 +132,7 @@ for epoch in range(EPOCHS):
         terminal = net.get_terminal_layer()
         terminal.clamp_state(y)
 
+        energy = 0.0
         for _ in range(INFERENCE_STEPS):
             energy = net.calculate_state()
             net.update_state()
