@@ -204,7 +204,7 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     # Modern cross-platform way to copy required DLLs (like OpenMP/BLAS) to the Python package on Windows
     if(WIN32)
         add_custom_command(TARGET deepity POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:deepity>>,copy_if_different,true>
             $<TARGET_RUNTIME_DLLS:deepity>
             $<TARGET_FILE_DIR:deepity>
             COMMAND_EXPAND_LISTS
@@ -231,7 +231,7 @@ if(DEEPITY_BUILD_TESTS)
     # Copy DLLs for the test executable on Windows
     if(WIN32)
         add_custom_command(TARGET DeepityTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityTests>>,copy_if_different,true>
             $<TARGET_RUNTIME_DLLS:DeepityTests>
             $<TARGET_FILE_DIR:DeepityTests>
             COMMAND_EXPAND_LISTS
