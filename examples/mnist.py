@@ -1,4 +1,4 @@
-from pydeepity import deepity
+from pydeepity import deepity  # pyright: ignore[reportAttributeAccessIssue] - raw C++ extension, no static type info available
 import numpy as np
 import torch
 from torchvision import datasets, transforms

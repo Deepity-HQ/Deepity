@@ -7,6 +7,16 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
+# Explicit least-privilege GITHUB_TOKEN scope. None of the jobs below write
+# to the repo, comment on PRs, or publish anything - they only check out
+# code, build/test it, and upload log artifacts - so read-only access to
+# contents is all that's needed. Without this block, jobs run with the
+# default token scope, which can be broader than necessary depending on
+# repo/org settings (this is what CodeQL's "workflow does not contain
+# permissions" alert flags).
+permissions:
+  contents: read
+
 jobs:
   build-and-test:
     name: build-and-test (${{ matrix.compiler }})
