@@ -1,4 +1,11 @@
-[](https://github.com/ra4ster/deepity/actions/workflows/ci.yml)
+[![CI](https://github.com/ra4ster/deepity/actions/workflows/ci.yml/badge.svg)](https://github.com/ra4ster/deepity/actions/workflows/ci.yml)
+[![License](https://img.shields.io/github/license/ra4ster/deepity)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/ra4ster/deepity)](https://github.com/ra4ster/deepity/releases)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
+[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](CMakeLists.txt)
+[![Stars](https://img.shields.io/github/stars/ra4ster/deepity?style=social)](https://github.com/ra4ster/deepity/stargazers)
+[![Issues](https://img.shields.io/github/issues/ra4ster/deepity)](https://github.com/ra4ster/deepity/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/ra4ster/deepity)](https://github.com/ra4ster/deepity/commits/main)
 
 # ![Deepity](resources/Deepity.png)
 
