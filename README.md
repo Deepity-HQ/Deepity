@@ -1,4 +1,4 @@
-[](https://github.com/<owner>/<repo>/actions/workflows/ci.yml)
+[](https://github.com/ra4ster/deepity/actions/workflows/ci.yml)
 
 # ![Deepity](resources/Deepity.png)
 
