@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['layer_0',['Layer',['../classDeep_1_1Layer.html',1,'Deep']]],
-  ['layer_2eh_1',['Layer.h',['../Layer_8h.html',1,'']]],
-  ['layout_3a_20contiguous_20vs_20separate_2',['Memory Layout: Contiguous vs. Separate',['../index.html#autotoc_md11',1,'']]],
-  ['llvm_20performance_3',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md4',1,'']]]
+  ['memory_20layout_3a_20contiguous_20vs_20separate_0',['Memory Layout: Contiguous vs. Separate',['../index.html#autotoc_md12',1,'']]],
+  ['mnist_20on_20the_20cpu_20in_20under_20an_20hour_3a_1',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]]
 ];

@@ -5,11 +5,11 @@
 #include <random>
 #include <memory>
 #include <cstdlib>
-#include "Activations.h"
-#include "AdamOptimizer.h"
-#include "Layer.h"
-#include "MemoryArena.h"
-#include "Im2Col.h"
+#include <deepity/Activations.h>
+#include <deepity/AdamOptimizer.h>
+#include <deepity/layers/Layer.h>
+#include <deepity/MemoryArena.h>
+#include <deepity/Im2Col.h>
 
 /**
  * @file SimpleConvPCLayer.h

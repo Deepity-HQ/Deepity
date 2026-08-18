@@ -10,7 +10,7 @@
 //      SimplePCLayer code, checking SIGN first (same bug class found and
 //      fixed there)
 
-#include "SimpleConvPCLayer.h"
+#include <deepity/layers/SimpleConvPCLayer.h>
 #include <random>
 #include <vector>
 #include <iostream>
@@ -27,9 +27,9 @@ void Part1_SGDWeightGradCheck()
     const float LR = 0.05f;
 
     SimpleConvPCLayer layerA(1, 2, 4, 4, 3, 3, 1, 1, 0, 0, BATCH, LR, 0.1f, 0.0f,
-                              ActivationType::TANH, ActivationType::dTANH);
+                             ActivationType::TANH, ActivationType::dTANH);
     SimpleConvPCLayer layerB(2, 0, 2, 2, 1, 1, 0, 0, 0, 0, BATCH, LR, 0.1f, 0.0f,
-                              ActivationType::LINEAR, ActivationType::dLINEAR);
+                             ActivationType::LINEAR, ActivationType::dLINEAR);
     layerA.SetLayerAbove(&layerB);
     layerB.SetLayerBelow(&layerA);
 
@@ -38,9 +38,11 @@ void Part1_SGDWeightGradCheck()
 
     std::uniform_real_distribution<float> dataDist(-1.0f, 1.0f);
     std::vector<float> x(1 * 4 * 4);
-    for (auto &v : x) v = dataDist(rng);
+    for (auto &v : x)
+        v = dataDist(rng);
     std::vector<float> target(2 * 2 * 2);
-    for (auto &v : target) v = dataDist(rng);
+    for (auto &v : target)
+        v = dataDist(rng);
 
     layerA.ClampState(x);
     layerB.ClampState(target);
@@ -49,7 +51,8 @@ void Part1_SGDWeightGradCheck()
     layerA.UpdateState();
     layerB.UpdateState();
 
-    auto totalEnergy = [&]() { return layerA.CalculateState() + layerB.CalculateState(); };
+    auto totalEnergy = [&]()
+    { return layerA.CalculateState() + layerB.CalculateState(); };
 
     size_t Wsize = (size_t)2 * 1 * 3 * 3;
     std::vector<float> W_before(layerA.GetWeights(), layerA.GetWeights() + Wsize);
@@ -90,9 +93,9 @@ void Part1_SGDWeightGradCheck()
         worstRelErr = std::max(worstRelErr, best);
 
         std::cout << "  W[" << idx << "]: delta=" << analytic_delta[idx]
-                   << "  numeric_dE/dW=" << numeric_dEdW
-                   << "  " << (err_descent < err_ascent ? "MATCHES DESCENT" : "MATCHES ASCENT")
-                   << "  rel_err=" << best << "\n";
+                  << "  numeric_dE/dW=" << numeric_dEdW
+                  << "  " << (err_descent < err_ascent ? "MATCHES DESCENT" : "MATCHES ASCENT")
+                  << "  rel_err=" << best << "\n";
     }
     std::cout << "Worst relative error: " << worstRelErr << "\n";
     std::cout << (worstRelErr < 0.02f ? "PASS" : "FAIL") << "\n";
@@ -106,13 +109,15 @@ void Part2_FeedbackVerify()
     const float IR = 0.1f;
 
     SimpleConvPCLayer layer0(1, 2, 6, 6, 3, 3, 1, 1, 0, 0, BATCH, 0.05f, IR, 0.0f,
-                              ActivationType::TANH, ActivationType::dTANH);
+                             ActivationType::TANH, ActivationType::dTANH);
     SimpleConvPCLayer layer1(2, 1, 4, 4, 3, 3, 1, 1, 0, 0, BATCH, 0.05f, IR, 0.0f,
-                              ActivationType::TANH, ActivationType::dTANH);
+                             ActivationType::TANH, ActivationType::dTANH);
     SimpleConvPCLayer layer2(1, 0, 2, 2, 1, 1, 0, 0, 0, 0, BATCH, 0.05f, IR, 0.0f,
-                              ActivationType::LINEAR, ActivationType::dLINEAR);
-    layer0.SetLayerAbove(&layer1); layer1.SetLayerBelow(&layer0);
-    layer1.SetLayerAbove(&layer2); layer2.SetLayerBelow(&layer1);
+                             ActivationType::LINEAR, ActivationType::dLINEAR);
+    layer0.SetLayerAbove(&layer1);
+    layer1.SetLayerBelow(&layer0);
+    layer1.SetLayerAbove(&layer2);
+    layer2.SetLayerBelow(&layer1);
 
     std::mt19937 rng(42);
     layer0.RandomizeWeights(rng);
@@ -120,20 +125,30 @@ void Part2_FeedbackVerify()
 
     std::uniform_real_distribution<float> dataDist(-1.0f, 1.0f);
     std::vector<float> x(1 * 6 * 6);
-    for (auto &v : x) v = dataDist(rng);
+    for (auto &v : x)
+        v = dataDist(rng);
     std::vector<float> target(1 * 2 * 2);
-    for (auto &v : target) v = dataDist(rng);
+    for (auto &v : target)
+        v = dataDist(rng);
 
-    layer0.ResetState(); layer1.ResetState(); layer2.ResetState();
+    layer0.ResetState();
+    layer1.ResetState();
+    layer2.ResetState();
     layer0.ClampState(x);
     layer2.ClampState(target);
 
-    auto step = [&]() {
-        layer0.CalculateState(); layer1.CalculateState(); layer2.CalculateState();
-        layer0.UpdateState(); layer1.UpdateState(); layer2.UpdateState();
+    auto step = [&]()
+    {
+        layer0.CalculateState();
+        layer1.CalculateState();
+        layer2.CalculateState();
+        layer0.UpdateState();
+        layer1.UpdateState();
+        layer2.UpdateState();
     };
 
-    for (int t = 0; t < 30; ++t) step();
+    for (int t = 0; t < 30; ++t)
+        step();
 
     size_t hiddenSize = layer1.GetInputSize();
     std::vector<float> z_before(layer1.GetBeliefs(), layer1.GetBeliefs() + hiddenSize);
@@ -147,7 +162,8 @@ void Part2_FeedbackVerify()
 
     std::memcpy(layer1.GetBeliefs(), z_before.data(), hiddenSize * sizeof(float));
 
-    auto totalEnergy = [&]() {
+    auto totalEnergy = [&]()
+    {
         return layer0.CalculateState() + layer1.CalculateState() + layer2.CalculateState();
     };
 
@@ -173,7 +189,7 @@ void Part2_FeedbackVerify()
         worstRelErr = std::max(worstRelErr, relErr);
 
         std::cout << "  z[" << idx << "]: implied_dz_dt=" << implied_dz_dt[idx]
-                   << "  -numeric_dE/dz=" << expected_dz_dt << "  rel_err=" << relErr << "\n";
+                  << "  -numeric_dE/dz=" << expected_dz_dt << "  rel_err=" << relErr << "\n";
     }
     std::cout << "Worst relative error: " << worstRelErr << "\n";
     std::cout << (worstRelErr < 0.05f ? "PASS" : "FAIL") << "\n";
@@ -187,9 +203,9 @@ void Part3_AdamWGradCheck()
     const float LR = 0.05f;
 
     SimpleConvPCLayer layerA(1, 2, 4, 4, 3, 3, 1, 1, 0, 0, BATCH, LR, 0.1f, 0.0f,
-                              ActivationType::TANH, ActivationType::dTANH);
+                             ActivationType::TANH, ActivationType::dTANH);
     SimpleConvPCLayer layerB(2, 0, 2, 2, 1, 1, 0, 0, 0, 0, BATCH, LR, 0.1f, 0.0f,
-                              ActivationType::LINEAR, ActivationType::dLINEAR);
+                             ActivationType::LINEAR, ActivationType::dLINEAR);
     layerA.SetLayerAbove(&layerB);
     layerB.SetLayerBelow(&layerA);
     layerA.SetOptimizer(OptimizerType::ADAMW);
@@ -216,9 +232,11 @@ void Part3_AdamWGradCheck()
 
     std::uniform_real_distribution<float> dataDist(-1.0f, 1.0f);
     std::vector<float> x(1 * 4 * 4);
-    for (auto &v : x) v = dataDist(rng);
+    for (auto &v : x)
+        v = dataDist(rng);
     std::vector<float> target(2 * 2 * 2);
-    for (auto &v : target) v = dataDist(rng);
+    for (auto &v : target)
+        v = dataDist(rng);
 
     layerA.ClampState(x);
     layerB.ClampState(target);
@@ -227,7 +245,8 @@ void Part3_AdamWGradCheck()
     layerA.UpdateState();
     layerB.UpdateState();
 
-    auto totalEnergy = [&]() { return layerA.CalculateState() + layerB.CalculateState(); };
+    auto totalEnergy = [&]()
+    { return layerA.CalculateState() + layerB.CalculateState(); };
 
     size_t Wsize = (size_t)2 * 1 * 3 * 3;
     std::vector<float> W_before(layerA.GetWeights(), layerA.GetWeights() + Wsize);
@@ -261,11 +280,12 @@ void Part3_AdamWGradCheck()
 
         float numeric_dEdW = (E_plus - E_minus) / (2 * eps);
         bool correctSign = (analytic_delta[idx] > 0) == (numeric_dEdW < 0) || std::abs(numeric_dEdW) < 1e-6f;
-        if (!correctSign) allCorrectSign = false;
+        if (!correctSign)
+            allCorrectSign = false;
 
         std::cout << "  W[" << idx << "]: delta=" << analytic_delta[idx]
-                   << "  true_grad_sign=" << (numeric_dEdW > 0 ? "+" : "-")
-                   << "  " << (correctSign ? "OK" : "WRONG SIGN") << "\n";
+                  << "  true_grad_sign=" << (numeric_dEdW > 0 ? "+" : "-")
+                  << "  " << (correctSign ? "OK" : "WRONG SIGN") << "\n";
     }
     std::cout << "All signs correct: " << (allCorrectSign ? "true" : "false") << "\n";
     std::cout << (allCorrectSign ? "PASS" : "FAIL") << "\n";

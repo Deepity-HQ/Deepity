@@ -1,11 +1,11 @@
-#include "StreamAlignedBatcher.h"
+#include <deepity/StreamAlignedBatcher.h>
 #include <algorithm>
 
 namespace Deep
 {
     StreamAlignedBatcher::StreamAlignedBatcher(const float *X, const float *Y, const int *labels,
-                                                 size_t numSamples, size_t xStride, size_t yStride,
-                                                 int numClasses, int perClass, unsigned seed)
+                                               size_t numSamples, size_t xStride, size_t yStride,
+                                               int numClasses, int perClass, unsigned seed)
         : X(X), Y(Y), labels(labels), numSamples(numSamples), xStride(xStride), yStride(yStride),
           numClasses(numClasses), perClass(perClass), rng(seed)
     {

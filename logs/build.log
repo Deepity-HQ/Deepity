@@ -1,0 +1,291 @@
+--- Deepity Build Log (Release) ---
+
+=== CMake Configuration ===
+-- The CXX compiler identification is GNU 16.1.1
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.2")
+-- Looking for sgemm_
+-- Looking for sgemm_ - not found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Looking for sgemm_
+-- Looking for sgemm_ - found
+-- Found BLAS: /usr/lib64/libflexiblas.so
+-- CUDA toolkit not found. Building CPU-only.
+-- Found Python: /usr/bin/python3.14 (found suitable version "3.14.6", minimum required is "3.8") found components: Interpreter Development.Module Development.Embed
+-- Performing Test HAS_FLTO_AUTO
+-- Performing Test HAS_FLTO_AUTO - Success
+-- Found pybind11: /usr/include (found version "3.0.4")
+-- Configuring SLEEF 3.9.0
+-- The C compiler identification is GNU 16.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
+-- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1")
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.2")
+-- Configuring build for SLEEF-v3.9.0
+   Target system: Linux-7.1.8-200.fc44.x86_64
+   Target processor: x86_64
+   Host system: Linux-7.1.8-200.fc44.x86_64
+   Host processor: x86_64
+   Detected C compiler: GNU @ /usr/bin/cc
+   CMake: 4.3.0
+   Make program: /usr/bin/ninja-build
+   CMake build type: Release
+-- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
+-- Building shared libs : OFF
+-- Building static test bins: OFF
+-- MPFR : LIB_MPFR-NOTFOUND
+-- GMP : LIBGMP-NOTFOUND
+-- RT : /usr/lib64/librt.a
+-- FFTW3 : LIBFFTW3-NOTFOUND
+-- FFTW3F : LIBFFTW3F-NOTFOUND
+-- OPENSSL : 
+-- SDE : SDE_COMMAND-NOTFOUND
+-- COMPILER_SUPPORTS_OPENMP : 1
+-- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
+-- Failed to find LLVM FileCheck
+-- Found Git: /usr/bin/git (found version "2.55.0")
+-- Google Benchmark version: v1.9.1, normalized to 1.9.1
+-- Compiling and running to test HAVE_STD_REGEX
+-- Performing Test HAVE_STD_REGEX -- success
+-- Compiling and running to test HAVE_GNU_POSIX_REGEX
+-- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+-- Compiling and running to test HAVE_POSIX_REGEX
+-- Performing Test HAVE_POSIX_REGEX -- success
+-- Compiling and running to test HAVE_STEADY_CLOCK
+-- Performing Test HAVE_STEADY_CLOCK -- success
+-- Compiling and running to test HAVE_PTHREAD_AFFINITY
+-- Performing Test HAVE_PTHREAD_AFFINITY -- success
+-- Configuring done (10.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/rose0/Projects/deepity/build/Release
+
+
+=== Compilation ===
+[1/154] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.o
+[2/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.o
+[3/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.o
+[4/154] Linking C executable _deps/sleef-build/bin/mkrename_gnuabi
+[5/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.o
+[6/154] Generating include/renameavx2_gnuabi.h
+Generating renameavx2_gnuabi.h: mkrename_gnuabi avx2 d 4 8 __m256d __m256 __m128i __m256i __AVX2__
+[7/154] Generating include/renameavx512f_gnuabi.h
+Generating renameavx512f_gnuabi.h: mkrename_gnuabi avx512f e 8 16 __m512d __m512 __m256i __m512i __AVX512F__
+[8/154] Generating include/renameavx_gnuabi.h
+Generating renameavx_gnuabi.h: mkrename_gnuabi avx c 4 8 __m256d __m256 __m128i struct\ {\ __m128i\ x,\ y;\ } __AVX__
+[9/154] Generating include/renamesse2_gnuabi.h
+Generating renamesse2_gnuabi.h: mkrename_gnuabi sse2 b 2 4 _mm128d _mm128 _mm128i _mm128i __SSE2__
+[10/154] Linking C executable _deps/sleef-build/bin/mkmasked_gnuabi
+[11/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkdisp.dir/mkdisp.c.o
+[12/154] Generating include/masked_avx512f_dp_gnuabi.h
+[13/154] Generating include/masked_avx512f_sp_gnuabi.h
+[14/154] Linking C executable _deps/sleef-build/bin/mkdisp
+[15/154] Linking C executable _deps/sleef-build/bin/mkalias
+[16/154] Generating dispscalar.c.body
+[17/154] Generating alias_AVX512F_dp.h.tmp
+[18/154] Generating alias_AVX512F_sp.h.tmp
+[19/154] Generating dispsse.c.tmp
+[20/154] Generating dispavx.c.tmp
+[21/154] Generating include/alias_avx512f.h
+[22/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename.dir/mkrename.c.o
+[23/154] Generating dispscalar.c
+[24/154] Generating dispsse.c
+[25/154] Generating dispavx.c
+[26/154] Linking C executable _deps/sleef-build/bin/mkrename
+[27/154] Generating sleeflibm_AVX.h.tmp
+[28/154] Generating sleeflibm_AVX2.h.tmp
+[29/154] Generating sleeflibm_AVX2128.h.tmp
+[30/154] Generating sleeflibm_AVX512F.h.tmp
+[31/154] Generating sleeflibm_AVX512FNOFMA.h.tmp
+[32/154] Generating sleeflibm_AVX512F_.h.tmp
+[33/154] Generating sleeflibm_AVX_.h.tmp
+[34/154] Generating sleeflibm_DSP_SCALAR.h.tmp
+[35/154] Generating sleeflibm_FMA4.h.tmp
+[36/154] Generating sleeflibm_PURECFMA_SCALAR.h.tmp
+[37/154] Generating sleeflibm_PUREC_SCALAR.h.tmp
+[38/154] Generating sleeflibm_SSE2.h.tmp
+[39/154] Generating sleeflibm_SSE4.h.tmp
+[40/154] Generating sleeflibm_SSE_.h.tmp
+[41/154] Generating include/renameavx512fnofma.h
+Generating renameavx512fnofma.h: mkrename cinz_ 8 16 avx512fnofma
+[42/154] Generating include/renameavx512f.h
+Generating renameavx512f.h: mkrename finz_ 8 16 avx512f
+[43/154] Generating include/renameavx2.h
+Generating renameavx2.h: mkrename finz_ 4 8 avx2
+[44/154] Generating include/renameavx2128.h
+Generating renameavx2128.h: mkrename finz_ 2 4 avx2128
+[45/154] Generating include/renamefma4.h
+Generating renamefma4.h: mkrename finz_ 4 8 fma4
+[46/154] Generating include/renameavx.h
+Generating renameavx.h: mkrename cinz_ 4 8 avx
+[47/154] Generating include/renamesse4.h
+Generating renamesse4.h: mkrename cinz_ 2 4 sse4
+[48/154] Generating include/renamesse2.h
+Generating renamesse2.h: mkrename cinz_ 2 4 sse2
+[49/154] Generating include/renamepurec_scalar.h
+Generating renamepurec_scalar.h: mkrename cinz_ 1 1 purec
+[50/154] Generating include/renamepurecfma_scalar.h
+Generating renamepurecfma_scalar.h: mkrename finz_ 1 1 purecfma
+[51/154] Generating include/renamecuda.h
+Generating renamecuda.h: mkrename finz_ 1 1 cuda
+[52/154] Generating ../../include/sleef.h
+[53/154] Generating include/renamedspscalar.h
+[54/154] Generating include/renamedsp128.h
+[55/154] Generating include/renamedsp256.h
+[56/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
+[57/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
+[58/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
+[59/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
+[60/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.o
+[61/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
+[62/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
+[63/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.o
+[64/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
+[65/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o
+[66/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
+[67/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
+[68/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.o
+[69/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
+[70/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.o
+[71/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
+[72/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.o
+[73/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.o
+[74/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.o
+[75/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.o
+[76/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.o
+[77/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.o
+[78/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
+[79/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.o
+[80/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.o
+[81/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.o
+[82/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.o
+[83/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.o
+[84/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.o
+[85/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.o
+[86/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.o
+[87/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o
+[88/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.o
+[89/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.o
+[90/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.o
+[91/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.o
+[92/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.o
+[93/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.o
+[94/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.o
+[95/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.o
+[96/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.o
+[97/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.o
+[98/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefld.c.o
+[99/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.o
+[100/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.o
+[101/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefqp.c.o
+[102/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.o
+[103/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.o
+[104/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.o
+[105/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.o
+[106/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.o
+[107/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.o
+[108/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.o
+[109/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.o
+[110/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.o
+[111/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.o
+[112/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.o
+[113/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.o
+[114/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.o
+[115/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.o
+[116/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
+[117/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.o
+[118/154] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
+[119/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.o
+[120/154] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
+[121/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.o
+[122/154] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
+[123/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
+[124/154] Linking C static library _deps/sleef-build/lib/libsleef.a
+[125/154] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
+[126/154] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.o
+[127/154] Linking C executable _deps/sleef-build/bin/addSuffix
+[128/154] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.o
+[129/154] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.o
+[130/154] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.o
+[131/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
+[132/154] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.o
+[133/154] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
+[134/154] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
+[135/154] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.o
+[136/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2dp.dir/sleefsimddp.c.o
+[137/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
+[138/154] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
+[139/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2dp.dir/sleefsimddp.c.o
+[140/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
+[141/154] Building CXX object CMakeFiles/DeepityTests.dir/tests/tResearch.cpp.o
+[142/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
+[143/154] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
+[144/154] Linking CXX static library bin/libDeepity.a
+[145/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
+[146/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
+[147/154] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxsp.dir/sleefsimdsp.c.o
+[148/154] Linking C static library _deps/sleef-build/lib/libsleefgnuabi.a
+[149/154] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
+[150/154] Linking CXX static library _deps/benchmark-build/src/libbenchmark.a
+[151/154] Linking CXX static library _deps/benchmark-build/src/libbenchmark_main.a
+[152/154] Linking CXX executable bin/DeepityTests
+[153/154] Building CXX object CMakeFiles/deepity.dir/bindings/pybinding.cpp.o
+[154/154] Linking CXX shared module /home/rose0/Projects/deepity/pydeepity/deepity.cpython-314-x86_64-linux-gnu.so
+
+
+=== Tests ===
+
+=== Part 1: SGD weight-gradient check ===
+  W[5]: delta=0.03608  numeric_dE/dW=-0.68903  MATCHES DESCENT  rel_err=0.00236346
+  W[17]: delta=0.0546692  numeric_dE/dW=-1.01757  MATCHES DESCENT  rel_err=0.00372522
+  W[6]: delta=-0.018854  numeric_dE/dW=0.368834  MATCHES DESCENT  rel_err=0.00111798
+  W[4]: delta=0.000938594  numeric_dE/dW=-0.0264645  MATCHES DESCENT  rel_err=0.0145338
+  W[8]: delta=-0.0150366  numeric_dE/dW=0.299931  MATCHES DESCENT  rel_err=0.000133744
+  W[1]: delta=-0.0190711  numeric_dE/dW=0.371337  MATCHES DESCENT  rel_err=0.00135795
+  W[14]: delta=0.0116533  numeric_dE/dW=-0.317812  MATCHES DESCENT  rel_err=0.0133326
+  W[11]: delta=0.0684187  numeric_dE/dW=-1.28996  MATCHES DESCENT  rel_err=0.00303923
+Worst relative error: 0.0145338
+PASS
+
+=== Part 2: feedback-term (Col2Im) verification, SimpleConvPCLayer ===
+  z[3]: implied_dz_dt=0.0045494  -numeric_dE/dz=0.00452995  rel_err=0.00429182
+  z[19]: implied_dz_dt=-0.0106531  -numeric_dE/dz=-0.0106394  rel_err=0.00128848
+  z[15]: implied_dz_dt=0.0041806  -numeric_dE/dz=0.00414252  rel_err=0.00918843
+  z[26]: implied_dz_dt=-0.00197962  -numeric_dE/dz=-0.00199676  rel_err=0.00857779
+  z[1]: implied_dz_dt=-0.0406229  -numeric_dE/dz=-0.0406504  rel_err=0.000674379
+  z[5]: implied_dz_dt=-0.0247908  -numeric_dE/dz=-0.0247955  rel_err=0.000192225
+  z[29]: implied_dz_dt=0.0272506  -numeric_dE/dz=0.0272393  rel_err=0.000415808
+  z[12]: implied_dz_dt=0.0424355  -numeric_dE/dz=0.0424385  rel_err=7.01353e-05
+Worst relative error: 0.00918843
+PASS
+
+=== Part 3: AdamW weight-gradient check (NEW port, checking SIGN first) ===
+  (Manually re-bound layerA's memory after SetOptimizer(ADAMW) -- 
+  SimpleConvPCLayer has no Network wrapper yet to do this automatically,
+  unlike SimplePCNetwork's Compile()-after-SetOptimizer() flow. A real
+  design gap worth fixing when SimpleConvPCNetwork gets built.)
+
+  W[5]: delta=0.05  true_grad_sign=-  OK
+  W[17]: delta=0.05  true_grad_sign=-  OK
+  W[6]: delta=-0.05  true_grad_sign=+  OK
+  W[4]: delta=0.05  true_grad_sign=-  OK
+  W[8]: delta=-0.05  true_grad_sign=+  OK
+  W[1]: delta=-0.05  true_grad_sign=+  OK
+  W[14]: delta=0.05  true_grad_sign=-  OK
+  W[11]: delta=0.05  true_grad_sign=-  OK
+All signs correct: true
+PASS
+
+

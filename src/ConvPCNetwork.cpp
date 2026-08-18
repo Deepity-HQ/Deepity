@@ -1,4 +1,4 @@
-#include "ConvPCNetwork.h"
+#include <deepity/networks/ConvPCNetwork.h>
 
 namespace Deep
 {

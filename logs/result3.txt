@@ -1,0 +1,17 @@
+rose0  ~/Projects/deepitytest  ❯ python test.py
+Fetching full MNIST dataset (70,000 images)...
+
+CONFIRMATION RUN: 50 epochs, 60 inference steps (was 150 -- steps sweep showed 60 reproduces the original's convergence rate almost exactly: epoch1->2 ratio 0.559 vs original's 0.57), batch_size=256, lr=0.06, decay_rate=0.98...
+
+Training 50 epochs, 60 inference steps, 234 batches/epoch (batch_size=256)...
+
+  epochs    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 50/50   • 0:31:40 • 0:00:00 epoch 50 avg energy = 9829.6101
+    batches ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 234/234 • 0:00:37 • 0:00:00 lr=0.02230  energy= 9922.12  avg= 9829.61
+
+Training complete.
+
+Training complete in 1900.8s.
+
+Evaluating on held-out test set...
+
+Test Accuracy: 9257/9984 (92.72%)

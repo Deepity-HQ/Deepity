@@ -1,5 +1,5 @@
-#include "ConvPCLayer.h"
-#include "MemoryArena.h"
+#include <deepity/layers/ConvPCLayer.h>
+#include <deepity/MemoryArena.h>
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -65,7 +65,8 @@ namespace Deep
             // 1. BACKUP Z BEFORE IT GETS CORRUPTED BY UPDATESTATE
             size_t hidden_size = l1.GetInputSize();
             std::vector<float> original_z_vec(hidden_size);
-            for(size_t i = 0; i < hidden_size; ++i) {
+            for (size_t i = 0; i < hidden_size; ++i)
+            {
                 original_z_vec[i] = l1.z[i];
             }
 
@@ -76,12 +77,14 @@ namespace Deep
 
             // Save the analytical gradients directly
             std::vector<float> analytical_grads(hidden_size);
-            for(size_t i = 0; i < hidden_size; ++i) {
+            for (size_t i = 0; i < hidden_size; ++i)
+            {
                 analytical_grads[i] = -l1.dz_dt[i]; // dE/dz = -dz_dt
             }
 
             // 3. RESTORE Z SO NUMERICAL GRADIENT EVALUATES AT THE EXACT SAME POINT
-            for(size_t i = 0; i < hidden_size; ++i) {
+            for (size_t i = 0; i < hidden_size; ++i)
+            {
                 l1.z[i] = original_z_vec[i];
             }
 
@@ -131,7 +134,8 @@ namespace Deep
     };
 }
 
-    int main(void) {
-        Deep::PCNDiagnostics::RunHiddenLayerGradientCheck();
-        return 0;
-    }
+int main(void)
+{
+    Deep::PCNDiagnostics::RunHiddenLayerGradientCheck();
+    return 0;
+}

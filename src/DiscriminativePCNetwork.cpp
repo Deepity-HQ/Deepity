@@ -1,9 +1,9 @@
-#include "DiscriminativePCNetwork.h"
-#include "Optimize.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/Optimize.h>
+#include <deepity/ModelIO.h>
 #include <cstring>
 #include <cmath>
 #include <limits>
-#include "ModelIO.h"
 
 namespace Deep
 {
@@ -24,10 +24,10 @@ namespace Deep
             autoSize = false;
             DynamicThread(batchSize);
         }
-        
+
         // Pass raw pointers directly to Constructor 2
         DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, act, dAct);
-        
+
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);
@@ -45,10 +45,10 @@ namespace Deep
             autoSize = false;
             DynamicThread(batchSize);
         }
-        
+
         // Pass enums directly to Constructor 1
         DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, aType, dType);
-        
+
         if (!layers.empty())
         {
             layers.back()->SetLayerAbove(l);

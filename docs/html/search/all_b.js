@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['nextsize_0',['nextSize',['../classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0',1,'Deep::Layer']]],
-  ['number_20generation_1',['Random Number Generation',['../index.html#autotoc_md12',1,'']]]
+  ['of_20batching_0',['The Impact of Batching',['../index.html#autotoc_md10',1,'']]],
+  ['on_20the_20cpu_20in_20under_20an_20hour_3a_1',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]],
+  ['optimizations_2',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md7',1,'']]]
 ];

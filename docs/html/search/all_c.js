@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['of_20batching_0',['The Impact of Batching',['../index.html#autotoc_md9',1,'']]],
-  ['optimizations_1',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md6',1,'']]],
-  ['optimize_2eh_2',['Optimize.h',['../Optimize_8h.html',1,'']]]
+  ['pcndiagnostics_0',['PCNDiagnostics',['../classDeep_1_1PCNDiagnostics.html',1,'Deep']]],
+  ['performance_1',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md5',1,'']]],
+  ['performance_20at_20a_20glance_2',['🚀 Performance at a Glance',['../index.html#autotoc_md3',1,'']]],
+  ['png_20deepity_3',['&lt;img src=&quot;Deepity.png&quot; alt=&quot;&quot; class=&quot;inline&quot; title=&quot;Deepity&quot;/&gt;',['../index.html',1,'']]],
+  ['project_20structure_4',['🏗️ Project Structure',['../index.html#autotoc_md18',1,'']]]
 ];

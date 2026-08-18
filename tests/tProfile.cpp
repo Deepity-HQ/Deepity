@@ -13,8 +13,8 @@
 #include <vector>
 #include <random>
 #include <chrono>
-#include "DiscriminativePCNetwork.h"
-#include "Profile.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/Profile.h>
 
 using namespace Deep;
 
@@ -41,11 +41,13 @@ int main()
 
     std::vector<float> X((size_t)BATCH_SIZE * 784);
     std::vector<float> Y((size_t)BATCH_SIZE * 10);
-    for (auto &v : X) v = dist(rng);
-    for (auto &v : Y) v = dist(rng);
+    for (auto &v : X)
+        v = dist(rng);
+    for (auto &v : Y)
+        v = dist(rng);
 
     std::cout << "Profiling: " << N_BATCHES << " batches, batch_size=" << BATCH_SIZE
-               << ", inference_steps=" << INFERENCE_STEPS << "\n";
+              << ", inference_steps=" << INFERENCE_STEPS << "\n";
 
     // --- Wall-clock timer wraps the ENTIRE run, measured independently of
     // the phase accumulators, per review point 2. ---

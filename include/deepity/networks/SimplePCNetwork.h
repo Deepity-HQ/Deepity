@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 #include <random>
-#include "SimplePCLayer.h"
-#include "MemoryArena.h"
+#include <deepity/layers/SimplePCLayer.h>
+#include <deepity/MemoryArena.h>
 
 /**
  * @file SimplePCNetwork.h
@@ -42,6 +42,11 @@ namespace Deep
         std::vector<SimplePCLayer *> &GetLayers() noexcept { return layers; }
         const std::vector<SimplePCLayer *> &GetLayers() const noexcept { return layers; }
         int GetBatchSize() const noexcept { return batchSize; }
+
+        void SetOptimizer(OptimizerType o) noexcept {
+            for (SimplePCLayer *layer : layers)
+                layer->SetOptimizer(o);
+        }
 
         float TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);

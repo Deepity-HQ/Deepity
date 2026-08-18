@@ -1,5 +1,5 @@
-#include "DiscriminativePCLayer.h"
-#include "Optimize.h"
+#include <deepity/layers/DiscriminativePCLayer.h>
+#include <deepity/Optimize.h>
 #include <cstdlib>
 #include <iostream>
 #include <chrono>
@@ -577,7 +577,8 @@ namespace Deep
         // MemoryArena::AllocateFloats() rounds EVERY individual allocation up
         // to a 64-byte (16-float) boundary. Summing raw, unpadded counts here
         // undercounts whenever a dimension isn't already a multiple of 16.
-        auto pad16 = [](size_t n) { return (n + 15) & ~(size_t)15; };
+        auto pad16 = [](size_t n)
+        { return (n + 15) & ~(size_t)15; };
 
         size_t total = 0;
         size_t own_state_size = (size_t)batchSize * size;
@@ -590,7 +591,7 @@ namespace Deep
             size_t out_state_size = (size_t)batchSize * nextSize;
             total += pad16((size_t)size * nextSize); // W
             total += pad16(nextSize);                // b
-            total += pad16(out_state_size) * 2;       // mu, bottom_up
+            total += pad16(out_state_size) * 2;      // mu, bottom_up
         }
 
         return total;

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
-#include "DiscriminativePCLayer.h"
-#include "Optimize.h"
+#include <deepity/layers/DiscriminativePCLayer.h>
+#include <deepity/Optimize.h>
 
 /**
  * @file DiscriminativePCLayer.h
@@ -11,7 +11,7 @@
  * This header includes implementations of PC layer-to-layer interaction.
  *
  * Usage:
- *  #include <DiscriminativePCNetwork.h>
+ *  #include <deepity/networks/DiscriminativePCNetwork.h>
  *
  * Example:
  *  Deep::DiscriminativePCNetwork network(1);

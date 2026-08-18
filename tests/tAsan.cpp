@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include "DiscriminativePCNetwork.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
 
-int main(void) 
+int main(void)
 {
     std::cout << "[ASan] Initializing PCNetwork (Batch Size: 32)..." << std::endl;
     Deep::DiscriminativePCNetwork net(32);
@@ -28,13 +28,13 @@ int main(void)
     std::vector<float> Y(32 * 10, 0.9f);
 
     std::cout << "[ASan] Firing TrainStep (Euler Integration)..." << std::endl;
-    try 
+    try
     {
         // Run 10 inference steps to trigger all forward/backward SIMD loops
         float energy = net.TrainStep(X, Y, 10);
         std::cout << "[ASan] Success! Final Energy: " << energy << std::endl;
-    } 
-    catch (const std::exception& e) 
+    }
+    catch (const std::exception &e)
     {
         std::cerr << "[ASan] Exception caught: " << e.what() << std::endl;
     }

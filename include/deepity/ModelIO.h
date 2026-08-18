@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "DiscriminativePCNetwork.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
 
 namespace Deep
 {

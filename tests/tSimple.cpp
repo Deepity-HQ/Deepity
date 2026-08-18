@@ -4,9 +4,9 @@
 #include <random>
 #include <iomanip>
 #include <algorithm>
-#include "DiscriminativePCNetwork.h"
-#include "Activations.h"
-#include "Timer.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/Activations.h>
+#include <deepity/Timer.h>
 
 float WeightNorm(Deep::DiscriminativePCLayer *layer, size_t count)
 {
@@ -19,7 +19,7 @@ float WeightNorm(Deep::DiscriminativePCLayer *layer, size_t count)
 
 int main(void)
 {
-    Deep::DiscriminativePCNetwork net(4); 
+    Deep::DiscriminativePCNetwork net(4);
     Timer timer;
 
     net.AddLayer(2, 8, 0.05f, 0.3f, 0.000f, 0.0001f, Deep::tanh, Deep::dTanh);
@@ -47,7 +47,7 @@ int main(void)
 
     int epochs = 5000;
     int inferenceSteps = 50;
-    int reportEvery = 100; 
+    int reportEvery = 100;
 
     std::cout << "Starting Discriminative PC XOR Test (Clean API)...\n";
 
@@ -63,10 +63,10 @@ int main(void)
             float w1norm = WeightNorm(layer1, 8 * 1);
 
             std::cout << "Epoch " << std::setw(5) << epoch
-                       << " | Energy: " << std::fixed << std::setprecision(4) << energy / 4.0f
-                       << " | W0 norm: " << w0norm
-                       << " | W1 norm: " << w1norm
-                       << " | Elapsed: " << timer.elapsed() - start << "s\n";
+                      << " | Energy: " << std::fixed << std::setprecision(4) << energy / 4.0f
+                      << " | W0 norm: " << w0norm
+                      << " | W1 norm: " << w1norm
+                      << " | Elapsed: " << timer.elapsed() - start << "s\n";
             start = timer.elapsed();
 
             if (w0norm > 10.0f * initialW0Norm && w0norm > 20.0f)
@@ -80,19 +80,20 @@ int main(void)
 
     // Effortless prediction API
     auto preds = net.Predict(flatX, inferenceSteps);
-    
+
     int correct = 0;
     for (int i = 0; i < 4; i++)
     {
         float pred = preds[i];
         float target = flatY[i];
         bool signCorrect = (pred > 0 && target > 0) || (pred < 0 && target < 0);
-        if (signCorrect) correct++;
+        if (signCorrect)
+            correct++;
 
         std::cout << "Input: [" << std::setw(2) << flatX[i * 2] << ", " << std::setw(2) << flatX[i * 2 + 1] << "]"
-                   << " | Target: " << std::showpos << target
-                   << " | Pred: " << std::noshowpos << std::setprecision(4) << pred
-                   << (signCorrect ? " OK" : " WRONG") << "\n";
+                  << " | Target: " << std::showpos << target
+                  << " | Pred: " << std::noshowpos << std::setprecision(4) << pred
+                  << (signCorrect ? " OK" : " WRONG") << "\n";
     }
 
     std::cout << "\nAccuracy: " << correct << "/4\n";

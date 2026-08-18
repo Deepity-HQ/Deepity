@@ -1,4 +1,4 @@
-#include "ConvPCLayer.h"
+#include <deepity/layers/ConvPCLayer.h>
 #include <cblas.h>
 #include <omp.h>
 #include <cstring>

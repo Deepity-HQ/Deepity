@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['⚡_20core_20architecture_20optimizations_0',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md6',1,'']]]
+  ['⚡_20core_20architecture_20optimizations_0',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md7',1,'']]]
 ];

@@ -1,4 +1,4 @@
-#include "ModelIO.h"
+#include <deepity/ModelIO.h>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
@@ -175,7 +175,7 @@ namespace Deep
                 wStream.read(reinterpret_cast<char *>(const_cast<float *>(layer->GetWeights())), sizeof(float) * wCount);
                 wStream.read(reinterpret_cast<char *>(const_cast<float *>(layer->GetBiases())), sizeof(float) * bCount);
             }
-	       layer->ResyncLogPrecision();
+            layer->ResyncLogPrecision();
         }
         return wStream.good() || wStream.eof();
     }

@@ -26,36 +26,30 @@ var NAVTREE =
 [
   [ "Deepity", "index.html", [
     [ "Classes", "annotated.html", [
-      [ "🚀 Performance at a Glance", "index.html#autotoc_md2", null ],
-      [ "⚔️ GCC vs. Clang (LLVM) Performance", "index.html#autotoc_md4", null ],
-      [ "⚡ Core Architecture &amp; Optimizations", "index.html#autotoc_md6", null ],
-      [ "📊 Design Decisions &amp; Benchmarks", "index.html#autotoc_md8", [
-        [ "The Impact of Batching", "index.html#autotoc_md9", null ],
-        [ "Dynamic Thread Scheduling", "index.html#autotoc_md10", null ],
-        [ "Memory Layout: Contiguous vs. Separate", "index.html#autotoc_md11", null ],
-        [ "Random Number Generation", "index.html#autotoc_md12", null ]
+      [ "🚀 Performance at a Glance", "index.html#autotoc_md3", null ],
+      [ "⚔️ GCC vs. Clang (LLVM) Performance", "index.html#autotoc_md5", null ],
+      [ "⚡ Core Architecture &amp; Optimizations", "index.html#autotoc_md7", null ],
+      [ "📊 Design Decisions &amp; Benchmarks", "index.html#autotoc_md9", [
+        [ "See it train MNIST on the CPU in under an hour:", "index.html#autotoc_md1", null ],
+        [ "The Impact of Batching", "index.html#autotoc_md10", null ],
+        [ "Dynamic Thread Scheduling", "index.html#autotoc_md11", null ],
+        [ "Memory Layout: Contiguous vs. Separate", "index.html#autotoc_md12", null ],
+        [ "Random Number Generation", "index.html#autotoc_md13", null ]
       ] ],
-      [ "🛠️ Example Usage", "index.html#autotoc_md14", [
-        [ "C++", "index.html#autotoc_md15", null ]
+      [ "🛠️ Example Usage", "index.html#autotoc_md15", [
+        [ "C++", "index.html#autotoc_md16", null ]
       ] ],
+      [ "📅 Roadmap", "index.html#autotoc_md17", null ],
+      [ "🏗️ Project Structure", "index.html#autotoc_md18", null ],
       [ "Class List", "annotated.html", "annotated_dup" ],
-      [ "Class Index", "classes.html", null ],
-      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
-      [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ],
-        [ "Variables", "functions_vars.html", null ]
-      ] ]
-    ] ],
-    [ "Files", "files.html", [
-      [ "File List", "files.html", "files_dup" ]
+      [ "Class Index", "classes.html", null ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"Activations_8h.html"
+"annotated.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

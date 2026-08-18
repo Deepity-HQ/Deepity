@@ -1,5 +1,5 @@
-#include "SimplePCLayer.h"
-#include "Optimize.h"
+#include <deepity/layers/SimplePCLayer.h>
+#include <deepity/Optimize.h>
 #include <cstdlib>
 #include <iostream>
 #include <chrono>
@@ -420,58 +420,58 @@ namespace Deep
         return total;
     }
 
-void SimplePCLayer::BindMemory(MemoryArena &arena)
-{
-    size_t own_state_size = (size_t)batchSize * size;
-    size_t out_state_size = (size_t)batchSize * nextSize;
-
-    z = arena.AllocateFloats(own_state_size);
-    e = arena.AllocateFloats(own_state_size);
-    dz_dt = arena.AllocateFloats(own_state_size);
-
-    std::memset(z, 0, own_state_size * sizeof(float));
-    std::memset(e, 0, own_state_size * sizeof(float));
-    std::memset(dz_dt, 0, own_state_size * sizeof(float));
-
-    if (nextSize > 0)
+    void SimplePCLayer::BindMemory(MemoryArena &arena)
     {
-        size_t w_size = (size_t)size * nextSize;
+        size_t own_state_size = (size_t)batchSize * size;
+        size_t out_state_size = (size_t)batchSize * nextSize;
 
-        W = arena.AllocateFloats(w_size);
-        b = arena.AllocateFloats(nextSize);
-        mu = arena.AllocateFloats(out_state_size);
-        bottom_up = arena.AllocateFloats(out_state_size);
+        z = arena.AllocateFloats(own_state_size);
+        e = arena.AllocateFloats(own_state_size);
+        dz_dt = arena.AllocateFloats(own_state_size);
 
-        std::memset(b, 0, nextSize * sizeof(float));
-        std::memset(mu, 0, out_state_size * sizeof(float));
-        std::memset(bottom_up, 0, out_state_size * sizeof(float));
+        std::memset(z, 0, own_state_size * sizeof(float));
+        std::memset(e, 0, own_state_size * sizeof(float));
+        std::memset(dz_dt, 0, own_state_size * sizeof(float));
 
-        // Conditionally bind Adam variables
-        if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
+        if (nextSize > 0)
         {
-            grad_W = arena.AllocateFloats(w_size);
-            m_W = arena.AllocateFloats(w_size);
-            v_W = arena.AllocateFloats(w_size);
+            size_t w_size = (size_t)size * nextSize;
 
-            grad_b = arena.AllocateFloats(nextSize);
-            m_b = arena.AllocateFloats(nextSize);
-            v_b = arena.AllocateFloats(nextSize);
+            W = arena.AllocateFloats(w_size);
+            b = arena.AllocateFloats(nextSize);
+            mu = arena.AllocateFloats(out_state_size);
+            bottom_up = arena.AllocateFloats(out_state_size);
 
-            // Adam moments must begin at zero
-            std::memset(m_W, 0, w_size * sizeof(float));
-            std::memset(v_W, 0, w_size * sizeof(float));
-            std::memset(m_b, 0, nextSize * sizeof(float));
-            std::memset(v_b, 0, nextSize * sizeof(float));
+            std::memset(b, 0, nextSize * sizeof(float));
+            std::memset(mu, 0, out_state_size * sizeof(float));
+            std::memset(bottom_up, 0, out_state_size * sizeof(float));
 
-            // It's good practice to zero the gradients as well
-            std::memset(grad_W, 0, w_size * sizeof(float));
-            std::memset(grad_b, 0, nextSize * sizeof(float));
+            // Conditionally bind Adam variables
+            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
+            {
+                grad_W = arena.AllocateFloats(w_size);
+                m_W = arena.AllocateFloats(w_size);
+                v_W = arena.AllocateFloats(w_size);
+
+                grad_b = arena.AllocateFloats(nextSize);
+                m_b = arena.AllocateFloats(nextSize);
+                v_b = arena.AllocateFloats(nextSize);
+
+                // Adam moments must begin at zero
+                std::memset(m_W, 0, w_size * sizeof(float));
+                std::memset(v_W, 0, w_size * sizeof(float));
+                std::memset(m_b, 0, nextSize * sizeof(float));
+                std::memset(v_b, 0, nextSize * sizeof(float));
+
+                // It's good practice to zero the gradients as well
+                std::memset(grad_W, 0, w_size * sizeof(float));
+                std::memset(grad_b, 0, nextSize * sizeof(float));
+            }
+        }
+
+        if (localArena && localArena.get() != &arena)
+        {
+            localArena.reset();
         }
     }
-
-    if (localArena && localArena.get() != &arena)
-    {
-        localArena.reset();
-    }
-}
 }

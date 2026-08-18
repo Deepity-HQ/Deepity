@@ -5,9 +5,9 @@
 #include <random>
 #include <memory>
 #include <cstdlib>
-#include "Activations.h"
-#include "Layer.h"
-#include "MemoryArena.h"
+#include <deepity/Activations.h>
+#include <deepity/layers/Layer.h>
+#include <deepity/MemoryArena.h>
 
 /**
  * @file DiscriminativePCLayer.h
@@ -16,7 +16,7 @@
  * This header includes implementations of state calculation, state updates, and learning.
  *
  * Usage:
- *  #include <DiscriminativePCLayer.h>
+ *  #include <deepity/layers/DiscriminativePCLayer.h>
  *
  * Example:
  *  Deep::Layer layer(2, 3, 1, 1e-6);

@@ -7,3 +7,6 @@ pyrightconfig.json
 /CLAUDE.md
 out/build/windows-clang/
 repomix-output.xml
+experiments/outputs/
+experiments/data/
+experiments/checkpoints/

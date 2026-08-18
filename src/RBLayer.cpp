@@ -1,11 +1,11 @@
-#include "RBLayer.h"
+#include <deepity/layers/RBLayer.h>
 #include <cblas.h>
 #include <iostream>
 #include <random>
 
 using namespace Deep;
 
-RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k_1, float k_2, float lmbda, float alpha, size_t batchSize, int stepSize,  void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
+RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k_1, float k_2, float lmbda, float alpha, size_t batchSize, int stepSize, void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     : var(var), var_td(var_td), k_1(k_1), k_2(k_2), lmbda(lmbda), alpha(alpha), stepSize(stepSize), batchSize(batchSize), act(act), dAct(dAct)
 {
     this->size = inSize;
@@ -32,14 +32,14 @@ size_t RBLayer::GetTotalSize() const noexcept
 {
     size_t total = 0;
     total += batchSize * nextSize; // r (beliefs)
-    total += nextSize * size;    // U (weights)
-    total += batchSize * size;  // e_bu
+    total += nextSize * size;      // U (weights)
+    total += batchSize * size;     // e_bu
     total += batchSize * nextSize; // e_td
     total += batchSize * nextSize; // tmpBelief
-    total += batchSize * size;  // tmpWeight1
-    total += batchSize * size;  // tmpWeight2
-    total += batchSize * size;  // tmpWeight3
-    total += nextSize * size;    // tmpWeight4
+    total += batchSize * size;     // tmpWeight1
+    total += batchSize * size;     // tmpWeight2
+    total += batchSize * size;     // tmpWeight3
+    total += nextSize * size;      // tmpWeight4
     return total;
 }
 

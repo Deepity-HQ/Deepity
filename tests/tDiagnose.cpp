@@ -22,11 +22,11 @@
 #include <random>
 #include <iomanip>
 #include <algorithm>
-#include "ConvPCNetwork.h"
+#include <deepity/networks/ConvPCNetwork.h>
 
 using namespace Deep;
 
-constexpr int IMG = 12;        // input image is IMG x IMG, 1 channel
+constexpr int IMG = 12; // input image is IMG x IMG, 1 channel
 constexpr int N_CLASSES = 5;
 constexpr int N_TRAIN = 400;
 constexpr int N_TEST = 100;
@@ -84,13 +84,13 @@ Dataset MakeSpatialBlobs(int n, std::mt19937 &rng)
 std::vector<float> SliceImages(const std::vector<float> &flat, int start, int count)
 {
     return std::vector<float>(flat.begin() + (size_t)start * IMG * IMG,
-                               flat.begin() + (size_t)(start + count) * IMG * IMG);
+                              flat.begin() + (size_t)(start + count) * IMG * IMG);
 }
 
 std::vector<float> SliceLabels(const std::vector<float> &flat, int start, int count)
 {
     return std::vector<float>(flat.begin() + (size_t)start * N_CLASSES,
-                               flat.begin() + (size_t)(start + count) * N_CLASSES);
+                              flat.begin() + (size_t)(start + count) * N_CLASSES);
 }
 
 int main()
@@ -142,8 +142,8 @@ int main()
         }
         if (epoch % 5 == 0 || epoch == EPOCHS - 1)
             std::cout << "  Epoch " << std::setw(3) << epoch
-                       << "  avg energy=" << std::fixed << std::setprecision(4)
-                       << (epochEnergy / nBatches) << "\n";
+                      << "  avg energy=" << std::fixed << std::setprecision(4)
+                      << (epochEnergy / nBatches) << "\n";
     }
 
     std::cout << "\nEvaluating on held-out test set...\n";
@@ -161,7 +161,11 @@ int main()
             for (int c = 0; c < N_CLASSES; c++)
             {
                 float v = preds[(size_t)i * N_CLASSES + c];
-                if (v > best) { best = v; predicted = c; }
+                if (v > best)
+                {
+                    best = v;
+                    predicted = c;
+                }
             }
             int trueLabel = test.labels[b * BATCH_SIZE + i];
             if (predicted == trueLabel)
@@ -171,20 +175,20 @@ int main()
 
     float acc = 100.0f * correct / (nTestBatches * BATCH_SIZE);
     std::cout << "Held-out test accuracy: " << correct << "/" << (nTestBatches * BATCH_SIZE)
-               << " (" << std::fixed << std::setprecision(2) << acc << "%)\n\n";
+              << " (" << std::fixed << std::setprecision(2) << acc << "%)\n\n";
 
     if (acc >= 90.0f)
         std::cout << "PASS -- ConvPCNetwork solves an easy, spatially-separable task.\n"
-                   << "The architecture and Im2Col/Col2Im wiring are sound end-to-end.\n";
+                  << "The architecture and Im2Col/Col2Im wiring are sound end-to-end.\n";
     else if (acc >= 50.0f)
         std::cout << "PARTIAL -- better than chance (" << (100.0f / N_CLASSES)
-                   << "% baseline) but not solving cleanly.\n"
-                   << "Worth checking epochs/inference steps/learning rate before\n"
-                   << "suspecting a correctness bug -- gradient checks already passed.\n";
+                  << "% baseline) but not solving cleanly.\n"
+                  << "Worth checking epochs/inference steps/learning rate before\n"
+                  << "suspecting a correctness bug -- gradient checks already passed.\n";
     else
         std::cout << "FAIL -- at or near chance level. Something is wrong beyond\n"
-                   << "hyperparameters; worth re-checking the network wiring\n"
-                   << "(layer shapes, AddLayer order) before MNIST.\n";
+                  << "hyperparameters; worth re-checking the network wiring\n"
+                  << "(layer shapes, AddLayer order) before MNIST.\n";
 
     return acc >= 90.0f ? 0 : 1;
 }

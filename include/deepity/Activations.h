@@ -20,7 +20,7 @@
  * This header includes implementations of ReLU and TanH.
  *
  * Usage:
- *  #include <Activations.h>
+ *  #include <deepity/Activations.h>
  *
  * Example:
  *  Deep::tanh(array, arraysize)

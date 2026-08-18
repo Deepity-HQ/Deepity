@@ -1,4 +1,4 @@
-#include "SimplePCNetwork.h"
+#include <deepity/networks/SimplePCNetwork.h>
 
 namespace Deep
 {
@@ -12,7 +12,7 @@ namespace Deep
     }
 
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                                    void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
+                                   void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
         SimplePCLayer *l = new SimplePCLayer(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
 
@@ -25,7 +25,7 @@ namespace Deep
     }
 
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                                    ActivationType aType, ActivationType dType)
+                                   ActivationType aType, ActivationType dType)
     {
         SimplePCLayer *l = new SimplePCLayer(size, nextSize, batchSize, lr, ir, lmbda, aType, dType);
 

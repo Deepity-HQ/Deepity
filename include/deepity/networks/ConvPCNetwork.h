@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 #include <random>
-#include "ConvPCLayer.h"
-#include "MemoryArena.h"
+#include <deepity/layers/ConvPCLayer.h>
+#include <deepity/MemoryArena.h>
 
 /**
  * @file ConvPCNetwork.h

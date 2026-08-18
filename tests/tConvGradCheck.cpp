@@ -16,7 +16,7 @@
 #include <cmath>
 #include <cstring>
 #include <iomanip>
-#include "ConvPCLayer.h"
+#include <deepity/layers/ConvPCLayer.h>
 
 using namespace Deep;
 
@@ -43,8 +43,10 @@ int main()
 
     std::vector<float> input(1 * 6 * 6);
     std::vector<float> target(2 * 4 * 4);
-    for (auto &v : input) v = dist(rng);
-    for (auto &v : target) v = dist(rng);
+    for (auto &v : input)
+        v = dist(rng);
+    for (auto &v : target)
+        v = dist(rng);
 
     layer0.ClampState(input);
     layer1.ClampState(target);
@@ -54,7 +56,8 @@ int main()
     layer0.UpdateState(); // converts layer0's mu -> f'(activated); clamped, so z untouched
     layer1.UpdateState(); // outChannels=0, clamped -- no-op
 
-    auto TotalEnergy = [&]() {
+    auto TotalEnergy = [&]()
+    {
         return layer0.CalculateState() + layer1.CalculateState();
     };
 
@@ -109,9 +112,9 @@ int main()
         worstRelErr = std::max(worstRelErr, best);
 
         std::cout << "  W[" << i << "]: analytic_delta=" << analytic_delta[i]
-                   << "  numeric dE/dW=" << numeric_dEdW
-                   << "  " << (err_descent < err_ascent ? "MATCHES DESCENT" : "MATCHES ASCENT")
-                   << "  (rel err=" << best << ")\n";
+                  << "  numeric dE/dW=" << numeric_dEdW
+                  << "  " << (err_descent < err_ascent ? "MATCHES DESCENT" : "MATCHES ASCENT")
+                  << "  (rel err=" << best << ")\n";
     }
 
     std::cout << "\nWorst relative error: " << worstRelErr << "\n";

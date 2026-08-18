@@ -1,4 +1,4 @@
-#include "SimpleConvPCLayer.h"
+#include <deepity/layers/SimpleConvPCLayer.h>
 #include <cblas.h>
 #include <omp.h>
 #include <cstring>
@@ -55,18 +55,18 @@ namespace Deep
             size_t colSize = colRows * colCols;
             size_t Wsize = (size_t)outChannels * colRows;
 
-            total += pad16(Wsize);                            // W
-            total += pad16((size_t)outChannels);              // b
-            total += pad16(outStateSize);                     // mu
-            total += pad16((size_t)batchSize * colSize) * 2;  // colBuffer, feedbackScratch
-            total += pad16(outStateSize);                     // bottom_up_cols
-            total += pad16((size_t)batchSize * colSize);      // colsRepacked
-            total += pad16(outStateSize);                     // lgRepacked
-            total += pad16(outStateSize);                     // muRepacked
+            total += pad16(Wsize);                           // W
+            total += pad16((size_t)outChannels);             // b
+            total += pad16(outStateSize);                    // mu
+            total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
+            total += pad16(outStateSize);                    // bottom_up_cols
+            total += pad16((size_t)batchSize * colSize);     // colsRepacked
+            total += pad16(outStateSize);                    // lgRepacked
+            total += pad16(outStateSize);                    // muRepacked
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
-                total += pad16(Wsize) * 3;             // grad_W, m_W, v_W
+                total += pad16(Wsize) * 3;               // grad_W, m_W, v_W
                 total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
             }
         }
@@ -133,9 +133,15 @@ namespace Deep
         }
         else
         {
-            W = nullptr; b = nullptr; mu = nullptr;
-            colBuffer = nullptr; feedbackScratch = nullptr; bottom_up_cols = nullptr;
-            colsRepacked = nullptr; lgRepacked = nullptr; muRepacked = nullptr;
+            W = nullptr;
+            b = nullptr;
+            mu = nullptr;
+            colBuffer = nullptr;
+            feedbackScratch = nullptr;
+            bottom_up_cols = nullptr;
+            colsRepacked = nullptr;
+            lgRepacked = nullptr;
+            muRepacked = nullptr;
         }
 
         if (localArena && localArena.get() != &arena)
