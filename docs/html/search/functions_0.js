@@ -1,6 +1,11 @@
 var searchData=
 [
-  ['addlayer_0',['AddLayer',['../classDeep_1_1DiscriminativePCNetwork.html#a671f20780865ad65050178fc8852cd6d',1,'Deep::DiscriminativePCNetwork']]],
-  ['allocatefloats_1',['AllocateFloats',['../classDeep_1_1MemoryArena.html#af78e70321c76b968facf3b65ec30c338',1,'Deep::MemoryArena']]],
-  ['attach_2',['Attach',['../classDeep_1_1RBLayer.html#ac82d646502e6faf7031c9ff04bf4f972',1,'Deep::RBLayer']]]
+  ['adamupdate_0',['AdamUpdate',['../namespaceDeep.html#af0031c5b95344a0fb959914fee35449c',1,'Deep']]],
+  ['adamwupdate_1',['AdamWUpdate',['../namespaceDeep.html#a5aa6de3c8e5ed8673d718748c4999608',1,'Deep']]],
+  ['addlayer_2',['AddLayer',['../classDeep_1_1ConvPCNetwork.html#aaf55133efb673e06f500b581cfe4f909',1,'Deep::ConvPCNetwork::AddLayer()'],['../classDeep_1_1DiscriminativePCNetwork.html#a671f20780865ad65050178fc8852cd6d',1,'Deep::DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda, void(*act)(float *, size_t), void(*dAct)(float *, size_t, bool))'],['../classDeep_1_1DiscriminativePCNetwork.html#a2ca6add042ecc71ca17c197b44ce17ae',1,'Deep::DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda, Deep::ActivationType aType, Deep::ActivationType dType)'],['../classDeep_1_1SimplePCNetwork.html#aa384bc2e4c8680e546fa30fadbe26097',1,'Deep::SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda, void(*act)(float *, size_t), void(*dAct)(float *, size_t, bool))'],['../classDeep_1_1SimplePCNetwork.html#ab92a4ed5946ba59c9878386bcf8e755f',1,'Deep::SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda, ActivationType aType, ActivationType dType)']]],
+  ['alignedallocportable_3',['AlignedAllocPortable',['../namespaceDeep_1_1detail.html#af3da503898a70b79185386c34fc3812c',1,'Deep::detail']]],
+  ['alignedfreeportable_4',['AlignedFreePortable',['../namespaceDeep_1_1detail.html#aa81d102ebb96772f976ed83e00ae12ca',1,'Deep::detail']]],
+  ['allocatefloats_5',['AllocateFloats',['../classDeep_1_1MemoryArena.html#af78e70321c76b968facf3b65ec30c338',1,'Deep::MemoryArena']]],
+  ['attach_6',['Attach',['../classDeep_1_1RBLayer.html#ac82d646502e6faf7031c9ff04bf4f972',1,'Deep::RBLayer']]],
+  ['autobatchsize_7',['AutoBatchSize',['../namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004',1,'Deep']]]
 ];

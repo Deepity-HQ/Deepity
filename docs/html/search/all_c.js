@@ -1,8 +1,19 @@
 var searchData=
 [
-  ['pcndiagnostics_0',['PCNDiagnostics',['../classDeep_1_1PCNDiagnostics.html',1,'Deep']]],
-  ['performance_1',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md5',1,'']]],
-  ['performance_20at_20a_20glance_2',['🚀 Performance at a Glance',['../index.html#autotoc_md3',1,'']]],
-  ['png_20deepity_3',['&lt;img src=&quot;Deepity.png&quot; alt=&quot;&quot; class=&quot;inline&quot; title=&quot;Deepity&quot;/&gt;',['../index.html',1,'']]],
-  ['project_20structure_4',['🏗️ Project Structure',['../index.html#autotoc_md18',1,'']]]
+  ['p0_0',['P0',['../Activations_8h.html#a1583b00a62bc1138f99bbfcd8ef81a6a',1,'Activations.h']]],
+  ['p1_1',['P1',['../Activations_8h.html#a6c2a9f7efd46f0160f3037869924d6ce',1,'Activations.h']]],
+  ['p2_2',['P2',['../Activations_8h.html#ae00a52dba55d31948c377fa85d385b87',1,'Activations.h']]],
+  ['pcn_5ftime_3',['PCN_TIME',['../Profile_8h.html#a0c74b93e21c61e2f23b7e718e91beee1',1,'Profile.h']]],
+  ['pcndiagnostics_4',['PCNDiagnostics',['../classDeep_1_1PCNDiagnostics.html',1,'Deep::PCNDiagnostics'],['../classDeep_1_1ConvPCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCLayer::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCLayer::PCNDiagnostics()'],['../classDeep_1_1ConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCNetwork::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCNetwork::PCNDiagnostics()']]],
+  ['pcndiagnostics_2ecpp_5',['PCNDiagnostics.cpp',['../PCNDiagnostics_8cpp.html',1,'']]],
+  ['performance_6',['Performance',['../index.html#performance',1,'']]],
+  ['phasesum_7',['PhaseSum',['../structDeep_1_1ProfileAccumulator.html#a83b598b4911307d14bcbf96b03353ad7',1,'Deep::ProfileAccumulator']]],
+  ['predict_8',['Predict',['../classDeep_1_1ConvPCNetwork.html#ade6d0963dd15392166b03510a2b8849d',1,'Deep::ConvPCNetwork::Predict()'],['../classDeep_1_1DiscriminativePCNetwork.html#a4b9bfb6b75743cb26253f4c0ed2451e8',1,'Deep::DiscriminativePCNetwork::Predict()'],['../classDeep_1_1SimplePCNetwork.html#a9d0bb526df254fd0cb83cb8f0557128e',1,'Deep::SimplePCNetwork::Predict()']]],
+  ['print_9',['Print',['../structDeep_1_1ProfileAccumulator.html#a1e6b121ad5ca20b39c6407728306cf7d',1,'Deep::ProfileAccumulator']]],
+  ['printallprofiles_10',['PrintAllProfiles',['../namespaceDeep.html#a7b797d1b36359f0bf39a7d0b55190eee',1,'Deep']]],
+  ['profile_2eh_11',['Profile.h',['../Profile_8h.html',1,'']]],
+  ['profileaccumulator_12',['ProfileAccumulator',['../structDeep_1_1ProfileAccumulator.html',1,'Deep']]],
+  ['profileentry_13',['ProfileEntry',['../structDeep_1_1ProfileEntry.html',1,'Deep']]],
+  ['profileregistry_14',['ProfileRegistry',['../namespaceDeep.html#acd40701ddacb775649741df40bc3b929',1,'Deep']]],
+  ['python_15',['Python',['../index.html#quickstart_py',1,'']]]
 ];

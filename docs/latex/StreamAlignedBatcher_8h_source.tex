@@ -1,0 +1,51 @@
+\doxysection{Stream\+Aligned\+Batcher.\+h}
+\hypertarget{StreamAlignedBatcher_8h_source}{}\label{StreamAlignedBatcher_8h_source}\index{include/deepity/StreamAlignedBatcher.h@{include/deepity/StreamAlignedBatcher.h}}
+\doxymbox{\hyperlink{StreamAlignedBatcher_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <random>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <cstring>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00006\ }
+\DoxyCodeLine{00025\ }
+\DoxyCodeLine{00026\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00027\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_a7b85750508e4e9882f656027ba7e730b}{StreamAlignedBatcher}}}
+\DoxyCodeLine{00029\ \ \ \ \ \{}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_a7b85750508e4e9882f656027ba7e730b}{StreamAlignedBatcher}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *X,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *Y,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ *labels,}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ numSamples,\ \textcolor{keywordtype}{size\_t}\ xStride,\ \textcolor{keywordtype}{size\_t}\ yStride,}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ numClasses,\ \textcolor{keywordtype}{int}\ perClass,\ \textcolor{keywordtype}{unsigned}\ seed\ =\ 42);}
+\DoxyCodeLine{00042\ }
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_aa14e92ec71dec9635bbdbef9faebb06b}{NumBatchesPerEpoch}}()\ \textcolor{keyword}{const}\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00048\ }
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_aca65ab8f7a124767d3a45577a7200d16}{GetBatch}}(\textcolor{keywordtype}{float}\ *X\_out,\ \textcolor{keywordtype}{float}\ *Y\_out,\ \textcolor{keywordtype}{int}\ *labels\_out)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ad67843b5322c419d45343ab19cdb94c8}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ numClasses\ *\ perClass;\ \}}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ae85a2675756ddbbc264c4a44a8e9e02b}{GetPerClass}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ perClass;\ \}}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ab154209d06f27c16ed33e70c8f0705cd}{GetNumClasses}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ numClasses;\ \}}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ad4a5d799cab3cebf207a529535defc2f}{GetXStride}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ xStride;\ \}}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_a6d913163a45ab64996674824b6a6468f}{GetYStride}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ yStride;\ \}}
+\DoxyCodeLine{00064\ }
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *X;}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *Y;}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ *labels;}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ numSamples;}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ xStride;}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ yStride;}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ numClasses;}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ perClass;}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ std::mt19937\ rng;}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ std::vector<std::vector<size\_t>>\ classIndices;\ \textcolor{comment}{//\ per-\/class\ list\ of\ global\ row\ indices}}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ std::vector<size\_t>\ pointers;\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ current\ read\ position\ within\ each\ class's\ list}}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ ReshuffleClass(\textcolor{keywordtype}{int}\ c)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ std::vector<size\_t>\ NextClassSlice(\textcolor{keywordtype}{int}\ c,\ \textcolor{keywordtype}{int}\ n)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00084\ \ \ \ \ \};}
+\DoxyCodeLine{00085\ \}}
+
+\end{DoxyCode}

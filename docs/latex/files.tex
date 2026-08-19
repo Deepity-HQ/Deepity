@@ -1,11 +1,34 @@
 \doxysection{File List}
-Here is a list of all documented files with brief descriptions:\+\begin{DoxyCompactList}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{Activations_8h}{Activations.\+h}} \\*Defines the activation functions of a predictive coding model }{\pageref{Activations_8h}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{DiscriminativePCLayer_8h}{Discriminative\+PCLayer.\+h}} \\*Defines the single-\/layer implementation of a PC model }{\pageref{DiscriminativePCLayer_8h}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{DiscriminativePCNetwork_8h_source}{Discriminative\+PCNetwork.\+h}} }{\pageref{DiscriminativePCNetwork_8h_source}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{Layer_8h}{Layer.\+h}} \\*Virtual Layer }{\pageref{Layer_8h}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{MemoryArena_8h_source}{Memory\+Arena.\+h}} }{\pageref{MemoryArena_8h_source}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{Optimize_8h}{Optimize.\+h}} \\*Defines useful optimization functions of a PC model }{\pageref{Optimize_8h}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{RBLayer_8h}{RBLayer.\+h}} \\*Restricted Boltzmann-\/style Predictive Coding (PC) Layer }{\pageref{RBLayer_8h}}{}
-\item\contentsline{section}{includes/\+\doxymbox{\hyperlink{Timer_8h_source}{Timer.\+h}} }{\pageref{Timer_8h_source}}{}
+Here is a list of all files with brief descriptions:\+\begin{DoxyCompactList}
+\item\contentsline{section}{include/\+\doxymbox{\hyperlink{stb__image_8h}{stb\+\_\+image.\+h}} }{\pageref{stb__image_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{Activations_8h}{Activations.\+h}} \\*Defines the activation functions of a predictive coding model }{\pageref{Activations_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{AdamOptimizer_8h}{Adam\+Optimizer.\+h}} \\*Vectorized AdamW update, operating per-\/element over an array of weights (or biases) -- NOT the single-\/scalar-\/averaging design from the earlier draft, which would have collapsed many distinct per-\/weight gradients into one shared update and thrown away exactly the per-\/parameter information Adam depends on }{\pageref{AdamOptimizer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{DeviceMemoryArena_8h}{Device\+Memory\+Arena.\+h}} }{\pageref{DeviceMemoryArena_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{Im2Col_8h}{Im2\+Col.\+h}} \\*Standalone im2col /\+ col2im utilities:\+ convolution expressed as matrix multiplication, so Conv\+PCLayer can reuse cblas\+\_\+sgemm rather than needing hand-\/written conv kernels }{\pageref{Im2Col_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{MemoryArena_8h}{Memory\+Arena.\+h}} \\*A 64-\/byte-\/aligned bump-\/pointer allocator over a single heap-\/allocated block, used to pack every layer\textquotesingle{}s beliefs/\+errors/\+ weights/\+scratch buffers into one contiguous region for cache locality (see the "{}\+Contiguous Arena Allocator"{} design note in the project README). Host-\/side counterpart to \doxylink{DeviceMemoryArena_8h}{Device\+Memory\+Arena.\+h}\textquotesingle{}s CUDA version }{\pageref{MemoryArena_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{ModelIO_8h}{Model\+IO.\+h}} \\*Save/\+load support for persisting a Discriminative\+PCNetwork\textquotesingle{}s trained state to and from disk, as a structured directory rather than a single opaque binary blob }{\pageref{ModelIO_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{Optimize_8h}{Optimize.\+h}} \\*Defines useful optimization functions of a PC model }{\pageref{Optimize_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{Profile_8h}{Profile.\+h}} \\*Per-\/\+LAYER, phase-\/level timing accumulator }{\pageref{Profile_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{StreamAlignedBatcher_8h}{Stream\+Aligned\+Batcher.\+h}} \\*C++ port of the Python Stream\+Aligned\+Batcher -- builds batches with a fixed number of examples per class, grouped together, required for I\+\_\+avg\textquotesingle{}s per-\/class averaging (Eq. 7 of "{}\+Faster Predictive Coding Networks via Better Initialization"{}) }{\pageref{StreamAlignedBatcher_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+\doxymbox{\hyperlink{Timer_8h}{Timer.\+h}} }{\pageref{Timer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{ConvPCLayer_8h}{Conv\+PCLayer.\+h}} \\*Convolutional counterpart to Discriminative\+PCLayer }{\pageref{ConvPCLayer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{DiscriminativePCLayer_8h}{Discriminative\+PCLayer.\+h}} \\*Defines the single-\/layer implementation of a PC model }{\pageref{DiscriminativePCLayer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{Layer_8h}{Layer.\+h}} \\*Virtual Layer }{\pageref{Layer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{RBLayer_8h}{RBLayer.\+h}} \\*Restricted Boltzmann-\/style Predictive Coding (PC) Layer }{\pageref{RBLayer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{SimpleConvPCLayer_8h}{Simple\+Conv\+PCLayer.\+h}} \\*Conv\+PCLayer with precision removed (mirrors Simple\+PCLayer\textquotesingle{}s relationship to Discriminative\+PCLayer) AND Adam\+W/\+\+Adam support added (mirrors Simple\+PCLayer\textquotesingle{}s own AdamW integration) }{\pageref{SimpleConvPCLayer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+layers/\+\doxymbox{\hyperlink{SimplePCLayer_8h}{Simple\+PCLayer.\+h}} \\*Discriminative\+PCLayer with precision entirely removed }{\pageref{SimplePCLayer_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+networks/\+\doxymbox{\hyperlink{ConvPCNetwork_8h}{Conv\+PCNetwork.\+h}} \\*Convolutional counterpart to Discriminative\+PCNetwork -- same public interface shape (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+\+Update\+State/\+ Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Conv\+PCLayer instead }{\pageref{ConvPCNetwork_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+networks/\+\doxymbox{\hyperlink{DiscriminativePCNetwork_8h}{Discriminative\+PCNetwork.\+h}} }{\pageref{DiscriminativePCNetwork_8h}}{}
+\item\contentsline{section}{include/\+deepity/\+networks/\+\doxymbox{\hyperlink{SimplePCNetwork_8h}{Simple\+PCNetwork.\+h}} \\*Network wrapper for Simple\+PCLayer, mirroring Discriminative\+PCNetwork exactly (minus the Update\+Precision() call, which no longer exists) }{\pageref{SimplePCNetwork_8h}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{ConvPCLayer_8cpp}{Conv\+PCLayer.\+cpp}} }{\pageref{ConvPCLayer_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{ConvPCNetwork_8cpp}{Conv\+PCNetwork.\+cpp}} }{\pageref{ConvPCNetwork_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{DiscriminativePCLayer_8cpp}{Discriminative\+PCLayer.\+cpp}} }{\pageref{DiscriminativePCLayer_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{DiscriminativePCNetwork_8cpp}{Discriminative\+PCNetwork.\+cpp}} }{\pageref{DiscriminativePCNetwork_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{ModelIO_8cpp}{Model\+IO.\+cpp}} }{\pageref{ModelIO_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{PCNDiagnostics_8cpp}{PCNDiagnostics.\+cpp}} }{\pageref{PCNDiagnostics_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{RBLayer_8cpp}{RBLayer.\+cpp}} }{\pageref{RBLayer_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{SimpleConvPCLayer_8cpp}{Simple\+Conv\+PCLayer.\+cpp}} }{\pageref{SimpleConvPCLayer_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{SimplePCLayer_8cpp}{Simple\+PCLayer.\+cpp}} }{\pageref{SimplePCLayer_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{SimplePCNetwork_8cpp}{Simple\+PCNetwork.\+cpp}} }{\pageref{SimplePCNetwork_8cpp}}{}
+\item\contentsline{section}{src/\+\doxymbox{\hyperlink{StreamAlignedBatcher_8cpp}{Stream\+Aligned\+Batcher.\+cpp}} }{\pageref{StreamAlignedBatcher_8cpp}}{}
 \end{DoxyCompactList}

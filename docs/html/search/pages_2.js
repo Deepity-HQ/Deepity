@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['c_0',['C++',['../index.html#autotoc_md16',1,'']]],
-  ['clang_20llvm_20performance_1',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md5',1,'']]],
-  ['contiguous_20vs_20separate_2',['Memory Layout: Contiguous vs. Separate',['../index.html#autotoc_md12',1,'']]],
-  ['core_20architecture_20optimizations_3',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md7',1,'']]],
-  ['cpu_20in_20under_20an_20hour_3a_4',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]]
+  ['deepity_0',['Deepity',['../index.html',1,'']]],
+  ['dense_1',['DiscriminativePCLayer (dense)',['../ConvPCLayer_math.html#dense_formulas',1,'']]],
+  ['derivation_2',['ConvPCLayer Mathematical Derivation',['../ConvPCLayer_math.html',1,'']]],
+  ['design_20notes_3',['Design Notes',['../ConvPCLayer_math.html#design_notes',1,'']]],
+  ['discriminativepclayer_20dense_4',['DiscriminativePCLayer (dense)',['../ConvPCLayer_math.html#dense_formulas',1,'']]]
 ];

@@ -1,0 +1,52 @@
+\doxysection{include/\+deepity/\+layers/\+\+Simple\+PCLayer.h File Reference}
+\hypertarget{SimplePCLayer_8h}{}\label{SimplePCLayer_8h}\index{include/deepity/layers/SimplePCLayer.h@{include/deepity/layers/SimplePCLayer.h}}
+
+
+Discriminative\+PCLayer with precision entirely removed.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Adam\+Optimizer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Layer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Deep::\+\+Simple\+PCLayer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Discriminative\+PCLayer with precision entirely removed. 
+
+Precision weighting (p, log\+\_\+p, Update\+Precision()) was found this session to be an unused cost, not a benefit:\+ every real training run used pr=0.\+0 (precision inert -- p stays permanently at 1, log\+\_\+p at 0), yet Update\+Precision() was still called unconditionally every train\+\_\+step(), and every layer paid for the p buffer, the log\+\_\+p buffer, and the precision-\/weighted energy formula\textquotesingle{}s extra multiply/\+log term on every single Calculate\+State()/\+\+Update\+State() call, for zero behavioral benefit.
+
+This class removes all of that:\+ energy reduces to plain E = 0.\+5\texorpdfstring{$\ast$}{*}sum(e\texorpdfstring{$^\wedge$}{\string^}2) (no precision weighting, no -\/0.\+5\texorpdfstring{$\ast$}{*}log(p) term), and Update\+State()\textquotesingle{}s own term reduces to dz\+\_\+dt = -\/e (no p multiplier, since p=1 always made that multiplication a no-\/op anyway).
+
+Mirrors Discriminative\+PCLayer\textquotesingle{}s public interface as closely as possible (same Add\+Layer-\/style construction pattern, same Activation\+Type-\/based constructor, same Get\+Beliefs/\+\+Get\+Errors/\+\+Get\+Weights/\+\+Get\+Biases accessors) so it\textquotesingle{}s a near-\/drop-\/in swap for anyone not using precision -- which, per the above, was everyone.
+
+\begin{DoxyWarning}{Warning}
+Not yet gradient-\/checked independently -- this is a direct strip-\/down of Discriminative\+PCLayer\textquotesingle{}s already-\/verified math (same Calculate\+State/\+\+Update\+State/\+\+Update\+Weights formulas, precision terms removed), not new math, but the removal itself hasn\textquotesingle{}t been re-\/verified via finite-\/difference check. Do that before trusting this for real training -- same discipline as every other change this session.
+\end{DoxyWarning}
+\begin{DoxyNote}{Note}
+Optionally uses Adam (see \doxylink{AdamOptimizer_8h}{Adam\+Optimizer.\+h}) instead of plain SGD for weight updates, selected via Set\+Optimizer(); Adam\textquotesingle{}s moment buffers are only allocated when selected, keeping the SGD-\/only path free of their memory/\+compute cost. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

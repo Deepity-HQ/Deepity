@@ -1,5 +1,27 @@
 var searchData=
 [
-  ['under_20an_20hour_3a_0',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]],
-  ['usage_1',['🛠️ Example Usage',['../index.html#autotoc_md15',1,'']]]
+  ['tanh_0',['TANH',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1',1,'Deep']]],
+  ['tanh_5fbiglimit_1',['TANH_BIGLIMIT',['../Activations_8h.html#ac245f863ccdf620e12419737387cfc96',1,'Activations.h']]],
+  ['tanh_5fpoly_5flimit_2',['TANH_POLY_LIMIT',['../Activations_8h.html#a7ec15aed34c551c8e43a3f0ec25b7c65',1,'Activations.h']]],
+  ['tanh_5ftinylimit_3',['TANH_TINYLIMIT',['../Activations_8h.html#af09b50acd5a5564417673be65960c0ea',1,'Activations.h']]],
+  ['test10_5fpredictionconsistency_4',['Test10_PredictionConsistency',['../classDeep_1_1PCNDiagnostics.html#af9e86a1e9a6154232ae822eb4f2e3e15',1,'Deep::PCNDiagnostics']]],
+  ['test11_5fweightupdateconsistency_5',['Test11_WeightUpdateConsistency',['../classDeep_1_1PCNDiagnostics.html#a9999a79346d8f95b87e1185959e801d0',1,'Deep::PCNDiagnostics']]],
+  ['test12_5fprecisionstatistics_6',['Test12_PrecisionStatistics',['../classDeep_1_1PCNDiagnostics.html#a44ded8bb40cc2e55170285a6448cda6b',1,'Deep::PCNDiagnostics']]],
+  ['test13_5factivationsaturation_7',['Test13_ActivationSaturation',['../classDeep_1_1PCNDiagnostics.html#adbf85a35d7bd2b8a5cb15daa338cf4d4',1,'Deep::PCNDiagnostics']]],
+  ['test14_5fmemorylayout_8',['Test14_MemoryLayout',['../classDeep_1_1PCNDiagnostics.html#aae2b935b3f3d70fb37115ccd1e3ed714',1,'Deep::PCNDiagnostics']]],
+  ['test15_5fbufferlifecycleaudit_9',['Test15_BufferLifecycleAudit',['../classDeep_1_1PCNDiagnostics.html#accd70cb3137bdaf8ba10e619ff4f9da8',1,'Deep::PCNDiagnostics']]],
+  ['test16_5foverfitoneexample_10',['Test16_OverfitOneExample',['../classDeep_1_1PCNDiagnostics.html#a213ab194ec7d777ba76b2a17636fd885',1,'Deep::PCNDiagnostics']]],
+  ['test1_5finferenceconvergence_11',['Test1_InferenceConvergence',['../classDeep_1_1PCNDiagnostics.html#a097ca8bed751e7488873d0ed051663ed',1,'Deep::PCNDiagnostics']]],
+  ['test2_5fgradientcheckweights_12',['Test2_GradientCheckWeights',['../classDeep_1_1PCNDiagnostics.html#af42952821c342107adf2c1e5b19c4adb',1,'Deep::PCNDiagnostics']]],
+  ['test3_5fgradientcheckstates_13',['Test3_GradientCheckStates',['../classDeep_1_1PCNDiagnostics.html#a9865a11e733935ecabd9ddd0fd41c0d4',1,'Deep::PCNDiagnostics']]],
+  ['test4_5fgradientcheckprecision_14',['Test4_GradientCheckPrecision',['../classDeep_1_1PCNDiagnostics.html#ab75dd365d706ca3369b5eb725ae2768a',1,'Deep::PCNDiagnostics']]],
+  ['test5_5factivationderivatives_15',['Test5_ActivationDerivatives',['../classDeep_1_1PCNDiagnostics.html#a757c3ed61db0cee28d1e3dd9301c5fdd',1,'Deep::PCNDiagnostics']]],
+  ['test6_5fenergydecomposition_16',['Test6_EnergyDecomposition',['../classDeep_1_1PCNDiagnostics.html#a8fce9b1d4d659a43a920d85254a930bc',1,'Deep::PCNDiagnostics']]],
+  ['test7_5fsimdconsistency_17',['Test7_SIMDConsistency',['../classDeep_1_1PCNDiagnostics.html#a18c896e5158ac778e3ef7c5eb97f3884',1,'Deep::PCNDiagnostics']]],
+  ['test8_5fbatchinvariance_18',['Test8_BatchInvariance',['../classDeep_1_1PCNDiagnostics.html#ae660afa46eb16a8e714464be1109a604',1,'Deep::PCNDiagnostics']]],
+  ['test9_5fbufferpoisoning_19',['Test9_BufferPoisoning',['../classDeep_1_1PCNDiagnostics.html#a93399ddea16d062bf378bfddcb1a3c8a',1,'Deep::PCNDiagnostics']]],
+  ['timer_20',['Timer',['../classTimer.html',1,'']]],
+  ['timer_2eh_21',['Timer.h',['../Timer_8h.html',1,'']]],
+  ['tooptype_22',['toOpType',['../namespaceDeep.html#a6ca9308132b5c8017685367d79b5c753',1,'Deep']]],
+  ['trainstep_23',['TrainStep',['../classDeep_1_1ConvPCNetwork.html#a96f7fdb1fd4e28f9796f7961473aab0e',1,'Deep::ConvPCNetwork::TrainStep()'],['../classDeep_1_1DiscriminativePCNetwork.html#ac234beb279bfd8ffa13e374624ba790a',1,'Deep::DiscriminativePCNetwork::TrainStep()'],['../classDeep_1_1SimplePCNetwork.html#a85b53cd16ead4c216534c799cf2c83a3',1,'Deep::SimplePCNetwork::TrainStep()']]]
 ];

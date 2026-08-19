@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -101,25 +102,252 @@ $(function(){initNavTree('classDeep_1_1MemoryArena.html','','classDeep_1_1Memory
   <div class="headertitle"><div class="title">Deep::MemoryArena Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory. Every chunk handed out via <a class="el" href="#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> is itself 64-byte aligned, satisfying this codebase's strict alignment requirement for AVX2/AVX-512 loads.  
+ <a href="#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">MemoryArena.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4633eb18edd4c1956ea46a418f0e346e" id="r_a4633eb18edd4c1956ea46a418f0e346e"><td class="memItemLeft"><a id="a4633eb18edd4c1956ea46a418f0e346e" name="a4633eb18edd4c1956ea46a418f0e346e"></a>
-&#160;</td><td class="memItemRight"><b>MemoryArena</b> (size_t total_floats)</td></tr>
-<tr class="memitem:a35deffffadd8b70bee90c55d0eb0eacd" id="r_a35deffffadd8b70bee90c55d0eb0eacd"><td class="memItemLeft"><a id="a35deffffadd8b70bee90c55d0eb0eacd" name="a35deffffadd8b70bee90c55d0eb0eacd"></a>
-&#160;</td><td class="memItemRight"><b>MemoryArena</b> (const MemoryArena &amp;)=delete</td></tr>
-<tr class="memitem:adcb6d3fab7ac84d0c427b70381afabca" id="r_adcb6d3fab7ac84d0c427b70381afabca"><td class="memItemLeft"><a id="adcb6d3fab7ac84d0c427b70381afabca" name="adcb6d3fab7ac84d0c427b70381afabca"></a>
-MemoryArena &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (const MemoryArena &amp;)=delete</td></tr>
-<tr class="memitem:af78e70321c76b968facf3b65ec30c338" id="r_af78e70321c76b968facf3b65ec30c338"><td class="memItemLeft"><a id="af78e70321c76b968facf3b65ec30c338" name="af78e70321c76b968facf3b65ec30c338"></a>
-float *&#160;</td><td class="memItemRight"><b>AllocateFloats</b> (size_t num_floats)</td></tr>
-<tr class="memdesc:af78e70321c76b968facf3b65ec30c338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a 64-byte aligned chunk of floats from the arena. <br /></td></tr>
-<tr class="memitem:a18292466507e177d192cde18d5d4eb69" id="r_a18292466507e177d192cde18d5d4eb69"><td class="memItemLeft"><a id="a18292466507e177d192cde18d5d4eb69" name="a18292466507e177d192cde18d5d4eb69"></a>
-size_t&#160;</td><td class="memItemRight"><b>GetUsedBytes</b> () const</td></tr>
-<tr class="memitem:af5d7949e8c5767b3a83c6488b03b2704" id="r_af5d7949e8c5767b3a83c6488b03b2704"><td class="memItemLeft"><a id="af5d7949e8c5767b3a83c6488b03b2704" name="af5d7949e8c5767b3a83c6488b03b2704"></a>
-size_t&#160;</td><td class="memItemRight"><b>GetCapacityBytes</b> () const</td></tr>
+<tr class="memitem:a4633eb18edd4c1956ea46a418f0e346e" id="r_a4633eb18edd4c1956ea46a418f0e346e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> (size_t total_floats)</td></tr>
+<tr class="memdesc:a4633eb18edd4c1956ea46a418f0e346e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a single 64-byte-aligned buffer large enough to hold <span class="tt">total_floats</span> floats, rounded up to the nearest 64-byte boundary.  <br /></td></tr>
+<tr class="memitem:a49fb270b07d4ae887bb0f084bf09d024" id="r_a49fb270b07d4ae887bb0f084bf09d024"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a49fb270b07d4ae887bb0f084bf09d024">~MemoryArena</a> ()</td></tr>
+<tr class="memdesc:a49fb270b07d4ae887bb0f084bf09d024"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the underlying aligned allocation, if any.  <br /></td></tr>
+<tr class="memitem:a35deffffadd8b70bee90c55d0eb0eacd" id="r_a35deffffadd8b70bee90c55d0eb0eacd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a35deffffadd8b70bee90c55d0eb0eacd">MemoryArena</a> (const MemoryArena &amp;)=delete</td></tr>
+<tr class="memdesc:a35deffffadd8b70bee90c55d0eb0eacd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copying would risk a double-free.  <br /></td></tr>
+<tr class="memitem:adcb6d3fab7ac84d0c427b70381afabca" id="r_adcb6d3fab7ac84d0c427b70381afabca"><td class="memItemLeft"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#adcb6d3fab7ac84d0c427b70381afabca">operator=</a> (const <a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;)=delete</td></tr>
+<tr class="memdesc:adcb6d3fab7ac84d0c427b70381afabca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copy-assignment would risk a double-free.  <br /></td></tr>
+<tr class="memitem:af78e70321c76b968facf3b65ec30c338" id="r_af78e70321c76b968facf3b65ec30c338"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#af78e70321c76b968facf3b65ec30c338">AllocateFloats</a> (size_t num_floats)</td></tr>
+<tr class="memdesc:af78e70321c76b968facf3b65ec30c338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a 64-byte aligned chunk of floats from the arena.  <br /></td></tr>
+<tr class="memitem:a18292466507e177d192cde18d5d4eb69" id="r_a18292466507e177d192cde18d5d4eb69"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a18292466507e177d192cde18d5d4eb69">GetUsedBytes</a> () const</td></tr>
+<tr class="memdesc:a18292466507e177d192cde18d5d4eb69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns how many bytes have been allocated from the arena so far.  <br /></td></tr>
+<tr class="memitem:af5d7949e8c5767b3a83c6488b03b2704" id="r_af5d7949e8c5767b3a83c6488b03b2704"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#af5d7949e8c5767b3a83c6488b03b2704">GetCapacityBytes</a> () const</td></tr>
+<tr class="memdesc:af5d7949e8c5767b3a83c6488b03b2704"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the arena's total capacity.  <br /></td></tr>
 </table>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory. Every chunk handed out via <a class="el" href="#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> is itself 64-byte aligned, satisfying this codebase's strict alignment requirement for AVX2/AVX-512 loads. </p>
+</div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a4633eb18edd4c1956ea46a418f0e346e" name="a4633eb18edd4c1956ea46a418f0e346e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4633eb18edd4c1956ea46a418f0e346e">&#9670;&#160;</a></span>MemoryArena() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Deep::MemoryArena::MemoryArena </td>
+          <td>(</td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>total_floats</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Allocates a single 64-byte-aligned buffer large enough to hold <span class="tt">total_floats</span> floats, rounded up to the nearest 64-byte boundary. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">total_floats</td><td>Total number of floats this arena can hand out across all future <a class="el" href="#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> calls combined. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::bad_alloc</td><td>if the underlying aligned allocation fails. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a49fb270b07d4ae887bb0f084bf09d024" name="a49fb270b07d4ae887bb0f084bf09d024"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49fb270b07d4ae887bb0f084bf09d024">&#9670;&#160;</a></span>~MemoryArena()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Deep::MemoryArena::~MemoryArena </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Frees the underlying aligned allocation, if any. </p>
+
+</div>
+</div>
+<a id="a35deffffadd8b70bee90c55d0eb0eacd" name="a35deffffadd8b70bee90c55d0eb0eacd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35deffffadd8b70bee90c55d0eb0eacd">&#9670;&#160;</a></span>MemoryArena() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Deep::MemoryArena::MemoryArena </td>
+          <td>(</td>
+          <td class="paramtype">const MemoryArena &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel delete">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copying would risk a double-free. </p>
+
+</div>
+</div>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="af78e70321c76b968facf3b65ec30c338" name="af78e70321c76b968facf3b65ec30c338"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af78e70321c76b968facf3b65ec30c338">&#9670;&#160;</a></span>AllocateFloats()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float * Deep::MemoryArena::AllocateFloats </td>
+          <td>(</td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>num_floats</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Allocates a 64-byte aligned chunk of floats from the arena. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">num_floats</td><td>Number of floats to allocate from the arena. The actual reservation is rounded up to the nearest 64-byte boundary, so the returned chunk may have more usable capacity than requested. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the start of the allocated chunk, valid for the lifetime of this <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a>. 64-byte aligned. </dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">std::runtime_error</td><td>if the requested allocation would exceed the arena's total capacity. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section warning"><dt>Warning</dt><dd>Individual chunks are never freed independently; the entire arena is released at once in the destructor. </dd></dl>
+
+</div>
+</div>
+<a id="af5d7949e8c5767b3a83c6488b03b2704" name="af5d7949e8c5767b3a83c6488b03b2704"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5d7949e8c5767b3a83c6488b03b2704">&#9670;&#160;</a></span>GetCapacityBytes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t Deep::MemoryArena::GetCapacityBytes </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the arena's total capacity. </p>
+<dl class="section return"><dt>Returns</dt><dd>The capacity, in bytes, rounded up to a multiple of 64. </dd></dl>
+
+</div>
+</div>
+<a id="a18292466507e177d192cde18d5d4eb69" name="a18292466507e177d192cde18d5d4eb69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18292466507e177d192cde18d5d4eb69">&#9670;&#160;</a></span>GetUsedBytes()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t Deep::MemoryArena::GetUsedBytes </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns how many bytes have been allocated from the arena so far. </p>
+<dl class="section return"><dt>Returns</dt><dd>The current offset, in bytes. </dd></dl>
+
+</div>
+</div>
+<a id="adcb6d3fab7ac84d0c427b70381afabca" name="adcb6d3fab7ac84d0c427b70381afabca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcb6d3fab7ac84d0c427b70381afabca">&#9670;&#160;</a></span>operator=()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp; Deep::MemoryArena::operator= </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel delete">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copy-assignment would risk a double-free. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>includes/<a class="el" href="MemoryArena_8h_source.html">MemoryArena.h</a></li>
+<li>include/deepity/<a class="el" href="MemoryArena_8h_source.html">MemoryArena.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -134,7 +362,7 @@ size_t&#160;</td><td class="memItemRight"><b>GetCapacityBytes</b> () const</td><
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>Deep</b></li><li class="navelem"><a href="classDeep_1_1MemoryArena.html">MemoryArena</a></li>
+    <li class="navelem"><a href="namespaceDeep.html">Deep</a></li><li class="navelem"><a href="classDeep_1_1MemoryArena.html">MemoryArena</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

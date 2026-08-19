@@ -1,0 +1,39 @@
+\doxysection{Device\+Memory\+Arena.\+h}
+\hypertarget{DeviceMemoryArena_8h_source}{}\label{DeviceMemoryArena_8h_source}\index{include/deepity/DeviceMemoryArena.h@{include/deepity/DeviceMemoryArena.h}}
+\doxymbox{\hyperlink{DeviceMemoryArena_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#if\ defined(DEEPITY\_ENABLE\_CUDA)}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <cuda\_runtime.h>}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00030\ \textcolor{keyword}{class\ }DeviceMemoryArena}
+\DoxyCodeLine{00031\ \{}
+\DoxyCodeLine{00032\ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00034\ \ \ \ \ \textcolor{keywordtype}{float}\ *base\_ptr;}
+\DoxyCodeLine{00036\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity\_bytes;}
+\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ offset\_bytes;}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00049\ \ \ \ \ DeviceMemoryArena(\textcolor{keywordtype}{size\_t}\ total\_floats)}
+\DoxyCodeLine{00050\ \ \ \ \ \{}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ capacity\_bytes\ =\ total\_floats\ *\ \textcolor{keyword}{sizeof}(float);}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ cudaMalloc(\&base\_ptr,\ capacity\_bytes);}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ offset\_bytes\ =\ 0;}
+\DoxyCodeLine{00054\ \ \ \ \ \}}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00057\ \ \ \ \ \string~DeviceMemoryArena()}
+\DoxyCodeLine{00058\ \ \ \ \ \{}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ cudaFree(base\_ptr);}
+\DoxyCodeLine{00060\ \ \ \ \ \}}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00071\ \ \ \ \ \textcolor{keywordtype}{float}\ *AllocateFloats(\textcolor{keywordtype}{size\_t}\ num\_floats)}
+\DoxyCodeLine{00072\ \ \ \ \ \{}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *chunk\ =\ base\_ptr\ +\ (offset\_bytes\ /\ \textcolor{keyword}{sizeof}(float));}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ offset\_bytes\ +=\ num\_floats\ *\ \textcolor{keyword}{sizeof}(float);}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ chunk;}
+\DoxyCodeLine{00076\ \ \ \ \ \}}
+\DoxyCodeLine{00077\ \};}
+\DoxyCodeLine{00078\ \textcolor{preprocessor}{\#endif}}
+
+\end{DoxyCode}

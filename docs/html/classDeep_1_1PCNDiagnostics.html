@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -104,45 +105,478 @@ $(function(){initNavTree('classDeep_1_1PCNDiagnostics.html','','classDeep_1_1PCN
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac707698472b39f6737f2ee8953e52a8c" id="r_ac707698472b39f6737f2ee8953e52a8c"><td class="memItemLeft"><a id="ac707698472b39f6737f2ee8953e52a8c" name="ac707698472b39f6737f2ee8953e52a8c"></a>
-void&#160;</td><td class="memItemRight"><b>RunAllTests</b> ()</td></tr>
-<tr class="memitem:a097ca8bed751e7488873d0ed051663ed" id="r_a097ca8bed751e7488873d0ed051663ed"><td class="memItemLeft"><a id="a097ca8bed751e7488873d0ed051663ed" name="a097ca8bed751e7488873d0ed051663ed"></a>
-void&#160;</td><td class="memItemRight"><b>Test1_InferenceConvergence</b> ()</td></tr>
-<tr class="memitem:af42952821c342107adf2c1e5b19c4adb" id="r_af42952821c342107adf2c1e5b19c4adb"><td class="memItemLeft"><a id="af42952821c342107adf2c1e5b19c4adb" name="af42952821c342107adf2c1e5b19c4adb"></a>
-void&#160;</td><td class="memItemRight"><b>Test2_GradientCheckWeights</b> ()</td></tr>
-<tr class="memitem:a9865a11e733935ecabd9ddd0fd41c0d4" id="r_a9865a11e733935ecabd9ddd0fd41c0d4"><td class="memItemLeft"><a id="a9865a11e733935ecabd9ddd0fd41c0d4" name="a9865a11e733935ecabd9ddd0fd41c0d4"></a>
-void&#160;</td><td class="memItemRight"><b>Test3_GradientCheckStates</b> ()</td></tr>
-<tr class="memitem:ab75dd365d706ca3369b5eb725ae2768a" id="r_ab75dd365d706ca3369b5eb725ae2768a"><td class="memItemLeft"><a id="ab75dd365d706ca3369b5eb725ae2768a" name="ab75dd365d706ca3369b5eb725ae2768a"></a>
-void&#160;</td><td class="memItemRight"><b>Test4_GradientCheckPrecision</b> ()</td></tr>
-<tr class="memitem:a757c3ed61db0cee28d1e3dd9301c5fdd" id="r_a757c3ed61db0cee28d1e3dd9301c5fdd"><td class="memItemLeft"><a id="a757c3ed61db0cee28d1e3dd9301c5fdd" name="a757c3ed61db0cee28d1e3dd9301c5fdd"></a>
-void&#160;</td><td class="memItemRight"><b>Test5_ActivationDerivatives</b> ()</td></tr>
-<tr class="memitem:a8fce9b1d4d659a43a920d85254a930bc" id="r_a8fce9b1d4d659a43a920d85254a930bc"><td class="memItemLeft"><a id="a8fce9b1d4d659a43a920d85254a930bc" name="a8fce9b1d4d659a43a920d85254a930bc"></a>
-void&#160;</td><td class="memItemRight"><b>Test6_EnergyDecomposition</b> ()</td></tr>
-<tr class="memitem:a18c896e5158ac778e3ef7c5eb97f3884" id="r_a18c896e5158ac778e3ef7c5eb97f3884"><td class="memItemLeft"><a id="a18c896e5158ac778e3ef7c5eb97f3884" name="a18c896e5158ac778e3ef7c5eb97f3884"></a>
-void&#160;</td><td class="memItemRight"><b>Test7_SIMDConsistency</b> ()</td></tr>
-<tr class="memitem:ae660afa46eb16a8e714464be1109a604" id="r_ae660afa46eb16a8e714464be1109a604"><td class="memItemLeft"><a id="ae660afa46eb16a8e714464be1109a604" name="ae660afa46eb16a8e714464be1109a604"></a>
-void&#160;</td><td class="memItemRight"><b>Test8_BatchInvariance</b> ()</td></tr>
-<tr class="memitem:a93399ddea16d062bf378bfddcb1a3c8a" id="r_a93399ddea16d062bf378bfddcb1a3c8a"><td class="memItemLeft"><a id="a93399ddea16d062bf378bfddcb1a3c8a" name="a93399ddea16d062bf378bfddcb1a3c8a"></a>
-void&#160;</td><td class="memItemRight"><b>Test9_BufferPoisoning</b> ()</td></tr>
-<tr class="memitem:af9e86a1e9a6154232ae822eb4f2e3e15" id="r_af9e86a1e9a6154232ae822eb4f2e3e15"><td class="memItemLeft"><a id="af9e86a1e9a6154232ae822eb4f2e3e15" name="af9e86a1e9a6154232ae822eb4f2e3e15"></a>
-void&#160;</td><td class="memItemRight"><b>Test10_PredictionConsistency</b> ()</td></tr>
-<tr class="memitem:a9999a79346d8f95b87e1185959e801d0" id="r_a9999a79346d8f95b87e1185959e801d0"><td class="memItemLeft"><a id="a9999a79346d8f95b87e1185959e801d0" name="a9999a79346d8f95b87e1185959e801d0"></a>
-void&#160;</td><td class="memItemRight"><b>Test11_WeightUpdateConsistency</b> ()</td></tr>
-<tr class="memitem:a44ded8bb40cc2e55170285a6448cda6b" id="r_a44ded8bb40cc2e55170285a6448cda6b"><td class="memItemLeft"><a id="a44ded8bb40cc2e55170285a6448cda6b" name="a44ded8bb40cc2e55170285a6448cda6b"></a>
-void&#160;</td><td class="memItemRight"><b>Test12_PrecisionStatistics</b> ()</td></tr>
-<tr class="memitem:adbf85a35d7bd2b8a5cb15daa338cf4d4" id="r_adbf85a35d7bd2b8a5cb15daa338cf4d4"><td class="memItemLeft"><a id="adbf85a35d7bd2b8a5cb15daa338cf4d4" name="adbf85a35d7bd2b8a5cb15daa338cf4d4"></a>
-void&#160;</td><td class="memItemRight"><b>Test13_ActivationSaturation</b> ()</td></tr>
-<tr class="memitem:aae2b935b3f3d70fb37115ccd1e3ed714" id="r_aae2b935b3f3d70fb37115ccd1e3ed714"><td class="memItemLeft"><a id="aae2b935b3f3d70fb37115ccd1e3ed714" name="aae2b935b3f3d70fb37115ccd1e3ed714"></a>
-void&#160;</td><td class="memItemRight"><b>Test14_MemoryLayout</b> ()</td></tr>
-<tr class="memitem:accd70cb3137bdaf8ba10e619ff4f9da8" id="r_accd70cb3137bdaf8ba10e619ff4f9da8"><td class="memItemLeft"><a id="accd70cb3137bdaf8ba10e619ff4f9da8" name="accd70cb3137bdaf8ba10e619ff4f9da8"></a>
-void&#160;</td><td class="memItemRight"><b>Test15_BufferLifecycleAudit</b> ()</td></tr>
-<tr class="memitem:a3d1a44c506b20d170293448dd111ad07" id="r_a3d1a44c506b20d170293448dd111ad07"><td class="memItemLeft"><a id="a3d1a44c506b20d170293448dd111ad07" name="a3d1a44c506b20d170293448dd111ad07"></a>
-std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><b>LoadMNISTPNG</b> (const std::string &amp;path)</td></tr>
-<tr class="memitem:a213ab194ec7d777ba76b2a17636fd885" id="r_a213ab194ec7d777ba76b2a17636fd885"><td class="memItemLeft"><a id="a213ab194ec7d777ba76b2a17636fd885" name="a213ab194ec7d777ba76b2a17636fd885"></a>
-void&#160;</td><td class="memItemRight"><b>Test16_OverfitOneExample</b> ()</td></tr>
+<tr class="memitem:ac707698472b39f6737f2ee8953e52a8c" id="r_ac707698472b39f6737f2ee8953e52a8c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac707698472b39f6737f2ee8953e52a8c">RunAllTests</a> ()</td></tr>
+<tr class="memitem:a097ca8bed751e7488873d0ed051663ed" id="r_a097ca8bed751e7488873d0ed051663ed"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a097ca8bed751e7488873d0ed051663ed">Test1_InferenceConvergence</a> ()</td></tr>
+<tr class="memitem:af42952821c342107adf2c1e5b19c4adb" id="r_af42952821c342107adf2c1e5b19c4adb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af42952821c342107adf2c1e5b19c4adb">Test2_GradientCheckWeights</a> ()</td></tr>
+<tr class="memitem:a9865a11e733935ecabd9ddd0fd41c0d4" id="r_a9865a11e733935ecabd9ddd0fd41c0d4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9865a11e733935ecabd9ddd0fd41c0d4">Test3_GradientCheckStates</a> ()</td></tr>
+<tr class="memitem:ab75dd365d706ca3369b5eb725ae2768a" id="r_ab75dd365d706ca3369b5eb725ae2768a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab75dd365d706ca3369b5eb725ae2768a">Test4_GradientCheckPrecision</a> ()</td></tr>
+<tr class="memitem:a757c3ed61db0cee28d1e3dd9301c5fdd" id="r_a757c3ed61db0cee28d1e3dd9301c5fdd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a757c3ed61db0cee28d1e3dd9301c5fdd">Test5_ActivationDerivatives</a> ()</td></tr>
+<tr class="memitem:a8fce9b1d4d659a43a920d85254a930bc" id="r_a8fce9b1d4d659a43a920d85254a930bc"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8fce9b1d4d659a43a920d85254a930bc">Test6_EnergyDecomposition</a> ()</td></tr>
+<tr class="memitem:a18c896e5158ac778e3ef7c5eb97f3884" id="r_a18c896e5158ac778e3ef7c5eb97f3884"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a18c896e5158ac778e3ef7c5eb97f3884">Test7_SIMDConsistency</a> ()</td></tr>
+<tr class="memitem:ae660afa46eb16a8e714464be1109a604" id="r_ae660afa46eb16a8e714464be1109a604"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae660afa46eb16a8e714464be1109a604">Test8_BatchInvariance</a> ()</td></tr>
+<tr class="memitem:a93399ddea16d062bf378bfddcb1a3c8a" id="r_a93399ddea16d062bf378bfddcb1a3c8a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93399ddea16d062bf378bfddcb1a3c8a">Test9_BufferPoisoning</a> ()</td></tr>
+<tr class="memitem:af9e86a1e9a6154232ae822eb4f2e3e15" id="r_af9e86a1e9a6154232ae822eb4f2e3e15"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af9e86a1e9a6154232ae822eb4f2e3e15">Test10_PredictionConsistency</a> ()</td></tr>
+<tr class="memitem:a9999a79346d8f95b87e1185959e801d0" id="r_a9999a79346d8f95b87e1185959e801d0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9999a79346d8f95b87e1185959e801d0">Test11_WeightUpdateConsistency</a> ()</td></tr>
+<tr class="memitem:a44ded8bb40cc2e55170285a6448cda6b" id="r_a44ded8bb40cc2e55170285a6448cda6b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a44ded8bb40cc2e55170285a6448cda6b">Test12_PrecisionStatistics</a> ()</td></tr>
+<tr class="memitem:adbf85a35d7bd2b8a5cb15daa338cf4d4" id="r_adbf85a35d7bd2b8a5cb15daa338cf4d4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adbf85a35d7bd2b8a5cb15daa338cf4d4">Test13_ActivationSaturation</a> ()</td></tr>
+<tr class="memitem:aae2b935b3f3d70fb37115ccd1e3ed714" id="r_aae2b935b3f3d70fb37115ccd1e3ed714"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aae2b935b3f3d70fb37115ccd1e3ed714">Test14_MemoryLayout</a> ()</td></tr>
+<tr class="memitem:accd70cb3137bdaf8ba10e619ff4f9da8" id="r_accd70cb3137bdaf8ba10e619ff4f9da8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#accd70cb3137bdaf8ba10e619ff4f9da8">Test15_BufferLifecycleAudit</a> ()</td></tr>
+<tr class="memitem:a3d1a44c506b20d170293448dd111ad07" id="r_a3d1a44c506b20d170293448dd111ad07"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a3d1a44c506b20d170293448dd111ad07">LoadMNISTPNG</a> (const std::string &amp;path)</td></tr>
+<tr class="memitem:a213ab194ec7d777ba76b2a17636fd885" id="r_a213ab194ec7d777ba76b2a17636fd885"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a213ab194ec7d777ba76b2a17636fd885">Test16_OverfitOneExample</a> ()</td></tr>
 </table>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a3d1a44c506b20d170293448dd111ad07" name="a3d1a44c506b20d170293448dd111ad07"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d1a44c506b20d170293448dd111ad07">&#9670;&#160;</a></span>LoadMNISTPNG()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; float &gt; Deep::PCNDiagnostics::LoadMNISTPNG </td>
+          <td>(</td>
+          <td class="paramtype">const std::string &amp;</td>          <td class="paramname"><span class="paramname"><em>path</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac707698472b39f6737f2ee8953e52a8c" name="ac707698472b39f6737f2ee8953e52a8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac707698472b39f6737f2ee8953e52a8c">&#9670;&#160;</a></span>RunAllTests()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::RunAllTests </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af9e86a1e9a6154232ae822eb4f2e3e15" name="af9e86a1e9a6154232ae822eb4f2e3e15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9e86a1e9a6154232ae822eb4f2e3e15">&#9670;&#160;</a></span>Test10_PredictionConsistency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test10_PredictionConsistency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9999a79346d8f95b87e1185959e801d0" name="a9999a79346d8f95b87e1185959e801d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9999a79346d8f95b87e1185959e801d0">&#9670;&#160;</a></span>Test11_WeightUpdateConsistency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test11_WeightUpdateConsistency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a44ded8bb40cc2e55170285a6448cda6b" name="a44ded8bb40cc2e55170285a6448cda6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44ded8bb40cc2e55170285a6448cda6b">&#9670;&#160;</a></span>Test12_PrecisionStatistics()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test12_PrecisionStatistics </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adbf85a35d7bd2b8a5cb15daa338cf4d4" name="adbf85a35d7bd2b8a5cb15daa338cf4d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbf85a35d7bd2b8a5cb15daa338cf4d4">&#9670;&#160;</a></span>Test13_ActivationSaturation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test13_ActivationSaturation </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aae2b935b3f3d70fb37115ccd1e3ed714" name="aae2b935b3f3d70fb37115ccd1e3ed714"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae2b935b3f3d70fb37115ccd1e3ed714">&#9670;&#160;</a></span>Test14_MemoryLayout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test14_MemoryLayout </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="accd70cb3137bdaf8ba10e619ff4f9da8" name="accd70cb3137bdaf8ba10e619ff4f9da8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accd70cb3137bdaf8ba10e619ff4f9da8">&#9670;&#160;</a></span>Test15_BufferLifecycleAudit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test15_BufferLifecycleAudit </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a213ab194ec7d777ba76b2a17636fd885" name="a213ab194ec7d777ba76b2a17636fd885"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a213ab194ec7d777ba76b2a17636fd885">&#9670;&#160;</a></span>Test16_OverfitOneExample()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test16_OverfitOneExample </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a097ca8bed751e7488873d0ed051663ed" name="a097ca8bed751e7488873d0ed051663ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a097ca8bed751e7488873d0ed051663ed">&#9670;&#160;</a></span>Test1_InferenceConvergence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test1_InferenceConvergence </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af42952821c342107adf2c1e5b19c4adb" name="af42952821c342107adf2c1e5b19c4adb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af42952821c342107adf2c1e5b19c4adb">&#9670;&#160;</a></span>Test2_GradientCheckWeights()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test2_GradientCheckWeights </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9865a11e733935ecabd9ddd0fd41c0d4" name="a9865a11e733935ecabd9ddd0fd41c0d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9865a11e733935ecabd9ddd0fd41c0d4">&#9670;&#160;</a></span>Test3_GradientCheckStates()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test3_GradientCheckStates </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab75dd365d706ca3369b5eb725ae2768a" name="ab75dd365d706ca3369b5eb725ae2768a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab75dd365d706ca3369b5eb725ae2768a">&#9670;&#160;</a></span>Test4_GradientCheckPrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test4_GradientCheckPrecision </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a757c3ed61db0cee28d1e3dd9301c5fdd" name="a757c3ed61db0cee28d1e3dd9301c5fdd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a757c3ed61db0cee28d1e3dd9301c5fdd">&#9670;&#160;</a></span>Test5_ActivationDerivatives()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test5_ActivationDerivatives </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8fce9b1d4d659a43a920d85254a930bc" name="a8fce9b1d4d659a43a920d85254a930bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fce9b1d4d659a43a920d85254a930bc">&#9670;&#160;</a></span>Test6_EnergyDecomposition()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test6_EnergyDecomposition </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a18c896e5158ac778e3ef7c5eb97f3884" name="a18c896e5158ac778e3ef7c5eb97f3884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18c896e5158ac778e3ef7c5eb97f3884">&#9670;&#160;</a></span>Test7_SIMDConsistency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test7_SIMDConsistency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae660afa46eb16a8e714464be1109a604" name="ae660afa46eb16a8e714464be1109a604"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae660afa46eb16a8e714464be1109a604">&#9670;&#160;</a></span>Test8_BatchInvariance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test8_BatchInvariance </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a93399ddea16d062bf378bfddcb1a3c8a" name="a93399ddea16d062bf378bfddcb1a3c8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93399ddea16d062bf378bfddcb1a3c8a">&#9670;&#160;</a></span>Test9_BufferPoisoning()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::PCNDiagnostics::Test9_BufferPoisoning </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>src/<b>PCNDiagnostics.cpp</b></li>
+<li>src/<a class="el" href="PCNDiagnostics_8cpp.html">PCNDiagnostics.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -157,7 +591,7 @@ void&#160;</td><td class="memItemRight"><b>Test16_OverfitOneExample</b> ()</td><
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>Deep</b></li><li class="navelem"><a href="classDeep_1_1PCNDiagnostics.html">PCNDiagnostics</a></li>
+    <li class="navelem"><a href="namespaceDeep.html">Deep</a></li><li class="navelem"><a href="classDeep_1_1PCNDiagnostics.html">PCNDiagnostics</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

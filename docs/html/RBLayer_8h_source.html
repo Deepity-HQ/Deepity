@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: includes/RBLayer.h Source File</title>
+<title>Deepity: include/deepity/layers/RBLayer.h Source File</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -19,6 +19,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -30,7 +31,7 @@
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -96,13 +97,13 @@ $(function(){initNavTree('RBLayer_8h_source.html','',''); });
 <div class="contents">
 <a href="RBLayer_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
-<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &quot;<a class="code" href="Layer_8h.html">Layer.h</a>&quot;</span></div>
-<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &quot;<a class="code" href="Activations_8h.html">Activations.h</a>&quot;</span></div>
+<div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#include &lt;<a class="code" href="Layer_8h.html">deepity/layers/Layer.h</a>&gt;</span></div>
+<div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;<a class="code" href="Activations_8h.html">deepity/Activations.h</a>&gt;</span></div>
 <div class="line"><a id="l00005" name="l00005"></a><span class="lineno">    5</span><span class="preprocessor">#include &lt;cstddef&gt;</span></div>
 <div class="line"><a id="l00006" name="l00006"></a><span class="lineno">    6</span><span class="preprocessor">#include &lt;memory&gt;</span></div>
 <div class="line"><a id="l00007" name="l00007"></a><span class="lineno">    7</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="keyword">namespace </span>Deep</div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceDeep.html">Deep</a></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>{</div>
 <div class="foldopen" id="foldopen00027" data-start="{" data-end="};">
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="classDeep_1_1RBLayer.html">   27</a></span>    <span class="keyword">class </span><a class="code hl_function" href="classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd">RBLayer</a> : <span class="keyword">public</span> <a class="code hl_class" href="classDeep_1_1Layer.html">Layer</a></div>
@@ -115,7 +116,7 @@ $(function(){initNavTree('RBLayer_8h_source.html','',''); });
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                <span class="keywordtype">size_t</span> batchSize = 64, <span class="keywordtype">int</span> stepSize = 30,</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>                <span class="keywordtype">void</span>(*act)(<span class="keywordtype">float</span> *, <span class="keywordtype">size_t</span>) = relu, <span class="keywordtype">void</span>(*dAct)(<span class="keywordtype">float</span> *, <span class="keywordtype">size_t</span>, <span class="keywordtype">bool</span>) = dRelu);</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <a class="code hl_function" href="classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd">~RBLayer</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <a class="code hl_function" href="classDeep_1_1RBLayer.html#a6a42bddaa3f7b7df37c4834908f72783">~RBLayer</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span></div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="keywordtype">void</span> <a class="code hl_function" href="classDeep_1_1RBLayer.html#ab330434bcc4cf32574e23508f714891b">RunPrediction</a>(<span class="keyword">const</span> <span class="keywordtype">float</span> *input, <span class="keywordtype">size_t</span> currentBatchSize) <span class="keyword">noexcept</span>;</div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span></div>
@@ -145,14 +146,14 @@ $(function(){initNavTree('RBLayer_8h_source.html','',''); });
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span></div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="keywordtype">void</span> <a class="code hl_function" href="classDeep_1_1RBLayer.html#ac82d646502e6faf7031c9ff04bf4f972">Attach</a>(<span class="keywordtype">float</span> *ptr) noexcept;</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        [[nodiscard]] <span class="keywordtype">float</span> *GetWeights() const noexcept { <span class="keywordflow">return</span> U; }</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno"><a class="line" href="classDeep_1_1RBLayer.html#a716d52f7ba8028e9276e4e8a61191a9b">  122</a></span>        [[nodiscard]] <span class="keywordtype">float</span> *<a class="code hl_function" href="classDeep_1_1RBLayer.html#a716d52f7ba8028e9276e4e8a61191a9b">GetWeights</a>() const noexcept { <span class="keywordflow">return</span> U; }</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        [[nodiscard]] <span class="keywordtype">size_t</span> <a class="code hl_function" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">GetBatchSize</a>() const noexcept override;</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        [[nodiscard]] <span class="keywordtype">size_t</span> <a class="code hl_function" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">GetInputSize</a>() const noexcept override;</div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        [[nodiscard]] <span class="keywordtype">size_t</span> <a class="code hl_function" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">GetOutputSize</a>() const noexcept override;</div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        [[nodiscard]] <span class="keywordtype">float</span> *<a class="code hl_function" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">GetBeliefs</a>() noexcept override;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        [[nodiscard]] const <span class="keywordtype">float</span> *GetInferenceError() const noexcept;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        [[nodiscard]] const <span class="keywordtype">float</span> *<a class="code hl_function" href="classDeep_1_1RBLayer.html#a23cb469a779702cc89c110cb33143f3f">GetInferenceError</a>() const noexcept;</div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span><span class="preprocessor">#ifdef _DEBUG</span></div>
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        <span class="keywordtype">void</span> DebugStats(<span class="keywordtype">int</span> layerIndex) <span class="keyword">const</span>;</div>
@@ -200,15 +201,18 @@ $(function(){initNavTree('RBLayer_8h_source.html','',''); });
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>} <span class="comment">// namespace Deep</span></div>
 <div class="ttc" id="aActivations_8h_html"><div class="ttname"><a href="Activations_8h.html">Activations.h</a></div><div class="ttdoc">Defines the activation functions of a predictive coding model.</div></div>
 <div class="ttc" id="aLayer_8h_html"><div class="ttname"><a href="Layer_8h.html">Layer.h</a></div><div class="ttdoc">Virtual Layer.</div></div>
-<div class="ttc" id="aclassDeep_1_1Layer_html"><div class="ttname"><a href="classDeep_1_1Layer.html">Deep::Layer</a></div><div class="ttdoc">A deepity layer virtual class.</div><div class="ttdef"><b>Definition</b> Layer.h:16</div></div>
+<div class="ttc" id="aclassDeep_1_1Layer_html"><div class="ttname"><a href="classDeep_1_1Layer.html">Deep::Layer</a></div><div class="ttdoc">A deepity layer virtual class.</div><div class="ttdef"><b>Definition</b> Layer.h:25</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a025abc761fcbe169c099e505437d3c25"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a025abc761fcbe169c099e505437d3c25">Deep::RBLayer::CalcError</a></div><div class="ttdeci">void CalcError(const float *bottomUp, const float *topDown, size_t currentBatchSize) noexcept</div><div class="ttdoc">Computes the precision-weighted prediction errors.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:128</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a0a37d411bef0cba234593ce5956a5227"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">Deep::RBLayer::GetBeliefs</a></div><div class="ttdeci">float * GetBeliefs() noexcept override</div><div class="ttdoc">Should return belief state z.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:293</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a142cba3bec26565888d16900bbc95ffb"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">Deep::RBLayer::GetErrors</a></div><div class="ttdeci">const float * GetErrors() const noexcept override</div><div class="ttdoc">Should return errors e.</div><div class="ttdef"><b>Definition</b> RBLayer.h:114</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a1a1d6e8cd0114fc0cad24027e437d8bd"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">Deep::RBLayer::UpdateWeights</a></div><div class="ttdeci">void UpdateWeights() noexcept override</div><div class="ttdoc">Parameter-less override for generic layer weight updates.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:284</div></div>
+<div class="ttc" id="aclassDeep_1_1RBLayer_html_a23cb469a779702cc89c110cb33143f3f"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a23cb469a779702cc89c110cb33143f3f">Deep::RBLayer::GetInferenceError</a></div><div class="ttdeci">const float * GetInferenceError() const noexcept</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:294</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a386066e86ed987fd00d1c0b5f0510755"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">Deep::RBLayer::UpdateState</a></div><div class="ttdeci">void UpdateState() noexcept override</div><div class="ttdoc">Computes the state derivatives and applies them to current beliefs.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:279</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a563d7ef929d3ef37359c0c2c6f87cc02"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">Deep::RBLayer::GetOutputSize</a></div><div class="ttdeci">size_t GetOutputSize() const noexcept override</div><div class="ttdoc">Should return output size.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:292</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a5b570e93bdcfb61173523378d0009de7"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a5b570e93bdcfb61173523378d0009de7">Deep::RBLayer::UpdateBeliefs</a></div><div class="ttdeci">void UpdateBeliefs(const float *bottomUp, const float *topDown, size_t currentBatchSize) noexcept</div><div class="ttdoc">Updates internal state beliefs via gradient descent on the prediction error.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:162</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a5cef7ef9caec43df0f7496c5363e07aa"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa">Deep::RBLayer::Flush</a></div><div class="ttdeci">void Flush() noexcept override</div><div class="ttdoc">Flushes remaining batches.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:256</div></div>
+<div class="ttc" id="aclassDeep_1_1RBLayer_html_a6a42bddaa3f7b7df37c4834908f72783"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a6a42bddaa3f7b7df37c4834908f72783">Deep::RBLayer::~RBLayer</a></div><div class="ttdeci">~RBLayer() override</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:21</div></div>
+<div class="ttc" id="aclassDeep_1_1RBLayer_html_a716d52f7ba8028e9276e4e8a61191a9b"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a716d52f7ba8028e9276e4e8a61191a9b">Deep::RBLayer::GetWeights</a></div><div class="ttdeci">float * GetWeights() const noexcept</div><div class="ttdef"><b>Definition</b> RBLayer.h:122</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_a743571cb2fde273c62b820d90c618c66"><div class="ttname"><a href="classDeep_1_1RBLayer.html#a743571cb2fde273c62b820d90c618c66">Deep::RBLayer::GetTotalSize</a></div><div class="ttdeci">size_t GetTotalSize() const noexcept</div><div class="ttdoc">Returns the total byte size required by this layer for flat allocation.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:31</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_aa506bb782dcfba7a578c697302723fb6"><div class="ttname"><a href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">Deep::RBLayer::GetBatchSize</a></div><div class="ttdeci">size_t GetBatchSize() const noexcept override</div><div class="ttdoc">Should return batch size.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:290</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_ab22f28aa6c0049bfcff6769fe4ea4cdd"><div class="ttname"><a href="classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd">Deep::RBLayer::RBLayer</a></div><div class="ttdeci">RBLayer(size_t inSize, size_t outSize, float var=1.0f, float var_td=10.0f, float k_1=1e-3f, float k_2=1e-5f, float lmbda=1e-6f, float alpha=1.0f, size_t batchSize=64, int stepSize=30, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</div><div class="ttdoc">Constructs an RBLayer with specified dimensions and hyperparameters.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:8</div></div>
@@ -217,13 +221,14 @@ $(function(){initNavTree('RBLayer_8h_source.html','',''); });
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_ad1fcdf0468974b1af5c7e778e91b2ebf"><div class="ttname"><a href="classDeep_1_1RBLayer.html#ad1fcdf0468974b1af5c7e778e91b2ebf">Deep::RBLayer::RunInferenceStep</a></div><div class="ttdeci">void RunInferenceStep(const float *input, const float *topDown, size_t currentBatchSize) noexcept</div><div class="ttdoc">Executes a single bidirectional inference step integrating bottom-up and top-down signals.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:115</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_ad50379af7001257495455d96b7a5e7e9"><div class="ttname"><a href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">Deep::RBLayer::GetInputSize</a></div><div class="ttdeci">size_t GetInputSize() const noexcept override</div><div class="ttdoc">Should return input size.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:291</div></div>
 <div class="ttc" id="aclassDeep_1_1RBLayer_html_af3f0482e4caeda2e3bce0c0723649705"><div class="ttname"><a href="classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705">Deep::RBLayer::CalculateState</a></div><div class="ttdeci">float CalculateState() noexcept override</div><div class="ttdoc">Calculates the total layer energy state.</div><div class="ttdef"><b>Definition</b> RBLayer.cpp:273</div></div>
+<div class="ttc" id="anamespaceDeep_html"><div class="ttname"><a href="namespaceDeep.html">Deep</a></div><div class="ttdef"><b>Definition</b> ConvPCLayer.cpp:9</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>includes</b></li><li class="navelem"><a href="RBLayer_8h.html">RBLayer.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="dir_792aeb10f41f6ed28420db9157f30d00.html">layers</a></li><li class="navelem"><a href="RBLayer_8h.html">RBLayer.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

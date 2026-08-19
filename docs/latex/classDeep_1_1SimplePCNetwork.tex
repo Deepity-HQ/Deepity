@@ -1,0 +1,335 @@
+\doxysection{Deep::\+Simple\+PCNetwork Class Reference}
+\hypertarget{classDeep_1_1SimplePCNetwork}{}\label{classDeep_1_1SimplePCNetwork}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+
+
+An abstracted class for an array of {\ttfamily \doxylink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}}.  
+
+
+
+
+{\ttfamily \+\#include $<$Simple\+PCNetwork.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}{Simple\+PCNetwork}} (int batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Constructs an empty network with a predetermined batch size. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a0dee15d9e8bc635bd713af7670845394}{\texorpdfstring{$\sim$}{\string~}\+Simple\+PCNetwork}} ()
+\begin{DoxyCompactList}\small\item\em Default destructor; deletes each layer. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a8fd6812b4f86ad0727ed870a723b1d8d}{Simple\+PCNetwork}} (const Simple\+PCNetwork \&)=delete
+\item 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}{Simple\+PCNetwork}} \& \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a045dbcb6ded7afa0bf3d54bb90851b2f}{operator=}} (const \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}{Simple\+PCNetwork}} \&)=delete
+\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_aa384bc2e4c8680e546fa30fadbe26097}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float lmbda, void(\texorpdfstring{$\ast$}{*}act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t), void(\texorpdfstring{$\ast$}{*}d\+Act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool))
+\begin{DoxyCompactList}\small\item\em Adds a layer to the network. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_ab92a4ed5946ba59c9878386bcf8e755f}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float lmbda, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} a\+Type, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} d\+Type)
+\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a727f5326dfd8e9b638a7cf2a4c6902b0}{Randomize\+Weights}} (std::\+mt19937 \&rng)
+\begin{DoxyCompactList}\small\item\em Randomizes the weights of each layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_ae0d3f77469fa220ca3fe0cfdc6f1c17e}{Reset\+State}} () noexcept
+\begin{DoxyCompactList}\small\item\em Resets each layer\textquotesingle{}s state without touching learned weights. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_ac959713c058af0b16cd49dc7f503d8f4}{Clamp}} (const std::\+vector$<$ float $>$ \&input)
+\begin{DoxyCompactList}\small\item\em Clamps the input to the first layer, necessary for prediction. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a413894fb1d5b5da37159f1b728339e66}{Calculate\+State}} ()
+\begin{DoxyCompactList}\small\item\em Calculates the state of each layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a7dead28868c2df0a25844d72c724fb03}{Update\+State}} ()
+\begin{DoxyCompactList}\small\item\em Updates each layer\textquotesingle{}s state. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a37cef4fd66daf8a0fe188e8d68f1fd16}{Update\+Weights}} ()
+\begin{DoxyCompactList}\small\item\em Updates each layer\textquotesingle{}s weights. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a005cc58fff7ac41f673df3a17d779b5c}{Get\+Terminal\+Layer}} () noexcept
+\begin{DoxyCompactList}\small\item\em Returns the network\textquotesingle{}s terminal (final) layer. \end{DoxyCompactList}\item 
+std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a73ed2efc5d4b9668d1730480084c2fdc}{Get\+Layers}} () noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
+const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a0c20be6b03d7c36dbf56ac7d7594db00}{Get\+Layers}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a55a9abe5da408b0520355d2fb43e64b0}{Get\+Batch\+Size}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns the batch size for the network\textquotesingle{}s layers. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a93c9e277b76d47da05176f27925467a0}{Set\+Optimizer}} (\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} o) noexcept
+\begin{DoxyCompactList}\small\item\em Sets the optimizer used for weight updates on every layer. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a85b53cd16ead4c216534c799cf2c83a3}{Train\+Step}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Runs a complete training step (clamp, settle, update, unclamp). \end{DoxyCompactList}\item 
+std::\+vector$<$ float $>$ \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a9d0bb526df254fd0cb83cb8f0557128e}{Predict}} (const std::\+vector$<$ float $>$ \&x, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Runs a forward prediction pass (clamp, settle, read). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_ab002be580e5752b5861d2dfa77072ede}{Compile}} ()
+\begin{DoxyCompactList}\small\item\em Loads all layers into one contiguous block of memory. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+An abstracted class for an array of {\ttfamily \doxylink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}}. 
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1SimplePCNetwork_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!SimplePCNetwork@{SimplePCNetwork}}
+\index{SimplePCNetwork@{SimplePCNetwork}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{SimplePCNetwork()}{SimplePCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48} 
+Deep::\+\+Simple\+PCNetwork::\+\+Simple\+PCNetwork (\begin{DoxyParamCaption}\item[{int}]{batch\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}, {\ttfamily [noexcept]}}
+
+
+
+Constructs an empty network with a predetermined batch size. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em batch\+Size} & Batch size \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a0dee15d9e8bc635bd713af7670845394}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!````~SimplePCNetwork@{\texorpdfstring{$\sim$}{\string~}SimplePCNetwork}}
+\index{````~SimplePCNetwork@{\texorpdfstring{$\sim$}{\string~}SimplePCNetwork}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}SimplePCNetwork()}{\string~SimplePCNetwork()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a0dee15d9e8bc635bd713af7670845394} 
+Deep::\+\+Simple\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Simple\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Default destructor; deletes each layer. 
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_a8fd6812b4f86ad0727ed870a723b1d8d}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!SimplePCNetwork@{SimplePCNetwork}}
+\index{SimplePCNetwork@{SimplePCNetwork}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{SimplePCNetwork()}{SimplePCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a8fd6812b4f86ad0727ed870a723b1d8d} 
+Deep::\+\+Simple\+PCNetwork::\+\+Simple\+PCNetwork (\begin{DoxyParamCaption}\item[{const Simple\+PCNetwork \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1SimplePCNetwork_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1SimplePCNetwork_ab92a4ed5946ba59c9878386bcf8e755f}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!AddLayer@{AddLayer}}
+\index{AddLayer@{AddLayer}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_ab92a4ed5946ba59c9878386bcf8e755f} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{size}{, }\item[{int}]{next\+Size}{, }\item[{float}]{lr}{, }\item[{float}]{ir}{, }\item[{float}]{lmbda}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{a\+Type}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{d\+Type}{}\end{DoxyParamCaption})}
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_aa384bc2e4c8680e546fa30fadbe26097}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!AddLayer@{AddLayer}}
+\index{AddLayer@{AddLayer}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_aa384bc2e4c8680e546fa30fadbe26097} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{size}{, }\item[{int}]{next\+Size}{, }\item[{float}]{lr}{, }\item[{float}]{ir}{, }\item[{float}]{lmbda}{, }\item[{void(\texorpdfstring{$\ast$}{*}}]{act~}{)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t), }\item[{void(\texorpdfstring{$\ast$}{*}}]{d\+Act~}{)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)}\end{DoxyParamCaption})}
+
+
+
+Adds a layer to the network. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & input size \\
+\hline
+{\em next\+Size} & output size \\
+\hline
+{\em lr} & learning rate for beliefs \\
+\hline
+{\em ir} & learning rate for weights \\
+\hline
+{\em lmbda} & weight decay (L2 regularization) coefficient \\
+\hline
+{\em act} & activation function \\
+\hline
+{\em d\+Act} & derivative of previous activation function \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a413894fb1d5b5da37159f1b728339e66}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!CalculateState@{CalculateState}}
+\index{CalculateState@{CalculateState}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{CalculateState()}{CalculateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a413894fb1d5b5da37159f1b728339e66} 
+float Deep::\+\+Simple\+PCNetwork::\+\+Calculate\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Calculates the state of each layer. 
+
+\begin{DoxyReturn}{Returns}
+Returns total energy 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_ac959713c058af0b16cd49dc7f503d8f4}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!Clamp@{Clamp}}
+\index{Clamp@{Clamp}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{Clamp()}{Clamp()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_ac959713c058af0b16cd49dc7f503d8f4} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Clamp (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{input}{}\end{DoxyParamCaption})}
+
+
+
+Clamps the input to the first layer, necessary for prediction. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & reference to input vector \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCNetwork_ab002be580e5752b5861d2dfa77072ede}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!Compile@{Compile}}
+\index{Compile@{Compile}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{Compile()}{Compile()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_ab002be580e5752b5861d2dfa77072ede} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Compile (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Loads all layers into one contiguous block of memory. 
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_a55a9abe5da408b0520355d2fb43e64b0}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a55a9abe5da408b0520355d2fb43e64b0} 
+int Deep::\+\+Simple\+PCNetwork::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the batch size for the network\textquotesingle{}s layers. 
+
+\begin{DoxyReturn}{Returns}
+size\+\_\+t batch\+Size 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a0c20be6b03d7c36dbf56ac7d7594db00}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!GetLayers@{GetLayers}}
+\index{GetLayers@{GetLayers}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a0c20be6b03d7c36dbf56ac7d7594db00} 
+const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& Deep::\+\+Simple\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A const reference to the internal layer list. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a73ed2efc5d4b9668d1730480084c2fdc}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!GetLayers@{GetLayers}}
+\index{GetLayers@{GetLayers}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a73ed2efc5d4b9668d1730480084c2fdc} 
+std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& Deep::\+\+Simple\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A reference to the internal layer list. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a005cc58fff7ac41f673df3a17d779b5c}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!GetTerminalLayer@{GetTerminalLayer}}
+\index{GetTerminalLayer@{GetTerminalLayer}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetTerminalLayer()}{GetTerminalLayer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a005cc58fff7ac41f673df3a17d779b5c} 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*} Deep::\+\+Simple\+PCNetwork::\+\+Get\+Terminal\+Layer (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the network\textquotesingle{}s terminal (final) layer. 
+
+\begin{DoxyReturn}{Returns}
+Pointer to the last layer added via \doxylink{classDeep_1_1SimplePCNetwork_aa384bc2e4c8680e546fa30fadbe26097}{Add\+Layer()}. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a045dbcb6ded7afa0bf3d54bb90851b2f}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!operator=@{operator=}}
+\index{operator=@{operator=}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a045dbcb6ded7afa0bf3d54bb90851b2f} 
+\doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}{Simple\+PCNetwork}} \& Deep::\+\+Simple\+PCNetwork::\+operator= (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork_a2e9fea4af3192bea1d016ae25e9f0d48}{Simple\+PCNetwork}} \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_a9d0bb526df254fd0cb83cb8f0557128e}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!Predict@{Predict}}
+\index{Predict@{Predict}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{Predict()}{Predict()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a9d0bb526df254fd0cb83cb8f0557128e} 
+std::\+vector$<$ float $>$ Deep::\+\+Simple\+PCNetwork::\+\+Predict (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Runs a forward prediction pass (clamp, settle, read). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & The batched input data \\
+\hline
+{\em inference\+Steps} & The number of relaxation iterations \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A vector containing the batched predictions 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a727f5326dfd8e9b638a7cf2a4c6902b0}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!RandomizeWeights@{RandomizeWeights}}
+\index{RandomizeWeights@{RandomizeWeights}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{RandomizeWeights()}{RandomizeWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a727f5326dfd8e9b638a7cf2a4c6902b0} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Randomize\+Weights (\begin{DoxyParamCaption}\item[{std::\+mt19937 \&}]{rng}{}\end{DoxyParamCaption})}
+
+
+
+Randomizes the weights of each layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rng} & The classic Mersenne Twister \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCNetwork_ae0d3f77469fa220ca3fe0cfdc6f1c17e}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!ResetState@{ResetState}}
+\index{ResetState@{ResetState}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{ResetState()}{ResetState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_ae0d3f77469fa220ca3fe0cfdc6f1c17e} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Reset\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Resets each layer\textquotesingle{}s state without touching learned weights. 
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_a93c9e277b76d47da05176f27925467a0}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!SetOptimizer@{SetOptimizer}}
+\index{SetOptimizer@{SetOptimizer}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{SetOptimizer()}{SetOptimizer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a93c9e277b76d47da05176f27925467a0} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Set\+Optimizer (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}}}]{o}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Sets the optimizer used for weight updates on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & The optimizer type to apply. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a85b53cd16ead4c216534c799cf2c83a3}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!TrainStep@{TrainStep}}
+\index{TrainStep@{TrainStep}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{TrainStep()}{TrainStep()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a85b53cd16ead4c216534c799cf2c83a3} 
+float Deep::\+\+Simple\+PCNetwork::\+\+Train\+Step (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{const std::\+vector$<$ float $>$ \&}]{y}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Runs a complete training step (clamp, settle, update, unclamp). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & The batched input data \\
+\hline
+{\em y} & The batched target data \\
+\hline
+{\em inference\+Steps} & The number of relaxation iterations \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The final energy state of the network before weight updates 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCNetwork_a7dead28868c2df0a25844d72c724fb03}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!UpdateState@{UpdateState}}
+\index{UpdateState@{UpdateState}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdateState()}{UpdateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a7dead28868c2df0a25844d72c724fb03} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Update\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Updates each layer\textquotesingle{}s state. 
+
+\Hypertarget{classDeep_1_1SimplePCNetwork_a37cef4fd66daf8a0fe188e8d68f1fd16}\index{Deep::SimplePCNetwork@{Deep::SimplePCNetwork}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::SimplePCNetwork@{Deep::SimplePCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCNetwork_a37cef4fd66daf8a0fe188e8d68f1fd16} 
+void Deep::\+\+Simple\+PCNetwork::\+\+Update\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Updates each layer\textquotesingle{}s weights. 
+
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+networks/\+\doxymbox{\hyperlink{SimplePCNetwork_8h}{Simple\+PCNetwork.\+h}}\item 
+src/\+\doxymbox{\hyperlink{SimplePCNetwork_8cpp}{Simple\+PCNetwork.\+cpp}}\end{DoxyCompactItemize}

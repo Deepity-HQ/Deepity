@@ -1,0 +1,661 @@
+/* ==========================================================================
+   customdoxygen.css
+   Dark theme for Doxygen HTML output, matched to the Deepity site palette.
+
+   USAGE:
+     1. Save this file next to your Doxyfile (e.g. docs/customdoxygen.css).
+     2. In your Doxyfile set:
+          GENERATE_TREEVIEW     = YES     (recommended, styles below assume it)
+          HTML_EXTRA_STYLESHEET = customdoxygen.css
+     3. Re-run doxygen.
+
+   Built against classic Doxygen HTML output (1.9.x doxygen.css structure).
+   If you're on a very different Doxygen version some selectors may need
+   small tweaks, but the variables at the top should carry over cleanly.
+   ========================================================================== */
+
+:root {
+  /* Core site tokens (from index.css) */
+  --dx-bg: #00111c;
+  --dx-bg-gradient: radial-gradient(circle at 70% 10%, #16324a 0%, #0d1420 55%, #00111c 100%);
+  --dx-panel: #131b2b;
+  --dx-border: #263149;
+  --dx-accent: #5ec8f2;
+
+  --dx-purple: #9a53c3;
+  --dx-violet: #7556d6;
+  --dx-blue: #4169e1;
+
+  --dx-text: #ffffff;
+  --dx-text-dim: rgba(255, 255, 255, 0.75);
+  --dx-text-muted: rgba(255, 255, 255, 0.55);
+
+  --dx-scrollbar-track: #0d1420;
+  --dx-scrollbar-thumb: #263149;
+  --dx-scrollbar-thumb-hover: #5ec8f2;
+
+  --dx-code-bg: #0d1420;
+
+  /* A red distinct from the purple/violet/blue accent trio, used only for
+     warning/attention/bug admonitions so they still read as "danger" */
+  --dx-red: #e2545a;
+}
+
+/* --------------------------------------------------------------------
+   Native Doxygen theme variables (Doxygen 1.10+ exposes its own palette
+   as CSS custom properties in doxygen.css). Overriding these directly is
+   far more reliable than chasing individual selectors, since Doxygen's
+   own rules already reference them. This stylesheet loads after
+   doxygen.css, so redeclaring :root here wins.
+
+   NOTE: the four below are confirmed from your inspected output. Doxygen
+   defines many more (things like --page-background-color,
+   --page-foreground-color, --code-*-color, --nav-*-color, etc.) — if you
+   spot more mismatched colors, inspect the element, find the var(--...)
+   it's using, and send me the name; I'll add it here directly rather than
+   guessing at selectors.
+   -------------------------------------------------------------------- */
+
+:root {
+  /* Parameter names inside function signatures/docs (was #602020) */
+  --memdef-param-name-color: var(--dx-accent);
+
+  /* Member description text in the summary/declaration tables (was gray
+     on dark blue — unreadable) */
+  --memdecl-foreground-color: var(--dx-text-dim);
+
+  /* Alternating rows in class/file/namespace index tables (was
+     #F8F9FC / white) */
+  --index-odd-item-bg-color: var(--dx-panel);
+  --index-even-item-bg-color: var(--dx-panel);
+}
+
+/* --------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------- */
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dx-scrollbar-thumb) var(--dx-scrollbar-track);
+}
+
+body, table, div, p, dl {
+  font-family: 'Inter', 'Roboto', sans-serif;
+  color: var(--dx-text-dim);
+}
+
+body {
+  background-color: var(--dx-bg);
+  background-image: var(--dx-bg-gradient);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--dx-text);
+  font-weight: 600;
+}
+
+h1.groupheader,
+div.headertitle h1 {
+  border-bottom: 1px solid var(--dx-border);
+  padding-bottom: 0.4em;
+}
+
+/* Per-page header block (div.header, holding .headertitle / .summary) */
+div.header {
+  background: var(--dx-panel);
+  background-image: none;
+  border-bottom: 1px solid var(--dx-border);
+}
+
+div.header .headertitle,
+div.header .title {
+  color: var(--dx-text);
+  border: none;
+}
+
+div.header .summary {
+  color: var(--dx-text-dim);
+}
+
+div.header .summary a {
+  color: var(--dx-accent);
+}
+
+div.header .ingroups,
+div.header .ingroups a {
+  color: var(--dx-text-muted);
+}
+
+/* Per-page outline / quick-nav side panel: the resizable panel Doxygen
+   renders as
+     #page-nav.page-nav-panel > #page-nav-tree > #page-nav-contents > ul.page-outline
+   with li items (some being section headers like "Public Member Functions")
+   each holding .item > .arrow > .arrowhead, then an <a>. */
+
+#page-nav.page-nav-panel {
+  background: var(--dx-bg) !important;
+  border-left: 1px solid var(--dx-border);
+}
+
+#page-nav-resize-handle {
+  background: var(--dx-border);
+}
+
+#page-nav-tree,
+#page-nav-contents {
+  background: transparent !important;
+}
+
+ul.page-outline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+ul.page-outline li {
+  background: transparent !important;
+}
+
+ul.page-outline li .item {
+  color: var(--dx-text-dim);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+ul.page-outline li .item a {
+  color: var(--dx-text-dim) !important;
+  text-decoration: none;
+}
+
+ul.page-outline li .item a:hover,
+ul.page-outline li .item:hover {
+  background: var(--dx-border);
+}
+
+ul.page-outline li .item a:hover {
+  color: var(--dx-accent) !important;
+}
+
+/* Section headers, e.g. "Public Member Functions" / "Member Function
+   Documentation" — these li's have an id starting nav-header- */
+ul.page-outline li[id^="nav-header-"] > .item {
+  font-weight: 600;
+  color: var(--dx-text);
+}
+
+ul.page-outline li[id^="nav-header-"] > .item a {
+  color: var(--dx-text) !important;
+}
+
+/* Expand/collapse triangle icons, drawn via CSS border-triangle trick */
+ul.page-outline .arrowhead {
+  border-color: transparent transparent transparent var(--dx-text-muted) !important;
+}
+
+ul.page-outline .arrowhead.opened {
+  border-color: var(--dx-text-muted) transparent transparent transparent !important;
+}
+
+a {
+  color: var(--dx-accent);
+  text-decoration: none;
+  transition: color 0.15s ease-in-out;
+}
+
+a:hover,
+a:focus {
+  color: var(--dx-blue);
+  text-decoration: underline;
+}
+
+a.el {
+  color: var(--dx-accent);
+  font-weight: 500;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--dx-border);
+}
+
+/* Webkit scrollbars everywhere */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--dx-scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--dx-scrollbar-thumb);
+  border-radius: 6px;
+  border: 2px solid var(--dx-scrollbar-track);
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--dx-scrollbar-thumb-hover);
+}
+::-webkit-scrollbar-corner {
+  background: var(--dx-scrollbar-track);
+}
+
+/* --------------------------------------------------------------------
+   Top bar / project header
+   -------------------------------------------------------------------- */
+
+#top {
+  background: var(--dx-panel);
+  border-bottom: 1px solid var(--dx-border);
+}
+
+#titlearea {
+  background: var(--dx-panel);
+  border-bottom: 1px solid var(--dx-border);
+}
+
+#projectname {
+  color: var(--dx-text);
+  font-weight: 700;
+}
+
+#projectbrief,
+#projectnumber {
+  color: var(--dx-text-muted);
+}
+
+/* Tabs (top nav) */
+.tabs, .tabs2, .tabs3 {
+  background: var(--dx-panel);
+  border-bottom: 1px solid var(--dx-border);
+}
+
+.tablist {
+  background: transparent;
+}
+
+.tablist li {
+  background: transparent;
+}
+
+.tablist a {
+  color: var(--dx-text-dim);
+  border: none;
+}
+
+.tablist li.current a,
+.tablist a:hover {
+  color: var(--dx-text);
+  background: linear-gradient(to right, var(--dx-purple), var(--dx-violet), var(--dx-blue));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* --------------------------------------------------------------------
+   Main menu (#main-menu / ul.sm-dox — the horizontal top menu bar that
+   Doxygen's smartmenus JS renders with a white background by default,
+   used whether or not GENERATE_TREEVIEW is on)
+   -------------------------------------------------------------------- */
+
+#main-menu,
+.sm-dox {
+  background: var(--dx-panel) !important;
+  background-image: none !important;
+  border-bottom: 1px solid var(--dx-border);
+}
+
+.sm-dox a,
+.sm-dox a:visited {
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--dx-text-dim) !important;
+  text-shadow: none !important;
+}
+
+.sm-dox a:hover,
+.sm-dox a:active,
+.sm-dox a:focus,
+.sm-dox a.highlighted {
+  background: var(--dx-border) !important;
+  background-image: none !important;
+  color: var(--dx-text) !important;
+}
+
+.sm-dox a span.sub-arrow {
+  border-color: var(--dx-text-dim) transparent transparent transparent;
+}
+
+/* Dropdown submenus */
+.sm-dox ul {
+  background: var(--dx-panel) !important;
+  border: 1px solid var(--dx-border) !important;
+}
+
+.sm-dox ul a {
+  color: var(--dx-text-dim) !important;
+  border-color: var(--dx-border) !important;
+}
+
+.sm-dox ul a:hover {
+  background: var(--dx-border) !important;
+  color: var(--dx-text) !important;
+}
+
+/* --------------------------------------------------------------------
+   Sidebar / navigation tree
+   -------------------------------------------------------------------- */
+
+#side-nav {
+  background: var(--dx-bg);
+  border-right: 1px solid var(--dx-border);
+}
+
+#nav-tree {
+  background: var(--dx-bg);
+}
+
+#nav-tree .item {
+  color: var(--dx-text-dim);
+}
+
+#nav-tree .selected {
+  background: linear-gradient(90deg, var(--dx-panel), transparent);
+  border-left: 2px solid var(--dx-accent);
+}
+
+#nav-tree a {
+  color: var(--dx-text-dim);
+}
+
+#nav-tree a:focus,
+#nav-tree a:hover,
+#nav-tree .selected a {
+  color: var(--dx-accent);
+}
+
+#nav-tree .arrow {
+  color: var(--dx-text-muted);
+}
+
+#nav-sync img {
+  filter: invert(1) brightness(1.4);
+}
+
+#nav-tree-contents {
+  background: var(--dx-bg);
+}
+
+.ui-resizable-handle {
+  background: var(--dx-border) !important;
+}
+
+/* --------------------------------------------------------------------
+   Search box
+   -------------------------------------------------------------------- */
+
+#MSearchBox {
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-border);
+  border-radius: 6px;
+}
+
+#MSearchField {
+  background: transparent;
+  color: var(--dx-text);
+}
+
+.left #MSearchSelect, .right #MSearchSelect {
+  filter: invert(1);
+}
+
+#MSearchResultsWindow {
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-border);
+}
+
+.SRPage, .SRChildren {
+  background: var(--dx-panel);
+  color: var(--dx-text-dim);
+}
+
+.SRResult {
+  background: var(--dx-panel);
+}
+
+.SRSymbol {
+  color: var(--dx-accent);
+}
+
+a.SRScope {
+  color: var(--dx-text-dim);
+}
+
+/* --------------------------------------------------------------------
+   Content panels: memitem boxes (functions, classes, members)
+   -------------------------------------------------------------------- */
+
+div.contents {
+  color: var(--dx-text-dim);
+}
+
+.memitem {
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-border);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.memproto, dl.reflist dt {
+  background: var(--dx-panel);
+  background-image: none;
+  border-bottom: 1px solid var(--dx-border);
+  color: var(--dx-text);
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.memname, .memitem .paramtype, .memitem .paramname {
+  color: var(--dx-text);
+}
+
+.memdoc, dl.reflist dd {
+  background: var(--dx-panel);
+  border: none;
+  color: var(--dx-text-dim);
+}
+
+.memtitle {
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-border);
+  border-bottom: none;
+  color: var(--dx-text);
+}
+
+.memnav {
+  background: var(--dx-panel);
+  border: 1px solid var(--dx-border);
+}
+
+/* Summary tables (member lists at top of class/file pages) */
+table.memberdecls {
+  color: var(--dx-text-dim);
+}
+
+.memberdecls td.memItemLeft,
+.memberdecls td.memItemRight,
+.memberdecls td.memTemplItemLeft,
+.memberdecls td.memTemplItemRight,
+.memberdecls td.memTemplParams {
+  background: var(--dx-panel);
+  border: none;
+}
+
+.memberdecls td.memSeparator {
+  background: transparent;
+  border-bottom: 1px solid var(--dx-border);
+}
+
+.memItemLeft a, .memItemRight a, .memTemplItemLeft a, .memTemplItemRight a {
+  color: var(--dx-accent);
+}
+
+h2.groupheader {
+  border-bottom: 1px solid var(--dx-border);
+  color: var(--dx-text);
+}
+
+/* --------------------------------------------------------------------
+   Generic tables
+   -------------------------------------------------------------------- */
+
+table.markdownTable,
+table.doxtable {
+  border: 1px solid var(--dx-border);
+  border-collapse: collapse;
+}
+
+table.markdownTable th, table.doxtable th {
+  background: var(--dx-panel);
+  color: var(--dx-text);
+  border: 1px solid var(--dx-border);
+}
+
+table.markdownTable td, table.doxtable td {
+  border: 1px solid var(--dx-border);
+  color: var(--dx-text-dim);
+}
+
+th.markdownTableHeadLeft, th.markdownTableHeadRight, th.markdownTableHeadCenter, th.markdownTableHeadNone {
+  background: var(--dx-panel);
+}
+
+/* --------------------------------------------------------------------
+   Code blocks / fragments
+   -------------------------------------------------------------------- */
+
+div.fragment, pre.fragment {
+  background: var(--dx-code-bg);
+  border: 1px solid var(--dx-border);
+  border-radius: 6px;
+  color: var(--dx-text-dim);
+}
+
+div.line {
+  color: var(--dx-text-dim);
+}
+
+div.line .lineno {
+  background: var(--dx-panel);
+  border-right: 1px solid var(--dx-border);
+  color: var(--dx-text-muted);
+}
+
+span.comment { color: #6a9955; }
+span.keyword, span.keywordtype, span.keywordflow { color: var(--dx-violet); }
+span.stringliteral { color: #ce9178; }
+span.preprocessor { color: var(--dx-purple); }
+
+code {
+  color: var(--dx-accent);
+  background: var(--dx-code-bg);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+}
+
+/* Inline code from single-backtick markdown, rendered as <tt class="tt"> or
+   <span class="tt"> depending on Doxygen version */
+tt, .tt, code.tt, span.tt {
+  color: var(--dx-accent) !important;
+  background: var(--dx-code-bg) !important;
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+a tt, a .tt, a code.tt {
+  color: var(--dx-accent) !important;
+}
+
+/* --------------------------------------------------------------------
+   Directory / file listing tables
+   -------------------------------------------------------------------- */
+
+.directory {
+  color: var(--dx-text-dim);
+}
+
+.directory td.entry a {
+  color: var(--dx-text-dim);
+}
+
+.directory td.entry a.dirlink,
+.directory .levels span {
+  color: var(--dx-accent);
+}
+
+.directory tr.even {
+  background: var(--dx-panel);
+}
+
+.directory tr {
+  background: var(--dx-panel);
+}
+
+.directory tr:hover {
+  background: var(--dx-border);
+}
+
+.icona, .icon {
+  background: var(--dx-blue);
+}
+
+/* --------------------------------------------------------------------
+   Misc: params, notes, deprecated, footer
+   -------------------------------------------------------------------- */
+
+dl.params .paramname,
+dl.tparams .paramname {
+  color: var(--dx-accent);
+}
+
+dl.note, dl.warning, dl.attention, dl.deprecated, dl.bug, dl.todo {
+  border-left: 4px solid var(--dx-accent);
+  background: var(--dx-panel);
+  color: var(--dx-text-dim);
+}
+
+dl.warning, dl.attention, dl.bug {
+  border-left-color: var(--dx-red);
+}
+
+#nav-path {
+  background: var(--dx-panel);
+  border-top: 1px solid var(--dx-border);
+}
+
+#nav-path ul {
+  background: none;
+}
+
+.navpath li.navelem a {
+  color: var(--dx-text-dim);
+}
+
+.navpath li.navelem a:hover {
+  color: var(--dx-accent);
+}
+
+address.footer {
+  color: var(--dx-text-muted);
+  border-top: 1px solid var(--dx-border);
+}
+
+/* Class hierarchy / inheritance diagrams (SVG via graphviz) keep their own
+   colors, but give the surrounding panel a matching background */
+.center, .zoom {
+  background: transparent;
+}
+
+img.formulaDsp, img.formulaInl {
+  filter: invert(0.92) hue-rotate(180deg);
+}

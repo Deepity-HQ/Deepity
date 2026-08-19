@@ -1,0 +1,372 @@
+\doxysection{Deep::\+Conv\+PCNetwork Class Reference}
+\hypertarget{classDeep_1_1ConvPCNetwork}{}\label{classDeep_1_1ConvPCNetwork}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+
+
+A convolutional Predictive Coding (PC) network:\+ an ordered stack of \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} instances sharing a single contiguous \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, trained via iterative energy-\/relaxation rather than backpropagation.  
+
+
+
+
+{\ttfamily \+\#include $<$Conv\+PCNetwork.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} (int batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Constructs an empty convolutional PC network for a fixed batch size. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d}{\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork}} ()
+\begin{DoxyCompactList}\small\item\em Destroys the network, freeing every owned \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} and releasing the backing \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_adc5f4792666bdacfabea87325afb0f9d}{Conv\+PCNetwork}} (const Conv\+PCNetwork \&)=delete
+\begin{DoxyCompactList}\small\item\em Deleted:\+ \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork} owns raw layer pointers and a \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, so copying is not supported. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} \& \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a622e6a7baea151de32b1b507a16372b1}{operator=}} (const \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} \&)=delete
+\begin{DoxyCompactList}\small\item\em Deleted:\+ \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork} owns raw layer pointers and a \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, so copy-\/assignment is not supported. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer}} (int in\+Channels, int out\+Channels, int in\+Height, int in\+Width, int kernelH, int kernelW, int strideH=1, int strideW=1, int padH=0, int padW=0, float lr=1e-\/6f, float ir=0.\+1f, float pr=0.\+01f, float lmbda=1e-\/2f, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} a\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Activation\+Type::\+\+RELU}}, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} d\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Activation\+Type::\+d\+RELU}})
+\begin{DoxyCompactList}\small\item\em Adds a convolutional layer. Pass out\+Channels=0 to mark a terminal layer (no outgoing prediction), matching \doxylink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}\textquotesingle{}s next\+Size=0 convention. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c}{Compile}} ()
+\begin{DoxyCompactList}\small\item\em Sums every layer\textquotesingle{}s required float count into a single contiguous arena and binds each layer into it. Call after all \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer()} calls, before \doxylink{classDeep_1_1ConvPCNetwork_a3a8eb06c3e271d4096e71d6c3af20f92}{Randomize\+Weights()}. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a3a8eb06c3e271d4096e71d6c3af20f92}{Randomize\+Weights}} (std::\+mt19937 \&rng) noexcept
+\begin{DoxyCompactList}\small\item\em Randomizes every layer\textquotesingle{}s weights (and biases, where applicable) in place using the supplied random engine. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_aedc52b9889272cf4d04ad3d51541c122}{Reset\+State}} () noexcept
+\begin{DoxyCompactList}\small\item\em Resets every layer\textquotesingle{}s beliefs/\+errors (and any other per-\/step state) back to their initial values, without touching learned weights. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a}{Clamp}} (const std::\+vector$<$ float $>$ \&input) noexcept
+\begin{DoxyCompactList}\small\item\em Clamps the flattened, batched input to the first (input) layer. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State}} () noexcept
+\begin{DoxyCompactList}\small\item\em Performs a single energy-\/relaxation step across every layer given the current clamped/\+settled state, without committing the resulting update (see \doxylink{classDeep_1_1ConvPCNetwork_ae46edfcccce5b90eceede8054c4940b6}{Update\+State()}). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_ae46edfcccce5b90eceede8054c4940b6}{Update\+State}} () noexcept
+\begin{DoxyCompactList}\small\item\em Commits the state update computed by the most recent \doxylink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State()} call, advancing every layer\textquotesingle{}s beliefs one relaxation step. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights}} () noexcept
+\begin{DoxyCompactList}\small\item\em Calls \doxylink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights()} on every layer except the terminal one (mirrors \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}; each layer\textquotesingle{}s own \doxylink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights()} is also self-\/guarded against out\+Channels==0, so this is belt-\/and-\/suspenders, not load-\/bearing). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe22354e2}{Update\+Precision}} () noexcept
+\begin{DoxyCompactList}\small\item\em Updates every layer\textquotesingle{}s precision estimate based on current prediction errors, using each layer\textquotesingle{}s configured precision rate (pr). \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d}{Get\+Terminal\+Layer}} () noexcept
+\begin{DoxyCompactList}\small\item\em Returns the network\textquotesingle{}s terminal (final) layer. \end{DoxyCompactList}\item 
+const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0}{Get\+Layers}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_adeaa64c8b54bef23610dff7bc1127d0d}{Get\+Batch\+Size}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns the fixed batch size this network was constructed with. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a96f7fdb1fd4e28f9796f7961473aab0e}{Train\+Step}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Full train step:\+ clamp input+target, settle for inference\+Steps, update weights once, return the final energy. Mirrors \doxylink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{Discriminative\+PCNetwork::\+\+Train\+Step()} exactly. \end{DoxyCompactList}\item 
+std::\+vector$<$ float $>$ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_ade6d0963dd15392166b03510a2b8849d}{Predict}} (const std::\+vector$<$ float $>$ \&x, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Clamps input only, settles, and returns the terminal layer\textquotesingle{}s settled beliefs (flattened, batched). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Friends}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a383316d08df576c124c5514c5f8b3d2b}{PCNDiagnostics}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A convolutional Predictive Coding (PC) network:\+ an ordered stack of \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} instances sharing a single contiguous \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, trained via iterative energy-\/relaxation rather than backpropagation. 
+
+Mirrors \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}\textquotesingle{}s public interface shape (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+\+Update\+State/\+\+Update\+Weights/\+ Train\+Step/\+\+Predict) so the two can generally be swapped for each other, but wires \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} instead of \doxylink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}, making this the convolutional variant.
+
+Typical usage:\+ 
+\begin{DoxyCode}{0}
+\DoxyCodeLine{Deep::ConvPCNetwork\ net(batchSize);}
+\DoxyCodeLine{net.AddLayer(inChannels,\ outChannels,\ inHeight,\ inWidth,\ kernelH,\ kernelW);}
+\DoxyCodeLine{\textcolor{comment}{//\ ...\ additional\ AddLayer()\ calls\ ...}}
+\DoxyCodeLine{net.Compile();}
+\DoxyCodeLine{net.RandomizeWeights(rng);}
+\DoxyCodeLine{\textcolor{keywordtype}{float}\ energy\ =\ net.TrainStep(x,\ y,\ inferenceSteps);}
+
+\end{DoxyCode}
+ 
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1ConvPCNetwork_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!ConvPCNetwork@{ConvPCNetwork}}
+\index{ConvPCNetwork@{ConvPCNetwork}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{ConvPCNetwork()}{ConvPCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a} 
+Deep::\+\+Conv\+PCNetwork::\+\+Conv\+PCNetwork (\begin{DoxyParamCaption}\item[{int}]{batch\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}, {\ttfamily [noexcept]}}
+
+
+
+Constructs an empty convolutional PC network for a fixed batch size. 
+
+No layers exist yet; call \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer()} for each layer followed by a single \doxylink{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c}{Compile()} call before use.
+
+
+\begin{DoxyParams}{Parameters}
+{\em batch\+Size} & Number of samples processed together in every \doxylink{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a}{Clamp()}/\+\+Calculate\+State()/\+\+Update\+State()/\+\+Train\+Step()/\+\+Predict() call. Fixed for the lifetime of the network. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!````~ConvPCNetwork@{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork}}
+\index{````~ConvPCNetwork@{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork()}{\string~ConvPCNetwork()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d} 
+Deep::\+\+Conv\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Destroys the network, freeing every owned \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} and releasing the backing \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}. 
+
+\Hypertarget{classDeep_1_1ConvPCNetwork_adc5f4792666bdacfabea87325afb0f9d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!ConvPCNetwork@{ConvPCNetwork}}
+\index{ConvPCNetwork@{ConvPCNetwork}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{ConvPCNetwork()}{ConvPCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_adc5f4792666bdacfabea87325afb0f9d} 
+Deep::\+\+Conv\+PCNetwork::\+\+Conv\+PCNetwork (\begin{DoxyParamCaption}\item[{const Conv\+PCNetwork \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Deleted:\+ \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork} owns raw layer pointers and a \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, so copying is not supported. 
+
+
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1ConvPCNetwork_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!AddLayer@{AddLayer}}
+\index{AddLayer@{AddLayer}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{in\+Channels}{, }\item[{int}]{out\+Channels}{, }\item[{int}]{in\+Height}{, }\item[{int}]{in\+Width}{, }\item[{int}]{kernelH}{, }\item[{int}]{kernelW}{, }\item[{int}]{strideH}{ = {\ttfamily 1}, }\item[{int}]{strideW}{ = {\ttfamily 1}, }\item[{int}]{padH}{ = {\ttfamily 0}, }\item[{int}]{padW}{ = {\ttfamily 0}, }\item[{float}]{lr}{ = {\ttfamily 1e-\/6f}, }\item[{float}]{ir}{ = {\ttfamily 0.1f}, }\item[{float}]{pr}{ = {\ttfamily 0.01f}, }\item[{float}]{lmbda}{ = {\ttfamily 1e-\/2f}, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{a\+Type}{ = {\ttfamily \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Activation\+Type::\+\+RELU}}}, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{d\+Type}{ = {\ttfamily \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Activation\+Type::\+d\+RELU}}}}\end{DoxyParamCaption})}
+
+
+
+Adds a convolutional layer. Pass out\+Channels=0 to mark a terminal layer (no outgoing prediction), matching \doxylink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}\textquotesingle{}s next\+Size=0 convention. 
+
+Spatial dimensions are NOT inferred from the previous layer\textquotesingle{}s output shape -- in\+Height/\+in\+Width must be passed explicitly for every layer, including layers after the first. See the file-\/level \doxylink{ConvPCNetwork_8h}{Conv\+PCNetwork.\+h} documentation for why.
+
+
+\begin{DoxyParams}{Parameters}
+{\em in\+Channels} & Number of input channels this layer accepts. \\
+\hline
+{\em out\+Channels} & Number of output channels this layer produces; pass 0 to mark this as the terminal layer. \\
+\hline
+{\em in\+Height} & Height of the input feature map for this layer. \\
+\hline
+{\em in\+Width} & Width of the input feature map for this layer. \\
+\hline
+{\em kernelH} & Height of the convolution kernel. \\
+\hline
+{\em kernelW} & Width of the convolution kernel. \\
+\hline
+{\em strideH} & Vertical stride of the convolution. Defaults to 1. \\
+\hline
+{\em strideW} & Horizontal stride of the convolution. Defaults to 1. \\
+\hline
+{\em padH} & Vertical (top/\+bottom) zero-\/padding applied to the input. Defaults to 0. \\
+\hline
+{\em padW} & Horizontal (left/\+right) zero-\/padding applied to the input. Defaults to 0. \\
+\hline
+{\em lr} & Learning rate used for this layer\textquotesingle{}s weight updates. \\
+\hline
+{\em ir} & Inference rate used while settling this layer\textquotesingle{}s beliefs during \doxylink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State()}/\+\+Update\+State(). \\
+\hline
+{\em pr} & Precision-\/update rate used by \doxylink{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe22354e2}{Update\+Precision()}. \\
+\hline
+{\em lmbda} & Weight-\/decay /\+ regularization coefficient applied during \doxylink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights()}. \\
+\hline
+{\em a\+Type} & Activation function applied to this layer\textquotesingle{}s beliefs. Defaults to \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Activation\+Type::\+\+RELU}. \\
+\hline
+{\em d\+Type} & Derivative of the activation function, used during energy relaxation. Defaults to \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Activation\+Type::\+d\+RELU}. Must correspond to {\ttfamily a\+Type}. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!CalculateState@{CalculateState}}
+\index{CalculateState@{CalculateState}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{CalculateState()}{CalculateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86} 
+float Deep::\+\+Conv\+PCNetwork::\+\+Calculate\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Performs a single energy-\/relaxation step across every layer given the current clamped/\+settled state, without committing the resulting update (see \doxylink{classDeep_1_1ConvPCNetwork_ae46edfcccce5b90eceede8054c4940b6}{Update\+State()}). 
+
+\begin{DoxyReturn}{Returns}
+The network\textquotesingle{}s total energy at the current state, summed across all layers -- lower values indicate a better fit between predictions and observed/\+clamped values. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!Clamp@{Clamp}}
+\index{Clamp@{Clamp}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Clamp()}{Clamp()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Clamp (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{input}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Clamps the flattened, batched input to the first (input) layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & Flattened, batched input data. Expected length and layout must match the first layer\textquotesingle{}s in\+Channels/\+in\+Height/\+in\+Width and the network\textquotesingle{}s batch\+Size. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!Compile@{Compile}}
+\index{Compile@{Compile}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Compile()}{Compile()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Compile (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Sums every layer\textquotesingle{}s required float count into a single contiguous arena and binds each layer into it. Call after all \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer()} calls, before \doxylink{classDeep_1_1ConvPCNetwork_a3a8eb06c3e271d4096e71d6c3af20f92}{Randomize\+Weights()}. 
+
+\begin{DoxyWarning}{Warning}
+Calling \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer()} again after \doxylink{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c}{Compile()} has been called results in undefined/\+unsupported behavior, since layer offsets into the arena are fixed at compile time. 
+\end{DoxyWarning}
+\Hypertarget{classDeep_1_1ConvPCNetwork_adeaa64c8b54bef23610dff7bc1127d0d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_adeaa64c8b54bef23610dff7bc1127d0d} 
+int Deep::\+\+Conv\+PCNetwork::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the fixed batch size this network was constructed with. 
+
+\begin{DoxyReturn}{Returns}
+The number of samples processed together in every per-\/step call. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!GetLayers@{GetLayers}}
+\index{GetLayers@{GetLayers}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0} 
+const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& Deep::\+\+Conv\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A const reference to the internal layer list. Valid for the lifetime of this \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork}. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!GetTerminalLayer@{GetTerminalLayer}}
+\index{GetTerminalLayer@{GetTerminalLayer}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetTerminalLayer()}{GetTerminalLayer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d} 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} Deep::\+\+Conv\+PCNetwork::\+\+Get\+Terminal\+Layer (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the network\textquotesingle{}s terminal (final) layer. 
+
+\begin{DoxyReturn}{Returns}
+Pointer to the last layer added via \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06f500b581cfe4f909}{Add\+Layer()}; this is the layer with out\+Channels==0. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a622e6a7baea151de32b1b507a16372b1}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!operator=@{operator=}}
+\index{operator=@{operator=}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a622e6a7baea151de32b1b507a16372b1} 
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} \& Deep::\+\+Conv\+PCNetwork::\+operator= (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Deleted:\+ \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork} owns raw layer pointers and a \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, so copy-\/assignment is not supported. 
+
+\Hypertarget{classDeep_1_1ConvPCNetwork_ade6d0963dd15392166b03510a2b8849d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!Predict@{Predict}}
+\index{Predict@{Predict}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Predict()}{Predict()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_ade6d0963dd15392166b03510a2b8849d} 
+std::\+vector$<$ float $>$ Deep::\+\+Conv\+PCNetwork::\+\+Predict (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Clamps input only, settles, and returns the terminal layer\textquotesingle{}s settled beliefs (flattened, batched). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & Flattened, batched input data clamped to the first layer. \\
+\hline
+{\em inference\+Steps} & Number of \doxylink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State()}/\+\+Update\+State() relaxation iterations to run before reading out predictions. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The terminal layer\textquotesingle{}s settled beliefs, flattened and batched in the same layout as {\ttfamily x}. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a3a8eb06c3e271d4096e71d6c3af20f92}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!RandomizeWeights@{RandomizeWeights}}
+\index{RandomizeWeights@{RandomizeWeights}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{RandomizeWeights()}{RandomizeWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a3a8eb06c3e271d4096e71d6c3af20f92} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Randomize\+Weights (\begin{DoxyParamCaption}\item[{std::\+mt19937 \&}]{rng}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Randomizes every layer\textquotesingle{}s weights (and biases, where applicable) in place using the supplied random engine. 
+
+Must be called after \doxylink{classDeep_1_1ConvPCNetwork_a95506ba6450152075862e5bb76df883c}{Compile()}, since weight storage is only valid once every layer has been bound into the arena.
+
+
+\begin{DoxyParams}{Parameters}
+{\em rng} & The classic Mersenne Twister engine used as the source of randomness; passed by reference so the caller retains control of seeding and can reuse the same engine elsewhere. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1ConvPCNetwork_aedc52b9889272cf4d04ad3d51541c122}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!ResetState@{ResetState}}
+\index{ResetState@{ResetState}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{ResetState()}{ResetState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_aedc52b9889272cf4d04ad3d51541c122} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Reset\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Resets every layer\textquotesingle{}s beliefs/\+errors (and any other per-\/step state) back to their initial values, without touching learned weights. 
+
+Typically called between independent \doxylink{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a}{Clamp()}/\+settle cycles so that stale beliefs from a previous input don\textquotesingle{}t bias the next one. \Hypertarget{classDeep_1_1ConvPCNetwork_a96f7fdb1fd4e28f9796f7961473aab0e}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!TrainStep@{TrainStep}}
+\index{TrainStep@{TrainStep}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{TrainStep()}{TrainStep()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a96f7fdb1fd4e28f9796f7961473aab0e} 
+float Deep::\+\+Conv\+PCNetwork::\+\+Train\+Step (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{const std::\+vector$<$ float $>$ \&}]{y}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Full train step:\+ clamp input+target, settle for inference\+Steps, update weights once, return the final energy. Mirrors \doxylink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{Discriminative\+PCNetwork::\+\+Train\+Step()} exactly. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & Flattened, batched input data clamped to the first layer. \\
+\hline
+{\em y} & Flattened, batched target data clamped to the terminal layer. \\
+\hline
+{\em inference\+Steps} & Number of \doxylink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State()}/\+\+Update\+State() relaxation iterations to run before updating weights. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The network\textquotesingle{}s total energy after the final relaxation step, immediately before weights are updated. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe22354e2}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!UpdatePrecision@{UpdatePrecision}}
+\index{UpdatePrecision@{UpdatePrecision}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdatePrecision()}{UpdatePrecision()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe22354e2} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Update\+Precision (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Updates every layer\textquotesingle{}s precision estimate based on current prediction errors, using each layer\textquotesingle{}s configured precision rate (pr). 
+
+\Hypertarget{classDeep_1_1ConvPCNetwork_ae46edfcccce5b90eceede8054c4940b6}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!UpdateState@{UpdateState}}
+\index{UpdateState@{UpdateState}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdateState()}{UpdateState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_ae46edfcccce5b90eceede8054c4940b6} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Update\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Commits the state update computed by the most recent \doxylink{classDeep_1_1ConvPCNetwork_a6a823037855cf7be70ac6f1525c18c86}{Calculate\+State()} call, advancing every layer\textquotesingle{}s beliefs one relaxation step. 
+
+\Hypertarget{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2} 
+void Deep::\+\+Conv\+PCNetwork::\+\+Update\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Calls \doxylink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights()} on every layer except the terminal one (mirrors \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}; each layer\textquotesingle{}s own \doxylink{classDeep_1_1ConvPCNetwork_acccd1a223005083eb9d60f8555fa93b2}{Update\+Weights()} is also self-\/guarded against out\+Channels==0, so this is belt-\/and-\/suspenders, not load-\/bearing). 
+
+
+
+\label{doc-related-members}
+\Hypertarget{classDeep_1_1ConvPCNetwork_doc-related-members}
+\doxysubsection{Friends And Related Symbol Documentation}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a383316d08df576c124c5514c5f8b3d2b}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!PCNDiagnostics@{PCNDiagnostics}}
+\index{PCNDiagnostics@{PCNDiagnostics}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
+\doxysubsubsection{\texorpdfstring{PCNDiagnostics}{PCNDiagnostics}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a383316d08df576c124c5514c5f8b3d2b} 
+friend class PCNDiagnostics\hspace{0.3cm}{\ttfamily [friend]}}
+
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+networks/\+\doxymbox{\hyperlink{ConvPCNetwork_8h}{Conv\+PCNetwork.\+h}}\item 
+src/\+\doxymbox{\hyperlink{ConvPCNetwork_8cpp}{Conv\+PCNetwork.\+cpp}}\end{DoxyCompactItemize}

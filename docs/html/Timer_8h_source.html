@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: includes/Timer.h Source File</title>
+<title>Deepity: include/deepity/Timer.h Source File</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -19,6 +19,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -30,7 +31,7 @@
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -94,7 +95,7 @@ $(function(){initNavTree('Timer_8h_source.html','',''); });
   <div class="headertitle"><div class="title">Timer.h</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span></div>
+<a href="Timer_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span> </div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span><span class="preprocessor">#pragma once</span></div>
 <div class="line"><a id="l00004" name="l00004"></a><span class="lineno">    4</span><span class="preprocessor">#include &lt;chrono&gt;</span></div>
@@ -109,25 +110,31 @@ $(function(){initNavTree('Timer_8h_source.html','',''); });
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>    std::chrono::time_point&lt;Clock&gt; m_beg { Clock::now() };</div>
 <div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span> </div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span>    <span class="keywordtype">void</span> reset()</div>
+<div class="foldopen" id="foldopen00015" data-start="{" data-end="}">
+<div class="line"><a id="l00015" name="l00015"></a><span class="lineno"><a class="line" href="classTimer.html#a9020542d73357a4eef512eefaf57524b">   15</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="classTimer.html#a9020542d73357a4eef512eefaf57524b">reset</a>()</div>
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span>    {</div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span>        m_beg = Clock::now();</div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span>    }</div>
+</div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span>    <span class="keywordtype">double</span> elapsed()<span class="keyword"> const</span></div>
+<div class="foldopen" id="foldopen00020" data-start="{" data-end="}">
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno"><a class="line" href="classTimer.html#a6a89a613c2af9b0d1e5f7e4ba9e46c54">   20</a></span>    <span class="keywordtype">double</span> <a class="code hl_function" href="classTimer.html#a6a89a613c2af9b0d1e5f7e4ba9e46c54">elapsed</a>()<span class="keyword"> const</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="keyword">    </span>{</div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span>        <span class="keywordflow">return</span> std::chrono::duration_cast&lt;Second&gt;(Clock::now() - m_beg).count();</div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span>    }</div>
+</div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span>};</div>
 </div>
 <div class="ttc" id="aclassTimer_html"><div class="ttname"><a href="classTimer.html">Timer</a></div><div class="ttdoc">Implementation by Alex: https://www.learncpp.com/cpp-tutorial/timing-your-code/.</div><div class="ttdef"><b>Definition</b> Timer.h:7</div></div>
+<div class="ttc" id="aclassTimer_html_a6a89a613c2af9b0d1e5f7e4ba9e46c54"><div class="ttname"><a href="classTimer.html#a6a89a613c2af9b0d1e5f7e4ba9e46c54">Timer::elapsed</a></div><div class="ttdeci">double elapsed() const</div><div class="ttdef"><b>Definition</b> Timer.h:20</div></div>
+<div class="ttc" id="aclassTimer_html_a9020542d73357a4eef512eefaf57524b"><div class="ttname"><a href="classTimer.html#a9020542d73357a4eef512eefaf57524b">Timer::reset</a></div><div class="ttdeci">void reset()</div><div class="ttdef"><b>Definition</b> Timer.h:15</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>includes</b></li><li class="navelem"><b>Timer.h</b></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="Timer_8h.html">Timer.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

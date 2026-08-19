@@ -1,0 +1,143 @@
+\doxysection{Conv\+PCLayer.\+h}
+\hypertarget{ConvPCLayer_8h_source}{}\label{ConvPCLayer_8h_source}\index{include/deepity/layers/ConvPCLayer.h@{include/deepity/layers/ConvPCLayer.h}}
+\doxymbox{\hyperlink{ConvPCLayer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <random>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdlib>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Activations_8h}{deepity/Activations.h}}>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Layer_8h}{deepity/layers/Layer.h}}>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{MemoryArena_8h}{deepity/MemoryArena.h}}>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Im2Col_8h}{deepity/Im2Col.h}}>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00039\ }
+\DoxyCodeLine{00040\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00041\ \{}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1PCNDiagnostics}{PCNDiagnostics}};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afbe3da4f62bf7a5b0a7d793f91af1e51}{ConvPCLayer}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}}
+\DoxyCodeLine{00045\ \ \ \ \ \{}
+\DoxyCodeLine{00046\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afbe3da4f62bf7a5b0a7d793f91af1e51}{ConvPCLayer}}(\textcolor{keywordtype}{int}\ inChannels,\ \textcolor{keywordtype}{int}\ outChannels,}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ inHeight,\ \textcolor{keywordtype}{int}\ inWidth,}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ kernelH,\ \textcolor{keywordtype}{int}\ kernelW,}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ strideH\ =\ 1,\ \textcolor{keywordtype}{int}\ strideW\ =\ 1,}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ padH\ =\ 0,\ \textcolor{keywordtype}{int}\ padW\ =\ 0,}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize\ =\ 1,}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ learningRate\ =\ 1e-\/6f,\ \textcolor{keywordtype}{float}\ inferenceRate\ =\ 0.1f,}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ precisionRate\ =\ 0.01f,\ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/2f,}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ aType\ =\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}},}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ dType\ =\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}});}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ab80ca88f8561690269d84bed7d71a574}{CalculateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afee30e07ebd335ccb46344fe74ec4f09}{UpdateState}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a0a245df963dc3df55c99eb86b70c85de}{UpdateWeights}}()\ \textcolor{keyword}{noexcept}\ \textcolor{keyword}{override};}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a5ed6f16605f24b1622c1a6d78a2a6400}{UpdatePrecision}}()\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_aff35d6077e7bd442814ace667b297412}{Flush}}()\ noexcept\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00094\ }
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ab01dd6c4dbd013164e5191e3c8470ab8}{ClampState}}(\textcolor{keyword}{const}\ std::vector<float>\ \&inputData)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a88dc17c102d73387f76f1e3d789ea72d}{UnclampState}}()\ noexcept;}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afdd7786fc9c6a98c84aee691b39f9a13}{GetBeliefs}}()\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ z;\ \}}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a0221998b0f1299dfde2bfc7642877945}{GetErrors}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ e;\ \}}
+\DoxyCodeLine{00112\ }
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ab9f5ad7698b841dbb34e545e486d7dfd}{GetInputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ (\textcolor{keywordtype}{size\_t})inChannels\ *\ inHeight\ *\ inWidth;\ \}}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a6aa1034bb417fab22cf55e8899200c02}{GetOutputSize}}()\ const\ noexcept\textcolor{keyword}{\ override}}
+\DoxyCodeLine{00118\ \textcolor{keyword}{\ \ \ \ \ \ \ \ }\{}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ outChannels\ >\ 0\ ?\ (size\_t)outChannels\ *\ outHeight\ *\ outWidth\ :\ 0;}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a7c9b9138e65be1203bdcce1c72c72fc7}{GetBatchSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ac9decaddb27a56c381c276bc3efbc145}{GetWeights}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ab75543a8620226fab95b3fc5d0574d9b}{GetWeights}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a91c346f8e60d00aedea080889657d3d3}{GetBiases}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a083b8beb3f45ca2968f2bb5db2fa0f7a}{GetBiases}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a15fe3cf3782608a06fb28baf9263c61b}{GetPrecisions}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ p;\ \}}
+\DoxyCodeLine{00140\ }
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a74516c7560a63ed9d270139f87060703}{GetLearningRate}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lr;\ \}}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ac7001a9188703afbb69268cf9430aada}{GetInferenceRate}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ ir;\ \}}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a4c73f8191b0930407fc7cb35092b86f0}{GetPrecisionRate}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ pr;\ \}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a2356aa3d5f23285d318a41c0cd73240c}{GetLambda}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lmbda;\ \}}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a90fb410b2af18b9cabbf9d14dcb56e7a}{SetLearningRate}}(\textcolor{keywordtype}{float}\ lr)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lr\ =\ lr;\ \}}
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_adf2bac67164530769100e454505b1876}{SetInferenceRate}}(\textcolor{keywordtype}{float}\ ir)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>ir\ =\ ir;\ \}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a0bf90e8586b806a3c2a2bc4d6aa09b61}{SetPrecisionRate}}(\textcolor{keywordtype}{float}\ pr)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>pr\ =\ pr;\ \}}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a26123fb7dd0592ae2dfb9041c0cdf4f4}{SetLambda}}(\textcolor{keywordtype}{float}\ l)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lmbda\ =\ l;\ \}}
+\DoxyCodeLine{00166\ }
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a18cb4624a859e1ef8501d1582dcc1697}{SetLayerAbove}}(\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afbe3da4f62bf7a5b0a7d793f91af1e51}{ConvPCLayer}}\ *above)\ \textcolor{keyword}{noexcept}\ \{\ layerAbove\ =\ above;\ \}}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a2716f5edea53bc2f70fa496063594c26}{SetLayerBelow}}(\doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_afbe3da4f62bf7a5b0a7d793f91af1e51}{ConvPCLayer}}\ *below)\ \textcolor{keyword}{noexcept}\ \{\ layerBelow\ =\ below;\ \}}
+\DoxyCodeLine{00175\ }
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_abaedf14b28524e3c0fb364003e435910}{ResetState}}()\ noexcept;}
+\DoxyCodeLine{00179\ }
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ac5d599c4bf0c6dd617e33849bda71663}{RandomizeWeights}}(std::mt19937\ \&twister)\ noexcept;}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a265f3eb0937208facfdbc09600d9f521}{ResyncLogPrecision}}()\ noexcept;}
+\DoxyCodeLine{00188\ }
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a61005e118bbeca8d557e1a64d49aa63e}{GetActivationType}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activation);\ \}}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_abaa2803a71aaa21af9eae1147b0be136}{GetDerivativeType}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activationDerivative);\ \}}
+\DoxyCodeLine{00195\ }
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_adde8c251dab885f14f32056f3bc5d15a}{GetInChannels}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ inChannels;\ \}}
+\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a862dc9f214d407c35c0f88eb359c5c2b}{GetOutChannels}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ outChannels;\ \}}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a43f835d07822ece37137deda95500965}{GetInHeight}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ inHeight;\ \}}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a80f1a1c74d37b7bcbb135d2e1f844d90}{GetInWidth}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ inWidth;\ \}}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a3462422427f126b6242f87e0e878290e}{GetOutHeight}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ outHeight;\ \}}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a778f466c50ba3379845e798be8a51630}{GetOutWidth}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ outWidth;\ \}}
+\DoxyCodeLine{00209\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a2536ac8f33d45b5e9545134902bb8d75}{GetKernelH}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ kernelH;\ \}}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_af44180a5e49c2165d387377039ef2cd1}{GetKernelW}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ kernelW;\ \}}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00217\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_ae5594a34020f1400c0cf89dc5f02bdc3}{GetRequiredFloats}}()\ const\ noexcept;}
+\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_af4bd9f4ac9fd4dce2fa6350a231b2455}{BindMemory}}(\doxymbox{\hyperlink{classDeep_1_1MemoryArena}{MemoryArena}}\ \&arena);}
+\DoxyCodeLine{00222\ }
+\DoxyCodeLine{00223\ \ \ \ \ private:}
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ std::unique\_ptr<\doxymbox{\hyperlink{classDeep_1_1MemoryArena}{MemoryArena}}>\ localArena;}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ inChannels,\ outChannels;}
+\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ inHeight,\ inWidth;}
+\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ outHeight,\ outWidth;}
+\DoxyCodeLine{00231\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ kernelH,\ kernelW;}
+\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ strideH,\ strideW;}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ padH,\ padW;}
+\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00236\ }
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *W;\ }
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *b;\ }
+\DoxyCodeLine{00241\ }
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *z;\ \ \ \ \ }
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e;\ \ \ \ \ }
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *dz\_dt;\ }
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *p;\ \ \ \ \ }
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *log\_p;\ }
+\DoxyCodeLine{00248\ }
+\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *mu;}
+\DoxyCodeLine{00251\ }
+\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *colBuffer;}
+\DoxyCodeLine{00259\ }
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *feedbackScratch;}
+\DoxyCodeLine{00263\ }
+\DoxyCodeLine{00267\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *bottom\_up\_cols;}
+\DoxyCodeLine{00268\ }
+\DoxyCodeLine{00272\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *colsRepacked;}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *lgRepacked;}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *muRepacked;}
+\DoxyCodeLine{00278\ }
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr,\ ir,\ pr,\ lmbda;}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ isClamped\ =\ false;}
+\DoxyCodeLine{00281\ }
+\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{ConvPCLayer}}\ *layerAbove;}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{ConvPCLayer}}\ *layerBelow;}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ activation;}
+\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ activationDerivative;}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ activationType;}
+\DoxyCodeLine{00287\ }
+\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ friend\ class\ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer_a383316d08df576c124c5514c5f8b3d2b}{PCNDiagnostics}};}
+\DoxyCodeLine{00289\ \ \ \ \ \};}
+\DoxyCodeLine{00290\ }
+\DoxyCodeLine{00291\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+\DoxyCodeLine{00292\ }
+
+\end{DoxyCode}

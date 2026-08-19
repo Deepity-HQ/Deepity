@@ -25,31 +25,64 @@
 var NAVTREE =
 [
   [ "Deepity", "index.html", [
+    [ "Overview", "index.html#overview", null ],
+    [ "Quick Start", "index.html#quickstart", [
+      [ "C++", "index.html#quickstart_cpp", null ],
+      [ "Python", "index.html#quickstart_py", null ]
+    ] ],
+    [ "Core Architecture", "index.html#architecture", [
+      [ "Networks", "index.html#architecture_networks", null ],
+      [ "Layers", "index.html#architecture_layers", null ],
+      [ "Supporting Components", "index.html#architecture_support", null ]
+    ] ],
+    [ "Performance", "index.html#performance", null ],
+    [ "Roadmap", "index.html#roadmap", null ],
+    [ "Elsewhere", "index.html#elsewhere", null ],
+    [ "ConvPCLayer Mathematical Derivation", "ConvPCLayer_math.html", [
+      [ "Design Notes", "ConvPCLayer_math.html#design_notes", [
+        [ "DiscriminativePCLayer (dense)", "ConvPCLayer_math.html#dense_formulas", null ],
+        [ "ConvPCLayer (conv)", "ConvPCLayer_math.html#conv_formulas", null ]
+      ] ]
+    ] ],
+    [ "Namespaces", "namespaces.html", [
+      [ "Namespace List", "namespaces.html", "namespaces_dup" ],
+      [ "Namespace Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", null ],
+        [ "Functions", "namespacemembers_func.html", null ],
+        [ "Typedefs", "namespacemembers_type.html", null ],
+        [ "Enumerations", "namespacemembers_enum.html", null ]
+      ] ]
+    ] ],
     [ "Classes", "annotated.html", [
-      [ "🚀 Performance at a Glance", "index.html#autotoc_md3", null ],
-      [ "⚔️ GCC vs. Clang (LLVM) Performance", "index.html#autotoc_md5", null ],
-      [ "⚡ Core Architecture &amp; Optimizations", "index.html#autotoc_md7", null ],
-      [ "📊 Design Decisions &amp; Benchmarks", "index.html#autotoc_md9", [
-        [ "See it train MNIST on the CPU in under an hour:", "index.html#autotoc_md1", null ],
-        [ "The Impact of Batching", "index.html#autotoc_md10", null ],
-        [ "Dynamic Thread Scheduling", "index.html#autotoc_md11", null ],
-        [ "Memory Layout: Contiguous vs. Separate", "index.html#autotoc_md12", null ],
-        [ "Random Number Generation", "index.html#autotoc_md13", null ]
-      ] ],
-      [ "🛠️ Example Usage", "index.html#autotoc_md15", [
-        [ "C++", "index.html#autotoc_md16", null ]
-      ] ],
-      [ "📅 Roadmap", "index.html#autotoc_md17", null ],
-      [ "🏗️ Project Structure", "index.html#autotoc_md18", null ],
       [ "Class List", "annotated.html", "annotated_dup" ],
-      [ "Class Index", "classes.html", null ]
+      [ "Class Index", "classes.html", null ],
+      [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
+      [ "Class Members", "functions.html", [
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", null ],
+        [ "Related Symbols", "functions_rela.html", null ]
+      ] ]
+    ] ],
+    [ "Files", "files.html", [
+      [ "File List", "files.html", "files_dup" ],
+      [ "File Members", "globals.html", [
+        [ "All", "globals.html", null ],
+        [ "Functions", "globals_func.html", null ],
+        [ "Typedefs", "globals_type.html", null ],
+        [ "Enumerator", "globals_eval.html", null ],
+        [ "Macros", "globals_defs.html", null ]
+      ] ]
     ] ]
   ] ]
 ];
 
 var NAVTREEINDEX =
 [
-"annotated.html"
+"Activations_8h.html",
+"classDeep_1_1DiscriminativePCLayer.html#a8fc7a24ab49c7928a1ed0a936d44f35e",
+"classDeep_1_1SimpleConvPCLayer.html#a54f427e28c0ea482ccb9ed87d45d0694",
+"namespaceDeep.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

@@ -1,5 +1,5 @@
 \doxysection{Optimize.\+h}
-\hypertarget{Optimize_8h_source}{}\label{Optimize_8h_source}\index{includes/Optimize.h@{includes/Optimize.h}}
+\hypertarget{Optimize_8h_source}{}\label{Optimize_8h_source}\index{include/deepity/Optimize.h@{include/deepity/Optimize.h}}
 \doxymbox{\hyperlink{Optimize_8h}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
@@ -14,12 +14,12 @@
 \DoxyCodeLine{00010\ }
 \DoxyCodeLine{00011\ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}}
 \DoxyCodeLine{00012\ \{}
-\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{void}\ openblas\_set\_num\_threads(\textcolor{keywordtype}{int}\ num\_threads);}
+\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(\textcolor{keywordtype}{int}\ num\_threads);}
 \DoxyCodeLine{00014\ \}}
 \DoxyCodeLine{00015\ }
-\DoxyCodeLine{00033\ \textcolor{keyword}{namespace\ }Deep}
+\DoxyCodeLine{00033\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
 \DoxyCodeLine{00034\ \{}
-\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ GetL2CacheBytes()}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}()}
 \DoxyCodeLine{00036\ \ \ \ \ \{}
 \DoxyCodeLine{00037\ \textcolor{preprocessor}{\#ifdef\ \_\_linux\_\_}}
 \DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ std::ifstream\ f(\textcolor{stringliteral}{"{}/sys/devices/system/cpu/cpu0/cache/index2/size"{}});}
@@ -43,9 +43,9 @@
 \DoxyCodeLine{00056\ \textcolor{preprocessor}{\#endif}}
 \DoxyCodeLine{00057\ \ \ \ \ \}}
 \DoxyCodeLine{00058\ }
-\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ AutoBatchSize(\textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize)}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004}{AutoBatchSize}}(\textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize)}
 \DoxyCodeLine{00060\ \ \ \ \ \{}
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ l2\ =\ GetL2CacheBytes();}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ l2\ =\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}();}
 \DoxyCodeLine{00062\ }
 \DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ wSize\ =\ inSize\ *\ outSize\ *\ \textcolor{keyword}{sizeof}(float);}
 \DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ bytesPerBatch\ =\ (outSize\ +\ inSize\ +\ inSize)\ *\ \textcolor{keyword}{sizeof}(\textcolor{keywordtype}{float});}
@@ -78,7 +78,7 @@
 \DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentThreads\ !=\ targetThreads)}
 \DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \{}
 \DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ omp\_set\_num\_threads(targetThreads);}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ openblas\_set\_num\_threads(targetThreads);}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(targetThreads);}
 \DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ currentThreads\ =\ targetThreads;}
 \DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00097\ \ \ \ \ \}}

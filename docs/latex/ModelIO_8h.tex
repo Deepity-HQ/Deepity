@@ -1,0 +1,36 @@
+\doxysection{include/\+deepity/\+\+Model\+IO.h File Reference}
+\hypertarget{ModelIO_8h}{}\label{ModelIO_8h}\index{include/deepity/ModelIO.h@{include/deepity/ModelIO.h}}
+
+
+Save/\+load support for persisting a Discriminative\+PCNetwork\textquotesingle{}s trained state to and from disk, as a structured directory rather than a single opaque binary blob.  
+
+
+{\ttfamily \+\#include $<$string$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+networks/\+\+Discriminative\+PCNetwork.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ModelIO}{Deep::\+\+Model\+IO}}
+\begin{DoxyCompactList}\small\item\em Static utility class for saving and loading \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork} model state to/\+from a structured directory on disk. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Save/\+load support for persisting a Discriminative\+PCNetwork\textquotesingle{}s trained state to and from disk, as a structured directory rather than a single opaque binary blob. 
+
+\begin{DoxyNote}{Note}
+Layer weights and activation configuration are stored separately:\+ numeric weights go into a flat binary buffer (weights.\+bin), while per-\/layer metadata (sizes, activation types, hyperparameters) is expected to live in a human-\/readable manifest (manifest.\+json), with a generated README.\+md alongside for a human-\/readable summary. Activation\+To\+String()/\+\+String\+To\+Activation() are the round-\/trip conversion used when writing/\+reading that manifest. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

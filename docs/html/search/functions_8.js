@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['setlayerabove_0',['SetLayerAbove',['../classDeep_1_1DiscriminativePCLayer.html#a76ea705b1fd38a4e2ed0b4f6404fb7ee',1,'Deep::DiscriminativePCLayer']]],
-  ['setlayerbelow_1',['SetLayerBelow',['../classDeep_1_1DiscriminativePCLayer.html#abede165ae677fd873e41f4948ac8f11d',1,'Deep::DiscriminativePCLayer']]],
-  ['sigmoid_2',['sigmoid',['../Activations_8h.html#a91ebb69ce7bf80e16bdbbc5eef5dcb38',1,'Deep']]]
+  ['layerprofile_0',['LayerProfile',['../namespaceDeep.html#afc0c7bc2619873cb922f19a2eaf5ffd2',1,'Deep']]],
+  ['load_1',['Load',['../classDeep_1_1ModelIO.html#aff573d97a8059f6a5f30f5ba784e26a2',1,'Deep::ModelIO::Load()'],['../classDeep_1_1DiscriminativePCNetwork.html#a897d0a5bea0b22c1634ae5338cb11b72',1,'Deep::DiscriminativePCNetwork::Load()']]],
+  ['loadmnistpng_2',['LoadMNISTPNG',['../classDeep_1_1PCNDiagnostics.html#a3d1a44c506b20d170293448dd111ad07',1,'Deep::PCNDiagnostics']]],
+  ['logf_5fv_3',['logf_v',['../namespaceDeep.html#afca3df42a9f8d541c51cf729a4c8b89b',1,'Deep']]]
 ];

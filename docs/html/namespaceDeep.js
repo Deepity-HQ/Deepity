@@ -1,0 +1,55 @@
+var namespaceDeep =
+[
+    [ "detail", "namespaceDeep_1_1detail.html", [
+      [ "AlignedAllocPortable", "namespaceDeep_1_1detail.html#af3da503898a70b79185386c34fc3812c", null ],
+      [ "AlignedFreePortable", "namespaceDeep_1_1detail.html#aa81d102ebb96772f976ed83e00ae12ca", null ]
+    ] ],
+    [ "PCNDiagnostics", "classDeep_1_1PCNDiagnostics.html", "classDeep_1_1PCNDiagnostics" ],
+    [ "ConvPCLayer", "classDeep_1_1ConvPCLayer.html", "classDeep_1_1ConvPCLayer" ],
+    [ "DiscriminativePCLayer", "classDeep_1_1DiscriminativePCLayer.html", "classDeep_1_1DiscriminativePCLayer" ],
+    [ "Layer", "classDeep_1_1Layer.html", "classDeep_1_1Layer" ],
+    [ "RBLayer", "classDeep_1_1RBLayer.html", "classDeep_1_1RBLayer" ],
+    [ "SimpleConvPCLayer", "classDeep_1_1SimpleConvPCLayer.html", "classDeep_1_1SimpleConvPCLayer" ],
+    [ "SimplePCLayer", "classDeep_1_1SimplePCLayer.html", "classDeep_1_1SimplePCLayer" ],
+    [ "MemoryArena", "classDeep_1_1MemoryArena.html", "classDeep_1_1MemoryArena" ],
+    [ "ModelIO", "classDeep_1_1ModelIO.html", null ],
+    [ "ConvPCNetwork", "classDeep_1_1ConvPCNetwork.html", "classDeep_1_1ConvPCNetwork" ],
+    [ "DiscriminativePCNetwork", "classDeep_1_1DiscriminativePCNetwork.html", "classDeep_1_1DiscriminativePCNetwork" ],
+    [ "SimplePCNetwork", "classDeep_1_1SimplePCNetwork.html", "classDeep_1_1SimplePCNetwork" ],
+    [ "ProfileAccumulator", "structDeep_1_1ProfileAccumulator.html", "structDeep_1_1ProfileAccumulator" ],
+    [ "ProfileEntry", "structDeep_1_1ProfileEntry.html", "structDeep_1_1ProfileEntry" ],
+    [ "ScopedTimer", "classDeep_1_1ScopedTimer.html", "classDeep_1_1ScopedTimer" ],
+    [ "StreamAlignedBatcher", "classDeep_1_1StreamAlignedBatcher.html", "classDeep_1_1StreamAlignedBatcher" ],
+    [ "ActivationFn", "namespaceDeep.html#afa1dea57980a3726b01372a204121e16", null ],
+    [ "DerivativeFn", "namespaceDeep.html#aac769fa213f2bba46034c471e75d58fa", null ],
+    [ "ActivationType", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61", [
+      [ "RELU", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c", null ],
+      [ "dRELU", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75", null ],
+      [ "SIGMOID", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b", null ],
+      [ "dSIGMOID", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01", null ],
+      [ "eSIGMOID", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4", null ],
+      [ "TANH", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1", null ],
+      [ "dTANH", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd", null ],
+      [ "LINEAR", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046", null ],
+      [ "dLINEAR", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7", null ],
+      [ "NONE", "namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693", null ]
+    ] ],
+    [ "OptimizerType", "namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02", [
+      [ "SGD", "namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2", null ],
+      [ "ADAM", "namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff", null ],
+      [ "ADAMW", "namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d", null ]
+    ] ],
+    [ "AdamUpdate", "namespaceDeep.html#af0031c5b95344a0fb959914fee35449c", null ],
+    [ "AdamWUpdate", "namespaceDeep.html#a5aa6de3c8e5ed8673d718748c4999608", null ],
+    [ "AutoBatchSize", "namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004", null ],
+    [ "Col2Im", "namespaceDeep.html#a4159753931479670feba6d8e6b227e74", null ],
+    [ "ConvOutDim", "namespaceDeep.html#abc365756de75008896ed7b64b27b1b4a", null ],
+    [ "e_sigmoid", "namespaceDeep.html#ac83ec1ef9cfd17806563be3f5a2d5b50", null ],
+    [ "GetL2CacheBytes", "namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342", null ],
+    [ "Im2Col", "namespaceDeep.html#a0dbe430b93930a2b8d3c04be012d0017", null ],
+    [ "LayerProfile", "namespaceDeep.html#afc0c7bc2619873cb922f19a2eaf5ffd2", null ],
+    [ "logf_v", "namespaceDeep.html#afca3df42a9f8d541c51cf729a4c8b89b", null ],
+    [ "PrintAllProfiles", "namespaceDeep.html#a7b797d1b36359f0bf39a7d0b55190eee", null ],
+    [ "ProfileRegistry", "namespaceDeep.html#acd40701ddacb775649741df40bc3b929", null ],
+    [ "toOpType", "namespaceDeep.html#a6ca9308132b5c8017685367d79b5c753", null ]
+];

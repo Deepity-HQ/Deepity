@@ -1,0 +1,476 @@
+\doxysection{Deep Namespace Reference}
+\hypertarget{namespaceDeep}{}\label{namespaceDeep}\index{Deep@{Deep}}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep_1_1detail}{detail}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1PCNDiagnostics}{PCNDiagnostics}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}
+\begin{DoxyCompactList}\small\item\em A deepity layer virtual class. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1RBLayer}{RBLayer}}
+\begin{DoxyCompactList}\small\item\em Restricted Boltzmann-\/style Predictive Coding (PC) \doxylink{classDeep_1_1Layer}{Layer}. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimpleConvPCLayer}{Simple\+Conv\+PCLayer}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1MemoryArena}{Memory\+Arena}}
+\begin{DoxyCompactList}\small\item\em A 64-\/byte-\/aligned bump-\/pointer allocator over a single contiguous block of host memory. Every chunk handed out via \doxylink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats()} is itself 64-\/byte aligned, satisfying this codebase\textquotesingle{}s strict alignment requirement for AVX2/\+\+AVX-\/512 loads. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1ModelIO}{Model\+IO}}
+\begin{DoxyCompactList}\small\item\em Static utility class for saving and loading \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork} model state to/\+from a structured directory on disk. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork}}
+\begin{DoxyCompactList}\small\item\em A convolutional Predictive Coding (PC) network:\+ an ordered stack of \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} instances sharing a single contiguous \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, trained via iterative energy-\/relaxation rather than backpropagation. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}}
+\begin{DoxyCompactList}\small\item\em An abstracted class for an array of {\ttfamily \doxylink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}}. \end{DoxyCompactList}\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimplePCNetwork}{Simple\+PCNetwork}}
+\begin{DoxyCompactList}\small\item\em An abstracted class for an array of {\ttfamily \doxylink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}}. \end{DoxyCompactList}\item 
+struct \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{Profile\+Accumulator}}
+\item 
+struct \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{Profile\+Entry}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ScopedTimer}{Scoped\+Timer}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher}{Stream\+Aligned\+Batcher}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+using \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{Activation\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)
+\item 
+using \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{Derivative\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} :\+ uint8\+\_\+t \{ \newline
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{RELU}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{d\+RELU}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{SIGMOID}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{d\+SIGMOID}}
+, \newline
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{e\+SIGMOID}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{TANH}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{d\+TANH}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{LINEAR}}
+, \newline
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{d\+LINEAR}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{NONE}}
+ \}
+\item 
+enum class \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} \{ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{SGD}}
+, \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff}{ADAM}}
+, \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d}{ADAMW}}
+ \}
+\begin{DoxyCompactList}\small\item\em Selects which weight-\/update rule a layer applies during Update\+Weights(). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \doxymbox{\hyperlink{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b}{logf\+\_\+v}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+\item 
+void \doxymbox{\hyperlink{namespaceDeep_ac83ec1ef9cfd17806563be3f5a2d5b50}{e\+\_\+sigmoid}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} x, const size\+\_\+t n) noexcept
+\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} \doxymbox{\hyperlink{namespaceDeep_a6ca9308132b5c8017685367d79b5c753}{to\+Op\+Type}} (const char \texorpdfstring{$\ast$}{*}s)
+\begin{DoxyCompactList}\small\item\em Parses an \doxylink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type} from its name. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608}{Adam\+WUpdate}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} w, const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} grad, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} m, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} v, size\+\_\+t n, int t, float lr, float lambda, float beta1=0.\+9f, float beta2=0.\+999f, float eps=1e-\/8f) noexcept
+\begin{DoxyCompactList}\small\item\em Vectorized AdamW update over {\ttfamily n} elements. {\ttfamily w}, {\ttfamily grad}, {\ttfamily m}, {\ttfamily v} are all arrays of length {\ttfamily n} -- ONE m/\+v pair PER WEIGHT, not one shared scalar. {\ttfamily t} is the layer\textquotesingle{}s own timestep counter (increment ONCE per Update\+Weights() call, not per element -- shared across the whole array, which is why beta1\texorpdfstring{$^\wedge$}{\string^}t/\+beta2\texorpdfstring{$^\wedge$}{\string^}t are computed once here, not per element). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_af0031c5b95344a0fb959914fee35449c}{Adam\+Update}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} w, const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} grad, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} m, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} v, size\+\_\+t n, int t, float lr, float beta1=0.\+9f, float beta2=0.\+999f, float eps=1e-\/8f) noexcept
+\begin{DoxyCompactList}\small\item\em Vectorized PLAIN Adam update over {\ttfamily n} elements -- NO weight decay term at all, unlike Adam\+WUpdate above. This is deliberate, not a missing feature:\+ "{}\+Adam with L2 regularization"{} (folding decay into the gradient before the moment estimates see it) is the well-\/known WORSE approach AdamW was specifically invented to fix -- large-\/gradient weights get decayed less than they should, since the adaptive step size shrinks the decay term along with everything else. If you want regularization alongside plain Adam, apply this codebase\textquotesingle{}s existing decay convention separately (e.\+g. cblas\+\_\+sscal(n, 1.\+0f-\/lmbda, w, 1) before calling this) -- fully composable, and avoids re-\/introducing the exact problem AdamW exists to solve. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{namespaceDeep_abc365756de75008896ed7b64b27b1b4a}{Conv\+Out\+Dim}} (int in\+Dim, int kernel, int stride, int pad) noexcept
+\begin{DoxyCompactList}\small\item\em Computes a single convolution output dimension (height or width) from its corresponding input dimension and conv parameters. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col}} (const float \texorpdfstring{$\ast$}{*}input, int channels, int height, int width, int kH, int kW, int strideH, int strideW, int padH, int padW, float \texorpdfstring{$\ast$}{*}columns) noexcept
+\begin{DoxyCompactList}\small\item\em Rearranges a single (channels, height, width) input image into a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column matrix, where each column holds one flattened receptive-\/field patch -- the standard im2col transform that lets convolution be computed as a single GEMM against a (out\+Channels, channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW) weight matrix. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a4159753931479670feba6d8e6b227e74}{Col2\+Im}} (const float \texorpdfstring{$\ast$}{*}columns, int channels, int height, int width, int kH, int kW, int strideH, int strideW, int padH, int padW, float \texorpdfstring{$\ast$}{*}output\+Image) noexcept
+\begin{DoxyCompactList}\small\item\em The adjoint of \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col()}:\+ scatters a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column-\/gradient buffer back into a (channels, height, width) image. \end{DoxyCompactList}\item 
+size\+\_\+t \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{Get\+L2\+Cache\+Bytes}} ()
+\item 
+size\+\_\+t \doxymbox{\hyperlink{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004}{Auto\+Batch\+Size}} (size\+\_\+t in\+Size, size\+\_\+t out\+Size)
+\item 
+std::\+vector$<$ std::\+pair$<$ const void \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{Profile\+Entry}} $>$ $>$ \& \doxymbox{\hyperlink{namespaceDeep_acd40701ddacb775649741df40bc3b929}{Profile\+Registry}} ()
+\item 
+{\footnotesize template$<$typename LayerT$>$ }\\\doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{Profile\+Accumulator}} \& \doxymbox{\hyperlink{namespaceDeep_afc0c7bc2619873cb922f19a2eaf5ffd2}{Layer\+Profile}} (LayerT \texorpdfstring{$\ast$}{*}layer)
+\item 
+void \doxymbox{\hyperlink{namespaceDeep_a7b797d1b36359f0bf39a7d0b55190eee}{Print\+All\+Profiles}} (double wall\+Clock\+Seconds)
+\end{DoxyCompactItemize}
+
+
+\label{doc-typedef-members}
+\Hypertarget{namespaceDeep_doc-typedef-members}
+\doxysubsection{Typedef Documentation}
+\Hypertarget{namespaceDeep_afa1dea57980a3726b01372a204121e16}\index{Deep@{Deep}!ActivationFn@{ActivationFn}}
+\index{ActivationFn@{ActivationFn}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{ActivationFn}{ActivationFn}}
+{\footnotesize\ttfamily \label{namespaceDeep_afa1dea57980a3726b01372a204121e16} 
+using \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{Deep::\+\+Activation\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)}
+
+\Hypertarget{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}\index{Deep@{Deep}!DerivativeFn@{DerivativeFn}}
+\index{DerivativeFn@{DerivativeFn}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{DerivativeFn}{DerivativeFn}}
+{\footnotesize\ttfamily \label{namespaceDeep_aac769fa213f2bba46034c471e75d58fa} 
+using \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{Deep::\+\+Derivative\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)}
+
+
+
+\label{doc-enum-members}
+\Hypertarget{namespaceDeep_doc-enum-members}
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}\index{Deep@{Deep}!ActivationType@{ActivationType}}
+\index{ActivationType@{ActivationType}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{ActivationType}{ActivationType}}
+{\footnotesize\ttfamily \label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61} 
+enum class \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}} :\+ uint8\+\_\+t\hspace{0.3cm}{\ttfamily [strong]}}
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{RELU@{RELU}!Deep@{Deep}}
+\index{Deep@{Deep}!RELU@{RELU}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c} 
+RELU&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{dRELU@{dRELU}!Deep@{Deep}}
+\index{Deep@{Deep}!dRELU@{dRELU}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75} 
+d\+RELU&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SIGMOID@{SIGMOID}!Deep@{Deep}}
+\index{Deep@{Deep}!SIGMOID@{SIGMOID}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b} 
+SIGMOID&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{dSIGMOID@{dSIGMOID}!Deep@{Deep}}
+\index{Deep@{Deep}!dSIGMOID@{dSIGMOID}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01} 
+d\+SIGMOID&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{eSIGMOID@{eSIGMOID}!Deep@{Deep}}
+\index{Deep@{Deep}!eSIGMOID@{eSIGMOID}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4} 
+e\+SIGMOID&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{TANH@{TANH}!Deep@{Deep}}
+\index{Deep@{Deep}!TANH@{TANH}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1} 
+TANH&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{dTANH@{dTANH}!Deep@{Deep}}
+\index{Deep@{Deep}!dTANH@{dTANH}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd} 
+d\+TANH&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{LINEAR@{LINEAR}!Deep@{Deep}}
+\index{Deep@{Deep}!LINEAR@{LINEAR}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046} 
+LINEAR&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{dLINEAR@{dLINEAR}!Deep@{Deep}}
+\index{Deep@{Deep}!dLINEAR@{dLINEAR}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7} 
+d\+LINEAR&\\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{NONE@{NONE}!Deep@{Deep}}
+\index{Deep@{Deep}!NONE@{NONE}}
+}\Hypertarget{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}\label{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693} 
+NONE&\\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}\index{Deep@{Deep}!OptimizerType@{OptimizerType}}
+\index{OptimizerType@{OptimizerType}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{OptimizerType}{OptimizerType}}
+{\footnotesize\ttfamily \label{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02} 
+enum class \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Deep::\+\+Optimizer\+Type}}\hspace{0.3cm}{\ttfamily [strong]}}
+
+
+
+Selects which weight-\/update rule a layer applies during Update\+Weights(). 
+
+\begin{DoxyEnumFields}[2]{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{SGD@{SGD}!Deep@{Deep}}
+\index{Deep@{Deep}!SGD@{SGD}}
+}\Hypertarget{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}\label{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2} 
+SGD&Plain stochastic gradient descent (this codebase\textquotesingle{}s existing cblas-\/based update). \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ADAM@{ADAM}!Deep@{Deep}}
+\index{Deep@{Deep}!ADAM@{ADAM}}
+}\Hypertarget{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff}\label{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff} 
+ADAM&Adam with no decoupled weight decay; see \doxylink{namespaceDeep_af0031c5b95344a0fb959914fee35449c}{Adam\+Update()}. \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{ADAMW@{ADAMW}!Deep@{Deep}}
+\index{Deep@{Deep}!ADAMW@{ADAMW}}
+}\Hypertarget{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d}\label{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d} 
+ADAMW&Adam with decoupled weight decay; see \doxylink{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608}{Adam\+WUpdate()}. \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\label{doc-func-members}
+\Hypertarget{namespaceDeep_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceDeep_af0031c5b95344a0fb959914fee35449c}\index{Deep@{Deep}!AdamUpdate@{AdamUpdate}}
+\index{AdamUpdate@{AdamUpdate}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{AdamUpdate()}{AdamUpdate()}}
+{\footnotesize\ttfamily \label{namespaceDeep_af0031c5b95344a0fb959914fee35449c} 
+void Deep::\+\+Adam\+Update (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{w}{, }\item[{const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{grad}{, }\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{m}{, }\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{v}{, }\item[{size\+\_\+t}]{n}{, }\item[{int}]{t}{, }\item[{float}]{lr}{, }\item[{float}]{beta1}{ = {\ttfamily 0.9f}, }\item[{float}]{beta2}{ = {\ttfamily 0.999f}, }\item[{float}]{eps}{ = {\ttfamily 1e-\/8f}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Vectorized PLAIN Adam update over {\ttfamily n} elements -- NO weight decay term at all, unlike Adam\+WUpdate above. This is deliberate, not a missing feature:\+ "{}\+Adam with L2 regularization"{} (folding decay into the gradient before the moment estimates see it) is the well-\/known WORSE approach AdamW was specifically invented to fix -- large-\/gradient weights get decayed less than they should, since the adaptive step size shrinks the decay term along with everything else. If you want regularization alongside plain Adam, apply this codebase\textquotesingle{}s existing decay convention separately (e.\+g. cblas\+\_\+sscal(n, 1.\+0f-\/lmbda, w, 1) before calling this) -- fully composable, and avoids re-\/introducing the exact problem AdamW exists to solve. 
+
+Same per-\/element m/\+v semantics as Adam\+WUpdate:\+ one m/\+v pair PER WEIGHT, t is the layer\textquotesingle{}s own shared timestep counter (increment ONCE per Update\+Weights() call, not per element).
+
+
+\begin{DoxyParams}{Parameters}
+{\em w} & Weight (or bias) array of length {\ttfamily n}; updated in place. \\
+\hline
+{\em grad} & RAW, unscaled gradient array of length {\ttfamily n} (NOT pre-\/scaled by lr or batch size -- see file-\/level warning). \\
+\hline
+{\em m} & First-\/moment (mean) estimate array of length {\ttfamily n}; updated in place. One entry per weight. \\
+\hline
+{\em v} & Second-\/moment (uncentered variance) estimate array of length {\ttfamily n}; updated in place. One entry per weight. \\
+\hline
+{\em n} & Number of elements in {\ttfamily w} /\+ {\ttfamily grad} /\+ {\ttfamily m} /\+ {\ttfamily v}. \\
+\hline
+{\em t} & This layer\textquotesingle{}s shared timestep counter, incremented once per Update\+Weights() call (not per element). \\
+\hline
+{\em lr} & Learning rate. \\
+\hline
+{\em beta1} & Exponential decay rate for the first-\/moment estimate. Defaults to 0.\+9. \\
+\hline
+{\em beta2} & Exponential decay rate for the second-\/moment estimate. Defaults to 0.\+999. \\
+\hline
+{\em eps} & Numerical-\/stability constant added to the denominator. Defaults to 1e-\/8. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608}\index{Deep@{Deep}!AdamWUpdate@{AdamWUpdate}}
+\index{AdamWUpdate@{AdamWUpdate}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{AdamWUpdate()}{AdamWUpdate()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608} 
+void Deep::\+\+Adam\+WUpdate (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{w}{, }\item[{const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{grad}{, }\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{m}{, }\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{v}{, }\item[{size\+\_\+t}]{n}{, }\item[{int}]{t}{, }\item[{float}]{lr}{, }\item[{float}]{lambda}{, }\item[{float}]{beta1}{ = {\ttfamily 0.9f}, }\item[{float}]{beta2}{ = {\ttfamily 0.999f}, }\item[{float}]{eps}{ = {\ttfamily 1e-\/8f}}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Vectorized AdamW update over {\ttfamily n} elements. {\ttfamily w}, {\ttfamily grad}, {\ttfamily m}, {\ttfamily v} are all arrays of length {\ttfamily n} -- ONE m/\+v pair PER WEIGHT, not one shared scalar. {\ttfamily t} is the layer\textquotesingle{}s own timestep counter (increment ONCE per Update\+Weights() call, not per element -- shared across the whole array, which is why beta1\texorpdfstring{$^\wedge$}{\string^}t/\+beta2\texorpdfstring{$^\wedge$}{\string^}t are computed once here, not per element). 
+
+AdamW\textquotesingle{}s decoupled weight decay ({\ttfamily w -\/= lr\texorpdfstring{$\ast$}{*}lambda\texorpdfstring{$\ast$}{*}w}, applied separately from the gradient-\/based step) replaces this codebase\textquotesingle{}s existing {\ttfamily cblas\+\_\+sscal(..., 1.\+0f-\/lmbda, W, 1)} weight-\/decay call -- don\textquotesingle{}t apply both, or decay will be applied twice.
+
+
+\begin{DoxyParams}{Parameters}
+{\em w} & Weight (or bias) array of length {\ttfamily n}; updated in place. \\
+\hline
+{\em grad} & RAW, unscaled gradient array of length {\ttfamily n} (NOT pre-\/scaled by lr or batch size -- see file-\/level warning). \\
+\hline
+{\em m} & First-\/moment (mean) estimate array of length {\ttfamily n}; updated in place. One entry per weight. \\
+\hline
+{\em v} & Second-\/moment (uncentered variance) estimate array of length {\ttfamily n}; updated in place. One entry per weight. \\
+\hline
+{\em n} & Number of elements in {\ttfamily w} /\+ {\ttfamily grad} /\+ {\ttfamily m} /\+ {\ttfamily v}. \\
+\hline
+{\em t} & This layer\textquotesingle{}s shared timestep counter, incremented once per Update\+Weights() call (not per element). \\
+\hline
+{\em lr} & Learning rate. \\
+\hline
+{\em lambda} & Decoupled weight-\/decay coefficient (Adam\+W-\/style, applied directly to {\ttfamily w}, not folded into the gradient). \\
+\hline
+{\em beta1} & Exponential decay rate for the first-\/moment estimate. Defaults to 0.\+9. \\
+\hline
+{\em beta2} & Exponential decay rate for the second-\/moment estimate. Defaults to 0.\+999. \\
+\hline
+{\em eps} & Numerical-\/stability constant added to the denominator. Defaults to 1e-\/8. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004}\index{Deep@{Deep}!AutoBatchSize@{AutoBatchSize}}
+\index{AutoBatchSize@{AutoBatchSize}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{AutoBatchSize()}{AutoBatchSize()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004} 
+size\+\_\+t Deep::\+\+Auto\+Batch\+Size (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{in\+Size}{, }\item[{size\+\_\+t}]{out\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_a4159753931479670feba6d8e6b227e74}\index{Deep@{Deep}!Col2Im@{Col2Im}}
+\index{Col2Im@{Col2Im}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{Col2Im()}{Col2Im()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a4159753931479670feba6d8e6b227e74} 
+void Deep::\+\+Col2\+Im (\begin{DoxyParamCaption}\item[{const float \texorpdfstring{$\ast$}{*}}]{columns}{, }\item[{int}]{channels}{, }\item[{int}]{height}{, }\item[{int}]{width}{, }\item[{int}]{kH}{, }\item[{int}]{kW}{, }\item[{int}]{strideH}{, }\item[{int}]{strideW}{, }\item[{int}]{padH}{, }\item[{int}]{padW}{, }\item[{float \texorpdfstring{$\ast$}{*}}]{output\+Image}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+The adjoint of \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col()}:\+ scatters a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column-\/gradient buffer back into a (channels, height, width) image. 
+
+Verified (see file-\/level note) to be the TRUE mathematical adjoint of \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col()}, not just an inverse-\/shaped operation -- this is what makes it safe to use for \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}\textquotesingle{}s feedback term.
+
+
+\begin{DoxyParams}{Parameters}
+{\em columns} & Input buffer of shape (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW), typically a gradient produced by a GEMM against the same weight matrix used in the forward \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col()} pass. \\
+\hline
+{\em channels} & Number of output-\/image channels. \\
+\hline
+{\em height} & Output image height (the original pre-\/\+Im2\+Col input height). \\
+\hline
+{\em width} & Output image width (the original pre-\/\+Im2\+Col input width). \\
+\hline
+{\em kH} & Kernel height. \\
+\hline
+{\em kW} & Kernel width. \\
+\hline
+{\em strideH} & Vertical stride. \\
+\hline
+{\em strideW} & Horizontal stride. \\
+\hline
+{\em padH} & Vertical zero-\/padding. \\
+\hline
+{\em padW} & Horizontal zero-\/padding. \\
+\hline
+{\em output\+Image} & Output buffer of shape (channels, height, width). ACCUMULATED into (values are added, not overwritten) -- the caller must zero this buffer first if a fresh result is wanted. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyWarning}{Warning}
+Not batch-\/aware -- call once per batch item, with {\ttfamily columns} and {\ttfamily output\+Image} offset to that item\textquotesingle{}s slice. 
+
+Accumulates into {\ttfamily output\+Image} rather than overwriting it; failing to memset the destination first will add this call\textquotesingle{}s result on top of whatever was already there. 
+\end{DoxyWarning}
+\Hypertarget{namespaceDeep_abc365756de75008896ed7b64b27b1b4a}\index{Deep@{Deep}!ConvOutDim@{ConvOutDim}}
+\index{ConvOutDim@{ConvOutDim}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{ConvOutDim()}{ConvOutDim()}}
+{\footnotesize\ttfamily \label{namespaceDeep_abc365756de75008896ed7b64b27b1b4a} 
+int Deep::\+\+Conv\+Out\+Dim (\begin{DoxyParamCaption}\item[{int}]{in\+Dim}{, }\item[{int}]{kernel}{, }\item[{int}]{stride}{, }\item[{int}]{pad}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Computes a single convolution output dimension (height or width) from its corresponding input dimension and conv parameters. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em in\+Dim} & Input dimension (height or width) before convolution. \\
+\hline
+{\em kernel} & Kernel size along this dimension. \\
+\hline
+{\em stride} & Stride along this dimension. \\
+\hline
+{\em pad} & Zero-\/padding applied to both sides of this dimension. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The resulting output dimension:\+ {\ttfamily (in\+Dim + 2\texorpdfstring{$\ast$}{*}pad -\/ kernel) /\+ stride + 1}. 
+\end{DoxyReturn}
+\Hypertarget{namespaceDeep_ac83ec1ef9cfd17806563be3f5a2d5b50}\index{Deep@{Deep}!e\_sigmoid@{e\_sigmoid}}
+\index{e\_sigmoid@{e\_sigmoid}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{e\_sigmoid()}{e\_sigmoid()}}
+{\footnotesize\ttfamily \label{namespaceDeep_ac83ec1ef9cfd17806563be3f5a2d5b50} 
+void Deep::\+e\+\_\+sigmoid (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}}]{x}{, }\item[{const size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
+\hline
+{\em n} & x length \\
+\hline
+\end{DoxyParams}
+\Hypertarget{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}\index{Deep@{Deep}!GetL2CacheBytes@{GetL2CacheBytes}}
+\index{GetL2CacheBytes@{GetL2CacheBytes}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{GetL2CacheBytes()}{GetL2CacheBytes()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342} 
+size\+\_\+t Deep::\+\+Get\+L2\+Cache\+Bytes (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}\index{Deep@{Deep}!Im2Col@{Im2Col}}
+\index{Im2Col@{Im2Col}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{Im2Col()}{Im2Col()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017} 
+void Deep::\+\+Im2\+Col (\begin{DoxyParamCaption}\item[{const float \texorpdfstring{$\ast$}{*}}]{input}{, }\item[{int}]{channels}{, }\item[{int}]{height}{, }\item[{int}]{width}{, }\item[{int}]{kH}{, }\item[{int}]{kW}{, }\item[{int}]{strideH}{, }\item[{int}]{strideW}{, }\item[{int}]{padH}{, }\item[{int}]{padW}{, }\item[{float \texorpdfstring{$\ast$}{*}}]{columns}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Rearranges a single (channels, height, width) input image into a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column matrix, where each column holds one flattened receptive-\/field patch -- the standard im2col transform that lets convolution be computed as a single GEMM against a (out\+Channels, channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW) weight matrix. 
+
+Positions that fall outside the input (due to padding) are written as zero.
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & Pointer to a single batch item\textquotesingle{}s input image, layout (channels, height, width), row-\/major, contiguous per channel. \\
+\hline
+{\em channels} & Number of input channels. \\
+\hline
+{\em height} & Input image height. \\
+\hline
+{\em width} & Input image width. \\
+\hline
+{\em kH} & Kernel height. \\
+\hline
+{\em kW} & Kernel width. \\
+\hline
+{\em strideH} & Vertical stride. \\
+\hline
+{\em strideW} & Horizontal stride. \\
+\hline
+{\em padH} & Vertical zero-\/padding. \\
+\hline
+{\em padW} & Horizontal zero-\/padding. \\
+\hline
+{\em columns} & Output buffer of shape (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW), fully overwritten (not accumulated into). Must be preallocated by the caller with size computed from \doxylink{namespaceDeep_abc365756de75008896ed7b64b27b1b4a}{Conv\+Out\+Dim()}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyWarning}{Warning}
+Not batch-\/aware -- call once per batch item, with {\ttfamily input} and {\ttfamily columns} offset to that item\textquotesingle{}s slice. 
+\end{DoxyWarning}
+\Hypertarget{namespaceDeep_afc0c7bc2619873cb922f19a2eaf5ffd2}\index{Deep@{Deep}!LayerProfile@{LayerProfile}}
+\index{LayerProfile@{LayerProfile}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{LayerProfile()}{LayerProfile()}}
+{\footnotesize\ttfamily \label{namespaceDeep_afc0c7bc2619873cb922f19a2eaf5ffd2} 
+template$<$typename LayerT$>$ \\
+\doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{Profile\+Accumulator}} \& Deep::\+\+Layer\+Profile (\begin{DoxyParamCaption}\item[{LayerT \texorpdfstring{$\ast$}{*}}]{layer}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b}\index{Deep@{Deep}!logf\_v@{logf\_v}}
+\index{logf\_v@{logf\_v}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{logf\_v()}{logf\_v()}}
+{\footnotesize\ttfamily \label{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b} 
+void Deep::\+logf\+\_\+v (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{x}{, }\item[{size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_a7b797d1b36359f0bf39a7d0b55190eee}\index{Deep@{Deep}!PrintAllProfiles@{PrintAllProfiles}}
+\index{PrintAllProfiles@{PrintAllProfiles}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{PrintAllProfiles()}{PrintAllProfiles()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a7b797d1b36359f0bf39a7d0b55190eee} 
+void Deep::\+\+Print\+All\+Profiles (\begin{DoxyParamCaption}\item[{double}]{wall\+Clock\+Seconds}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_acd40701ddacb775649741df40bc3b929}\index{Deep@{Deep}!ProfileRegistry@{ProfileRegistry}}
+\index{ProfileRegistry@{ProfileRegistry}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{ProfileRegistry()}{ProfileRegistry()}}
+{\footnotesize\ttfamily \label{namespaceDeep_acd40701ddacb775649741df40bc3b929} 
+std::\+vector$<$ std::\+pair$<$ const void \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{Profile\+Entry}} $>$ $>$ \& Deep::\+\+Profile\+Registry (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\Hypertarget{namespaceDeep_a6ca9308132b5c8017685367d79b5c753}\index{Deep@{Deep}!toOpType@{toOpType}}
+\index{toOpType@{toOpType}!Deep@{Deep}}
+\doxysubsubsection{\texorpdfstring{toOpType()}{toOpType()}}
+{\footnotesize\ttfamily \label{namespaceDeep_a6ca9308132b5c8017685367d79b5c753} 
+\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} Deep::\+to\+Op\+Type (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{s}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Parses an \doxylink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type} from its name. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em s} & Null-\/terminated string; expected to start with "{}\+SGD"{}, "{}\+ADAM"{}, or "{}\+ADAMW"{} (checked in that order, so "{}\+ADAMW"{} must be tested before a bare "{}\+ADAM"{} prefix match would otherwise win). \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The matching \doxylink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}, or \doxylink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{Optimizer\+Type::\+\+SGD} if {\ttfamily s} doesn\textquotesingle{}t match any recognized name. 
+\end{DoxyReturn}

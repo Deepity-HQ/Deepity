@@ -1,0 +1,171 @@
+\doxysection{Deep::\+Profile\+Accumulator Struct Reference}
+\hypertarget{structDeep_1_1ProfileAccumulator}{}\label{structDeep_1_1ProfileAccumulator}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+
+
+{\ttfamily \+\#include $<$Profile.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a83b598b4911307d14bcbf96b03353ad7}{Phase\+Sum}} () const noexcept
+\item 
+void \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1e6b121ad5ca20b39c6407728306cf7d}{Print}} (const std::\+string \&label) const
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f}{error\+Construction}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf}{energy\+Calculation}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824}{forward\+Gemm}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0}{bias\+Add}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb}{activation\+Forward}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236}{activation\+Derivative}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8}{local\+Error\+Term}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180}{bottom\+Up\+Construction}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb}{feedback\+Gemm}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4}{saxpy\+Update}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a}{update\+Weights\+Total}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20}{update\+Precision\+Total}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359}{calculate\+State\+Total}} = 0.\+0
+\item 
+double \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e}{update\+State\+Total}} = 0.\+0
+\item 
+long long \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_af864cc123d6783536f061bc4dce4391c}{calculate\+State\+Calls}} = 0
+\item 
+long long \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a4aa78b716bf166ee0dd010ff9ed77e2d}{update\+State\+Calls}} = 0
+\end{DoxyCompactItemize}
+
+
+\label{doc-func-members}
+\Hypertarget{structDeep_1_1ProfileAccumulator_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{structDeep_1_1ProfileAccumulator_a83b598b4911307d14bcbf96b03353ad7}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!PhaseSum@{PhaseSum}}
+\index{PhaseSum@{PhaseSum}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{PhaseSum()}{PhaseSum()}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a83b598b4911307d14bcbf96b03353ad7} 
+double Deep::\+\+Profile\+Accumulator::\+\+Phase\+Sum (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a1e6b121ad5ca20b39c6407728306cf7d}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!Print@{Print}}
+\index{Print@{Print}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{Print()}{Print()}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a1e6b121ad5ca20b39c6407728306cf7d} 
+void Deep::\+\+Profile\+Accumulator::\+\+Print (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{label}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+\label{doc-variable-members}
+\Hypertarget{structDeep_1_1ProfileAccumulator_doc-variable-members}
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!activationDerivative@{activationDerivative}}
+\index{activationDerivative@{activationDerivative}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{activationDerivative}{activationDerivative}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236} 
+double Deep::\+\+Profile\+Accumulator::\+activation\+Derivative = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!activationForward@{activationForward}}
+\index{activationForward@{activationForward}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{activationForward}{activationForward}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb} 
+double Deep::\+\+Profile\+Accumulator::\+activation\+Forward = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!biasAdd@{biasAdd}}
+\index{biasAdd@{biasAdd}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{biasAdd}{biasAdd}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0} 
+double Deep::\+\+Profile\+Accumulator::\+bias\+Add = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!bottomUpConstruction@{bottomUpConstruction}}
+\index{bottomUpConstruction@{bottomUpConstruction}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{bottomUpConstruction}{bottomUpConstruction}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180} 
+double Deep::\+\+Profile\+Accumulator::\+bottom\+Up\+Construction = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_af864cc123d6783536f061bc4dce4391c}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!calculateStateCalls@{calculateStateCalls}}
+\index{calculateStateCalls@{calculateStateCalls}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{calculateStateCalls}{calculateStateCalls}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_af864cc123d6783536f061bc4dce4391c} 
+long long Deep::\+\+Profile\+Accumulator::\+calculate\+State\+Calls = 0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!calculateStateTotal@{calculateStateTotal}}
+\index{calculateStateTotal@{calculateStateTotal}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{calculateStateTotal}{calculateStateTotal}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359} 
+double Deep::\+\+Profile\+Accumulator::\+calculate\+State\+Total = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!energyCalculation@{energyCalculation}}
+\index{energyCalculation@{energyCalculation}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{energyCalculation}{energyCalculation}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf} 
+double Deep::\+\+Profile\+Accumulator::\+energy\+Calculation = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!errorConstruction@{errorConstruction}}
+\index{errorConstruction@{errorConstruction}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{errorConstruction}{errorConstruction}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f} 
+double Deep::\+\+Profile\+Accumulator::\+error\+Construction = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!feedbackGemm@{feedbackGemm}}
+\index{feedbackGemm@{feedbackGemm}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{feedbackGemm}{feedbackGemm}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb} 
+double Deep::\+\+Profile\+Accumulator::\+feedback\+Gemm = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!forwardGemm@{forwardGemm}}
+\index{forwardGemm@{forwardGemm}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{forwardGemm}{forwardGemm}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824} 
+double Deep::\+\+Profile\+Accumulator::\+forward\+Gemm = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!localErrorTerm@{localErrorTerm}}
+\index{localErrorTerm@{localErrorTerm}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{localErrorTerm}{localErrorTerm}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8} 
+double Deep::\+\+Profile\+Accumulator::\+local\+Error\+Term = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!saxpyUpdate@{saxpyUpdate}}
+\index{saxpyUpdate@{saxpyUpdate}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{saxpyUpdate}{saxpyUpdate}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4} 
+double Deep::\+\+Profile\+Accumulator::\+saxpy\+Update = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!updatePrecisionTotal@{updatePrecisionTotal}}
+\index{updatePrecisionTotal@{updatePrecisionTotal}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{updatePrecisionTotal}{updatePrecisionTotal}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20} 
+double Deep::\+\+Profile\+Accumulator::\+update\+Precision\+Total = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a4aa78b716bf166ee0dd010ff9ed77e2d}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!updateStateCalls@{updateStateCalls}}
+\index{updateStateCalls@{updateStateCalls}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{updateStateCalls}{updateStateCalls}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a4aa78b716bf166ee0dd010ff9ed77e2d} 
+long long Deep::\+\+Profile\+Accumulator::\+update\+State\+Calls = 0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!updateStateTotal@{updateStateTotal}}
+\index{updateStateTotal@{updateStateTotal}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{updateStateTotal}{updateStateTotal}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e} 
+double Deep::\+\+Profile\+Accumulator::\+update\+State\+Total = 0.\+0}
+
+\Hypertarget{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a}\index{Deep::ProfileAccumulator@{Deep::ProfileAccumulator}!updateWeightsTotal@{updateWeightsTotal}}
+\index{updateWeightsTotal@{updateWeightsTotal}!Deep::ProfileAccumulator@{Deep::ProfileAccumulator}}
+\doxysubsubsection{\texorpdfstring{updateWeightsTotal}{updateWeightsTotal}}
+{\footnotesize\ttfamily \label{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a} 
+double Deep::\+\+Profile\+Accumulator::\+update\+Weights\+Total = 0.\+0}
+
+
+
+The documentation for this struct was generated from the following file:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+\doxymbox{\hyperlink{Profile_8h}{Profile.\+h}}\end{DoxyCompactItemize}

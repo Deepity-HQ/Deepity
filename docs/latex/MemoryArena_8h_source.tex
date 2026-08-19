@@ -1,63 +1,100 @@
 \doxysection{Memory\+Arena.\+h}
-\hypertarget{MemoryArena_8h_source}{}\label{MemoryArena_8h_source}\index{includes/MemoryArena.h@{includes/MemoryArena.h}}
-
+\hypertarget{MemoryArena_8h_source}{}\label{MemoryArena_8h_source}\index{include/deepity/MemoryArena.h@{include/deepity/MemoryArena.h}}
+\doxymbox{\hyperlink{MemoryArena_8h}{Go to the documentation of this file.}}
 \begin{DoxyCode}{0}
 \DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
 \DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstddef>}}
 \DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <cstdlib>}}
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <new>}}
 \DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
-\DoxyCodeLine{00006\ }
-\DoxyCodeLine{00007\ \textcolor{keyword}{namespace\ }Deep\ \{}
-\DoxyCodeLine{00008\ }
-\DoxyCodeLine{00009\ \ \ \ \ \textcolor{keyword}{class\ }MemoryArena\ \{}
-\DoxyCodeLine{00010\ \ \ \ \ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00011\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}*\ base\_ptr;}
-\DoxyCodeLine{00012\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity\_bytes;}
-\DoxyCodeLine{00013\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ offset\_bytes;}
-\DoxyCodeLine{00014\ }
-\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keyword}{public}:}
-\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ MemoryArena(\textcolor{keywordtype}{size\_t}\ total\_floats)\ \{}
-\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Guarantee\ total\ capacity\ is\ a\ multiple\ of\ 64\ bytes}}
-\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \ \ \ \ capacity\_bytes\ =\ (total\_floats\ *\ \textcolor{keyword}{sizeof}(float)\ +\ 63)\ \&\ \string~63;}
-\DoxyCodeLine{00019\ \ \ \ \ \ \ \ \ \ \ \ \ base\_ptr\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}*\textcolor{keyword}{>}(std::aligned\_alloc(64,\ capacity\_bytes));}
-\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00021\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!base\_ptr)\ \{}
-\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::bad\_alloc();}
-\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00024\ \ \ \ \ \ \ \ \ \ \ \ \ offset\_bytes\ =\ 0;}
-\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#if\ defined(\_WIN32)}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <malloc.h>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00009\ }
 \DoxyCodeLine{00026\ }
-\DoxyCodeLine{00027\ \ \ \ \ \ \ \ \ \string~MemoryArena()\ \{}
-\DoxyCodeLine{00028\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (base\_ptr)\ \{}
-\DoxyCodeLine{00029\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::free(base\_ptr);}
-\DoxyCodeLine{00030\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00032\ }
-\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Delete\ copy/move\ constructors\ to\ prevent\ double-\/free\ corruption}}
-\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ MemoryArena(\textcolor{keyword}{const}\ MemoryArena\&)\ =\ \textcolor{keyword}{delete};}
-\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ MemoryArena\&\ operator=(\textcolor{keyword}{const}\ MemoryArena\&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00027\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00028\ \{}
+\DoxyCodeLine{00029\ \ \ \ \ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep_1_1detail}{detail}}}
+\DoxyCodeLine{00030\ \ \ \ \ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ std::aligned\_alloc\ isn't\ reliably\ available\ on\ Windows/MinGW:\ the}}
+\DoxyCodeLine{00032\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ standard\ requires\ memory\ from\ it\ be\ freed\ with\ plain\ free(),\ but}}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Windows'\ native\ aligned\ allocator\ needs\ the\ opposite\ pairing}}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (\_aligned\_malloc\ /\ \_aligned\_free),\ so\ many\ MinGW\ toolchains\ simply}}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ omit\ std::aligned\_alloc\ rather\ than\ violate\ the\ standard's\ contract.}}
 \DoxyCodeLine{00036\ }
-\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}*\ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{AllocateFloats}}(\textcolor{keywordtype}{size\_t}\ num\_floats)\ \{}
-\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ how\ many\ bytes\ we\ need,\ padded\ to\ the\ nearest\ 64-\/byte\ boundary}}
-\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ allocation\_size\ =\ (num\_floats\ *\ \textcolor{keyword}{sizeof}(float)\ +\ 63)\ \&\ \string~63;}
-\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (offset\_bytes\ +\ allocation\_size\ >\ capacity\_bytes)\ \{}
-\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::runtime\_error(\textcolor{stringliteral}{"{}Fatal:\ MemoryArena\ capacity\ exceeded\ during\ allocation."{}});}
-\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}*\ chunk\ =\ \textcolor{keyword}{reinterpret\_cast<}\textcolor{keywordtype}{float}*\textcolor{keyword}{>}(}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{reinterpret\_cast<}\textcolor{keywordtype}{char}*\textcolor{keyword}{>}(base\_ptr)\ +\ offset\_bytes}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \ \ \ \ );}
-\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \ \ \ \ }
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ offset\_bytes\ +=\ allocation\_size;}
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ chunk;}
-\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00053\ }
-\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ GetUsedBytes()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ offset\_bytes;\ \}}
-\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ GetCapacityBytes()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ capacity\_bytes;\ \}}
-\DoxyCodeLine{00056\ \ \ \ \ \};}
-\DoxyCodeLine{00057\ }
-\DoxyCodeLine{00058\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ *\doxymbox{\hyperlink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{AlignedAllocPortable}}(\textcolor{keywordtype}{size\_t}\ alignment,\ \textcolor{keywordtype}{size\_t}\ size)}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00052\ \textcolor{preprocessor}{\#if\ defined(\_WIN32)}}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_aligned\_malloc(size,\ alignment);\ \textcolor{comment}{//\ note:\ (size,\ alignment)\ -\/-\/\ reversed\ vs\ aligned\_alloc}}
+\DoxyCodeLine{00054\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ std::aligned\_alloc(alignment,\ size);}
+\DoxyCodeLine{00056\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00058\ }
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}{AlignedFreePortable}}(\textcolor{keywordtype}{void}\ *ptr)}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00065\ \textcolor{preprocessor}{\#if\ defined(\_WIN32)}}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \_aligned\_free(ptr);}
+\DoxyCodeLine{00067\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ std::free(ptr);}
+\DoxyCodeLine{00069\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00071\ \ \ \ \ \}\ \textcolor{comment}{//\ namespace\ detail}}
+\DoxyCodeLine{00072\ }
+\DoxyCodeLine{00077\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{MemoryArena}}}
+\DoxyCodeLine{00078\ \ \ \ \ \{}
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *base\_ptr;}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ capacity\_bytes;}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ offset\_bytes;}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{MemoryArena}}(\textcolor{keywordtype}{size\_t}\ total\_floats)}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Guarantee\ total\ capacity\ is\ a\ multiple\ of\ 64\ bytes}}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ capacity\_bytes\ =\ (total\_floats\ *\ \textcolor{keyword}{sizeof}(float)\ +\ 63)\ \&\ \string~63;}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ base\_ptr\ =\ \textcolor{keyword}{static\_cast<}\textcolor{keywordtype}{float}\ *\textcolor{keyword}{>}(\doxymbox{\hyperlink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{detail::AlignedAllocPortable}}(64,\ capacity\_bytes));}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!base\_ptr)}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::bad\_alloc();}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ offset\_bytes\ =\ 0;}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00110\ }
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a49fb270b07d4ae887bb0f084bf09d024}{\string~MemoryArena}}()}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (base\_ptr)}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}{detail::AlignedFreePortable}}(base\_ptr);}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Delete\ copy/move\ constructors\ to\ prevent\ double-\/free\ corruption}}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd}{MemoryArena}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{MemoryArena}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{MemoryArena}}\ \&\doxymbox{\hyperlink{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca}{operator=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{MemoryArena}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{AllocateFloats}}(\textcolor{keywordtype}{size\_t}\ num\_floats)}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Calculate\ how\ many\ bytes\ we\ need,\ padded\ to\ the\ nearest\ 64-\/byte\ boundary}}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ allocation\_size\ =\ (num\_floats\ *\ \textcolor{keyword}{sizeof}(float)\ +\ 63)\ \&\ \string~63;}
+\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (offset\_bytes\ +\ allocation\_size\ >\ capacity\_bytes)}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{throw}\ std::runtime\_error(\textcolor{stringliteral}{"{}Fatal:\ MemoryArena\ capacity\ exceeded\ during\ allocation."{}});}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *chunk\ =\ \textcolor{keyword}{reinterpret\_cast<}\textcolor{keywordtype}{float}\ *\textcolor{keyword}{>}(}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{reinterpret\_cast<}\textcolor{keywordtype}{char}\ *\textcolor{keyword}{>}(base\_ptr)\ +\ offset\_bytes);}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ offset\_bytes\ +=\ allocation\_size;}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ chunk;}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69}{GetUsedBytes}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ offset\_bytes;\ \}}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704}{GetCapacityBytes}}()\textcolor{keyword}{\ const\ }\{\ \textcolor{keywordflow}{return}\ capacity\_bytes;\ \}}
+\DoxyCodeLine{00164\ \ \ \ \ \};}
+\DoxyCodeLine{00165\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
 
 \end{DoxyCode}

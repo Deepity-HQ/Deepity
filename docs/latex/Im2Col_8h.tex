@@ -1,0 +1,51 @@
+\doxysection{include/\+deepity/\+\+Im2\+Col.h File Reference}
+\hypertarget{Im2Col_8h}{}\label{Im2Col_8h}\index{include/deepity/Im2Col.h@{include/deepity/Im2Col.h}}
+
+
+Standalone im2col /\+ col2im utilities:\+ convolution expressed as matrix multiplication, so Conv\+PCLayer can reuse cblas\+\_\+sgemm rather than needing hand-\/written conv kernels.  
+
+
+{\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+{\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \doxymbox{\hyperlink{namespaceDeep_abc365756de75008896ed7b64b27b1b4a}{Deep::\+\+Conv\+Out\+Dim}} (int in\+Dim, int kernel, int stride, int pad) noexcept
+\begin{DoxyCompactList}\small\item\em Computes a single convolution output dimension (height or width) from its corresponding input dimension and conv parameters. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Deep::\+\+Im2\+Col}} (const float \texorpdfstring{$\ast$}{*}input, int channels, int height, int width, int kH, int kW, int strideH, int strideW, int padH, int padW, float \texorpdfstring{$\ast$}{*}columns) noexcept
+\begin{DoxyCompactList}\small\item\em Rearranges a single (channels, height, width) input image into a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column matrix, where each column holds one flattened receptive-\/field patch -- the standard im2col transform that lets convolution be computed as a single GEMM against a (out\+Channels, channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW) weight matrix. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a4159753931479670feba6d8e6b227e74}{Deep::\+\+Col2\+Im}} (const float \texorpdfstring{$\ast$}{*}columns, int channels, int height, int width, int kH, int kW, int strideH, int strideW, int padH, int padW, float \texorpdfstring{$\ast$}{*}output\+Image) noexcept
+\begin{DoxyCompactList}\small\item\em The adjoint of \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Im2\+Col()}:\+ scatters a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) column-\/gradient buffer back into a (channels, height, width) image. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Standalone im2col /\+ col2im utilities:\+ convolution expressed as matrix multiplication, so Conv\+PCLayer can reuse cblas\+\_\+sgemm rather than needing hand-\/written conv kernels. 
+
+VERIFIED:\+ passed t\+Conv\+Verify.\+cpp -- naive-\/reference comparison across three shape configurations (max error \texorpdfstring{$\sim$}{\string~}1e-\/6, float32 GEMM accumulation tolerance) AND an exact adjoint check (\texorpdfstring{$<$}{<}Wx,y\texorpdfstring{$>$}{>} == \texorpdfstring{$<$}{<}x,W\texorpdfstring{$^\wedge$}{\string^}\+Ty\texorpdfstring{$>$}{>}, \texorpdfstring{$\vert$}{|}diff\texorpdfstring{$\vert$}{|}=0), confirming Col2\+Im is the TRUE adjoint of Im2\+Col, not just a plausible-\/looking inverse-\/shaped operation. This matters because Conv\+PCLayer\textquotesingle{}s Update\+State() feedback term relies on that adjoint property the same way Discriminative\+PCLayer\textquotesingle{}s feedback term relies on W\texorpdfstring{$^\wedge$}{\string^}T being the genuine transpose.
+
+Layout convention:\+ NCHW. A single batch item\textquotesingle{}s input is (channels, height, width), row-\/major, contiguous per channel.
+
+im2col output shape:\+ (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) -- each column is one flattened receptive-\/field patch, ready to be GEMM\textquotesingle{}d against a (out\+Channels, channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW) weight matrix to produce (out\+Channels, out\+H\texorpdfstring{$\ast$}{*}outW) in one matrix multiply.
+
+col2im is the adjoint operation:\+ scatters a (channels\texorpdfstring{$\ast$}{*}k\+H\texorpdfstring{$\ast$}{*}kW, out\+H\texorpdfstring{$\ast$}{*}outW) gradient buffer back into a (channels, height, width) image, ACCUMULATING (does not zero the destination first -- caller must memset if needed).
+
+Neither function knows anything about batching -- call once per batch item, with pointers offset to that item\textquotesingle{}s slice.
+
+\begin{DoxyNote}{Note}
+Each SIMD width (AVX-\/512/\+\+AVX2+\+AVX/\+\+SSE) is handled as a separate preprocessor branch with its own scalar-\/tail fallback along the stride-\/1 fast path; the strided (strideW != 1) path is always scalar, since a fixed vector width can\textquotesingle{}t align with an arbitrary stride. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

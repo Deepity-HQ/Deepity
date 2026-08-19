@@ -1,175 +1,27 @@
-\chapter{ }
-\hypertarget{index}{}\label{index}\index{"@image\lcurly{}inline\rcurly{} html resources/Deepity.png "{}Deepity"{}@{"@image\lcurly{}inline\rcurly{} html resources/Deepity.png ""Deepity""}}
+\chapter{Deepity }
+\hypertarget{index}{}\label{index}\index{Deepity@{Deepity}}
+Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-\/overhead, ultra-\/low-\/variance inference and learning. It is aggressively CPU-\/optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.
 
-\begin{DoxyInlineImage}%
-\includegraphics[height=\baselineskip,keepaspectratio=true]{Deepity.png}%Deepity%
-\end{DoxyInlineImage}
-   
-
-\label{index_md_README}%
-\Hypertarget{index_md_README}%
-
-
-Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-\/overhead, ultra-\/low variance inference and learning. It is aggressively CPU-\/optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.\hypertarget{index_autotoc_md1}{}\doxysubsection{\texorpdfstring{See it train MNIST on the CPU in under an hour:\+}{See it train MNIST on the CPU in under an hour:\+}}\label{index_autotoc_md1}
- 
-\begin{DoxyImage}%
-\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{MNIST_results.png}%
-\doxyfigcaption{PCN Layer CPU Metrics}%
-\end{DoxyImage}
-   
-
-\DoxyHorRuler{0}
-\hypertarget{index_autotoc_md3}{}\doxysection{\texorpdfstring{🚀 Performance at a Glance}{🚀 Performance at a Glance}}\label{index_autotoc_md3}
- 
-\begin{DoxyImage}%
-\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{perf.svg}%
-\doxyfigcaption{PCN Profiler}%
-\end{DoxyImage}
-   
-
-Deepity is built for speed. On a {\bfseries{Dell Inspiron 16 Plus 7620}} (12th Gen Intel Core i7-\/12700H, 20 logical processors), the engine sustains approximately {\bfseries{123 GFLOPS}} during predictive-\/coding inference and learning when compiled with Clang (LLVM).
-
-{\bfseries{Benchmark Configuration:\+}}
-\begin{DoxyItemize}
-\item {\bfseries{Architecture:\+}} 784 → 512 → 256 → 64 → 10
-\item {\bfseries{Batch size:\+}} 256
-\item {\bfseries{Iterations:\+}} 157
-\item {\bfseries{Average runtime:\+}} \texorpdfstring{$\sim$}{\string~}1.175 s (CPU time)
-\end{DoxyItemize}
-
-The dominant computation consists of batched single-\/precision matrix multiplications ({\ttfamily SGEMM}), corresponding to roughly 144.\+4 GFLOPs of floating-\/point work:\+
-
-\$\$ \textbackslash{}frac\{144.\+4 \textbackslash{}text\{ GFLOPs\}\}\{1.\+175 \textbackslash{}text\{ s\}\} \textbackslash{}approx 122.\+89 \textbackslash{}text\{ GFLOPS\} \$\$
-
-By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running significantly faster than an equivalent, highly vectorized Num\+Py implementation.
-
- 
-\begin{DoxyImage}%
-\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{PyTest.png}%
-\doxyfigcaption{Python Benchmark Results}%
-\end{DoxyImage}
-   
-
-
-\begin{DoxyTable}{4}{}{}{1}
-\SetCell{bg=\tableheadbgcolor,font=\bfseries}Implementation  &\SetCell{r,bg=\tableheadbgcolor,font=\bfseries}Avg (ms)  &\SetCell{r,bg=\tableheadbgcolor,font=\bfseries}Min (ms)  &\SetCell{r,bg=\tableheadbgcolor,font=\bfseries}Max (ms)  \\
-{\bfseries{Deepity (Python/\+\+Clang)}}  &\SetCell{r}{\bfseries{1169.\+1}}  &\SetCell{r}{\bfseries{1167.\+8}}  &\SetCell{r}{\bfseries{1172.\+5}}  \\
-Num\+Py (Naive)  &\SetCell{r}4201.\+6  &\SetCell{r}4147.\+5  &\SetCell{r}4281.\+3  \\
-\end{DoxyTable}
-
-
-{\itshape Note:\+ High-\/level research frameworks routinely incur heavy penalties from Python execution and tensor abstractions. Deepity bypasses this by keeping the entire inference loop in native C++ memory.}
-
-\DoxyHorRuler{0}
-\hypertarget{index_autotoc_md5}{}\doxysection{\texorpdfstring{⚔️ GCC vs. Clang (LLVM) Performance}{⚔️ GCC vs. Clang (LLVM) Performance}}\label{index_autotoc_md5}
-Recent benchmarking indicates that compiling Deepity with Clang (LLVM) provides measurable speedups across core neural network workloads compared to GCC. Because Clang handles our heavily vectorized SIMD micro-\/kernels more efficiently, it is the officially recommended compiler for maximum throughput.
-
-
-\begin{DoxyItemize}
-\item {\bfseries{Weight Updates:\+}} Clang nearly halves the execution time for layer weight updates, dropping the CPU time for a size 128 layer from 1.\+24 ns (GCC) to 0.\+671 ns.
-\item {\bfseries{End-\/to-\/\+End Training:\+}} A full training epoch ({\ttfamily BM\+\_\+\+Network\+\_\+\+Train\+Epoch/\+128}) completes in 161,998 ns under Clang, a measurable improvement over GCC\textquotesingle{}s 166,488 ns.
-\item {\bfseries{Inference Speed:\+}} Network inference ({\ttfamily BM\+\_\+\+Network\+\_\+\+Inference/\+128}) executes in 44,791 ns with Clang, compared to 47,225 ns with GCC.
-\end{DoxyItemize}
-
-
-\begin{DoxyTable}{3}{}{}{1}
-\SetCell{bg=\tableheadbgcolor,font=\bfseries}Benchmark Workload (Size 128)  &\SetCell{bg=\tableheadbgcolor,font=\bfseries}Deepity v2 (Memory\+Arena)  &\SetCell{bg=\tableheadbgcolor,font=\bfseries}Deepity v1 (Legacy)  \\
-{\ttfamily BM\+\_\+\+Network\+\_\+\+Inference}  &{\bfseries{11,245 ns}}  &44,791 ns  \\
-{\ttfamily BM\+\_\+\+Network\+\_\+\+Train\+Sample}  &{\bfseries{12,988 ns}}  &38,094 ns  \\
-{\ttfamily BM\+\_\+\+Layer\+\_\+\+Update\+Weights}  &{\bfseries{0.\+665 ns}}  &0.\+671 ns  \\
-\end{DoxyTable}
-
-
-{\itshape (Note:\+ GCC retains a slight edge in linear derivative calculations and weight randomization, but Clang wins heavily in the primary training loop).}
-
-\DoxyHorRuler{0}
-\hypertarget{index_autotoc_md7}{}\doxysection{\texorpdfstring{⚡ Core Architecture \& Optimizations}{⚡ Core Architecture \& Optimizations}}\label{index_autotoc_md7}
-Deepity achieves its low-\/variance execution times through strict memory management and custom hardware intrinsics.
-
-{\bfseries{Custom SIMD Micro-\/\+Kernels}} We bypass standard C++ library bottlenecks by implementing highly optimized activation functions using raw AVX2 and AVX-\/512 intrinsics.
-
-{\bfseries{Rational Polynomial Tanh}} Deepity avoids expensive {\ttfamily expf} instruction calls by utilizing a highly tuned Elliot Sigmoid approximation. This yields up to a 11000\% speedup over a standard library version without sacrificing necessary precision.
-
- 
-\begin{DoxyImage}%
-\includegraphics[width=\textwidth,height=\textheight/2,keepaspectratio=true]{ActivationCPUMetrics.png}%
-\doxyfigcaption{Activation CPU Metrics}%
-\end{DoxyImage}
-   
-
-{\bfseries{Saturated Vectorized Re\+LU}} The Re\+LU implementation processes up to 16 floats per clock cycle, completely saturating standard single-\/core RAM bandwidth limits (\texorpdfstring{$\sim$}{\string~}15.8 GB/\+s).
-
-{\bfseries{Strict 64-\/Byte Alignment}} To prevent hardware exceptions and segmentation faults when loading wide 256-\/bit or 512-\/bit registers, Deepity enforces strict 64-\/byte memory boundaries ({\ttfamily std::\+align\+\_\+val\+\_\+t\{64\}}) for all internal sequential sub-\/buffers.
-
-{\bfseries{Contiguous Arena Allocator}} All layer buffers in a network are packed into a single contiguous memory block. This maximizes L1/\+\+L2 cache locality and eliminates pointer-\/chasing overhead across the layer hierarchy.
-
-\DoxyHorRuler{0}
-\hypertarget{index_autotoc_md9}{}\doxysection{\texorpdfstring{📊 Design Decisions \& Benchmarks}{📊 Design Decisions \& Benchmarks}}\label{index_autotoc_md9}
-During development, we benchmarked several architectural approaches to find the absolute ceiling for CPU throughput.\hypertarget{index_autotoc_md10}{}\doxysubsection{\texorpdfstring{The Impact of Batching}{The Impact of Batching}}\label{index_autotoc_md10}
-Batching provides massive scaling. A batch size of {\bfseries{256}} proved to be the sweet spot for maximizing CPU utilization before cache eviction penalties take over.
-
-
-\begin{DoxyTable}{2}{}{}{1}
-\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Batch Size  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Time (ms)  \\
-1 (None)  &4484  \\
-16  &3149  \\
-64  &2338  \\
-{\bfseries{256}}  &{\bfseries{2233}}  \\
-512  &2265  \\
-\end{DoxyTable}
-\hypertarget{index_autotoc_md11}{}\doxysubsection{\texorpdfstring{Dynamic Thread Scheduling}{Dynamic Thread Scheduling}}\label{index_autotoc_md11}
-During the implementation of Open\+MP and Open\+BLAS multithreading, benchmarking revealed a severe performance trap:\+ {\bfseries{oversubscription and thread spin-\/up overhead}}. For smaller batch sizes, the CPU spent more time waking up threads and managing locks than performing the actual matrix math, causing multi-\/threaded runs to perform worse than single-\/threaded execution.
-
-By sweeping the batch sizes, we identified the exact mathematical break-\/even point where matrix payloads outgrow OS thread latency.
-
-
-\begin{DoxyTable}{4}{}{}{1}
-\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Batch Size  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Threads  &\SetCell{r,bg=\tableheadbgcolor,font=\bfseries}Throughput (Items/\+sec)  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Verdict  \\
-16-\/256  &1  &\SetCell{r}\texorpdfstring{$\sim$}{\string~}2.6k  &Single-\/thread dominates  \\
-16-\/256  &4  &\SetCell{r}\texorpdfstring{$\sim$}{\string~}2.5k  &Multithreading penalizes performance  \\
-{\bfseries{1024}}  &{\bfseries{Max}}  &\SetCell{r}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\sim$}{\string~}11.7k\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}  &{\bfseries{The Ignition Point (4.\+5x Speedup)}}  \\
-16384  &Max  &\SetCell{r}\texorpdfstring{$\sim$}{\string~}14.3k  &Peak multi-\/threaded scaling  \\
-\end{DoxyTable}
-\hypertarget{index_autotoc_md12}{}\doxysubsection{\texorpdfstring{Memory Layout:\+ Contiguous vs. Separate}{Memory Layout:\+ Contiguous vs. Separate}}\label{index_autotoc_md12}
-Packing all layer attributes into a single flat array showed zero performance penalty over separate heap allocations, while providing vastly simpler alignment guarantees and predictable cache behavior.
-
-
-\begin{DoxyTable}{2}{}{}{1}
-\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Layout  &\SetCell{c,bg=\tableheadbgcolor,font=\bfseries}Time (ms)  \\
-Separate vectors  &4481  \\
-Contiguous block  &4484  \\
-\end{DoxyTable}
-\hypertarget{index_autotoc_md13}{}\doxysubsection{\texorpdfstring{Random Number Generation}{Random Number Generation}}\label{index_autotoc_md13}
-We tested {\ttfamily Open\+RAND} against the standard {\ttfamily std::\+mt19937} generator. Because the results were within a 5\% margin of error, we opted for the standard library MT implementation to minimize external dependencies.
-
-\DoxyHorRuler{0}
-\hypertarget{index_autotoc_md15}{}\doxysection{\texorpdfstring{🛠️ Example Usage}{🛠️ Example Usage}}\label{index_autotoc_md15}
-\hypertarget{index_autotoc_md16}{}\doxysubsection{\texorpdfstring{C++}{C++}}\label{index_autotoc_md16}
-Running a Predictive Coding network in Deepity is built to be straightforward and explicit. The {\ttfamily Discriminative\+PCNetwork} abstraction automatically manages layer hierarchies, bidirectionality, and dynamic thread scaling based on batch size.
+This page is the entry point into the {\bfseries{API reference}}. For build instructions, benchmarks, and contribution guidelines, see the \href{https://github.com/ra4ster/deepity\#readme}{\texttt{Git\+Hub README}}.\hypertarget{index_overview}{}\doxysection{\texorpdfstring{Overview}{Overview}}\label{index_overview}
+Deepity implements Predictive Coding Networks (PCNs) as an alternative to standard backpropagation-\/based training. The library is written in C++20, uses custom AVX2/\+\+AVX-\/512 SIMD kernels for activation functions, and packs layer buffers into a single contiguous memory arena for cache locality. A {\ttfamily pybind11}-\/based Python extension ({\ttfamily pydeepity}) exposes the same native engine to Python with negligible overhead.\hypertarget{index_quickstart}{}\doxysection{\texorpdfstring{Quick Start}{Quick Start}}\label{index_quickstart}
+\hypertarget{index_quickstart_cpp}{}\doxysubsection{\texorpdfstring{C++}{C++}}\label{index_quickstart_cpp}
+The \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork} class manages layer hierarchies, bidirectionality, and dynamic thread scaling based on batch size automatically:\+
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}DiscriminativePCNetwork.h"{}}}
-\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}Activations.h"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{DiscriminativePCNetwork_8h}{DiscriminativePCNetwork.h}}"{}}}
+\DoxyCodeLine{\textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{Activations.h}}"{}}}
 \DoxyCodeLine{\textcolor{preprocessor}{\#include\ <vector>}}
 \DoxyCodeLine{\textcolor{preprocessor}{\#include\ <random>}}
 \DoxyCodeLine{\textcolor{preprocessor}{\#include\ <iostream>}}
 \DoxyCodeLine{}
-\DoxyCodeLine{\textcolor{keywordtype}{int}\ main()\ \{}
-\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ Initialize\ a\ network\ with\ a\ batch\ size\ of\ 4\ (e.g.,\ for\ XOR)}}
-\DoxyCodeLine{\ \ \ \ Deep::DiscriminativePCNetwork\ net(4);}
+\DoxyCodeLine{\textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{PCNDiagnostics_8cpp_ae66f6b31b5ad750f1fe042a706a4e3d4}{main}}()\ \{}
+\DoxyCodeLine{\textcolor{comment}{//\ Initialize\ a\ network\ with\ a\ batch\ size\ of\ 4\ (e.g.,\ for\ XOR)}}
+\DoxyCodeLine{\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Deep::DiscriminativePCNetwork}}\ net(4);}
 \DoxyCodeLine{}
-\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ Architecture:\ Input(2)\ -\/>\ Hidden(8)\ -\/>\ Terminal(1)}}
-\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ AddLayer(in,\ out,\ lr,\ ir,\ pr,\ lmbda,\ activation,\ derivative)}}
-\DoxyCodeLine{\ \ \ \ net.AddLayer(2,\ 8,\ 0.05f,\ 0.3f,\ 0.00f,\ 0.0001f,\ Deep::tanh,\ Deep::dTanh);}
-\DoxyCodeLine{\ \ \ \ net.AddLayer(8,\ 1,\ 0.05f,\ 0.3f,\ 0.00f,\ 0.0001f,\ Deep::linear,\ Deep::dLinear);}
-\DoxyCodeLine{}
-\DoxyCodeLine{\ \ \ \ std::mt19937\ rng(42);}
-\DoxyCodeLine{\ \ \ \ net.RandomizeWeights(rng);}
-\DoxyCodeLine{}
-\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ Flattened,\ row-\/major\ input/target\ data}}
-\DoxyCodeLine{\ \ \ \ std::vector<float>\ X\ =\ \{-\/1,-\/1,\ -\/1,1,\ 1,-\/1,\ 1,1\};}
-\DoxyCodeLine{\ \ \ \ std::vector<float>\ Y\ =\ \{-\/1,\ 1,\ 1,\ -\/1\};}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ ...\ configure\ layers,\ load\ data\ (see\ examples/xor.py\ for\ a\ full}}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ worked\ example,\ and\ DiscriminativePCNetwork's\ own\ docs\ below\ for}}
+\DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ the\ layer-\/configuration\ API)\ ...}}
 \DoxyCodeLine{}
 \DoxyCodeLine{\ \ \ \ \textcolor{comment}{//\ Train\ using\ the\ clean\ TrainStep\ API\ (150\ relaxation\ steps\ per\ epoch)}}
 \DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{int}\ epoch\ =\ 0;\ epoch\ <\ 1500;\ ++epoch)\ \{}
@@ -184,10 +36,43 @@ Running a Predictive Coding network in Deepity is built to be straightforward an
 \DoxyCodeLine{\ \ \ \ \}}
 \DoxyCodeLine{}
 \DoxyCodeLine{\ \ \ \ \textcolor{keywordflow}{return}\ 0;}
+\DoxyCodeLine{}
 \DoxyCodeLine{\}}
 
 \end{DoxyCode}
-\hypertarget{index_autotoc_md17}{}\doxysection{\texorpdfstring{📅 Roadmap}{📅 Roadmap}}\label{index_autotoc_md17}
+\hypertarget{index_quickstart_py}{}\doxysubsection{\texorpdfstring{Python}{Python}}\label{index_quickstart_py}
+The same engine is available from Python via the compiled {\ttfamily pydeepity} extension module. Runnable examples live in {\ttfamily examples/\+}, including {\ttfamily examples/\+xor.\+py} (minimal training loop) and {\ttfamily examples/\+train\+\_\+mnist\+\_\+deep.\+py} (end-\/to-\/end MNIST training).\hypertarget{index_architecture}{}\doxysection{\texorpdfstring{Core Architecture}{Core Architecture}}\label{index_architecture}
+\hypertarget{index_architecture_networks}{}\doxysubsection{\texorpdfstring{Networks}{Networks}}\label{index_architecture_networks}
+Top-\/level network abstractions, each managing a layer stack and the predictive-\/coding relaxation loop:\+
+
+
+\begin{DoxyItemize}
+\item \doxylink{classDeep_1_1SimplePCNetwork}{Deep::\+\+Simple\+PCNetwork}
+\item \doxylink{classDeep_1_1DiscriminativePCNetwork}{Deep::\+\+Discriminative\+PCNetwork}
+\item \doxylink{classDeep_1_1ConvPCNetwork}{Deep::\+\+Conv\+PCNetwork}
+\end{DoxyItemize}\hypertarget{index_architecture_layers}{}\doxysubsection{\texorpdfstring{Layers}{Layers}}\label{index_architecture_layers}
+All layers derive from a common \doxylink{classDeep_1_1Layer}{Layer} base:\+
+
+
+\begin{DoxyItemize}
+\item \doxylink{classDeep_1_1Layer}{Deep::\+\+Layer} (base class)
+\item \doxylink{classDeep_1_1SimplePCLayer}{Deep::\+\+Simple\+PCLayer}
+\item \doxylink{classDeep_1_1SimpleConvPCLayer}{Deep::\+\+Simple\+Conv\+PCLayer}
+\item \doxylink{classDeep_1_1ConvPCLayer}{Deep::\+\+Conv\+PCLayer}
+\item \doxylink{classDeep_1_1RBLayer}{Deep::\+\+RBLayer}
+\item \doxylink{classDeep_1_1DiscriminativePCLayer}{Deep::\+\+Discriminative\+PCLayer}
+\end{DoxyItemize}\hypertarget{index_architecture_support}{}\doxysubsection{\texorpdfstring{Supporting Components}{Supporting Components}}\label{index_architecture_support}
+
+\begin{DoxyItemize}
+\item \doxylink{classDeep_1_1MemoryArena}{Deep::\+\+Memory\+Arena} /\+ Deep::\+\+Device\+Memory\+Arena — contiguous buffer allocation for layer state
+\item Deep::\+\+Adam\+Optimizer — weight-\/update optimizer
+\item \doxylink{classDeep_1_1StreamAlignedBatcher}{Deep::\+\+Stream\+Aligned\+Batcher} — batch alignment for SIMD kernels
+\item \doxylink{namespaceDeep_a0dbe430b93930a2b8d3c04be012d0017}{Deep::\+\+Im2\+Col} — convolution lowering
+\item \doxylink{classDeep_1_1ModelIO}{Deep::\+\+Model\+IO} — model save/\+load
+\item Deep::\+\+Profile /\+ Deep::\+\+Timer — internal profiling utilities
+\item Activation functions (Elliot Sigmoid approximation, vectorized Re\+LU) — see {\ttfamily \doxylink{Activations_8h}{Activations.\+h}}
+\end{DoxyItemize}\hypertarget{index_performance}{}\doxysection{\texorpdfstring{Performance}{Performance}}\label{index_performance}
+On a 12th Gen Intel Core i7-\/12700H, Deepity sustains roughly 123 GFLOPS during predictive-\/coding inference and learning when compiled with Clang (LLVM), via custom SIMD micro-\/kernels, 64-\/byte-\/aligned buffers, and a contiguous memory arena. Full benchmark methodology and GCC-\/vs-\/\+Clang comparisons are in the \href{https://github.com/ra4ster/deepity\#-performance-at-a-glance}{\texttt{README}}.\hypertarget{index_roadmap}{}\doxysection{\texorpdfstring{Roadmap}{Roadmap}}\label{index_roadmap}
 
 \begin{DoxyItemize}
 \item[\DoxyChecked] SIMD micro-\/kernels (AVX2/\+\+AVX-\/512 Padé approximations)
@@ -216,19 +101,9 @@ Running a Predictive Coding network in Deepity is built to be straightforward an
 \end{DoxyItemize}
 \begin{DoxyItemize}
 \item[\DoxyUnchecked] Java port
-\end{DoxyItemize}\hypertarget{index_autotoc_md18}{}\doxysection{\texorpdfstring{🏗️ Project Structure}{🏗️ Project Structure}}\label{index_autotoc_md18}
+\end{DoxyItemize}\hypertarget{index_elsewhere}{}\doxysection{\texorpdfstring{Elsewhere}{Elsewhere}}\label{index_elsewhere}
 
-\begin{DoxyCode}{0}
-\DoxyCodeLine{includes/\ \ \ \ \ \ \ \#\ Public\ headers\ (PCLayer.h,\ PCNetwork.h,\ Activations.h)}
-\DoxyCodeLine{src/\ \ \ \ \ \ \ \ \ \ \ \ \#\ C++\ source\ (PCLayer.cpp,\ PCNetwork.cpp)}
-\DoxyCodeLine{bindings/\ \ \ \ \ \ \ \#\ Python\ bindings\ (binding.cpp)}
-\DoxyCodeLine{tests/\ \ \ \ \ \ \ \ \ \ \#\ C++\ and\ Python\ test\ suites}
-\DoxyCodeLine{build/\ \ \ \ \ \ \ \ \ \ \ \ \#\ Build\ outputs\ (library,\ executables\ (bin),\ Python\ .so)}
-\DoxyCodeLine{resources/\ \ \ \ \ \ \#\ Images\ and\ benchmark\ assets}
-
-\end{DoxyCode}
-
-
-
-\footnotesize {\itshape  Ra4ster (Jack R) @ 2026 ❤️ }
-\normalsize  
+\begin{DoxyItemize}
+\item \href{https://github.com/ra4ster/deepity\#readme}{\texttt{Git\+Hub README}} — install, build ({\ttfamily build.\+py}), and benchmark details
+\item \href{https://github.com/ra4ster/deepity/blob/main/CONTRIBUTING.md}{\texttt{CONTRIBUTING.\+md}} 
+\end{DoxyItemize}

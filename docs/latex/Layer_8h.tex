@@ -1,16 +1,34 @@
-\doxysection{includes/\+\+Layer.h File Reference}
-\hypertarget{Layer_8h}{}\label{Layer_8h}\index{includes/Layer.h@{includes/Layer.h}}
+\doxysection{include/\+deepity/\+layers/\+\+Layer.h File Reference}
+\hypertarget{Layer_8h}{}\label{Layer_8h}\index{include/deepity/layers/Layer.h@{include/deepity/layers/Layer.h}}
 
 
 Virtual Layer.  
 
 
 {\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$sleef.\+h$>$}\newline
+{\ttfamily \+\#include $<$cblas.\+h$>$}\newline
 \doxysubsubsection*{Classes}
 \begin{DoxyCompactItemize}
 \item 
 class \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}
 \begin{DoxyCompactList}\small\item\em A deepity layer virtual class. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{Layer_8h_af5abd28c44c29b7397c84f1fec4b1d84}{ALPHA}}~0.\+001
+\item 
+\+\#define \doxymbox{\hyperlink{Layer_8h_a3c0b9279f3bb789b4f5723b3c17eaf0c}{BETA1}}~0.\+9
+\item 
+\+\#define \doxymbox{\hyperlink{Layer_8h_a5e33e4ef7e5a5f5f8565818d698301ae}{BETA2}}~0.\+999
+\item 
+\+\#define \doxymbox{\hyperlink{Layer_8h_a6ebf6899d6c1c8b7b9d09be872c05aae}{EPS}}~1e-\/8
+\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -25,3 +43,32 @@ Virtual Layer.
 \begin{DoxyAuthor}{Author}
 Jack Rose 
 \end{DoxyAuthor}
+
+
+\label{doc-define-members}
+\Hypertarget{Layer_8h_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{Layer_8h_af5abd28c44c29b7397c84f1fec4b1d84}\index{Layer.h@{Layer.h}!ALPHA@{ALPHA}}
+\index{ALPHA@{ALPHA}!Layer.h@{Layer.h}}
+\doxysubsubsection{\texorpdfstring{ALPHA}{ALPHA}}
+{\footnotesize\ttfamily \label{Layer_8h_af5abd28c44c29b7397c84f1fec4b1d84} 
+\+\#define ALPHA~0.\+001}
+
+\Hypertarget{Layer_8h_a3c0b9279f3bb789b4f5723b3c17eaf0c}\index{Layer.h@{Layer.h}!BETA1@{BETA1}}
+\index{BETA1@{BETA1}!Layer.h@{Layer.h}}
+\doxysubsubsection{\texorpdfstring{BETA1}{BETA1}}
+{\footnotesize\ttfamily \label{Layer_8h_a3c0b9279f3bb789b4f5723b3c17eaf0c} 
+\+\#define BETA1~0.\+9}
+
+\Hypertarget{Layer_8h_a5e33e4ef7e5a5f5f8565818d698301ae}\index{Layer.h@{Layer.h}!BETA2@{BETA2}}
+\index{BETA2@{BETA2}!Layer.h@{Layer.h}}
+\doxysubsubsection{\texorpdfstring{BETA2}{BETA2}}
+{\footnotesize\ttfamily \label{Layer_8h_a5e33e4ef7e5a5f5f8565818d698301ae} 
+\+\#define BETA2~0.\+999}
+
+\Hypertarget{Layer_8h_a6ebf6899d6c1c8b7b9d09be872c05aae}\index{Layer.h@{Layer.h}!EPS@{EPS}}
+\index{EPS@{EPS}!Layer.h@{Layer.h}}
+\doxysubsubsection{\texorpdfstring{EPS}{EPS}}
+{\footnotesize\ttfamily \label{Layer_8h_a6ebf6899d6c1c8b7b9d09be872c05aae} 
+\+\#define EPS~1e-\/8}
+

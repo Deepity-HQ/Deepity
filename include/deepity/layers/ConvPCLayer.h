@@ -28,6 +28,13 @@
  * Only then wire this into MNIST.
  *
  * Layout convention: NCHW, row-major, contiguous per channel per batch item.
+ *
+ * @note Single-instance layer; scratch/column buffers are bound into a
+ * MemoryArena rather than stored in a container, unlike
+ * DiscriminativePCNetwork's vector-of-layers.
+ * @version 1.0
+ * @date 2026-06-30
+ * @author Jack Rose
  */
 
 namespace Deep
@@ -70,6 +77,7 @@ namespace Deep
 
         /// @brief Calculate energy/prediction errors for this layer.
         /// @warning Weight-gradient path verified; feedback term NOT YET verified—see file-level warning.
+        /// @return This layer's energy contribution at the current state.
         float CalculateState() noexcept override;
         /// @brief Update latent beliefs (z/r) via inference gradient.
         /// @warning Feedback term not yet verified—see file-level warning.
@@ -77,14 +85,29 @@ namespace Deep
         /// @brief Hebbian/gradient weight update.
         /// @warning Weight-gradient path verified; feedback term NOT YET verified—see file-level warning.
         void UpdateWeights() noexcept override;
+        /// @brief Updates this layer's precision estimate from current
+        /// prediction errors, using the configured precision rate (pr).
         void UpdatePrecision() noexcept;
 
+        /// @brief No-op; exists for Layer interface conformance.
         void Flush() noexcept override {}
 
+        /// @brief Clamps this layer's beliefs to externally-provided data,
+        /// preventing them from being updated by UpdateState().
+        /// @param inputData Flattened input data matching
+        /// (inChannels, inHeight, inWidth) per batch item.
         void ClampState(const std::vector<float> &inputData) noexcept;
+        /// @brief Releases a previous ClampState() call, allowing this
+        /// layer's beliefs to update normally again.
         void UnclampState() noexcept;
 
+        /// @brief Returns this layer's belief buffer.
+        /// @return Pointer to (outChannels, outHeight, outWidth) beliefs
+        /// per batch item.
         float *GetBeliefs() noexcept override { return z; }
+        /// @brief Returns this layer's prediction-error buffer.
+        /// @return Pointer to (outChannels, outHeight, outWidth) errors
+        /// per batch item.
         const float *GetErrors() const noexcept override { return e; }
 
         /// @brief Flattened element count per batch item (inChannels*H*W).
@@ -95,29 +118,67 @@ namespace Deep
         {
             return outChannels > 0 ? (size_t)outChannels * outHeight * outWidth : 0;
         }
+        /// @brief Returns the batch size this layer was constructed with.
+        /// @return The batch size.
         size_t GetBatchSize() const noexcept override { return batchSize; }
 
+        /// @brief Returns this layer's weight buffer.
+        /// @return Pointer to (outChannels, inChannels*kernelH*kernelW) weights.
         const float *GetWeights() const noexcept { return W; }
+        /// @brief Returns this layer's weight buffer.
+        /// @return Pointer to (outChannels, inChannels*kernelH*kernelW) weights.
         float *GetWeights() noexcept { return W; }
+        /// @brief Returns this layer's bias buffer.
+        /// @return Pointer to (outChannels,) biases.
         const float *GetBiases() const noexcept { return b; }
+        /// @brief Returns this layer's bias buffer.
+        /// @return Pointer to (outChannels,) biases.
         float *GetBiases() noexcept { return b; }
+        /// @brief Returns this layer's precision buffer.
+        /// @return Pointer to (outChannels,) precisions.
         const float *GetPrecisions() const noexcept { return p; }
 
+        /// @brief Returns the learning rate used for weight updates.
+        /// @return The learning rate.
         float GetLearningRate() const noexcept { return lr; }
+        /// @brief Returns the learning rate used for internal-state updates.
+        /// @return The inference rate.
         float GetInferenceRate() const noexcept { return ir; }
+        /// @brief Returns the learning rate used for precision updates.
+        /// @return The precision rate.
         float GetPrecisionRate() const noexcept { return pr; }
+        /// @brief Returns the weight-decay (L2 regularization) coefficient.
+        /// @return Lambda.
         float GetLambda() const noexcept { return lmbda; }
 
+        /// @brief Sets the learning rate used for weight updates.
+        /// @param lr The new learning rate.
         void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        /// @brief Sets the learning rate used for internal-state updates.
+        /// @param ir The new inference rate.
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+        /// @brief Sets the learning rate used for precision updates.
+        /// @param pr The new precision rate.
         void SetPrecisionRate(float pr) noexcept { this->pr = pr; }
+        /// @brief Sets the weight-decay (L2 regularization) coefficient.
+        /// @param l The new lambda value.
         void SetLambda(float l) noexcept { this->lmbda = l; }
 
+        /// @brief Sets the layer immediately above this one in the network.
+        /// @param above Pointer to the layer above; may be nullptr for a
+        /// terminal layer.
         void SetLayerAbove(ConvPCLayer *above) noexcept { layerAbove = above; }
+        /// @brief Sets the layer immediately below this one in the network.
+        /// @param below Pointer to the layer below; may be nullptr for the
+        /// input layer.
         void SetLayerBelow(ConvPCLayer *below) noexcept { layerBelow = below; }
 
+        /// @brief Resets this layer's beliefs/errors back to their initial
+        /// values, without touching learned weights.
         void ResetState() noexcept;
 
+        /// @brief Randomizes this layer's weights (and biases) in place.
+        /// @param twister The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
         /// @brief Rebuilds log_p from p -- required after a checkpoint load
@@ -125,19 +186,38 @@ namespace Deep
         /// same p/log_p desync issue found in ModelIO::Load()).
         void ResyncLogPrecision() noexcept;
 
+        /// @brief Returns this layer's configured activation type.
+        /// @return The activation type.
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
+        /// @brief Returns this layer's configured activation-derivative type.
+        /// @return The activation-derivative type.
         ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
 
+        /// @brief Returns the number of input channels.
         int GetInChannels() const noexcept { return inChannels; }
+        /// @brief Returns the number of output channels (0 for a terminal layer).
         int GetOutChannels() const noexcept { return outChannels; }
+        /// @brief Returns the input feature-map height.
         int GetInHeight() const noexcept { return inHeight; }
+        /// @brief Returns the input feature-map width.
         int GetInWidth() const noexcept { return inWidth; }
+        /// @brief Returns the output feature-map height.
         int GetOutHeight() const noexcept { return outHeight; }
+        /// @brief Returns the output feature-map width.
         int GetOutWidth() const noexcept { return outWidth; }
+        /// @brief Returns the convolution kernel height.
         int GetKernelH() const noexcept { return kernelH; }
+        /// @brief Returns the convolution kernel width.
         int GetKernelW() const noexcept { return kernelW; }
 
+        /// @brief Computes the total number of floats this layer requires
+        /// from a MemoryArena (weights, biases, beliefs, errors, and every
+        /// scratch buffer combined).
+        /// @return The required float count.
         size_t GetRequiredFloats() const noexcept;
+        /// @brief Binds this layer's weight/state/scratch buffers into the
+        /// supplied arena. Must be called before any other operation.
+        /// @param arena The MemoryArena to bind into.
         void BindMemory(MemoryArena &arena);
 
     private:
@@ -156,14 +236,14 @@ namespace Deep
 
         /// @name Weight and bias buffers
         /// @{
-        float *W;  ///< Weights: (outChannels, inChannels*kernelH*kernelW)
-        float *b;  ///< Biases: (outChannels)
+        float *W; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
+        float *b; ///< Biases: (outChannels)
 
-        float *z;      ///< Beliefs/activations: (outChannels, outHeight, outWidth) per batch item
-        float *e;      ///< Prediction errors: (outChannels, outHeight, outWidth) per batch item
-        float *dz_dt;  ///< State derivatives: (outChannels, outHeight, outWidth) per batch item
-        float *p;      ///< Precisions: (outChannels,)
-        float *log_p;  ///< Log-precisions: (outChannels,)
+        float *z;     ///< Beliefs/activations: (outChannels, outHeight, outWidth) per batch item
+        float *e;     ///< Prediction errors: (outChannels, outHeight, outWidth) per batch item
+        float *dz_dt; ///< State derivatives: (outChannels, outHeight, outWidth) per batch item
+        float *p;     ///< Precisions: (outChannels,)
+        float *log_p; ///< Log-precisions: (outChannels,)
         /// @}
 
         /// @brief Predictions from above (incoming error feedback)

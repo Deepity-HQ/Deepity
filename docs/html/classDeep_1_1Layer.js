@@ -1,5 +1,6 @@
 var classDeep_1_1Layer =
 [
+    [ "~Layer", "classDeep_1_1Layer.html#a7345cceda85f2a8c845fc00db21c6d4d", null ],
     [ "CalculateState", "classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe", null ],
     [ "Flush", "classDeep_1_1Layer.html#aa25f07b8ffa01f5de94cd96edbcd103d", null ],
     [ "GetBatchSize", "classDeep_1_1Layer.html#aa76875cc43cfa3bf24fdb8b949fb8f9e", null ],

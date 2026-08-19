@@ -1,0 +1,21 @@
+var searchData=
+[
+  ['test10_5fpredictionconsistency_0',['Test10_PredictionConsistency',['../classDeep_1_1PCNDiagnostics.html#af9e86a1e9a6154232ae822eb4f2e3e15',1,'Deep::PCNDiagnostics']]],
+  ['test11_5fweightupdateconsistency_1',['Test11_WeightUpdateConsistency',['../classDeep_1_1PCNDiagnostics.html#a9999a79346d8f95b87e1185959e801d0',1,'Deep::PCNDiagnostics']]],
+  ['test12_5fprecisionstatistics_2',['Test12_PrecisionStatistics',['../classDeep_1_1PCNDiagnostics.html#a44ded8bb40cc2e55170285a6448cda6b',1,'Deep::PCNDiagnostics']]],
+  ['test13_5factivationsaturation_3',['Test13_ActivationSaturation',['../classDeep_1_1PCNDiagnostics.html#adbf85a35d7bd2b8a5cb15daa338cf4d4',1,'Deep::PCNDiagnostics']]],
+  ['test14_5fmemorylayout_4',['Test14_MemoryLayout',['../classDeep_1_1PCNDiagnostics.html#aae2b935b3f3d70fb37115ccd1e3ed714',1,'Deep::PCNDiagnostics']]],
+  ['test15_5fbufferlifecycleaudit_5',['Test15_BufferLifecycleAudit',['../classDeep_1_1PCNDiagnostics.html#accd70cb3137bdaf8ba10e619ff4f9da8',1,'Deep::PCNDiagnostics']]],
+  ['test16_5foverfitoneexample_6',['Test16_OverfitOneExample',['../classDeep_1_1PCNDiagnostics.html#a213ab194ec7d777ba76b2a17636fd885',1,'Deep::PCNDiagnostics']]],
+  ['test1_5finferenceconvergence_7',['Test1_InferenceConvergence',['../classDeep_1_1PCNDiagnostics.html#a097ca8bed751e7488873d0ed051663ed',1,'Deep::PCNDiagnostics']]],
+  ['test2_5fgradientcheckweights_8',['Test2_GradientCheckWeights',['../classDeep_1_1PCNDiagnostics.html#af42952821c342107adf2c1e5b19c4adb',1,'Deep::PCNDiagnostics']]],
+  ['test3_5fgradientcheckstates_9',['Test3_GradientCheckStates',['../classDeep_1_1PCNDiagnostics.html#a9865a11e733935ecabd9ddd0fd41c0d4',1,'Deep::PCNDiagnostics']]],
+  ['test4_5fgradientcheckprecision_10',['Test4_GradientCheckPrecision',['../classDeep_1_1PCNDiagnostics.html#ab75dd365d706ca3369b5eb725ae2768a',1,'Deep::PCNDiagnostics']]],
+  ['test5_5factivationderivatives_11',['Test5_ActivationDerivatives',['../classDeep_1_1PCNDiagnostics.html#a757c3ed61db0cee28d1e3dd9301c5fdd',1,'Deep::PCNDiagnostics']]],
+  ['test6_5fenergydecomposition_12',['Test6_EnergyDecomposition',['../classDeep_1_1PCNDiagnostics.html#a8fce9b1d4d659a43a920d85254a930bc',1,'Deep::PCNDiagnostics']]],
+  ['test7_5fsimdconsistency_13',['Test7_SIMDConsistency',['../classDeep_1_1PCNDiagnostics.html#a18c896e5158ac778e3ef7c5eb97f3884',1,'Deep::PCNDiagnostics']]],
+  ['test8_5fbatchinvariance_14',['Test8_BatchInvariance',['../classDeep_1_1PCNDiagnostics.html#ae660afa46eb16a8e714464be1109a604',1,'Deep::PCNDiagnostics']]],
+  ['test9_5fbufferpoisoning_15',['Test9_BufferPoisoning',['../classDeep_1_1PCNDiagnostics.html#a93399ddea16d062bf378bfddcb1a3c8a',1,'Deep::PCNDiagnostics']]],
+  ['tooptype_16',['toOpType',['../namespaceDeep.html#a6ca9308132b5c8017685367d79b5c753',1,'Deep']]],
+  ['trainstep_17',['TrainStep',['../classDeep_1_1ConvPCNetwork.html#a96f7fdb1fd4e28f9796f7961473aab0e',1,'Deep::ConvPCNetwork::TrainStep()'],['../classDeep_1_1DiscriminativePCNetwork.html#ac234beb279bfd8ffa13e374624ba790a',1,'Deep::DiscriminativePCNetwork::TrainStep()'],['../classDeep_1_1SimplePCNetwork.html#a85b53cd16ead4c216534c799cf2c83a3',1,'Deep::SimplePCNetwork::TrainStep()']]]
+];

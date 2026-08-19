@@ -1,28 +1,148 @@
 \doxysection{Deep::\+Memory\+Arena Class Reference}
 \hypertarget{classDeep_1_1MemoryArena}{}\label{classDeep_1_1MemoryArena}\index{Deep::MemoryArena@{Deep::MemoryArena}}
+
+
+A 64-\/byte-\/aligned bump-\/pointer allocator over a single contiguous block of host memory. Every chunk handed out via \doxylink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats()} is itself 64-\/byte aligned, satisfying this codebase\textquotesingle{}s strict alignment requirement for AVX2/\+\+AVX-\/512 loads.  
+
+
+
+
+{\ttfamily \+\#include $<$Memory\+Arena.\+h$>$}
+
 \doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}\label{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e} 
-{\bfseries Memory\+Arena} (size\+\_\+t total\+\_\+floats)
-\item 
-\Hypertarget{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd}\label{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd} 
-{\bfseries Memory\+Arena} (const Memory\+Arena \&)=delete
-\item 
-\Hypertarget{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca}\label{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca} 
-Memory\+Arena \& {\bfseries operator=} (const Memory\+Arena \&)=delete
-\item 
-\Hypertarget{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}\label{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338} 
-float \texorpdfstring{$\ast$}{*} {\bfseries Allocate\+Floats} (size\+\_\+t num\+\_\+floats)
+\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{Memory\+Arena}} (size\+\_\+t total\+\_\+floats)
+\begin{DoxyCompactList}\small\item\em Allocates a single 64-\/byte-\/aligned buffer large enough to hold {\ttfamily total\+\_\+floats} floats, rounded up to the nearest 64-\/byte boundary. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a49fb270b07d4ae887bb0f084bf09d024}{\texorpdfstring{$\sim$}{\string~}\+Memory\+Arena}} ()
+\begin{DoxyCompactList}\small\item\em Frees the underlying aligned allocation, if any. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd}{Memory\+Arena}} (const Memory\+Arena \&)=delete
+\begin{DoxyCompactList}\small\item\em Deleted:\+ \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena} owns a single aligned allocation, so copying would risk a double-\/free. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{Memory\+Arena}} \& \doxymbox{\hyperlink{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca}{operator=}} (const \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{Memory\+Arena}} \&)=delete
+\begin{DoxyCompactList}\small\item\em Deleted:\+ \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena} owns a single aligned allocation, so copy-\/assignment would risk a double-\/free. \end{DoxyCompactList}\item 
+float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats}} (size\+\_\+t num\+\_\+floats)
 \begin{DoxyCompactList}\small\item\em Allocates a 64-\/byte aligned chunk of floats from the arena. \end{DoxyCompactList}\item 
-\Hypertarget{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69}\label{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69} 
-size\+\_\+t {\bfseries Get\+Used\+Bytes} () const
-\item 
-\Hypertarget{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704}\label{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704} 
-size\+\_\+t {\bfseries Get\+Capacity\+Bytes} () const
-\end{DoxyCompactItemize}
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69}{Get\+Used\+Bytes}} () const
+\begin{DoxyCompactList}\small\item\em Returns how many bytes have been allocated from the arena so far. \end{DoxyCompactList}\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704}{Get\+Capacity\+Bytes}} () const
+\begin{DoxyCompactList}\small\item\em Returns the arena\textquotesingle{}s total capacity. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A 64-\/byte-\/aligned bump-\/pointer allocator over a single contiguous block of host memory. Every chunk handed out via \doxylink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats()} is itself 64-\/byte aligned, satisfying this codebase\textquotesingle{}s strict alignment requirement for AVX2/\+\+AVX-\/512 loads. 
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1MemoryArena_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}\index{Deep::MemoryArena@{Deep::MemoryArena}!MemoryArena@{MemoryArena}}
+\index{MemoryArena@{MemoryArena}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{MemoryArena()}{MemoryArena()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e} 
+Deep::\+\+Memory\+Arena::\+\+Memory\+Arena (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{total\+\_\+floats}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Allocates a single 64-\/byte-\/aligned buffer large enough to hold {\ttfamily total\+\_\+floats} floats, rounded up to the nearest 64-\/byte boundary. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em total\+\_\+floats} & Total number of floats this arena can hand out across all future \doxylink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats()} calls combined. \\
+\hline
+\end{DoxyParams}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std::\+bad\+\_\+alloc} & if the underlying aligned allocation fails. \\
+\hline
+\end{DoxyExceptions}
+\Hypertarget{classDeep_1_1MemoryArena_a49fb270b07d4ae887bb0f084bf09d024}\index{Deep::MemoryArena@{Deep::MemoryArena}!````~MemoryArena@{\texorpdfstring{$\sim$}{\string~}MemoryArena}}
+\index{````~MemoryArena@{\texorpdfstring{$\sim$}{\string~}MemoryArena}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}MemoryArena()}{\string~MemoryArena()}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_a49fb270b07d4ae887bb0f084bf09d024} 
+Deep::\+\+Memory\+Arena::\+\texorpdfstring{$\sim$}{\string~}\+Memory\+Arena (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Frees the underlying aligned allocation, if any. 
+
+\Hypertarget{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd}\index{Deep::MemoryArena@{Deep::MemoryArena}!MemoryArena@{MemoryArena}}
+\index{MemoryArena@{MemoryArena}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{MemoryArena()}{MemoryArena()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_a35deffffadd8b70bee90c55d0eb0eacd} 
+Deep::\+\+Memory\+Arena::\+\+Memory\+Arena (\begin{DoxyParamCaption}\item[{const Memory\+Arena \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Deleted:\+ \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena} owns a single aligned allocation, so copying would risk a double-\/free. 
+
+
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1MemoryArena_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}\index{Deep::MemoryArena@{Deep::MemoryArena}!AllocateFloats@{AllocateFloats}}
+\index{AllocateFloats@{AllocateFloats}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{AllocateFloats()}{AllocateFloats()}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338} 
+float \texorpdfstring{$\ast$}{*} Deep::\+\+Memory\+Arena::\+\+Allocate\+Floats (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{num\+\_\+floats}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Allocates a 64-\/byte aligned chunk of floats from the arena. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em num\+\_\+floats} & Number of floats to allocate from the arena. The actual reservation is rounded up to the nearest 64-\/byte boundary, so the returned chunk may have more usable capacity than requested. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to the start of the allocated chunk, valid for the lifetime of this \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}. 64-\/byte aligned. 
+\end{DoxyReturn}
+
+\begin{DoxyExceptions}{Exceptions}
+{\em std::\+runtime\+\_\+error} & if the requested allocation would exceed the arena\textquotesingle{}s total capacity. \\
+\hline
+\end{DoxyExceptions}
+\begin{DoxyWarning}{Warning}
+Individual chunks are never freed independently; the entire arena is released at once in the destructor. 
+\end{DoxyWarning}
+\Hypertarget{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704}\index{Deep::MemoryArena@{Deep::MemoryArena}!GetCapacityBytes@{GetCapacityBytes}}
+\index{GetCapacityBytes@{GetCapacityBytes}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{GetCapacityBytes()}{GetCapacityBytes()}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_af5d7949e8c5767b3a83c6488b03b2704} 
+size\+\_\+t Deep::\+\+Memory\+Arena::\+\+Get\+Capacity\+Bytes (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Returns the arena\textquotesingle{}s total capacity. 
+
+\begin{DoxyReturn}{Returns}
+The capacity, in bytes, rounded up to a multiple of 64. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69}\index{Deep::MemoryArena@{Deep::MemoryArena}!GetUsedBytes@{GetUsedBytes}}
+\index{GetUsedBytes@{GetUsedBytes}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{GetUsedBytes()}{GetUsedBytes()}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_a18292466507e177d192cde18d5d4eb69} 
+size\+\_\+t Deep::\+\+Memory\+Arena::\+\+Get\+Used\+Bytes (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Returns how many bytes have been allocated from the arena so far. 
+
+\begin{DoxyReturn}{Returns}
+The current offset, in bytes. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca}\index{Deep::MemoryArena@{Deep::MemoryArena}!operator=@{operator=}}
+\index{operator=@{operator=}!Deep::MemoryArena@{Deep::MemoryArena}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \label{classDeep_1_1MemoryArena_adcb6d3fab7ac84d0c427b70381afabca} 
+\doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{Memory\+Arena}} \& Deep::\+\+Memory\+Arena::\+operator= (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classDeep_1_1MemoryArena_a4633eb18edd4c1956ea46a418f0e346e}{Memory\+Arena}} \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Deleted:\+ \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena} owns a single aligned allocation, so copy-\/assignment would risk a double-\/free. 
+
 
 
 The documentation for this class was generated from the following file:\+\begin{DoxyCompactItemize}
 \item 
-includes/\+Memory\+Arena.\+h\end{DoxyCompactItemize}
+include/\+deepity/\+\doxymbox{\hyperlink{MemoryArena_8h}{Memory\+Arena.\+h}}\end{DoxyCompactItemize}

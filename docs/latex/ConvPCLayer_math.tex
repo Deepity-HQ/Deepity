@@ -1,0 +1,25 @@
+\chapter{Conv\+PCLayer Mathematical Derivation }
+\hypertarget{ConvPCLayer_math}{}\label{ConvPCLayer_math}\index{ConvPCLayer Mathematical Derivation@{ConvPCLayer Mathematical Derivation}}
+\hypertarget{ConvPCLayer_math_design_notes}{}\doxysection{\texorpdfstring{Design Notes}{Design Notes}}\label{ConvPCLayer_math_design_notes}
+Conv energy/\+state/\+weight derivation, adapted from Discriminative\+PCLayer\textquotesingle{}s already-\/verified formulas:\+\hypertarget{ConvPCLayer_math_dense_formulas}{}\doxysubsection{\texorpdfstring{Discriminative\+PCLayer (dense)}{Discriminative\+PCLayer (dense)}}\label{ConvPCLayer_math_dense_formulas}
+\[\begin{align}
+  \mu &= f(z \cdot W^T + b) && \text{GEMM} \\
+  e &= z_{this} - \mu_{incoming}(\text{from below}) \\
+  \frac{dz}{dt} &+= -p \cdot e && \text{(own term)} \\
+  &+ (e_{above} \cdot p_{above}) \cdot W && \text{(feedback, GEMM, no transpose)} \\
+  dW &+= lr \cdot (e_{above} \cdot p_{above})^T \cdot z && \text{GEMM}
+\end{align}
+\]\hypertarget{ConvPCLayer_math_conv_formulas}{}\doxysubsection{\texorpdfstring{Conv\+PCLayer (conv)}{Conv\+PCLayer (conv)}}\label{ConvPCLayer_math_conv_formulas}
+\[\begin{align}
+  cols &= \text{Im2Col}(z) && (inC \cdot kH \cdot kW, outH \cdot outW) \\
+  &\text{stored in colBuffer, REUSED LATER by UpdateWeights()} \\
+  \mu &= f(W_{flat} \cdot cols + b) && \text{GEMM, same as dense} \\
+  e &= z_{this} - \mu_{incoming}(\text{from below}) && \text{UNCHANGED, elementwise} \\
+  feedback\_cols &= W_{flat}^T \cdot (e_{above} \cdot p_{above}) && \text{GEMM, written to feedbackScratch (NOT colBuffer)} \\
+  \frac{dz}{dt} &+= -p \cdot e && \text{(own term, UNCHANGED)} \\
+  &+ \text{Col2Im}(feedback\_cols) && \text{(scatter back to $(inC,H,W)$)} \\
+  dW_{flat} &+= lr \cdot (e_{above} \cdot p_{above}) \cdot cols^T && \text{GEMM, using colBuffer saved by CalculateState()} \\
+\end{align}
+\]
+
+The forward GEMM and the feedback GEMM are transposes of the SAME weight matrix, mirroring how Discriminative\+PCLayer\textquotesingle{}s forward and feedback GEMMs both use W with Cblas\+Trans flipped between them. 

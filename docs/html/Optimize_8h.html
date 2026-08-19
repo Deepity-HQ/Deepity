@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: includes/Optimize.h File Reference</title>
+<title>Deepity: include/deepity/Optimize.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -110,25 +111,44 @@ $(function(){initNavTree('Optimize_8h.html','',''); });
 </div>
 <p><a href="Optimize_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aa406a94b91fca1119d42385c388ff1ff" id="r_aa406a94b91fca1119d42385c388ff1ff"><td class="memItemLeft"><a id="aa406a94b91fca1119d42385c388ff1ff" name="aa406a94b91fca1119d42385c388ff1ff"></a>
-void&#160;</td><td class="memItemRight"><b>openblas_set_num_threads</b> (int num_threads)</td></tr>
-<tr class="memitem:a1f6c92c5abb579ef6bf96a0047d54342" id="r_a1f6c92c5abb579ef6bf96a0047d54342"><td class="memItemLeft"><a id="a1f6c92c5abb579ef6bf96a0047d54342" name="a1f6c92c5abb579ef6bf96a0047d54342"></a>
-size_t&#160;</td><td class="memItemRight"><b>Deep::GetL2CacheBytes</b> ()</td></tr>
-<tr class="memitem:a94bef4184e1ca26cb5f79296395b4004" id="r_a94bef4184e1ca26cb5f79296395b4004"><td class="memItemLeft"><a id="a94bef4184e1ca26cb5f79296395b4004" name="a94bef4184e1ca26cb5f79296395b4004"></a>
-size_t&#160;</td><td class="memItemRight"><b>Deep::AutoBatchSize</b> (size_t inSize, size_t outSize)</td></tr>
+<tr class="memitem:aa406a94b91fca1119d42385c388ff1ff" id="r_aa406a94b91fca1119d42385c388ff1ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa406a94b91fca1119d42385c388ff1ff">openblas_set_num_threads</a> (int num_threads)</td></tr>
+<tr class="memitem:a1f6c92c5abb579ef6bf96a0047d54342" id="r_a1f6c92c5abb579ef6bf96a0047d54342"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">Deep::GetL2CacheBytes</a> ()</td></tr>
+<tr class="memitem:a94bef4184e1ca26cb5f79296395b4004" id="r_a94bef4184e1ca26cb5f79296395b4004"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004">Deep::AutoBatchSize</a> (size_t inSize, size_t outSize)</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines useful optimization functions of a PC model. </p>
 <p>This header currently only includes implementation of an L2 Cache size lookup.</p>
-<p>Usage: #include &lt;<a class="el" href="Optimize_8h.html" title="Defines useful optimization functions of a PC model.">Optimize.h</a>&gt;</p>
+<p>Usage: #include &lt;<a class="el" href="Optimize_8h.html" title="Defines useful optimization functions of a PC model.">deepity/Optimize.h</a>&gt;</p>
 <p>Example: size_t sizeofL2 = GetL2CacheBytes();</p>
 <dl class="section note"><dt>Note</dt><dd>Separate versions exist for Windows VS. Linux. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2026-06-21 </dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>
-</div></div><!-- contents -->
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
+<a id="aa406a94b91fca1119d42385c388ff1ff" name="aa406a94b91fca1119d42385c388ff1ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa406a94b91fca1119d42385c388ff1ff">&#9670;&#160;</a></span>openblas_set_num_threads()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void openblas_set_num_threads </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>num_threads</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
 <div id="page-nav-resize-handle"></div>
@@ -141,7 +161,7 @@ size_t&#160;</td><td class="memItemRight"><b>Deep::AutoBatchSize</b> (size_t inS
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>includes</b></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

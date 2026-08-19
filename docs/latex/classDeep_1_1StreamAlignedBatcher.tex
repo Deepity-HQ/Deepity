@@ -1,0 +1,125 @@
+\doxysection{Deep::\+Stream\+Aligned\+Batcher Class Reference}
+\hypertarget{classDeep_1_1StreamAlignedBatcher}{}\label{classDeep_1_1StreamAlignedBatcher}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+
+
+{\ttfamily \+\#include $<$Stream\+Aligned\+Batcher.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_a7b85750508e4e9882f656027ba7e730b}{Stream\+Aligned\+Batcher}} (const float \texorpdfstring{$\ast$}{*}X, const float \texorpdfstring{$\ast$}{*}Y, const int \texorpdfstring{$\ast$}{*}labels, size\+\_\+t num\+Samples, size\+\_\+t x\+Stride, size\+\_\+t y\+Stride, int num\+Classes, int per\+Class, unsigned seed=42)
+\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_aa14e92ec71dec9635bbdbef9faebb06b}{Num\+Batches\+Per\+Epoch}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Number of complete batches obtainable per epoch, limited by the rarest class\textquotesingle{}s sample count (matches the Python version\textquotesingle{}s behavior -- some samples from more common classes go unused each epoch, rather than padding/\+repeating to force even usage). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_aca65ab8f7a124767d3a45577a7200d16}{Get\+Batch}} (float \texorpdfstring{$\ast$}{*}X\+\_\+out, float \texorpdfstring{$\ast$}{*}Y\+\_\+out, int \texorpdfstring{$\ast$}{*}labels\+\_\+out) noexcept
+\begin{DoxyCompactList}\small\item\em Fills the next batch into caller-\/provided, pre-\/allocated output buffers. Rows are GROUPED by class:\+ rows \+[0, per\+Class) are class 0, \+[per\+Class, 2\texorpdfstring{$\ast$}{*}per\+Class) are class 1, etc. -- same convention as the Python version, so per-\/class slicing for cache-\/averaging is a trivial contiguous range. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ad67843b5322c419d45343ab19cdb94c8}{Get\+Batch\+Size}} () const noexcept
+\item 
+int \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ae85a2675756ddbbc264c4a44a8e9e02b}{Get\+Per\+Class}} () const noexcept
+\item 
+int \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ab154209d06f27c16ed33e70c8f0705cd}{Get\+Num\+Classes}} () const noexcept
+\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_ad4a5d799cab3cebf207a529535defc2f}{Get\+XStride}} () const noexcept
+\item 
+size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher_a6d913163a45ab64996674824b6a6468f}{Get\+YStride}} () const noexcept
+\end{DoxyCompactItemize}
+
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_a7b85750508e4e9882f656027ba7e730b}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!StreamAlignedBatcher@{StreamAlignedBatcher}}
+\index{StreamAlignedBatcher@{StreamAlignedBatcher}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{StreamAlignedBatcher()}{StreamAlignedBatcher()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_a7b85750508e4e9882f656027ba7e730b} 
+Deep::\+\+Stream\+Aligned\+Batcher::\+\+Stream\+Aligned\+Batcher (\begin{DoxyParamCaption}\item[{const float \texorpdfstring{$\ast$}{*}}]{X}{, }\item[{const float \texorpdfstring{$\ast$}{*}}]{Y}{, }\item[{const int \texorpdfstring{$\ast$}{*}}]{labels}{, }\item[{size\+\_\+t}]{num\+Samples}{, }\item[{size\+\_\+t}]{x\+Stride}{, }\item[{size\+\_\+t}]{y\+Stride}{, }\item[{int}]{num\+Classes}{, }\item[{int}]{per\+Class}{, }\item[{unsigned}]{seed}{ = {\ttfamily 42}}\end{DoxyParamCaption})}
+
+
+\begin{DoxyParams}{Parameters}
+{\em X} & Flat, row-\/major input data, num\+Samples rows of x\+Stride floats each. NOT owned. \\
+\hline
+{\em Y} & Flat, row-\/major target data, num\+Samples rows of y\+Stride floats each. NOT owned. \\
+\hline
+{\em labels} & Integer class label per sample, length num\+Samples. NOT owned. \\
+\hline
+{\em num\+Samples} & Total number of samples in X/\+\+Y/\+labels. \\
+\hline
+{\em x\+Stride} & Floats per X row. \\
+\hline
+{\em y\+Stride} & Floats per Y row. \\
+\hline
+{\em num\+Classes} & Number of distinct classes (labels expected in \+[0, num\+Classes)). \\
+\hline
+{\em per\+Class} & Examples per class per batch (batch size = num\+Classes \texorpdfstring{$\ast$}{*} per\+Class). \\
+\hline
+\end{DoxyParams}
+
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_aca65ab8f7a124767d3a45577a7200d16}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetBatch@{GetBatch}}
+\index{GetBatch@{GetBatch}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetBatch()}{GetBatch()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_aca65ab8f7a124767d3a45577a7200d16} 
+void Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+Batch (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}}]{X\+\_\+out}{, }\item[{float \texorpdfstring{$\ast$}{*}}]{Y\+\_\+out}{, }\item[{int \texorpdfstring{$\ast$}{*}}]{labels\+\_\+out}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Fills the next batch into caller-\/provided, pre-\/allocated output buffers. Rows are GROUPED by class:\+ rows \+[0, per\+Class) are class 0, \+[per\+Class, 2\texorpdfstring{$\ast$}{*}per\+Class) are class 1, etc. -- same convention as the Python version, so per-\/class slicing for cache-\/averaging is a trivial contiguous range. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em X\+\_\+out} & Must be sized (num\+Classes\texorpdfstring{$\ast$}{*}per\+Class) \texorpdfstring{$\ast$}{*} x\+Stride. \\
+\hline
+{\em Y\+\_\+out} & Must be sized (num\+Classes\texorpdfstring{$\ast$}{*}per\+Class) \texorpdfstring{$\ast$}{*} y\+Stride. \\
+\hline
+{\em labels\+\_\+out} & Must be sized (num\+Classes\texorpdfstring{$\ast$}{*}per\+Class). \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_ad67843b5322c419d45343ab19cdb94c8}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_ad67843b5322c419d45343ab19cdb94c8} 
+int Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_ab154209d06f27c16ed33e70c8f0705cd}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetNumClasses@{GetNumClasses}}
+\index{GetNumClasses@{GetNumClasses}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetNumClasses()}{GetNumClasses()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_ab154209d06f27c16ed33e70c8f0705cd} 
+int Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+Num\+Classes (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_ae85a2675756ddbbc264c4a44a8e9e02b}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetPerClass@{GetPerClass}}
+\index{GetPerClass@{GetPerClass}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetPerClass()}{GetPerClass()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_ae85a2675756ddbbc264c4a44a8e9e02b} 
+int Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+Per\+Class (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_ad4a5d799cab3cebf207a529535defc2f}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetXStride@{GetXStride}}
+\index{GetXStride@{GetXStride}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetXStride()}{GetXStride()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_ad4a5d799cab3cebf207a529535defc2f} 
+size\+\_\+t Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+XStride (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_a6d913163a45ab64996674824b6a6468f}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!GetYStride@{GetYStride}}
+\index{GetYStride@{GetYStride}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{GetYStride()}{GetYStride()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_a6d913163a45ab64996674824b6a6468f} 
+size\+\_\+t Deep::\+\+Stream\+Aligned\+Batcher::\+\+Get\+YStride (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+\Hypertarget{classDeep_1_1StreamAlignedBatcher_aa14e92ec71dec9635bbdbef9faebb06b}\index{Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}!NumBatchesPerEpoch@{NumBatchesPerEpoch}}
+\index{NumBatchesPerEpoch@{NumBatchesPerEpoch}!Deep::StreamAlignedBatcher@{Deep::StreamAlignedBatcher}}
+\doxysubsubsection{\texorpdfstring{NumBatchesPerEpoch()}{NumBatchesPerEpoch()}}
+{\footnotesize\ttfamily \label{classDeep_1_1StreamAlignedBatcher_aa14e92ec71dec9635bbdbef9faebb06b} 
+size\+\_\+t Deep::\+\+Stream\+Aligned\+Batcher::\+\+Num\+Batches\+Per\+Epoch (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Number of complete batches obtainable per epoch, limited by the rarest class\textquotesingle{}s sample count (matches the Python version\textquotesingle{}s behavior -- some samples from more common classes go unused each epoch, rather than padding/\+repeating to force even usage). 
+
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+\doxymbox{\hyperlink{StreamAlignedBatcher_8h}{Stream\+Aligned\+Batcher.\+h}}\item 
+src/\+\doxymbox{\hyperlink{StreamAlignedBatcher_8cpp}{Stream\+Aligned\+Batcher.\+cpp}}\end{DoxyCompactItemize}

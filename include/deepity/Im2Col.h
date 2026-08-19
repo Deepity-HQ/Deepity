@@ -34,15 +34,57 @@
  *
  * Neither function knows anything about batching -- call once per batch
  * item, with pointers offset to that item's slice.
+ *
+ * @note Each SIMD width (AVX-512/AVX2+AVX/SSE) is handled as a separate
+ * preprocessor branch with its own scalar-tail fallback along the
+ * stride-1 fast path; the strided (strideW != 1) path is always scalar,
+ * since a fixed vector width can't align with an arbitrary stride.
+ * @version 1.0
+ * @date 2026-06-30
+ * @author Jack Rose
  */
 
 namespace Deep
 {
+    /// @brief Computes a single convolution output dimension (height or
+    /// width) from its corresponding input dimension and conv parameters.
+    /// @param inDim Input dimension (height or width) before convolution.
+    /// @param kernel Kernel size along this dimension.
+    /// @param stride Stride along this dimension.
+    /// @param pad Zero-padding applied to both sides of this dimension.
+    /// @return The resulting output dimension:
+    /// `(inDim + 2*pad - kernel) / stride + 1`.
     inline int ConvOutDim(int inDim, int kernel, int stride, int pad) noexcept
     {
         return (inDim + 2 * pad - kernel) / stride + 1;
     }
 
+    /// @brief Rearranges a single (channels, height, width) input image
+    /// into a (channels*kH*kW, outH*outW) column matrix, where each
+    /// column holds one flattened receptive-field patch -- the standard
+    /// im2col transform that lets convolution be computed as a single
+    /// GEMM against a (outChannels, channels*kH*kW) weight matrix.
+    ///
+    /// Positions that fall outside the input (due to padding) are
+    /// written as zero.
+    ///
+    /// @param input Pointer to a single batch item's input image, layout
+    /// (channels, height, width), row-major, contiguous per channel.
+    /// @param channels Number of input channels.
+    /// @param height Input image height.
+    /// @param width Input image width.
+    /// @param kH Kernel height.
+    /// @param kW Kernel width.
+    /// @param strideH Vertical stride.
+    /// @param strideW Horizontal stride.
+    /// @param padH Vertical zero-padding.
+    /// @param padW Horizontal zero-padding.
+    /// @param columns Output buffer of shape
+    /// (channels*kH*kW, outH*outW), fully overwritten (not accumulated
+    /// into). Must be preallocated by the caller with size computed from
+    /// ConvOutDim().
+    /// @warning Not batch-aware -- call once per batch item, with @p input
+    /// and @p columns offset to that item's slice.
     inline void Im2Col(const float *input,
                        int channels, int height, int width,
                        int kH, int kW,
@@ -81,8 +123,8 @@ namespace Deep
                         {
                             const int first = padW > kw ? padW - kw : 0;
                             const int last = width + padW - kw < outW
-                                ? width + padW - kw
-                                : outW;
+                                                 ? width + padW - kw
+                                                 : outW;
 
                             int ow = 0;
 
@@ -136,6 +178,38 @@ namespace Deep
         }
     }
 
+    /// @brief The adjoint of Im2Col(): scatters a
+    /// (channels*kH*kW, outH*outW) column-gradient buffer back into a
+    /// (channels, height, width) image.
+    ///
+    /// Verified (see file-level note) to be the TRUE mathematical adjoint
+    /// of Im2Col(), not just an inverse-shaped operation -- this is what
+    /// makes it safe to use for ConvPCLayer's feedback term.
+    ///
+    /// @param columns Input buffer of shape
+    /// (channels*kH*kW, outH*outW), typically a gradient produced by a
+    /// GEMM against the same weight matrix used in the forward Im2Col()
+    /// pass.
+    /// @param channels Number of output-image channels.
+    /// @param height Output image height (the original pre-Im2Col
+    /// input height).
+    /// @param width Output image width (the original pre-Im2Col
+    /// input width).
+    /// @param kH Kernel height.
+    /// @param kW Kernel width.
+    /// @param strideH Vertical stride.
+    /// @param strideW Horizontal stride.
+    /// @param padH Vertical zero-padding.
+    /// @param padW Horizontal zero-padding.
+    /// @param outputImage Output buffer of shape (channels, height,
+    /// width). ACCUMULATED into (values are added, not overwritten) --
+    /// the caller must zero this buffer first if a fresh result is
+    /// wanted.
+    /// @warning Not batch-aware -- call once per batch item, with
+    /// @p columns and @p outputImage offset to that item's slice.
+    /// @warning Accumulates into @p outputImage rather than overwriting
+    /// it; failing to memset the destination first will add this call's
+    /// result on top of whatever was already there.
     inline void Col2Im(const float *columns,
                        int channels, int height, int width,
                        int kH, int kW,
@@ -175,8 +249,8 @@ namespace Deep
                         {
                             const int first = padW > kw ? padW - kw : 0;
                             const int last = width + padW - kw < outW
-                                ? width + padW - kw
-                                : outW;
+                                                 ? width + padW - kw
+                                                 : outW;
 
                             const float *s = src + first;
                             float *d = dst + first - padW + kw;

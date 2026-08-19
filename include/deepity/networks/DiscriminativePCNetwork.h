@@ -104,10 +104,26 @@ namespace Deep
             return layers.back();
         }
 
-        void SetLearningRate(float lr) { for (auto layer : layers) layer->SetLearningRate(lr); }
-        void SetInferenceRate(float ir) { for (auto layer : layers) layer->SetLearningRate(ir); }
-        void SetPrecisionRate(float pr) { for (auto layer : layers) layer->SetPrecisionRate(pr); }
-        void SetLambda(float l) { for (auto layer : layers) layer->SetLambda(l); }
+        void SetLearningRate(float lr)
+        {
+            for (auto layer : layers)
+                layer->SetLearningRate(lr);
+        }
+        void SetInferenceRate(float ir)
+        {
+            for (auto layer : layers)
+                layer->SetLearningRate(ir);
+        }
+        void SetPrecisionRate(float pr)
+        {
+            for (auto layer : layers)
+                layer->SetPrecisionRate(pr);
+        }
+        void SetLambda(float l)
+        {
+            for (auto layer : layers)
+                layer->SetLambda(l);
+        }
 
         /// @brief Runs a complete training step (clamp, settle, update, unclamp)
         /// @param x The batched input data
@@ -125,10 +141,11 @@ namespace Deep
         bool Save(const std::string &filename) const noexcept;
         bool Load(const std::string &filename) noexcept;
 
+        /// @brief Loads all layers into one contiguous block of memory.
         void Compile();
 
     private:
         std::unique_ptr<MemoryArena> arena;
-    friend class PCNDiagnostics;
+        friend class PCNDiagnostics;
     };
 }

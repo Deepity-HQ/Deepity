@@ -1,0 +1,72 @@
+\doxysection{Deep::\+Model\+IO Class Reference}
+\hypertarget{classDeep_1_1ModelIO}{}\label{classDeep_1_1ModelIO}\index{Deep::ModelIO@{Deep::ModelIO}}
+
+
+Static utility class for saving and loading \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork} model state to/\+from a structured directory on disk.  
+
+
+
+
+{\ttfamily \+\#include $<$Model\+IO.\+h$>$}
+
+\doxysubsubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static bool \doxymbox{\hyperlink{classDeep_1_1ModelIO_a3662d697bcb32ea272c8b3ce065faf21}{Save}} (const \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}} \&net, const std::\+string \&dir\+Path)
+\begin{DoxyCompactList}\small\item\em Saves the network into a structured directory (manifest.\+json, weights.\+bin, README.\+md). \end{DoxyCompactList}\item 
+static bool \doxymbox{\hyperlink{classDeep_1_1ModelIO_aff573d97a8059f6a5f30f5ba784e26a2}{Load}} (\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}} \&net, const std::\+string \&dir\+Path)
+\begin{DoxyCompactList}\small\item\em Loads a network state from a structured directory. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Static utility class for saving and loading \doxylink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork} model state to/\+from a structured directory on disk. 
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1ModelIO_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1ModelIO_aff573d97a8059f6a5f30f5ba784e26a2}\index{Deep::ModelIO@{Deep::ModelIO}!Load@{Load}}
+\index{Load@{Load}!Deep::ModelIO@{Deep::ModelIO}}
+\doxysubsubsection{\texorpdfstring{Load()}{Load()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ModelIO_aff573d97a8059f6a5f30f5ba784e26a2} 
+bool Deep::\+\+Model\+IO::\+\+Load (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}} \&}]{net}{, }\item[{const std::\+string \&}]{dir\+Path}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Loads a network state from a structured directory. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em net} & The network to load state into. Its layer configuration is expected to already match (or be rebuilt from) what\textquotesingle{}s recorded in the manifest; existing weights are overwritten with the loaded values. \\
+\hline
+{\em dir\+Path} & Path to a directory previously written by \doxylink{classDeep_1_1ModelIO_a3662d697bcb32ea272c8b3ce065faf21}{Save()}. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if the network was loaded successfully, false otherwise (e.\+g. missing/\+malformed files). 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1ModelIO_a3662d697bcb32ea272c8b3ce065faf21}\index{Deep::ModelIO@{Deep::ModelIO}!Save@{Save}}
+\index{Save@{Save}!Deep::ModelIO@{Deep::ModelIO}}
+\doxysubsubsection{\texorpdfstring{Save()}{Save()}}
+{\footnotesize\ttfamily \label{classDeep_1_1ModelIO_a3662d697bcb32ea272c8b3ce065faf21} 
+bool Deep::\+\+Model\+IO::\+\+Save (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{Discriminative\+PCNetwork}} \&}]{net}{, }\item[{const std::\+string \&}]{dir\+Path}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Saves the network into a structured directory (manifest.\+json, weights.\+bin, README.\+md). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em net} & The network whose state (weights, biases, and per-\/layer configuration) should be saved. \\
+\hline
+{\em dir\+Path} & Path to the directory to save into; created if it doesn\textquotesingle{}t already exist. Any existing contents at this path may be overwritten. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+true if every file was written successfully, false otherwise. 
+\end{DoxyReturn}
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+\doxymbox{\hyperlink{ModelIO_8h}{Model\+IO.\+h}}\item 
+src/\+\doxymbox{\hyperlink{ModelIO_8cpp}{Model\+IO.\+cpp}}\end{DoxyCompactItemize}

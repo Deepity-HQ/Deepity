@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['flush_0',['Flush',['../classDeep_1_1DiscriminativePCLayer.html#a6d31245ccb390d8279da33f9d4014eda',1,'Deep::DiscriminativePCLayer::Flush()'],['../classDeep_1_1Layer.html#aa25f07b8ffa01f5de94cd96edbcd103d',1,'Deep::Layer::Flush()'],['../classDeep_1_1RBLayer.html#a5cef7ef9caec43df0f7496c5363e07aa',1,'Deep::RBLayer::Flush()']]]
+  ['e_5fsigmoid_0',['e_sigmoid',['../namespaceDeep.html#ac83ec1ef9cfd17806563be3f5a2d5b50',1,'Deep']]],
+  ['elapsed_1',['elapsed',['../classTimer.html#a6a89a613c2af9b0d1e5f7e4ba9e46c54',1,'Timer']]]
 ];

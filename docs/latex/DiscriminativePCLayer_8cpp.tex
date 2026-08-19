@@ -1,0 +1,39 @@
+\doxysection{src/\+\+Discriminative\+PCLayer.cpp File Reference}
+\hypertarget{DiscriminativePCLayer_8cpp}{}\label{DiscriminativePCLayer_8cpp}\index{src/DiscriminativePCLayer.cpp@{src/DiscriminativePCLayer.cpp}}
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Discriminative\+PCLayer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Optimize.\+h$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$iostream$>$}\newline
+{\ttfamily \+\#include $<$chrono$>$}\newline
+{\ttfamily \+\#include $<$cblas.\+h$>$}\newline
+{\ttfamily \+\#include $<$omp.\+h$>$}\newline
+{\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
+{\ttfamily \+\#include $<$algorithm$>$}\newline
+{\ttfamily \+\#include $<$sleef.\+h$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{DiscriminativePCLayer_8cpp_a35cab29dbe53f69302cda53eabc7cf09}{ALIGN64}}(n)
+\end{DoxyCompactItemize}
+
+
+\label{doc-define-members}
+\Hypertarget{DiscriminativePCLayer_8cpp_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{DiscriminativePCLayer_8cpp_a35cab29dbe53f69302cda53eabc7cf09}\index{DiscriminativePCLayer.cpp@{DiscriminativePCLayer.cpp}!ALIGN64@{ALIGN64}}
+\index{ALIGN64@{ALIGN64}!DiscriminativePCLayer.cpp@{DiscriminativePCLayer.cpp}}
+\doxysubsubsection{\texorpdfstring{ALIGN64}{ALIGN64}}
+{\footnotesize\ttfamily \label{DiscriminativePCLayer_8cpp_a35cab29dbe53f69302cda53eabc7cf09} 
+\+\#define ALIGN64(\begin{DoxyParamCaption}\item[{}]{n}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{(((n)\ +\ 63)\ \&\ \string~63)}
+
+\end{DoxyCode}

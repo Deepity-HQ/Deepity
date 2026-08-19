@@ -1,5 +1,5 @@
-\doxysection{includes/\+\+Discriminative\+PCLayer.h File Reference}
-\hypertarget{DiscriminativePCLayer_8h}{}\label{DiscriminativePCLayer_8h}\index{includes/DiscriminativePCLayer.h@{includes/DiscriminativePCLayer.h}}
+\doxysection{include/\+deepity/\+layers/\+\+Discriminative\+PCLayer.h File Reference}
+\hypertarget{DiscriminativePCLayer_8h}{}\label{DiscriminativePCLayer_8h}\index{include/deepity/layers/DiscriminativePCLayer.h@{include/deepity/layers/DiscriminativePCLayer.h}}
 
 
 Defines the single-\/layer implementation of a PC model.  
@@ -10,13 +10,18 @@ Defines the single-\/layer implementation of a PC model.
 {\ttfamily \+\#include $<$random$>$}\newline
 {\ttfamily \+\#include $<$memory$>$}\newline
 {\ttfamily \+\#include $<$cstdlib$>$}\newline
-{\ttfamily \+\#include "{}Activations.\+h"{}}\newline
-{\ttfamily \+\#include "{}Layer.\+h"{}}\newline
-{\ttfamily \+\#include "{}Memory\+Arena.\+h"{}}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Layer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
 \doxysubsubsection*{Classes}
 \begin{DoxyCompactItemize}
 \item 
 class \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Deep::\+\+Discriminative\+PCLayer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
 \end{DoxyCompactItemize}
 
 
@@ -27,7 +32,7 @@ Defines the network-\/level implementation of a PC model.
 
 This header includes implementations of state calculation, state updates, and learning.
 
-Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{DiscriminativePCLayer_8h}{Discriminative\+PCLayer.\+h}\texorpdfstring{$>$}{>}
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{DiscriminativePCLayer_8h}{deepity/\+layers/\+\+Discriminative\+PCLayer.\+h}\texorpdfstring{$>$}{>}
 
 Example:\+ \doxylink{classDeep_1_1Layer}{Deep::\+\+Layer} layer(2, 3, 1, 1e-\/6); layer.\+Clamp\+State(\{ 0.\+1f, 0.\+75f \}); layer.\+Calculate\+State();
 
@@ -45,7 +50,7 @@ Jack Rose
 \end{DoxyAuthor}
 This header includes implementations of PC layer-\/to-\/layer interaction.
 
-Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{DiscriminativePCNetwork_8h_source}{Discriminative\+PCNetwork.\+h}\texorpdfstring{$>$}{>}
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{DiscriminativePCNetwork_8h}{deepity/\+networks/\+\+Discriminative\+PCNetwork.\+h}\texorpdfstring{$>$}{>}
 
 Example:\+ \doxylink{classDeep_1_1DiscriminativePCNetwork}{Deep::\+\+Discriminative\+PCNetwork} network(1); network.\+add\+Layer(\{...\}); network.\+Clamp(input); network.\+Calculate\+State();
 

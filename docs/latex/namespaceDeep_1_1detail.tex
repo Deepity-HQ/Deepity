@@ -1,0 +1,52 @@
+\doxysection{Deep::\+detail Namespace Reference}
+\hypertarget{namespaceDeep_1_1detail}{}\label{namespaceDeep_1_1detail}\index{Deep::detail@{Deep::detail}}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Aligned\+Alloc\+Portable}} (size\+\_\+t alignment, size\+\_\+t size)
+\begin{DoxyCompactList}\small\item\em Allocates a block of memory aligned to {\ttfamily alignment} bytes, using whichever aligned-\/allocation API is actually reliable on the current platform (see the comment above for why this can\textquotesingle{}t just be std::\+aligned\+\_\+alloc everywhere). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}{Aligned\+Free\+Portable}} (void \texorpdfstring{$\ast$}{*}ptr)
+\begin{DoxyCompactList}\small\item\em Frees a block previously returned by \doxylink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Aligned\+Alloc\+Portable()}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\label{doc-func-members}
+\Hypertarget{namespaceDeep_1_1detail_doc-func-members}
+\doxysubsection{Function Documentation}
+\Hypertarget{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}\index{Deep::detail@{Deep::detail}!AlignedAllocPortable@{AlignedAllocPortable}}
+\index{AlignedAllocPortable@{AlignedAllocPortable}!Deep::detail@{Deep::detail}}
+\doxysubsubsection{\texorpdfstring{AlignedAllocPortable()}{AlignedAllocPortable()}}
+{\footnotesize\ttfamily \label{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c} 
+void \texorpdfstring{$\ast$}{*} Deep::\+detail::\+\+Aligned\+Alloc\+Portable (\begin{DoxyParamCaption}\item[{size\+\_\+t}]{alignment}{, }\item[{size\+\_\+t}]{size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Allocates a block of memory aligned to {\ttfamily alignment} bytes, using whichever aligned-\/allocation API is actually reliable on the current platform (see the comment above for why this can\textquotesingle{}t just be std::\+aligned\+\_\+alloc everywhere). 
+
+
+\begin{DoxyParams}{Parameters}
+{\em alignment} & Required alignment, in bytes. Must be a valid alignment for the platform\textquotesingle{}s underlying allocator (e.\+g. a power of two). \\
+\hline
+{\em size} & Number of bytes to allocate. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Pointer to the allocated block, or nullptr on failure. 
+\end{DoxyReturn}
+\begin{DoxyWarning}{Warning}
+The pointer returned must be freed with \doxylink{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}{Aligned\+Free\+Portable()}, never plain free() or delete -- the underlying allocator differs by platform and the two must be paired correctly. 
+\end{DoxyWarning}
+\Hypertarget{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}\index{Deep::detail@{Deep::detail}!AlignedFreePortable@{AlignedFreePortable}}
+\index{AlignedFreePortable@{AlignedFreePortable}!Deep::detail@{Deep::detail}}
+\doxysubsubsection{\texorpdfstring{AlignedFreePortable()}{AlignedFreePortable()}}
+{\footnotesize\ttfamily \label{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca} 
+void Deep::\+detail::\+\+Aligned\+Free\+Portable (\begin{DoxyParamCaption}\item[{void \texorpdfstring{$\ast$}{*}}]{ptr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Frees a block previously returned by \doxylink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Aligned\+Alloc\+Portable()}. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ptr} & Pointer to free; must have been returned by \doxylink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Aligned\+Alloc\+Portable()}, not by plain malloc()/\+new or any other allocator. \\
+\hline
+\end{DoxyParams}

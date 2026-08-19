@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -111,11 +112,11 @@ $(function(){initNavTree('classDeep_1_1RBLayer.html','',''); });
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">GetBatchSize</a>() const noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">GetBeliefs</a>() noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">GetErrors</a>() const noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">inline</span><span class="mlabel">virtual</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>GetInferenceError</b>() const noexcept (defined in <a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a>)</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a23cb469a779702cc89c110cb33143f3f">GetInferenceError</a>() const noexcept</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">GetInputSize</a>() const noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">GetOutputSize</a>() const noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a743571cb2fde273c62b820d90c618c66">GetTotalSize</a>() const noexcept</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>GetWeights</b>() const noexcept (defined in <a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a>)</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a716d52f7ba8028e9276e4e8a61191a9b">GetWeights</a>() const noexcept</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a></td><td class="entry"><a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td><td class="entry"><span class="mlabel">protected</span></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd">RBLayer</a>(size_t inSize, size_t outSize, float var=1.0f, float var_td=10.0f, float k_1=1e-3f, float k_2=1e-5f, float lmbda=1e-6f, float alpha=1.0f, size_t batchSize=64, int stepSize=30, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#ad1fcdf0468974b1af5c7e778e91b2ebf">RunInferenceStep</a>(const float *input, const float *topDown, size_t currentBatchSize) noexcept</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
@@ -125,8 +126,8 @@ $(function(){initNavTree('classDeep_1_1RBLayer.html','',''); });
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">UpdateState</a>() noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a500c18f5ba9df30dda7cb2dfa26f4370">UpdateWeights</a>(size_t currentBatchSize) noexcept</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">UpdateWeights</a>() noexcept override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>~Layer</b>()=default (defined in <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a>)</td><td class="entry"><a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>~RBLayer</b>() override (defined in <a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a>)</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1Layer.html#a7345cceda85f2a8c845fc00db21c6d4d">~Layer</a>()=default</td><td class="entry"><a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td><td class="entry"><span class="mlabel">virtual</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html#a6a42bddaa3f7b7df37c4834908f72783">~RBLayer</a>() override</td><td class="entry"><a class="el" href="classDeep_1_1RBLayer.html">Deep::RBLayer</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

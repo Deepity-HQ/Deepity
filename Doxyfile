@@ -54,7 +54,7 @@ PROJECT_NUMBER         =
 # for a project that appears at the top of each page and should give viewers a
 # quick idea about the purpose of the project. Keep the description short.
 
-PROJECT_BRIEF          = "Ultra-low variance Predictive Coding engine"
+PROJECT_BRIEF          = "Ultra-fast, SIMD-accelerated Predictive Coding"
 
 # With the PROJECT_LOGO tag one can specify a logo or an icon that is included
 # in the documentation. The maximum height of the logo should not exceed 55
@@ -548,7 +548,7 @@ TIMESTAMP              = NO
 # normally produced when WARNINGS is set to YES.
 # The default value is: NO.
 
-EXTRACT_ALL            = NO
+EXTRACT_ALL            = YES
 
 # If the EXTRACT_PRIVATE tag is set to YES, all private members of a class will
 # be included in the documentation.
@@ -1026,7 +1026,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = src/ includes/ README.md
+INPUT                  = src/ include/ docs/mainpage.md
 
 # This tag can be used to specify the character encoding of the source files
 # that Doxygen parses. Internally Doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1241,7 +1241,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the Doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = README.md
+USE_MDFILE_AS_MAINPAGE = docs/mainpage.md
 
 # If the IMPLICIT_DIR_DOCS tag is set to YES, any README.md file found in sub-
 # directories of the project's root, is used as the documentation for that sub-
@@ -1490,7 +1490,7 @@ HTML_STYLESHEET        =
 # documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  =
+HTML_EXTRA_STYLESHEET  = resources/customdoxygen.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note

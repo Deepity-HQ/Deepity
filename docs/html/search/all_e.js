@@ -1,7 +1,17 @@
 var searchData=
 [
-  ['scheduling_0',['Dynamic Thread Scheduling',['../index.html#autotoc_md11',1,'']]],
-  ['see_20it_20train_20mnist_20on_20the_20cpu_20in_20under_20an_20hour_3a_1',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]],
-  ['separate_2',['Memory Layout: Contiguous vs. Separate',['../index.html#autotoc_md12',1,'']]],
-  ['structure_3',['🏗️ Project Structure',['../index.html#autotoc_md18',1,'']]]
+  ['randomizeweights_0',['RandomizeWeights',['../classDeep_1_1ConvPCLayer.html#ac5d599c4bf0c6dd617e33849bda71663',1,'Deep::ConvPCLayer::RandomizeWeights()'],['../classDeep_1_1DiscriminativePCLayer.html#ac0487aab6d212d0d35421ae3182f1fbe',1,'Deep::DiscriminativePCLayer::RandomizeWeights()'],['../classDeep_1_1SimpleConvPCLayer.html#ae2ac2d67d8d84d257f0694b171a25511',1,'Deep::SimpleConvPCLayer::RandomizeWeights()'],['../classDeep_1_1SimplePCLayer.html#a6887459397ed3fbe2f30cddec0cd4710',1,'Deep::SimplePCLayer::RandomizeWeights()'],['../classDeep_1_1ConvPCNetwork.html#a3a8eb06c3e271d4096e71d6c3af20f92',1,'Deep::ConvPCNetwork::RandomizeWeights()'],['../classDeep_1_1DiscriminativePCNetwork.html#ad7b33441b523389418b95d305d1e42ac',1,'Deep::DiscriminativePCNetwork::RandomizeWeights()'],['../classDeep_1_1SimplePCNetwork.html#a727f5326dfd8e9b638a7cf2a4c6902b0',1,'Deep::SimplePCNetwork::RandomizeWeights()']]],
+  ['rblayer_1',['RBLayer',['../classDeep_1_1RBLayer.html',1,'Deep::RBLayer'],['../classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd',1,'Deep::RBLayer::RBLayer()']]],
+  ['rblayer_2ecpp_2',['RBLayer.cpp',['../RBLayer_8cpp.html',1,'']]],
+  ['rblayer_2eh_3',['RBLayer.h',['../RBLayer_8h.html',1,'']]],
+  ['read_4',['read',['../structstbi__io__callbacks.html#a623e46b3a2a019611601409926283a88',1,'stbi_io_callbacks']]],
+  ['relu_5',['RELU',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c',1,'Deep']]],
+  ['reset_6',['reset',['../classTimer.html#a9020542d73357a4eef512eefaf57524b',1,'Timer']]],
+  ['resetstate_7',['ResetState',['../classDeep_1_1ConvPCLayer.html#abaedf14b28524e3c0fb364003e435910',1,'Deep::ConvPCLayer::ResetState()'],['../classDeep_1_1DiscriminativePCLayer.html#a7e5a803f047a9724fd50b7862cd443ad',1,'Deep::DiscriminativePCLayer::ResetState()'],['../classDeep_1_1SimpleConvPCLayer.html#ab625276a3806caf9c1074dce2261a164',1,'Deep::SimpleConvPCLayer::ResetState()'],['../classDeep_1_1SimplePCLayer.html#a151f1853dcc7b2d6e06e557df95bb2df',1,'Deep::SimplePCLayer::ResetState()'],['../classDeep_1_1ConvPCNetwork.html#aedc52b9889272cf4d04ad3d51541c122',1,'Deep::ConvPCNetwork::ResetState()'],['../classDeep_1_1DiscriminativePCNetwork.html#a5a5c10b33e3243deb69c9f25b79afb22',1,'Deep::DiscriminativePCNetwork::ResetState()'],['../classDeep_1_1SimplePCNetwork.html#ae0d3f77469fa220ca3fe0cfdc6f1c17e',1,'Deep::SimplePCNetwork::ResetState()']]],
+  ['restrict_8',['RESTRICT',['../Activations_8h.html#aae3356b63849abbe8789dd41648ee90a',1,'RESTRICT:&#160;Activations.h'],['../AdamOptimizer_8h.html#aae3356b63849abbe8789dd41648ee90a',1,'RESTRICT:&#160;AdamOptimizer.h']]],
+  ['resynclogprecision_9',['ResyncLogPrecision',['../classDeep_1_1ConvPCLayer.html#a265f3eb0937208facfdbc09600d9f521',1,'Deep::ConvPCLayer::ResyncLogPrecision()'],['../classDeep_1_1DiscriminativePCLayer.html#a8fc7a24ab49c7928a1ed0a936d44f35e',1,'Deep::DiscriminativePCLayer::ResyncLogPrecision()']]],
+  ['roadmap_10',['Roadmap',['../index.html#roadmap',1,'']]],
+  ['runalltests_11',['RunAllTests',['../classDeep_1_1PCNDiagnostics.html#ac707698472b39f6737f2ee8953e52a8c',1,'Deep::PCNDiagnostics']]],
+  ['runinferencestep_12',['RunInferenceStep',['../classDeep_1_1RBLayer.html#ad1fcdf0468974b1af5c7e778e91b2ebf',1,'Deep::RBLayer']]],
+  ['runprediction_13',['RunPrediction',['../classDeep_1_1RBLayer.html#ab330434bcc4cf32574e23508f714891b',1,'Deep::RBLayer']]]
 ];

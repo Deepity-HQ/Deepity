@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['vs_20clang_20llvm_20performance_0',['⚔️ GCC vs. Clang (LLVM) Performance',['../index.html#autotoc_md5',1,'']]],
-  ['vs_20separate_1',['Memory Layout: Contiguous vs. Separate',['../index.html#autotoc_md12',1,'']]]
+  ['under_20an_20hour_3a_0',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md0',1,'']]],
+  ['usage_1',['🛠️ Example Usage',['../index.html#autotoc_md14',1,'']]]
 ];

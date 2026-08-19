@@ -1,0 +1,29 @@
+\doxysection{include/\+deepity/\+\+Stream\+Aligned\+Batcher.h File Reference}
+\hypertarget{StreamAlignedBatcher_8h}{}\label{StreamAlignedBatcher_8h}\index{include/deepity/StreamAlignedBatcher.h@{include/deepity/StreamAlignedBatcher.h}}
+
+
+C++ port of the Python Stream\+Aligned\+Batcher -- builds batches with a fixed number of examples per class, grouped together, required for I\+\_\+avg\textquotesingle{}s per-\/class averaging (Eq. 7 of "{}\+Faster Predictive Coding Networks via Better Initialization"{}).  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1StreamAlignedBatcher}{Deep::\+\+Stream\+Aligned\+Batcher}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+C++ port of the Python Stream\+Aligned\+Batcher -- builds batches with a fixed number of examples per class, grouped together, required for I\+\_\+avg\textquotesingle{}s per-\/class averaging (Eq. 7 of "{}\+Faster Predictive Coding Networks via Better Initialization"{}). 
+
+Kept deliberately SEPARATE from Discriminative\+PCNetwork/\+\+Simple\+PCNetwork/\+ Conv\+PCNetwork -- this is a standalone data-\/pipeline utility, not part of the core numerical library. Any consumer (C++, or via future bindings) uses it independently, feeding its output into whichever network class they\textquotesingle{}re using via the existing Clamp\+Input/\+\+Clamp\+State-\/style API.
+
+Does NOT own or copy the dataset -- holds pointers + stride info only. Caller must keep X/\+\+Y/\+labels alive for the batcher\textquotesingle{}s lifetime. Get\+Batch() gathers selected rows into caller-\/provided output buffers, so the same buffers can be reused across calls without repeated allocation. 

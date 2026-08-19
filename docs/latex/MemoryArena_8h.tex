@@ -1,0 +1,47 @@
+\doxysection{include/\+deepity/\+\+Memory\+Arena.h File Reference}
+\hypertarget{MemoryArena_8h}{}\label{MemoryArena_8h}\index{include/deepity/MemoryArena.h@{include/deepity/MemoryArena.h}}
+
+
+A 64-\/byte-\/aligned bump-\/pointer allocator over a single heap-\/allocated block, used to pack every layer\textquotesingle{}s beliefs/\+errors/\+ weights/\+scratch buffers into one contiguous region for cache locality (see the "{}\+Contiguous Arena Allocator"{} design note in the project README). Host-\/side counterpart to \doxylink{DeviceMemoryArena_8h}{Device\+Memory\+Arena.\+h}\textquotesingle{}s CUDA version.  
+
+
+{\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$new$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1MemoryArena}{Deep::\+\+Memory\+Arena}}
+\begin{DoxyCompactList}\small\item\em A 64-\/byte-\/aligned bump-\/pointer allocator over a single contiguous block of host memory. Every chunk handed out via \doxylink{classDeep_1_1MemoryArena_af78e70321c76b968facf3b65ec30c338}{Allocate\+Floats()} is itself 64-\/byte aligned, satisfying this codebase\textquotesingle{}s strict alignment requirement for AVX2/\+\+AVX-\/512 loads. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep_1_1detail}{Deep::\+detail}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Deep::\+detail::\+\+Aligned\+Alloc\+Portable}} (size\+\_\+t alignment, size\+\_\+t size)
+\begin{DoxyCompactList}\small\item\em Allocates a block of memory aligned to {\ttfamily alignment} bytes, using whichever aligned-\/allocation API is actually reliable on the current platform (see the comment above for why this can\textquotesingle{}t just be std::\+aligned\+\_\+alloc everywhere). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_1_1detail_aa81d102ebb96772f976ed83e00ae12ca}{Deep::\+detail::\+\+Aligned\+Free\+Portable}} (void \texorpdfstring{$\ast$}{*}ptr)
+\begin{DoxyCompactList}\small\item\em Frees a block previously returned by \doxylink{namespaceDeep_1_1detail_af3da503898a70b79185386c34fc3812c}{Aligned\+Alloc\+Portable()}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A 64-\/byte-\/aligned bump-\/pointer allocator over a single heap-\/allocated block, used to pack every layer\textquotesingle{}s beliefs/\+errors/\+ weights/\+scratch buffers into one contiguous region for cache locality (see the "{}\+Contiguous Arena Allocator"{} design note in the project README). Host-\/side counterpart to \doxylink{DeviceMemoryArena_8h}{Device\+Memory\+Arena.\+h}\textquotesingle{}s CUDA version. 
+
+\begin{DoxyNote}{Note}
+Individual chunks handed out by Allocate\+Floats() cannot be freed independently -- the entire arena is released at once in the destructor, matching the bump-\/pointer/\+no-\/reclaim design used throughout this codebase\textquotesingle{}s memory arenas. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -120,15 +121,13 @@ Inheritance diagram for Deep::RBLayer:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab22f28aa6c0049bfcff6769fe4ea4cdd" id="r_ab22f28aa6c0049bfcff6769fe4ea4cdd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ab22f28aa6c0049bfcff6769fe4ea4cdd">RBLayer</a> (size_t inSize, size_t outSize, float var=1.0f, float var_td=10.0f, float k_1=1e-3f, float k_2=1e-5f, float lmbda=1e-6f, float alpha=1.0f, size_t batchSize=64, int stepSize=30, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
 <tr class="memdesc:ab22f28aa6c0049bfcff6769fe4ea4cdd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an <a class="el" href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer.">RBLayer</a> with specified dimensions and hyperparameters.  <br /></td></tr>
-<tr class="memitem:ab330434bcc4cf32574e23508f714891b" id="r_ab330434bcc4cf32574e23508f714891b"><td class="memItemLeft"><a id="ab330434bcc4cf32574e23508f714891b" name="ab330434bcc4cf32574e23508f714891b"></a>
-void&#160;</td><td class="memItemRight"><b>RunPrediction</b> (const float *input, size_t currentBatchSize) noexcept</td></tr>
-<tr class="memdesc:ab330434bcc4cf32574e23508f714891b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes a forward pass prediction without updating internal beliefs. <br /></td></tr>
-<tr class="memitem:ad1fcdf0468974b1af5c7e778e91b2ebf" id="r_ad1fcdf0468974b1af5c7e778e91b2ebf"><td class="memItemLeft"><a id="ad1fcdf0468974b1af5c7e778e91b2ebf" name="ad1fcdf0468974b1af5c7e778e91b2ebf"></a>
-void&#160;</td><td class="memItemRight"><b>RunInferenceStep</b> (const float *input, const float *topDown, size_t currentBatchSize) noexcept</td></tr>
-<tr class="memdesc:ad1fcdf0468974b1af5c7e778e91b2ebf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes a single bidirectional inference step integrating bottom-up and top-down signals. <br /></td></tr>
-<tr class="memitem:a025abc761fcbe169c099e505437d3c25" id="r_a025abc761fcbe169c099e505437d3c25"><td class="memItemLeft"><a id="a025abc761fcbe169c099e505437d3c25" name="a025abc761fcbe169c099e505437d3c25"></a>
-void&#160;</td><td class="memItemRight"><b>CalcError</b> (const float *bottomUp, const float *topDown, size_t currentBatchSize) noexcept</td></tr>
-<tr class="memdesc:a025abc761fcbe169c099e505437d3c25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the precision-weighted prediction errors. <br /></td></tr>
+<tr class="memitem:a6a42bddaa3f7b7df37c4834908f72783" id="r_a6a42bddaa3f7b7df37c4834908f72783"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6a42bddaa3f7b7df37c4834908f72783">~RBLayer</a> () override</td></tr>
+<tr class="memitem:ab330434bcc4cf32574e23508f714891b" id="r_ab330434bcc4cf32574e23508f714891b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab330434bcc4cf32574e23508f714891b">RunPrediction</a> (const float *input, size_t currentBatchSize) noexcept</td></tr>
+<tr class="memdesc:ab330434bcc4cf32574e23508f714891b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes a forward pass prediction without updating internal beliefs.  <br /></td></tr>
+<tr class="memitem:ad1fcdf0468974b1af5c7e778e91b2ebf" id="r_ad1fcdf0468974b1af5c7e778e91b2ebf"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad1fcdf0468974b1af5c7e778e91b2ebf">RunInferenceStep</a> (const float *input, const float *topDown, size_t currentBatchSize) noexcept</td></tr>
+<tr class="memdesc:ad1fcdf0468974b1af5c7e778e91b2ebf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Executes a single bidirectional inference step integrating bottom-up and top-down signals.  <br /></td></tr>
+<tr class="memitem:a025abc761fcbe169c099e505437d3c25" id="r_a025abc761fcbe169c099e505437d3c25"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a025abc761fcbe169c099e505437d3c25">CalcError</a> (const float *bottomUp, const float *topDown, size_t currentBatchSize) noexcept</td></tr>
+<tr class="memdesc:a025abc761fcbe169c099e505437d3c25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the precision-weighted prediction errors.  <br /></td></tr>
 <tr class="memitem:a5b570e93bdcfb61173523378d0009de7" id="r_a5b570e93bdcfb61173523378d0009de7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5b570e93bdcfb61173523378d0009de7">UpdateBeliefs</a> (const float *bottomUp, const float *topDown, size_t currentBatchSize) noexcept</td></tr>
 <tr class="memdesc:a5b570e93bdcfb61173523378d0009de7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates internal state beliefs via gradient descent on the prediction error.  <br /></td></tr>
 <tr class="memitem:a500c18f5ba9df30dda7cb2dfa26f4370" id="r_a500c18f5ba9df30dda7cb2dfa26f4370"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a500c18f5ba9df30dda7cb2dfa26f4370">UpdateWeights</a> (size_t currentBatchSize) noexcept</td></tr>
@@ -143,14 +142,11 @@ void&#160;</td><td class="memItemRight"><b>CalcError</b> (const float *bottomUp,
 <tr class="memdesc:a5cef7ef9caec43df0f7496c5363e07aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flushes remaining batches.  <br /></td></tr>
 <tr class="memitem:a142cba3bec26565888d16900bbc95ffb" id="r_a142cba3bec26565888d16900bbc95ffb"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a142cba3bec26565888d16900bbc95ffb">GetErrors</a> () const noexcept override</td></tr>
 <tr class="memdesc:a142cba3bec26565888d16900bbc95ffb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return errors <span class="tt">e</span>.  <br /></td></tr>
-<tr class="memitem:a743571cb2fde273c62b820d90c618c66" id="r_a743571cb2fde273c62b820d90c618c66"><td class="memItemLeft"><a id="a743571cb2fde273c62b820d90c618c66" name="a743571cb2fde273c62b820d90c618c66"></a>
-size_t&#160;</td><td class="memItemRight"><b>GetTotalSize</b> () const noexcept</td></tr>
-<tr class="memdesc:a743571cb2fde273c62b820d90c618c66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the total byte size required by this layer for flat allocation. <br /></td></tr>
-<tr class="memitem:ac82d646502e6faf7031c9ff04bf4f972" id="r_ac82d646502e6faf7031c9ff04bf4f972"><td class="memItemLeft"><a id="ac82d646502e6faf7031c9ff04bf4f972" name="ac82d646502e6faf7031c9ff04bf4f972"></a>
-void&#160;</td><td class="memItemRight"><b>Attach</b> (float *ptr) noexcept</td></tr>
-<tr class="memdesc:ac82d646502e6faf7031c9ff04bf4f972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches the layer to a pre-allocated, 64-byte aligned memory block. <br /></td></tr>
-<tr class="memitem:a716d52f7ba8028e9276e4e8a61191a9b" id="r_a716d52f7ba8028e9276e4e8a61191a9b"><td class="memItemLeft"><a id="a716d52f7ba8028e9276e4e8a61191a9b" name="a716d52f7ba8028e9276e4e8a61191a9b"></a>
-float *&#160;</td><td class="memItemRight"><b>GetWeights</b> () const noexcept</td></tr>
+<tr class="memitem:a743571cb2fde273c62b820d90c618c66" id="r_a743571cb2fde273c62b820d90c618c66"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a743571cb2fde273c62b820d90c618c66">GetTotalSize</a> () const noexcept</td></tr>
+<tr class="memdesc:a743571cb2fde273c62b820d90c618c66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the total byte size required by this layer for flat allocation.  <br /></td></tr>
+<tr class="memitem:ac82d646502e6faf7031c9ff04bf4f972" id="r_ac82d646502e6faf7031c9ff04bf4f972"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac82d646502e6faf7031c9ff04bf4f972">Attach</a> (float *ptr) noexcept</td></tr>
+<tr class="memdesc:ac82d646502e6faf7031c9ff04bf4f972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attaches the layer to a pre-allocated, 64-byte aligned memory block.  <br /></td></tr>
+<tr class="memitem:a716d52f7ba8028e9276e4e8a61191a9b" id="r_a716d52f7ba8028e9276e4e8a61191a9b"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#a716d52f7ba8028e9276e4e8a61191a9b">GetWeights</a> () const noexcept</td></tr>
 <tr class="memitem:aa506bb782dcfba7a578c697302723fb6" id="r_aa506bb782dcfba7a578c697302723fb6"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#aa506bb782dcfba7a578c697302723fb6">GetBatchSize</a> () const noexcept override</td></tr>
 <tr class="memdesc:aa506bb782dcfba7a578c697302723fb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return batch size.  <br /></td></tr>
 <tr class="memitem:ad50379af7001257495455d96b7a5e7e9" id="r_ad50379af7001257495455d96b7a5e7e9"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#ad50379af7001257495455d96b7a5e7e9">GetInputSize</a> () const noexcept override</td></tr>
@@ -159,18 +155,17 @@ float *&#160;</td><td class="memItemRight"><b>GetWeights</b> () const noexcept</
 <tr class="memdesc:a563d7ef929d3ef37359c0c2c6f87cc02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return output size.  <br /></td></tr>
 <tr class="memitem:a0a37d411bef0cba234593ce5956a5227" id="r_a0a37d411bef0cba234593ce5956a5227"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#a0a37d411bef0cba234593ce5956a5227">GetBeliefs</a> () noexcept override</td></tr>
 <tr class="memdesc:a0a37d411bef0cba234593ce5956a5227"><td class="mdescLeft">&#160;</td><td class="mdescRight">Should return belief state <span class="tt">z</span>.  <br /></td></tr>
-<tr class="memitem:a23cb469a779702cc89c110cb33143f3f" id="r_a23cb469a779702cc89c110cb33143f3f"><td class="memItemLeft"><a id="a23cb469a779702cc89c110cb33143f3f" name="a23cb469a779702cc89c110cb33143f3f"></a>
-const float *&#160;</td><td class="memItemRight"><b>GetInferenceError</b> () const noexcept</td></tr>
+<tr class="memitem:a23cb469a779702cc89c110cb33143f3f" id="r_a23cb469a779702cc89c110cb33143f3f"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a23cb469a779702cc89c110cb33143f3f">GetInferenceError</a> () const noexcept</td></tr>
+<tr class="inherit_header pub_methods_classDeep_1_1Layer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classDeep_1_1Layer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td></tr>
+<tr class="memitem:a7345cceda85f2a8c845fc00db21c6d4d inherit pub_methods_classDeep_1_1Layer" id="r_a7345cceda85f2a8c845fc00db21c6d4d"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a7345cceda85f2a8c845fc00db21c6d4d">~Layer</a> ()=default</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
 <tr class="inherit_header pro_attribs_classDeep_1_1Layer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classDeep_1_1Layer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Attributes inherited from <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td></tr>
-<tr class="memitem:a7480249662a3bd8ad458dcdcde68a37d inherit pro_attribs_classDeep_1_1Layer" id="r_a7480249662a3bd8ad458dcdcde68a37d"><td class="memItemLeft">
-size_t&#160;</td><td class="memItemRight"><b>size</b></td></tr>
-<tr class="memdesc:a7480249662a3bd8ad458dcdcde68a37d inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of input. <br /></td></tr>
-<tr class="memitem:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer" id="r_a5a538a25f3064996bbe651e6d48918d0"><td class="memItemLeft">
-size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
-<tr class="memdesc:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of output. <br /></td></tr>
+<tr class="memitem:a7480249662a3bd8ad458dcdcde68a37d inherit pro_attribs_classDeep_1_1Layer" id="r_a7480249662a3bd8ad458dcdcde68a37d"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a></td></tr>
+<tr class="memdesc:a7480249662a3bd8ad458dcdcde68a37d inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of input.  <br /></td></tr>
+<tr class="memitem:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer" id="r_a5a538a25f3064996bbe651e6d48918d0"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a></td></tr>
+<tr class="memdesc:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of output.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Restricted Boltzmann-style Predictive Coding (PC) <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>. </p>
@@ -269,7 +264,95 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 </div>
 </div>
+<a id="a6a42bddaa3f7b7df37c4834908f72783" name="a6a42bddaa3f7b7df37c4834908f72783"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a42bddaa3f7b7df37c4834908f72783">&#9670;&#160;</a></span>~RBLayer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RBLayer::~RBLayer </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="ac82d646502e6faf7031c9ff04bf4f972" name="ac82d646502e6faf7031c9ff04bf4f972"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac82d646502e6faf7031c9ff04bf4f972">&#9670;&#160;</a></span>Attach()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RBLayer::Attach </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>ptr</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Attaches the layer to a pre-allocated, 64-byte aligned memory block. </p>
+
+</div>
+</div>
+<a id="a025abc761fcbe169c099e505437d3c25" name="a025abc761fcbe169c099e505437d3c25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a025abc761fcbe169c099e505437d3c25">&#9670;&#160;</a></span>CalcError()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RBLayer::CalcError </td>
+          <td>(</td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>bottomUp</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>topDown</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>currentBatchSize</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Computes the precision-weighted prediction errors. </p>
+
+</div>
+</div>
 <a id="af3f0482e4caeda2e3bce0c0723649705" name="af3f0482e4caeda2e3bce0c0723649705"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af3f0482e4caeda2e3bce0c0723649705">&#9670;&#160;</a></span>CalculateState()</h2>
 
@@ -422,6 +505,31 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 
 </div>
 </div>
+<a id="a23cb469a779702cc89c110cb33143f3f" name="a23cb469a779702cc89c110cb33143f3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a23cb469a779702cc89c110cb33143f3f">&#9670;&#160;</a></span>GetInferenceError()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float * RBLayer::GetInferenceError </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel nodiscard">nodiscard</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ad50379af7001257495455d96b7a5e7e9" name="ad50379af7001257495455d96b7a5e7e9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad50379af7001257495455d96b7a5e7e9">&#9670;&#160;</a></span>GetInputSize()</h2>
 
@@ -479,6 +587,125 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
 <p>Implements <a class="el" href="classDeep_1_1Layer.html#ac15039414878c57137e60dbb5c96b745">Deep::Layer</a>.</p>
+
+</div>
+</div>
+<a id="a743571cb2fde273c62b820d90c618c66" name="a743571cb2fde273c62b820d90c618c66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a743571cb2fde273c62b820d90c618c66">&#9670;&#160;</a></span>GetTotalSize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t RBLayer::GetTotalSize </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel nodiscard">nodiscard</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns the total byte size required by this layer for flat allocation. </p>
+
+</div>
+</div>
+<a id="a716d52f7ba8028e9276e4e8a61191a9b" name="a716d52f7ba8028e9276e4e8a61191a9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a716d52f7ba8028e9276e4e8a61191a9b">&#9670;&#160;</a></span>GetWeights()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float * Deep::RBLayer::GetWeights </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel nodiscard">nodiscard</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad1fcdf0468974b1af5c7e778e91b2ebf" name="ad1fcdf0468974b1af5c7e778e91b2ebf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1fcdf0468974b1af5c7e778e91b2ebf">&#9670;&#160;</a></span>RunInferenceStep()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RBLayer::RunInferenceStep </td>
+          <td>(</td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>input</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>topDown</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>currentBatchSize</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Executes a single bidirectional inference step integrating bottom-up and top-down signals. </p>
+
+</div>
+</div>
+<a id="ab330434bcc4cf32574e23508f714891b" name="ab330434bcc4cf32574e23508f714891b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab330434bcc4cf32574e23508f714891b">&#9670;&#160;</a></span>RunPrediction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void RBLayer::RunPrediction </td>
+          <td>(</td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>input</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>currentBatchSize</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Executes a forward pass prediction without updating internal beliefs. </p>
 
 </div>
 </div>
@@ -634,8 +861,8 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>includes/<a class="el" href="RBLayer_8h_source.html">RBLayer.h</a></li>
-<li>src/<b>RBLayer.cpp</b></li>
+<li>include/deepity/layers/<a class="el" href="RBLayer_8h_source.html">RBLayer.h</a></li>
+<li>src/<a class="el" href="RBLayer_8cpp.html">RBLayer.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->
@@ -650,7 +877,7 @@ size_t&#160;</td><td class="memItemRight"><b>nextSize</b></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>Deep</b></li><li class="navelem"><a href="classDeep_1_1RBLayer.html">RBLayer</a></li>
+    <li class="navelem"><a href="namespaceDeep.html">Deep</a></li><li class="navelem"><a href="classDeep_1_1RBLayer.html">RBLayer</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

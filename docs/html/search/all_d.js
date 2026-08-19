@@ -1,6 +1,7 @@
 var searchData=
 [
-  ['random_20number_20generation_0',['Random Number Generation',['../index.html#autotoc_md13',1,'']]],
-  ['resources_20deepity_20png_20deepity_1',['&lt;img src=&quot;Deepity.png&quot; alt=&quot;&quot; class=&quot;inline&quot; title=&quot;Deepity&quot;/&gt;',['../index.html',1,'']]],
-  ['roadmap_2',['📅 Roadmap',['../index.html#autotoc_md17',1,'']]]
+  ['q0_0',['Q0',['../Activations_8h.html#ab137e2ab3b44c3f8ee86bce6497ed14c',1,'Activations.h']]],
+  ['q1_1',['Q1',['../Activations_8h.html#a0f32727853a3ac3d848701803c3b8688',1,'Activations.h']]],
+  ['q2_2',['Q2',['../Activations_8h.html#af5bca4c32f8c6886a3d8c526d2e3e9a7',1,'Activations.h']]],
+  ['quick_20start_3',['Quick Start',['../index.html#quickstart',1,'']]]
 ];

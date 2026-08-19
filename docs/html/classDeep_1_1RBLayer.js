@@ -1,6 +1,7 @@
 var classDeep_1_1RBLayer =
 [
     [ "RBLayer", "classDeep_1_1RBLayer.html#ab22f28aa6c0049bfcff6769fe4ea4cdd", null ],
+    [ "~RBLayer", "classDeep_1_1RBLayer.html#a6a42bddaa3f7b7df37c4834908f72783", null ],
     [ "Attach", "classDeep_1_1RBLayer.html#ac82d646502e6faf7031c9ff04bf4f972", null ],
     [ "CalcError", "classDeep_1_1RBLayer.html#a025abc761fcbe169c099e505437d3c25", null ],
     [ "CalculateState", "classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705", null ],
@@ -8,9 +9,11 @@ var classDeep_1_1RBLayer =
     [ "GetBatchSize", "classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6", null ],
     [ "GetBeliefs", "classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227", null ],
     [ "GetErrors", "classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb", null ],
+    [ "GetInferenceError", "classDeep_1_1RBLayer.html#a23cb469a779702cc89c110cb33143f3f", null ],
     [ "GetInputSize", "classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9", null ],
     [ "GetOutputSize", "classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02", null ],
     [ "GetTotalSize", "classDeep_1_1RBLayer.html#a743571cb2fde273c62b820d90c618c66", null ],
+    [ "GetWeights", "classDeep_1_1RBLayer.html#a716d52f7ba8028e9276e4e8a61191a9b", null ],
     [ "RunInferenceStep", "classDeep_1_1RBLayer.html#ad1fcdf0468974b1af5c7e778e91b2ebf", null ],
     [ "RunPrediction", "classDeep_1_1RBLayer.html#ab330434bcc4cf32574e23508f714891b", null ],
     [ "UpdateBeliefs", "classDeep_1_1RBLayer.html#a5b570e93bdcfb61173523378d0009de7", null ],

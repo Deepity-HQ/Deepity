@@ -1,0 +1,42 @@
+\doxysection{include/\+deepity/\+layers/\+\+Simple\+Conv\+PCLayer.h File Reference}
+\hypertarget{SimpleConvPCLayer_8h}{}\label{SimpleConvPCLayer_8h}\index{include/deepity/layers/SimpleConvPCLayer.h@{include/deepity/layers/SimpleConvPCLayer.h}}
+
+
+Conv\+PCLayer with precision removed (mirrors Simple\+PCLayer\textquotesingle{}s relationship to Discriminative\+PCLayer) AND Adam\+W/\+\+Adam support added (mirrors Simple\+PCLayer\textquotesingle{}s own AdamW integration).  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Adam\+Optimizer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Layer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Im2\+Col.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimpleConvPCLayer}{Deep::\+\+Simple\+Conv\+PCLayer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Conv\+PCLayer with precision removed (mirrors Simple\+PCLayer\textquotesingle{}s relationship to Discriminative\+PCLayer) AND Adam\+W/\+\+Adam support added (mirrors Simple\+PCLayer\textquotesingle{}s own AdamW integration). 
+
+Precision removal:\+ identical justification to Simple\+PCLayer -- every real run used pr=0.\+0 (precision inert), yet every layer paid for the p/\+log\+\_\+p buffers and the extra multiply/\+log terms regardless.
+
+\begin{DoxyWarning}{Warning}
+Built on TOP of Conv\+PCLayer\textquotesingle{}s just-\/verified feedback term (Col2\+Im path, confirmed via t\+Conv\+Feedback\+Verify.\+cpp with a genuinely unclamped middle layer -- worst rel err 1.\+09\%). This class has NOT been independently re-\/verified:\+ neither the precision-\/removal (should be inert, same argument as Simple\+PCLayer, but not yet confirmed) nor the AdamW integration (a NEW port, not the one already gradient-\/checked for Simple\+PCLayer -- same class of grad\+\_\+scale-\/sign bug that was found and fixed there is possible here too, and hasn\textquotesingle{}t been ruled out). Required before trusting this for real training:\+
+\begin{DoxyEnumerate}
+\item A finite-\/difference gradient check on Update\+Weights() (SGD path).
+\item The SAME feedback-\/term verification t\+Conv\+Feedback\+Verify.\+cpp did for Conv\+PCLayer, re-\/run against THIS class.
+\item A separate gradient check specifically for the AdamW path (same sign-\/convention pitfall found in Simple\+PCLayer -- local\+\_\+grad\textquotesingle{}s established sign convention may not match what Adam\+WUpdate() expects without an explicit sign flip on the raw-\/gradient GEMM). 
+\end{DoxyEnumerate}
+\end{DoxyWarning}

@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -109,15 +110,64 @@ $(function(){initNavTree('classTimer.html','','classTimer-members'); });
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9020542d73357a4eef512eefaf57524b" id="r_a9020542d73357a4eef512eefaf57524b"><td class="memItemLeft"><a id="a9020542d73357a4eef512eefaf57524b" name="a9020542d73357a4eef512eefaf57524b"></a>
-void&#160;</td><td class="memItemRight"><b>reset</b> ()</td></tr>
-<tr class="memitem:a6a89a613c2af9b0d1e5f7e4ba9e46c54" id="r_a6a89a613c2af9b0d1e5f7e4ba9e46c54"><td class="memItemLeft"><a id="a6a89a613c2af9b0d1e5f7e4ba9e46c54" name="a6a89a613c2af9b0d1e5f7e4ba9e46c54"></a>
-double&#160;</td><td class="memItemRight"><b>elapsed</b> () const</td></tr>
+<tr class="memitem:a9020542d73357a4eef512eefaf57524b" id="r_a9020542d73357a4eef512eefaf57524b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9020542d73357a4eef512eefaf57524b">reset</a> ()</td></tr>
+<tr class="memitem:a6a89a613c2af9b0d1e5f7e4ba9e46c54" id="r_a6a89a613c2af9b0d1e5f7e4ba9e46c54"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a6a89a613c2af9b0d1e5f7e4ba9e46c54">elapsed</a> () const</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Implementation by Alex: <a href="https://www.learncpp.com/cpp-tutorial/timing-your-code/">https://www.learncpp.com/cpp-tutorial/timing-your-code/</a>. </p>
-</div><hr/>The documentation for this class was generated from the following file:<ul>
-<li>includes/<a class="el" href="Timer_8h_source.html">Timer.h</a></li>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a6a89a613c2af9b0d1e5f7e4ba9e46c54" name="a6a89a613c2af9b0d1e5f7e4ba9e46c54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a89a613c2af9b0d1e5f7e4ba9e46c54">&#9670;&#160;</a></span>elapsed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double Timer::elapsed </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9020542d73357a4eef512eefaf57524b" name="a9020542d73357a4eef512eefaf57524b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9020542d73357a4eef512eefaf57524b">&#9670;&#160;</a></span>reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Timer::reset </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<hr/>The documentation for this class was generated from the following file:<ul>
+<li>include/deepity/<a class="el" href="Timer_8h_source.html">Timer.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

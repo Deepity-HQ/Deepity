@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: includes/Optimize.h Source File</title>
+<title>Deepity: include/deepity/Optimize.h Source File</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -19,6 +19,7 @@
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -30,7 +31,7 @@
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -106,12 +107,13 @@ $(function(){initNavTree('Optimize_8h_source.html','',''); });
 <div class="line"><a id="l00010" name="l00010"></a><span class="lineno">   10</span> </div>
 <div class="line"><a id="l00011" name="l00011"></a><span class="lineno">   11</span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span></div>
 <div class="line"><a id="l00012" name="l00012"></a><span class="lineno">   12</span>{</div>
-<div class="line"><a id="l00013" name="l00013"></a><span class="lineno">   13</span>    <span class="keywordtype">void</span> openblas_set_num_threads(<span class="keywordtype">int</span> num_threads);</div>
+<div class="line"><a id="l00013" name="l00013"></a><span class="lineno"><a class="line" href="Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff">   13</a></span>    <span class="keywordtype">void</span> <a class="code hl_function" href="Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff">openblas_set_num_threads</a>(<span class="keywordtype">int</span> num_threads);</div>
 <div class="line"><a id="l00014" name="l00014"></a><span class="lineno">   14</span>}</div>
 <div class="line"><a id="l00015" name="l00015"></a><span class="lineno">   15</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span>Deep</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceDeep.html">Deep</a></div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>{</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keyword">inline</span> <span class="keywordtype">size_t</span> GetL2CacheBytes()</div>
+<div class="foldopen" id="foldopen00035" data-start="{" data-end="}">
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">   35</a></span>    <span class="keyword">inline</span> <span class="keywordtype">size_t</span> <a class="code hl_function" href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">GetL2CacheBytes</a>()</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    {</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="preprocessor">#ifdef __linux__</span></div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        std::ifstream f(<span class="stringliteral">&quot;/sys/devices/system/cpu/cpu0/cache/index2/size&quot;</span>);</div>
@@ -134,10 +136,12 @@ $(function(){initNavTree('Optimize_8h_source.html','',''); });
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="keywordflow">return</span> 512 * 1024; <span class="comment">// fallback for unknown platforms</span></div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    }</div>
+</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keyword">inline</span> <span class="keywordtype">size_t</span> AutoBatchSize(<span class="keywordtype">size_t</span> inSize, <span class="keywordtype">size_t</span> outSize)</div>
+<div class="foldopen" id="foldopen00059" data-start="{" data-end="}">
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno"><a class="line" href="namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004">   59</a></span>    <span class="keyword">inline</span> <span class="keywordtype">size_t</span> <a class="code hl_function" href="namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004">AutoBatchSize</a>(<span class="keywordtype">size_t</span> inSize, <span class="keywordtype">size_t</span> outSize)</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    {</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        <span class="keywordtype">size_t</span> l2 = GetL2CacheBytes();</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        <span class="keywordtype">size_t</span> l2 = <a class="code hl_function" href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">GetL2CacheBytes</a>();</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        <span class="keywordtype">size_t</span> wSize = inSize * outSize * <span class="keyword">sizeof</span>(float);</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        <span class="keywordtype">size_t</span> bytesPerBatch = (outSize + inSize + inSize) * <span class="keyword">sizeof</span>(<span class="keywordtype">float</span>);</div>
@@ -158,6 +162,7 @@ $(function(){initNavTree('Optimize_8h_source.html','',''); });
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        <span class="keywordflow">return</span> pow2;</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    }</div>
+</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keyword">static</span> <span class="keyword">inline</span> <span class="keywordtype">void</span> DynamicThread(<span class="keywordtype">int</span> batchSize) <span class="keyword">noexcept</span></div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    {</div>
@@ -170,7 +175,7 @@ $(function(){initNavTree('Optimize_8h_source.html','',''); });
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        <span class="keywordflow">if</span> (currentThreads != targetThreads)</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        {</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            omp_set_num_threads(targetThreads);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            openblas_set_num_threads(targetThreads);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            <a class="code hl_function" href="Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff">openblas_set_num_threads</a>(targetThreads);</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            currentThreads = targetThreads;</div>
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        }</div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    }</div>
@@ -198,13 +203,17 @@ $(function(){initNavTree('Optimize_8h_source.html','',''); });
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <span class="keywordflow">return</span> _mm_cvtss_f32(sums);</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    }</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>}</div>
+<div class="ttc" id="aOptimize_8h_html_aa406a94b91fca1119d42385c388ff1ff"><div class="ttname"><a href="Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff">openblas_set_num_threads</a></div><div class="ttdeci">void openblas_set_num_threads(int num_threads)</div></div>
+<div class="ttc" id="anamespaceDeep_html"><div class="ttname"><a href="namespaceDeep.html">Deep</a></div><div class="ttdef"><b>Definition</b> ConvPCLayer.cpp:9</div></div>
+<div class="ttc" id="anamespaceDeep_html_a1f6c92c5abb579ef6bf96a0047d54342"><div class="ttname"><a href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">Deep::GetL2CacheBytes</a></div><div class="ttdeci">size_t GetL2CacheBytes()</div><div class="ttdef"><b>Definition</b> Optimize.h:35</div></div>
+<div class="ttc" id="anamespaceDeep_html_a94bef4184e1ca26cb5f79296395b4004"><div class="ttname"><a href="namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004">Deep::AutoBatchSize</a></div><div class="ttdeci">size_t AutoBatchSize(size_t inSize, size_t outSize)</div><div class="ttdef"><b>Definition</b> Optimize.h:59</div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>includes</b></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

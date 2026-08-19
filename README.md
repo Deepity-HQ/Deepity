@@ -1,13 +1,13 @@
 [![CI](https://github.com/ra4ster/deepity/actions/workflows/ci.yml/badge.svg)](https://github.com/ra4ster/deepity/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/ra4ster/deepity)](LICENSE)
+[![License](https://img.shields.io/github/license/ra4ster/deepity)](https://github.com/ra4ster/deepity/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/ra4ster/deepity)](https://github.com/ra4ster/deepity/releases)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](pyproject.toml)
-[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](CMakeLists.txt)
+[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://github.com/ra4ster/deepity/blob/main/pyproject.toml)
+[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](Chttps://github.com/ra4ster/deepity/blob/main/CMakeLists.txt)
 [![Stars](https://img.shields.io/github/stars/ra4ster/deepity?style=social)](https://github.com/ra4ster/deepity/stargazers)
 [![Issues](https://img.shields.io/github/issues/ra4ster/deepity)](https://github.com/ra4ster/deepity/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/ra4ster/deepity)](https://github.com/ra4ster/deepity/commits/main)
 
-# ![Deepity](resources/Deepity.png)
+![](resources/Deepity.png)
 
 Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-overhead, ultra-low variance inference and learning. It is aggressively CPU-optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.
 
@@ -267,7 +267,7 @@ Research and long-running experiments (checkpoints, MNIST training runs, step-tu
 
 ## 📅 Roadmap
 
-Deepity's roadmap has moved to [`Roadmap.md`](Roadmap.md) for tracking in more detail. At a glance, completed and in-progress work includes:
+Deepity's roadmap will move to (WIP) [`Roadmap.md`](Roadmap.md) for tracking in more detail. At a glance, completed and in-progress work includes:
 
 - [x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
 - [x] Contiguous flat-memory buffers

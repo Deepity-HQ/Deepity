@@ -1,0 +1,331 @@
+\doxysection{Adam\+Optimizer.\+h}
+\hypertarget{AdamOptimizer_8h_source}{}\label{AdamOptimizer_8h_source}\index{include/deepity/AdamOptimizer.h@{include/deepity/AdamOptimizer.h}}
+\doxymbox{\hyperlink{AdamOptimizer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstddef>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <cmath>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <immintrin.h>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <sleef.h>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <cstring>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#if\ defined(\_MSC\_VER)}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#define\ RESTRICT\ \_\_restrict}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#define\ RESTRICT\ \_\_restrict\_\_}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00046\ \{}
+\DoxyCodeLine{00049\ \ \ \ \ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}}
+\DoxyCodeLine{00050\ \ \ \ \ \{}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{SGD}},\ \ }
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff}{ADAM}},\ }
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d}{ADAMW}}\ }
+\DoxyCodeLine{00054\ \ \ \ \ \};}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}\ \doxymbox{\hyperlink{namespaceDeep_a6ca9308132b5c8017685367d79b5c753}{toOpType}}(\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *s)}
+\DoxyCodeLine{00063\ \ \ \ \ \{}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (strncmp(s,\ \textcolor{stringliteral}{"{}SGD"{}},\ 3)\ ==\ 0)}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{OptimizerType::SGD}};}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (strncmp(s,\ \textcolor{stringliteral}{"{}ADAM"{}},\ 4)\ ==\ 0)}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff}{OptimizerType::ADAM}};}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}\ \textcolor{keywordflow}{if}\ (strncmp(s,\ \textcolor{stringliteral}{"{}ADAMW"{}},\ 5)\ ==\ 0)}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d}{OptimizerType::ADAMW}};}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{else}}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{OptimizerType::SGD}};}
+\DoxyCodeLine{00072\ \ \ \ \ \}}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00105\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608}{AdamWUpdate}}(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ w,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ grad,}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ m,\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ v,}
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{int}\ t,}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr,\ \textcolor{keywordtype}{float}\ lambda,}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ beta1\ =\ 0.9f,\ \textcolor{keywordtype}{float}\ beta2\ =\ 0.999f,\ \textcolor{keywordtype}{float}\ eps\ =\ 1e-\/8f)\ noexcept}
+\DoxyCodeLine{00110\ \ \ \ \ \{}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Bias-\/correction\ terms\ depend\ only\ on\ t,\ beta1,\ beta2\ -\/-\/\ identical}}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ for\ every\ element\ in\ this\ call.\ Computed\ ONCE\ (scalar),\ not}}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ per-\/element\ (would\ otherwise\ mean\ n\ redundant\ Sleef\_powf\ calls}}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ for\ a\ value\ that\ never\ changes\ within\ this\ call).}}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ beta1\_t\ =\ 1.0f\ -\/\ Sleef\_powf\_u10(beta1,\ (\textcolor{keywordtype}{float})t);}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ beta2\_t\ =\ 1.0f\ -\/\ Sleef\_powf\_u10(beta2,\ (\textcolor{keywordtype}{float})t);}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ inv\_beta1\_t\ =\ 1.0f\ /\ beta1\_t;}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ inv\_beta2\_t\ =\ 1.0f\ /\ beta2\_t;}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \_\_m512\ beta1\_v\ =\ \_mm512\_set1\_ps(beta1);}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \_\_m512\ one\_minus\_beta1\ =\ \_mm512\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \_\_m512\ beta2\_v\ =\ \_mm512\_set1\_ps(beta2);}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \_\_m512\ one\_minus\_beta2\ =\ \_mm512\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \_\_m512\ inv\_beta1\_t\_v\ =\ \_mm512\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \_\_m512\ inv\_beta2\_t\_v\ =\ \_mm512\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \_\_m512\ lr\_v\ =\ \_mm512\_set1\_ps(lr);}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \_\_m512\ eps\_v\ =\ \_mm512\_set1\_ps(eps);}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \_\_m512\ decay\_v\ =\ \_mm512\_set1\_ps(1.0f\ -\/\ lr\ *\ lambda);\ \textcolor{comment}{//\ AdamW\ decoupled\ decay\ factor}}
+\DoxyCodeLine{00132\ }
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ g\ =\ \_mm512\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_old\ =\ \_mm512\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_old\ =\ \_mm512\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00140\ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_new\ =\ \_mm512\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm512\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_new\ =\ \_mm512\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm512\_mul\_ps(one\_minus\_beta2,\ \_mm512\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_hat\ =\ \_mm512\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_hat\ =\ \_mm512\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00146\ }
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ denom\ =\ \_mm512\_add\_ps(\_mm512\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ step\ =\ \_mm512\_div\_ps(\_mm512\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00149\ }
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ w\_old\ =\ \_mm512\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ AdamW:\ decoupled\ decay\ applied\ to\ w\ directly,\ THEN\ the}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ gradient-\/based\ step\ -\/-\/\ not\ folded\ into\ the\ gradient\ itself.}}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ w\_new\ =\ \_mm512\_sub\_ps(\_mm512\_mul\_ps(w\_old,\ decay\_v),\ step);}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00159\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \_\_m256\ beta1\_v\ =\ \_mm256\_set1\_ps(beta1);}
+\DoxyCodeLine{00161\ \ \ \ \ \ \ \ \ \_\_m256\ one\_minus\_beta1\ =\ \_mm256\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \_\_m256\ beta2\_v\ =\ \_mm256\_set1\_ps(beta2);}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \_\_m256\ one\_minus\_beta2\ =\ \_mm256\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \_\_m256\ inv\_beta1\_t\_v\ =\ \_mm256\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \_\_m256\ inv\_beta2\_t\_v\ =\ \_mm256\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \_\_m256\ lr\_v\ =\ \_mm256\_set1\_ps(lr);}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \_\_m256\ eps\_v\ =\ \_mm256\_set1\_ps(eps);}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \_\_m256\ decay\_v\ =\ \_mm256\_set1\_ps(1.0f\ -\/\ lr\ *\ lambda);}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00174\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ g\ =\ \_mm256\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_old\ =\ \_mm256\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_old\ =\ \_mm256\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00178\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_new\ =\ \_mm256\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm256\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00180\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_new\ =\ \_mm256\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm256\_mul\_ps(one\_minus\_beta2,\ \_mm256\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00181\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_new\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(beta1\_v,\ m\_old),\ \_mm256\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_new\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(beta2\_v,\ v\_old),\ \_mm256\_mul\_ps(one\_minus\_beta2,\ \_mm256\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00184\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_hat\ =\ \_mm256\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_hat\ =\ \_mm256\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00188\ }
+\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ denom\ =\ \_mm256\_add\_ps(\_mm256\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ step\ =\ \_mm256\_div\_ps(\_mm256\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00191\ }
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ w\_old\ =\ \_mm256\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ w\_new\ =\ \_mm256\_sub\_ps(\_mm256\_mul\_ps(w\_old,\ decay\_v),\ step);}
+\DoxyCodeLine{00194\ }
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00199\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \_\_m128\ beta1\_v\ =\ \_mm\_set1\_ps(beta1);}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \_\_m128\ one\_minus\_beta1\ =\ \_mm\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \_\_m128\ beta2\_v\ =\ \_mm\_set1\_ps(beta2);}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \_\_m128\ one\_minus\_beta2\ =\ \_mm\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \_\_m128\ inv\_beta1\_t\_v\ =\ \_mm\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \_\_m128\ inv\_beta2\_t\_v\ =\ \_mm\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \_\_m128\ lr\_v\ =\ \_mm\_set1\_ps(lr);}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \_\_m128\ eps\_v\ =\ \_mm\_set1\_ps(eps);}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \_\_m128\ decay\_v\ =\ \_mm\_set1\_ps(1.0f\ -\/\ lr\ *\ lambda);}
+\DoxyCodeLine{00209\ }
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ g\ =\ \_mm\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_old\ =\ \_mm\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_old\ =\ \_mm\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00218\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_new\ =\ \_mm\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_new\ =\ \_mm\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm\_mul\_ps(one\_minus\_beta2,\ \_mm\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00221\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_new\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(beta1\_v,\ m\_old),\ \_mm\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_new\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(beta2\_v,\ v\_old),\ \_mm\_mul\_ps(one\_minus\_beta2,\ \_mm\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00224\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00226\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_hat\ =\ \_mm\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00227\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_hat\ =\ \_mm\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00228\ }
+\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ denom\ =\ \_mm\_add\_ps(\_mm\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ step\ =\ \_mm\_div\_ps(\_mm\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00231\ }
+\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ w\_old\ =\ \_mm\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ w\_new\ =\ \_mm\_sub\_ps(\_mm\_mul\_ps(w\_old,\ decay\_v),\ step);}
+\DoxyCodeLine{00234\ }
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00238\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00239\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Scalar\ tail}}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ decay\ =\ 1.0f\ -\/\ lr\ *\ lambda;}
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ ++i)}
+\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ g\ =\ grad[i];}
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ m[i]\ =\ beta1\ *\ m[i]\ +\ (1.0f\ -\/\ beta1)\ *\ g;}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ v[i]\ =\ beta2\ *\ v[i]\ +\ (1.0f\ -\/\ beta2)\ *\ g\ *\ g;}
+\DoxyCodeLine{00247\ }
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ m\_hat\ =\ m[i]\ *\ inv\_beta1\_t;}
+\DoxyCodeLine{00249\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ v\_hat\ =\ v[i]\ *\ inv\_beta2\_t;}
+\DoxyCodeLine{00250\ }
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \ \ \ \ w[i]\ =\ w[i]\ *\ decay\ -\/\ lr\ *\ m\_hat\ /\ (Sleef\_sqrtf\_u05(v\_hat)\ +\ eps);}
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00253\ \ \ \ \ \}}
+\DoxyCodeLine{00254\ }
+\DoxyCodeLine{00289\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_af0031c5b95344a0fb959914fee35449c}{AdamUpdate}}(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ w,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ grad,}
+\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ m,\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ v,}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{int}\ t,}
+\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr,}
+\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ beta1\ =\ 0.9f,\ \textcolor{keywordtype}{float}\ beta2\ =\ 0.999f,\ \textcolor{keywordtype}{float}\ eps\ =\ 1e-\/8f)\ noexcept}
+\DoxyCodeLine{00294\ \ \ \ \ \{}
+\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ beta1\_t\ =\ 1.0f\ -\/\ Sleef\_powf\_u10(beta1,\ (\textcolor{keywordtype}{float})t);}
+\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ beta2\_t\ =\ 1.0f\ -\/\ Sleef\_powf\_u10(beta2,\ (\textcolor{keywordtype}{float})t);}
+\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ inv\_beta1\_t\ =\ 1.0f\ /\ beta1\_t;}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ inv\_beta2\_t\ =\ 1.0f\ /\ beta2\_t;}
+\DoxyCodeLine{00299\ }
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00301\ }
+\DoxyCodeLine{00302\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \_\_m512\ beta1\_v\ =\ \_mm512\_set1\_ps(beta1);}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \_\_m512\ one\_minus\_beta1\ =\ \_mm512\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \_\_m512\ beta2\_v\ =\ \_mm512\_set1\_ps(beta2);}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \_\_m512\ one\_minus\_beta2\ =\ \_mm512\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \_\_m512\ inv\_beta1\_t\_v\ =\ \_mm512\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \_\_m512\ inv\_beta2\_t\_v\ =\ \_mm512\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \_\_m512\ lr\_v\ =\ \_mm512\_set1\_ps(lr);}
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \_\_m512\ eps\_v\ =\ \_mm512\_set1\_ps(eps);}
+\DoxyCodeLine{00311\ }
+\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ g\ =\ \_mm512\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_old\ =\ \_mm512\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_old\ =\ \_mm512\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00319\ }
+\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_new\ =\ \_mm512\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm512\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_new\ =\ \_mm512\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm512\_mul\_ps(one\_minus\_beta2,\ \_mm512\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00322\ }
+\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ m\_hat\ =\ \_mm512\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ v\_hat\ =\ \_mm512\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00325\ }
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ denom\ =\ \_mm512\_add\_ps(\_mm512\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ step\ =\ \_mm512\_div\_ps(\_mm512\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00328\ }
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ w\_old\ =\ \_mm512\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ w\_new\ =\ \_mm512\_sub\_ps(w\_old,\ step);\ \textcolor{comment}{//\ no\ decay\ term\ -\/-\/\ plain\ Adam}}
+\DoxyCodeLine{00331\ }
+\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00333\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00336\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
+\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \_\_m256\ beta1\_v\ =\ \_mm256\_set1\_ps(beta1);}
+\DoxyCodeLine{00338\ \ \ \ \ \ \ \ \ \_\_m256\ one\_minus\_beta1\ =\ \_mm256\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \_\_m256\ beta2\_v\ =\ \_mm256\_set1\_ps(beta2);}
+\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ \_\_m256\ one\_minus\_beta2\ =\ \_mm256\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \_\_m256\ inv\_beta1\_t\_v\ =\ \_mm256\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00342\ \ \ \ \ \ \ \ \ \_\_m256\ inv\_beta2\_t\_v\ =\ \_mm256\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00343\ \ \ \ \ \ \ \ \ \_\_m256\ lr\_v\ =\ \_mm256\_set1\_ps(lr);}
+\DoxyCodeLine{00344\ \ \ \ \ \ \ \ \ \_\_m256\ eps\_v\ =\ \_mm256\_set1\_ps(eps);}
+\DoxyCodeLine{00345\ }
+\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
+\DoxyCodeLine{00347\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ g\ =\ \_mm256\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00351\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_old\ =\ \_mm256\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_old\ =\ \_mm256\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00353\ }
+\DoxyCodeLine{00354\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_new\ =\ \_mm256\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm256\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00356\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_new\ =\ \_mm256\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm256\_mul\_ps(one\_minus\_beta2,\ \_mm256\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00357\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_new\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(beta1\_v,\ m\_old),\ \_mm256\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_new\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(beta2\_v,\ v\_old),\ \_mm256\_mul\_ps(one\_minus\_beta2,\ \_mm256\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00360\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00361\ }
+\DoxyCodeLine{00362\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ m\_hat\ =\ \_mm256\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ v\_hat\ =\ \_mm256\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00364\ }
+\DoxyCodeLine{00365\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ denom\ =\ \_mm256\_add\_ps(\_mm256\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ step\ =\ \_mm256\_div\_ps(\_mm256\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00367\ }
+\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ w\_old\ =\ \_mm256\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ w\_new\ =\ \_mm256\_sub\_ps(w\_old,\ step);}
+\DoxyCodeLine{00370\ }
+\DoxyCodeLine{00371\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00372\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00373\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00374\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00375\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00376\ \ \ \ \ \ \ \ \ \_\_m128\ beta1\_v\ =\ \_mm\_set1\_ps(beta1);}
+\DoxyCodeLine{00377\ \ \ \ \ \ \ \ \ \_\_m128\ one\_minus\_beta1\ =\ \_mm\_set1\_ps(1.0f\ -\/\ beta1);}
+\DoxyCodeLine{00378\ \ \ \ \ \ \ \ \ \_\_m128\ beta2\_v\ =\ \_mm\_set1\_ps(beta2);}
+\DoxyCodeLine{00379\ \ \ \ \ \ \ \ \ \_\_m128\ one\_minus\_beta2\ =\ \_mm\_set1\_ps(1.0f\ -\/\ beta2);}
+\DoxyCodeLine{00380\ \ \ \ \ \ \ \ \ \_\_m128\ inv\_beta1\_t\_v\ =\ \_mm\_set1\_ps(inv\_beta1\_t);}
+\DoxyCodeLine{00381\ \ \ \ \ \ \ \ \ \_\_m128\ inv\_beta2\_t\_v\ =\ \_mm\_set1\_ps(inv\_beta2\_t);}
+\DoxyCodeLine{00382\ \ \ \ \ \ \ \ \ \_\_m128\ lr\_v\ =\ \_mm\_set1\_ps(lr);}
+\DoxyCodeLine{00383\ \ \ \ \ \ \ \ \ \_\_m128\ eps\_v\ =\ \_mm\_set1\_ps(eps);}
+\DoxyCodeLine{00384\ }
+\DoxyCodeLine{00385\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
+\DoxyCodeLine{00386\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00387\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00388\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ g\ =\ \_mm\_loadu\_ps(\&grad[i]);}
+\DoxyCodeLine{00390\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_old\ =\ \_mm\_loadu\_ps(\&m[i]);}
+\DoxyCodeLine{00391\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_old\ =\ \_mm\_loadu\_ps(\&v[i]);}
+\DoxyCodeLine{00392\ }
+\DoxyCodeLine{00393\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00394\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_new\ =\ \_mm\_fmadd\_ps(beta1\_v,\ m\_old,\ \_mm\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00395\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_new\ =\ \_mm\_fmadd\_ps(beta2\_v,\ v\_old,\ \_mm\_mul\_ps(one\_minus\_beta2,\ \_mm\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00396\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00397\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_new\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(beta1\_v,\ m\_old),\ \_mm\_mul\_ps(one\_minus\_beta1,\ g));}
+\DoxyCodeLine{00398\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_new\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(beta2\_v,\ v\_old),\ \_mm\_mul\_ps(one\_minus\_beta2,\ \_mm\_mul\_ps(g,\ g)));}
+\DoxyCodeLine{00399\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00400\ }
+\DoxyCodeLine{00401\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ m\_hat\ =\ \_mm\_mul\_ps(m\_new,\ inv\_beta1\_t\_v);}
+\DoxyCodeLine{00402\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ v\_hat\ =\ \_mm\_mul\_ps(v\_new,\ inv\_beta2\_t\_v);}
+\DoxyCodeLine{00403\ }
+\DoxyCodeLine{00404\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ denom\ =\ \_mm\_add\_ps(\_mm\_sqrt\_ps(v\_hat),\ eps\_v);}
+\DoxyCodeLine{00405\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ step\ =\ \_mm\_div\_ps(\_mm\_mul\_ps(lr\_v,\ m\_hat),\ denom);}
+\DoxyCodeLine{00406\ }
+\DoxyCodeLine{00407\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ w\_old\ =\ \_mm\_loadu\_ps(\&w[i]);}
+\DoxyCodeLine{00408\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ w\_new\ =\ \_mm\_sub\_ps(w\_old,\ step);}
+\DoxyCodeLine{00409\ }
+\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&w[i],\ w\_new);}
+\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&m[i],\ m\_new);}
+\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(\&v[i],\ v\_new);}
+\DoxyCodeLine{00413\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00414\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00415\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Scalar\ tail}}
+\DoxyCodeLine{00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ ++i)}
+\DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ g\ =\ grad[i];}
+\DoxyCodeLine{00419\ \ \ \ \ \ \ \ \ \ \ \ \ m[i]\ =\ beta1\ *\ m[i]\ +\ (1.0f\ -\/\ beta1)\ *\ g;}
+\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \ \ \ \ v[i]\ =\ beta2\ *\ v[i]\ +\ (1.0f\ -\/\ beta2)\ *\ g\ *\ g;}
+\DoxyCodeLine{00421\ }
+\DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ m\_hat\ =\ m[i]\ *\ inv\_beta1\_t;}
+\DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ v\_hat\ =\ v[i]\ *\ inv\_beta2\_t;}
+\DoxyCodeLine{00424\ }
+\DoxyCodeLine{00425\ \ \ \ \ \ \ \ \ \ \ \ \ w[i]\ -\/=\ lr\ *\ m\_hat\ /\ (Sleef\_sqrtf\_u05(v\_hat)\ +\ eps);}
+\DoxyCodeLine{00426\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00427\ \ \ \ \ \}}
+\DoxyCodeLine{00428\ }
+\DoxyCodeLine{00429\ \}}
+
+\end{DoxyCode}

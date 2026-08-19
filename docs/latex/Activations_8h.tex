@@ -1,5 +1,5 @@
-\doxysection{includes/\+\+Activations.h File Reference}
-\hypertarget{Activations_8h}{}\label{Activations_8h}\index{includes/Activations.h@{includes/Activations.h}}
+\doxysection{include/\+deepity/\+\+Activations.h File Reference}
+\hypertarget{Activations_8h}{}\label{Activations_8h}\index{include/deepity/Activations.h@{include/deepity/Activations.h}}
 
 
 Defines the activation functions of a predictive coding model.  
@@ -11,93 +11,69 @@ Defines the activation functions of a predictive coding model.
 {\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
 {\ttfamily \+\#include $<$sleef.\+h$>$}\newline
 {\ttfamily \+\#include $<$omp.\+h$>$}\newline
+{\ttfamily \+\#include $<$algorithm$>$}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
 \doxysubsubsection*{Macros}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{Activations_8h_aae3356b63849abbe8789dd41648ee90a}\label{Activations_8h_aae3356b63849abbe8789dd41648ee90a} 
-\+\#define {\bfseries RESTRICT}~\+\_\+\+\_\+restrict\+\_\+\+\_\+
+\+\#define \doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}~\+\_\+\+\_\+restrict\+\_\+\+\_\+
 \item 
 \+\#define \doxymbox{\hyperlink{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}{MAX}}(a,  b)
 \item 
-\Hypertarget{Activations_8h_af09b50acd5a5564417673be65960c0ea}\label{Activations_8h_af09b50acd5a5564417673be65960c0ea} 
-\+\#define {\bfseries TANH\+\_\+\+TINYLIMIT}~0.\+000244140625f
+\+\#define \doxymbox{\hyperlink{Activations_8h_af09b50acd5a5564417673be65960c0ea}{TANH\+\_\+\+TINYLIMIT}}~0.\+000244140625f
 \item 
-\Hypertarget{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65}\label{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65} 
-\+\#define {\bfseries TANH\+\_\+\+POLY\+\_\+\+LIMIT}~0.\+625f
+\+\#define \doxymbox{\hyperlink{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65}{TANH\+\_\+\+POLY\+\_\+\+LIMIT}}~0.\+625f
 \item 
-\Hypertarget{Activations_8h_ac245f863ccdf620e12419737387cfc96}\label{Activations_8h_ac245f863ccdf620e12419737387cfc96} 
-\+\#define {\bfseries TANH\+\_\+\+BIGLIMIT}~6.\+0f
+\+\#define \doxymbox{\hyperlink{Activations_8h_ac245f863ccdf620e12419737387cfc96}{TANH\+\_\+\+BIGLIMIT}}~6.\+0f
 \item 
-\Hypertarget{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a}\label{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a} 
-\+\#define {\bfseries P0}~-\/0.\+9643991794f
+\+\#define \doxymbox{\hyperlink{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a}{P0}}~-\/0.\+9643991794f
 \item 
-\Hypertarget{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce}\label{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce} 
-\+\#define {\bfseries P1}~-\/99.\+28772310f
+\+\#define \doxymbox{\hyperlink{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce}{P1}}~-\/99.\+28772310f
 \item 
-\Hypertarget{Activations_8h_ae00a52dba55d31948c377fa85d385b87}\label{Activations_8h_ae00a52dba55d31948c377fa85d385b87} 
-\+\#define {\bfseries P2}~-\/1614.\+687684f
+\+\#define \doxymbox{\hyperlink{Activations_8h_ae00a52dba55d31948c377fa85d385b87}{P2}}~-\/1614.\+687684f
 \item 
-\Hypertarget{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c}\label{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c} 
-\+\#define {\bfseries Q0}~112.\+8116785f
+\+\#define \doxymbox{\hyperlink{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c}{Q0}}~112.\+8116785f
 \item 
-\Hypertarget{Activations_8h_a0f32727853a3ac3d848701803c3b8688}\label{Activations_8h_a0f32727853a3ac3d848701803c3b8688} 
-\+\#define {\bfseries Q1}~2235.\+488391f
+\+\#define \doxymbox{\hyperlink{Activations_8h_a0f32727853a3ac3d848701803c3b8688}{Q1}}~2235.\+488391f
 \item 
-\Hypertarget{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7}\label{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7} 
-\+\#define {\bfseries Q2}~4844.\+063053f
+\+\#define \doxymbox{\hyperlink{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7}{Q2}}~4844.\+063053f
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Typedefs}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{Activations_8h_afa1dea57980a3726b01372a204121e16}\label{Activations_8h_afa1dea57980a3726b01372a204121e16} 
-using {\bfseries Deep::\+\+Activation\+Fn} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)
+using \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{Deep::\+\+Activation\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)
 \item 
-\Hypertarget{Activations_8h_aac769fa213f2bba46034c471e75d58fa}\label{Activations_8h_aac769fa213f2bba46034c471e75d58fa} 
-using {\bfseries Deep::\+\+Derivative\+Fn} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)
+using \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{Deep::\+\+Derivative\+Fn}} = void (\texorpdfstring{$\ast$}{*})(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Enumerations}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{Activations_8h_a4b7606ca838be34029bd134f319e0f61}\label{Activations_8h_a4b7606ca838be34029bd134f319e0f61} 
-enum class {\bfseries Activation\+Type} :\+ uint8\+\_\+t \{ \newline
-{\bfseries RELU}
-, {\bfseries d\+RELU}
-, {\bfseries SIGMOID}
-, {\bfseries d\+SIGMOID}
+enum class \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}} :\+ uint8\+\_\+t \{ \newline
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Deep::\+\+RELU}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Deep::\+d\+RELU}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{Deep::\+\+SIGMOID}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{Deep::\+d\+SIGMOID}}
 , \newline
-{\bfseries TANH}
-, {\bfseries d\+TANH}
-, {\bfseries LINEAR}
-, {\bfseries d\+LINEAR}
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{Deep::\+e\+SIGMOID}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{Deep::\+\+TANH}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{Deep::\+d\+TANH}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{Deep::\+\+LINEAR}}
 , \newline
-{\bfseries NONE}
+\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{Deep::\+d\+LINEAR}}
+, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{Deep::\+\+NONE}}
  \}
 \end{DoxyCompactItemize}
 \doxysubsubsection*{Functions}
 \begin{DoxyCompactItemize}
 \item 
-\Hypertarget{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea}\label{Activations_8h_aec8c8f0e5bfec6a4b15cbdb2143eb0ea} 
-void {\bfseries Deep::\+expf\+\_\+v} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
+void \doxymbox{\hyperlink{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b}{Deep::\+logf\+\_\+v}} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
 \item 
-\Hypertarget{Activations_8h_afca3df42a9f8d541c51cf729a4c8b89b}\label{Activations_8h_afca3df42a9f8d541c51cf729a4c8b89b} 
-void {\bfseries Deep::\+logf\+\_\+v} (float \texorpdfstring{$\ast$}{*}x, size\+\_\+t n)
-\item 
-void \doxymbox{\hyperlink{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}{Deep::\+relu}} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
-\begin{DoxyCompactList}\small\item\em RELU(x) = MAX(0, x) for all x. \end{DoxyCompactList}\item 
-\Hypertarget{Activations_8h_aa22935f3602295ed65f1c96c9ebc116d}\label{Activations_8h_aa22935f3602295ed65f1c96c9ebc116d} 
-void {\bfseries Deep::\+d\+Relu} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
-\item 
-\Hypertarget{Activations_8h_a3b6e5a79dbdc6d83a08bf1027aea69cb}\label{Activations_8h_a3b6e5a79dbdc6d83a08bf1027aea69cb} 
-void {\bfseries Deep::\+tanh} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
-\item 
-\Hypertarget{Activations_8h_a58dc5a679bdb3c89ca0136bf3e7f5e8d}\label{Activations_8h_a58dc5a679bdb3c89ca0136bf3e7f5e8d} 
-void {\bfseries Deep::\+d\+Tanh} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
-\item 
-void \doxymbox{\hyperlink{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38}{Deep::\+sigmoid}} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n) noexcept
-\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\item 
-\Hypertarget{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d}\label{Activations_8h_a26b8b58c35c5eae83bc5e6f4e8554a5d} 
-void {\bfseries Deep::\+d\+Sigmoid} (float \texorpdfstring{$\ast$}{*}RESTRICT x, const size\+\_\+t n, bool activated=false) noexcept
-\end{DoxyCompactItemize}
+void \doxymbox{\hyperlink{namespaceDeep_ac83ec1ef9cfd17806563be3f5a2d5b50}{Deep::\+e\+\_\+sigmoid}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} x, const size\+\_\+t n) noexcept
+\begin{DoxyCompactList}\small\item\em Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -105,7 +81,7 @@ Defines the activation functions of a predictive coding model.
 
 This header includes implementations of Re\+LU and TanH.
 
-Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{Activations_8h}{Activations.\+h}\texorpdfstring{$>$}{>}
+Usage:\+ \+\#include \texorpdfstring{$<$}{<}\doxylink{Activations_8h}{deepity/\+\+Activations.\+h}\texorpdfstring{$>$}{>}
 
 Example:\+ Deep::\+tanh(array, arraysize)
 
@@ -137,42 +113,63 @@ Jack Rose
 \DoxyCodeLine{(((a)\ >\ (b))\ ?\ (a)\ :\ (b))}
 
 \end{DoxyCode}
+\Hypertarget{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a}\index{Activations.h@{Activations.h}!P0@{P0}}
+\index{P0@{P0}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{P0}{P0}}
+{\footnotesize\ttfamily \label{Activations_8h_a1583b00a62bc1138f99bbfcd8ef81a6a} 
+\+\#define P0~-\/0.\+9643991794f}
 
+\Hypertarget{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce}\index{Activations.h@{Activations.h}!P1@{P1}}
+\index{P1@{P1}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{P1}{P1}}
+{\footnotesize\ttfamily \label{Activations_8h_a6c2a9f7efd46f0160f3037869924d6ce} 
+\+\#define P1~-\/99.\+28772310f}
 
-\label{doc-func-members}
-\Hypertarget{Activations_8h_doc-func-members}
-\doxysubsection{Function Documentation}
-\Hypertarget{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6}\index{Activations.h@{Activations.h}!relu@{relu}}
-\index{relu@{relu}!Activations.h@{Activations.h}}
-\doxysubsubsection{\texorpdfstring{relu()}{relu()}}
-{\footnotesize\ttfamily \label{Activations_8h_ac04542a67acf45ce4d7257d9c72d84c6} 
-void Deep::\+relu (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}RESTRICT}]{x}{, }\item[{const size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+\Hypertarget{Activations_8h_ae00a52dba55d31948c377fa85d385b87}\index{Activations.h@{Activations.h}!P2@{P2}}
+\index{P2@{P2}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{P2}{P2}}
+{\footnotesize\ttfamily \label{Activations_8h_ae00a52dba55d31948c377fa85d385b87} 
+\+\#define P2~-\/1614.\+687684f}
 
+\Hypertarget{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c}\index{Activations.h@{Activations.h}!Q0@{Q0}}
+\index{Q0@{Q0}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{Q0}{Q0}}
+{\footnotesize\ttfamily \label{Activations_8h_ab137e2ab3b44c3f8ee86bce6497ed14c} 
+\+\#define Q0~112.\+8116785f}
 
+\Hypertarget{Activations_8h_a0f32727853a3ac3d848701803c3b8688}\index{Activations.h@{Activations.h}!Q1@{Q1}}
+\index{Q1@{Q1}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{Q1}{Q1}}
+{\footnotesize\ttfamily \label{Activations_8h_a0f32727853a3ac3d848701803c3b8688} 
+\+\#define Q1~2235.\+488391f}
 
-RELU(x) = MAX(0, x) for all x. 
+\Hypertarget{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7}\index{Activations.h@{Activations.h}!Q2@{Q2}}
+\index{Q2@{Q2}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{Q2}{Q2}}
+{\footnotesize\ttfamily \label{Activations_8h_af5bca4c32f8c6886a3d8c526d2e3e9a7} 
+\+\#define Q2~4844.\+063053f}
 
+\Hypertarget{Activations_8h_aae3356b63849abbe8789dd41648ee90a}\index{Activations.h@{Activations.h}!RESTRICT@{RESTRICT}}
+\index{RESTRICT@{RESTRICT}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{RESTRICT}{RESTRICT}}
+{\footnotesize\ttfamily \label{Activations_8h_aae3356b63849abbe8789dd41648ee90a} 
+\+\#define RESTRICT~\+\_\+\+\_\+restrict\+\_\+\+\_\+}
 
-\begin{DoxyParams}{Parameters}
-{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
-\hline
-{\em n} & x length \\
-\hline
-\end{DoxyParams}
-\Hypertarget{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38}\index{Activations.h@{Activations.h}!sigmoid@{sigmoid}}
-\index{sigmoid@{sigmoid}!Activations.h@{Activations.h}}
-\doxysubsubsection{\texorpdfstring{sigmoid()}{sigmoid()}}
-{\footnotesize\ttfamily \label{Activations_8h_a91ebb69ce7bf80e16bdbbc5eef5dcb38} 
-void Deep::\+sigmoid (\begin{DoxyParamCaption}\item[{float \texorpdfstring{$\ast$}{*}RESTRICT}]{x}{, }\item[{const size\+\_\+t}]{n}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+\Hypertarget{Activations_8h_ac245f863ccdf620e12419737387cfc96}\index{Activations.h@{Activations.h}!TANH\_BIGLIMIT@{TANH\_BIGLIMIT}}
+\index{TANH\_BIGLIMIT@{TANH\_BIGLIMIT}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{TANH\_BIGLIMIT}{TANH\_BIGLIMIT}}
+{\footnotesize\ttfamily \label{Activations_8h_ac245f863ccdf620e12419737387cfc96} 
+\+\#define TANH\+\_\+\+BIGLIMIT~6.\+0f}
 
+\Hypertarget{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65}\index{Activations.h@{Activations.h}!TANH\_POLY\_LIMIT@{TANH\_POLY\_LIMIT}}
+\index{TANH\_POLY\_LIMIT@{TANH\_POLY\_LIMIT}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{TANH\_POLY\_LIMIT}{TANH\_POLY\_LIMIT}}
+{\footnotesize\ttfamily \label{Activations_8h_a7ec15aed34c551c8e43a3f0ec25b7c65} 
+\+\#define TANH\+\_\+\+POLY\+\_\+\+LIMIT~0.\+625f}
 
+\Hypertarget{Activations_8h_af09b50acd5a5564417673be65960c0ea}\index{Activations.h@{Activations.h}!TANH\_TINYLIMIT@{TANH\_TINYLIMIT}}
+\index{TANH\_TINYLIMIT@{TANH\_TINYLIMIT}!Activations.h@{Activations.h}}
+\doxysubsubsection{\texorpdfstring{TANH\_TINYLIMIT}{TANH\_TINYLIMIT}}
+{\footnotesize\ttfamily \label{Activations_8h_af09b50acd5a5564417673be65960c0ea} 
+\+\#define TANH\+\_\+\+TINYLIMIT~0.\+000244140625f}
 
-Implements the {\itshape Elliot} {\itshape Sigmoid} approximation, i.\+e. {\ttfamily S(x) = (1/\+2)((x /\+ (1 + \texorpdfstring{$\vert$}{|}x\texorpdfstring{$\vert$}{|})) + 1)}. 
-
-
-\begin{DoxyParams}{Parameters}
-{\em x} & array, {\itshape assumed} to be 64-\/bit aligned! \\
-\hline
-{\em n} & x length \\
-\hline
-\end{DoxyParams}

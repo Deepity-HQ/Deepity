@@ -1,8 +1,22 @@
 var searchData=
 [
-  ['decisions_20benchmarks_0',['📊 Design Decisions &amp;amp; Benchmarks',['../index.html#autotoc_md9',1,'']]],
-  ['deepity_1',['&lt;img src=&quot;Deepity.png&quot; alt=&quot;&quot; class=&quot;inline&quot; title=&quot;Deepity&quot;/&gt;',['../index.html',1,'']]],
-  ['deepity_20png_20deepity_2',['&lt;img src=&quot;Deepity.png&quot; alt=&quot;&quot; class=&quot;inline&quot; title=&quot;Deepity&quot;/&gt;',['../index.html',1,'']]],
-  ['design_20decisions_20benchmarks_3',['📊 Design Decisions &amp;amp; Benchmarks',['../index.html#autotoc_md9',1,'']]],
-  ['dynamic_20thread_20scheduling_4',['Dynamic Thread Scheduling',['../index.html#autotoc_md11',1,'']]]
+  ['deep_0',['Deep',['../namespaceDeep.html',1,'']]],
+  ['deep_3a_3adetail_1',['detail',['../namespaceDeep_1_1detail.html',1,'Deep']]],
+  ['deepity_2',['Deepity',['../index.html',1,'']]],
+  ['dense_3',['DiscriminativePCLayer (dense)',['../ConvPCLayer_math.html#dense_formulas',1,'']]],
+  ['derivation_4',['ConvPCLayer Mathematical Derivation',['../ConvPCLayer_math.html',1,'']]],
+  ['derivativefn_5',['DerivativeFn',['../namespaceDeep.html#aac769fa213f2bba46034c471e75d58fa',1,'Deep']]],
+  ['design_20notes_6',['Design Notes',['../ConvPCLayer_math.html#design_notes',1,'']]],
+  ['devicememoryarena_2eh_7',['DeviceMemoryArena.h',['../DeviceMemoryArena_8h.html',1,'']]],
+  ['discriminativepclayer_8',['DiscriminativePCLayer',['../classDeep_1_1DiscriminativePCLayer.html',1,'Deep::DiscriminativePCLayer'],['../classDeep_1_1DiscriminativePCLayer.html#a20876cd300c0c080085a48e36498cc3c',1,'Deep::DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float precisionRate=0.01f, float lmbda=1e-2f, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)'],['../classDeep_1_1DiscriminativePCLayer.html#a5fdddc8507be2bde4e22bfbd48186c7b',1,'Deep::DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float precisionRate=0.01f, float lmbda=1e-2f, ActivationType aType=ActivationType::RELU, ActivationType dType=ActivationType::dRELU)']]],
+  ['discriminativepclayer_20dense_9',['DiscriminativePCLayer (dense)',['../ConvPCLayer_math.html#dense_formulas',1,'']]],
+  ['discriminativepclayer_2ecpp_10',['DiscriminativePCLayer.cpp',['../DiscriminativePCLayer_8cpp.html',1,'']]],
+  ['discriminativepclayer_2eh_11',['DiscriminativePCLayer.h',['../DiscriminativePCLayer_8h.html',1,'']]],
+  ['discriminativepcnetwork_12',['DiscriminativePCNetwork',['../classDeep_1_1DiscriminativePCNetwork.html',1,'Deep::DiscriminativePCNetwork'],['../classDeep_1_1DiscriminativePCNetwork.html#a3b3ba3c36d6dcb7c16bb353236ec830c',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork()'],['../classDeep_1_1DiscriminativePCNetwork.html#aa5f7d2e72477a8a3b59a11ae2bc23215',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork(int batchSize)'],['../classDeep_1_1DiscriminativePCNetwork.html#acef22b0bde2c8633af40fe8fdefae448',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork(DiscriminativePCNetwork &amp;&amp;other) noexcept=default']]],
+  ['discriminativepcnetwork_2ecpp_13',['DiscriminativePCNetwork.cpp',['../DiscriminativePCNetwork_8cpp.html',1,'']]],
+  ['discriminativepcnetwork_2eh_14',['DiscriminativePCNetwork.h',['../DiscriminativePCNetwork_8h.html',1,'']]],
+  ['dlinear_15',['dLINEAR',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7',1,'Deep']]],
+  ['drelu_16',['dRELU',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75',1,'Deep']]],
+  ['dsigmoid_17',['dSIGMOID',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01',1,'Deep']]],
+  ['dtanh_18',['dTANH',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd',1,'Deep']]]
 ];

@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['of_20batching_0',['The Impact of Batching',['../index.html#autotoc_md10',1,'']]],
-  ['on_20the_20cpu_20in_20under_20an_20hour_3a_1',['See it train MNIST on the CPU in under an hour:',['../index.html#autotoc_md1',1,'']]],
-  ['optimizations_2',['⚡ Core Architecture &amp;amp; Optimizations',['../index.html#autotoc_md7',1,'']]]
+  ['openblas_5fset_5fnum_5fthreads_0',['openblas_set_num_threads',['../Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff',1,'Optimize.h']]],
+  ['operator_3d_1',['operator=',['../classDeep_1_1MemoryArena.html#adcb6d3fab7ac84d0c427b70381afabca',1,'Deep::MemoryArena::operator=()'],['../classDeep_1_1ConvPCNetwork.html#a622e6a7baea151de32b1b507a16372b1',1,'Deep::ConvPCNetwork::operator=()'],['../classDeep_1_1DiscriminativePCNetwork.html#a7e8373c911697c531b75b1a3cbb413bd',1,'Deep::DiscriminativePCNetwork::operator=()'],['../classDeep_1_1SimplePCNetwork.html#a045dbcb6ded7afa0bf3d54bb90851b2f',1,'Deep::SimplePCNetwork::operator=()']]],
+  ['optimize_2eh_2',['Optimize.h',['../Optimize_8h.html',1,'']]],
+  ['optimizertype_3',['OptimizerType',['../namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02',1,'Deep']]],
+  ['overview_4',['Overview',['../index.html#overview',1,'']]]
 ];

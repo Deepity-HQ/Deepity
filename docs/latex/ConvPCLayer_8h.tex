@@ -1,0 +1,53 @@
+\doxysection{include/\+deepity/\+layers/\+\+Conv\+PCLayer.h File Reference}
+\hypertarget{ConvPCLayer_8h}{}\label{ConvPCLayer_8h}\index{include/deepity/layers/ConvPCLayer.h@{include/deepity/layers/ConvPCLayer.h}}
+
+
+Convolutional counterpart to Discriminative\+PCLayer.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Layer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Im2\+Col.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Deep::\+\+Conv\+PCLayer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Convolutional counterpart to Discriminative\+PCLayer. 
+
+\begin{DoxyWarning}{Warning}
+Calculate\+State/\+\+Update\+State/\+\+Update\+Weights math is implemented in \doxylink{ConvPCLayer_8cpp}{Conv\+PCLayer.\+cpp} but has ONLY been verified for its weight-\/gradient path (Update\+Weights(), via finite-\/difference check with both layers clamped). The Col2\+Im-\/based feedback term in Update\+State() has NOT yet been exercised by any test -- both layers in the existing gradient check were clamped, so that code path never actually ran. Do not trust the full training loop (unclamped hidden layers) until:\+
+\begin{DoxyEnumerate}
+\item A gradient check with a genuinely UNCLAMPED middle layer passes, exercising the feedback term for real.
+\item A clean ASan/\+\+UBSan run on a tiny synthetic Conv\+PCNetwork.
+\item A synthetic floor test (same pattern as t\+Diagnose.\+cpp) passes. Only then wire this into MNIST.
+\end{DoxyEnumerate}
+\end{DoxyWarning}
+Layout convention:\+ NCHW, row-\/major, contiguous per channel per batch item.
+
+\begin{DoxyNote}{Note}
+Single-\/instance layer; scratch/\+column buffers are bound into a Memory\+Arena rather than stored in a container, unlike Discriminative\+PCNetwork\textquotesingle{}s vector-\/of-\/layers. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}

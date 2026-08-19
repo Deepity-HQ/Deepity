@@ -1,0 +1,26 @@
+\doxysection{Model\+IO.\+h}
+\hypertarget{ModelIO_8h_source}{}\label{ModelIO_8h_source}\index{include/deepity/ModelIO.h@{include/deepity/ModelIO.h}}
+\doxymbox{\hyperlink{ModelIO_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{DiscriminativePCNetwork_8h}{deepity/networks/DiscriminativePCNetwork.h}}>}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00022\ }
+\DoxyCodeLine{00023\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00024\ \{}
+\DoxyCodeLine{00028\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1ModelIO}{ModelIO}}}
+\DoxyCodeLine{00029\ \ \ \ \ \{}
+\DoxyCodeLine{00030\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classDeep_1_1ModelIO_a3662d697bcb32ea272c8b3ce065faf21}{Save}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{DiscriminativePCNetwork}}\ \&net,\ \textcolor{keyword}{const}\ std::string\ \&dirPath);}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{bool}\ \doxymbox{\hyperlink{classDeep_1_1ModelIO_aff573d97a8059f6a5f30f5ba784e26a2}{Load}}(\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork}{DiscriminativePCNetwork}}\ \&net,\ \textcolor{keyword}{const}\ std::string\ \&dirPath);}
+\DoxyCodeLine{00052\ }
+\DoxyCodeLine{00053\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ std::string\ ActivationToString(\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ type);}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ StringToActivation(\textcolor{keyword}{const}\ std::string\ \&str);}
+\DoxyCodeLine{00066\ \ \ \ \ \};}
+\DoxyCodeLine{00067\ \}}
+
+\end{DoxyCode}

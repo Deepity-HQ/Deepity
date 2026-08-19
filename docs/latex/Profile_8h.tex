@@ -1,0 +1,70 @@
+\doxysection{include/\+deepity/\+\+Profile.h File Reference}
+\hypertarget{Profile_8h}{}\label{Profile_8h}\index{include/deepity/Profile.h@{include/deepity/Profile.h}}
+
+
+Per-\/\+LAYER, phase-\/level timing accumulator.  
+
+
+{\ttfamily \+\#include $<$chrono$>$}\newline
+{\ttfamily \+\#include $<$iostream$>$}\newline
+{\ttfamily \+\#include $<$iomanip$>$}\newline
+{\ttfamily \+\#include $<$string$>$}\newline
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$utility$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{Deep::\+\+Profile\+Accumulator}}
+\item 
+struct \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{Deep::\+\+Profile\+Entry}}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ScopedTimer}{Deep::\+\+Scoped\+Timer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{Profile_8h_a0c74b93e21c61e2f23b7e718e91beee1}{PCN\+\_\+\+TIME}}(accumulator)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+std::\+vector$<$ std::\+pair$<$ const void \texorpdfstring{$\ast$}{*}, \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{Profile\+Entry}} $>$ $>$ \& \doxymbox{\hyperlink{namespaceDeep_acd40701ddacb775649741df40bc3b929}{Deep::\+\+Profile\+Registry}} ()
+\item 
+{\footnotesize template$<$typename LayerT$>$ }\\\doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{Profile\+Accumulator}} \& \doxymbox{\hyperlink{namespaceDeep_afc0c7bc2619873cb922f19a2eaf5ffd2}{Deep::\+\+Layer\+Profile}} (LayerT \texorpdfstring{$\ast$}{*}layer)
+\item 
+void \doxymbox{\hyperlink{namespaceDeep_a7b797d1b36359f0bf39a7d0b55190eee}{Deep::\+\+Print\+All\+Profiles}} (double wall\+Clock\+Seconds)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Per-\/\+LAYER, phase-\/level timing accumulator. 
+
+Changes from the first draft, per review:\+
+\begin{DoxyEnumerate}
+\item Accumulators are now PER LAYER (keyed by layer pointer), not one global blob -- so "{}feedback GEMM"{} for the 784-\/\texorpdfstring{$>$}{>}512 layer is reported separately from the 512-\/\texorpdfstring{$>$}{>}10 layer, per review point 4.
+\item Added calculate\+State\+Total/\+update\+State\+Total top-\/level timers, so you can see e.\+g. "{}\+Update\+State 78\%"{} before drilling into its sub-\/phases.
+\item Print() no longer claims to BE wall-\/clock time -- Print\+All\+Profiles() takes an explicit externally-\/measured wall-\/clock duration and prints it alongside the phase sum as a reconciliation check, per review point 2. If they don\textquotesingle{}t roughly match, that\textquotesingle{}s itself a finding.
+\item "{}own\+Gradient\+Term"{} renamed to "{}local\+Error\+Term"{} (it\textquotesingle{}s dz\+\_\+dt = -\/p\texorpdfstring{$\ast$}{*}e, not a conventional backprop gradient -- review point 5).
+\end{DoxyEnumerate}
+
+Still gated behind PCN\+\_\+\+PROFILE; a no-\/op in normal builds. 
+
+\label{doc-define-members}
+\Hypertarget{Profile_8h_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{Profile_8h_a0c74b93e21c61e2f23b7e718e91beee1}\index{Profile.h@{Profile.h}!PCN\_TIME@{PCN\_TIME}}
+\index{PCN\_TIME@{PCN\_TIME}!Profile.h@{Profile.h}}
+\doxysubsubsection{\texorpdfstring{PCN\_TIME}{PCN\_TIME}}
+{\footnotesize\ttfamily \label{Profile_8h_a0c74b93e21c61e2f23b7e718e91beee1} 
+\+\#define PCN\+\_\+\+TIME(\begin{DoxyParamCaption}\item[{}]{accumulator}{}\end{DoxyParamCaption})}
+
+{\bfseries Value:\+}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\textcolor{keywordflow}{do}\ \{\}\ \textcolor{keywordflow}{while}\ (0)}
+
+\end{DoxyCode}

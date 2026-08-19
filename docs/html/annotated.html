@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -103,8 +104,25 @@ $(function(){initNavTree('annotated.html','',''); });
 <div class="contents">
 <div class="textblock">Here are the classes, structs, unions and interfaces with brief descriptions:</div><div class="directory">
 <div class="levels">[detail level <span onclick="javascript:dynsection.toggleLevel(1);">1</span><span onclick="javascript:dynsection.toggleLevel(2);">2</span>]</div><table class="directory">
-<tr id="row_0_" class="even"><td class="entry"><span style="width:0px;display:inline-block;">&#160;</span><span id="arr_0_" class="arrow" onclick="dynsection.toggleFolder('0_')"><span class="arrowhead opened"></span></span><span class="icona"><span class="icon">N</span></span><b>Deep</b></td><td class="desc"></td></tr>
+<tr id="row_0_" class="even"><td class="entry"><span style="width:0px;display:inline-block;">&#160;</span><span id="arr_0_" class="arrow" onclick="dynsection.toggleFolder('0_')"><span class="arrowhead opened"></span></span><span class="icona"><span class="icon">N</span></span><a class="el" href="namespaceDeep.html" target="_self">Deep</a></td><td class="desc"></td></tr>
 <tr id="row_0_0_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1PCNDiagnostics.html" target="_self">PCNDiagnostics</a></td><td class="desc"></td></tr>
+<tr id="row_0_1_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1ConvPCLayer.html" target="_self">ConvPCLayer</a></td><td class="desc"></td></tr>
+<tr id="row_0_2_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1DiscriminativePCLayer.html" target="_self">DiscriminativePCLayer</a></td><td class="desc"></td></tr>
+<tr id="row_0_3_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1Layer.html" target="_self">Layer</a></td><td class="desc">A deepity layer virtual class </td></tr>
+<tr id="row_0_4_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1RBLayer.html" target="_self">RBLayer</a></td><td class="desc">Restricted Boltzmann-style Predictive Coding (PC) <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> </td></tr>
+<tr id="row_0_5_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1SimpleConvPCLayer.html" target="_self">SimpleConvPCLayer</a></td><td class="desc"></td></tr>
+<tr id="row_0_6_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1SimplePCLayer.html" target="_self">SimplePCLayer</a></td><td class="desc"></td></tr>
+<tr id="row_0_7_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1MemoryArena.html" target="_self">MemoryArena</a></td><td class="desc">A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory. Every chunk handed out via <a class="el" href="classDeep_1_1MemoryArena.html#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> is itself 64-byte aligned, satisfying this codebase's strict alignment requirement for AVX2/AVX-512 loads </td></tr>
+<tr id="row_0_8_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1ModelIO.html" target="_self">ModelIO</a></td><td class="desc">Static utility class for saving and loading <a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="An abstracted class for an array of DiscriminativePCLayer.">DiscriminativePCNetwork</a> model state to/from a structured directory on disk </td></tr>
+<tr id="row_0_9_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1ConvPCNetwork.html" target="_self">ConvPCNetwork</a></td><td class="desc">A convolutional Predictive Coding (PC) network: an ordered stack of <a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a> instances sharing a single contiguous <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a>, trained via iterative energy-relaxation rather than backpropagation </td></tr>
+<tr id="row_0_10_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" target="_self">DiscriminativePCNetwork</a></td><td class="desc">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></span> </td></tr>
+<tr id="row_0_11_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1SimplePCNetwork.html" target="_self">SimplePCNetwork</a></td><td class="desc">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a></span> </td></tr>
+<tr id="row_0_12_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="structDeep_1_1ProfileAccumulator.html" target="_self">ProfileAccumulator</a></td><td class="desc"></td></tr>
+<tr id="row_0_13_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="structDeep_1_1ProfileEntry.html" target="_self">ProfileEntry</a></td><td class="desc"></td></tr>
+<tr id="row_0_14_" class="odd"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1ScopedTimer.html" target="_self">ScopedTimer</a></td><td class="desc"></td></tr>
+<tr id="row_0_15_" class="even"><td class="entry"><span style="width:32px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classDeep_1_1StreamAlignedBatcher.html" target="_self">StreamAlignedBatcher</a></td><td class="desc"></td></tr>
+<tr id="row_1_" class="odd"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="structstbi__io__callbacks.html" target="_self">stbi_io_callbacks</a></td><td class="desc"></td></tr>
+<tr id="row_2_" class="even"><td class="entry"><span style="width:16px;display:inline-block;">&#160;</span><span class="icona"><span class="icon">C</span></span><a class="el" href="classTimer.html" target="_self">Timer</a></td><td class="desc">Implementation by Alex: <a href="https://www.learncpp.com/cpp-tutorial/timing-your-code/">https://www.learncpp.com/cpp-tutorial/timing-your-code/</a> </td></tr>
 </table>
 </div><!-- directory -->
 </div><!-- contents -->

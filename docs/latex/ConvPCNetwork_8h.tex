@@ -1,0 +1,28 @@
+\doxysection{include/\+deepity/\+networks/\+\+Conv\+PCNetwork.h File Reference}
+\hypertarget{ConvPCNetwork_8h}{}\label{ConvPCNetwork_8h}\index{include/deepity/networks/ConvPCNetwork.h@{include/deepity/networks/ConvPCNetwork.h}}
+
+
+Convolutional counterpart to Discriminative\+PCNetwork -- same public interface shape (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+\+Update\+State/\+ Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Conv\+PCLayer instead.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Conv\+PCLayer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork}{Deep::\+\+Conv\+PCNetwork}}
+\begin{DoxyCompactList}\small\item\em A convolutional Predictive Coding (PC) network:\+ an ordered stack of \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} instances sharing a single contiguous \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, trained via iterative energy-\/relaxation rather than backpropagation. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Convolutional counterpart to Discriminative\+PCNetwork -- same public interface shape (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+\+Update\+State/\+ Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Conv\+PCLayer instead. 
+
+Add\+Layer\textquotesingle{}s spatial dimensions (in\+Height/\+in\+Width) are NOT auto-\/inferred from the previous layer\textquotesingle{}s output shape -- pass them explicitly for each layer. This mirrors how every Conv\+PCLayer test this session specified shapes directly rather than relying on inference, and avoids a class of silent-\/shape-\/mismatch bug if a stride/\+padding choice doesn\textquotesingle{}t produce the dimension you expected. 

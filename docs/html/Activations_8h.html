@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: includes/Activations.h File Reference</title>
+<title>Deepity: include/deepity/Activations.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -110,80 +111,61 @@ $(function(){initNavTree('Activations_8h.html','',''); });
 <code>#include &lt;immintrin.h&gt;</code><br />
 <code>#include &lt;sleef.h&gt;</code><br />
 <code>#include &lt;omp.h&gt;</code><br />
+<code>#include &lt;algorithm&gt;</code><br />
 </div>
 <p><a href="Activations_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
+Namespaces</h2></td></tr>
+<tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:aae3356b63849abbe8789dd41648ee90a" id="r_aae3356b63849abbe8789dd41648ee90a"><td class="memItemLeft"><a id="aae3356b63849abbe8789dd41648ee90a" name="aae3356b63849abbe8789dd41648ee90a"></a>
-#define&#160;</td><td class="memItemRight"><b>RESTRICT</b>&#160;&#160;&#160;__restrict__</td></tr>
+<tr class="memitem:aae3356b63849abbe8789dd41648ee90a" id="r_aae3356b63849abbe8789dd41648ee90a"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>&#160;&#160;&#160;__restrict__</td></tr>
 <tr class="memitem:afa99ec4acc4ecb2dc3c2d05da15d0e3f" id="r_afa99ec4acc4ecb2dc3c2d05da15d0e3f"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#afa99ec4acc4ecb2dc3c2d05da15d0e3f">MAX</a>(a,  b)</td></tr>
-<tr class="memitem:af09b50acd5a5564417673be65960c0ea" id="r_af09b50acd5a5564417673be65960c0ea"><td class="memItemLeft"><a id="af09b50acd5a5564417673be65960c0ea" name="af09b50acd5a5564417673be65960c0ea"></a>
-#define&#160;</td><td class="memItemRight"><b>TANH_TINYLIMIT</b>&#160;&#160;&#160;0.000244140625f</td></tr>
-<tr class="memitem:a7ec15aed34c551c8e43a3f0ec25b7c65" id="r_a7ec15aed34c551c8e43a3f0ec25b7c65"><td class="memItemLeft"><a id="a7ec15aed34c551c8e43a3f0ec25b7c65" name="a7ec15aed34c551c8e43a3f0ec25b7c65"></a>
-#define&#160;</td><td class="memItemRight"><b>TANH_POLY_LIMIT</b>&#160;&#160;&#160;0.625f</td></tr>
-<tr class="memitem:ac245f863ccdf620e12419737387cfc96" id="r_ac245f863ccdf620e12419737387cfc96"><td class="memItemLeft"><a id="ac245f863ccdf620e12419737387cfc96" name="ac245f863ccdf620e12419737387cfc96"></a>
-#define&#160;</td><td class="memItemRight"><b>TANH_BIGLIMIT</b>&#160;&#160;&#160;6.0f</td></tr>
-<tr class="memitem:a1583b00a62bc1138f99bbfcd8ef81a6a" id="r_a1583b00a62bc1138f99bbfcd8ef81a6a"><td class="memItemLeft"><a id="a1583b00a62bc1138f99bbfcd8ef81a6a" name="a1583b00a62bc1138f99bbfcd8ef81a6a"></a>
-#define&#160;</td><td class="memItemRight"><b>P0</b>&#160;&#160;&#160;-0.9643991794f</td></tr>
-<tr class="memitem:a6c2a9f7efd46f0160f3037869924d6ce" id="r_a6c2a9f7efd46f0160f3037869924d6ce"><td class="memItemLeft"><a id="a6c2a9f7efd46f0160f3037869924d6ce" name="a6c2a9f7efd46f0160f3037869924d6ce"></a>
-#define&#160;</td><td class="memItemRight"><b>P1</b>&#160;&#160;&#160;-99.28772310f</td></tr>
-<tr class="memitem:ae00a52dba55d31948c377fa85d385b87" id="r_ae00a52dba55d31948c377fa85d385b87"><td class="memItemLeft"><a id="ae00a52dba55d31948c377fa85d385b87" name="ae00a52dba55d31948c377fa85d385b87"></a>
-#define&#160;</td><td class="memItemRight"><b>P2</b>&#160;&#160;&#160;-1614.687684f</td></tr>
-<tr class="memitem:ab137e2ab3b44c3f8ee86bce6497ed14c" id="r_ab137e2ab3b44c3f8ee86bce6497ed14c"><td class="memItemLeft"><a id="ab137e2ab3b44c3f8ee86bce6497ed14c" name="ab137e2ab3b44c3f8ee86bce6497ed14c"></a>
-#define&#160;</td><td class="memItemRight"><b>Q0</b>&#160;&#160;&#160;112.8116785f</td></tr>
-<tr class="memitem:a0f32727853a3ac3d848701803c3b8688" id="r_a0f32727853a3ac3d848701803c3b8688"><td class="memItemLeft"><a id="a0f32727853a3ac3d848701803c3b8688" name="a0f32727853a3ac3d848701803c3b8688"></a>
-#define&#160;</td><td class="memItemRight"><b>Q1</b>&#160;&#160;&#160;2235.488391f</td></tr>
-<tr class="memitem:af5bca4c32f8c6886a3d8c526d2e3e9a7" id="r_af5bca4c32f8c6886a3d8c526d2e3e9a7"><td class="memItemLeft"><a id="af5bca4c32f8c6886a3d8c526d2e3e9a7" name="af5bca4c32f8c6886a3d8c526d2e3e9a7"></a>
-#define&#160;</td><td class="memItemRight"><b>Q2</b>&#160;&#160;&#160;4844.063053f</td></tr>
+<tr class="memitem:af09b50acd5a5564417673be65960c0ea" id="r_af09b50acd5a5564417673be65960c0ea"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af09b50acd5a5564417673be65960c0ea">TANH_TINYLIMIT</a>&#160;&#160;&#160;0.000244140625f</td></tr>
+<tr class="memitem:a7ec15aed34c551c8e43a3f0ec25b7c65" id="r_a7ec15aed34c551c8e43a3f0ec25b7c65"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a7ec15aed34c551c8e43a3f0ec25b7c65">TANH_POLY_LIMIT</a>&#160;&#160;&#160;0.625f</td></tr>
+<tr class="memitem:ac245f863ccdf620e12419737387cfc96" id="r_ac245f863ccdf620e12419737387cfc96"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ac245f863ccdf620e12419737387cfc96">TANH_BIGLIMIT</a>&#160;&#160;&#160;6.0f</td></tr>
+<tr class="memitem:a1583b00a62bc1138f99bbfcd8ef81a6a" id="r_a1583b00a62bc1138f99bbfcd8ef81a6a"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a1583b00a62bc1138f99bbfcd8ef81a6a">P0</a>&#160;&#160;&#160;-0.9643991794f</td></tr>
+<tr class="memitem:a6c2a9f7efd46f0160f3037869924d6ce" id="r_a6c2a9f7efd46f0160f3037869924d6ce"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a6c2a9f7efd46f0160f3037869924d6ce">P1</a>&#160;&#160;&#160;-99.28772310f</td></tr>
+<tr class="memitem:ae00a52dba55d31948c377fa85d385b87" id="r_ae00a52dba55d31948c377fa85d385b87"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ae00a52dba55d31948c377fa85d385b87">P2</a>&#160;&#160;&#160;-1614.687684f</td></tr>
+<tr class="memitem:ab137e2ab3b44c3f8ee86bce6497ed14c" id="r_ab137e2ab3b44c3f8ee86bce6497ed14c"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#ab137e2ab3b44c3f8ee86bce6497ed14c">Q0</a>&#160;&#160;&#160;112.8116785f</td></tr>
+<tr class="memitem:a0f32727853a3ac3d848701803c3b8688" id="r_a0f32727853a3ac3d848701803c3b8688"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a0f32727853a3ac3d848701803c3b8688">Q1</a>&#160;&#160;&#160;2235.488391f</td></tr>
+<tr class="memitem:af5bca4c32f8c6886a3d8c526d2e3e9a7" id="r_af5bca4c32f8c6886a3d8c526d2e3e9a7"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#af5bca4c32f8c6886a3d8c526d2e3e9a7">Q2</a>&#160;&#160;&#160;4844.063053f</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:afa1dea57980a3726b01372a204121e16" id="r_afa1dea57980a3726b01372a204121e16"><td class="memItemLeft"><a id="afa1dea57980a3726b01372a204121e16" name="afa1dea57980a3726b01372a204121e16"></a>
-using&#160;</td><td class="memItemRight"><b>Deep::ActivationFn</b> = void (*)(float *, size_t)</td></tr>
-<tr class="memitem:aac769fa213f2bba46034c471e75d58fa" id="r_aac769fa213f2bba46034c471e75d58fa"><td class="memItemLeft"><a id="aac769fa213f2bba46034c471e75d58fa" name="aac769fa213f2bba46034c471e75d58fa"></a>
-using&#160;</td><td class="memItemRight"><b>Deep::DerivativeFn</b> = void (*)(float *, size_t, bool)</td></tr>
+<tr class="memitem:afa1dea57980a3726b01372a204121e16" id="r_afa1dea57980a3726b01372a204121e16"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#afa1dea57980a3726b01372a204121e16">Deep::ActivationFn</a> = void (*)(float *, size_t)</td></tr>
+<tr class="memitem:aac769fa213f2bba46034c471e75d58fa" id="r_aac769fa213f2bba46034c471e75d58fa"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#aac769fa213f2bba46034c471e75d58fa">Deep::DerivativeFn</a> = void (*)(float *, size_t, bool)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a4b7606ca838be34029bd134f319e0f61" id="r_a4b7606ca838be34029bd134f319e0f61"><td class="memItemLeft"><a id="a4b7606ca838be34029bd134f319e0f61" name="a4b7606ca838be34029bd134f319e0f61"></a>enum class &#160;</td><td class="memItemRight"><b>ActivationType</b> : uint8_t { <br />
-&#160;&#160;<b>RELU</b>
-, <b>dRELU</b>
-, <b>SIGMOID</b>
-, <b>dSIGMOID</b>
+<tr class="memitem:a4b7606ca838be34029bd134f319e0f61" id="r_a4b7606ca838be34029bd134f319e0f61"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">Deep::ActivationType</a> : uint8_t { <br />
+&#160;&#160;<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">Deep::RELU</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">Deep::dRELU</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b">Deep::SIGMOID</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01">Deep::dSIGMOID</a>
 , <br />
-&#160;&#160;<b>TANH</b>
-, <b>dTANH</b>
-, <b>LINEAR</b>
-, <b>dLINEAR</b>
+&#160;&#160;<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4">Deep::eSIGMOID</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1">Deep::TANH</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd">Deep::dTANH</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046">Deep::LINEAR</a>
 , <br />
-&#160;&#160;<b>NONE</b>
+&#160;&#160;<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7">Deep::dLINEAR</a>
+, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">Deep::NONE</a>
 <br />
  }</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:aec8c8f0e5bfec6a4b15cbdb2143eb0ea" id="r_aec8c8f0e5bfec6a4b15cbdb2143eb0ea"><td class="memItemLeft"><a id="aec8c8f0e5bfec6a4b15cbdb2143eb0ea" name="aec8c8f0e5bfec6a4b15cbdb2143eb0ea"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::expf_v</b> (float *x, size_t n)</td></tr>
-<tr class="memitem:afca3df42a9f8d541c51cf729a4c8b89b" id="r_afca3df42a9f8d541c51cf729a4c8b89b"><td class="memItemLeft"><a id="afca3df42a9f8d541c51cf729a4c8b89b" name="afca3df42a9f8d541c51cf729a4c8b89b"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::logf_v</b> (float *x, size_t n)</td></tr>
-<tr class="memitem:ac04542a67acf45ce4d7257d9c72d84c6" id="r_ac04542a67acf45ce4d7257d9c72d84c6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac04542a67acf45ce4d7257d9c72d84c6">Deep::relu</a> (float *RESTRICT x, const size_t n) noexcept</td></tr>
-<tr class="memdesc:ac04542a67acf45ce4d7257d9c72d84c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">RELU(x) = MAX(0, x) for all x.  <br /></td></tr>
-<tr class="memitem:aa22935f3602295ed65f1c96c9ebc116d" id="r_aa22935f3602295ed65f1c96c9ebc116d"><td class="memItemLeft"><a id="aa22935f3602295ed65f1c96c9ebc116d" name="aa22935f3602295ed65f1c96c9ebc116d"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dRelu</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
-<tr class="memitem:a3b6e5a79dbdc6d83a08bf1027aea69cb" id="r_a3b6e5a79dbdc6d83a08bf1027aea69cb"><td class="memItemLeft"><a id="a3b6e5a79dbdc6d83a08bf1027aea69cb" name="a3b6e5a79dbdc6d83a08bf1027aea69cb"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::tanh</b> (float *RESTRICT x, const size_t n) noexcept</td></tr>
-<tr class="memitem:a58dc5a679bdb3c89ca0136bf3e7f5e8d" id="r_a58dc5a679bdb3c89ca0136bf3e7f5e8d"><td class="memItemLeft"><a id="a58dc5a679bdb3c89ca0136bf3e7f5e8d" name="a58dc5a679bdb3c89ca0136bf3e7f5e8d"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dTanh</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
-<tr class="memitem:a91ebb69ce7bf80e16bdbbc5eef5dcb38" id="r_a91ebb69ce7bf80e16bdbbc5eef5dcb38"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a91ebb69ce7bf80e16bdbbc5eef5dcb38">Deep::sigmoid</a> (float *RESTRICT x, const size_t n) noexcept</td></tr>
-<tr class="memdesc:a91ebb69ce7bf80e16bdbbc5eef5dcb38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
-<tr class="memitem:a26b8b58c35c5eae83bc5e6f4e8554a5d" id="r_a26b8b58c35c5eae83bc5e6f4e8554a5d"><td class="memItemLeft"><a id="a26b8b58c35c5eae83bc5e6f4e8554a5d" name="a26b8b58c35c5eae83bc5e6f4e8554a5d"></a>
-void&#160;</td><td class="memItemRight"><b>Deep::dSigmoid</b> (float *RESTRICT x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memitem:afca3df42a9f8d541c51cf729a4c8b89b" id="r_afca3df42a9f8d541c51cf729a4c8b89b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#afca3df42a9f8d541c51cf729a4c8b89b">Deep::logf_v</a> (float *x, size_t n)</td></tr>
+<tr class="memitem:ac83ec1ef9cfd17806563be3f5a2d5b50" id="r_ac83ec1ef9cfd17806563be3f5a2d5b50"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#ac83ec1ef9cfd17806563be3f5a2d5b50">Deep::e_sigmoid</a> (float *<a class="el" href="#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:ac83ec1ef9cfd17806563be3f5a2d5b50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines the activation functions of a predictive coding model. </p>
 <p>This header includes implementations of ReLU and TanH.</p>
-<p>Usage: #include &lt;<a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">Activations.h</a>&gt;</p>
+<p>Usage: #include &lt;<a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">deepity/Activations.h</a>&gt;</p>
 <p>Example: Deep::tanh(array, arraysize)</p>
 <dl class="section note"><dt>Note</dt><dd>Separate implementations exist for AVX512F, AVX2, SSE, and naive. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
@@ -212,80 +194,143 @@ void&#160;</td><td class="memItemRight"><b>Deep::dSigmoid</b> (float *RESTRICT x
 </div><!-- fragment -->
 </div>
 </div>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Function Documentation</h2>
-<a id="ac04542a67acf45ce4d7257d9c72d84c6" name="ac04542a67acf45ce4d7257d9c72d84c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac04542a67acf45ce4d7257d9c72d84c6">&#9670;&#160;</a></span>relu()</h2>
+<a id="a1583b00a62bc1138f99bbfcd8ef81a6a" name="a1583b00a62bc1138f99bbfcd8ef81a6a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1583b00a62bc1138f99bbfcd8ef81a6a">&#9670;&#160;</a></span>P0</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Deep::relu </td>
-          <td>(</td>
-          <td class="paramtype">float *RESTRICT</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+          <td class="memname">#define P0&#160;&#160;&#160;-0.9643991794f</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>RELU(x) = MAX(0, x) for all x. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">x</td><td>array, <em>assumed</em> to be 64-bit aligned! </td></tr>
-    <tr><td class="paramname">n</td><td>x length </td></tr>
-  </table>
-  </dd>
-</dl>
-
 </div>
 </div>
-<a id="a91ebb69ce7bf80e16bdbbc5eef5dcb38" name="a91ebb69ce7bf80e16bdbbc5eef5dcb38"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91ebb69ce7bf80e16bdbbc5eef5dcb38">&#9670;&#160;</a></span>sigmoid()</h2>
+<a id="a6c2a9f7efd46f0160f3037869924d6ce" name="a6c2a9f7efd46f0160f3037869924d6ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c2a9f7efd46f0160f3037869924d6ce">&#9670;&#160;</a></span>P1</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Deep::sigmoid </td>
-          <td>(</td>
-          <td class="paramtype">float *RESTRICT</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+          <td class="memname">#define P1&#160;&#160;&#160;-99.28772310f</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">x</td><td>array, <em>assumed</em> to be 64-bit aligned! </td></tr>
-    <tr><td class="paramname">n</td><td>x length </td></tr>
-  </table>
-  </dd>
-</dl>
+</div>
+</div>
+<a id="ae00a52dba55d31948c377fa85d385b87" name="ae00a52dba55d31948c377fa85d385b87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae00a52dba55d31948c377fa85d385b87">&#9670;&#160;</a></span>P2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define P2&#160;&#160;&#160;-1614.687684f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab137e2ab3b44c3f8ee86bce6497ed14c" name="ab137e2ab3b44c3f8ee86bce6497ed14c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab137e2ab3b44c3f8ee86bce6497ed14c">&#9670;&#160;</a></span>Q0</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define Q0&#160;&#160;&#160;112.8116785f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0f32727853a3ac3d848701803c3b8688" name="a0f32727853a3ac3d848701803c3b8688"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f32727853a3ac3d848701803c3b8688">&#9670;&#160;</a></span>Q1</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define Q1&#160;&#160;&#160;2235.488391f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af5bca4c32f8c6886a3d8c526d2e3e9a7" name="af5bca4c32f8c6886a3d8c526d2e3e9a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5bca4c32f8c6886a3d8c526d2e3e9a7">&#9670;&#160;</a></span>Q2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define Q2&#160;&#160;&#160;4844.063053f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aae3356b63849abbe8789dd41648ee90a" name="aae3356b63849abbe8789dd41648ee90a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae3356b63849abbe8789dd41648ee90a">&#9670;&#160;</a></span>RESTRICT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RESTRICT&#160;&#160;&#160;__restrict__</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac245f863ccdf620e12419737387cfc96" name="ac245f863ccdf620e12419737387cfc96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac245f863ccdf620e12419737387cfc96">&#9670;&#160;</a></span>TANH_BIGLIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define TANH_BIGLIMIT&#160;&#160;&#160;6.0f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7ec15aed34c551c8e43a3f0ec25b7c65" name="a7ec15aed34c551c8e43a3f0ec25b7c65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ec15aed34c551c8e43a3f0ec25b7c65">&#9670;&#160;</a></span>TANH_POLY_LIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define TANH_POLY_LIMIT&#160;&#160;&#160;0.625f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af09b50acd5a5564417673be65960c0ea" name="af09b50acd5a5564417673be65960c0ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af09b50acd5a5564417673be65960c0ea">&#9670;&#160;</a></span>TANH_TINYLIMIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define TANH_TINYLIMIT&#160;&#160;&#160;0.000244140625f</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
 
 </div>
 </div>
@@ -302,7 +347,7 @@ void&#160;</td><td class="memItemRight"><b>Deep::dSigmoid</b> (float *RESTRICT x
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><b>includes</b></li><li class="navelem"><a href="Activations_8h.html">Activations.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="Activations_8h.html">Activations.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

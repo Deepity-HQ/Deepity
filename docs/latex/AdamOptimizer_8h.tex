@@ -1,0 +1,71 @@
+\doxysection{include/\+deepity/\+\+Adam\+Optimizer.h File Reference}
+\hypertarget{AdamOptimizer_8h}{}\label{AdamOptimizer_8h}\index{include/deepity/AdamOptimizer.h@{include/deepity/AdamOptimizer.h}}
+
+
+Vectorized AdamW update, operating per-\/element over an array of weights (or biases) -- NOT the single-\/scalar-\/averaging design from the earlier draft, which would have collapsed many distinct per-\/weight gradients into one shared update and thrown away exactly the per-\/parameter information Adam depends on.  
+
+
+{\ttfamily \+\#include $<$cstddef$>$}\newline
+{\ttfamily \+\#include $<$cmath$>$}\newline
+{\ttfamily \+\#include $<$immintrin.\+h$>$}\newline
+{\ttfamily \+\#include $<$sleef.\+h$>$}\newline
+{\ttfamily \+\#include $<$cstring$>$}\newline
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\+\#define \doxymbox{\hyperlink{AdamOptimizer_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}~\+\_\+\+\_\+restrict\+\_\+\+\_\+
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum class \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Deep::\+\+Optimizer\+Type}} \{ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{Deep::\+\+SGD}}
+, \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff}{Deep::\+\+ADAM}}
+, \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d}{Deep::\+\+ADAMW}}
+ \}
+\begin{DoxyCompactList}\small\item\em Selects which weight-\/update rule a layer applies during Update\+Weights(). \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} \doxymbox{\hyperlink{namespaceDeep_a6ca9308132b5c8017685367d79b5c753}{Deep::\+to\+Op\+Type}} (const char \texorpdfstring{$\ast$}{*}s)
+\begin{DoxyCompactList}\small\item\em Parses an \doxylink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type} from its name. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_a5aa6de3c8e5ed8673d718748c4999608}{Deep::\+\+Adam\+WUpdate}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} w, const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} grad, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} m, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} v, size\+\_\+t n, int t, float lr, float lambda, float beta1=0.\+9f, float beta2=0.\+999f, float eps=1e-\/8f) noexcept
+\begin{DoxyCompactList}\small\item\em Vectorized AdamW update over {\ttfamily n} elements. {\ttfamily w}, {\ttfamily grad}, {\ttfamily m}, {\ttfamily v} are all arrays of length {\ttfamily n} -- ONE m/\+v pair PER WEIGHT, not one shared scalar. {\ttfamily t} is the layer\textquotesingle{}s own timestep counter (increment ONCE per Update\+Weights() call, not per element -- shared across the whole array, which is why beta1\texorpdfstring{$^\wedge$}{\string^}t/\+beta2\texorpdfstring{$^\wedge$}{\string^}t are computed once here, not per element). \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{namespaceDeep_af0031c5b95344a0fb959914fee35449c}{Deep::\+\+Adam\+Update}} (float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} w, const float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} grad, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} m, float \texorpdfstring{$\ast$}{*}\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}} v, size\+\_\+t n, int t, float lr, float beta1=0.\+9f, float beta2=0.\+999f, float eps=1e-\/8f) noexcept
+\begin{DoxyCompactList}\small\item\em Vectorized PLAIN Adam update over {\ttfamily n} elements -- NO weight decay term at all, unlike Adam\+WUpdate above. This is deliberate, not a missing feature:\+ "{}\+Adam with L2 regularization"{} (folding decay into the gradient before the moment estimates see it) is the well-\/known WORSE approach AdamW was specifically invented to fix -- large-\/gradient weights get decayed less than they should, since the adaptive step size shrinks the decay term along with everything else. If you want regularization alongside plain Adam, apply this codebase\textquotesingle{}s existing decay convention separately (e.\+g. cblas\+\_\+sscal(n, 1.\+0f-\/lmbda, w, 1) before calling this) -- fully composable, and avoids re-\/introducing the exact problem AdamW exists to solve. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Vectorized AdamW update, operating per-\/element over an array of weights (or biases) -- NOT the single-\/scalar-\/averaging design from the earlier draft, which would have collapsed many distinct per-\/weight gradients into one shared update and thrown away exactly the per-\/parameter information Adam depends on. 
+
+IMPORTANT -- this requires the RAW, unscaled gradient, not the already-\/lr-\/scaled delta the existing Update\+Weights() GEMM calls produce. The GEMM\textquotesingle{}s alpha parameter needs to change from {\ttfamily lr/\+batch\+Size} to {\ttfamily 1.\+0}, writing into a scratch gradient buffer, with THIS function handling all scaling (lr, momentum, bias correction) afterward. Adam\textquotesingle{}s moment estimates (m, v) are only meaningful if they\textquotesingle{}re tracking the raw gradient\textquotesingle{}s own magnitude consistently across timesteps -- baking lr scaling into the gradient before Adam sees it would corrupt that.
+
+lr is a genuine runtime parameter, not a compile-\/time constant -- this session has repeatedly found lr needs to be tunable per-\/layer and per schedule (base rate, decay, and a found-\/empirically-\/necessary correction factor for at least one training regime); hardcoding it would silently break all of that.
+
+\begin{DoxyNote}{Note}
+Each SIMD width (AVX-\/512/\+\+AVX2+\+AVX/\+\+SSE) is handled as a separate preprocessor branch with its own scalar-\/tail fallback, so exactly one of the vectorized paths compiles in per target plus the shared scalar loop for any remainder elements not divisible by the vector width. 
+\end{DoxyNote}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/06-\/30 
+\end{DoxyDate}
+\begin{DoxyAuthor}{Author}
+Jack Rose 
+\end{DoxyAuthor}
+
+
+\label{doc-define-members}
+\Hypertarget{AdamOptimizer_8h_doc-define-members}
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{AdamOptimizer_8h_aae3356b63849abbe8789dd41648ee90a}\index{AdamOptimizer.h@{AdamOptimizer.h}!RESTRICT@{RESTRICT}}
+\index{RESTRICT@{RESTRICT}!AdamOptimizer.h@{AdamOptimizer.h}}
+\doxysubsubsection{\texorpdfstring{RESTRICT}{RESTRICT}}
+{\footnotesize\ttfamily \label{AdamOptimizer_8h_aae3356b63849abbe8789dd41648ee90a} 
+\+\#define RESTRICT~\+\_\+\+\_\+restrict\+\_\+\+\_\+}
+

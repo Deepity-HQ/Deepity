@@ -1,0 +1,174 @@
+\doxysection{Profile.\+h}
+\hypertarget{Profile_8h_source}{}\label{Profile_8h_source}\index{include/deepity/Profile.h@{include/deepity/Profile.h}}
+\doxymbox{\hyperlink{Profile_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <chrono>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <iostream>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <iomanip>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <string>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <utility>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00030\ \{}
+\DoxyCodeLine{00031\ \ \ \ \ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{ProfileAccumulator}}}
+\DoxyCodeLine{00032\ \ \ \ \ \{}
+\DoxyCodeLine{00033\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f}{errorConstruction}}\ =\ 0.0;}
+\DoxyCodeLine{00034\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf}{energyCalculation}}\ =\ 0.0;}
+\DoxyCodeLine{00035\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824}{forwardGemm}}\ =\ 0.0;}
+\DoxyCodeLine{00036\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0}{biasAdd}}\ =\ 0.0;}
+\DoxyCodeLine{00037\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb}{activationForward}}\ =\ 0.0;}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236}{activationDerivative}}\ =\ 0.0;}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8}{localErrorTerm}}\ =\ 0.0;\ \textcolor{comment}{//\ was\ ownGradientTerm\ -\/-\/\ dz\_dt\ =\ -\/p*e,\ not\ a\ backprop\ gradient}}
+\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180}{bottomUpConstruction}}\ =\ 0.0;}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb}{feedbackGemm}}\ =\ 0.0;}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4}{saxpyUpdate}}\ =\ 0.0;}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a}{updateWeightsTotal}}\ =\ 0.0;}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20}{updatePrecisionTotal}}\ =\ 0.0;}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Top-\/level\ timers\ -\/-\/\ wrap\ the\ ENTIRE\ function\ body,\ separate\ from}}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (and\ in\ addition\ to)\ the\ sub-\/phase\ timers\ above,\ so\ you\ can\ see}}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ "{}UpdateState\ 78\%"{}\ before\ drilling\ into\ its\ five\ sub-\/phases.}}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359}{calculateStateTotal}}\ =\ 0.0;}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e}{updateStateTotal}}\ =\ 0.0;}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{long}\ \textcolor{keywordtype}{long}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_af864cc123d6783536f061bc4dce4391c}{calculateStateCalls}}\ =\ 0;}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{long}\ \textcolor{keywordtype}{long}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a4aa78b716bf166ee0dd010ff9ed77e2d}{updateStateCalls}}\ =\ 0;}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a83b598b4911307d14bcbf96b03353ad7}{PhaseSum}}()\ const\ noexcept}
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Sub-\/phases\ only\ -\/-\/\ does\ NOT\ include\ calculateStateTotal/}}
+\DoxyCodeLine{00060\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ updateStateTotal,\ since\ those\ measure\ the\ SAME\ work\ the}}
+\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ sub-\/phases\ already\ measure\ (they'd\ double-\/count\ if\ summed}}
+\DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ together).\ calculateStateTotal/updateStateTotal\ exist\ purely}}
+\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ as\ an\ independent\ top-\/level\ cross-\/check\ against\ the\ sub-\/phase}}
+\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ sum,\ and\ against\ everything\ outside\ CalculateState/UpdateState}}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ (e.g.\ UpdateWeights,\ UpdatePrecision,\ caller-\/side\ overhead).}}
+\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f}{errorConstruction}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf}{energyCalculation}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824}{forwardGemm}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0}{biasAdd}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb}{activationForward}}}
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236}{activationDerivative}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8}{localErrorTerm}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180}{bottomUpConstruction}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb}{feedbackGemm}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4}{saxpyUpdate}}}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a}{updateWeightsTotal}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20}{updatePrecisionTotal}};}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1e6b121ad5ca20b39c6407728306cf7d}{Print}}(\textcolor{keyword}{const}\ std::string\ \&label)\textcolor{keyword}{\ const}}
+\DoxyCodeLine{00072\ \textcolor{keyword}{\ \ \ \ \ \ \ \ }\{}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ phaseSum\ =\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a83b598b4911307d14bcbf96b03353ad7}{PhaseSum}}();}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ row\ =\ [\&](\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *name,\ \textcolor{keywordtype}{double}\ t)}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ \ \ "{}}\ <<\ std::left\ <<\ std::setw(24)\ <<\ name}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ std::right\ <<\ std::setw(10)\ <<\ std::fixed\ <<\ std::setprecision(4)\ <<\ t\ <<\ \textcolor{stringliteral}{"{}\ s"{}}}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ std::setw(8)\ <<\ std::setprecision(1)\ <<\ (phaseSum\ >\ 0\ ?\ 100.0\ *\ t\ /\ phaseSum\ :\ 0.0)\ <<\ \textcolor{stringliteral}{"{}\%\(\backslash\)n"{}};}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ \};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n-\/-\/-\/\ "{}}\ <<\ label\ <<\ \textcolor{stringliteral}{"{}\ ("{}}\ <<\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_af864cc123d6783536f061bc4dce4391c}{calculateStateCalls}}}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\ CalculateState\ calls,\ "{}}\ <<\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a4aa78b716bf166ee0dd010ff9ed77e2d}{updateStateCalls}}\ <<\ \textcolor{stringliteral}{"{}\ UpdateState\ calls)\ -\/-\/-\/\(\backslash\)n"{}};}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ CalculateState()\ [top-\/level:\ "{}}\ <<\ std::fixed\ <<\ std::setprecision(4)}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359}{calculateStateTotal}}\ <<\ \textcolor{stringliteral}{"{}\ s]\(\backslash\)n"{}};}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}error\ construction"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a3295fd2b7f50a9aa8b4784512933f00f}{errorConstruction}});}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}energy\ calculation"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a1bf019e24bdc84438550f712ccb07abf}{energyCalculation}});}
+\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}forward\ GEMM"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a089262779c7f8dbdd3607d713a244824}{forwardGemm}});}
+\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}bias\ add"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a47f6308a938d25fb6dd63dd14ee834f0}{biasAdd}});}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}activation\ (fwd)"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a46727678329c84e5a4ed20fa4c316acb}{activationForward}});}
+\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ UpdateState()\ [top-\/level:\ "{}}\ <<\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e}{updateStateTotal}}\ <<\ \textcolor{stringliteral}{"{}\ s]\(\backslash\)n"{}};}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}activation\ derivative"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_affdc8101d76dc8da900cba4587787236}{activationDerivative}});}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}local\ error\ term"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ad83b403e26383045860741d71d3869a8}{localErrorTerm}});}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}bottom-\/up\ construction"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a14ac8d0da97bda21921373da1a6ad180}{bottomUpConstruction}});}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}feedback\ GEMM"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a6ac6f0647452a0636546773dcd8edcdb}{feedbackGemm}});}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}SAXPY\ update"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae224589e5aabadde5434992fd56b1eb4}{saxpyUpdate}});}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ Other:\(\backslash\)n"{}};}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}UpdateWeights\ (total)"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a81c159ba5609494e0fb978c4ea219e5a}{updateWeightsTotal}});}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ row(\textcolor{stringliteral}{"{}UpdatePrecision\ (total)"{}},\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_a7b50542473446257d555045a60804d20}{updatePrecisionTotal}});}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ Sub-\/phase\ sum:\ "{}}\ <<\ phaseSum\ <<\ \textcolor{stringliteral}{"{}\ s"{}}}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\ \ (top-\/level\ CalcState+UpdateState:\ "{}}\ <<\ (\doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_ae577cc552ae007a52dcfc8abb7210359}{calculateStateTotal}}\ +\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator_add71e38777e74672f447b9e892cd0b9e}{updateStateTotal}})\ <<\ \textcolor{stringliteral}{"{}\ s"{}}}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\ -\/-\/\ these\ should\ be\ CLOSE;\ large\ divergence\ means\ the\ sub-\/phase"{}}}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\ timers\ aren't\ capturing\ everything\ the\ function\ does)\(\backslash\)n"{}};}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00104\ \ \ \ \ \};}
+\DoxyCodeLine{00105\ }
+\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keyword}{struct\ }\doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{ProfileEntry}}}
+\DoxyCodeLine{00107\ \ \ \ \ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ std::string\ \doxymbox{\hyperlink{structDeep_1_1ProfileEntry_a644ea9fd78acb65d419f561da0cf6194}{label}};}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{ProfileAccumulator}}\ \doxymbox{\hyperlink{structDeep_1_1ProfileEntry_afcc5ee105d12d3d995a0bfd9a47885ea}{acc}};}
+\DoxyCodeLine{00110\ \ \ \ \ \};}
+\DoxyCodeLine{00111\ }
+\DoxyCodeLine{00112\ \ \ \ \ \textcolor{comment}{//\ Registry:\ linear\ vector,\ not\ a\ hash\ map\ -\/-\/\ small\ layer\ counts,\ and}}
+\DoxyCodeLine{00113\ \ \ \ \ \textcolor{comment}{//\ preserves\ insertion\ order\ (==\ network\ layer\ order)\ for\ printing.}}
+\DoxyCodeLine{00114\ \ \ \ \ \textcolor{keyword}{inline}\ std::vector<std::pair<const\ void\ *,\ ProfileEntry>>\ \&\doxymbox{\hyperlink{namespaceDeep_acd40701ddacb775649741df40bc3b929}{ProfileRegistry}}()}
+\DoxyCodeLine{00115\ \ \ \ \ \{}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ std::vector<std::pair<const\ void\ *,\ ProfileEntry>>\ registry;}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ registry;}
+\DoxyCodeLine{00118\ \ \ \ \ \}}
+\DoxyCodeLine{00119\ }
+\DoxyCodeLine{00120\ \ \ \ \ \textcolor{comment}{//\ Looks\ up\ (or\ creates,\ on\ first\ call)\ this\ layer's\ accumulator.\ Label}}
+\DoxyCodeLine{00121\ \ \ \ \ \textcolor{comment}{//\ is\ generated\ from\ the\ layer's\ own\ GetInputSize()/GetOutputSize()\ -\/-\/}}
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{comment}{//\ works\ for\ any\ layer\ type\ with\ those\ methods\ (DiscriminativePCLayer,}}
+\DoxyCodeLine{00123\ \ \ \ \ \textcolor{comment}{//\ ConvPCLayer,\ ...)\ via\ duck-\/typed\ template,\ no\ coupling\ to\ a\ specific}}
+\DoxyCodeLine{00124\ \ \ \ \ \textcolor{comment}{//\ class\ or\ forward\ declaration\ needed.}}
+\DoxyCodeLine{00125\ \ \ \ \ \textcolor{keyword}{template}\ <\textcolor{keyword}{typename}\ LayerT>}
+\DoxyCodeLine{00126\ \ \ \ \ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{structDeep_1_1ProfileAccumulator}{ProfileAccumulator}}\ \&\doxymbox{\hyperlink{namespaceDeep_afc0c7bc2619873cb922f19a2eaf5ffd2}{LayerProfile}}(LayerT\ *layer)}
+\DoxyCodeLine{00127\ \ \ \ \ \{}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ \&registry\ =\ \doxymbox{\hyperlink{namespaceDeep_acd40701ddacb775649741df40bc3b929}{ProfileRegistry}}();}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ \&entry\ :\ registry)}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (entry.first\ ==\ layer)}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ entry.second.acc;}
+\DoxyCodeLine{00132\ }
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{structDeep_1_1ProfileEntry}{ProfileEntry}}\ entry;}
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ entry.\doxymbox{\hyperlink{structDeep_1_1ProfileEntry_a644ea9fd78acb65d419f561da0cf6194}{label}}\ =\ \textcolor{stringliteral}{"{}layer("{}}\ +\ std::to\_string(layer-\/>GetInputSize())\ +\ \textcolor{stringliteral}{"{}-\/>"{}}}
+\DoxyCodeLine{00135\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ +\ std::to\_string(layer-\/>GetOutputSize())\ +\ \textcolor{stringliteral}{"{})\ @\ "{}}\ +\ std::to\_string((\textcolor{keywordtype}{size\_t})layer);}
+\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ registry.emplace\_back(layer,\ std::move(entry));}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ registry.back().second.acc;}
+\DoxyCodeLine{00138\ \ \ \ \ \}}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00140\ \ \ \ \ \textcolor{comment}{//\ Call\ once,\ after\ the\ training\ run,\ with\ an\ INDEPENDENTLY\ measured}}
+\DoxyCodeLine{00141\ \ \ \ \ \textcolor{comment}{//\ wall-\/clock\ duration\ (std::chrono\ around\ the\ whole\ run\ in\ the\ harness,}}
+\DoxyCodeLine{00142\ \ \ \ \ \textcolor{comment}{//\ NOT\ derived\ from\ these\ accumulators)\ -\/-\/\ this\ is\ the\ reconciliation}}
+\DoxyCodeLine{00143\ \ \ \ \ \textcolor{comment}{//\ check\ from\ review\ point\ 2.}}
+\DoxyCodeLine{00144\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_a7b797d1b36359f0bf39a7d0b55190eee}{PrintAllProfiles}}(\textcolor{keywordtype}{double}\ wallClockSeconds)}
+\DoxyCodeLine{00145\ \ \ \ \ \{}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ grandTotal\ =\ 0.0;}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ \&entry\ :\ \doxymbox{\hyperlink{namespaceDeep_acd40701ddacb775649741df40bc3b929}{ProfileRegistry}}())}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \ \ \ \ entry.second.acc.Print(entry.second.label);}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ \ \ \ \ grandTotal\ +=\ entry.second.acc.PhaseSum();}
+\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\(\backslash\)n===\ Reconciliation\ ===\(\backslash\)n"{}};}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ Wall-\/clock\ (measured\ around\ whole\ run):\ "{}}\ <<\ std::fixed\ <<\ std::setprecision(4)}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ wallClockSeconds\ <<\ \textcolor{stringliteral}{"{}\ s\(\backslash\)n"{}};}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ Sum\ of\ all\ layers'\ phase\ sums:\ \ \ \ \ \ \ \ \ \ "{}}\ <<\ grandTotal\ <<\ \textcolor{stringliteral}{"{}\ s\(\backslash\)n"{}};}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ std::cout\ <<\ \textcolor{stringliteral}{"{}\ \ Unaccounted-\/for\ time:\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ "{}}\ <<\ (wallClockSeconds\ -\/\ grandTotal)\ <<\ \textcolor{stringliteral}{"{}\ s"{}}}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\ \ ("{}}\ <<\ (wallClockSeconds\ >\ 0\ ?\ 100.0\ *\ (wallClockSeconds\ -\/\ grandTotal)\ /\ wallClockSeconds\ :\ 0.0)}
+\DoxyCodeLine{00158\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ <<\ \textcolor{stringliteral}{"{}\%\ -\/-\/\ data\ loading,\ Python/pybind\ overhead,\ timer\ overhead\ itself,\ etc.)\(\backslash\)n"{}};}
+\DoxyCodeLine{00159\ \ \ \ \ \}}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00161\ \textcolor{preprocessor}{\#ifdef\ PCN\_PROFILE}}
+\DoxyCodeLine{00162\ \ \ \ \ \textcolor{keyword}{class\ }ScopedTimer}
+\DoxyCodeLine{00163\ \ \ \ \ \{}
+\DoxyCodeLine{00164\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}(\textcolor{keywordtype}{double}\ \&accumulator)\ noexcept}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ :\ accumulator(accumulator),\ start(std::chrono::steady\_clock::now())\ \{\}}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{\string~ScopedTimer}}()\ noexcept}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ end\ =\ std::chrono::steady\_clock::now();}
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \ \ \ \ accumulator\ +=\ std::chrono::duration<double>(end\ -\/\ start).count();}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}\ \&operator=(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00174\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{double}\ \&accumulator;}
+\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ std::chrono::steady\_clock::time\_point\ start;}
+\DoxyCodeLine{00177\ \ \ \ \ \};}
+\DoxyCodeLine{00178\ \textcolor{preprocessor}{\#define\ PCN\_TIME(accumulator)\ ::Deep::ScopedTimer\ \_pcn\_timer\_\#\#\_\_LINE\_\_(accumulator)}}
+\DoxyCodeLine{00179\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00180\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}}
+\DoxyCodeLine{00181\ \ \ \ \ \{}
+\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classDeep_1_1ScopedTimer_a0afadbefff1105480d2b1a558b6cddd6}{ScopedTimer}}(\textcolor{keywordtype}{double}\ \&)\ \textcolor{keyword}{noexcept}\ \{\}}
+\DoxyCodeLine{00184\ \ \ \ \ \};}
+\DoxyCodeLine{00185\ \textcolor{preprocessor}{\#define\ PCN\_TIME(accumulator)\ do\ \{\}\ while\ (0)}}
+\DoxyCodeLine{00186\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00187\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+
+\end{DoxyCode}

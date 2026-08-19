@@ -26,6 +26,7 @@ MathJax.Hub.Config({
 </script>
 <script type="text/javascript" async="async" src="https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js"></script>
 <link href="doxygen.css" rel="stylesheet" type="text/css" />
+<link href="customdoxygen.css" rel="stylesheet" type="text/css"/>
 </head>
 <body>
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
@@ -37,7 +38,7 @@ MathJax.Hub.Config({
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
-   <div id="projectbrief">Ultra-low variance Predictive Coding engine</div>
+   <div id="projectbrief">Ultra-fast, SIMD-accelerated Predictive Coding</div>
   </td>
  </tr>
  </tbody>
@@ -105,12 +106,12 @@ $(function(){initNavTree('classDeep_1_1MemoryArena.html','',''); });
 <p>This is the complete list of members for <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>, including all inherited members.</p>
 <table class="directory">
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#af78e70321c76b968facf3b65ec30c338">AllocateFloats</a>(size_t num_floats)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>GetCapacityBytes</b>() const (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>GetUsedBytes</b>() const (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>MemoryArena</b>(size_t total_floats) (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>MemoryArena</b>(const MemoryArena &amp;)=delete (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="odd"><td class="entry"><b>operator=</b>(const MemoryArena &amp;)=delete (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"></td></tr>
-  <tr bgcolor="#f0f0f0" class="even"><td class="entry"><b>~MemoryArena</b>() (defined in <a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a>)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#af5d7949e8c5767b3a83c6488b03b2704">GetCapacityBytes</a>() const</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#a18292466507e177d192cde18d5d4eb69">GetUsedBytes</a>() const</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a>(size_t total_floats)</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#a35deffffadd8b70bee90c55d0eb0eacd">MemoryArena</a>(const MemoryArena &amp;)=delete</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#adcb6d3fab7ac84d0c427b70381afabca">operator=</a>(const MemoryArena &amp;)=delete</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html#a49fb270b07d4ae887bb0f084bf09d024">~MemoryArena</a>()</td><td class="entry"><a class="el" href="classDeep_1_1MemoryArena.html">Deep::MemoryArena</a></td><td class="entry"><span class="mlabel">inline</span></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

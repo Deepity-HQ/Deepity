@@ -32,20 +32,43 @@
  * schedule (base rate, decay, and a found-empirically-necessary correction
  * factor for at least one training regime); hardcoding it would silently
  * break all of that.
+ *
+ * @note Each SIMD width (AVX-512/AVX2+AVX/SSE) is handled as a separate
+ * preprocessor branch with its own scalar-tail fallback, so exactly one
+ * of the vectorized paths compiles in per target plus the shared scalar
+ * loop for any remainder elements not divisible by the vector width.
+ * @version 1.0
+ * @date 2026-06-30
+ * @author Jack Rose
  */
 
 namespace Deep
 {
-    enum class OptimizerType {
-        SGD,
-        ADAM,
-        ADAMW
+    /// @brief Selects which weight-update rule a layer applies during
+    /// UpdateWeights().
+    enum class OptimizerType
+    {
+        SGD,  ///< Plain stochastic gradient descent (this codebase's existing cblas-based update).
+        ADAM, ///< Adam with no decoupled weight decay; see AdamUpdate().
+        ADAMW ///< Adam with decoupled weight decay; see AdamWUpdate().
     };
-    inline OptimizerType toOpType(const char *s) {
-        if (strncmp(s, "SGD", 3) == 0) return OptimizerType::SGD;
-        else if (strncmp(s, "ADAM", 4) == 0) return OptimizerType::ADAM;
-        else if (strncmp(s, "ADAMW", 5) == 0) return OptimizerType::ADAMW;
-        else return OptimizerType::SGD;
+
+    /// @brief Parses an OptimizerType from its name.
+    /// @param s Null-terminated string; expected to start with "SGD",
+    /// "ADAM", or "ADAMW" (checked in that order, so "ADAMW" must be
+    /// tested before a bare "ADAM" prefix match would otherwise win).
+    /// @return The matching OptimizerType, or OptimizerType::SGD if @p s
+    /// doesn't match any recognized name.
+    inline OptimizerType toOpType(const char *s)
+    {
+        if (strncmp(s, "SGD", 3) == 0)
+            return OptimizerType::SGD;
+        else if (strncmp(s, "ADAM", 4) == 0)
+            return OptimizerType::ADAM;
+        else if (strncmp(s, "ADAMW", 5) == 0)
+            return OptimizerType::ADAMW;
+        else
+            return OptimizerType::SGD;
     }
 
     /// @brief Vectorized AdamW update over `n` elements. `w`, `grad`, `m`,
@@ -59,6 +82,26 @@ namespace Deep
     /// separately from the gradient-based step) replaces this codebase's
     /// existing `cblas_sscal(..., 1.0f-lmbda, W, 1)` weight-decay call --
     /// don't apply both, or decay will be applied twice.
+    ///
+    /// @param w Weight (or bias) array of length @p n; updated in place.
+    /// @param grad RAW, unscaled gradient array of length @p n (NOT
+    /// pre-scaled by lr or batch size -- see file-level warning).
+    /// @param m First-moment (mean) estimate array of length @p n;
+    /// updated in place. One entry per weight.
+    /// @param v Second-moment (uncentered variance) estimate array of
+    /// length @p n; updated in place. One entry per weight.
+    /// @param n Number of elements in @p w / @p grad / @p m / @p v.
+    /// @param t This layer's shared timestep counter, incremented once
+    /// per UpdateWeights() call (not per element).
+    /// @param lr Learning rate.
+    /// @param lambda Decoupled weight-decay coefficient (AdamW-style,
+    /// applied directly to @p w, not folded into the gradient).
+    /// @param beta1 Exponential decay rate for the first-moment estimate.
+    /// Defaults to 0.9.
+    /// @param beta2 Exponential decay rate for the second-moment estimate.
+    /// Defaults to 0.999.
+    /// @param eps Numerical-stability constant added to the denominator.
+    /// Defaults to 1e-8.
     inline void AdamWUpdate(float *RESTRICT w, const float *RESTRICT grad,
                             float *RESTRICT m, float *RESTRICT v,
                             size_t n, int t,
@@ -225,6 +268,24 @@ namespace Deep
     /// Same per-element m/v semantics as AdamWUpdate: one m/v pair PER
     /// WEIGHT, t is the layer's own shared timestep counter (increment
     /// ONCE per UpdateWeights() call, not per element).
+    ///
+    /// @param w Weight (or bias) array of length @p n; updated in place.
+    /// @param grad RAW, unscaled gradient array of length @p n (NOT
+    /// pre-scaled by lr or batch size -- see file-level warning).
+    /// @param m First-moment (mean) estimate array of length @p n;
+    /// updated in place. One entry per weight.
+    /// @param v Second-moment (uncentered variance) estimate array of
+    /// length @p n; updated in place. One entry per weight.
+    /// @param n Number of elements in @p w / @p grad / @p m / @p v.
+    /// @param t This layer's shared timestep counter, incremented once
+    /// per UpdateWeights() call (not per element).
+    /// @param lr Learning rate.
+    /// @param beta1 Exponential decay rate for the first-moment estimate.
+    /// Defaults to 0.9.
+    /// @param beta2 Exponential decay rate for the second-moment estimate.
+    /// Defaults to 0.999.
+    /// @param eps Numerical-stability constant added to the denominator.
+    /// Defaults to 1e-8.
     inline void AdamUpdate(float *RESTRICT w, const float *RESTRICT grad,
                            float *RESTRICT m, float *RESTRICT v,
                            size_t n, int t,
