@@ -1,33 +1,29 @@
-// tProfile.cpp
+// tProfile.cpp -- SIMPLIFIED for this investigation.
 //
-// Small, synthetic-data, MNIST-shaped profiling harness. No Python, no real
-// MNIST loading -- deliberately fast to iterate on (seconds, not the 50
-// minutes we're trying to explain), so the OMP/OpenBLAS thread-count sweep
-// and the log(p)->log_p A/B test are actually practical to run repeatedly.
-//
-// Build with -DPCN_PROFILE (see CMakeLists.txt changes needed below) --
-// WITHOUT that flag, this measures nothing (PCN_TIME is a no-op) and the
-// numbers would be meaningless.
-
+// The original per-phase instrumentation (PCN_TIME() calls inside
+// DiscriminativePCLayer.cpp) was never carried forward through today's
+// restructuring -- the registry in Profile.h is empty, confirmed by the
+// missing per-layer sections in the last run's output. Rather than
+// re-instrument the whole library again, this measures the two coarse
+// phases that actually matter for "where is the Windows slowdown coming
+// from" directly at the call site: the settling loop (CalculateState +
+// UpdateState, repeated INFERENCE_STEPS times) vs UpdateWeights(). No
+// changes to any library source file needed -- just std::chrono around
+// the existing public methods.
 #include <iostream>
 #include <vector>
 #include <random>
 #include <chrono>
 #include <deepity/networks/DiscriminativePCNetwork.h>
-#include <deepity/Profile.h>
 
 using namespace Deep;
 
-int main()
+int main(void)
 {
-#ifndef PCN_PROFILE
-    std::cout << "WARNING: built without -DPCN_PROFILE -- all timers are "
-                 "no-ops. This run measures nothing.\n";
-#endif
-
-    const int BATCH_SIZE = 256;      // real MNIST batch size, not a toy value
-    const int INFERENCE_STEPS = 150; // matches your real hyperparameters
-    const int N_BATCHES = 200;       // representative, but seconds not hours
+    std::cout << "OpenBLAS selected CPU kernel: " << openblas_get_corename() << "\n\n";
+    const int BATCH_SIZE = 256;
+    const int INFERENCE_STEPS = 150;
+    const int N_BATCHES = 5;
 
     std::mt19937 rng(42);
     std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
@@ -41,32 +37,72 @@ int main()
 
     std::vector<float> X((size_t)BATCH_SIZE * 784);
     std::vector<float> Y((size_t)BATCH_SIZE * 10);
-    for (auto &v : X)
-        v = dist(rng);
-    for (auto &v : Y)
-        v = dist(rng);
+    for (auto &v : X) v = dist(rng);
+    for (auto &v : Y) v = dist(rng);
 
-    std::cout << "Profiling: " << N_BATCHES << " batches, batch_size=" << BATCH_SIZE
-              << ", inference_steps=" << INFERENCE_STEPS << "\n";
+    std::cout << "Profiling (coarse, call-site timing): " << N_BATCHES << " batches, batch_size="
+              << BATCH_SIZE << ", inference_steps=" << INFERENCE_STEPS << "\n\n";
 
-    // --- Wall-clock timer wraps the ENTIRE run, measured independently of
-    // the phase accumulators, per review point 2. ---
+    double totalSettle = 0.0;
+    double totalCalcState = 0.0;
+    double totalUpdateState = 0.0;
+    double totalUpdateWeights = 0.0;
+    double totalResetClamp = 0.0;
+
     auto wallStart = std::chrono::steady_clock::now();
 
     for (int b = 0; b < N_BATCHES; ++b)
     {
-        net.TrainStep(X, Y, INFERENCE_STEPS);
+        auto t0 = std::chrono::steady_clock::now();
+        net.ResetState();
+        net.Clamp(X);
+        net.GetTerminalLayer()->ClampState(Y);
+        auto t1 = std::chrono::steady_clock::now();
+        totalResetClamp += std::chrono::duration<double>(t1 - t0).count();
+
+        for (int s = 0; s < INFERENCE_STEPS; ++s)
+        {
+            auto cs0 = std::chrono::steady_clock::now();
+            net.CalculateState();
+            auto cs1 = std::chrono::steady_clock::now();
+            totalCalcState += std::chrono::duration<double>(cs1 - cs0).count();
+
+            net.UpdateState();
+            auto us1 = std::chrono::steady_clock::now();
+            totalUpdateState += std::chrono::duration<double>(us1 - cs1).count();
+        }
+
+        auto t2 = std::chrono::steady_clock::now();
+        net.UpdateWeights();
+        auto t3 = std::chrono::steady_clock::now();
+        totalUpdateWeights += std::chrono::duration<double>(t3 - t2).count();
+
+        net.GetTerminalLayer()->UnclampState();
+
+        std::cout << "  batch " << (b + 1) << "/" << N_BATCHES << " done\n";
     }
 
     auto wallEnd = std::chrono::steady_clock::now();
     double wallSeconds = std::chrono::duration<double>(wallEnd - wallStart).count();
+    totalSettle = totalCalcState + totalUpdateState;
 
-    // --- Report ---
-    PrintAllProfiles(wallSeconds);
-
-    std::cout << "\nRun with:\n";
-    std::cout << "  OMP_NUM_THREADS=<n> OPENBLAS_NUM_THREADS=<m> ./tProfile\n";
-    std::cout << "and re-run to sweep the thread-count grid from the review.\n";
+    std::cout << "\n=== Coarse phase breakdown (" << N_BATCHES << " batches, "
+              << INFERENCE_STEPS << " steps each) ===\n";
+    std::cout << "  Wall clock total:        " << wallSeconds << " s\n";
+    std::cout << "  ResetState+Clamp:        " << totalResetClamp << " s  ("
+              << (100.0 * totalResetClamp / wallSeconds) << "%)\n";
+    std::cout << "  CalculateState (sum):    " << totalCalcState << " s  ("
+              << (100.0 * totalCalcState / wallSeconds) << "%)\n";
+    std::cout << "  UpdateState (sum):       " << totalUpdateState << " s  ("
+              << (100.0 * totalUpdateState / wallSeconds) << "%)\n";
+    std::cout << "  UpdateWeights (sum):     " << totalUpdateWeights << " s  ("
+              << (100.0 * totalUpdateWeights / wallSeconds) << "%)\n";
+    std::cout << "  --------\n";
+    std::cout << "  Settle loop total:       " << totalSettle << " s  ("
+              << (100.0 * totalSettle / wallSeconds) << "%)\n";
+    std::cout << "  Per-step avg (Calc+Upd): " << (totalSettle / (N_BATCHES * INFERENCE_STEPS)) * 1000.0 << " ms\n";
+    std::cout << "  Per-step CalculateState: " << (totalCalcState / (N_BATCHES * INFERENCE_STEPS)) * 1000.0 << " ms\n";
+    std::cout << "  Per-step UpdateState:    " << (totalUpdateState / (N_BATCHES * INFERENCE_STEPS)) * 1000.0 << " ms\n";
 
     return 0;
 }

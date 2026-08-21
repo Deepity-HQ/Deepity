@@ -248,7 +248,7 @@ class RichReporter(Reporter):
             )
             return Panel(
                 body,
-                title="[bold yellow]⚙ Configuration[/bold yellow]",
+                title="[bold yellow]⚙  Configuration[/bold yellow]",
                 border_style="yellow",
             )
 
@@ -694,7 +694,10 @@ def main() -> None:
 
             if ninja:
                 config_cmd.extend(["-G", "Ninja"])
-
+            
+            vcpkg_root = os.environ.get("VCPKG_ROOT")
+            if vcpkg_root:
+                config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_root}/scripts/buildsystems/vcpkg.cmake")
             reporter.configure_started()
 
             start = time.perf_counter()

@@ -10,3 +10,10 @@ repomix-output.xml
 experiments/outputs/
 experiments/data/
 experiments/checkpoints/
+*.lib
+*.dll
+*.so
+*.pyd
+*.exe
+*.obj
+*.o
