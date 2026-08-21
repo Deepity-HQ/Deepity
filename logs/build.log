@@ -1,118 +1,166 @@
 --- Deepity Build Log (Release) ---
 
-=== Compilation ===
-CMake is re-running because C:/Users/Jack/Projects/Deepity/build/Release/CMakeFiles/generate.stamp is out-of-date.
-  the file 'C:/Users/Jack/Projects/Deepity/CMakeLists.txt'
-  is newer than 'C:/Users/Jack/Projects/Deepity/build/Release/CMakeFiles/generate.stamp.depend'
-  result='-1'
--- Selecting Windows SDK version 10.0.26100.0 to target Windows 10.0.26200.
--- CXX compiler: C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
--- CUDA support enabled.
--- Found pybind11: C:/Users/Jack/vcpkg/installed/x64-windows/include (found version "3.1.0")
+=== CMake Configuration ===
+-- The C compiler identification is GNU 16.1.1
+-- The CXX compiler identification is GNU 16.1.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- CXX compiler: /usr/bin/c++
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.2")
+-- CUDA toolkit not found. Building CPU-only.
+-- Found Python: /usr/bin/python3.14 (found suitable version "3.14.6", minimum required is "3.8") found components: Interpreter Development.Module Development.Embed
+-- Performing Test HAS_FLTO_AUTO
+-- Performing Test HAS_FLTO_AUTO - Success
+-- Found pybind11: /usr/include (found version "3.0.4")
+-- Looking for sgemm_
+-- Looking for sgemm_ - found
+-- Found BLAS: /usr/lib64/libopenblas.so
 -- Configuring SLEEF 3.9.0
+-- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
+-- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1")
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
 -- Configuring build for SLEEF-v3.9.0
-   Target system: Windows-10.0.26200
-   Target processor: AMD64
-   Host system: Windows-10.0.26200
-   Host processor: AMD64
-   Detected C compiler: MSVC @ C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.51.36231/bin/Hostx64/x64/cl.exe
-   CMake: 4.3.3
-   Make program: C:/Program Files/Microsoft Visual Studio/18/Community/MSBuild/Current/Bin/amd64/MSBuild.exe
+   Target system: Linux-7.1.8-200.fc44.x86_64
+   Target processor: x86_64
+   Host system: Linux-7.1.8-200.fc44.x86_64
+   Host processor: x86_64
+   Detected C compiler: GNU @ /usr/bin/cc
+   CMake: 4.3.0
+   Make program: /usr/bin/ninja-build
    CMake build type: Release
--- Using option `/D_CRT_SECURE_NO_WARNINGS /D_CRT_NONSTDC_NO_DEPRECATE  ` to compile libsleef
+-- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
 -- Building shared libs : OFF
 -- Building static test bins: OFF
 -- MPFR : LIB_MPFR-NOTFOUND
 -- GMP : LIBGMP-NOTFOUND
--- RT : 
+-- RT : /usr/lib64/librt.a
 -- FFTW3 : LIBFFTW3-NOTFOUND
 -- FFTW3F : LIBFFTW3F-NOTFOUND
--- OPENSSL : 3.6.3
+-- OPENSSL : 
 -- SDE : SDE_COMMAND-NOTFOUND
 -- COMPILER_SUPPORTS_OPENMP : 1
+-- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
+-- Failed to find LLVM FileCheck
+-- Found Git: /usr/bin/git (found version "2.55.0")
 -- Google Benchmark version: v1.9.1, normalized to 1.9.1
+-- Compiling and running to test HAVE_STD_REGEX
 -- Performing Test HAVE_STD_REGEX -- success
+-- Compiling and running to test HAVE_GNU_POSIX_REGEX
 -- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
--- Performing Test HAVE_POSIX_REGEX -- failed to compile
+-- Compiling and running to test HAVE_POSIX_REGEX
+-- Performing Test HAVE_POSIX_REGEX -- success
+-- Compiling and running to test HAVE_STEADY_CLOCK
 -- Performing Test HAVE_STEADY_CLOCK -- success
--- Performing Test HAVE_PTHREAD_AFFINITY -- failed to compile
--- Configuring done (39.3s)
--- Generating done (1.0s)
--- Build files have been written to: C:/Users/Jack/Projects/Deepity/build/Release
-MSBuild version 18.9.1+a81b43525 for .NET Framework
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Compiling and running to test HAVE_PTHREAD_AFFINITY
+-- Performing Test HAVE_PTHREAD_AFFINITY -- success
+-- Configuring done (13.4s)
+-- Generating done (0.1s)
+-- Build files have been written to: /home/rose0/Projects/deepity/build/Release
 
-  testerutil_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\testerutil_obj.dir\Release\testerutil_obj.lib
-  common.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\common.dir\Release\common.lib
-  qtesterutil_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\qtesterutil_obj.dir\Release\qtesterutil_obj.lib
-  mkrename.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkrename.exe
-  mkalias.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkalias.exe
-  mkdisp.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkdisp.exe
-  sleefdetfma4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetfma4.dir\Release\sleefdetfma4.lib
-  sleeffma4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleeffma4.dir\Release\sleeffma4.lib
-  sleefavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx.dir\Release\sleefavx.lib
-  sleefpurec_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefpurec_scalar.dir\Release\sleefpurec_scalar.lib
-  sleefdetavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512fnofma.dir\Release\sleefdetavx512fnofma.lib
-  dispsse_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispsse_obj.dir\Release\dispsse_obj.lib
-  sleefavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx512fnofma.dir\Release\sleefavx512fnofma.lib
-  sleefsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse2.dir\Release\sleefsse2.lib
-  sleefdetavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx.dir\Release\sleefdetavx.lib
-  sleefavx2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2.dir\Release\sleefavx2.lib
-  sleefdetavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx2128.dir\Release\sleefdetavx2128.lib
-  dispavx_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispavx_obj.dir\Release\dispavx_obj.lib
-  sleefdetpurec_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetpurec_scalar.dir\Release\sleefdetpurec_scalar.lib
-  sleefdetavx2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx2.dir\Release\sleefdetavx2.lib
-  sleefpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefpurecfma_scalar.dir\Release\sleefpurecfma_scalar.lib
-  sleefavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2128.dir\Release\sleefavx2128.lib
-  sleefdetpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetpurecfma_scalar.dir\Release\sleefdetpurecfma_scalar.lib
-  sleefdetsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse2.dir\Release\sleefdetsse2.lib
-  dispscalar_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispscalar_obj.dir\Release\dispscalar_obj.lib
-  sleefdetsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse4.dir\Release\sleefdetsse4.lib
-  sleefsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse4.dir\Release\sleefsse4.lib
-  sleefavx512f.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx512f.dir\Release\sleefavx512f.lib
-  sleefdetavx512f.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512f.dir\Release\sleefdetavx512f.lib
-  sleef.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\lib\sleef.lib
-  Deepity.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\Deepity.lib
-  pydeepity.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\pydeepity.cp312-win_amd64.pyd
-  addSuffix.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\addSuffix.exe
-  test_psha_capi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\test_psha_capi.exe
-  test_psha.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\test_psha.exe
-  DeepityProfiled.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityProfiled.lib
-  benchmark.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark.lib
-  mkrename_gnuabi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkrename_gnuabi.exe
-  mkmasked_gnuabi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkmasked_gnuabi.exe
-  benchmark_main.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark_main.lib
-  DeepityProfile.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityProfile.exe
-  DeepityTests.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityTests.exe
-cl : command line  warning D9025: overriding '/openmp' with '/openmp:llvm' [C:\Users\Jack\Projects\Deepity\build\Release\NoProfileBench.vcxproj]
-  tNoProfileBench.cpp
-     Creating library C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/NoProfileBench.lib and object C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/NoProfileBench.exp
-  NoProfileBench.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\NoProfileBench.exe
+
+=== Compilation ===
+[1/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/StreamAlignedBatcher.cpp.o
+[2/62] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
+[3/62] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
+[4/62] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
+[5/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCNetwork.cpp.o
+[6/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.o
+[7/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCNetwork.cpp.o
+[8/62] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.o
+[9/62] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
+[10/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCNetwork.cpp.o
+[11/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
+[12/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
+[13/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
+[14/62] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.o
+[15/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ModelIO.cpp.o
+[16/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
+[17/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
+[18/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.o
+[19/62] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
+[20/62] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
+[21/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
+[22/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.o
+[23/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.o
+[24/62] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
+[25/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.o
+[26/62] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
+[27/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o
+[28/62] Linking CXX static library bin/libDeepity.a
+[29/62] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.o
+[30/62] Linking CXX static library bin/libDeepityProfiled.a
+[31/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
+[32/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.o
+[33/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
+[34/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
+[35/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
+[36/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
+[37/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
+[38/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
+[39/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o
+[40/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.o
+[41/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
+[42/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
+[43/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2dp.dir/sleefsimddp.c.o
+[44/62] Building CXX object CMakeFiles/DeepityTests.dir/tests/tSimpleConvVerify.cpp.o
+[45/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
+[46/62] Building CXX object CMakeFiles/DeepityProfile.dir/tests/tProfile.cpp.o
+[47/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
+[48/62] Building CXX object CMakeFiles/NoProfileBench.dir/tests/tNoProfileBench.cpp.o
+[49/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
+[50/62] Linking CXX executable bin/DeepityProfile
+[51/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
+[52/62] Linking CXX executable bin/NoProfileBench
+[53/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2dp.dir/sleefsimddp.c.o
+[54/62] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxsp.dir/sleefsimdsp.c.o
+[55/62] Linking C static library _deps/sleef-build/lib/libsleefgnuabi.a
+[56/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
+[57/62] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
+[58/62] Linking CXX static library bin/libbenchmark.a
+[59/62] Linking CXX static library bin/libbenchmark_main.a
+[60/62] Linking CXX executable bin/DeepityTests
+[61/62] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.o
+[62/62] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
 
 
 === Tests ===
 
 === Part 1: SGD weight-gradient check ===
-  W[5]: delta=-0.0738741  numeric_dE/dW=-0.736475  MATCHES ASCENT  rel_err=0.0503077
-  W[0]: delta=0.00724029  numeric_dE/dW=0.0920296  MATCHES ASCENT  rel_err=0.0286735
-  W[1]: delta=0.00503254  numeric_dE/dW=0.0305176  MATCHES ASCENT  rel_err=0.114906
-  W[4]: delta=0.00362268  numeric_dE/dW=0.027895  MATCHES ASCENT  rel_err=0.0798686
-  W[12]: delta=-0.0150143  numeric_dE/dW=-0.155926  MATCHES ASCENT  rel_err=0.0462915
-  W[4]: delta=0.00362268  numeric_dE/dW=0.0276566  MATCHES ASCENT  rel_err=0.0809881
-  W[7]: delta=0.0498782  numeric_dE/dW=0.50354  MATCHES ASCENT  rel_err=0.0490551
-  W[12]: delta=-0.0150143  numeric_dE/dW=-0.155926  MATCHES ASCENT  rel_err=0.0462915
-Worst relative error: 0.114906
-FAIL
+  W[5]: delta=0.03608  numeric_dE/dW=-0.689149  MATCHES DESCENT  rel_err=0.0023544
+  W[17]: delta=0.0546692  numeric_dE/dW=-1.01757  MATCHES DESCENT  rel_err=0.00372522
+  W[6]: delta=-0.018854  numeric_dE/dW=0.368714  MATCHES DESCENT  rel_err=0.0011345
+  W[4]: delta=0.000938594  numeric_dE/dW=-0.0264645  MATCHES DESCENT  rel_err=0.0145338
+  W[8]: delta=-0.0150366  numeric_dE/dW=0.30005  MATCHES DESCENT  rel_err=0.000113825
+  W[1]: delta=-0.0190711  numeric_dE/dW=0.371098  MATCHES DESCENT  rel_err=0.00139094
+  W[14]: delta=0.0116533  numeric_dE/dW=-0.317812  MATCHES DESCENT  rel_err=0.0133326
+  W[11]: delta=0.0684187  numeric_dE/dW=-1.29008  MATCHES DESCENT  rel_err=0.00303433
+Worst relative error: 0.0145338
+PASS
 
 === Part 2: feedback-term (Col2Im) verification, SimpleConvPCLayer ===
-  z[2]: implied_dz_dt=0.0161332  -numeric_dE/dz=0.0161529  rel_err=0.00121758
-  z[0]: implied_dz_dt=0.0183019  -numeric_dE/dz=0.0182837  rel_err=0.000994302
-  z[31]: implied_dz_dt=0.0133443  -numeric_dE/dz=0.0133514  rel_err=0.000535613
-  z[13]: implied_dz_dt=-0.00727579  -numeric_dE/dz=-0.00725687  rel_err=0.00260751
-  z[24]: implied_dz_dt=-0.0108968  -numeric_dE/dz=-0.0108927  rel_err=0.000369384
-  z[12]: implied_dz_dt=-0.0208363  -numeric_dE/dz=-0.0208467  rel_err=0.000500272
-  z[6]: implied_dz_dt=-0.00872105  -numeric_dE/dz=-0.00871718  rel_err=0.000444455
-  z[9]: implied_dz_dt=0.0299203  -numeric_dE/dz=0.0299364  rel_err=0.000537502
-Worst relative error: 0.00260751
+  z[3]: implied_dz_dt=0.0045494  -numeric_dE/dz=0.00455976  rel_err=0.00227074
+  z[19]: implied_dz_dt=-0.0106531  -numeric_dE/dz=-0.0106096  rel_err=0.00410083
+  z[15]: implied_dz_dt=0.0041806  -numeric_dE/dz=0.00420213  rel_err=0.00512289
+  z[26]: implied_dz_dt=-0.00197962  -numeric_dE/dz=-0.00199676  rel_err=0.00857779
+  z[1]: implied_dz_dt=-0.0406229  -numeric_dE/dz=-0.0406206  rel_err=5.87843e-05
+  z[5]: implied_dz_dt=-0.0247908  -numeric_dE/dz=-0.0247955  rel_err=0.000192225
+  z[29]: implied_dz_dt=0.0272506  -numeric_dE/dz=0.0272691  rel_err=0.000677503
+  z[12]: implied_dz_dt=0.0424355  -numeric_dE/dz=0.0424385  rel_err=7.01353e-05
+Worst relative error: 0.00857779
 PASS
 
 === Part 3: AdamW weight-gradient check (NEW port, checking SIGN first) ===
@@ -121,15 +169,15 @@ PASS
   unlike SimplePCNetwork's Compile()-after-SetOptimizer() flow. A real
   design gap worth fixing when SimpleConvPCNetwork gets built.)
 
-  W[5]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[0]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[1]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[4]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[12]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[4]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[7]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[12]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-All signs correct: false
-FAIL
+  W[5]: delta=0.05  true_grad_sign=-  OK
+  W[17]: delta=0.05  true_grad_sign=-  OK
+  W[6]: delta=-0.05  true_grad_sign=+  OK
+  W[4]: delta=0.05  true_grad_sign=-  OK
+  W[8]: delta=-0.05  true_grad_sign=+  OK
+  W[1]: delta=-0.05  true_grad_sign=+  OK
+  W[14]: delta=0.05  true_grad_sign=-  OK
+  W[11]: delta=0.05  true_grad_sign=-  OK
+All signs correct: true
+PASS
 
 

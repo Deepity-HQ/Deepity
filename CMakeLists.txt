@@ -75,6 +75,7 @@ if(WIN32)
     )
     set(BLAS_LIBRARIES openblas_dll)
 else()
+    set(BLA_VENDOR OpenBLAS)
     find_package(BLAS REQUIRED)
     find_path(BLAS_INCLUDE_DIR
         NAMES cblas.h
@@ -156,6 +157,10 @@ add_library(Deepity STATIC
     src/StreamAlignedBatcher.cpp
 )
 
+if(NOT MSVC AND DEEPITY_NATIVE_OPT)
+    target_compile_options(Deepity PUBLIC -march=native)
+endif()
+
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${BLAS_INCLUDE_DIR}
@@ -218,6 +223,7 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     pybind11_add_module(pydeepity bindings/pybinding.cpp)
 
     target_link_libraries(pydeepity PRIVATE Deepity)
+    target_compile_options(pydeepity PRIVATE -march=native)
 
     if(WIN32)
         target_compile_definitions(pydeepity PRIVATE NOMINMAX)
@@ -229,10 +235,10 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 
     # Modern cross-platform way to copy required DLLs (like OpenMP/BLAS) to the Python package on Windows
     if(WIN32)
-    # Copy .pyd
-    add_custom_command(TARGET pydeepity POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy 
-            $<TARGET_FILE:pydeepity> 
+        # Copy .pyd
+        add_custom_command(TARGET pydeepity POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:pydeepity>
             ${CMAKE_SOURCE_DIR}/pydeepity/
         )
         # Copy required DLLs
@@ -251,6 +257,8 @@ endif()
 
 if(DEEPITY_BUILD_TESTS)
     add_executable(DeepityTests tests/tSimpleConvVerify.cpp)
+
+    target_compile_options(DeepityTests PRIVATE -march=native)
 
     target_link_libraries(DeepityTests PRIVATE
         Deepity
@@ -290,6 +298,8 @@ if(DEEPITY_BUILD_TESTS)
         src/StreamAlignedBatcher.cpp
     )
 
+    target_compile_options(DeepityProfiled PRIVATE -march=native)
+
     target_include_directories(DeepityProfiled PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${BLAS_INCLUDE_DIR}
@@ -316,7 +326,7 @@ if(DEEPITY_BUILD_TESTS)
             target_compile_definitions(DeepityProfiled PUBLIC __AVX__ __AVX2__)
             target_compile_options(DeepityProfiled PUBLIC /arch:AVX2)
         endif()
-        target_compile_options(DeepityProfiled PRIVATE /O2)
+        target_compile_options(DeepityProfiled PRIVATE /O2 /fp:fast /openmp:llvm)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         target_compile_options(DeepityProfiled PRIVATE -O3 ${ARCH_FLAGS} -ffast-math -fvectorize -fslp-vectorize)
     else()

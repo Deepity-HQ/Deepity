@@ -185,7 +185,7 @@ void bind_layers(py::module_ &m)
                                    py::arg("size"), py::arg("next_size"), py::arg("batch_size") = 1, py::arg("learning_rate") = 1e-6f, py::arg("inference_rate") = 0.01f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu");
     BindCommonPCLayer<Deep::SimplePCLayer>(simpleLayerCls, "SimplePCLayer");
     simpleLayerCls.def_property_readonly("biases", [](Deep::SimplePCLayer &self)
-                                         { return py::array_t<float>({(py::ssize_t)self.GetOutputSize()}, self.GetBiases(), py::cast(&self)); });
+                                         { return py::array_t<float>((py::ssize_t)self.GetOutputSize(), self.GetBiases(), py::cast(&self)); });
 
     py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
         .def(py::init([](size_t in_size, size_t out_size, float var, float var_td, float k1, float k2, float lambda, float alpha, size_t batch_size, int step_size, const std::string &activation, const std::string &activation_deriv)
@@ -232,15 +232,15 @@ void bind_layers(py::module_ &m)
         .def("resync_log_precision", &Deep::ConvPCLayer::ResyncLogPrecision)
         .def("clamp_state", [](Deep::ConvPCLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
              {
-            auto buf = input.request();
-            std::vector<float> values(static_cast<float *>(buf.ptr), static_cast<float *>(buf.ptr) + buf.size);
-            self.ClampState(values); }, py::arg("input"))
+        auto buf = input.request();
+        std::vector<float> values(static_cast<float *>(buf.ptr), static_cast<float *>(buf.ptr) + buf.size);
+        self.ClampState(values); }, py::arg("input"))
         .def("unclamp_state", &Deep::ConvPCLayer::UnclampState)
         .def("randomize_weights", [](Deep::ConvPCLayer &self)
              {
-            std::random_device rd;
-            std::mt19937 rng(rd());
-            self.RandomizeWeights(rng); })
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        self.RandomizeWeights(rng); })
         .def("set_layer_above", &Deep::ConvPCLayer::SetLayerAbove, py::return_value_policy::reference)
         .def("set_layer_below", &Deep::ConvPCLayer::SetLayerBelow, py::return_value_policy::reference)
         .def("set_learning_rate", &Deep::ConvPCLayer::SetLearningRate, py::arg("lr"))
