@@ -84,9 +84,12 @@ namespace Deep
     {
         static int currentThreads = -1;
 
-        // Threshold found during benchmarking: 512
-        const int THRESHOLD = 32; // Safer
-        int targetThreads = (batchSize < THRESHOLD) ? 1 : omp_get_num_procs();
+        const int THRESHOLD = 32;
+        int maxProcs = omp_get_num_procs();
+
+        const int MAX_USEFUL_THREADS = 8;
+
+        int targetThreads = (batchSize < THRESHOLD) ? 1 : std::min(maxProcs, MAX_USEFUL_THREADS);
 
         if (currentThreads != targetThreads)
         {

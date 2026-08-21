@@ -11,7 +11,7 @@
 #include <deepity/networks/DiscriminativePCNetwork.h>
 using namespace Deep;
 
-int main()
+int main(void)
 {
     const int BATCH_SIZE = 256;
     const int INFERENCE_STEPS = 150;
