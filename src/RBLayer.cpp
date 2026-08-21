@@ -2,6 +2,7 @@
 #include <cblas.h>
 #include <iostream>
 #include <random>
+#include <cstring>
 
 using namespace Deep;
 
@@ -12,7 +13,8 @@ RBLayer::RBLayer(size_t inSize, size_t outSize, float var, float var_td, float k
     this->nextSize = outSize;
 
     size_t total = GetTotalSize();
-    float *arena = new (std::align_val_t{64}) float[total](); // zero-init
+    float *arena = static_cast<float *>(::operator new[](total * sizeof(float), std::align_val_t{64}));
+    std::memset(arena, 0, total * sizeof(float)); // This is done for MSVC compatibility issues.
     Attach(arena);
     this->inputBuffer = std::make_unique<float[]>(batchSize * size);
     ownsMemory = true; // Attach() sets it false, so re-set after

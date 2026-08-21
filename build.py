@@ -690,14 +690,23 @@ def main() -> None:
                 str(build_dir),
                 f"-DCMAKE_BUILD_TYPE={build_type}",
                 "-DDEEPITY_BUILD_TESTS=ON",
+                "-DDEEPITY_ENABLE_CUDA=ON",
             ]
 
-            if ninja:
-                config_cmd.extend(["-G", "Ninja"])
-            
-            vcpkg_root = os.environ.get("VCPKG_ROOT")
-            if vcpkg_root:
-                config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_root}/scripts/buildsystems/vcpkg.cmake")
+            if sys.platform == "win32":
+                config_cmd.extend(["-A", "x64"])
+                vcpkg_path = os.environ.get("VCPKG_ROOT", "C:/Users/Jack/vcpkg")
+                toolchain = Path(vcpkg_path) / "scripts/buildsystems/vcpkg.cmake"
+                if toolchain.is_file():
+                    config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchain.as_posix()}")
+            else:
+                if ninja:
+                    config_cmd.extend(["-G", "Ninja"])
+
+                vcpkg_root = os.environ.get("VCPKG_ROOT")
+                if vcpkg_root:
+                    config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_root}/scripts/buildsystems/vcpkg.cmake")
+
             reporter.configure_started()
 
             start = time.perf_counter()

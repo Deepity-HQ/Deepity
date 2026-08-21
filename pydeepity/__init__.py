@@ -3,7 +3,7 @@ import numpy.typing as npt
 from typing import Optional
 
 # Import the raw compiled C++ bindings
-from . import deepity as dy
+from . import pydeepity as dy
 
 from rich.console import Console
 from rich.progress import (

@@ -59,7 +59,7 @@ namespace Deep
             std::normal_distribution<float> dist(0.0f, limit);
 
 #pragma omp for
-            for (size_t i = 0; i < Wsz; ++i)
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
     }

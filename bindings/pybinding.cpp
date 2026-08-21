@@ -374,13 +374,15 @@ void bind_utilities(py::module_ &m)
             py::array_t<int> labels_out(bsz);
             self.GetBatch(X_out.mutable_data(), Y_out.mutable_data(), labels_out.mutable_data());
             return py::make_tuple(X_out, Y_out, labels_out); });
-    
+
     m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes);
     m.def("auto_batch_size", &Deep::AutoBatchSize);
     m.def("dynamic_thread", &Deep::DynamicThread, py::arg("batch_size"));
-	
-    m.def("omp_max_threads", []() { return omp_get_max_threads(); });
-    m.def("omp_num_procs", []() { return omp_get_num_procs(); });
+
+    m.def("omp_max_threads", []()
+          { return omp_get_max_threads(); });
+    m.def("omp_num_procs", []()
+          { return omp_get_num_procs(); });
 
     m.def("relu", [](py::array_t<float> x)
           { Deep::relu(x.mutable_data(), x.size()); });
@@ -399,7 +401,7 @@ void bind_utilities(py::module_ &m)
 // ============================================================================
 // Main Module Entry
 // ============================================================================
-PYBIND11_MODULE(deepity, m)
+PYBIND11_MODULE(pydeepity, m)
 {
     m.doc() = "Deepity: A high-performance Predictive Coding library.";
 

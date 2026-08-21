@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <cstddef>
 
 namespace Deep
 {
@@ -149,7 +150,7 @@ namespace Deep
             std::mt19937 rng(seeds[omp_get_thread_num()]);
             std::normal_distribution<float> dist(0.0f, limit);
 #pragma omp for
-            for (size_t i = 0; i < Wsz; ++i)
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
     }
@@ -346,21 +347,30 @@ namespace Deep
         // reverted (see CalculateState()'s comment -- it regressed
         // performance), so this function must repack colBuffer itself
         // again, or it would silently read stale data.
+
+        const ptrdiff_t maxRows = static_cast<ptrdiff_t>(colRows);
+        const ptrdiff_t maxBatch1 = static_cast<ptrdiff_t>(batchSize);
 #pragma omp parallel for schedule(static) collapse(2)
-        for (size_t row = 0; row < colRows; ++row)
+        for (ptrdiff_t row = 0; row < maxRows; ++row)
         {
-            for (int batch = 0; batch < batchSize; ++batch)
+            for (ptrdiff_t batch = 0; batch < maxBatch1; ++batch)
             {
-                const float *src = colBuffer + (size_t)batch * colRows * colCols + row * colCols;
-                float *dst = colsRepacked + row * (size_t)batchSize * colCols + (size_t)batch * colCols;
+                size_t u_row = static_cast<size_t>(row);
+                size_t u_batch = static_cast<size_t>(batch);
+
+                const float *src = colBuffer + u_batch * colRows * colCols + u_row * colCols;
+                float *dst = colsRepacked + u_row * batchSize * colCols + u_batch * colCols;
                 std::memcpy(dst, src, colCols * sizeof(float));
             }
         }
 
+        const int maxOc = static_cast<int>(outChannels);
+        const int maxBatch2 = static_cast<int>(batchSize);
+
 #pragma omp parallel for schedule(static) collapse(2)
-        for (int oc = 0; oc < outChannels; ++oc)
+        for (int oc = 0; oc < maxOc; ++oc)
         {
-            for (int batch = 0; batch < batchSize; ++batch)
+            for (int batch = 0; batch < maxBatch2; ++batch)
             {
                 const float *src = bottom_up_cols + (size_t)batch * outSize + (size_t)oc * colCols;
                 float *dst = lgRepacked + (size_t)oc * batchSize * colCols + (size_t)batch * colCols;
@@ -405,7 +415,7 @@ namespace Deep
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
 
 #pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < ownSize; ++i)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)ownSize; ++i)
         {
             float grad = 0.0f;
             for (int batch = 0; batch < batchSize; ++batch)

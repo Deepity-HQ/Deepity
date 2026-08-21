@@ -61,7 +61,7 @@ namespace Deep
             std::normal_distribution<float> dist(0.0f, limit);
 
 #pragma omp for
-            for (size_t i = 0; i < Wsz; ++i)
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
     }
@@ -461,7 +461,7 @@ namespace Deep
         size_t r = size % 8;
         simd_end = size - r;
 #pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < simd_end; i += 8)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)simd_end; i += 8)
         {
             __m256 grad = _mm256_setzero_ps();
             __m256 p256 = _mm256_load_ps(&p[i]);

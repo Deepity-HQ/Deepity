@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <cstddef>
 
 namespace Deep
 {
@@ -167,7 +168,7 @@ namespace Deep
             std::mt19937 rng(seeds[omp_get_thread_num()]);
             std::normal_distribution<float> dist(0.0f, limit);
 #pragma omp for
-            for (size_t i = 0; i < Wsz; ++i)
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
     }
@@ -330,23 +331,34 @@ namespace Deep
         }
 
         // Repack (shared by both optimizer paths -- identical to ConvPCLayer's).
+        const int maxRow = static_cast<int>(colRows);
+        const int maxBatch = static_cast<int>(batchSize);
+        const int maxOc = static_cast<int>(outChannels);
+
 #pragma omp parallel for schedule(static) collapse(2)
-        for (size_t row = 0; row < colRows; ++row)
+        for (int row = 0; row < maxRow; ++row)
         {
-            for (int batch = 0; batch < batchSize; ++batch)
+            for (int batch = 0; batch < maxBatch; ++batch)
             {
-                const float *src = colBuffer + (size_t)batch * colRows * colCols + row * colCols;
-                float *dst = colsRepacked + row * (size_t)batchSize * colCols + (size_t)batch * colCols;
+                size_t u_row = static_cast<size_t>(row);
+                size_t u_batch = static_cast<size_t>(batch);
+
+                const float *src = colBuffer + u_batch * colRows * colCols + u_row * colCols;
+                float *dst = colsRepacked + u_row * batchSize * colCols + u_batch * colCols;
                 std::memcpy(dst, src, colCols * sizeof(float));
             }
         }
+
 #pragma omp parallel for schedule(static) collapse(2)
-        for (int oc = 0; oc < outChannels; ++oc)
+        for (int oc = 0; oc < maxOc; ++oc)
         {
-            for (int batch = 0; batch < batchSize; ++batch)
+            for (int batch = 0; batch < maxBatch; ++batch)
             {
-                const float *src = bottom_up_cols + (size_t)batch * outSize + (size_t)oc * colCols;
-                float *dst = lgRepacked + (size_t)oc * batchSize * colCols + (size_t)batch * colCols;
+                size_t u_oc = static_cast<size_t>(oc);
+                size_t u_batch = static_cast<size_t>(batch);
+
+                const float *src = bottom_up_cols + u_batch * outSize + u_oc * colCols;
+                float *dst = lgRepacked + u_oc * batchSize * colCols + u_batch * colCols;
                 std::memcpy(dst, src, colCols * sizeof(float));
             }
         }

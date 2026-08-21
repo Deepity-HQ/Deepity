@@ -138,7 +138,7 @@ namespace Deep
 #if defined(__AVX512F__)
         simd_end = n - (n % 16);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 16)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 16)
         {
             __m512 x_512 = _mm512_load_ps(x + i);
 
@@ -150,7 +150,7 @@ namespace Deep
 #elif defined(__AVX2__)
         simd_end = n - (n % 8);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 8)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 8)
         {
             __m256 x_256 = _mm256_load_ps(x + i);
 
@@ -162,7 +162,7 @@ namespace Deep
 #elif defined(__SSE2__)
         simd_end = n - (n % 4);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 4)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 4)
         {
             __m128 x_128 = _mm_load_ps(x + i);
 
@@ -186,7 +186,7 @@ namespace Deep
 #if defined(__AVX512F__)
         simd_end = n - (n % 16);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 16)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 16)
         {
             __m512 x_512 = _mm512_load_ps(x + i);
 
@@ -198,7 +198,7 @@ namespace Deep
 #elif defined(__AVX2__)
         simd_end = n - (n % 8);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 8)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 8)
         {
             __m256 x_256 = _mm256_load_ps(x + i);
 
@@ -210,10 +210,10 @@ namespace Deep
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
         simd_end = n - (n % 4);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 4)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 4)
         {
             __m128 x_128 = _mm_load_ps(x + i);
-            __m128 res = Sleef_logf4_u10(x_128);
+            __m128 res = Sleef_logf4_u10sse2(x_128);
 
             _mm_store_ps(x + i, res);
         }
@@ -240,7 +240,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 64);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 64)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 64)
         {
             __m512 x0 = _mm512_load_ps(x + i);
             __m512 x1 = _mm512_load_ps(x + i + 16);
@@ -269,7 +269,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 32);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 32)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 32)
         {
             __m256 x0 = _mm256_load_ps(x + i);
             __m256 x1 = _mm256_load_ps(x + i + 8);
@@ -298,7 +298,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 16);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 16)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 16)
         {
             __m128 x0 = _mm_load_ps(x + i);
             __m128 x1 = _mm_load_ps(x + i + 4);
@@ -342,7 +342,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 64);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 64)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 64)
         {
             __m512 x0 = _mm512_load_ps(x + i);
             __m512 x1 = _mm512_load_ps(x + i + 16);
@@ -374,7 +374,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 32);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 32)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 32)
         {
             __m256 x0 = _mm256_load_ps(x + i);
             __m256 x1 = _mm256_load_ps(x + i + 8);
@@ -405,7 +405,7 @@ namespace Deep
         size_t simd_end4 = n - (n % 16);
 
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end4; i += 16)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 16)
         {
             __m128 x0 = _mm_load_ps(x + i);
             __m128 x1 = _mm_load_ps(x + i + 4);
@@ -461,7 +461,7 @@ namespace Deep
 #if defined(__AVX512F__)
         simd_end = n - (n % 16);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 16)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 16)
         {
             __m512 x_512 = _mm512_load_ps(x + i);
             // u10 guarantees 1.0 ULP accuracy (highly precise)
@@ -472,7 +472,7 @@ namespace Deep
 #elif defined(__AVX2__)
         simd_end = n - (n % 8);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 8)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 8)
         {
             __m256 x_256 = _mm256_load_ps(x + i);
             __m256 res = Sleef_tanhf8_u10avx2(x_256);
@@ -482,7 +482,7 @@ namespace Deep
 #elif defined(__SSE4_1__) || defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
         simd_end = n - (n % 4);
 #pragma omp parallel for schedule(static) if (n > 65536)
-        for (size_t i = 0; i < simd_end; i += 4)
+        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end); i += 4)
         {
             __m128 x_128 = _mm_load_ps(x + i);
             // Fallback to sse4 or sse2 depending on what your SLEEF build exposes
@@ -615,7 +615,7 @@ namespace Deep
         {
             __m128 x_128 = _mm_load_ps(x + i);
             __m128 neg_x = _mm_mul_ps(x_128, neg_one);
-            __m128 exp_neg_x = Sleef_expf4_u10(neg_x);
+            __m128 exp_neg_x = Sleef_expf4_u10sse2(neg_x);
             __m128 den = _mm_add_ps(exp_neg_x, one);
             __m128 sig = _mm_div_ps(one, den);
             _mm_store_ps(x + i, sig);

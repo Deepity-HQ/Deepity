@@ -62,11 +62,10 @@ namespace Deep
                               float learningRate = 1e-6, float inferenceRate = 0.1f, float precisionRate = 0.01f, float lmbda = 1e-2f,
                               void (*act)(float *, size_t) = relu,
                               void (*dAct)(float *, size_t, bool) = dRelu);
-        
-         DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
+
+        DiscriminativePCLayer(int size, int nextSize, int batchSize = 1,
                               float learningRate = 1e-6, float inferenceRate = 0.1f, float precisionRate = 0.01f, float lmbda = 1e-2f,
                               ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
-        
 
         /// @brief Calculates the total network energy state.
         ///
@@ -94,8 +93,8 @@ namespace Deep
         /// @brief Does nothing; exists for class extension.
         void Flush() noexcept override {} // no buffer
 
-	/// @brief Recomputes log of precision if it falls behind.
-	void ResyncLogPrecision() noexcept;
+        /// @brief Recomputes log of precision if it falls behind.
+        void ResyncLogPrecision() noexcept;
 
         /// @brief Clamps the layer to the input data
         /// @param inputData Input
@@ -128,17 +127,17 @@ namespace Deep
         const float *GetBiases() const noexcept { return b; }
         float *GetBiases() noexcept { return b; }
 
-        const float* GetPrecisions() const { return p; }
+        const float *GetPrecisions() const { return p; }
 
         float GetLearningRate() const noexcept { return lr; }
         float GetInferenceRate() const noexcept { return ir; }
         float GetPrecisionRate() const noexcept { return pr; }
         float GetLambda() const noexcept { return lmbda; }
 
-        void SetLearningRate(float lr) noexcept { this->lr=lr; }
-        void SetInferenceRate(float ir) noexcept { this->ir=ir; }
-        void SetPrecisionRate(float pr) noexcept { this->pr=pr; }
-        void SetLambda(float l) noexcept { this->lmbda=l; }
+        void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+        void SetPrecisionRate(float pr) noexcept { this->pr = pr; }
+        void SetLambda(float l) noexcept { this->lmbda = l; }
 
         /// @brief Ties this layer to one above it
         /// @param above DiscriminativePCLayer*
@@ -171,7 +170,6 @@ namespace Deep
         void BindMemory(MemoryArena &arena);
 
     private:
-    
         /// @brief Local fallback memory for standalone layer instantiation
         std::unique_ptr<MemoryArena> localArena;
         /// @brief Weights
@@ -218,10 +216,10 @@ namespace Deep
 
         ActivationType activationType;
 
-   friend class PCNDiagnostics;
+        friend class PCNDiagnostics;
     };
 
- } // namespace Deep
+} // namespace Deep
 
 /*
  * MHSA USING PCNs:
