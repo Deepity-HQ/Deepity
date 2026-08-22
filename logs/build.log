@@ -3,78 +3,81 @@
 === Compilation ===
 MSBuild version 18.9.1+a81b43525 for .NET Framework
 
-  common.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\common.dir\Release\common.lib
   testerutil_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\testerutil_obj.dir\Release\testerutil_obj.lib
   qtesterutil_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\qtesterutil_obj.dir\Release\qtesterutil_obj.lib
+  common.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\common\common.dir\Release\common.lib
+  mkdisp.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkdisp.exe
   mkalias.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkalias.exe
   mkrename.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkrename.exe
-  mkdisp.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkdisp.exe
-  sleefavx2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2.dir\Release\sleefavx2.lib
   sleefdetpurec_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetpurec_scalar.dir\Release\sleefdetpurec_scalar.lib
-  sleefsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse2.dir\Release\sleefsse2.lib
-  sleefdetsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse2.dir\Release\sleefdetsse2.lib
+  sleefavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx512fnofma.dir\Release\sleefavx512fnofma.lib
+  sleefdetpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetpurecfma_scalar.dir\Release\sleefdetpurecfma_scalar.lib
+  sleefavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2128.dir\Release\sleefavx2128.lib
+  sleefdetavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx.dir\Release\sleefdetavx.lib
+  sleefdetavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx2128.dir\Release\sleefdetavx2128.lib
+  sleefavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx.dir\Release\sleefavx.lib
+  sleefdetavx512f.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512f.dir\Release\sleefdetavx512f.lib
+  sleefdetavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512fnofma.dir\Release\sleefdetavx512fnofma.lib
   sleefpurec_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefpurec_scalar.dir\Release\sleefpurec_scalar.lib
   sleefdetavx2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx2.dir\Release\sleefdetavx2.lib
-  sleefavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2128.dir\Release\sleefavx2128.lib
-  sleefavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx.dir\Release\sleefavx.lib
-  sleefdetavx2128.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx2128.dir\Release\sleefdetavx2128.lib
-  sleefpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefpurecfma_scalar.dir\Release\sleefpurecfma_scalar.lib
-  sleefdetpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetpurecfma_scalar.dir\Release\sleefdetpurecfma_scalar.lib
-  sleefdetavx.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx.dir\Release\sleefdetavx.lib
-  sleefdetavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512fnofma.dir\Release\sleefdetavx512fnofma.lib
-  sleefavx512fnofma.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx512fnofma.dir\Release\sleefavx512fnofma.lib
-  sleefdetavx512f.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetavx512f.dir\Release\sleefdetavx512f.lib
   sleefavx512f.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx512f.dir\Release\sleefavx512f.lib
-  dispscalar_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispscalar_obj.dir\Release\dispscalar_obj.lib
-  sleefdetsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse4.dir\Release\sleefdetsse4.lib
-  dispavx_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispavx_obj.dir\Release\dispavx_obj.lib
-  sleefsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse4.dir\Release\sleefsse4.lib
-  dispsse_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispsse_obj.dir\Release\dispsse_obj.lib
   sleefdetfma4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetfma4.dir\Release\sleefdetfma4.lib
+  dispavx_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispavx_obj.dir\Release\dispavx_obj.lib
+  dispsse_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispsse_obj.dir\Release\dispsse_obj.lib
+  dispscalar_obj.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\dispscalar_obj.dir\Release\dispscalar_obj.lib
+  sleefpurecfma_scalar.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefpurecfma_scalar.dir\Release\sleefpurecfma_scalar.lib
+  sleefavx2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefavx2.dir\Release\sleefavx2.lib
   sleeffma4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleeffma4.dir\Release\sleeffma4.lib
+  sleefsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse2.dir\Release\sleefsse2.lib
+  sleefdetsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse4.dir\Release\sleefdetsse4.lib
+  sleefsse4.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefsse4.dir\Release\sleefsse4.lib
+  sleefdetsse2.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\src\libm\sleefdetsse2.dir\Release\sleefdetsse2.lib
   sleef.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\lib\sleef.lib
   Deepity.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\Deepity.lib
+cl : command line  warning D9025: overriding '/openmp' with '/openmp:llvm' [C:\Users\Jack\Projects\Deepity\build\Release\pydeepity.vcxproj]
+cl : command line  warning D9002: ignoring unknown option '-march=native' [C:\Users\Jack\Projects\Deepity\build\Release\pydeepity.vcxproj]
+  pybinding.cpp
+     Creating library C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/pydeepity.lib and object C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/pydeepity.exp
+  Generating code
+  Finished generating code
   pydeepity.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\pydeepity.cp312-win_amd64.pyd
-  addSuffix.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\addSuffix.exe
   mkmasked_gnuabi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkmasked_gnuabi.exe
+  addSuffix.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\addSuffix.exe
   mkrename_gnuabi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\mkrename_gnuabi.exe
+  benchmark.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark.lib
+  DeepityProfiled.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityProfiled.lib
+  benchmark_main.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark_main.lib
+  ConvNetworkSmoke.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\ConvNetworkSmoke.exe
   test_psha_capi.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\test_psha_capi.exe
   test_psha.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\_deps\sleef-build\bin\test_psha.exe
-  DeepityProfiled.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityProfiled.lib
-  benchmark.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark.lib
-cl : command line  warning D9025: overriding '/openmp' with '/openmp:llvm' [C:\Users\Jack\Projects\Deepity\build\Release\NoProfileBench.vcxproj]
-  tNoProfileBench.cpp
-  benchmark_main.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\benchmark_main.lib
   DeepityTests.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityTests.exe
   DeepityProfile.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\DeepityProfile.exe
-     Creating library C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/NoProfileBench.lib and object C:/Users/Jack/Projects/Deepity/build/Release/bin/Release/NoProfileBench.exp
-  NoProfileBench.vcxproj -> C:\Users\Jack\Projects\Deepity\build\Release\bin\Release\NoProfileBench.exe
 
 
 === Tests ===
 
 === Part 1: SGD weight-gradient check ===
-  W[5]: delta=-0.0015021  numeric_dE/dW=-0.0178218  MATCHES ASCENT  rel_err=0.0342843
-  W[11]: delta=-0.0241773  numeric_dE/dW=-0.250339  MATCHES ASCENT  rel_err=0.0465781
-  W[9]: delta=0.0412222  numeric_dE/dW=0.385165  MATCHES ASCENT  rel_err=0.0570248
-  W[0]: delta=-0.0176824  numeric_dE/dW=-0.168979  MATCHES ASCENT  rel_err=0.0546426
-  W[7]: delta=-0.0538244  numeric_dE/dW=-0.540614  MATCHES ASCENT  rel_err=0.0495615
-  W[0]: delta=-0.0176824  numeric_dE/dW=-0.168979  MATCHES ASCENT  rel_err=0.0546426
-  W[5]: delta=-0.0015021  numeric_dE/dW=-0.0177026  MATCHES ASCENT  rel_err=0.0348518
-  W[9]: delta=0.0412222  numeric_dE/dW=0.385165  MATCHES ASCENT  rel_err=0.0570248
-Worst relative error: 0.0570248
+  W[5]: delta=-0.0738741  numeric_dE/dW=1.47343  MATCHES DESCENT  rel_err=0.000137625
+  W[0]: delta=0.00724029  numeric_dE/dW=-0.183582  MATCHES DESCENT  rel_err=0.0105611
+  W[1]: delta=0.00503254  numeric_dE/dW=-0.0612736  MATCHES DESCENT  rel_err=0.0321323
+  W[4]: delta=0.00362268  numeric_dE/dW=-0.0557899  MATCHES DESCENT  rel_err=0.0149343
+  W[12]: delta=-0.0150143  numeric_dE/dW=0.311851  MATCHES DESCENT  rel_err=0.00185426
+  W[4]: delta=0.00362268  numeric_dE/dW=-0.0557899  MATCHES DESCENT  rel_err=0.0149343
+  W[7]: delta=0.0498782  numeric_dE/dW=-1.0066  MATCHES DESCENT  rel_err=0.000448976
+  W[12]: delta=-0.0150143  numeric_dE/dW=0.311851  MATCHES DESCENT  rel_err=0.00185426
+Worst relative error: 0.0321323
 FAIL
 
 === Part 2: feedback-term (Col2Im) verification, SimpleConvPCLayer ===
-  z[18]: implied_dz_dt=0.036388  -numeric_dE/dz=0.0363886  rel_err=1.63185e-05
-  z[14]: implied_dz_dt=-0.0274682  -numeric_dE/dz=-0.0274628  rel_err=0.000195388
-  z[1]: implied_dz_dt=0.0193954  -numeric_dE/dz=0.0194013  rel_err=0.000307143
-  z[27]: implied_dz_dt=-0.0156033  -numeric_dE/dz=-0.0156164  rel_err=0.00083958
-  z[19]: implied_dz_dt=0.0376737  -numeric_dE/dz=0.0376701  rel_err=9.49952e-05
-  z[21]: implied_dz_dt=0.0324124  -numeric_dE/dz=0.03241  rel_err=7.3622e-05
-  z[5]: implied_dz_dt=-0.00937924  -numeric_dE/dz=-0.00938773  rel_err=0.000904605
-  z[14]: implied_dz_dt=-0.0274682  -numeric_dE/dz=-0.0274628  rel_err=0.000195388
-Worst relative error: 0.000904605
+  z[2]: implied_dz_dt=0.0161332  -numeric_dE/dz=0.0161529  rel_err=0.00121758
+  z[0]: implied_dz_dt=0.0183019  -numeric_dE/dz=0.0183135  rel_err=0.000634567
+  z[31]: implied_dz_dt=0.0133443  -numeric_dE/dz=0.0133216  rel_err=0.00170016
+  z[13]: implied_dz_dt=-0.00727579  -numeric_dE/dz=-0.00725687  rel_err=0.00260751
+  z[24]: implied_dz_dt=-0.0108968  -numeric_dE/dz=-0.0108629  rel_err=0.00311363
+  z[12]: implied_dz_dt=-0.0208363  -numeric_dE/dz=-0.0208467  rel_err=0.000500272
+  z[6]: implied_dz_dt=-0.00872105  -numeric_dE/dz=-0.00873208  rel_err=0.00126259
+  z[9]: implied_dz_dt=0.0299203  -numeric_dE/dz=0.0299215  rel_err=3.97783e-05
+Worst relative error: 0.00311363
 PASS
 
 === Part 3: AdamW weight-gradient check (NEW port, checking SIGN first) ===
@@ -83,15 +86,15 @@ PASS
   unlike SimplePCNetwork's Compile()-after-SetOptimizer() flow. A real
   design gap worth fixing when SimpleConvPCNetwork gets built.)
 
-  W[5]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[11]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[9]: delta=0.05  true_grad_sign=+  WRONG SIGN
-  W[0]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[7]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[0]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[5]: delta=-0.05  true_grad_sign=-  WRONG SIGN
-  W[9]: delta=0.05  true_grad_sign=+  WRONG SIGN
-All signs correct: false
-FAIL
+  W[5]: delta=-0.05  true_grad_sign=+  OK
+  W[0]: delta=0.05  true_grad_sign=-  OK
+  W[1]: delta=0.05  true_grad_sign=-  OK
+  W[4]: delta=0.05  true_grad_sign=-  OK
+  W[12]: delta=-0.05  true_grad_sign=+  OK
+  W[4]: delta=0.05  true_grad_sign=-  OK
+  W[7]: delta=0.05  true_grad_sign=-  OK
+  W[12]: delta=-0.05  true_grad_sign=+  OK
+All signs correct: true
+PASS
 
 

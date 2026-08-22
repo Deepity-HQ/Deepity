@@ -153,6 +153,7 @@ add_library(Deepity STATIC
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp
     src/SimplePCNetwork.cpp
+    src/SimpleConvPCNetwork.cpp
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
 )
@@ -352,14 +353,14 @@ if(DEEPITY_BUILD_TESTS)
 endif()
 
 if(DEEPITY_BUILD_TESTS)
-    add_executable(NoProfileBench tests/tNoProfileBench.cpp)
-    target_link_libraries(NoProfileBench PRIVATE Deepity)
-    set_target_properties(NoProfileBench PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_executable(ConvNetworkSmoke tests/tSimpleConvNetworkSmoke.cpp)
+    target_link_libraries(ConvNetworkSmoke PRIVATE Deepity)
+    set_target_properties(ConvNetworkSmoke PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     if(WIN32)
-        add_custom_command(TARGET NoProfileBench POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:NoProfileBench>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:NoProfileBench>
-            $<TARGET_FILE_DIR:NoProfileBench>
+        add_custom_command(TARGET ConvNetworkSmoke POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ConvNetworkSmoke>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:ConvNetworkSmoke>
+            $<TARGET_FILE_DIR:ConvNetworkSmoke>
             COMMAND_EXPAND_LISTS
         )
     endif()

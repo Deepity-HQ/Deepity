@@ -8,6 +8,7 @@ import sys
 import time
 from abc import ABC, abstractmethod
 from collections import deque
+from collections.abc import Callable
 from pathlib import Path
 import importlib.util
 
@@ -60,6 +61,31 @@ def format_duration(seconds: float | None) -> str:
 def command_string(cmd: list[str]) -> str:
     return " ".join(cmd)
 
+def get_git_info() -> tuple[str, str, bool]:
+    try:
+        branch = subprocess.check_output(
+            ["git", "branch", "--show-current"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+
+        commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+
+        status = subprocess.call(
+            ["git", "diff", "--quiet"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        dirty = status != 0
+        return branch or "detached", commit, dirty
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown", "unknown", False
 
 # ══════════════════════════════════════════════════════════════════════════
 # Reporter interface
@@ -80,6 +106,9 @@ class Reporter(ABC):
 
     @abstractmethod
     def __exit__(self, exc_type, exc, tb) -> None: ...
+
+    @abstractmethod
+    def build_summary(self, targets: int) -> None: ...
 
     @abstractmethod
     def clean_reconfigure(self) -> None: ...
@@ -138,7 +167,15 @@ class Reporter(ABC):
 class RichReporter(Reporter):
     """Single mutable Rich Live dashboard for the entire build."""
 
-    def __init__(self, build_type: str, generator: str, jobs: int) -> None:
+    def __init__(
+    self,
+    build_type: str,
+    generator: str,
+    jobs: int,
+    git_branch: str,
+    git_commit: str,
+    git_dirty: bool,
+    ) -> None:
         from rich.console import Console
         from rich.progress import (
             BarColumn,
@@ -151,6 +188,14 @@ class RichReporter(Reporter):
         self.build_type = build_type
         self.generator = generator
         self.jobs = jobs
+
+        self.git_branch = git_branch
+        self.git_commit = git_commit
+        self.git_dirty = git_dirty
+
+        self.targets_built = 0
+        self.num_passed = 0
+        self.num_failed = 0
 
         self.phase = "Starting..."
         self.configure_status = "[dim]waiting[/dim]"
@@ -213,6 +258,12 @@ class RichReporter(Reporter):
             f"[dim]Build[/dim] [bold]{self.build_type}[/bold]",
             f"[dim]Generator[/dim] [bold]{self.generator}[/bold]",
             f"[dim]Jobs[/dim] [bold]{self.jobs}[/bold]",
+        )
+
+        table.add_row(
+            "[dim]Git[/dim]",
+            f"[bold]{self.git_branch}[/bold] @ {self.git_commit}"
+            + (" [yellow]● modified[/yellow]" if self.git_dirty else " [green]✓ clean[/green]"),
         )
 
         return Panel(table, border_style="cyan", padding=(0, 1))
@@ -280,6 +331,7 @@ class RichReporter(Reporter):
             body.add_row("Build type", self.build_type)
             body.add_row("Generator", self.generator)
             body.add_row("Parallel jobs", str(self.jobs))
+            body.add_row("Targets", str(self.targets_built))
             body.add_row("Configuration", self._configure_time_display)
             body.add_row("Compilation", self._build_time_display)
             body.add_row("Tests", self._test_time_display)
@@ -315,6 +367,11 @@ class RichReporter(Reporter):
         self.console.print(Panel(body, title=f"[bold red]{title}[/bold red]", border_style="red"))
 
     # -- Reporter interface -------------------------------------------------
+
+    def build_summary(self, targets: int) -> None:
+        self.targets_built = targets
+        self._refresh()
+    
     def clean_reconfigure(self) -> None:
         self.phase = "Configuring"
         self.configure_status = "[yellow]● clean reconfigure[/yellow]"
@@ -356,11 +413,10 @@ class RichReporter(Reporter):
 
         current = int(match.group(1))
         total = int(match.group(2))
-        message = match.group(3).strip()
-
+        message= match.group(3).strip()
+        self.targets_built = max(self.targets_built, total)
         self.build_message = message
         self.progress.update(self.build_task, total=total, completed=current)
-        self._refresh()
 
     def build_complete(self, duration: float) -> None:
         self.build_status = (
@@ -388,6 +444,7 @@ class RichReporter(Reporter):
 
     def test_line(self, line: str) -> None:
         line = line.rstrip()
+
         if line:
             self.test_lines.append(line)
         self._refresh()
@@ -444,6 +501,7 @@ class PlainReporter(Reporter):
         self.build_status = "waiting"
         self.test_status = "waiting"
 
+        self.targets_built = 0
         self._last_build_pct = -1
         self._build_line_open = False
 
@@ -476,6 +534,10 @@ class PlainReporter(Reporter):
             self._build_line_open = False
 
     # -- Reporter interface -------------------------------------------------
+
+    def build_summary(self, targets: int) -> None:
+        print(f"Targets built: {targets}")
+
     def clean_reconfigure(self) -> None:
         self.phase = "Configuring"
         self.configure_status = "clean reconfigure"
@@ -573,6 +635,7 @@ class PlainReporter(Reporter):
         print(f"Build type     : {self.build_type}")
         print(f"Generator      : {self.generator}")
         print(f"Parallel jobs  : {self.jobs}")
+        print(f"Targets build  : {self.targets_built}")
         print(
             "Configuration  : "
             + (format_duration(configure_time) if configure_time else "cached")
@@ -585,7 +648,7 @@ class PlainReporter(Reporter):
 def run_streaming_command(
     cmd: list[str],
     *,
-    on_line,
+    on_line: Callable[[str], None],
 ) -> tuple[int, str]:
     """
     Run a command while streaming its combined stdout/stderr to on_line.
@@ -633,15 +696,39 @@ def main() -> None:
         default="Release",
         choices=["Release", "Debug"],
     )
+    parser.add_argument(
+        "--jobs",
+        "-j",
+        type=int,
+        default=multiprocessing.cpu_count(),
+        help="Number of parallel build jobs",
+    )
+    parser.add_argument(
+        "--no-tests",
+        action="store_true",
+        help="Skip running tests",
+    )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Remove the build directory before building",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show full build output",
+    )
     args = parser.parse_args()
 
     build_type = args.build_type
-    jobs = multiprocessing.cpu_count()
+    jobs = args.jobs
 
     build_dir = Path("build") / build_type
     deps_dir = build_dir / "_deps"
     cache_file = build_dir / "CMakeCache.txt"
-
+    if args.clean and build_dir.exists():
+        shutil.rmtree(build_dir)
+    
     ninja = shutil.which("ninja")
     generator = "Ninja" if ninja else "CMake"
 
@@ -662,8 +749,10 @@ def main() -> None:
             f.write(output)
             f.write("\n\n")
 
+    git_branch, git_commit, git_dirty = get_git_info()
+
     reporter: Reporter = (
-        RichReporter(build_type, generator, jobs)
+        RichReporter(build_type, generator, jobs, git_branch, git_commit, git_dirty)
         if RICH_AVAILABLE
         else PlainReporter(build_type, generator, jobs)
     )
@@ -695,10 +784,13 @@ def main() -> None:
 
             if sys.platform == "win32":
                 config_cmd.extend(["-A", "x64"])
-                vcpkg_path = os.environ.get("VCPKG_ROOT", "C:/Users/Jack/vcpkg")
-                toolchain = Path(vcpkg_path) / "scripts/buildsystems/vcpkg.cmake"
-                if toolchain.is_file():
-                    config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchain.as_posix()}")
+                vcpkg_root = os.environ.get("VCPKG_ROOT")
+                if vcpkg_root:
+                    toolchain = Path(vcpkg_root) / "scripts/buildsystems/vcpkg.cmake"
+                    if toolchain.is_file():
+                        config_cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchain.as_posix()}")
+                else:
+                    print("Warning: VCPKG_ROOT environment variable is not set. Dependencies may fail to resolve.")
             else:
                 if ninja:
                     config_cmd.extend(["-G", "Ninja"])
@@ -755,6 +847,9 @@ def main() -> None:
             sys.exit(return_code)
 
         reporter.build_complete(build_time)
+        if args.no_tests:
+            reporter.success(configure_time, build_time, 0.)
+            return
 
         # ────────────────────────────────────────────────────────────────
         # Find test executable
@@ -764,6 +859,8 @@ def main() -> None:
         test_paths = [
             build_dir / "bin" / exe_name,
             build_dir / "bin" / build_type / exe_name,
+            build_dir / exe_name,
+            build_dir / build_type / exe_name,
         ]
 
         test_exe = next((path for path in test_paths if path.is_file()), None)
