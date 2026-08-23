@@ -400,7 +400,7 @@ void bind_networks(py::module_ &m)
         .def_property_readonly("layers", [](Deep::ConvPCNetwork &self)
                                {
             py::list result;
-            for (auto &layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
+            for (auto &layer : self.GetLayers()) result.append(py::cast(layer.get(), py::return_value_policy::reference));
             return result; })
         .def("__len__", [](const Deep::ConvPCNetwork &self)
              { return self.GetLayers().size(); })
@@ -455,7 +455,7 @@ void bind_networks(py::module_ &m)
         .def_property_readonly("layers", [](Deep::SimpleConvPCNetwork &self)
                                {
             py::list result;
-            for (auto &layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
+            for (auto &layer : self.GetLayers()) result.append(py::cast(layer.get(), py::return_value_policy::reference));
             return result; })
         .def("__len__", [](const Deep::SimpleConvPCNetwork &self)
              { return self.GetLayers().size(); })
