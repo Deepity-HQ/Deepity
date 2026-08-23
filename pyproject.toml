@@ -15,11 +15,8 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "numpy",
+    "rich",
 ]
-
-[project.optional-dependencies]
-# 'rich' only powers build.py's interactive dashboard during development
-dev = ["rich"]
 
 # ══════════════════════════════════════════════════════════════════════════
 # scikit-build-core: how `pip install .` / `pip wheel .` invokes CMake
@@ -58,8 +55,6 @@ DEEPITY_MSVC_ARCH_FLAGS = ""
 # ══════════════════════════════════════════════════════════════════════════
 [tool.cibuildwheel]
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
-# musllinux (Alpine) and 32-bit Windows are skipped: OpenBLAS/SLEEF aren't
-# routinely tested there, and almost nobody needs a 32-bit ML build.
 skip = "*-musllinux* *-win32"
 build-verbosity = 1
 
@@ -73,11 +68,21 @@ manylinux-x86_64-image = "manylinux_2_28"
 before-all = "dnf install -y openblas-devel libgomp"
 
 [tool.cibuildwheel.macos]
+# NOT currently exercised by CI (see ci.yml's build-wheels matrix comment):
+# macos-latest runners are arm64, and CMakeLists.txt's SIMD flags are
+# x86-only with no arch-conditional branching yet, so a wheel build here
+# fails before it gets anywhere near this config actually mattering. Left
+# in place as the starting point for whoever picks that fix up.
 before-all = "brew install openblas libomp"
 # find_package(BLAS) / OpenMP need an explicit nudge on macOS since Homebrew
 # installs outside the paths Apple's toolchain searches by default.
 environment = { CMAKE_PREFIX_PATH = "/usr/local/opt/openblas:/usr/local/opt/libomp:/opt/homebrew/opt/openblas:/opt/homebrew/opt/libomp" }
-archs = ["x86_64", "arm64"]
+# x86_64 only for now: DEEPITY_ARCH_FLAGS above is an x86 -march string, and
+# CMakeLists.txt's SLEEF config force-enables AVX2/AVX512F unconditionally -
+# neither means anything when cross-compiling for arm64. Building real
+# arm64/Apple Silicon wheels needs CMakeLists.txt itself to branch SIMD
+# flags on target architecture, not just this file. Tracked as follow-up.
+archs = ["x86_64"]
 
 [tool.cibuildwheel.windows]
 # OpenBLAS comes from vcpkg here (matching the existing windows-clang CI

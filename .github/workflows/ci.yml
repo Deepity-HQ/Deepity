@@ -7,13 +7,6 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
-# Explicit least-privilege GITHUB_TOKEN scope. None of the jobs below write
-# to the repo, comment on PRs, or publish anything - they only check out
-# code, build/test it, and upload log artifacts - so read-only access to
-# contents is all that's needed. Without this block, jobs run with the
-# default token scope, which can be broader than necessary depending on
-# repo/org settings (this is what CodeQL's "workflow does not contain
-# permissions" alert flags).
 permissions:
   contents: read
 
@@ -24,9 +17,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Both compilers are exercised in CI since this project's behavior
-        # (SIMD dispatch, precision) has measurably differed between them -
-        # see CONTRIBUTING.md and the README's GCC vs. Clang benchmarks.
         include:
           - compiler: gcc
             cc: gcc
@@ -49,9 +39,6 @@ jobs:
           python-version: "3.x"
 
       - name: Install system dependencies
-        # NOTE: per CMakeLists.txt, SLEEF and Google Benchmark are fetched
-        # from source via FetchContent at configure time - they are NOT
-        # system packages, so they are deliberately absent here.
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -82,15 +69,6 @@ jobs:
   build-and-test-windows:
     name: build-and-test (windows, clang)
     runs-on: windows-latest
-    # NOTE: unlike the Linux job above, this one does NOT go through
-    # build.py. build.py's configure step is hardcoded to
-    # `-DCMAKE_BUILD_TYPE=... -DDEEPITY_BUILD_TESTS=ON` with no way to pass
-    # extra defines, but Windows+Clang needs several more (OpenMP_libomp_
-    # LIBRARY, CMAKE_TOOLCHAIN_FILE, BLA_VENDOR). Those live in the
-    # "windows-clang" preset in CMakePresets.json, which this job invokes
-    # directly via `cmake --preset` - see the Configure step below. If
-    # build.py grows support for passthrough CMake args or preset selection,
-    # this job should switch to using it, the same as the Linux job.
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -197,17 +175,15 @@ jobs:
 
   build-wheels:
     name: wheels (${{ matrix.os }})
-    # Deliberately decoupled from build-and-test above: those jobs exercise
-    # dev-style builds (GCC/Clang directly, DEEPITY_BUILD_TESTS=ON) to
-    # validate the C++ core itself. This job validates the actual artifact
-    # that gets published to users - the --distributed-equivalent config in
-    # pyproject.toml's [tool.scikit-build.cmake.define] (portable arch
-    # baseline, CUDA off, tests off) - so it only runs once those pass.
     needs: [build-and-test, build-and-test-windows]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        # macOS intentionally excluded for now: macos-latest runners are
+        # arm64, and CMakeLists.txt's SIMD flags (DEEPITY_ARCH_FLAGS's
+        # x86-64-v2, SLEEF_ENABLE_AVX2/AVX512F) are x86-only with no
+        # arch-conditional branching yet.
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
