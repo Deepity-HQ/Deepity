@@ -188,38 +188,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      # --- Windows-only: OpenBLAS has no system package, so it comes from
-      # vcpkg here exactly as it does in build-and-test-windows above. This
-      # runs on the host (cibuildwheel on Windows isn't containerized), so
-      # the toolchain file set via GITHUB_ENV is visible to the actual
-      # CMake configure step cibuildwheel triggers.
-      - name: Cache vcpkg
-        if: runner.os == 'Windows'
-        id: vcpkg-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            C:/vcpkg
-            !C:/vcpkg/buildtrees
-            !C:/vcpkg/packages
-            !C:/vcpkg/downloads
-          key: vcpkg-windows-openblas-wheels-v1
-
-      - name: Bootstrap vcpkg
-        if: runner.os == 'Windows' && steps.vcpkg-cache.outputs.cache-hit != 'true'
-        run: |
-          git clone https://github.com/microsoft/vcpkg C:/vcpkg
-          C:/vcpkg/bootstrap-vcpkg.bat
-
-      - name: Install OpenBLAS via vcpkg
-        if: runner.os == 'Windows'
-        run: C:/vcpkg/vcpkg.exe install openblas --triplet x64-windows
-
-      - name: Point CMake at the vcpkg toolchain file
-        if: runner.os == 'Windows'
-        run: echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" | Out-File -FilePath $env:GITHUB_ENV -Append
-
       # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp
       # install inside the manylinux container (Linux) or via Homebrew
       # (macOS) through the before-all hooks in pyproject.toml's

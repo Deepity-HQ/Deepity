@@ -90,4 +90,4 @@ archs = ["x86_64"]
 # CMAKE_TOOLCHAIN_FILE are set by the "Install vcpkg dependencies" CI step
 # below, before cibuildwheel runs - see ci.yml.
 before-build = "pip install delvewheel"
-repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
+repair-wheel-command = "delvewheel repair -w {dest_dir} --add-path build\\{wheel_tag}\\_deps\\openblas_prebuilt-src\\bin {wheel}"

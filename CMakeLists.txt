@@ -87,6 +87,7 @@ if(WIN32)
         PATHS "${openblas_prebuilt_SOURCE_DIR}/bin"
         REQUIRED
     )
+    message(STATUS "OPENBLAS_DLL resolved to: ${OPENBLAS_DLL}")
 
     add_library(openblas_dll SHARED IMPORTED)
     set_target_properties(openblas_dll PROPERTIES
