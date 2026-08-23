@@ -7,13 +7,6 @@ on:
     branches: [main]
   workflow_dispatch: {}
 
-# Explicit least-privilege GITHUB_TOKEN scope. None of the jobs below write
-# to the repo, comment on PRs, or publish anything - they only check out
-# code, build/test it, and upload log artifacts - so read-only access to
-# contents is all that's needed. Without this block, jobs run with the
-# default token scope, which can be broader than necessary depending on
-# repo/org settings (this is what CodeQL's "workflow does not contain
-# permissions" alert flags).
 permissions:
   contents: read
 
@@ -49,9 +42,6 @@ jobs:
           python-version: "3.x"
 
       - name: Install system dependencies
-        # NOTE: per CMakeLists.txt, SLEEF and Google Benchmark are fetched
-        # from source via FetchContent at configure time - they are NOT
-        # system packages, so they are deliberately absent here.
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -194,3 +184,91 @@ jobs:
 
       - name: Run pyright
         run: pyright
+
+  build-wheels:
+    name: wheels (${{ matrix.os }})
+    needs: [build-and-test, build-and-test-windows]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # --- Windows-only: OpenBLAS has no system package, so it comes from
+      # vcpkg here exactly as it does in build-and-test-windows above. This
+      # runs on the host (cibuildwheel on Windows isn't containerized), so
+      # the toolchain file set via GITHUB_ENV is visible to the actual
+      # CMake configure step cibuildwheel triggers.
+      - name: Cache vcpkg
+        if: runner.os == 'Windows'
+        id: vcpkg-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:/vcpkg
+            !C:/vcpkg/buildtrees
+            !C:/vcpkg/packages
+            !C:/vcpkg/downloads
+          key: vcpkg-windows-openblas-wheels-v1
+
+      - name: Bootstrap vcpkg
+        if: runner.os == 'Windows' && steps.vcpkg-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone https://github.com/microsoft/vcpkg C:/vcpkg
+          C:/vcpkg/bootstrap-vcpkg.bat
+
+      - name: Install OpenBLAS via vcpkg
+        if: runner.os == 'Windows'
+        run: C:/vcpkg/vcpkg.exe install openblas --triplet x64-windows
+
+      - name: Point CMake at the vcpkg toolchain file
+        if: runner.os == 'Windows'
+        run: echo "CMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp
+      # install inside the manylinux container (Linux) or via Homebrew
+      # (macOS) through the before-all hooks in pyproject.toml's
+      # [tool.cibuildwheel.linux] / [tool.cibuildwheel.macos] tables.
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.21
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+  build-sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install build
+        run: pip install build
+
+      - name: Build sdist
+        run: python -m build --sdist
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  # Not wired up yet: publishing needs the PyPI project configured for
+  # Trusted Publishing (pypi.org project settings -> Publishing) with this
+  # repo/workflow registered, then a job here gated on a tag push using
+  # `pypa/gh-action-pypi-publish` and `permissions: id-token: write` -
+  # no API token needs to live in repo secrets with that approach.

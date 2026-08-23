@@ -4,20 +4,25 @@ from sklearn.model_selection import train_test_split
 from pydeepity import SimplePCN
 from time import perf_counter
 
-# Tests forward-projection initialization -- the real, structural finding
-# from reading ngc-learn's actual pcn_model.py source: EVERY batch, they
-# run a pure feedforward pass through CURRENT weights first, and seed the
-# settling loop's hidden states from THAT, not from zero. This is
-# fundamentally different from (and likely much stronger than) I_avg's
-# stale class-average caching -- fresh, per-example, current-weights,
-# every single batch.
+# FINAL VALIDATION -- the complete stack found today:
+#   - Forward-projection initialization (seeds hidden layers from a real
+#     forward pass through current weights, not zero-init)
+#   - +-0.3 uniform weight init (matching ngc-learn's actual convention)
+#   - AdamW, lr=0.001 (matching ngc-learn's hard-coded Adam + eta=0.001 --
+#     the init range and optimizer needed to be changed TOGETHER, not
+#     independently; tested and confirmed: 73.31% alone with SGD vs
+#     93.96% paired with AdamW)
+#   - mu_cache_threshold=0.05 -- confirmed +30.6% faster than ngc-learn's
+#     real, measured per-batch time in an isolated speed test. THIS RUN
+#     checks whether that speed holds without costing the 93.96% accuracy
+#     already confirmed at threshold=disabled.
+#   - train_step_with_projection() -- single C++ call per batch, not a
+#     manual Python loop (confirmed real, if smaller, speedup from
+#     eliminating ~40 Python/pybind boundary crossings per batch)
 #
-# Matches ngc-learn's real settings as closely as possible now that we
-# have the actual source: [0,1] normalization, labels clipped to
-# [0.001, 0.999] (not raw one-hot), tanh activation (confirmed as their
-# actual default), 784->512->512->10, T=20, plain SGD (isolating THIS
-# specific change -- forward-projection init -- from the separate,
-# already-known Adam question).
+# [0,1] normalization, labels clipped to [0.001, 0.999], tanh activation,
+# 784->512->512->10, T=20 -- all matching ngc-learn's actual, real source
+# as closely as possible.
 
 
 def load_full_mnist():
@@ -73,6 +78,18 @@ def main() -> None:
                                   # without the other may have been the mistake.
     net.compile()
     net.randomize_weights()
+    net.set_mu_cache_threshold(0.0)  # REVERTED from 0.05 -- that showed genuine
+                                       # instability under real, sustained AdamW
+                                       # training (energy trending UP, a 62-point
+                                       # accuracy crash at epoch 8), not just noise.
+                                       # Likely cause: small caching-approximation
+                                       # bias accumulating in Adam's momentum/
+                                       # variance buffers over many updates --
+                                       # something the earlier single-trajectory,
+                                       # no-weight-update speed test structurally
+                                       # could not have caught. threshold=0 is
+                                       # exact (proven bit-identical to no caching)
+                                       # and confirmed safe with this exact stack.
 
     # Override weight init to match ngc-learn's actual convention: fixed
     # uniform range +-0.3, INDEPENDENT of layer size -- not our own
@@ -112,23 +129,7 @@ def main() -> None:
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-            # Manual loop instead of train_step() -- need ProjectForward()
-            # inserted between clamp_input() and the settling loop, which
-            # the existing train_step() convenience method doesn't do.
-            net.reset_state()
-            net.clamp_input(X_batch)
-            net.project_forward()  # THE new step -- seeds hidden layers
-                                     # from a genuine forward pass, not zero
-            net[-1].clamp_state(Y_batch)
-
-            energy = 0.0
-            for _ in range(STEPS):
-                energy += net.calculate_state()
-                net.update_state()
-
-            net.update_weights()
-            net[-1].unclamp_state()
-
+            energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
 
         # REAL accuracy check -- genuine UNCLAMPED settle on a cheap

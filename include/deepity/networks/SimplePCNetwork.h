@@ -37,11 +37,10 @@ namespace Deep
         /// @param batchSize Batch size
         explicit SimplePCNetwork(int batchSize) noexcept;
 
-        /// @brief Default destructor; deletes each layer.
-        ~SimplePCNetwork();
-
         SimplePCNetwork(const SimplePCNetwork &) = delete;
         SimplePCNetwork &operator=(const SimplePCNetwork &) = delete;
+
+        ~SimplePCNetwork() = default;
 
         /// @brief Adds a layer to the network.
         /// @param size input size
@@ -82,15 +81,15 @@ namespace Deep
 
         /// @brief Returns the network's terminal (final) layer.
         /// @return Pointer to the last layer added via AddLayer().
-        SimplePCLayer *GetTerminalLayer() noexcept { return layers.back(); }
+        SimplePCLayer *GetTerminalLayer() noexcept { return layers.back().get(); }
 
         /// @brief Returns every layer in the network, in the order they were added.
         /// @return A reference to the internal layer list.
-        std::vector<SimplePCLayer *> &GetLayers() noexcept { return layers; }
+        std::vector<std::unique_ptr<SimplePCLayer>> &GetLayers() noexcept { return layers; }
 
         /// @brief Returns every layer in the network, in the order they were added.
         /// @return A const reference to the internal layer list.
-        const std::vector<SimplePCLayer *> &GetLayers() const noexcept { return layers; }
+        const std::vector<std::unique_ptr<SimplePCLayer>> &GetLayers() const noexcept { return layers; }
 
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize
@@ -100,7 +99,7 @@ namespace Deep
         /// @param o The optimizer type to apply.
         void SetOptimizer(OptimizerType o) noexcept
         {
-            for (SimplePCLayer *layer : layers)
+            for (auto &layer : layers)
                 layer->SetOptimizer(o);
         }
 
@@ -134,11 +133,31 @@ namespace Deep
         /// point each layer's CalculateState() runs). Only mu is used.
         void ProjectForward() noexcept;
 
+        /// @brief Full train step WITH forward-projection initialization,
+        /// all in ONE call -- reset, clamp, project, settle, update weights,
+        /// unclamp. Matches TrainStep()'s signature/return convention exactly,
+        /// just with ProjectForward() inserted between clamping the input and
+        /// clamping the target.
+        ///
+        /// Exists specifically to eliminate the Python/pybind boundary-
+        /// crossing overhead of doing this same sequence via many separate
+        /// calls from Python (reset_state, clamp_input, project_forward,
+        /// clamp_state, then STEPS*2 individual calculate_state/update_state
+        /// calls, update_weights, unclamp_state -- over 40 individual
+        /// crossings per batch at STEPS=20). This does the whole sequence in
+        /// ONE crossing instead.
+        float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+
+        /// @brief Sets mu-cache threshold on every layer -- see
+        /// SimplePCLayer::SetMuCacheThreshold() for semantics. Safe to call any
+        /// time after Compile().
+        void SetMuCacheThreshold(float threshold) noexcept;
+
         /// @brief Loads all layers into one contiguous block of memory.
         void Compile();
 
     private:
-        std::vector<SimplePCLayer *> layers;
+        std::vector<std::unique_ptr<SimplePCLayer>> layers;
         std::unique_ptr<MemoryArena> arena;
         int batchSize;
     };

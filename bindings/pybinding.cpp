@@ -150,7 +150,7 @@ namespace
             .def_property_readonly("layers", [](NetT &self)
                                    {
                 py::list result;
-                for (auto *layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
+                for (const auto &layer : self.GetLayers()) result.append(py::cast(layer.get(), py::return_value_policy::reference));
                 return result; }, "List of layer objects owned by the network.")
             .def("__len__", [](const NetT &self)
                  { return self.GetLayers().size(); })
@@ -159,7 +159,7 @@ namespace
                 auto &layers = self.GetLayers();
                 if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
                 if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw py::index_error();
-                return layers[index]; }, py::return_value_policy::reference_internal)
+                return layers[index].get(); }, py::return_value_policy::reference_internal)
             .def("__repr__", [className](const NetT &self)
                  { return "<" + std::string(className) + " layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
     }
@@ -263,7 +263,7 @@ void bind_layers(py::module_ &m)
         .def_property_readonly("weights", [](Deep::ConvPCLayer &self)
                                { return py::array_t<float>({(py::ssize_t)self.GetOutChannels(), (py::ssize_t)self.GetInChannels(), (py::ssize_t)self.GetKernelH(), (py::ssize_t)self.GetKernelW()}, self.GetWeights(), py::cast(&self)); })
         .def_property_readonly("biases", [](Deep::ConvPCLayer &self)
-                               { return py::array_t<float>({(py::ssize_t)self.GetOutChannels()}, self.GetBiases(), py::cast(&self)); })
+                               { return py::array_t<float>((py::ssize_t)self.GetOutChannels(), self.GetBiases(), py::cast(&self)); })
         .def_property_readonly("batch_size", &Deep::ConvPCLayer::GetBatchSize)
         .def_property_readonly("in_channels", &Deep::ConvPCLayer::GetInChannels)
         .def_property_readonly("out_channels", &Deep::ConvPCLayer::GetOutChannels)
@@ -282,11 +282,11 @@ void bind_layers(py::module_ &m)
         .def_property_readonly("beliefs", [](Deep::SimpleConvPCLayer &self)
                                {
             size_t n = self.GetBatchSize() * self.GetInputSize();
-            return py::array_t<float>({(py::ssize_t)n}, self.GetBeliefs()); })
+            return py::array_t<float>((py::ssize_t)n, self.GetBeliefs()); })
         .def_property_readonly("errors", [](Deep::SimpleConvPCLayer &self)
                                {
             size_t n = self.GetBatchSize() * self.GetInputSize();
-            return py::array_t<float>({(py::ssize_t)n}, self.GetErrors()); })
+            return py::array_t<float>((py::ssize_t)n, self.GetErrors()); })
         .def_property_readonly("weights", [](Deep::SimpleConvPCLayer &self)
                                {
             if (self.GetOutChannels() == 0) return py::array_t<float>();
@@ -295,7 +295,7 @@ void bind_layers(py::module_ &m)
         .def_property_readonly("biases", [](Deep::SimpleConvPCLayer &self)
                                {
             if (self.GetOutChannels() == 0) return py::array_t<float>();
-            return py::array_t<float>({(py::ssize_t)self.GetOutChannels()}, self.GetBiases()); })
+            return py::array_t<float>((py::ssize_t)self.GetOutChannels(), self.GetBiases()); })
         .def_property_readonly("in_channels", &Deep::SimpleConvPCLayer::GetInChannels)
         .def_property_readonly("out_channels", &Deep::SimpleConvPCLayer::GetOutChannels)
         .def_property_readonly("in_height", &Deep::SimpleConvPCLayer::GetInHeight)
@@ -349,12 +349,18 @@ void bind_networks(py::module_ &m)
              {
             if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
             else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
-            else self.SetOptimizer(Deep::OptimizerType::SGD); }, py::arg("optimizer"), "Sets the optimizer: ADAM, ADAMW, or SGD.");
+            else self.SetOptimizer(Deep::OptimizerType::SGD); }, py::arg("optimizer"), "Sets the optimizer: ADAM, ADAMW, or SGD.")
 
-    simpleNetCls.def("project_forward", &Deep::SimplePCNetwork::ProjectForward,
-                     "Seeds hidden layers from a genuine forward pass through current "
-                     "weights, instead of zero-init. Call AFTER clamp_input(), BEFORE "
-                     "the settling loop.");
+        .def("project_forward", &Deep::SimplePCNetwork::ProjectForward, "Seeds hidden layers from a genuine forward pass through current "
+                                                                        "weights, instead of zero-init. Call AFTER clamp_input(), BEFORE "
+                                                                        "the settling loop.")
+
+        .def("train_step_with_projection", [](Deep::SimplePCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, py::array_t<float, py::array::c_style | py::array::forcecast> y, int steps)
+             {
+    auto xbuf = x.request(); auto ybuf = y.request();
+    std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+    std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
+    return self.TrainStepWithProjection(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"));
 
     py::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(py::init<int>(), py::arg("batch_size"), "Construct a network with a fixed batch size.")
@@ -394,7 +400,7 @@ void bind_networks(py::module_ &m)
         .def_property_readonly("layers", [](Deep::ConvPCNetwork &self)
                                {
             py::list result;
-            for (auto *layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
+            for (auto &layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
             return result; })
         .def("__len__", [](const Deep::ConvPCNetwork &self)
              { return self.GetLayers().size(); })
@@ -403,7 +409,7 @@ void bind_networks(py::module_ &m)
             auto &layers = self.GetLayers();
             if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
             if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw py::index_error();
-            return layers[index]; }, py::return_value_policy::reference_internal)
+            return layers[index].get(); }, py::return_value_policy::reference_internal)
         .def("__repr__", [](const Deep::ConvPCNetwork &self)
              { return "<ConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
 
@@ -449,7 +455,7 @@ void bind_networks(py::module_ &m)
         .def_property_readonly("layers", [](Deep::SimpleConvPCNetwork &self)
                                {
             py::list result;
-            for (auto *layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
+            for (auto &layer : self.GetLayers()) result.append(py::cast(layer, py::return_value_policy::reference));
             return result; })
         .def("__len__", [](const Deep::SimpleConvPCNetwork &self)
              { return self.GetLayers().size(); })
@@ -458,7 +464,7 @@ void bind_networks(py::module_ &m)
             auto &layers = self.GetLayers();
             if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
             if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw py::index_error();
-            return layers[index]; }, py::return_value_policy::reference_internal)
+            return layers[index].get(); }, py::return_value_policy::reference_internal)
         .def("__repr__", [](const Deep::SimpleConvPCNetwork &self)
              { return "<SimpleConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
 }

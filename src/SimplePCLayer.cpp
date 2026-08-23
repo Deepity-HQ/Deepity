@@ -53,7 +53,7 @@ namespace Deep
         for (auto &s : seeds)
             s = seedDist(seedGenerator);
 
-#pragma omp parallel
+#pragma omp parallel if(!omp_in_parallel())
         {
             std::mt19937 rng(seeds[omp_get_thread_num()]);
             std::normal_distribution<float> dist(0.0f, limit);
@@ -78,12 +78,9 @@ namespace Deep
             cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
         }
 
-        // No precision weighting: E = 0.5 * sum(e^2), plain SSE. No p
-        // multiply, no -0.5*log(p) term -- both were exactly inert at
-        // pr=0.0, which was the only value ever actually used.
         float totalEnergy = 0.0f;
 
-#pragma omp parallel for schedule(static) reduction(+ : totalEnergy)
+#pragma omp parallel for schedule(static) reduction(+ : totalEnergy) if(batchSize > 4 && !omp_in_parallel())
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const size_t offset = (size_t)batch * size;
@@ -143,32 +140,10 @@ namespace Deep
             size_t Nout = (size_t)batchSize * nextSize;
             size_t N = (size_t)batchSize * size;
 
-            // Mu-caching: recompute only when z has moved enough SINCE THE
-            // LAST RECOMPUTE (not just the immediately preceding step --
-            // comparing against prevZ, updated only on real recomputes,
-            // catches cumulative drift across several skipped steps that a
-            // step-to-step comparison would miss).
-            //
-            // threshold=0 (or a CLAMPED layer, whose z never changes at
-            // all) makes the ratio always exactly 0 -- reproducing the
-            // original, EXACT, validated behavior. threshold>0 extends
-            // this to UNCLAMPED layers too, as a genuine APPROXIMATION --
-            // correctness there means "close enough for real training,"
-            // not "bit-identical," and needs accuracy-impact validation,
-            // not just a single-batch trajectory diff.
-            //
-            // mu itself is NOT a stable buffer between steps -- UpdateState()
-            // mutates it in place (converts it to its own derivative, for
-            // the feedback GEMM) -- so a skip must copy a PRESERVED value
-            // back into mu, not just skip writing to mu.
             bool shouldRecompute = true;
             if (muCacheThreshold >= 0.0f && muCacheValid)
             {
                 float zNorm = cblas_snrm2((int)N, prevZ, 1);
-                // Reuse dz_dt as scratch -- safe: UpdateState() overwrites
-                // it fresh every step and nothing reads it between here
-                // and that call, avoiding a per-call heap allocation on
-                // this hot path.
                 cblas_scopy((int)N, z, 1, dz_dt, 1);
                 cblas_saxpy((int)N, -1.0f, prevZ, 1, dz_dt, 1);
                 float deltaNorm = cblas_snrm2((int)N, dz_dt, 1);
@@ -197,9 +172,6 @@ namespace Deep
             }
             else
             {
-                // Restore the preserved, correctly-activated prediction --
-                // mu was left holding last step's DERIVATIVE by
-                // UpdateState(), not the prediction itself.
                 cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
             }
         }
@@ -220,9 +192,7 @@ namespace Deep
         if (isClamped)
             return;
 
-        // Own term: dz_dt = -e (was -p*e; p=1 always made this a no-op
-        // multiply, so the multiplication itself is simply removed).
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
         for (int batch = 0; batch < batchSize; ++batch)
         {
             size_t offset = (size_t)batch * size;
@@ -263,9 +233,7 @@ namespace Deep
         {
             const float *e_above = layerAbove->GetErrors();
 
-            // bottom_up = e_above * mu(f') -- was e_above * p_above * mu(f');
-            // p_above=1 always made that multiply a no-op, removed.
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
             for (int batch = 0; batch < batchSize; ++batch)
             {
                 size_t offset = (size_t)batch * nextSize;
@@ -320,8 +288,7 @@ namespace Deep
         const float *e_above = layerAbove->GetErrors();
         float *local_grad = bottom_up;
 
-        // 1. Compute the local gradient delta (shared across all optimizers)
-#pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
         for (int batch = 0; batch < batchSize; ++batch)
         {
             size_t offset = (size_t)batch * nextSize;
@@ -358,7 +325,6 @@ namespace Deep
                 local_grad[offset + f] = e_above[offset + f] * mu[offset + f];
         }
 
-        // 2. Dispatch to the selected optimizer
         switch (opt)
         {
         case OptimizerType::SGD:
@@ -366,7 +332,6 @@ namespace Deep
             if (lmbda > 0.0f)
                 cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W, 1);
 
-            // Writes scaled updates directly into W via beta=1.0f
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 nextSize, size, batchSize,
@@ -382,29 +347,21 @@ namespace Deep
         case OptimizerType::ADAM:
         case OptimizerType::ADAMW:
         {
-            t++; // Increment layer-wide timestep ONCE
+            t++;
 
             size_t num_weights = (size_t)nextSize * size;
-
-            // NOTE: Using 1.0f / batchSize instead of 1.0f so the gradient
-            // magnitude doesn't drastically shift Adam's variance estimates
-            // if you change your batch size.
             float grad_scale = -1.0f / batchSize;
 
-            // Compute raw gradients for W into grad_W
-            // beta=0.0f overwrites grad_W cleanly, no memset needed
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 nextSize, size, batchSize,
                 grad_scale, local_grad, nextSize, z, size,
                 0.0f, grad_W, size);
 
-            // Compute raw gradients for biases into grad_b
             std::memset(grad_b, 0, nextSize * sizeof(float));
             for (int batch = 0; batch < batchSize; batch++)
                 cblas_saxpy(nextSize, grad_scale, local_grad + batch * nextSize, 1, grad_b, 1);
 
-            // Apply specific Adam flavor to Weights
             if (opt == OptimizerType::ADAMW)
             {
                 Deep::AdamWUpdate(W, grad_W, m_W, v_W, num_weights, t, lr, lmbda);
@@ -414,9 +371,7 @@ namespace Deep
                 Deep::AdamUpdate(W, grad_W, m_W, v_W, num_weights, t, lr);
             }
 
-            // Apply plain Adam to Biases (biases almost never use weight decay)
             Deep::AdamUpdate(b, grad_b, m_b, v_b, nextSize, t, lr);
-
             break;
         }
         }
@@ -433,7 +388,7 @@ namespace Deep
         size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
         memcpy(z, inputData.data(), copySize);
         isClamped = true;
-        muCacheValid = false; // fresh data this batch -- must recompute at least once
+        muCacheValid = false; 
     }
 
     void SimplePCLayer::UnclampState() noexcept
@@ -449,7 +404,6 @@ namespace Deep
         size_t total = 0;
         size_t own_state_size = (size_t)batchSize * size;
 
-        // z, e, dz_dt -- NO p/log_p buffers at all
         total += pad16(own_state_size) * 3;
 
         if (nextSize > 0)
@@ -457,16 +411,15 @@ namespace Deep
             size_t out_state_size = (size_t)batchSize * nextSize;
             size_t w_size = (size_t)size * nextSize;
 
-            total += pad16(w_size);             // W
-            total += pad16(nextSize);           // b
-            total += pad16(out_state_size) * 3; // mu, cachedMu, bottom_up
-            total += pad16(own_state_size);     // prevZ (own_state_size, matches z)
+            total += pad16(w_size);
+            total += pad16(nextSize);
+            total += pad16(out_state_size) * 3;
+            total += pad16(own_state_size);
 
-            // Conditionally allocate Adam variables to save space for SGD users
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
-                total += pad16(w_size) * 3;   // grad_W, m_W, v_W
-                total += pad16(nextSize) * 3; // grad_b, m_b, v_b
+                total += pad16(w_size) * 3;
+                total += pad16(nextSize) * 3;
             }
         }
 
@@ -503,7 +456,6 @@ namespace Deep
             std::memset(bottom_up, 0, out_state_size * sizeof(float));
             std::memset(prevZ, 0, own_state_size * sizeof(float));
 
-            // Conditionally bind Adam variables
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
                 grad_W = arena.AllocateFloats(w_size);
@@ -514,13 +466,11 @@ namespace Deep
                 m_b = arena.AllocateFloats(nextSize);
                 v_b = arena.AllocateFloats(nextSize);
 
-                // Adam moments must begin at zero
                 std::memset(m_W, 0, w_size * sizeof(float));
                 std::memset(v_W, 0, w_size * sizeof(float));
                 std::memset(m_b, 0, nextSize * sizeof(float));
                 std::memset(v_b, 0, nextSize * sizeof(float));
 
-                // It's good practice to zero the gradients as well
                 std::memset(grad_W, 0, w_size * sizeof(float));
                 std::memset(grad_b, 0, nextSize * sizeof(float));
             }

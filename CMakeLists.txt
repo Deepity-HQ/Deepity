@@ -9,7 +9,31 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
 option(DEEPITY_BUILD_TESTS "Build the DeepityTests target" OFF)
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
-option(DEEPITY_NATIVE_OPT "Enable -march=native for max performance (disable for portable builds)" ON)
+
+# --- Global Architecture & SIMD Flags -------------------------------
+# NOTE: build.py always sets these explicitly based on --native/--fast/
+# --distributed. These CACHE defaults only matter if someone invokes cmake
+# directly. Default to the portable "fast" profile (AVX2+FMA, x86-64-v3)
+# rather than -march=native, since native binaries crash on other CPUs.
+set(DEEPITY_ARCH_FLAGS "-march=x86-64-v3 -mtune=generic" CACHE STRING "Architecture/SIMD flags (e.g., -march=native, -march=x86-64-v2)")
+set(DEEPITY_MSVC_ARCH_FLAGS "/arch:AVX2" CACHE STRING "Architecture flags for MSVC (empty = compiler default / most portable)")
+
+if(MSVC)
+    if(DEEPITY_MSVC_ARCH_FLAGS)
+        add_compile_options(${DEEPITY_MSVC_ARCH_FLAGS})
+    endif()
+
+    if(DEEPITY_MSVC_ARCH_FLAGS MATCHES "AVX512")
+        add_compile_definitions(__SSE2__ __AVX__ __AVX2__ __AVX512F__)
+    elseif(DEEPITY_MSVC_ARCH_FLAGS MATCHES "AVX2")
+        add_compile_definitions(__SSE2__ __AVX__ __AVX2__)
+    elseif(DEEPITY_MSVC_ARCH_FLAGS MATCHES "AVX")
+        add_compile_definitions(__SSE2__ __AVX__)
+    endif()
+else()
+    separate_arguments(ARCH_FLAGS_LIST UNIX_COMMAND ${DEEPITY_ARCH_FLAGS})
+    add_compile_options(${ARCH_FLAGS_LIST})
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -18,9 +42,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}")
 
-# --------------------------------------------------------------------
-# Dependencies
-# --------------------------------------------------------------------
+# --- DEPENDENCIES ---------------------------------------------------
 
 find_package(OpenMP REQUIRED)
 
@@ -40,9 +62,7 @@ endif()
 
 include(FetchContent)
 
-# --------------------------------------------------------------------
-# OpenBLAS
-# --------------------------------------------------------------------
+# --- OpenBLAS -------------------------------------------------------
 
 if(WIN32)
     set(OPENBLAS_WIN_URL "https://github.com/OpenMathLib/OpenBLAS/releases/download/v0.3.34/OpenBLAS-0.3.34-x64.zip"
@@ -84,10 +104,8 @@ else()
     )
 endif()
 
-# --------------------------------------------------------------------
-# SLEEF
-# --------------------------------------------------------------------
-
+# --- SLEEF ----------------------------------------------------------
+# These are necessary, but don't ask me why
 set(SLEEF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(SLEEF_BUILD_STATIC_TEST_BINS OFF CACHE BOOL "" FORCE)
 set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -115,9 +133,7 @@ set(CMAKE_REQUIRED_QUIET ON)
 FetchContent_MakeAvailable(sleef)
 set(CMAKE_REQUIRED_QUIET OFF)
 
-# --------------------------------------------------------------------
-# Google Benchmark
-# --------------------------------------------------------------------
+# --- Google Benchmark -----------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -140,11 +156,9 @@ if(DEEPITY_BUILD_TESTS)
     set(CMAKE_REQUIRED_QUIET OFF)
 endif()
 
-# --------------------------------------------------------------------
-# Deepity library
-# --------------------------------------------------------------------
+# --- Deepity library ------------------------------------------------
 
-add_library(Deepity STATIC
+add_library(Deepity
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/ConvPCLayer.cpp
@@ -157,10 +171,6 @@ add_library(Deepity STATIC
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
 )
-
-if(NOT MSVC AND DEEPITY_NATIVE_OPT)
-    target_compile_options(Deepity PUBLIC -march=native)
-endif()
 
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -185,9 +195,7 @@ endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
-# --------------------------------------------------------------------
-# Compiler flags
-# --------------------------------------------------------------------
+# --- Compiler flags -------------------------------------------------
 
 if(MSVC)
     target_compile_options(Deepity PUBLIC
@@ -195,14 +203,6 @@ if(MSVC)
         $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>
         $<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>
     )
-    target_compile_definitions(Deepity PUBLIC __SSE2__)
-
-    # Note: MSVC handles vectorization under /O2 automatically. 
-    # /arch:AVX2 can be added if you want to force native-like behavior.
-    if(DEEPITY_NATIVE_OPT)
-        target_compile_definitions(Deepity PUBLIC __AVX__ __AVX2__)
-        target_compile_options(Deepity PUBLIC /arch:AVX2)
-    endif()
 endif()
 
 target_compile_definitions(Deepity PUBLIC $<$<CONFIG:Debug>:_DEBUG>)
@@ -216,15 +216,12 @@ set_target_properties(Deepity PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-# --------------------------------------------------------------------
-# Python bindings
-# --------------------------------------------------------------------
+# --- pydeepity ------------------------------------------------------
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     pybind11_add_module(pydeepity bindings/pybinding.cpp)
 
     target_link_libraries(pydeepity PRIVATE Deepity)
-    target_compile_options(pydeepity PRIVATE -march=native)
 
     if(WIN32)
         target_compile_definitions(pydeepity PRIVATE NOMINMAX)
@@ -234,32 +231,29 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         PREFIX ""
     )
 
-    # Modern cross-platform way to copy required DLLs (like OpenMP/BLAS) to the Python package on Windows
-    if(WIN32)
-        # Copy .pyd
-        add_custom_command(TARGET pydeepity POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            $<TARGET_FILE:pydeepity>
-            ${CMAKE_SOURCE_DIR}/pydeepity/
-        )
-        # Copy required DLLs
-        add_custom_command(TARGET pydeepity POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:pydeepity>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:pydeepity>
-            ${CMAKE_SOURCE_DIR}/pydeepity/
-            COMMAND_EXPAND_LISTS
-        )
-    endif()
+    # Modern cross-platform way to copy the compiled extension and required runtime libs
+    add_custom_command(TARGET pydeepity POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        $<TARGET_FILE:pydeepity>
+        ${CMAKE_SOURCE_DIR}/pydeepity/
+    )
+    add_custom_command(TARGET pydeepity POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:pydeepity>>,copy_if_different,true>
+        $<TARGET_RUNTIME_DLLS:pydeepity>
+        ${CMAKE_SOURCE_DIR}/pydeepity/
+        COMMAND_EXPAND_LISTS
+    )
+
+    install(TARGETS pydeepity
+        LIBRARY DESTINATION pydeepity
+        RUNTIME DESTINATION pydeepity
+    )
 endif()
 
-# --------------------------------------------------------------------
-# Tests
-# --------------------------------------------------------------------
+# --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
     add_executable(DeepityTests tests/tSimpleConvVerify.cpp)
-
-    target_compile_options(DeepityTests PRIVATE -march=native)
 
     target_link_libraries(DeepityTests PRIVATE
         Deepity
@@ -270,7 +264,6 @@ if(DEEPITY_BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
 
-    # Copy DLLs for the test executable on Windows
     if(WIN32)
         add_custom_command(TARGET DeepityTests POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityTests>>,copy_if_different,true>
@@ -281,9 +274,7 @@ if(DEEPITY_BUILD_TESTS)
     endif()
 endif()
 
-# --------------------------------------------------------------------
-# Profiling
-# --------------------------------------------------------------------
+# --- Profiling ------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
     add_library(DeepityProfiled STATIC
@@ -298,8 +289,6 @@ if(DEEPITY_BUILD_TESTS)
         src/ModelIO.cpp
         src/StreamAlignedBatcher.cpp
     )
-
-    target_compile_options(DeepityProfiled PRIVATE -march=native)
 
     target_include_directories(DeepityProfiled PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -322,16 +311,11 @@ if(DEEPITY_BUILD_TESTS)
     endif()
 
     if(MSVC)
-        target_compile_definitions(DeepityProfiled PUBLIC __SSE2__)
-        if(DEEPITY_NATIVE_OPT)
-            target_compile_definitions(DeepityProfiled PUBLIC __AVX__ __AVX2__)
-            target_compile_options(DeepityProfiled PUBLIC /arch:AVX2)
-        endif()
         target_compile_options(DeepityProfiled PRIVATE /O2 /fp:fast /openmp:llvm)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(DeepityProfiled PRIVATE -O3 ${ARCH_FLAGS} -ffast-math -fvectorize -fslp-vectorize)
+        target_compile_options(DeepityProfiled PRIVATE -O3 -ffast-math -fvectorize -fslp-vectorize)
     else()
-        target_compile_options(DeepityProfiled PRIVATE -O3 ${ARCH_FLAGS} -ffast-math -ftree-vectorize -ftree-slp-vectorize)
+        target_compile_options(DeepityProfiled PRIVATE -O3 -ffast-math -ftree-vectorize -ftree-slp-vectorize)
     endif()
 
     add_executable(DeepityProfile tests/tProfile.cpp)
@@ -347,20 +331,6 @@ if(DEEPITY_BUILD_TESTS)
             COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityProfile>>,copy_if_different,true>
             $<TARGET_RUNTIME_DLLS:DeepityProfile>
             $<TARGET_FILE_DIR:DeepityProfile>
-            COMMAND_EXPAND_LISTS
-        )
-    endif()
-endif()
-
-if(DEEPITY_BUILD_TESTS)
-    add_executable(MuCacheVerify tests/tMuCacheVerify.cpp)
-    target_link_libraries(MuCacheVerify PRIVATE Deepity)
-    set_target_properties(MuCacheVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    if(WIN32)
-        add_custom_command(TARGET MuCacheVerify POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:MuCacheVerify>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:MuCacheVerify>
-            $<TARGET_FILE_DIR:MuCacheVerify>
             COMMAND_EXPAND_LISTS
         )
     endif()
