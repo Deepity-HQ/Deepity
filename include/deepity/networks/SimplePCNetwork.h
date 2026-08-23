@@ -117,6 +117,23 @@ namespace Deep
         /// @return A vector containing the batched predictions
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
+        /// @brief Runs a single, non-iterative forward pass through current
+        /// weights, seeding each hidden layer's z from the PREVIOUS layer's
+        /// mu -- giving the settling loop a genuine, current-weights-based
+        /// starting point instead of zero-init.
+        ///
+        /// Reuses each layer's EXISTING CalculateState() (already-verified
+        /// forward computation, mu = f(W@z+b)) as a side effect -- no new
+        /// math, just a new sequence of existing calls. Assumes the input
+        /// layer (layers[0]) is ALREADY clamped before this is called.
+        ///
+        /// @warning Layer 0's error (e) and this call's energy return value
+        /// are meaningless here -- CalculateState() computes both mu (what
+        /// we want) and e/energy (a side effect we're discarding, since the
+        /// NEXT layer's z hasn't been set to a meaningful value yet at the
+        /// point each layer's CalculateState() runs). Only mu is used.
+        void ProjectForward() noexcept;
+
         /// @brief Loads all layers into one contiguous block of memory.
         void Compile();
 

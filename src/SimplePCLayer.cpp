@@ -141,16 +141,67 @@ namespace Deep
         if (nextSize > 0)
         {
             size_t Nout = (size_t)batchSize * nextSize;
+            size_t N = (size_t)batchSize * size;
 
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasTrans,
-                batchSize, nextSize, size,
-                1.0f, z, size, W, size, 0.0f, mu, nextSize);
+            // Mu-caching: recompute only when z has moved enough SINCE THE
+            // LAST RECOMPUTE (not just the immediately preceding step --
+            // comparing against prevZ, updated only on real recomputes,
+            // catches cumulative drift across several skipped steps that a
+            // step-to-step comparison would miss).
+            //
+            // threshold=0 (or a CLAMPED layer, whose z never changes at
+            // all) makes the ratio always exactly 0 -- reproducing the
+            // original, EXACT, validated behavior. threshold>0 extends
+            // this to UNCLAMPED layers too, as a genuine APPROXIMATION --
+            // correctness there means "close enough for real training,"
+            // not "bit-identical," and needs accuracy-impact validation,
+            // not just a single-batch trajectory diff.
+            //
+            // mu itself is NOT a stable buffer between steps -- UpdateState()
+            // mutates it in place (converts it to its own derivative, for
+            // the feedback GEMM) -- so a skip must copy a PRESERVED value
+            // back into mu, not just skip writing to mu.
+            bool shouldRecompute = true;
+            if (muCacheThreshold >= 0.0f && muCacheValid)
+            {
+                float zNorm = cblas_snrm2((int)N, prevZ, 1);
+                // Reuse dz_dt as scratch -- safe: UpdateState() overwrites
+                // it fresh every step and nothing reads it between here
+                // and that call, avoiding a per-call heap allocation on
+                // this hot path.
+                cblas_scopy((int)N, z, 1, dz_dt, 1);
+                cblas_saxpy((int)N, -1.0f, prevZ, 1, dz_dt, 1);
+                float deltaNorm = cblas_snrm2((int)N, dz_dt, 1);
+                float ratio = deltaNorm / (zNorm + 1e-8f);
+                shouldRecompute = ratio > muCacheThreshold;
+            }
 
-            for (int batch = 0; batch < batchSize; ++batch)
-                cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+            if (shouldRecompute)
+            {
+                cblas_sgemm(
+                    CblasRowMajor, CblasNoTrans, CblasTrans,
+                    batchSize, nextSize, size,
+                    1.0f, z, size, W, size, 0.0f, mu, nextSize);
 
-            activation(mu, Nout);
+                for (int batch = 0; batch < batchSize; ++batch)
+                    cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+
+                activation(mu, Nout);
+
+                if (muCacheThreshold >= 0.0f)
+                {
+                    cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+                    cblas_scopy((int)N, z, 1, prevZ, 1);
+                    muCacheValid = true;
+                }
+            }
+            else
+            {
+                // Restore the preserved, correctly-activated prediction --
+                // mu was left holding last step's DERIVATIVE by
+                // UpdateState(), not the prediction itself.
+                cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+            }
         }
 
         return totalEnergy;
@@ -382,6 +433,7 @@ namespace Deep
         size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
         memcpy(z, inputData.data(), copySize);
         isClamped = true;
+        muCacheValid = false; // fresh data this batch -- must recompute at least once
     }
 
     void SimplePCLayer::UnclampState() noexcept
@@ -407,7 +459,8 @@ namespace Deep
 
             total += pad16(w_size);             // W
             total += pad16(nextSize);           // b
-            total += pad16(out_state_size) * 2; // mu, bottom_up
+            total += pad16(out_state_size) * 3; // mu, cachedMu, bottom_up
+            total += pad16(own_state_size);     // prevZ (own_state_size, matches z)
 
             // Conditionally allocate Adam variables to save space for SGD users
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
@@ -440,11 +493,15 @@ namespace Deep
             W = arena.AllocateFloats(w_size);
             b = arena.AllocateFloats(nextSize);
             mu = arena.AllocateFloats(out_state_size);
+            cachedMu = arena.AllocateFloats(out_state_size);
             bottom_up = arena.AllocateFloats(out_state_size);
+            prevZ = arena.AllocateFloats(own_state_size);
 
             std::memset(b, 0, nextSize * sizeof(float));
             std::memset(mu, 0, out_state_size * sizeof(float));
+            std::memset(cachedMu, 0, out_state_size * sizeof(float));
             std::memset(bottom_up, 0, out_state_size * sizeof(float));
+            std::memset(prevZ, 0, own_state_size * sizeof(float));
 
             // Conditionally bind Adam variables
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)

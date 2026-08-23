@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from pydeepity import SequentialPCN
+from pydeepity import SimplePCN
 from time import perf_counter
 
 # PC-vs-backprop gradient fidelity experiment (per ChatGPT's plan, Section 2/5).
@@ -137,13 +137,14 @@ def main():
 
     x_batch, y_batch = load_one_frozen_batch(BATCH_SIZE)
 
-    net = SequentialPCN(batch_size=BATCH_SIZE)
+    net = SimplePCN(batch_size=BATCH_SIZE)
     # pr=0, lmbda=0 -- isolate pure gradient behavior, no decay/precision confound
-    net.add_layer(784, 512, lr=LR, ir=IR, pr=0.0, act="tanh", lmbda=0.0)
-    net.add_layer(512, 10, lr=LR, ir=IR, pr=0.0, act="tanh", lmbda=0.0)
-    net.add_layer(10, 0, lr=LR, ir=IR, pr=0.0, act="linear", lmbda=0.0)
+    net.add_layer(784, 512, lr=LR, ir=IR, act="tanh", lmbda=0.0)
+    net.add_layer(512, 10, lr=LR, ir=IR, act="tanh", lmbda=0.0)
+    net.add_layer(10, 0, lr=LR, ir=IR, act="linear", lmbda=0.0)
     net.compile()
     net.randomize_weights()
+    net.set_mu_cache_threshold(0.1)
 
     # Freeze this exact init -- copied into PyTorch for the backprop side too.
     W0 = net[0].weights.copy()
@@ -221,10 +222,10 @@ def main():
     print("-" * 55)
 
     for ir_test in [0.08, 0.16, 0.24, 0.32, 0.50, 0.80]:
-        net2 = SequentialPCN(batch_size=BATCH_SIZE)
-        net2.add_layer(784, 512, lr=LR, ir=ir_test, pr=0.0, act="tanh", lmbda=0.0)
-        net2.add_layer(512, 10, lr=LR, ir=ir_test, pr=0.0, act="tanh", lmbda=0.0)
-        net2.add_layer(10, 0, lr=LR, ir=ir_test, pr=0.0, act="linear", lmbda=0.0)
+        net2 = SimplePCN(batch_size=BATCH_SIZE)
+        net2.add_layer(784, 512, lr=LR, ir=ir_test, act="tanh", lmbda=0.0)
+        net2.add_layer(512, 10, lr=LR, ir=ir_test, act="tanh", lmbda=0.0)
+        net2.add_layer(10, 0, lr=LR, ir=ir_test, act="linear", lmbda=0.0)
         net2.compile()
 
         net2[0].weights[:] = W0

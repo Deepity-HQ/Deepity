@@ -353,14 +353,14 @@ if(DEEPITY_BUILD_TESTS)
 endif()
 
 if(DEEPITY_BUILD_TESTS)
-    add_executable(ConvNetworkSmoke tests/tSimpleConvNetworkSmoke.cpp)
-    target_link_libraries(ConvNetworkSmoke PRIVATE Deepity)
-    set_target_properties(ConvNetworkSmoke PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_executable(MuCacheVerify tests/tMuCacheVerify.cpp)
+    target_link_libraries(MuCacheVerify PRIVATE Deepity)
+    set_target_properties(MuCacheVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     if(WIN32)
-        add_custom_command(TARGET ConvNetworkSmoke POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ConvNetworkSmoke>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:ConvNetworkSmoke>
-            $<TARGET_FILE_DIR:ConvNetworkSmoke>
+        add_custom_command(TARGET MuCacheVerify POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:MuCacheVerify>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:MuCacheVerify>
+            $<TARGET_FILE_DIR:MuCacheVerify>
             COMMAND_EXPAND_LISTS
         )
     endif()

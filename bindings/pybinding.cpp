@@ -188,6 +188,14 @@ void bind_layers(py::module_ &m)
     simpleLayerCls.def_property_readonly("biases", [](Deep::SimplePCLayer &self)
                                          { return py::array_t<float>((py::ssize_t)self.GetOutputSize(), self.GetBiases(), py::cast(&self)); });
 
+    simpleLayerCls.def_property_readonly("biases", [](Deep::SimplePCLayer &self)
+                                         { return py::array_t<float>((py::ssize_t)self.GetOutputSize(), self.GetBiases(), py::cast(&self)); })
+        .def("set_mu_cache_threshold", &Deep::SimplePCLayer::SetMuCacheThreshold, py::arg("threshold"),
+             "Sets the mu-cache staleness threshold: -1 disables caching (default), "
+             "0 reproduces the exact clamped-only behavior, >0 extends caching to "
+             "unclamped layers as a genuine approximation.")
+        .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold);
+
     py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
         .def(py::init([](size_t in_size, size_t out_size, float var, float var_td, float k1, float k2, float lambda, float alpha, size_t batch_size, int step_size, const std::string &activation, const std::string &activation_deriv)
                       { return std::make_unique<Deep::RBLayer>(in_size, out_size, var, var_td, k1, k2, lambda, alpha, batch_size, step_size, resolveAct(activation), resolveDAct(activation_deriv)); }),
@@ -342,6 +350,11 @@ void bind_networks(py::module_ &m)
             if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
             else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
             else self.SetOptimizer(Deep::OptimizerType::SGD); }, py::arg("optimizer"), "Sets the optimizer: ADAM, ADAMW, or SGD.");
+
+    simpleNetCls.def("project_forward", &Deep::SimplePCNetwork::ProjectForward,
+                     "Seeds hidden layers from a genuine forward pass through current "
+                     "weights, instead of zero-init. Call AFTER clamp_input(), BEFORE "
+                     "the settling loop.");
 
     py::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(py::init<int>(), py::arg("batch_size"), "Construct a network with a fixed batch size.")

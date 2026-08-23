@@ -44,6 +44,14 @@
  * for weight updates, selected via SetOptimizer(); Adam's moment buffers
  * are only allocated when selected, keeping the SGD-only path free of
  * their memory/compute cost.
+ *
+ * @note Optionally caches a CLAMPED layer's outgoing prediction (mu)
+ * across settling steps via SetMuCaching() -- a clamped layer's z is
+ * fixed for the whole settling loop, and W/b don't change until
+ * UpdateWeights() runs afterward, so mu=f(W@z+b) is PROVABLY IDENTICAL
+ * every step while clamped. This is an EXACT optimization, not an
+ * approximation -- default OFF so both behaviors coexist for direct
+ * correctness/timing comparison before trusting it.
  * @version 1.0
  * @date 2026-06-30
  * @author Jack Rose
@@ -119,6 +127,14 @@ namespace Deep
         /// @brief Returns this layer's belief buffer.
         /// @return Pointer to this layer's `size`-length beliefs.
         float *GetBeliefs() noexcept override { return z; }
+
+        /// @brief Returns a prediction buffer
+        /// exposed specifically for forward-projection initialization (seeding
+        /// the next layer's z from a genuine, current-weights forward pass,
+        /// rather than zero-init). nullptr for a terminal layer (nextSize=0).
+        /// @return Outgoing prediction buffer
+        const float *GetMu() const noexcept { return mu; }
+
         /// @brief Returns this layer's prediction-error buffer.
         /// @return Pointer to this layer's `size`-length errors.
         const float *GetErrors() const noexcept override { return e; }
@@ -160,6 +176,20 @@ namespace Deep
         /// Adam). Adam's moment buffers are lazily allocated on first use.
         /// @param o The optimizer type to use.
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
+
+        /// @brief Sets the mu-cache staleness threshold: mu is recomputed
+        /// only when ||z - z_at_last_recompute|| / (||z_at_last_recompute||
+        /// + eps) exceeds this value. threshold=-1 disables caching
+        /// entirely (default). threshold=0 reproduces the original,
+        /// EXACT clamped-only behavior (a clamped layer's z never changes,
+        /// so its ratio is always exactly 0, always below any
+        /// threshold>=0). threshold>0 extends caching to UNCLAMPED layers
+        /// too, as a genuine approximation -- correctness there means
+        /// "close enough for real training," not "bit-identical," and
+        /// needs its own accuracy-impact validation, not just a trajectory
+        /// diff.
+        void SetMuCacheThreshold(float threshold) noexcept { muCacheThreshold = threshold; }
+        float GetMuCacheThreshold() const noexcept { return muCacheThreshold; }
 
         /// @brief Sets the layer immediately above this one in the network.
         /// @param above Pointer to the layer above; may be nullptr for a
@@ -214,6 +244,15 @@ namespace Deep
         int batchSize;
 
         float *mu;
+        float *cachedMu; // separate from mu -- mu gets mutated in-place by
+                         // UpdateState() every step (converted to its
+                         // derivative), so caching must copy a preserved
+                         // value back INTO mu each skipped step, not just
+                         // skip writing to mu entirely
+        float *prevZ;    // z AT THE LAST RECOMPUTE, not the immediately
+                         // preceding step -- so cumulative drift across
+                         // several skipped steps is measured correctly,
+                         // rather than only ever comparing step-to-step
         float *dz_dt;
         float *bottom_up;
 
@@ -221,6 +260,13 @@ namespace Deep
         float ir;
         float lmbda;
         bool isClamped = false;
+
+        float muCacheThreshold = -1.0f; // -1 = disabled. 0 = exact clamped-only
+                                        // (today's validated behavior). >0 =
+                                        // approximate, extends to unclamped
+                                        // layers too.
+        bool muCacheValid = false;      // true once mu computed at least once
+                                        // since the most recent ClampState()
 
         SimplePCLayer *layerAbove;
         SimplePCLayer *layerBelow;

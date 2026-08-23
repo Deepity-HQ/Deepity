@@ -111,6 +111,22 @@ namespace Deep
         return std::vector<float>(beliefs, beliefs + count);
     }
 
+    void SimplePCNetwork::ProjectForward() noexcept
+    {
+        for (size_t i = 0; i + 1 < layers.size(); ++i)
+        {
+            layers[i]->CalculateState(); // computes mu as a side effect;
+                                         // e/energy here are meaningless
+                                         // and discarded
+
+            const float *mu = layers[i]->GetMu();
+            float *nextZ = layers[i + 1]->GetBeliefs();
+            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+
+            std::memcpy(nextZ, mu, n * sizeof(float));
+        }
+    }
+
     void SimplePCNetwork::Compile()
     {
         size_t total_floats_needed = 0;

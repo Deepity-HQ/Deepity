@@ -11,15 +11,37 @@
 
 Deepity is a Predictive Coding (PC) library engineered from the ground up for zero-overhead, ultra-low variance inference and learning. It is aggressively CPU-optimized to extract maximum throughput from modern hardware, with a CUDA backend currently in development.
 
+Building from source is simple. Simply following these steps:
+
+```bash
+# 1. Clone the repository:
+git clone https://github.com/ra4ster/deepity
+
+# 2. Build with python:
+python build.py
+
+# python build.py [Release/Debug] [--clean] [--jobs={?}] [--verbose]
+```
+
+> **Note**: We recommend you do `pip install rich`, for clean logs:
+
+<div align="center">
+<img src="resources/buildingdeepity.png" alt="Rich build visuals" width="700" />
+</div>
+
 ### See it train MNIST on the CPU in under an hour:
 
-![PCN Layer CPU Metrics](resources/MNIST_results.png)
+<div align="center">
+<img src="resources/MNIST_results.png" alt="Results training mnist" width="500"/>
+</div>
 
 ---
 
 ## 🚀 Performance at a Glance
 
-![PCN Profiler](resources/perf.svg)
+<div align="center">
+<img src="resources/perf.svg" alt="Flamegraph" width="500" />
+</div>
 
 Deepity is built for speed. On a **Dell Inspiron 16 Plus 7620** (12th Gen Intel Core i7-12700H, 20 logical processors), the engine sustains approximately **123 GFLOPS** during predictive-coding inference and learning when compiled with Clang (LLVM).
 
@@ -36,7 +58,9 @@ $$ \frac{144.4 \text{ GFLOPs}}{1.175 \text{ s}} \approx 122.89 \text{ GFLOPS} $$
 
 By utilizing native C++ extensions via pybind11, Deepity maintains this performance footprint in Python with negligible overhead—running significantly faster than an equivalent, highly vectorized NumPy implementation.
 
-![Python Benchmark Results](resources/PyTest.png)
+<div align="center">
+<img src="resources/PyTest.png" width="500" alt="Comparing deepity to naive" />
+</div>
 
 | Implementation             |   Avg (ms) |   Min (ms) |   Max (ms) |
 | :------------------------- | ---------: | ---------: | ---------: |
@@ -77,7 +101,9 @@ We bypass standard C++ library bottlenecks by implementing highly optimized acti
 **Rational Polynomial Tanh**
 Deepity avoids expensive `expf` instruction calls by utilizing a highly tuned Elliot Sigmoid approximation. This yields up to a 11000% speedup over a standard library version without sacrificing necessary precision.
 
-![Activation CPU Metrics](resources/ActivationCPUMetrics.png)
+<div align="center">
+<img src="resources/ActivationCPUMetrics.png" alt="Error / Speedup versus standard lib" width="500" />
+</div>
 
 **Saturated Vectorized ReLU**
 The ReLU implementation processes up to 16 floats per clock cycle, completely saturating standard single-core RAM bandwidth limits (~15.8 GB/s).
@@ -106,7 +132,9 @@ Batching provides massive scaling. A batch size of **256** proved to be the swee
 | **256**    | **2233**  |
 | 512        | 2265      |
 
-![Batch size scaling](resources/batchsize.png)
+<div align="center">
+<img src="resources/batchsize.png" alt="Batch size vs performance" width="500" />
+</div>
 
 ### Dynamic Thread Scheduling
 
