@@ -29,7 +29,7 @@ def load_full_mnist():
     print("Fetching full MNIST dataset (70,000 images)...")
     X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False, parser='auto')
     X = X.astype(np.float32) / 255.0  # [0,1], matching ngc-learn
-    y = y.astype(int)
+    y = y.astype(int) # type: ignore
 
     # Clipped one-hot, matching ngc-learn's `jnp.clip(lab, eps, 1-eps)`
     eps = 0.001
