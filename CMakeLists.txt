@@ -281,6 +281,19 @@ if(DEEPITY_BUILD_TESTS)
 endif()
 
 # --- Profiling ------------------------------------------------------
+if(DEEPITY_BUILD_TESTS)
+    add_executable(Layer1Isolate513 tests/t513.cpp)
+    target_link_libraries(Layer1Isolate513 PRIVATE Deepity)
+    set_target_properties(Layer1Isolate513 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    if(WIN32)
+        add_custom_command(TARGET Layer1Isolate513 POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:Layer1Isolate513>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:Layer1Isolate513>
+            $<TARGET_FILE_DIR:Layer1Isolate513>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+endif()
 
 if(DEEPITY_BUILD_TESTS)
     add_library(DeepityProfiled STATIC
