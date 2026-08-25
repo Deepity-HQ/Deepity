@@ -253,6 +253,9 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     )
 endif()
 
+if(WIN32)
+        install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
+endif()
 # --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)

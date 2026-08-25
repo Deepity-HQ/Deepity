@@ -85,9 +85,5 @@ environment = { CMAKE_PREFIX_PATH = "/usr/local/opt/openblas:/usr/local/opt/libo
 archs = ["x86_64"]
 
 [tool.cibuildwheel.windows]
-# OpenBLAS comes from vcpkg here (matching the existing windows-clang CI
-# job) since there's no Windows system package for it. VCPKG_ROOT/
-# CMAKE_TOOLCHAIN_FILE are set by the "Install vcpkg dependencies" CI step
-# below, before cibuildwheel runs - see ci.yml.
 before-build = "pip install delvewheel"
-repair-wheel-command = "delvewheel repair -w {dest_dir} --add-path build\\{wheel_tag}\\_deps\\openblas_prebuilt-src\\bin {wheel}"
+repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
