@@ -34,10 +34,11 @@ namespace Deep
     {
     public:
         explicit SimpleConvPCNetwork(int batchSize) noexcept;
-        ~SimpleConvPCNetwork();
 
         SimpleConvPCNetwork(const SimpleConvPCNetwork &) = delete;
         SimpleConvPCNetwork &operator=(const SimpleConvPCNetwork &) = delete;
+
+        ~SimpleConvPCNetwork() = default;
 
         /// @brief Adds a convolutional layer. Pass outChannels=0 to mark a
         /// terminal layer (no outgoing prediction), matching
@@ -77,8 +78,8 @@ namespace Deep
         /// against outChannels==0, so this is belt-and-suspenders).
         void UpdateWeights() noexcept;
 
-        SimpleConvPCLayer *GetTerminalLayer() noexcept { return layers.back(); }
-        const std::vector<SimpleConvPCLayer *> &GetLayers() const noexcept { return layers; }
+        SimpleConvPCLayer *GetTerminalLayer() noexcept { return layers.back().get(); }
+        const auto &GetLayers() const noexcept { return layers; }
         int GetBatchSize() const noexcept { return batchSize; }
 
         /// @brief Full train step: clamp input+target, settle for
@@ -92,7 +93,7 @@ namespace Deep
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
     private:
-        std::vector<SimpleConvPCLayer *> layers;
+        std::vector<std::unique_ptr<SimpleConvPCLayer>> layers;
         std::unique_ptr<MemoryArena> arena;
         int batchSize;
         OptimizerType pendingOpt = OptimizerType::SGD;

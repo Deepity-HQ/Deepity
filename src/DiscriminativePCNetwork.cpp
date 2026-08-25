@@ -7,14 +7,6 @@
 
 namespace Deep
 {
-    DiscriminativePCNetwork::~DiscriminativePCNetwork()
-    {
-        for (auto l : layers)
-            delete l;
-
-        layers.clear();
-    }
-
     void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                                            void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
@@ -25,15 +17,14 @@ namespace Deep
             DynamicThread(batchSize);
         }
 
-        // Pass raw pointers directly to Constructor 2
-        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, act, dAct);
+        auto l = std::make_unique<DiscriminativePCLayer>(size, nextSize, batchSize, lr, ir, pr, lmbda, act, dAct);
 
         if (!layers.empty())
         {
-            layers.back()->SetLayerAbove(l);
-            l->SetLayerBelow(layers.back());
+            layers.back()->SetLayerAbove(l.get());
+            l->SetLayerBelow(layers.back().get());
         }
-        layers.push_back(l);
+        layers.push_back(std::move(l));
     }
 
     void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
@@ -47,25 +38,25 @@ namespace Deep
         }
 
         // Pass enums directly to Constructor 1
-        DiscriminativePCLayer *l = new DiscriminativePCLayer(size, nextSize, batchSize, lr, ir, pr, lmbda, aType, dType);
+        auto l = std::make_unique<DiscriminativePCLayer>(size, nextSize, batchSize, lr, ir, pr, lmbda, aType, dType);
 
         if (!layers.empty())
         {
-            layers.back()->SetLayerAbove(l);
-            l->SetLayerBelow(layers.back());
+            layers.back()->SetLayerAbove(l.get());
+            l->SetLayerBelow(layers.back().get());
         }
-        layers.push_back(l);
+        layers.push_back(std::move(l));
     }
 
     void DiscriminativePCNetwork::RandomizeWeights(std::mt19937 &rng)
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->RandomizeWeights(rng);
     }
 
     void DiscriminativePCNetwork::ResetState() noexcept
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->ResetState();
     }
 
@@ -84,7 +75,7 @@ namespace Deep
 
     void DiscriminativePCNetwork::UpdateState()
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->UpdateState();
     }
 
@@ -159,20 +150,13 @@ namespace Deep
     {
         size_t total_floats_needed = 0;
 
-        // 1. Calculate the exact footprint of the entire network
-        for (auto *layer : layers)
-        {
+        for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();
-        }
 
-        // 2. Allocate the single contiguous block of memory
         arena = std::make_unique<MemoryArena>(total_floats_needed);
 
-        // 3. Bind every layer sequentially into the arena
-        for (auto *layer : layers)
-        {
+        for (auto &layer : layers)
             layer->BindMemory(*arena);
-        }
     }
 
     bool DiscriminativePCNetwork::Save(const std::string &filename) const noexcept

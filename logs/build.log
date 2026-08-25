@@ -1,4 +1,4 @@
---- Deepity Build Log (Release) ---
+--- Deepity Build Log (Release, arch=fast) ---
 
 === Compilation ===
 ninja: no work to do.
@@ -7,27 +7,27 @@ ninja: no work to do.
 === Tests ===
 
 === Part 1: SGD weight-gradient check ===
-  W[5]: delta=0.03608  numeric_dE/dW=-0.689149  MATCHES DESCENT  rel_err=0.0023544
+  W[5]: delta=0.03608  numeric_dE/dW=-0.68903  MATCHES DESCENT  rel_err=0.00236346
   W[17]: delta=0.0546692  numeric_dE/dW=-1.01769  MATCHES DESCENT  rel_err=0.00371893
-  W[6]: delta=-0.018854  numeric_dE/dW=0.368714  MATCHES DESCENT  rel_err=0.0011345
-  W[4]: delta=0.000938594  numeric_dE/dW=-0.026226  MATCHES DESCENT  rel_err=0.0142114
-  W[8]: delta=-0.0150366  numeric_dE/dW=0.299931  MATCHES DESCENT  rel_err=0.000133743
-  W[1]: delta=-0.0190711  numeric_dE/dW=0.371456  MATCHES DESCENT  rel_err=0.00134147
+  W[6]: delta=-0.018854  numeric_dE/dW=0.368834  MATCHES DESCENT  rel_err=0.00111797
+  W[4]: delta=0.000938594  numeric_dE/dW=-0.0263453  MATCHES DESCENT  rel_err=0.0143733
+  W[8]: delta=-0.0150366  numeric_dE/dW=0.30005  MATCHES DESCENT  rel_err=0.000113825
+  W[1]: delta=-0.0190711  numeric_dE/dW=0.371337  MATCHES DESCENT  rel_err=0.00135795
   W[14]: delta=0.0116533  numeric_dE/dW=-0.317812  MATCHES DESCENT  rel_err=0.0133326
-  W[11]: delta=0.0684187  numeric_dE/dW=-1.29008  MATCHES DESCENT  rel_err=0.00303433
-Worst relative error: 0.0142114
+  W[11]: delta=0.0684187  numeric_dE/dW=-1.28984  MATCHES DESCENT  rel_err=0.00304413
+Worst relative error: 0.0143733
 PASS
 
 === Part 2: feedback-term (Col2Im) verification, SimpleConvPCLayer ===
-  z[3]: implied_dz_dt=0.0045494  -numeric_dE/dz=0.00455976  rel_err=0.00227074
-  z[19]: implied_dz_dt=-0.0106531  -numeric_dE/dz=-0.0106394  rel_err=0.00128848
+  z[3]: implied_dz_dt=0.0045494  -numeric_dE/dz=0.00452995  rel_err=0.00429182
+  z[19]: implied_dz_dt=-0.0106531  -numeric_dE/dz=-0.0106096  rel_err=0.00410083
   z[15]: implied_dz_dt=0.0041806  -numeric_dE/dz=0.00420213  rel_err=0.00512289
-  z[26]: implied_dz_dt=-0.00197962  -numeric_dE/dz=-0.00199676  rel_err=0.00857779
+  z[26]: implied_dz_dt=-0.00197962  -numeric_dE/dz=-0.00196695  rel_err=0.00643612
   z[1]: implied_dz_dt=-0.0406229  -numeric_dE/dz=-0.0406206  rel_err=5.87843e-05
-  z[5]: implied_dz_dt=-0.0247908  -numeric_dE/dz=-0.0248253  rel_err=0.00139243
+  z[5]: implied_dz_dt=-0.0247908  -numeric_dE/dz=-0.0247955  rel_err=0.000192225
   z[29]: implied_dz_dt=0.0272506  -numeric_dE/dz=0.0272691  rel_err=0.000677503
   z[12]: implied_dz_dt=0.0424355  -numeric_dE/dz=0.0424385  rel_err=7.01353e-05
-Worst relative error: 0.00857779
+Worst relative error: 0.00643612
 PASS
 
 === Part 3: AdamW weight-gradient check (NEW port, checking SIGN first) ===

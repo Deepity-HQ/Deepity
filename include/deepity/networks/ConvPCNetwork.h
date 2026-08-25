@@ -65,7 +65,7 @@ namespace Deep
          * @brief Destroys the network, freeing every owned ConvPCLayer
          * and releasing the backing MemoryArena.
          */
-        ~ConvPCNetwork();
+        ~ConvPCNetwork() = default;
 
         // No copy (owns raw pointers + a MemoryArena); move not implemented
         // either, matching DiscriminativePCNetwork's conventions.
@@ -207,7 +207,7 @@ namespace Deep
          * @return Pointer to the last layer added via AddLayer(); this is
          * the layer with outChannels==0.
          */
-        ConvPCLayer *GetTerminalLayer() noexcept { return layers.back(); }
+        ConvPCLayer *GetTerminalLayer() noexcept { return layers.back().get(); }
 
         /**
          * @brief Returns every layer in the network, in the order they
@@ -215,7 +215,7 @@ namespace Deep
          * @return A const reference to the internal layer list. Valid for
          * the lifetime of this ConvPCNetwork.
          */
-        const std::vector<ConvPCLayer *> &GetLayers() const noexcept { return layers; }
+        const auto &GetLayers() const noexcept { return layers; }
 
         /**
          * @brief Returns the fixed batch size this network was
@@ -257,7 +257,7 @@ namespace Deep
     private:
         /// @brief Every layer in the network, in the order added via
         /// AddLayer(); owned raw pointers, freed in the destructor.
-        std::vector<ConvPCLayer *> layers;
+        std::vector<std::unique_ptr<ConvPCLayer>> layers;
 
         /// @brief Single contiguous memory arena backing every layer's
         /// beliefs/errors/weights, bound during Compile().

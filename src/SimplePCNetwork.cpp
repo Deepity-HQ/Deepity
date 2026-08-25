@@ -4,48 +4,41 @@ namespace Deep
 {
     SimplePCNetwork::SimplePCNetwork(int batchSize) noexcept : batchSize(batchSize) {}
 
-    SimplePCNetwork::~SimplePCNetwork()
-    {
-        for (auto l : layers)
-            delete l;
-        layers.clear();
-    }
-
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                                    void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
-        SimplePCLayer *l = new SimplePCLayer(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
+        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
 
         if (!layers.empty())
         {
-            layers.back()->SetLayerAbove(l);
-            l->SetLayerBelow(layers.back());
+            layers.back()->SetLayerAbove(l.get());
+            l->SetLayerBelow(layers.back().get());
         }
-        layers.push_back(l);
+        layers.push_back(std::move(l));
     }
 
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                                    ActivationType aType, ActivationType dType)
     {
-        SimplePCLayer *l = new SimplePCLayer(size, nextSize, batchSize, lr, ir, lmbda, aType, dType);
+        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(size, nextSize, batchSize, lr, ir, lmbda, aType, dType);
 
         if (!layers.empty())
         {
-            layers.back()->SetLayerAbove(l);
-            l->SetLayerBelow(layers.back());
+            layers.back()->SetLayerAbove(l.get());
+            l->SetLayerBelow(layers.back().get());
         }
-        layers.push_back(l);
+        layers.push_back(std::move(l));
     }
 
     void SimplePCNetwork::RandomizeWeights(std::mt19937 &rng)
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->RandomizeWeights(rng);
     }
 
     void SimplePCNetwork::ResetState() noexcept
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->ResetState();
     }
 
@@ -64,7 +57,7 @@ namespace Deep
 
     void SimplePCNetwork::UpdateState()
     {
-        for (auto l : layers)
+        for (auto &l : layers)
             l->UpdateState();
     }
 
@@ -127,14 +120,40 @@ namespace Deep
         }
     }
 
+    float SimplePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
+    {
+        ResetState();
+        Clamp(x);
+        ProjectForward();
+        GetTerminalLayer()->ClampState(y);
+
+        float finalEnergy = 0.0f;
+        for (int t = 0; t < inferenceSteps; ++t)
+        {
+            finalEnergy = CalculateState();
+            UpdateState();
+        }
+
+        UpdateWeights();
+        GetTerminalLayer()->UnclampState();
+
+        return finalEnergy;
+    }
+
+    void SimplePCNetwork::SetMuCacheThreshold(float threshold) noexcept
+    {
+        for (auto &l : layers)
+            l->SetMuCacheThreshold(threshold);
+    }
+
     void SimplePCNetwork::Compile()
     {
         size_t total_floats_needed = 0;
-        for (auto *layer : layers)
+        for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();
 
         arena = std::make_unique<MemoryArena>(total_floats_needed);
-        for (auto *layer : layers)
+        for (auto &layer : layers)
             layer->BindMemory(*arena);
     }
 }

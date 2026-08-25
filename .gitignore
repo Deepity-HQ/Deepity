@@ -1,6 +1,6 @@
 .vscode/*
-build/*
-bin/*
+build/
+bin/
 __pycache__/*
 MNIST/*
 pyrightconfig.json
@@ -10,6 +10,7 @@ repomix-output.xml
 experiments/outputs/
 experiments/data/
 experiments/checkpoints/
+
 *.lib
 *.dll
 *.so
@@ -17,3 +18,11 @@ experiments/checkpoints/
 *.exe
 *.obj
 *.o
+CMakeCache.txt
+CMakeFiles/
+.ninja_log
+
+wheelhouse/
+dist/
+*.egg-info/
+_skbuild/

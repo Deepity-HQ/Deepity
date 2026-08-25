@@ -52,7 +52,7 @@ namespace Deep
             std::vector<char> writeBuffer(BUFFER_SIZE);
             wStream.rdbuf()->pubsetbuf(writeBuffer.data(), BUFFER_SIZE);
 
-            for (const auto *layer : layers)
+            for (const auto &layer : layers)
             {
                 size_t inputSize = layer->GetInputSize();
                 size_t outputSize = layer->GetOutputSize();
@@ -91,7 +91,7 @@ namespace Deep
 
             for (size_t i = 0; i < layers.size(); ++i)
             {
-                const auto *layer = layers[i];
+                const auto &layer = layers[i];
                 mStream << "    {\n";
                 mStream << "      \"index\": " << i << ",\n";
                 mStream << "      \"input_size\": " << layer->GetInputSize() << ",\n";
@@ -129,7 +129,7 @@ namespace Deep
 
             for (size_t i = 0; i < layers.size(); ++i)
             {
-                const auto *layer = layers[i];
+                const auto &layer = layers[i];
                 rStream << "| " << i << " | "
                         << layer->GetInputSize() << " | "
                         << layer->GetOutputSize() << " | "
@@ -160,7 +160,7 @@ namespace Deep
         std::vector<char> readBuffer(BUFFER_SIZE);
         wStream.rdbuf()->pubsetbuf(readBuffer.data(), BUFFER_SIZE);
 
-        for (auto *layer : net.GetLayers())
+        for (auto &layer : net.GetLayers())
         {
             size_t inputSize = layer->GetInputSize();
             size_t outputSize = layer->GetOutputSize();

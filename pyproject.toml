@@ -1,3 +1,89 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = [
+    "scikit-build-core>=0.10",
+    "pybind11>=2.13.0",
+    "cmake>=3.21",
+    "ninja",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pydeepity"
+version = "1.0.0"
+description = "A high-performance Predictive Coding library."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "rich",
+]
+
+# ══════════════════════════════════════════════════════════════════════════
+# scikit-build-core: how `pip install .` / `pip wheel .` invokes CMake
+# ══════════════════════════════════════════════════════════════════════════
+[tool.scikit-build]
+minimum-version = "build-system.requires"
+build-dir = "build/{wheel_tag}"
+
+# Pure-Python sources under pydeepity/ (__init__.py, utils.py, etc.) get
+# merged with whatever CMake's install() step places under pydeepity/ (the
+# compiled pydeepity*.so) into a single wheel.
+wheel.packages = ["pydeepity"]
+
+sdist.exclude = [
+    "tests",
+    "experiments",
+    "logs",
+    "build",
+    ".github",
+]
+
+[tool.scikit-build.cmake.define]
+# every flag here is chosen for maximum portability, not maximum speed.
+# See CMakeLists.txt's DEEPITY_ARCH_FLAGS/DEEPITY_MSVC_ARCH_FLAGS comments,
+# and build.py's --distributed profile, which mirrors this exact config for
+# local testing (`python build.py Release --distributed --no-cuda`).
+DEEPITY_BUILD_TESTS = "OFF"
+DEEPITY_BUILD_PYTHON_BINDINGS = "ON"
+DEEPITY_ENABLE_CUDA = "OFF"
+DEEPITY_ARCH_FLAGS = "-march=x86-64-v2 -mtune=generic"
+DEEPITY_MSVC_ARCH_FLAGS = ""
+
+# ══════════════════════════════════════════════════════════════════════════
+# cibuildwheel: which wheels get built, and what each platform needs
+# installed before CMake can configure successfully.
+# ══════════════════════════════════════════════════════════════════════════
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux* *-win32 *-manylinux_i686"
+build-verbosity = 1
+
+test-requires = ["numpy"]
+test-command = "python -c \"import pydeepity; print('pydeepity OK:', pydeepity.__file__)\""
+
+[tool.cibuildwheel.linux]
+# manylinux2014's stock GCC is too old for -std=c++20; the _2_28 images
+# (AlmaLinux 8 based) ship GCC 12+, which is required here.
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = "dnf install -y openblas-devel libgomp"
+
+[tool.cibuildwheel.macos]
+# NOT currently exercised by CI (see ci.yml's build-wheels matrix comment):
+# macos-latest runners are arm64, and CMakeLists.txt's SIMD flags are
+# x86-only with no arch-conditional branching yet, so a wheel build here
+# fails before it gets anywhere near this config actually mattering. Left
+# in place as the starting point for whoever picks that fix up.
+before-all = "brew install openblas libomp"
+# find_package(BLAS) / OpenMP need an explicit nudge on macOS since Homebrew
+# installs outside the paths Apple's toolchain searches by default.
+environment = { CMAKE_PREFIX_PATH = "/usr/local/opt/openblas:/usr/local/opt/libomp:/opt/homebrew/opt/openblas:/opt/homebrew/opt/libomp" }
+# x86_64 only for now: DEEPITY_ARCH_FLAGS above is an x86 -march string, and
+# CMakeLists.txt's SLEEF config force-enables AVX2/AVX512F unconditionally -
+# neither means anything when cross-compiling for arm64. Building real
+# arm64/Apple Silicon wheels needs CMakeLists.txt itself to branch SIMD
+# flags on target architecture, not just this file. Tracked as follow-up.
+archs = ["x86_64"]
+
+[tool.cibuildwheel.windows]
+before-build = "pip install delvewheel"
+repair-wheel-command = "delvewheel repair --add-path pydeepity -w {dest_dir} {wheel}"

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/Optimize.h>
 
@@ -33,7 +34,7 @@ namespace Deep
     /// @see https://arxiv.org/pdf/2506.06332
     class DiscriminativePCNetwork
     {
-        std::vector<DiscriminativePCLayer *> layers;
+        std::vector<std::unique_ptr<DiscriminativePCLayer>> layers;
         int batchSize;
         bool autoSize = true;
 
@@ -49,7 +50,7 @@ namespace Deep
         DiscriminativePCNetwork(int batchSize) : batchSize(batchSize), autoSize(false) {}
 
         /// @brief Default constructor; deletes each layer.
-        ~DiscriminativePCNetwork();
+        ~DiscriminativePCNetwork() = default;
 
         DiscriminativePCNetwork(DiscriminativePCNetwork &&other) noexcept = default;
         DiscriminativePCNetwork &operator=(DiscriminativePCNetwork &&other) noexcept = default;
@@ -91,7 +92,7 @@ namespace Deep
 
         void ResetState() noexcept;
 
-        const std::vector<DiscriminativePCLayer *> &GetLayers() const noexcept { return layers; }
+        const auto &GetLayers() const noexcept { return layers; }
 
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize
@@ -101,27 +102,27 @@ namespace Deep
         {
             if (layers.empty())
                 return nullptr;
-            return layers.back();
+            return layers.back().get();
         }
 
         void SetLearningRate(float lr)
         {
-            for (auto layer : layers)
+            for (auto &layer : layers)
                 layer->SetLearningRate(lr);
         }
         void SetInferenceRate(float ir)
         {
-            for (auto layer : layers)
+            for (auto &layer : layers)
                 layer->SetLearningRate(ir);
         }
         void SetPrecisionRate(float pr)
         {
-            for (auto layer : layers)
+            for (auto &layer : layers)
                 layer->SetPrecisionRate(pr);
         }
         void SetLambda(float l)
         {
-            for (auto layer : layers)
+            for (auto &layer : layers)
                 layer->SetLambda(l);
         }
 
