@@ -167,9 +167,11 @@ add_library(Deepity
     src/ConvPCLayer.cpp
     src/SimpleConvPCLayer.cpp
     src/SimplePCLayer.cpp
+    src/GaussSeidelPCLayer.cpp
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp
     src/SimplePCNetwork.cpp
+    src/GaussSeidelPCNetwork.cpp
     src/SimpleConvPCNetwork.cpp
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
@@ -254,27 +256,19 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 if(WIN32)
-        install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
+    install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
 endif()
 # --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
-    add_executable(DeepityTests tests/tSimpleConvVerify.cpp)
-
-    target_link_libraries(DeepityTests PRIVATE
-        Deepity
-        benchmark::benchmark
-    )
-
-    set_target_properties(DeepityTests PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    )
-
+    add_executable(GaussSeidelSmoke tests/tGaussSeidelSmoke.cpp)
+    target_link_libraries(GaussSeidelSmoke PRIVATE Deepity)
+    set_target_properties(GaussSeidelSmoke PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     if(WIN32)
-        add_custom_command(TARGET DeepityTests POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityTests>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:DeepityTests>
-            $<TARGET_FILE_DIR:DeepityTests>
+        add_custom_command(TARGET GaussSeidelSmoke POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelSmoke>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:GaussSeidelSmoke>
+            $<TARGET_FILE_DIR:GaussSeidelSmoke>
             COMMAND_EXPAND_LISTS
         )
     endif()

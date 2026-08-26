@@ -1,28 +1,40 @@
 {
-  "version": 6,
-  "configurePresets": [
-    {
-      "name": "windows-clang",
-      "displayName": "Windows (Clang + vcpkg)",
-      "description": "Known-working Clang/libomp/vcpkg configuration - kept in sync with the 'Configuring locally' section of CONTRIBUTING.md.",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/Release",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_C_COMPILER": "clang",
-        "CMAKE_CXX_COMPILER": "clang++",
-        "DEEPITY_BUILD_TESTS": "ON",
-        "OpenMP_CXX_FLAGS": "-fopenmp=libomp",
-        "OpenMP_CXX_LIB_NAMES": "libomp",
-        "OpenMP_libomp_LIBRARY": "C:/Program Files/LLVM/lib/libomp.lib",
-        "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "BLA_VENDOR": "OpenBLAS"
-      }
-    }
-  ]
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "windows-clang",
+            "displayName": "Windows (Clang + vcpkg)",
+            "description": "Known-working Clang/libomp/vcpkg configuration - kept in sync with the 'Configuring locally' section of CONTRIBUTING.md.",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/Release",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "DEEPITY_BUILD_TESTS": "ON",
+                "OpenMP_CXX_FLAGS": "-fopenmp=libomp",
+                "OpenMP_CXX_LIB_NAMES": "libomp",
+                "OpenMP_libomp_LIBRARY": "C:/Program Files/LLVM/lib/libomp.lib",
+                "CMAKE_TOOLCHAIN_FILE": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "BLA_VENDOR": "OpenBLAS"
+            }
+        },
+        {
+            "name": "CLANG",
+            "displayName": "Clang 22.1.8 x86_64-redhat-linux-gnu",
+            "description": "Using compilers: C = /usr/bin/clang, CXX = /usr/bin/clang++",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "/usr/bin/clang",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        }
+    ]
 }

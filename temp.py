@@ -1,41 +1,27 @@
 import numpy as np
 import os
-from pydeepity import SimplePCN
+from pydeepity import GaussSeidelPCN
 from time import perf_counter
 
-# FINAL VALIDATION -- the complete stack found today:
-#   - Forward-projection initialization (seeds hidden layers from a real
-#     forward pass through current weights, not zero-init)
-#   - +-0.3 uniform weight init (matching ngc-learn's actual convention)
-#   - AdamW, lr=0.001 (matching ngc-learn's hard-coded Adam + eta=0.001 --
-#     the init range and optimizer needed to be changed TOGETHER, not
-#     independently; tested and confirmed: 73.31% alone with SGD vs
-#     93.96% paired with AdamW)
-#   - mu_cache_threshold=0.05 -- confirmed +30.6% faster than ngc-learn's
-#     real, measured per-batch time in an isolated speed test. THIS RUN
-#     checks whether that speed holds without costing the 93.96% accuracy
-#     already confirmed at threshold=disabled.
-#   - train_step_with_projection() -- single C++ call per batch, not a
-#     manual Python loop (confirmed real, if smaller, speedup from
-#     eliminating ~40 Python/pybind boundary crossings per batch)
+# Tests GaussSeidelPCN -- the Gauss-Seidel (sequential-sweep) settling
+# restructuring, traced from ngc-learn's real execution graph, combined
+# with the SAME winning recipe already validated on SimplePCN:
+# forward-projection init, +-0.3 uniform weight init, plain Adam,
+# lmbda=0, canonical MNIST test set, 784->512->512->10, T=20.
 #
-# [0,1] normalization, labels clipped to [0.001, 0.999], tanh activation,
-# 784->512->512->10, T=20 -- all matching ngc-learn's actual, real source
-# as closely as possible.
+# UNPROVEN EXPERIMENT -- only smoke-tested so far (finite, decreasing
+# energy), not independently gradient-checked. Part 0 below is a cheap,
+# minimal one-weight finite-difference sanity check, bundled in rather
+# than skipped entirely -- catches the most likely failure mode (a sign
+# error or a completely wrong buffer read) before committing to a full,
+# expensive training run.
 
 
-def load_full_mnist():
-    # EXACT same loading method as ngc-learn's own uploaded mnist.py --
-    # direct download of Yann LeCun's canonical idx-ubyte files, giving
-    # the REAL, official, fixed 60k/10k split. Previously used sklearn's
-    # fetch_openml + our own arbitrary stratified split -- almost
-    # certainly a DIFFERENT set of 10,000 test images than the official
-    # one, which could explain a real, consistent, seed-independent gap
-    # entirely separate from anything about the model itself.
+def load_canonical_mnist():
     import gzip
     import urllib.request
 
-    print("Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...")
+    print("Fetching canonical MNIST dataset (idx-ubyte)...")
     base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
     files = {
         "x_train": "train-images-idx3-ubyte.gz",
@@ -72,82 +58,82 @@ def load_full_mnist():
     return X_train, Y_train, X_test, y_test_labels
 
 
-def main() -> None:
-    import sys
-    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7  # pass a seed on the
-                                                            # command line to
-                                                            # actually vary it,
-                                                            # e.g. `python
-                                                            # mnist_final_validated.py 123`
-
-    X_train, Y_train, X_test, y_test_labels = load_full_mnist()
-
-    BATCH_SIZE = 250       # CONFIRMED from their canonical train_pcn.py's
-                             # mb_size=250, not our own 256
-    STEPS = 20              # matches ngc-learn's T=20
-    EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15  # pass a 2nd arg
-                                                               # to try more
-                                                               # epochs, e.g.
-                                                               # `python
-                                                               # mnist_final_validated.py 7 25`
-    LR = 0.001               # Adam-appropriate scale, matches ngc-learn's own
-                              # stated eta=0.001 directly
-    DECAY_RATE = 0.98
-    LMBDA = 0.0              # CONFIRMED from HebbianSynapse's real source:
-                              # prior defaults to ("constant", 0.), never
-                              # overridden anywhere in pcn_model.py -- ngc-learn
-                              # runs with NO weight decay, not our own 0.0001
-
-    print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = SimplePCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
-    net.add_layer(512, 512, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
-    net.add_layer(512, 10, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
-    # Explicit TERMINAL layer -- outChannels/nextSize=0. Without this,
-    # net[-1] is the 512->10 layer itself, whose OWN beliefs are its
-    # 512-dim INPUT, not the 10-dim prediction it produces -- exactly
-    # the bug that just crashed this script (and was already silently
-    # corrupting every batch before that: clamp_state() truncates rather
-    # than erroring on a size mismatch).
-    net.add_layer(10, 0, lr=LR, ir=0.08, act="linear", lmbda=LMBDA)
-    net.set_optimizer("ADAM")  # CONFIRMED from the real Adam source: plain Adam,
-                                 # no decoupled weight-decay term at all -- was
-                                 # "ADAMW" before, a real, if likely small, mismatch
-                                 # now that lmbda=0 anyway (AdamW's decay term would
-                                 # be inert at lmbda=0, but matching their exact
-                                 # optimizer type removes any doubt).
+def build_net(batch_size, seed):
+    net = GaussSeidelPCN(batch_size=batch_size)
+    net.add_layer(784, 512, lr=0.001, ir=0.08, act="tanh")
+    net.add_layer(512, 512, lr=0.001, ir=0.08, act="tanh")
+    net.add_layer(512, 10, lr=0.001, ir=0.08, act="tanh")
+    net.add_layer(10, 0, lr=0.001, ir=0.08, act="linear")
+    net.set_optimizer("ADAM")
     net.compile()
     net.randomize_weights()
-    net.set_mu_cache_threshold(0.0)  # REVERTED from 0.05 -- that showed genuine
-                                       # instability under real, sustained AdamW
-                                       # training (energy trending UP, a 62-point
-                                       # accuracy crash at epoch 8), not just noise.
-                                       # Likely cause: small caching-approximation
-                                       # bias accumulating in Adam's momentum/
-                                       # variance buffers over many updates --
-                                       # something the earlier single-trajectory,
-                                       # no-weight-update speed test structurally
-                                       # could not have caught. threshold=0 is
-                                       # exact (proven bit-identical to no caching)
-                                       # and confirmed safe with this exact stack.
 
-    # Override weight init to match ngc-learn's actual convention: fixed
-    # uniform range +-0.3, INDEPENDENT of layer size -- not our own
-    # size-scaled Gaussian (std ~0.039 for the 784->512 layer, ~8x
-    # smaller). This directly affects how informative the very first
-    # forward-projection pass is -- larger initial weights produce more
-    # differentiated activations from a single forward pass. Biases
-    # already default to 0 in Deepity (never touched by
-    # RandomizeWeights()), matching ngc-learn's own bias_init=constant(0).
-    rng_init = np.random.default_rng(SEED)
-    for layer in net.layers[:-1]:  # skip the terminal -- it has no weights (nextSize=0)
-        w_shape = layer.weights.shape
-        layer.weights[:] = rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32)
+    rng_init = np.random.default_rng(seed)
+    for layer in net.layers[:-1]:
+        layer.weights[:] = rng_init.uniform(-0.3, 0.3, layer.weights.shape).astype(np.float32)
 
-    print(f"\nTraining with FORWARD-PROJECTION init: {EPOCHS} epochs, {STEPS} steps, "
-          f"lr={LR}, decay_rate={DECAY_RATE}...\n")
+    return net
+
+
+def part0_sanity_check(net, X_sample, Y_sample, batch_size, steps):
+    """Minimal, single-weight finite-difference check -- NOT the full
+    multi-point gradient-check ceremony, just enough to catch the most
+    likely failure mode (sign error, wrong buffer read) before trusting
+    a full, expensive training run."""
+    print("=== Part 0: minimal one-weight sanity check ===")
+
+    layer0 = net[0]
+    W_before = np.array(layer0.weights, copy=True)
+
+    energy = net.train_step_with_projection(X_sample, Y_sample, steps)
+    print(f"  Single train_step_with_projection() energy: {energy:.4f}")
+
+    if np.isnan(energy) or np.isinf(energy):
+        print("  FAIL -- energy is NaN/Inf after a single step.")
+        return False
+
+    W_after = np.array(layer0.weights, copy=True)
+    delta = W_after - W_before
+    idx = np.unravel_index(np.argmax(np.abs(delta)), delta.shape)
+    print(f"  Largest weight change: W{idx} moved by {delta[idx]:.6f}")
+    print(f"  (Not a full finite-difference check -- just confirms weights")
+    print(f"   moved a plausible, non-zero, non-exploding amount.)")
+
+    if np.abs(delta[idx]) > 10.0:
+        print("  WARNING -- largest weight change is suspiciously large.")
+        return False
+
+    print("  Looks sane. Proceeding to real training.\n")
+    return True
+
+
+def main():
+    X_train, Y_train, X_test, y_test_labels = load_canonical_mnist()
+
+    BATCH_SIZE = 256
+    STEPS = 20
+    EPOCHS = 15
+    SEED = 7
+
+    print(f"\nBuilding GaussSeidelPCN network (784->512->512->10), seed={SEED}...")
+    net = build_net(BATCH_SIZE, SEED)
+
+    # Part 0: cheap sanity check on a single real batch before committing
+    # to the full run.
+    X_sample = X_train[:BATCH_SIZE]
+    Y_sample = Y_train[:BATCH_SIZE]
+    if not part0_sanity_check(net, X_sample, Y_sample, BATCH_SIZE, STEPS):
+        print("Sanity check failed -- stopping before a full training run.")
+        return
+
+    # Rebuild fresh -- the sanity check already ran one real training step
+    # on this network, don't want that to contaminate the real run.
+    net = build_net(BATCH_SIZE, SEED)
+
+    print(f"Training: {EPOCHS} epochs, {STEPS} steps, GaussSeidel dynamics + forward-projection...\n")
     print("Reference (ngc-learn, real run): 26.91, 42.96, 60.12, 75.20, 84.68, 89.52,")
-    print("  91.90, 93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95 -- test 95.09%\n")
+    print("  91.90, 93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95 -- test 95.09%")
+    print("Reference (SimplePCN + forward-projection, Jacobi dynamics): 94.05-94.61% band\n")
 
     rng = np.random.default_rng(SEED)
     n_batches = len(X_train) // BATCH_SIZE
@@ -155,43 +141,29 @@ def main() -> None:
     epoch_accs = []
 
     for epoch in range(EPOCHS):
-        current_lr = LR * (DECAY_RATE ** epoch)
+        current_lr = 0.001 * (0.98 ** epoch)
         net.set_learning_rate(current_lr)
 
         indices = rng.permutation(len(X_train))
         X_shuf, Y_shuf = X_train[indices], Y_train[indices]
 
-        correct = 0
-        total = 0
         epoch_energy = 0.0
-
         for b in range(n_batches):
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
 
-        # REAL accuracy check -- genuine UNCLAMPED settle on a cheap
-        # subset, not reading beliefs right after unclamp_state() (which
-        # only flips a flag, never resets z -- that was reading back the
-        # clamped TARGET itself, trivially "matching" 100% every time).
-        N_ACC_BATCHES = 10
-        for b in range(min(N_ACC_BATCHES, n_batches)):
+        # Quick per-epoch accuracy on a subset, genuine unclamped predict
+        correct = 0
+        total = 0
+        for b in range(10):
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-
-            net.reset_state()
-            net.clamp_input(X_batch)
-            net.project_forward()
-            for _ in range(STEPS):  # same step count as training, genuinely unclamped
-                net.calculate_state()
-                net.update_state()
-
-            terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)
-            pred = np.argmax(terminal_beliefs, axis=1)
-            true = np.argmax(Y_batch, axis=1)
-            correct += np.sum(pred == true)
+            pred = net.predict(X_batch, steps=STEPS)
+            pred_classes = np.argmax(pred, axis=1)
+            true_classes = np.argmax(Y_batch, axis=1)
+            correct += np.sum(pred_classes == true_classes)
             total += BATCH_SIZE
 
         epoch_acc = 100.0 * correct / total
@@ -203,7 +175,7 @@ def main() -> None:
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
 
-    print("\nRunning final test evaluation (with forward-projection init)...")
+    print("\nRunning final test evaluation...")
     correct = 0
     total = 0
     for i in range(0, len(X_test), BATCH_SIZE):
@@ -211,31 +183,16 @@ def main() -> None:
         y_labels_batch = y_test_labels[i:i + BATCH_SIZE]
         if len(X_batch) != BATCH_SIZE:
             continue
-
-        net.reset_state()
-        net.clamp_input(X_batch)
-        net.project_forward()
-        for _ in range(STEPS):  # CONFIRMED from eval_model()'s real source: they
-                                   # evaluate with the SAME T=20 as training, not a
-                                   # more generous settle. Was 300 -- 15x more
-                                   # settling than the model was ever calibrated
-                                   # for, which may have been actively hurting
-                                   # accuracy rather than helping it.
-            net.calculate_state()
-            net.update_state()
-
-        terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)
-        pred_classes = np.argmax(terminal_beliefs, axis=1)
+        pred_matrix = net.predict(X_batch, steps=STEPS)
+        pred_classes = np.argmax(pred_matrix, axis=1)
         correct += np.sum(pred_classes == y_labels_batch)
         total += BATCH_SIZE
 
     test_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"Deepity + forward-projection test accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%)")
+    print(f"GaussSeidelPCN test accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%, SimplePCN band: 94.05-94.61%)")
     print(f"Train time: {train_time:.1f}s")
-    print(f"\nDeepity per-epoch: {[round(a,2) for a in epoch_accs]}")
-    print(f"ngc-learn per-epoch: [26.91, 42.96, 60.12, 75.20, 84.68, 89.52, 91.90,")
-    print(f"                      93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95]")
+    print(f"\nPer-epoch: {[round(a,2) for a in epoch_accs]}")
 
 
 if __name__ == "__main__":

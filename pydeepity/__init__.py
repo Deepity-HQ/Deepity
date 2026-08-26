@@ -4,7 +4,7 @@ from .SequentialPCN import SequentialPCN
 from .SimplePCN import SimplePCN
 from .ConvolutionalPCN import ConvolutionalPCN
 from .SimpleConvolutionalPCN import SimpleConvolutionalPCN
-
+from .GaussSeidelPCN import GaussSeidelPCN
 from ._backend import dy
 
 StreamAlignedBatcher = dy.StreamAlignedBatcher
@@ -29,6 +29,7 @@ __all__ = [
     "SequentialPCN",
     "SimplePCN",
     "ConvolutionalPCN",
+    "GaussSeidelPCN",
     # "SimpleConvolutionalPCN",
     
     # Utilities

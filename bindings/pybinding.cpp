@@ -26,6 +26,8 @@
 #include <deepity/networks/DiscriminativePCNetwork.h>
 #include <deepity/networks/SimplePCNetwork.h>
 #include <deepity/networks/SimpleConvPCNetwork.h>
+#include <deepity/layers/GaussSeidelPCLayer.h>
+#include <deepity/networks/GaussSeidelPCNetwork.h>
 
 namespace py = pybind11;
 
@@ -196,6 +198,12 @@ void bind_layers(py::module_ &m)
              "unclamped layers as a genuine approximation.")
         .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold);
 
+    auto gsLayerCls = py::class_<Deep::GaussSeidelPCLayer, Deep::Layer>(m, "GaussSeidelPCLayer", "PC layer with Gauss-Seidel (sequential-sweep) settling dynamics.")
+                          .def(py::init([](int size, int next_size, int batch_size, float learning_rate, float inference_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
+                                        { return std::make_unique<Deep::GaussSeidelPCLayer>(size, next_size, batch_size, learning_rate, inference_rate, lmbda, resolveAct(activation), resolveDAct(activation_deriv)); }),
+                               py::arg("size"), py::arg("next_size"), py::arg("batch_size") = 1, py::arg("learning_rate") = 1e-6f, py::arg("inference_rate") = 0.01f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu");
+    BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
+
     py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
         .def(py::init([](size_t in_size, size_t out_size, float var, float var_td, float k1, float k2, float lambda, float alpha, size_t batch_size, int step_size, const std::string &activation, const std::string &activation_deriv)
                       { return std::make_unique<Deep::RBLayer>(in_size, out_size, var, var_td, k1, k2, lambda, alpha, batch_size, step_size, resolveAct(activation), resolveDAct(activation_deriv)); }),
@@ -361,6 +369,57 @@ void bind_networks(py::module_ &m)
     std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
     std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
     return self.TrainStepWithProjection(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"));
+
+    py::class_<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
+        .def(py::init<int>(), py::arg("batch_size"))
+        .def("add_layer", [](Deep::GaussSeidelPCNetwork &self, int size, int next_size, float lr, float ir, float lmbda, const std::string &activation, const std::string &activation_deriv)
+             { self.AddLayer(size, next_size, lr, ir, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, py::arg("size"), py::arg("next_size"), py::arg("lr") = 1e-6f, py::arg("ir") = 0.1f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu")
+        .def("compile", &Deep::GaussSeidelPCNetwork::Compile)
+        .def("randomize_weights", [](Deep::GaussSeidelPCNetwork &self)
+             { std::random_device rd; std::mt19937 rng(rd()); self.RandomizeWeights(rng); })
+        .def("reset_state", &Deep::GaussSeidelPCNetwork::ResetState)
+        .def("clamp_input", [](Deep::GaussSeidelPCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> input)
+             { auto buf = input.request();
+           std::vector<float> values(static_cast<float *>(buf.ptr), static_cast<float *>(buf.ptr) + buf.size);
+           self.Clamp(values); }, py::arg("input"))
+        .def("step", &Deep::GaussSeidelPCNetwork::Step)
+        .def("update_weights", &Deep::GaussSeidelPCNetwork::UpdateWeights)
+        .def("project_forward", &Deep::GaussSeidelPCNetwork::ProjectForward)
+        .def("set_optimizer", [](Deep::GaussSeidelPCNetwork &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetOptimizer(Deep::OptimizerType::SGD); }, py::arg("optimizer"))
+        .def("set_learning_rate", &Deep::GaussSeidelPCNetwork::SetLearningRate)
+        .def("train_step", [](Deep::GaussSeidelPCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, py::array_t<float, py::array::c_style | py::array::forcecast> y, int steps)
+             { auto xbuf = x.request(); auto ybuf = y.request();
+           std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+           std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
+           return self.TrainStep(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"))
+        .def("train_step_with_projection", [](Deep::GaussSeidelPCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, py::array_t<float, py::array::c_style | py::array::forcecast> y, int steps)
+             { auto xbuf = x.request(); auto ybuf = y.request();
+           std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+           std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
+           return self.TrainStepWithProjection(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"))
+        .def("predict", [](Deep::GaussSeidelPCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, int steps)
+             { auto xbuf = x.request();
+           std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+           std::vector<float> result = self.Predict(xvec, steps);
+           Deep::GaussSeidelPCLayer *terminal = self.GetTerminalLayer();
+           py::array_t<float> out({(py::ssize_t)terminal->GetBatchSize(), (py::ssize_t)terminal->GetInputSize()});
+           std::memcpy(out.mutable_data(), result.data(), result.size() * sizeof(float));
+           return out; }, py::arg("x"), py::arg("steps"))
+        .def_property_readonly("batch_size", &Deep::GaussSeidelPCNetwork::GetBatchSize)
+        .def_property_readonly("layers", [](Deep::GaussSeidelPCNetwork &self)
+                               { py::list result;
+           for (auto &layer : self.GetLayers()) result.append(py::cast(layer.get(), py::return_value_policy::reference));
+           return result; })
+        .def("__len__", [](const Deep::GaussSeidelPCNetwork &self)
+             { return self.GetLayers().size(); })
+        .def("__getitem__", [](Deep::GaussSeidelPCNetwork &self, std::ptrdiff_t index)
+             { auto &layers = self.GetLayers();
+           if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
+           if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw py::index_error();
+           return layers[index].get(); }, py::return_value_policy::reference_internal);
 
     py::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(py::init<int>(), py::arg("batch_size"), "Construct a network with a fixed batch size.")
