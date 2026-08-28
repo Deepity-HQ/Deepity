@@ -1,4 +1,7 @@
 #include <deepity/networks/SimplePCNetwork.h>
+#include <pmmintrin.h>
+#include <xmmintrin.h>
+#include <omp.h>
 
 namespace Deep
 {
@@ -104,21 +107,22 @@ namespace Deep
         return std::vector<float>(beliefs, beliefs + count);
     }
 
-    void SimplePCNetwork::ProjectForward() noexcept
+	void SimplePCNetwork::ProjectForward() noexcept
+{
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
     {
-        for (size_t i = 0; i + 1 < layers.size(); ++i)
-        {
-            layers[i]->CalculateState(); // computes mu as a side effect;
-                                         // e/energy here are meaningless
-                                         // and discarded
+        // Optimization #3: Compute mu directly. 
+        // Bypasses the CalculateState() trap that wastes cycles 
+        // computing meaningless errors and energies during initialization.
+        layers[i]->ComputeMuOnly();
 
-            const float *mu = layers[i]->GetMu();
-            float *nextZ = layers[i + 1]->GetBeliefs();
-            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+        const float *mu = layers[i]->GetMu();
+        float *nextZ = layers[i + 1]->GetBeliefs();
+        size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-            std::memcpy(nextZ, mu, n * sizeof(float));
-        }
+        std::memcpy(nextZ, mu, n * sizeof(float));
     }
+}
 
     float SimplePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
     {
@@ -140,6 +144,25 @@ namespace Deep
         return finalEnergy;
     }
 
+    std::vector<float> SimplePCNetwork::PredictWithProjection(const std::vector<float> &x, int inferenceSteps)
+    {
+        ResetState();
+        Clamp(x);
+        ProjectForward(); // Add your forward projection initialization here
+
+        for (int t = 0; t < inferenceSteps; t++)
+        {
+            CalculateState();
+            UpdateState();
+        }
+
+        SimplePCLayer *terminal = GetTerminalLayer();
+        const float *beliefs = terminal->GetBeliefs();
+        size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
+
+        return std::vector<float>(beliefs, beliefs + count);
+    }
+
     void SimplePCNetwork::SetMuCacheThreshold(float threshold) noexcept
     {
         for (auto &l : layers)
@@ -148,6 +171,11 @@ namespace Deep
 
     void SimplePCNetwork::Compile()
     {
+#pragma omp parallel 
+	{ // Broadcast FTZ/DAZ hardware flags to ALL OpenMP worker threads
+		_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+		_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+	}
         size_t total_floats_needed = 0;
         for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();

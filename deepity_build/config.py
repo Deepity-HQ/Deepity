@@ -68,6 +68,7 @@ class BuildConfig:
     jobs: int
     arch_profile: str
     cuda: bool
+    blas: str
     build_tests: bool
     run_tests: bool
     python_bindings: bool

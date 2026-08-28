@@ -2,16 +2,20 @@
 #include <cstddef>
 #include <memory>
 #include <omp.h>
+
 #ifdef __linux__
 #include <fstream>
 #elif defined(_WIN32)
 #include <windows.h>
 #endif
 
-extern "C"
-{
+#ifdef DEEPITY_USE_MKL
+#include <mkl_service.h>
+#else
+extern "C" {
     void openblas_set_num_threads(int num_threads);
 }
+#endif
 
 /**
  * @file Optimize.h
@@ -105,7 +109,11 @@ namespace Deep
         if (currentThreads != targetThreads)
         {
             omp_set_num_threads(targetThreads);
+#ifdef DEEPITY_USE_MKL
+            mkl_set_num_threads(targetThreads);
+#else
             openblas_set_num_threads(targetThreads);
+#endif
             currentThreads = targetThreads;
         }
     }

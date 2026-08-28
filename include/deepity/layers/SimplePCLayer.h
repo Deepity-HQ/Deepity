@@ -94,11 +94,16 @@ namespace Deep
                       float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
                       ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
 
-        /// @brief Calculates the total network energy state.
+        /// @brief Calculates the total network energy state, and this
+        /// layer's outgoing prediction (mu).
         ///
         /// \f[
         /// E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
         /// \f]
+        /// mu is now computed as mu = W @ phi(z) + b -- activation
+        /// applied to z BEFORE the linear transform, matching
+        /// ngc-learn's documented convention exactly (was previously
+        /// mu = phi(W@z+b), activation AFTER the transform).
         /// (No precision weighting -- see file-level note.)
         /// @return This layer's energy contribution at the current state.
         float CalculateState() noexcept override;
@@ -106,8 +111,12 @@ namespace Deep
         /// @brief Computes the state derivatives for inference.
         ///
         /// \f[
-        /// \frac{dz^{(l)}}{dt} = -e^{(l)} + (W^{(l-1)})^T e^{(l-1)} \odot \sigma'(W^{(l-1)}z^{(l)})
+        /// \frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma'(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
         /// \f]
+        /// The derivative multiply now applies AFTER the W transform,
+        /// using f'(z) (this layer's OWN state derivative), not f'(mu)
+        /// applied before -- matching the activate-before-transform
+        /// convention.
         void UpdateState() noexcept override;
 
         /// @brief Computes weight updates via gradient descent, with L2 weight decay.
@@ -191,6 +200,13 @@ namespace Deep
         void SetMuCacheThreshold(float threshold) noexcept { muCacheThreshold = threshold; }
         float GetMuCacheThreshold() const noexcept { return muCacheThreshold; }
 
+	/// @brief Computes only mu (forward prediction), skipping error/energy
+	/// entirely. Extracted from CalculateState() for callers (like
+	/// ProjectForward()) that don't need the discarded error/energy values.
+	/// Computes zF=phi(z) internally and uses it for the GEMM, matching
+	/// the activate-before-transform convention (mu=W@phi(z)+b).
+	void ComputeMuOnly() noexcept;
+
         /// @brief Sets the layer immediately above this one in the network.
         /// @param above Pointer to the layer above; may be nullptr for a
         /// terminal layer.
@@ -255,6 +271,28 @@ namespace Deep
                          // rather than only ever comparing step-to-step
         float *dz_dt;
         float *bottom_up;
+        float *zF;              // this layer's OWN activated belief,
+                                 // phi(z) -- needed both for the forward
+                                 // GEMM (mu=zF@W+b) AND the weight
+                                 // gradient (dW uses zF, not raw z),
+                                 // matching ngc-learn's documented
+                                 // convention: mu_l = W_l . phi(z_{l-1})
+        float *zFDeriv;         // SEPARATE scratch for f'(z), computed
+                                 // from RAW z (activated=false flag) --
+                                 // zF itself must stay clean/activated
+                                 // for the weight-gradient step
+        float *feedbackScratch; // own_state_size scratch for the raw
+                                 // feedback GEMM's output -- the f'(z)
+                                 // multiply applies ONLY to the feedback
+                                 // term, not the -e term already in
+                                 // dz_dt, so it can't accumulate directly
+                                 // into dz_dt via the GEMM itself
+        float *E;                // feedback-alignment matrix -- SEPARATE
+                                 // from W, same shape, randomly
+                                 // initialized once, NEVER updated.
+                                 // Matches ngc-learn's real wiring:
+                                 // feedback alignment (Lillicrap et al.),
+                                 // not W transposed.
 
         float lr;
         float ir;

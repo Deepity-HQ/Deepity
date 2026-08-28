@@ -1,5 +1,9 @@
 #include <deepity/layers/SimpleConvPCLayer.h>
+#ifdef DEEPITY_USE_MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 #include <omp.h>
 #include <cstring>
 #include <cmath>

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(deepity C CXX)
+enable_testing()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -9,6 +10,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
 option(DEEPITY_BUILD_TESTS "Build the DeepityTests target" OFF)
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
+option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
 
 # --- Global Architecture & SIMD Flags -------------------------------
 # NOTE: build.py always sets these explicitly based on --native/--fast/
@@ -98,13 +100,36 @@ if(WIN32)
     )
     set(BLAS_LIBRARIES openblas_dll)
 else()
-    set(BLA_VENDOR OpenBLAS)
-    find_package(BLAS REQUIRED)
-    find_path(BLAS_INCLUDE_DIR
-        NAMES cblas.h
-        PATH_SUFFIXES openblas include/openblas
-        REQUIRED
-    )
+    set(DEEPITY_BLAS_RESOLVED FALSE)
+
+    if(DEEPITY_USE_MKL)
+        # Modern, recommended integration: Intel's own MKLConfig.cmake,
+        # present if oneAPI/MKL is properly installed and sourced (e.g.
+        # via `source /opt/intel/oneapi/setvars.sh`). Exposes a single
+        # target (MKL::MKL) with both include dirs and link libraries.
+        find_package(MKL CONFIG QUIET)
+        if(MKL_FOUND)
+            message(STATUS "Using Intel MKL (found via MKLConfig.cmake).")
+            set(BLAS_LIBRARIES MKL::MKL)
+            get_target_property(BLAS_INCLUDE_DIR MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
+            set(DEEPITY_BLAS_RESOLVED TRUE)
+        else()
+            message(WARNING "DEEPITY_USE_MKL was set, but MKL was not found "
+                "(is oneAPI/MKL installed and sourced? e.g. "
+                "'source /opt/intel/oneapi/setvars.sh'). "
+                "Falling back to OpenBLAS.")
+        endif()
+    endif()
+
+    if(NOT DEEPITY_BLAS_RESOLVED)
+        set(BLA_VENDOR OpenBLAS)
+        find_package(BLAS REQUIRED)
+        find_path(BLAS_INCLUDE_DIR
+            NAMES cblas.h
+            PATH_SUFFIXES openblas include/openblas
+            REQUIRED
+        )
+    endif()
 endif()
 
 # --- SLEEF ----------------------------------------------------------
@@ -176,6 +201,10 @@ add_library(Deepity
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
 )
+
+if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_MKL)
+endif()
 
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -261,14 +290,16 @@ endif()
 # --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
-    add_executable(GaussSeidelSmoke tests/tGaussSeidelSmoke.cpp)
-    target_link_libraries(GaussSeidelSmoke PRIVATE Deepity)
-    set_target_properties(GaussSeidelSmoke PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_executable(GaussSeidelVerify tests/tGaussSeidelVerify.cpp)
+    target_link_libraries(GaussSeidelVerify PRIVATE Deepity)
+    set_target_properties(GaussSeidelVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
+    
     if(WIN32)
-        add_custom_command(TARGET GaussSeidelSmoke POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelSmoke>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:GaussSeidelSmoke>
-            $<TARGET_FILE_DIR:GaussSeidelSmoke>
+        add_custom_command(TARGET GaussSeidelVerify POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelVerify>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:GaussSeidelVerify>
+            $<TARGET_FILE_DIR:GaussSeidelVerify>
             COMMAND_EXPAND_LISTS
         )
     endif()
@@ -276,14 +307,16 @@ endif()
 
 # --- Profiling ------------------------------------------------------
 if(DEEPITY_BUILD_TESTS)
-    add_executable(Layer1Isolate513 tests/t513.cpp)
-    target_link_libraries(Layer1Isolate513 PRIVATE Deepity)
-    set_target_properties(Layer1Isolate513 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_executable(GaussSeidelMiddleLayerVerify tests/tGaussSeidelMiddleLayerVerify.cpp)
+    target_link_libraries(GaussSeidelMiddleLayerVerify PRIVATE Deepity)
+    set_target_properties(GaussSeidelMiddleLayerVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_test(NAME GaussSeidelMiddleLayerVerify COMMAND GaussSeidelMiddleLayerVerify)
+    
     if(WIN32)
-        add_custom_command(TARGET Layer1Isolate513 POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:Layer1Isolate513>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:Layer1Isolate513>
-            $<TARGET_FILE_DIR:Layer1Isolate513>
+        add_custom_command(TARGET GaussSeidelMiddleLayerVerify POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelMiddleLayerVerify>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:GaussSeidelMiddleLayerVerify>
+            $<TARGET_FILE_DIR:GaussSeidelMiddleLayerVerify>
             COMMAND_EXPAND_LISTS
         )
     endif()
@@ -302,6 +335,10 @@ if(DEEPITY_BUILD_TESTS)
         src/ModelIO.cpp
         src/StreamAlignedBatcher.cpp
     )
+
+if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
+    	target_compile_definitions(DeepityProfiled PUBLIC DEEPITY_USE_MKL)
+endif()
 
     target_include_directories(DeepityProfiled PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -338,6 +375,7 @@ if(DEEPITY_BUILD_TESTS)
     set_target_properties(DeepityProfile PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    add_test(NAME DeepityProfile COMMAND DeepityProfile)
 
     if(WIN32)
         add_custom_command(TARGET DeepityProfile POST_BUILD

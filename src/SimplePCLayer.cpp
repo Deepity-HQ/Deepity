@@ -3,7 +3,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <chrono>
+#ifdef DEEPITY_USE_MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 #include <omp.h>
 #include <immintrin.h>
 #include <algorithm>
@@ -62,21 +66,47 @@ namespace Deep
             for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
+
+        // E: feedback-alignment matrix -- INDEPENDENT random draw (fresh
+        // seeds, matching ngc-learn's use of a separate subkey for E vs
+        // W), uniform +-0.3 (matching ngc-learn's ACTUAL StaticSynapse
+        // init convention exactly). Never touched again after this -- no
+        // UpdateWeights() involvement at all, matching "Static" in
+        // StaticSynapse.
+        std::vector<uint32_t> eSeeds(omp_get_max_threads());
+        for (auto &s : eSeeds)
+            s = seedDist(seedGenerator);
+
+#pragma omp parallel if(!omp_in_parallel())
+        {
+            std::mt19937 rng(eSeeds[omp_get_thread_num()]);
+            std::uniform_real_distribution<float> eDist(-0.3f, 0.3f);
+
+#pragma omp for
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
+                E[i] = eDist(rng);
+        }
     }
 
-    float SimplePCLayer::CalculateState() noexcept
+	float SimplePCLayer::CalculateState() noexcept
     {
         const size_t N = (size_t)batchSize * size;
-
+        
+        // OPTIMIZATION: The input layer's errors are always exactly 0. 
+        // Skip the massive AVX reduction loop entirely to save memory bandwidth.
         if (layerBelow == nullptr)
         {
             std::memset(e, 0, N * sizeof(float));
+            if (nextSize > 0)
+            {
+                ComputeMuOnly();
+            }
+            return 0.0f; 
         }
-        else
-        {
-            cblas_scopy(N, z, 1, e, 1);
-            cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
-        }
+
+        // For all middle/output layers, compute e = z - mu
+        cblas_scopy(N, z, 1, e, 1);
+        cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
 
         float totalEnergy = 0.0f;
 
@@ -134,196 +164,113 @@ namespace Deep
                 totalEnergy += 0.5f * err * err;
             }
         }
-
         if (nextSize > 0)
         {
-            size_t Nout = (size_t)batchSize * nextSize;
-            size_t N = (size_t)batchSize * size;
-
-            bool shouldRecompute = true;
-            if (muCacheThreshold >= 0.0f && muCacheValid)
-            {
-                float zNorm = cblas_snrm2((int)N, prevZ, 1);
-                cblas_scopy((int)N, z, 1, dz_dt, 1);
-                cblas_saxpy((int)N, -1.0f, prevZ, 1, dz_dt, 1);
-                float deltaNorm = cblas_snrm2((int)N, dz_dt, 1);
-                float ratio = deltaNorm / (zNorm + 1e-8f);
-                shouldRecompute = ratio > muCacheThreshold;
-            }
-
-            if (shouldRecompute)
-            {
-                cblas_sgemm(
-                    CblasRowMajor, CblasNoTrans, CblasTrans,
-                    batchSize, nextSize, size,
-                    1.0f, z, size, W, size, 0.0f, mu, nextSize);
-
-                for (int batch = 0; batch < batchSize; ++batch)
-                    cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
-
-                activation(mu, Nout);
-
-                if (muCacheThreshold >= 0.0f)
-                {
-                    cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
-                    cblas_scopy((int)N, z, 1, prevZ, 1);
-                    muCacheValid = true;
-                }
-            }
-            else
-            {
-                cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
-            }
+            ComputeMuOnly();
         }
 
         return totalEnergy;
     }
 
-    void SimplePCLayer::UpdateState() noexcept
+	void SimplePCLayer::ComputeMuOnly() noexcept
+{
+    if (nextSize == 0)
+        return;
+
+    size_t Nout = (size_t)batchSize * nextSize;
+    size_t N = (size_t)batchSize * size;
+
+    // Fast-path: A clamped layer's state never changes during inference.
+    // Copy from cache instead of doing 20 redundant GEMMs per step.
+    if (isClamped && muCacheValid)
     {
-        size_t N = (size_t)batchSize * size;
-
-        if (nextSize > 0)
-        {
-            size_t Nout = (size_t)batchSize * nextSize;
-            activationDerivative(mu, Nout, true);
-        }
-
-        if (isClamped)
-            return;
-
-#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            size_t offset = (size_t)batch * size;
-            size_t i = 0;
-#if defined(__AVX512F__)
-            __m512 neg_one = _mm512_set1_ps(-1.0f);
-            size_t r = size % 16;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 16)
-            {
-                __m512 e512 = _mm512_loadu_ps(&e[offset + i]);
-                _mm512_storeu_ps(&dz_dt[offset + i], _mm512_mul_ps(neg_one, e512));
-            }
-#elif defined(__AVX2__) || defined(__AVX__)
-            __m256 neg_one = _mm256_set1_ps(-1.0f);
-            size_t r = size % 8;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 8)
-            {
-                __m256 e256 = _mm256_loadu_ps(&e[offset + i]);
-                _mm256_storeu_ps(&dz_dt[offset + i], _mm256_mul_ps(neg_one, e256));
-            }
-#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-            __m128 neg_one = _mm_set1_ps(-1.0f);
-            size_t r = size % 4;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 4)
-            {
-                __m128 e128 = _mm_loadu_ps(&e[offset + i]);
-                _mm_storeu_ps(&dz_dt[offset + i], _mm_mul_ps(neg_one, e128));
-            }
-#endif
-            for (; i < size; ++i)
-                dz_dt[offset + i] = -e[offset + i];
-        }
-
-        if (layerAbove != nullptr && nextSize > 0)
-        {
-            const float *e_above = layerAbove->GetErrors();
-
-#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                size_t offset = (size_t)batch * nextSize;
-                size_t f = 0;
-#if defined(__AVX512F__)
-                size_t r = nextSize % 16;
-                size_t simd_end = nextSize - r;
-                for (; f < simd_end; f += 16)
-                {
-                    __m512 e_above512 = _mm512_loadu_ps(e_above + offset + f);
-                    __m512 mu512 = _mm512_loadu_ps(mu + offset + f);
-                    _mm512_storeu_ps(bottom_up + offset + f, _mm512_mul_ps(e_above512, mu512));
-                }
-#elif defined(__AVX2__) || defined(__AVX__)
-                size_t r = nextSize % 8;
-                size_t simd_end = nextSize - r;
-                for (; f < simd_end; f += 8)
-                {
-                    __m256 e_above256 = _mm256_loadu_ps(e_above + offset + f);
-                    __m256 mu256 = _mm256_loadu_ps(mu + offset + f);
-                    _mm256_storeu_ps(bottom_up + offset + f, _mm256_mul_ps(e_above256, mu256));
-                }
-#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-                size_t r = nextSize % 4;
-                size_t simd_end = nextSize - r;
-                for (; f < simd_end; f += 4)
-                {
-                    __m128 e_above128 = _mm_loadu_ps(e_above + offset + f);
-                    __m128 mu128 = _mm_loadu_ps(mu + offset + f);
-                    _mm_storeu_ps(bottom_up + offset + f, _mm_mul_ps(e_above128, mu128));
-                }
-#endif
-                for (; f < nextSize; ++f)
-                    bottom_up[offset + f] = e_above[offset + f] * mu[offset + f];
-            }
-
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                batchSize, size, nextSize,
-                1.0f, bottom_up, nextSize, W, size,
-                1.0f, dz_dt, size);
-        }
-
-        cblas_saxpy(N, ir, dz_dt, 1, z, 1);
+        cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+        return;
     }
+
+    // MATCHES ngc-learn's documented convention: mu = W @ phi(z) + b
+    cblas_scopy((int)N, z, 1, zF, 1);
+    activation(zF, N);
+
+    cblas_sgemm(
+        CblasRowMajor, CblasNoTrans, CblasTrans,
+        batchSize, nextSize, size,
+        1.0f, zF, size, W, size, 0.0f, mu, nextSize);
+
+    #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
+    for (int batch = 0; batch < batchSize; ++batch) {
+        cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+    }
+
+    // Only cache if it's actually a clamped layer
+    if (isClamped)
+    {
+        cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+        muCacheValid = true;
+    }
+}
+
+	void SimplePCLayer::UpdateState() noexcept
+{
+    size_t N = (size_t)batchSize * size;
+
+    if (isClamped)
+        return;
+
+    if (layerAbove != nullptr && nextSize > 0)
+    {
+        const float *e_above = layerAbove->GetErrors();
+
+        // 1. zFDeriv = f'(z)
+        cblas_scopy((int)N, z, 1, zFDeriv, 1);
+        activationDerivative(zFDeriv, N, false);
+
+        // 2. Exact Tied-Weights Feedback GEMM (Replace 'E' with 'W')
+        // e_above is (batchSize, nextSize), W is (nextSize, size). 
+        // Result is (batchSize, size).
+        cblas_sgemm(
+            CblasRowMajor, CblasNoTrans, CblasNoTrans,
+            batchSize, size, nextSize,
+            1.0f, e_above, nextSize, W, size,
+            0.0f, feedbackScratch, size);
+
+        // 3. Clean element-wise update. Let the compiler auto-vectorize.
+        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
+        for (int batch = 0; batch < batchSize; ++batch) {
+            size_t offset = (size_t)batch * size;
+            for (size_t i = 0; i < size; ++i) {
+                size_t idx = offset + i;
+                dz_dt[idx] = (feedbackScratch[idx] * zFDeriv[idx]) - e[idx];
+                z[idx] += ir * dz_dt[idx];
+            }
+        }
+    }
+    else // Output Layer (No Feedback)
+    {
+        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
+        for (int batch = 0; batch < batchSize; ++batch) {
+            size_t offset = (size_t)batch * size;
+            for (size_t i = 0; i < size; ++i) {
+                size_t idx = offset + i;
+                dz_dt[idx] = -e[idx];
+                z[idx] += ir * dz_dt[idx];
+            }
+        }
+    }
+}
+
 
     void SimplePCLayer::UpdateWeights() noexcept
     {
         if (layerAbove == nullptr || nextSize == 0)
             return;
 
-        const float *e_above = layerAbove->GetErrors();
-        float *local_grad = bottom_up;
-
-#pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            size_t offset = (size_t)batch * nextSize;
-            size_t f = 0;
-#if defined(__AVX512F__)
-            size_t r = nextSize % 16;
-            size_t simd_end = nextSize - r;
-            for (; f < simd_end; f += 16)
-            {
-                __m512 e512 = _mm512_loadu_ps(e_above + offset + f);
-                __m512 mu512 = _mm512_loadu_ps(mu + offset + f);
-                _mm512_storeu_ps(local_grad + offset + f, _mm512_mul_ps(e512, mu512));
-            }
-#elif defined(__AVX2__) || defined(__AVX__)
-            size_t r = nextSize % 8;
-            size_t simd_end = nextSize - r;
-            for (; f < simd_end; f += 8)
-            {
-                __m256 e256 = _mm256_loadu_ps(e_above + offset + f);
-                __m256 mu256 = _mm256_loadu_ps(mu + offset + f);
-                _mm256_storeu_ps(local_grad + offset + f, _mm256_mul_ps(e256, mu256));
-            }
-#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-            size_t r = nextSize % 4;
-            size_t simd_end = nextSize - r;
-            for (; f < simd_end; f += 4)
-            {
-                __m128 e128 = _mm_loadu_ps(e_above + offset + f);
-                __m128 mu128 = _mm_loadu_ps(mu + offset + f);
-                _mm_storeu_ps(local_grad + offset + f, _mm_mul_ps(e128, mu128));
-            }
-#endif
-            for (; f < nextSize; ++f)
-                local_grad[offset + f] = e_above[offset + f] * mu[offset + f];
-        }
+        // MATCHES ngc-learn's documented weight-update ODE: dW ~ e_l .
+        // phi(z_{l-1})^T -- PLAIN e_above directly (mu is linear now,
+        // d(mu)/d(zF)=W, so no elementwise derivative multiply is
+        // needed at all), and zF (activated z) as the outer-product
+        // factor, not raw z.
+        const float *local_grad = layerAbove->GetErrors();
 
         switch (opt)
         {
@@ -335,7 +282,7 @@ namespace Deep
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 nextSize, size, batchSize,
-                lr / batchSize, local_grad, nextSize, z, size,
+                lr / batchSize, local_grad, nextSize, zF, size,
                 1.0f, W, size);
 
             float lr_batch = lr / batchSize;
@@ -350,12 +297,12 @@ namespace Deep
             t++;
 
             size_t num_weights = (size_t)nextSize * size;
-            float grad_scale = -1.0f / batchSize;
+            float grad_scale = -1.0f;
 
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 nextSize, size, batchSize,
-                grad_scale, local_grad, nextSize, z, size,
+                grad_scale, local_grad, nextSize, zF, size,
                 0.0f, grad_W, size);
 
             std::memset(grad_b, 0, nextSize * sizeof(float));
@@ -414,7 +361,9 @@ namespace Deep
             total += pad16(w_size);
             total += pad16(nextSize);
             total += pad16(out_state_size) * 3;
-            total += pad16(own_state_size);
+            total += pad16(own_state_size);      // prevZ
+            total += pad16(own_state_size) * 3;  // zF, zFDeriv, feedbackScratch
+            total += pad16(w_size);              // E (feedback alignment, same shape as W)
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
@@ -447,14 +396,25 @@ namespace Deep
             b = arena.AllocateFloats(nextSize);
             mu = arena.AllocateFloats(out_state_size);
             cachedMu = arena.AllocateFloats(out_state_size);
-            bottom_up = arena.AllocateFloats(out_state_size);
+            bottom_up = arena.AllocateFloats(out_state_size); // no longer
+                                       // used by UpdateState/UpdateWeights
+                                       // after activate-before-transform --
+                                       // harmless, left allocated for now
             prevZ = arena.AllocateFloats(own_state_size);
+            zF = arena.AllocateFloats(own_state_size);
+            zFDeriv = arena.AllocateFloats(own_state_size);
+            feedbackScratch = arena.AllocateFloats(own_state_size);
+            E = arena.AllocateFloats(w_size);
 
             std::memset(b, 0, nextSize * sizeof(float));
             std::memset(mu, 0, out_state_size * sizeof(float));
             std::memset(cachedMu, 0, out_state_size * sizeof(float));
             std::memset(bottom_up, 0, out_state_size * sizeof(float));
             std::memset(prevZ, 0, own_state_size * sizeof(float));
+            std::memset(zF, 0, own_state_size * sizeof(float));
+            std::memset(zFDeriv, 0, own_state_size * sizeof(float));
+            std::memset(feedbackScratch, 0, own_state_size * sizeof(float));
+            std::memset(E, 0, w_size * sizeof(float));
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {

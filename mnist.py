@@ -3,35 +3,7 @@ import os
 from pydeepity import SimplePCN
 from time import perf_counter
 
-# FINAL VALIDATION -- the complete stack found today:
-#   - Forward-projection initialization (seeds hidden layers from a real
-#     forward pass through current weights, not zero-init)
-#   - +-0.3 uniform weight init (matching ngc-learn's actual convention)
-#   - AdamW, lr=0.001 (matching ngc-learn's hard-coded Adam + eta=0.001 --
-#     the init range and optimizer needed to be changed TOGETHER, not
-#     independently; tested and confirmed: 73.31% alone with SGD vs
-#     93.96% paired with AdamW)
-#   - mu_cache_threshold=0.05 -- confirmed +30.6% faster than ngc-learn's
-#     real, measured per-batch time in an isolated speed test. THIS RUN
-#     checks whether that speed holds without costing the 93.96% accuracy
-#     already confirmed at threshold=disabled.
-#   - train_step_with_projection() -- single C++ call per batch, not a
-#     manual Python loop (confirmed real, if smaller, speedup from
-#     eliminating ~40 Python/pybind boundary crossings per batch)
-#
-# [0,1] normalization, labels clipped to [0.001, 0.999], tanh activation,
-# 784->512->512->10, T=20 -- all matching ngc-learn's actual, real source
-# as closely as possible.
-
-
 def load_full_mnist():
-    # EXACT same loading method as ngc-learn's own uploaded mnist.py --
-    # direct download of Yann LeCun's canonical idx-ubyte files, giving
-    # the REAL, official, fixed 60k/10k split. Previously used sklearn's
-    # fetch_openml + our own arbitrary stratified split -- almost
-    # certainly a DIFFERENT set of 10,000 test images than the official
-    # one, which could explain a real, consistent, seed-independent gap
-    # entirely separate from anything about the model itself.
     import gzip
     import urllib.request
 
@@ -100,7 +72,7 @@ def main() -> None:
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
     net = SimplePCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
+    net.add_layer(784, 512, lr=LR, ir=0.08, act="linear", lmbda=LMBDA)
     net.add_layer(512, 512, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
     net.add_layer(512, 10, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
     # Explicit TERMINAL layer -- outChannels/nextSize=0. Without this,
@@ -214,17 +186,9 @@ def main() -> None:
 
         net.reset_state()
         net.clamp_input(X_batch)
-        net.project_forward()
-        for _ in range(STEPS):  # CONFIRMED from eval_model()'s real source: they
-                                   # evaluate with the SAME T=20 as training, not a
-                                   # more generous settle. Was 300 -- 15x more
-                                   # settling than the model was ever calibrated
-                                   # for, which may have been actively hurting
-                                   # accuracy rather than helping it.
-            net.calculate_state()
-            net.update_state()
+        flat_beliefs = net.predict_with_projection(X_batch, STEPS)
+        terminal_beliefs = flat_beliefs.reshape(BATCH_SIZE, 10)
 
-        terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)
         pred_classes = np.argmax(terminal_beliefs, axis=1)
         correct += np.sum(pred_classes == y_labels_batch)
         total += BATCH_SIZE

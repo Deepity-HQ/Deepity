@@ -202,6 +202,11 @@ void bind_layers(py::module_ &m)
                           .def(py::init([](int size, int next_size, int batch_size, float learning_rate, float inference_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
                                         { return std::make_unique<Deep::GaussSeidelPCLayer>(size, next_size, batch_size, learning_rate, inference_rate, lmbda, resolveAct(activation), resolveDAct(activation_deriv)); }),
                                py::arg("size"), py::arg("next_size"), py::arg("batch_size") = 1, py::arg("learning_rate") = 1e-6f, py::arg("inference_rate") = 0.01f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu");
+gsLayerCls.def("update_state", &Deep::GaussSeidelPCLayer::UpdateState)
+          .def("compute_prediction", &Deep::GaussSeidelPCLayer::ComputePrediction)
+          .def("compute_error", &Deep::GaussSeidelPCLayer::ComputeError)
+          .def_property_readonly("mu", [](Deep::GaussSeidelPCLayer &self)
+                                 { return py::array_t<float>((py::ssize_t)(self.GetBatchSize() * self.GetOutputSize()), self.GetMu(), py::cast(&self)); });
     BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
 
     py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
@@ -368,8 +373,22 @@ void bind_networks(py::module_ &m)
     auto xbuf = x.request(); auto ybuf = y.request();
     std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
     std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
-    return self.TrainStepWithProjection(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"));
-
+    return self.TrainStepWithProjection(xvec, yvec, steps); }, py::arg("x"), py::arg("y"), py::arg("steps"))
+.def("predict_with_projection", [](Deep::SimplePCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, int steps)
+             {
+    // 1. Extract the numpy buffer
+    auto xbuf = x.request();
+    
+    // 2. Convert to std::vector for the C++ backend
+    std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+    
+    // 3. Run the C++ settling loop
+    std::vector<float> out_beliefs = self.PredictWithProjection(xvec, steps);
+    
+    // 4. Return directly as a numpy array for Python
+    return py::array_t<float>(out_beliefs.size(), out_beliefs.data()); }, 
+             py::arg("x"), py::arg("steps"), 
+             "Runs forward-projection init and settling loop entirely in C++, returning terminal beliefs.");
     py::class_<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
         .def(py::init<int>(), py::arg("batch_size"))
         .def("add_layer", [](Deep::GaussSeidelPCNetwork &self, int size, int next_size, float lr, float ir, float lmbda, const std::string &activation, const std::string &activation_deriv)

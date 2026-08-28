@@ -1,5 +1,9 @@
 #include <deepity/layers/RBLayer.h>
+#ifdef DEEPITY_USE_MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 #include <iostream>
 #include <random>
 #include <cstring>

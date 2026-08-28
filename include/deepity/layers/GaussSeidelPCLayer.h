@@ -200,7 +200,15 @@ namespace Deep
                         // UpdateWeights()) -- copy mu here, derive in
                         // place, leaving the real mu untouched
         float *dz_dt;
+	float *z_deriv;
         float *bottom_up;
+        float *E; // feedback-alignment matrix -- SEPARATE from W, same
+                  // shape, randomly initialized once, NEVER updated.
+                  // Matches ngc-learn's REAL wiring: e2.dmu >> E2.inputs;
+                  // E2.outputs >> z1.j, where E2 is an independently
+                  // initialized StaticSynapse -- NOT W transposed. This
+                  // is feedback alignment (Lillicrap et al.), not
+                  // backprop-style transposed-weight feedback.
 
         float lr;
         float ir;

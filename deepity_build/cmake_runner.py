@@ -26,6 +26,7 @@ def configure_command(config: BuildConfig, ninja: str | None) -> list[str]:
         f"-DCMAKE_BUILD_TYPE={config.build_type}",
         f"-DDEEPITY_BUILD_TESTS={'ON' if config.build_tests else 'OFF'}",
         f"-DDEEPITY_ENABLE_CUDA={'ON' if config.cuda else 'OFF'}",
+        f"-DDEEPITY_USE_MKL={'ON' if config.blas else 'OFF'}",
         f"-DDEEPITY_BUILD_PYTHON_BINDINGS={'ON' if config.python_bindings else 'OFF'}",
         f"-DDEEPITY_ARCH_FLAGS={profile.unix_flags}",
     ]
@@ -63,20 +64,14 @@ def build_command(config: BuildConfig) -> list[str]:
     ]
 
 
-def test_executable_name() -> str:
-    return "DeepityTests.exe" if os.name == "nt" else "DeepityTests"
-
-
-def test_executable_candidates(config: BuildConfig) -> list[Path]:
-    exe_name = test_executable_name()
-
+def test_command(config: BuildConfig) -> list[str]:
     return [
-        config.build_dir / "bin" / exe_name,
-        config.build_dir / "bin" / config.build_type / exe_name,
-        config.build_dir / exe_name,
-        config.build_dir / config.build_type / exe_name,
+        "ctest",
+        "--test-dir",
+        str(config.build_dir),
+        "--build-config",
+        config.build_type,
+        "--output-on-failure",
+        "-j",
+        str(config.jobs),
     ]
-
-
-def find_test_executable(config: BuildConfig) -> Path | None:
-    return next((path for path in test_executable_candidates(config) if path.is_file()), None)

@@ -11,9 +11,7 @@ from .cmake_runner import (
     build_command,
     configure_command,
     find_generator,
-    find_test_executable,
-    test_executable_candidates,
-    test_executable_name,
+    test_command,
 )
 from .config import ARCH_PROFILES, DEFAULT_ARCH_PROFILE, BuildConfig
 from .git_info import get_git_info
@@ -38,6 +36,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=multiprocessing.cpu_count(),
         help="Number of parallel build jobs",
     )
+    parser.add_argument(
+        "blas",
+        nargs="?",
+        default="OpenBLAS",
+        choices=["OpenBLAS", "MKL"],
+    ) # Considering BLIS, ROCm, etc.
 
     arch_group = parser.add_mutually_exclusive_group()
     arch_group.add_argument(
@@ -143,6 +147,7 @@ def build_config_from_args(args: argparse.Namespace) -> BuildConfig:
         jobs=args.jobs,
         arch_profile=args.arch_profile,
         cuda=args.cuda,
+        blas=args.blas,
         build_tests=not args.no_tests,
         run_tests=not args.no_tests,
         python_bindings=not args.no_python_bindings,
@@ -237,19 +242,15 @@ def main(argv: list[str] | None = None) -> None:
             return
 
         # ────────────────────────────────────────────────────────────────
-        # Find + run tests
+        # Run tests via CTest
         # ────────────────────────────────────────────────────────────────
-        test_exe = find_test_executable(config)
-
-        if test_exe is None:
-            reporter.tests_missing(test_executable_name(), test_executable_candidates(config))
-            sys.exit(1)
-
         reporter.tests_started()
         start = time.perf_counter()
 
+        cmd = test_command(config)
+
         return_code, test_output = run_streaming_command(
-            [str(test_exe)],
+            cmd,
             on_line=reporter.test_line,
         )
         log_output("Tests", test_output)

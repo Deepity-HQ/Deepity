@@ -148,6 +148,7 @@ namespace Deep
         /// ONE crossing instead.
         float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
 
+	std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
         /// @brief Sets mu-cache threshold on every layer -- see
         /// SimplePCLayer::SetMuCacheThreshold() for semantics. Safe to call any
         /// time after Compile().
