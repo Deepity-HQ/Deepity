@@ -7,5 +7,9 @@ file \doxymbox{\hyperlink{ConvPCNetwork_8h}{Conv\+PCNetwork.\+h}}
 \begin{DoxyCompactList}\small\item\em Convolutional counterpart to Discriminative\+PCNetwork -- same public interface shape (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+\+Update\+State/\+ Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Conv\+PCLayer instead. \end{DoxyCompactList}\item 
 file \doxymbox{\hyperlink{DiscriminativePCNetwork_8h}{Discriminative\+PCNetwork.\+h}}
 \item 
+file \doxymbox{\hyperlink{GaussSeidelPCNetwork_8h}{Gauss\+Seidel\+PCNetwork.\+h}}
+\begin{DoxyCompactList}\small\item\em Orchestrates Gauss\+Seidel\+PCLayer\textquotesingle{}s three-\/phase settling step in the correct order -- the layer class alone cannot produce genuine Gauss-\/\+Seidel dynamics; the SWEEP ORDER across layers is what makes it Gauss-\/\+Seidel rather than Jacobi, and that only exists at this level. \end{DoxyCompactList}\item 
+file \doxymbox{\hyperlink{SimpleConvPCNetwork_8h}{Simple\+Conv\+PCNetwork.\+h}}
+\begin{DoxyCompactList}\small\item\em Convolutional counterpart to Simple\+PCNetwork -- same public interface shape as Conv\+PCNetwork (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+ Update\+State/\+\+Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Simple\+Conv\+PCLayer instead, with Adam\+W/\+\+Adam support via Set\+Optimizer(). \end{DoxyCompactList}\item 
 file \doxymbox{\hyperlink{SimplePCNetwork_8h}{Simple\+PCNetwork.\+h}}
 \begin{DoxyCompactList}\small\item\em Network wrapper for Simple\+PCLayer, mirroring Discriminative\+PCNetwork exactly (minus the Update\+Precision() call, which no longer exists). \end{DoxyCompactList}\end{DoxyCompactItemize}

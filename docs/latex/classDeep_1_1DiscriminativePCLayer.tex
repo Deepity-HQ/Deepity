@@ -16,7 +16,7 @@ Inheritance diagram for Deep::\+Discriminative\+PCLayer:\+\begin{figure}[H]
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{Discriminative\+PCLayer}} (int \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}}, int \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{next\+Size}}, int batch\+Size=1, float learning\+Rate=1e-\/6, float inference\+Rate=0.\+1f, float precision\+Rate=0.\+01f, float lmbda=1e-\/2f, void(\texorpdfstring{$\ast$}{*}act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t)=relu, void(\texorpdfstring{$\ast$}{*}d\+Act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)=d\+Relu)
 \begin{DoxyCompactList}\small\item\em Constructor for a Deepity \doxylink{classDeep_1_1Layer}{Layer}. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a5fdddc8507be2bde4e22bfbd48186c7b}{Discriminative\+PCLayer}} (int \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}}, int \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{next\+Size}}, int batch\+Size=1, float learning\+Rate=1e-\/6, float inference\+Rate=0.\+1f, float precision\+Rate=0.\+01f, float lmbda=1e-\/2f, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} a\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Activation\+Type::\+\+RELU}}, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} d\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Activation\+Type::\+d\+RELU}})
-\item 
+\begin{DoxyCompactList}\small\item\em Constructor for a Deepity \doxylink{classDeep_1_1Layer}{Layer}, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4d50660fe8014f93db31e3478f98ee07}{Calculate\+State}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Calculates the total network energy state. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a40f4dbeedd94bdc369d45091bbbdf559}{Update\+State}} () noexcept override
@@ -24,7 +24,7 @@ void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a40f4dbeedd94bdc369
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a39631620cf0d84cc97977b619fac2e9f}{Update\+Weights}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Computes weight updates via gradient descent, with L2 weight decay. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a93d1fa602e1f5e824f87c9882807d7a3}{Update\+Precision}} () noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Updates this layer\textquotesingle{}s precision weighting based on the current prediction error. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a6d31245ccb390d8279da33f9d4014eda}{Flush}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Does nothing; exists for class extension. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a8fc7a24ab49c7928a1ed0a936d44f35e}{Resync\+Log\+Precision}} () noexcept
@@ -37,6 +37,8 @@ float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1Discriminativ
 \begin{DoxyCompactList}\small\item\em Returns beliefs. \end{DoxyCompactList}\item 
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a274953fef6f8bbed0c30e50891b5acaf}{Get\+Errors}} () const noexcept override
 \begin{DoxyCompactList}\small\item\em Returns errors. \end{DoxyCompactList}\item 
+const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a5a3a3db06625ed80f52a8239d8779d09}{Get\+Mu}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns this layer\textquotesingle{}s outgoing prediction buffer. \end{DoxyCompactList}\item 
 size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a814d862eae4b8bce835f119b75d9900e}{Get\+Input\+Size}} () const noexcept override
 \begin{DoxyCompactList}\small\item\em Returns size (input size). \end{DoxyCompactList}\item 
 size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4f0e865011258493e4e2fa1dc4621b89}{Get\+Output\+Size}} () const noexcept override
@@ -46,29 +48,31 @@ size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_affd51aeca6e
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ae35bfeb5649e0869051495b5f35673b6}{Get\+Weights}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Returns a read-\/only version of the stored weights. \end{DoxyCompactList}\item 
 float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_abab65746562b3d62181266a938585de7}{Get\+Weights}} () noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns a mutable version of the stored weights. \end{DoxyCompactList}\item 
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_af2a3a028661dd0f93a31a8da34aeeedf}{Get\+Biases}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Returns a read-\/only version of the stored biases. \end{DoxyCompactList}\item 
 float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a75f6be3a401be268422e5faebcb20f97}{Get\+Biases}} () noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns a mutable version of the stored biases. \end{DoxyCompactList}\item 
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4b745a7170681aabb7eff4ac8945a632}{Get\+Precisions}} () const
-\item 
+\begin{DoxyCompactList}\small\item\em Returns a read-\/only version of the stored precisions. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a44cceb7cb7b6c506ac605240b1c2385f}{Get\+Learning\+Rate}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns the learning rate used for weight updates. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a587257ae27496b95823485b10b65dd8c}{Get\+Inference\+Rate}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns the inference rate used for state updates. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a4c20694219bec114a09bc43192db6cd6}{Get\+Precision\+Rate}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns the learning rate used for precision updates. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ae2c3689fdc9ad5e24a881d668fecf4db}{Get\+Lambda}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns the weight-\/decay (L2 regularization) coefficient. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_af814ef60c24e2e9ec54d157a5ec3454e}{Set\+Learning\+Rate}} (float lr) noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the learning rate used for weight updates. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ab19e152ef3075ddc9a53171d96beae8d}{Set\+Inference\+Rate}} (float ir) noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the inference rate used for state updates. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_aa67aebb3e24a80b16887f6628b18775f}{Set\+Precision\+Rate}} (float pr) noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the learning rate used for precision updates. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a0af93749baa70dbcebdd3c95d0e4e523}{Set\+Lambda}} (float l) noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the weight-\/decay (L2 regularization) coefficient. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_acef9457c35cd20b00bf9eeba5f492d14}{Set\+Optimizer}} (\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} o) noexcept
+\begin{DoxyCompactList}\small\item\em Selects the optimizer used for weight updates. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a76ea705b1fd38a4e2ed0b4f6404fb7ee}{Set\+Layer\+Above}} (\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*}above) noexcept
 \begin{DoxyCompactList}\small\item\em Ties this layer to one above it. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_abede165ae677fd873e41f4948ac8f11d}{Set\+Layer\+Below}} (\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c080085a48e36498cc3c}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*}below) noexcept
@@ -82,13 +86,15 @@ const \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a20876cd300c0c0800
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_ac0487aab6d212d0d35421ae3182f1fbe}{Randomize\+Weights}} (std::\+mt19937 \&twister) noexcept
 \begin{DoxyCompactList}\small\item\em Makes the weights W randomized to \+[0.\+0, 0.\+1]\+ using an Open\+MP-\/parallelized uniform real distribution. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a19c60f114c24e1acfe656bb457bd2fbf}{Get\+Activation\+Type}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns this layer\textquotesingle{}s configured activation type. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_aef19aa4132fdcc53eec41a3aec0df17f}{Get\+Derivative\+Type}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Returns this layer\textquotesingle{}s configured activation-\/derivative type. \end{DoxyCompactList}\item 
 size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_afd81ca54308b168546917a652043b5a9}{Get\+Required\+Floats}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Calculates exact float count required by this layer\textquotesingle{}s architecture. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_acc0fa51c4675373a68e80fbeafe81867}{Bind\+Memory}} (\doxymbox{\hyperlink{classDeep_1_1MemoryArena}{Memory\+Arena}} \&arena)
-\begin{DoxyCompactList}\small\item\em Binds all tensor pointers to the contiguous memory block. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em Binds all tensor pointers to the contiguous memory block. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer_a91974a53d4e2a130a6e3fbfaaab2ba36}{Compute\+Mu\+Only}} () noexcept
+\begin{DoxyCompactList}\small\item\em Computes only mu (forward prediction), skipping error and energy computation entirely. Useful for callers that only need a forward pass through current weights (e.\+g. forward projection initialization) without the cost of the discarded error/\+energy values. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsection*{Public Member Functions inherited from \doxymbox{\hyperlink{classDeep_1_1Layer}{Deep::\+\+Layer}}}
 \begin{DoxyCompactItemize}
 \item 
@@ -165,6 +171,31 @@ Deep::\+\+Discriminative\+PCLayer::\+\+Discriminative\+PCLayer (\begin{DoxyParam
 
 
 
+Constructor for a Deepity \doxylink{classDeep_1_1Layer}{Layer}, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em \doxylink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}} & Size of layer \\
+\hline
+{\em \doxylink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{next\+Size}} & Size of next layer (used for row size of W) \\
+\hline
+{\em batch\+Size} & Batch size (default to 1 for simplicity) \\
+\hline
+{\em learning\+Rate} & Learning rate to update weights \\
+\hline
+{\em inference\+Rate} & Learning rate to update state \\
+\hline
+{\em precision\+Rate} & Precition weight to update precision \\
+\hline
+{\em lmbda} & Weight decay (L2 regularization) coefficient \\
+\hline
+{\em a\+Type} & Activation type \\
+\hline
+{\em d\+Type} & Activation derivative type \\
+\hline
+\end{DoxyParams}
+
+
 \label{doc-func-members}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_doc-func-members}
 \doxysubsection{Member Function Documentation}
@@ -189,7 +220,10 @@ float Deep::\+\+Discriminative\+PCLayer::\+\+Calculate\+State (\begin{DoxyParamC
 Calculates the total network energy state. 
 
 \[E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
-\] 
+\] \begin{DoxyReturn}{Returns}
+This layer\textquotesingle{}s energy contribution at the current state. 
+\end{DoxyReturn}
+
 
 Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ae75c90b9ab50dc203cf9457694c1ebfe}{Deep::\+\+Layer}}.
 
@@ -208,6 +242,16 @@ Clamps the layer to the input data.
 {\em input\+Data} & Input \\
 \hline
 \end{DoxyParams}
+\Hypertarget{classDeep_1_1DiscriminativePCLayer_a91974a53d4e2a130a6e3fbfaaab2ba36}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!ComputeMuOnly@{ComputeMuOnly}}
+\index{ComputeMuOnly@{ComputeMuOnly}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
+\doxysubsubsection{\texorpdfstring{ComputeMuOnly()}{ComputeMuOnly()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a91974a53d4e2a130a6e3fbfaaab2ba36} 
+void Deep::\+\+Discriminative\+PCLayer::\+\+Compute\+Mu\+Only (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Computes only mu (forward prediction), skipping error and energy computation entirely. Useful for callers that only need a forward pass through current weights (e.\+g. forward projection initialization) without the cost of the discarded error/\+energy values. 
+
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a6d31245ccb390d8279da33f9d4014eda}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!Flush@{Flush}}
 \index{Flush@{Flush}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{Flush()}{Flush()}}
@@ -228,6 +272,13 @@ Reimplemented from \doxymbox{\hyperlink{classDeep_1_1Layer_aa25f07b8ffa01f5de94c
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a19c60f114c24e1acfe656bb457bd2fbf} 
 \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Activation\+Type (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns this layer\textquotesingle{}s configured activation type. 
+
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_affd51aeca6e09f395de07b0d167d28c4}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetBatchSize@{GetBatchSize}}
 \index{GetBatchSize@{GetBatchSize}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
@@ -281,12 +332,26 @@ const float \texorpdfstring{$\ast$}{*}b
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a75f6be3a401be268422e5faebcb20f97} 
 float \texorpdfstring{$\ast$}{*} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Biases (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns a mutable version of the stored biases. 
+
+\begin{DoxyReturn}{Returns}
+float \texorpdfstring{$\ast$}{*}b 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_aef19aa4132fdcc53eec41a3aec0df17f}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetDerivativeType@{GetDerivativeType}}
 \index{GetDerivativeType@{GetDerivativeType}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetDerivativeType()}{GetDerivativeType()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_aef19aa4132fdcc53eec41a3aec0df17f} 
 \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Derivative\+Type (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns this layer\textquotesingle{}s configured activation-\/derivative type. 
+
+\begin{DoxyReturn}{Returns}
+\doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a274953fef6f8bbed0c30e50891b5acaf}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetErrors@{GetErrors}}
 \index{GetErrors@{GetErrors}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetErrors()}{GetErrors()}}
@@ -310,6 +375,13 @@ Implements \doxymbox{\hyperlink{classDeep_1_1Layer_aa9d71ffc42b5ca6a0cdc4a28faf7
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a587257ae27496b95823485b10b65dd8c} 
 float Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Inference\+Rate (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns the inference rate used for state updates. 
+
+\begin{DoxyReturn}{Returns}
+float ir 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a814d862eae4b8bce835f119b75d9900e}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetInputSize@{GetInputSize}}
 \index{GetInputSize@{GetInputSize}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetInputSize()}{GetInputSize()}}
@@ -333,6 +405,13 @@ Implements \doxymbox{\hyperlink{classDeep_1_1Layer_aff8587bfbe62ef786e011a676c4e
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_ae2c3689fdc9ad5e24a881d668fecf4db} 
 float Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Lambda (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns the weight-\/decay (L2 regularization) coefficient. 
+
+\begin{DoxyReturn}{Returns}
+float lmbda 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_adc685e5c392fbad4ecd02a0798181ea7}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetLayerAbove@{GetLayerAbove}}
 \index{GetLayerAbove@{GetLayerAbove}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetLayerAbove()}{GetLayerAbove()}}
@@ -365,6 +444,26 @@ layer\+Below
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a44cceb7cb7b6c506ac605240b1c2385f} 
 float Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Learning\+Rate (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns the learning rate used for weight updates. 
+
+\begin{DoxyReturn}{Returns}
+float lr 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1DiscriminativePCLayer_a5a3a3db06625ed80f52a8239d8779d09}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetMu@{GetMu}}
+\index{GetMu@{GetMu}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
+\doxysubsubsection{\texorpdfstring{GetMu()}{GetMu()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a5a3a3db06625ed80f52a8239d8779d09} 
+const float \texorpdfstring{$\ast$}{*} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Mu (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns this layer\textquotesingle{}s outgoing prediction buffer. 
+
+\begin{DoxyReturn}{Returns}
+const float \texorpdfstring{$\ast$}{*}mu 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a4f0e865011258493e4e2fa1dc4621b89}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetOutputSize@{GetOutputSize}}
 \index{GetOutputSize@{GetOutputSize}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetOutputSize()}{GetOutputSize()}}
@@ -388,12 +487,26 @@ Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ac15039414878c57137e60dbb5c96
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a4c20694219bec114a09bc43192db6cd6} 
 float Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Precision\+Rate (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns the learning rate used for precision updates. 
+
+\begin{DoxyReturn}{Returns}
+float pr 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a4b745a7170681aabb7eff4ac8945a632}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetPrecisions@{GetPrecisions}}
 \index{GetPrecisions@{GetPrecisions}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetPrecisions()}{GetPrecisions()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a4b745a7170681aabb7eff4ac8945a632} 
 const float \texorpdfstring{$\ast$}{*} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Precisions (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Returns a read-\/only version of the stored precisions. 
+
+\begin{DoxyReturn}{Returns}
+const float \texorpdfstring{$\ast$}{*}p 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_afd81ca54308b168546917a652043b5a9}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!GetRequiredFloats@{GetRequiredFloats}}
 \index{GetRequiredFloats@{GetRequiredFloats}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetRequiredFloats()}{GetRequiredFloats()}}
@@ -423,6 +536,13 @@ const float \texorpdfstring{$\ast$}{*}W
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_abab65746562b3d62181266a938585de7} 
 float \texorpdfstring{$\ast$}{*} Deep::\+\+Discriminative\+PCLayer::\+\+Get\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns a mutable version of the stored weights. 
+
+\begin{DoxyReturn}{Returns}
+float \texorpdfstring{$\ast$}{*}W 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_ac0487aab6d212d0d35421ae3182f1fbe}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!RandomizeWeights@{RandomizeWeights}}
 \index{RandomizeWeights@{RandomizeWeights}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{RandomizeWeights()}{RandomizeWeights()}}
@@ -464,12 +584,30 @@ Recomputes log of precision if it falls behind.
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_ab19e152ef3075ddc9a53171d96beae8d} 
 void Deep::\+\+Discriminative\+PCLayer::\+\+Set\+Inference\+Rate (\begin{DoxyParamCaption}\item[{float}]{ir}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Sets the inference rate used for state updates. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ir} & The new inference rate. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a0af93749baa70dbcebdd3c95d0e4e523}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!SetLambda@{SetLambda}}
 \index{SetLambda@{SetLambda}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{SetLambda()}{SetLambda()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a0af93749baa70dbcebdd3c95d0e4e523} 
 void Deep::\+\+Discriminative\+PCLayer::\+\+Set\+Lambda (\begin{DoxyParamCaption}\item[{float}]{l}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Sets the weight-\/decay (L2 regularization) coefficient. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em l} & The new lambda value. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a76ea705b1fd38a4e2ed0b4f6404fb7ee}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!SetLayerAbove@{SetLayerAbove}}
 \index{SetLayerAbove@{SetLayerAbove}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{SetLayerAbove()}{SetLayerAbove()}}
@@ -506,12 +644,45 @@ Ties this layer to one below it.
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_af814ef60c24e2e9ec54d157a5ec3454e} 
 void Deep::\+\+Discriminative\+PCLayer::\+\+Set\+Learning\+Rate (\begin{DoxyParamCaption}\item[{float}]{lr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Sets the learning rate used for weight updates. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lr} & The new learning rate. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1DiscriminativePCLayer_acef9457c35cd20b00bf9eeba5f492d14}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!SetOptimizer@{SetOptimizer}}
+\index{SetOptimizer@{SetOptimizer}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
+\doxysubsubsection{\texorpdfstring{SetOptimizer()}{SetOptimizer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_acef9457c35cd20b00bf9eeba5f492d14} 
+void Deep::\+\+Discriminative\+PCLayer::\+\+Set\+Optimizer (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}}}]{o}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Selects the optimizer used for weight updates. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & The optimizer type to use. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_aa67aebb3e24a80b16887f6628b18775f}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!SetPrecisionRate@{SetPrecisionRate}}
 \index{SetPrecisionRate@{SetPrecisionRate}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{SetPrecisionRate()}{SetPrecisionRate()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_aa67aebb3e24a80b16887f6628b18775f} 
 void Deep::\+\+Discriminative\+PCLayer::\+\+Set\+Precision\+Rate (\begin{DoxyParamCaption}\item[{float}]{pr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Sets the learning rate used for precision updates. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pr} & The new precision rate. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_addc7e21589e6731c96652e31bcea9562}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!UnclampState@{UnclampState}}
 \index{UnclampState@{UnclampState}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}
 \doxysubsubsection{\texorpdfstring{UnclampState()}{UnclampState()}}
@@ -527,6 +698,10 @@ Unclamps the layer to the input data.
 \doxysubsubsection{\texorpdfstring{UpdatePrecision()}{UpdatePrecision()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCLayer_a93d1fa602e1f5e824f87c9882807d7a3} 
 void Deep::\+\+Discriminative\+PCLayer::\+\+Update\+Precision (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Updates this layer\textquotesingle{}s precision weighting based on the current prediction error. 
 
 \Hypertarget{classDeep_1_1DiscriminativePCLayer_a40f4dbeedd94bdc369d45091bbbdf559}\index{Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}!UpdateState@{UpdateState}}
 \index{UpdateState@{UpdateState}!Deep::DiscriminativePCLayer@{Deep::DiscriminativePCLayer}}

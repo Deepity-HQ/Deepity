@@ -14,7 +14,7 @@ A convolutional Predictive Coding (PC) network:\+ an ordered stack of \doxylink{
 \item 
 \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{Conv\+PCNetwork}} (int batch\+Size) noexcept
 \begin{DoxyCompactList}\small\item\em Constructs an empty convolutional PC network for a fixed batch size. \end{DoxyCompactList}\item 
-\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d}{\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork}} ()
+\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a8473a0415d06c743d77a0eb79417cecf}{\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork}} ()=default
 \begin{DoxyCompactList}\small\item\em Destroys the network, freeing every owned \doxylink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer} and releasing the backing \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_adc5f4792666bdacfabea87325afb0f9d}{Conv\+PCNetwork}} (const Conv\+PCNetwork \&)=delete
 \begin{DoxyCompactList}\small\item\em Deleted:\+ \doxylink{classDeep_1_1ConvPCNetwork}{Conv\+PCNetwork} owns raw layer pointers and a \doxylink{classDeep_1_1MemoryArena}{Memory\+Arena}, so copying is not supported. \end{DoxyCompactList}\item 
@@ -40,7 +40,7 @@ void \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe2
 \begin{DoxyCompactList}\small\item\em Updates every layer\textquotesingle{}s precision estimate based on current prediction errors, using each layer\textquotesingle{}s configured precision rate (pr). \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d}{Get\+Terminal\+Layer}} () noexcept
 \begin{DoxyCompactList}\small\item\em Returns the network\textquotesingle{}s terminal (final) layer. \end{DoxyCompactList}\item 
-const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0}{Get\+Layers}} () const noexcept
+const auto \& \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_acfd2dd5c03d2eec350d271d3a003494f}{Get\+Layers}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
 int \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_adeaa64c8b54bef23610dff7bc1127d0d}{Get\+Batch\+Size}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Returns the fixed batch size this network was constructed with. \end{DoxyCompactList}\item 
@@ -92,11 +92,11 @@ No layers exist yet; call \doxylink{classDeep_1_1ConvPCNetwork_aaf55133efb673e06
 {\em batch\+Size} & Number of samples processed together in every \doxylink{classDeep_1_1ConvPCNetwork_a595ddc9b6af2b98ef98ff6a162a95b8a}{Clamp()}/\+\+Calculate\+State()/\+\+Update\+State()/\+\+Train\+Step()/\+\+Predict() call. Fixed for the lifetime of the network. \\
 \hline
 \end{DoxyParams}
-\Hypertarget{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!````~ConvPCNetwork@{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork}}
+\Hypertarget{classDeep_1_1ConvPCNetwork_a8473a0415d06c743d77a0eb79417cecf}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!````~ConvPCNetwork@{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork}}
 \index{````~ConvPCNetwork@{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
 \doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}ConvPCNetwork()}{\string~ConvPCNetwork()}}
-{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d} 
-Deep::\+\+Conv\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a8473a0415d06c743d77a0eb79417cecf} 
+Deep::\+\+Conv\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Conv\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [default]}}
 
 
 
@@ -218,11 +218,11 @@ Returns the fixed batch size this network was constructed with.
 \begin{DoxyReturn}{Returns}
 The number of samples processed together in every per-\/step call. 
 \end{DoxyReturn}
-\Hypertarget{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!GetLayers@{GetLayers}}
+\Hypertarget{classDeep_1_1ConvPCNetwork_acfd2dd5c03d2eec350d271d3a003494f}\index{Deep::ConvPCNetwork@{Deep::ConvPCNetwork}!GetLayers@{GetLayers}}
 \index{GetLayers@{GetLayers}!Deep::ConvPCNetwork@{Deep::ConvPCNetwork}}
 \doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}}
-{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0} 
-const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{Conv\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& Deep::\+\+Conv\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+{\footnotesize\ttfamily \label{classDeep_1_1ConvPCNetwork_acfd2dd5c03d2eec350d271d3a003494f} 
+const auto \& Deep::\+\+Conv\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
 
 

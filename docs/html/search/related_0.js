@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['pcndiagnostics_0',['PCNDiagnostics',['../classDeep_1_1ConvPCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCLayer::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCLayer::PCNDiagnostics()'],['../classDeep_1_1ConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCNetwork::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCNetwork::PCNDiagnostics()']]]
+  ['gaussseidelpcndiagnostics_0',['GaussSeidelPCNDiagnostics',['../classDeep_1_1GaussSeidelPCLayer.html#a725ac3f7910a888e9dc63de71c9c477a',1,'Deep::GaussSeidelPCLayer']]]
 ];

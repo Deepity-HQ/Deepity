@@ -1,5 +1,4 @@
 var searchData=
 [
-  ['simpleconvpcndiagnostics_0',['SimpleConvPCNDiagnostics',['../classDeep_1_1SimpleConvPCLayer.html#a9e870ec610a1c2fe558a6cb5c58253c6',1,'Deep::SimpleConvPCLayer']]],
-  ['simplepcndiagnostics_1',['SimplePCNDiagnostics',['../classDeep_1_1SimplePCLayer.html#a2e8d987fcc810e327cc53a36276e831e',1,'Deep::SimplePCLayer']]]
+  ['pcndiagnostics_0',['PCNDiagnostics',['../classDeep_1_1ConvPCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCLayer::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCLayer::PCNDiagnostics()'],['../classDeep_1_1ConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCNetwork::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCNetwork::PCNDiagnostics()'],['../classDeep_1_1SimpleConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::SimpleConvPCNetwork::PCNDiagnostics()']]]
 ];

@@ -1,14 +1,14 @@
 var classDeep_1_1ConvPCNetwork =
 [
     [ "ConvPCNetwork", "classDeep_1_1ConvPCNetwork.html#a55e224271863dcc697941c83c905381a", null ],
-    [ "~ConvPCNetwork", "classDeep_1_1ConvPCNetwork.html#abd850e7ccfee1e12f43200b2000f381d", null ],
+    [ "~ConvPCNetwork", "classDeep_1_1ConvPCNetwork.html#a8473a0415d06c743d77a0eb79417cecf", null ],
     [ "ConvPCNetwork", "classDeep_1_1ConvPCNetwork.html#adc5f4792666bdacfabea87325afb0f9d", null ],
     [ "AddLayer", "classDeep_1_1ConvPCNetwork.html#aaf55133efb673e06f500b581cfe4f909", null ],
     [ "CalculateState", "classDeep_1_1ConvPCNetwork.html#a6a823037855cf7be70ac6f1525c18c86", null ],
     [ "Clamp", "classDeep_1_1ConvPCNetwork.html#a595ddc9b6af2b98ef98ff6a162a95b8a", null ],
     [ "Compile", "classDeep_1_1ConvPCNetwork.html#a95506ba6450152075862e5bb76df883c", null ],
     [ "GetBatchSize", "classDeep_1_1ConvPCNetwork.html#adeaa64c8b54bef23610dff7bc1127d0d", null ],
-    [ "GetLayers", "classDeep_1_1ConvPCNetwork.html#a465c12d90051b982332835d10073dcc0", null ],
+    [ "GetLayers", "classDeep_1_1ConvPCNetwork.html#acfd2dd5c03d2eec350d271d3a003494f", null ],
     [ "GetTerminalLayer", "classDeep_1_1ConvPCNetwork.html#a1929fa3dd5b810b349385c6837f5025d", null ],
     [ "operator=", "classDeep_1_1ConvPCNetwork.html#a622e6a7baea151de32b1b507a16372b1", null ],
     [ "Predict", "classDeep_1_1ConvPCNetwork.html#ade6d0963dd15392166b03510a2b8849d", null ],

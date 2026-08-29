@@ -121,7 +121,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad25610566363e33be901dec8c1ae43dc" id="r_ad25610566363e33be901dec8c1ae43dc"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad25610566363e33be901dec8c1ae43dc">SimplePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6f, float inferenceRate=0.1f, float lmbda=1e-2f, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">ActivationType::RELU</a>, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a>)</td></tr>
 <tr class="memdesc:ad25610566363e33be901dec8c1ae43dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers.  <br /></td></tr>
 <tr class="memitem:a717e90d966a9de3e88d79e05a734aa27" id="r_a717e90d966a9de3e88d79e05a734aa27"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a717e90d966a9de3e88d79e05a734aa27">CalculateState</a> () noexcept override</td></tr>
-<tr class="memdesc:a717e90d966a9de3e88d79e05a734aa27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state.  <br /></td></tr>
+<tr class="memdesc:a717e90d966a9de3e88d79e05a734aa27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state, and this layer's outgoing prediction (mu).  <br /></td></tr>
 <tr class="memitem:a2c75fb7c9b4fa075de9d0ab966ee2c83" id="r_a2c75fb7c9b4fa075de9d0ab966ee2c83"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2c75fb7c9b4fa075de9d0ab966ee2c83">UpdateState</a> () noexcept override</td></tr>
 <tr class="memdesc:a2c75fb7c9b4fa075de9d0ab966ee2c83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the state derivatives for inference.  <br /></td></tr>
 <tr class="memitem:a757530f0f89a4debc267b82d70ff40a7" id="r_a757530f0f89a4debc267b82d70ff40a7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a757530f0f89a4debc267b82d70ff40a7">UpdateWeights</a> () noexcept override</td></tr>
@@ -134,6 +134,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a0a34de6fd0a87f8c6d6228100de4bed6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Releases a previous <a class="el" href="#a0a9b015b8a020bf3f730aadd800b7f5e" title="Clamps this layer&#39;s beliefs to externally-provided data, preventing them from being updated by Update...">ClampState()</a> call, allowing this layer's beliefs to update normally again.  <br /></td></tr>
 <tr class="memitem:a78c8d51a29309aa9e17e36f745a3c759" id="r_a78c8d51a29309aa9e17e36f745a3c759"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#a78c8d51a29309aa9e17e36f745a3c759">GetBeliefs</a> () noexcept override</td></tr>
 <tr class="memdesc:a78c8d51a29309aa9e17e36f745a3c759"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's belief buffer.  <br /></td></tr>
+<tr class="memitem:a2e282de8650d363f1e6c62fdf43124b0" id="r_a2e282de8650d363f1e6c62fdf43124b0"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a2e282de8650d363f1e6c62fdf43124b0">GetMu</a> () const noexcept</td></tr>
+<tr class="memdesc:a2e282de8650d363f1e6c62fdf43124b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a prediction buffer exposed specifically for forward-projection initialization (seeding the next layer's z from a genuine, current-weights forward pass, rather than zero-init). nullptr for a terminal layer (nextSize=0).  <br /></td></tr>
 <tr class="memitem:aff8fbe6df1887a55eda3413a23a7e4bf" id="r_aff8fbe6df1887a55eda3413a23a7e4bf"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#aff8fbe6df1887a55eda3413a23a7e4bf">GetErrors</a> () const noexcept override</td></tr>
 <tr class="memdesc:aff8fbe6df1887a55eda3413a23a7e4bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's prediction-error buffer.  <br /></td></tr>
 <tr class="memitem:a5769f40787ec4f3ee8405f2acd7a19fe" id="r_a5769f40787ec4f3ee8405f2acd7a19fe"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a5769f40787ec4f3ee8405f2acd7a19fe">GetInputSize</a> () const noexcept override</td></tr>
@@ -164,6 +166,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:aead7b1e4c88ce5a15216e275ace21f30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the weight-decay (L2 regularization) coefficient.  <br /></td></tr>
 <tr class="memitem:a5e70ea45e8650ab0c704bdf160cebf16" id="r_a5e70ea45e8650ab0c704bdf160cebf16"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5e70ea45e8650ab0c704bdf160cebf16">SetOptimizer</a> (const <a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> o) noexcept</td></tr>
 <tr class="memdesc:a5e70ea45e8650ab0c704bdf160cebf16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the optimizer used for weight updates (SGD or Adam). Adam's moment buffers are lazily allocated on first use.  <br /></td></tr>
+<tr class="memitem:abcc9462a7aa38ec8cab0e6e707bb1176" id="r_abcc9462a7aa38ec8cab0e6e707bb1176"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abcc9462a7aa38ec8cab0e6e707bb1176">SetMuCacheThreshold</a> (float threshold) noexcept</td></tr>
+<tr class="memdesc:abcc9462a7aa38ec8cab0e6e707bb1176"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_at_last_recompute||.  <br /></td></tr>
+<tr class="memitem:a2a5566aff827e29aa79d85e2a864687b" id="r_a2a5566aff827e29aa79d85e2a864687b"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a2a5566aff827e29aa79d85e2a864687b">GetMuCacheThreshold</a> () const noexcept</td></tr>
+<tr class="memitem:aa3edc3797d6f8bbfa822f7c5fed216b4" id="r_aa3edc3797d6f8bbfa822f7c5fed216b4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa3edc3797d6f8bbfa822f7c5fed216b4">ComputeMuOnly</a> () noexcept</td></tr>
+<tr class="memdesc:aa3edc3797d6f8bbfa822f7c5fed216b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the total network energy state, and this layer&#39;s outgoing prediction (mu).">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b).  <br /></td></tr>
 <tr class="memitem:a902139c1ba87a3bab91a15cb1e639ea3" id="r_a902139c1ba87a3bab91a15cb1e639ea3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a902139c1ba87a3bab91a15cb1e639ea3">SetLayerAbove</a> (<a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *above) noexcept</td></tr>
 <tr class="memdesc:a902139c1ba87a3bab91a15cb1e639ea3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the layer immediately above this one in the network.  <br /></td></tr>
 <tr class="memitem:adca11e0dd4abf38757686f42db9f778d" id="r_adca11e0dd4abf38757686f42db9f778d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adca11e0dd4abf38757686f42db9f778d">SetLayerBelow</a> (<a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *below) noexcept</td></tr>
@@ -381,12 +388,12 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Calculates the total network energy state. </p>
+<p>Calculates the total network energy state, and this layer's outgoing prediction (mu). </p>
 <p class="formulaDsp">
 \[E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
 \]
 </p>
-<p> (No precision weighting &ndash; see file-level note.) </p><dl class="section return"><dt>Returns</dt><dd>This layer's energy contribution at the current state. </dd></dl>
+<p> mu is now computed as mu = W @ phi(z) + b &ndash; activation applied to z BEFORE the linear transform, matching ngc-learn's documented convention exactly (was previously mu = phi(W@z+b), activation AFTER the transform). (No precision weighting &ndash; see file-level note.) </p><dl class="section return"><dt>Returns</dt><dd>This layer's energy contribution at the current state. </dd></dl>
 
 <p>Implements <a class="el" href="classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe">Deep::Layer</a>.</p>
 
@@ -422,6 +429,33 @@ Additional Inherited Members</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="aa3edc3797d6f8bbfa822f7c5fed216b4" name="aa3edc3797d6f8bbfa822f7c5fed216b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3edc3797d6f8bbfa822f7c5fed216b4">&#9670;&#160;</a></span>ComputeMuOnly()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::SimplePCLayer::ComputeMuOnly </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the total network energy state, and this layer&#39;s outgoing prediction (mu).">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b). </p>
 
 </div>
 </div>
@@ -817,6 +851,59 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<a id="a2e282de8650d363f1e6c62fdf43124b0" name="a2e282de8650d363f1e6c62fdf43124b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e282de8650d363f1e6c62fdf43124b0">&#9670;&#160;</a></span>GetMu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float * Deep::SimplePCLayer::GetMu </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a prediction buffer exposed specifically for forward-projection initialization (seeding the next layer's z from a genuine, current-weights forward pass, rather than zero-init). nullptr for a terminal layer (nextSize=0). </p>
+<dl class="section return"><dt>Returns</dt><dd>Outgoing prediction buffer </dd></dl>
+
+</div>
+</div>
+<a id="a2a5566aff827e29aa79d85e2a864687b" name="a2a5566aff827e29aa79d85e2a864687b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a5566aff827e29aa79d85e2a864687b">&#9670;&#160;</a></span>GetMuCacheThreshold()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::SimplePCLayer::GetMuCacheThreshold </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a45f98604688f1ba990d5dde51e3e173f" name="a45f98604688f1ba990d5dde51e3e173f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a45f98604688f1ba990d5dde51e3e173f">&#9670;&#160;</a></span>GetOutputSize()</h2>
 
@@ -1153,6 +1240,36 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<a id="abcc9462a7aa38ec8cab0e6e707bb1176" name="abcc9462a7aa38ec8cab0e6e707bb1176"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcc9462a7aa38ec8cab0e6e707bb1176">&#9670;&#160;</a></span>SetMuCacheThreshold()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::SimplePCLayer::SetMuCacheThreshold </td>
+          <td>(</td>
+          <td class="paramtype">float</td>          <td class="paramname"><span class="paramname"><em>threshold</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_at_last_recompute||. </p>
+<ul>
+<li>eps) exceeds this value. threshold=-1 disables caching entirely (default). threshold=0 reproduces the original, EXACT clamped-only behavior (a clamped layer's z never changes, so its ratio is always exactly 0, always below any threshold&gt;=0). threshold&gt;0 extends caching to UNCLAMPED layers too, as a genuine approximation &ndash; correctness there means "close enough for real training," not "bit-identical," and needs its own accuracy-impact validation, not just a trajectory diff. </li>
+</ul>
+
+</div>
+</div>
 <a id="a5e70ea45e8650ab0c704bdf160cebf16" name="a5e70ea45e8650ab0c704bdf160cebf16"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5e70ea45e8650ab0c704bdf160cebf16">&#9670;&#160;</a></span>SetOptimizer()</h2>
 
@@ -1238,10 +1355,11 @@ Additional Inherited Members</h2></td></tr>
 
 <p>Computes the state derivatives for inference. </p>
 <p class="formulaDsp">
-\[\frac{dz^{(l)}}{dt} = -e^{(l)} + (W^{(l-1)})^T e^{(l-1)} \odot \sigma&#39;(W^{(l-1)}z^{(l)})
+\[\frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma&#39;(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
 \]
 </p>
- 
+<p> The derivative multiply now applies AFTER the W transform, using f'(z) (this layer's OWN state derivative), not f'(mu) applied before &ndash; matching the activate-before-transform convention. </p>
+
 <p>Implements <a class="el" href="classDeep_1_1Layer.html#ac87e63b18ef8aa27bd975031477e33f7">Deep::Layer</a>.</p>
 
 </div>

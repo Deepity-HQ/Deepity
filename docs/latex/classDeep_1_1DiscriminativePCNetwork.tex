@@ -16,16 +16,16 @@ An abstracted class for an array of {\ttfamily \doxylink{classDeep_1_1Discrimina
 \begin{DoxyCompactList}\small\item\em Default constructor. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aa5f7d2e72477a8a3b59a11ae2bc23215}{Discriminative\+PCNetwork}} (int batch\+Size)
 \begin{DoxyCompactList}\small\item\em Batched constructor. \end{DoxyCompactList}\item 
-\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaa4eadf99e0cf9e0aa669b549ce89189}{\texorpdfstring{$\sim$}{\string~}\+Discriminative\+PCNetwork}} ()
+\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_afa273d4c2d0eb3787fcbea497c09b5e9}{\texorpdfstring{$\sim$}{\string~}\+Discriminative\+PCNetwork}} ()=default
 \begin{DoxyCompactList}\small\item\em Default constructor; deletes each layer. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_acef22b0bde2c8633af40fe8fdefae448}{Discriminative\+PCNetwork}} (Discriminative\+PCNetwork \&\&other) noexcept=default
-\item 
+\begin{DoxyCompactList}\small\item\em Move constructor. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{Discriminative\+PCNetwork}} \& \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a7e8373c911697c531b75b1a3cbb413bd}{operator=}} (\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{Discriminative\+PCNetwork}} \&\&other) noexcept=default
-\item 
+\begin{DoxyCompactList}\small\item\em Move assignment operator. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a671f20780865ad65050178fc8852cd6d}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float pr, float lmbda, void(\texorpdfstring{$\ast$}{*}act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t), void(\texorpdfstring{$\ast$}{*}d\+Act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool))
 \begin{DoxyCompactList}\small\item\em Adds a layer to the network. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a2ca6add042ecc71ca17c197b44ce17ae}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float pr, float lmbda, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}} a\+Type, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}} d\+Type)
-\item 
+\begin{DoxyCompactList}\small\item\em Adds a layer to the network, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ad7b33441b523389418b95d305d1e42ac}{Randomize\+Weights}} (std::\+mt19937 \&rng)
 \begin{DoxyCompactList}\small\item\em Randomizes the weights of each layer. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aad6a69dcf213a6d2dfaa345995cb3d84}{Clamp}} (const std::\+vector$<$ float $>$ \&input)
@@ -37,31 +37,39 @@ void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab4b28b777621923b
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aaad5c950048825e4795ac73c23b218a2}{Update\+Weights}} ()
 \begin{DoxyCompactList}\small\item\em Updates each layer\textquotesingle{}s weights. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab02e9d1cfe73dc69dda7939127675353}{Update\+Precision}} ()
-\item 
+\begin{DoxyCompactList}\small\item\em Updates each layer\textquotesingle{}s precision weighting. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}{Project\+Forward}} () noexcept
+\begin{DoxyCompactList}\small\item\em Seeds every hidden layer\textquotesingle{}s belief from a genuine forward pass through current weights, rather than zero-\/init. Assumes the input layer is already clamped. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_af7cac346a0aad294d5b0836b6161ddad}{Train\+Step\+With\+Projection}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Same as \doxylink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{Train\+Step()}, but with \doxylink{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}{Project\+Forward()} called once after clamping the input, before the settling loop. \end{DoxyCompactList}\item 
+std::\+vector$<$ float $>$ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a1ad7b16c8e583fb681dfd77d4c9aa06b}{Predict\+With\+Projection}} (const std::\+vector$<$ float $>$ \&x, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Same as \doxylink{classDeep_1_1DiscriminativePCNetwork_a4b9bfb6b75743cb26253f4c0ed2451e8}{Predict()}, but with \doxylink{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}{Project\+Forward()} called once after clamping the input, before the settling loop. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a5a5c10b33e3243deb69c9f25b79afb22}{Reset\+State}} () noexcept
-\item 
-const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a9c441171237a3afd9f734d3ad7583c65}{Get\+Layers}} () const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Resets each layer\textquotesingle{}s state without touching learned weights. \end{DoxyCompactList}\item 
+const auto \& \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a5da4bce672bccaa72a56bd61179cf317}{Get\+Layers}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
 int \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ab96c81ab2171d59dc4c3bc7d1e02dd08}{Get\+Batch\+Size}} () const noexcept
 \begin{DoxyCompactList}\small\item\em Returns the batch size for the network\textquotesingle{}s layers. \end{DoxyCompactList}\item 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a050d1f0bea20b911fd2804baf6ab44f9}{Get\+Terminal\+Layer}} () const
-\item 
+\begin{DoxyCompactList}\small\item\em Returns the network\textquotesingle{}s terminal (final) layer. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a1746cd0c192acb515d38fbf99035b676}{Set\+Learning\+Rate}} (float lr)
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the learning rate used for weight updates, on every layer. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ae0fe75cacf06b0a48cd412020a673357}{Set\+Inference\+Rate}} (float ir)
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the inference rate used for state updates, on every layer. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a437d9414de038d84ab4607cfc067afef}{Set\+Precision\+Rate}} (float pr)
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the learning rate used for precision updates, on every layer. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_acdd5b3cd172aa5a0787d1b45d3eaf28d}{Set\+Lambda}} (float l)
-\item 
+\begin{DoxyCompactList}\small\item\em Sets the weight-\/decay (L2 regularization) coefficient, on every layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_afa8d85d6b6a23ca6b3d35ef2f602468a}{Set\+Optimizer}} (\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} opt) noexcept
+\begin{DoxyCompactList}\small\item\em Sets the optimizer used for weight updates, on every layer. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{Train\+Step}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
 \begin{DoxyCompactList}\small\item\em Runs a complete training step (clamp, settle, update, unclamp). \end{DoxyCompactList}\item 
 std::\+vector$<$ float $>$ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a4b9bfb6b75743cb26253f4c0ed2451e8}{Predict}} (const std::\+vector$<$ float $>$ \&x, int inference\+Steps)
 \begin{DoxyCompactList}\small\item\em Runs a forward prediction pass (clamp, settle, read). \end{DoxyCompactList}\item 
 bool \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a4439ed71ceda4eb341c801ec5c17b65f}{Save}} (const std::\+string \&filename) const noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Saves the network\textquotesingle{}s learned parameters to disk. \end{DoxyCompactList}\item 
 bool \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a897d0a5bea0b22c1634ae5338cb11b72}{Load}} (const std::\+string \&filename) noexcept
-\item 
+\begin{DoxyCompactList}\small\item\em Loads the network\textquotesingle{}s learned parameters from disk. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a2883834ad1affdadafae000829c025d8}{Compile}} ()
 \begin{DoxyCompactList}\small\item\em Loads all layers into one contiguous block of memory. \end{DoxyCompactList}\end{DoxyCompactItemize}
 \doxysubsubsection*{Friends}
@@ -107,11 +115,11 @@ Batched constructor.
 {\em batch\+Size} & Batch size\\
 \hline
 \end{DoxyParams}
-Initializes the network with a predetermined batch size. \Hypertarget{classDeep_1_1DiscriminativePCNetwork_aaa4eadf99e0cf9e0aa669b549ce89189}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!````~DiscriminativePCNetwork@{\texorpdfstring{$\sim$}{\string~}DiscriminativePCNetwork}}
+Initializes the network with a predetermined batch size. \Hypertarget{classDeep_1_1DiscriminativePCNetwork_afa273d4c2d0eb3787fcbea497c09b5e9}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!````~DiscriminativePCNetwork@{\texorpdfstring{$\sim$}{\string~}DiscriminativePCNetwork}}
 \index{````~DiscriminativePCNetwork@{\texorpdfstring{$\sim$}{\string~}DiscriminativePCNetwork}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}DiscriminativePCNetwork()}{\string~DiscriminativePCNetwork()}}
-{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_aaa4eadf99e0cf9e0aa669b549ce89189} 
-Deep::\+\+Discriminative\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Discriminative\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_afa273d4c2d0eb3787fcbea497c09b5e9} 
+Deep::\+\+Discriminative\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Discriminative\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [default]}}
 
 
 
@@ -125,6 +133,10 @@ Deep::\+\+Discriminative\+PCNetwork::\+\+Discriminative\+PCNetwork (\begin{DoxyP
 
 
 
+Move constructor. 
+
+
+
 \label{doc-func-members}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_doc-func-members}
 \doxysubsection{Member Function Documentation}
@@ -134,6 +146,29 @@ Deep::\+\+Discriminative\+PCNetwork::\+\+Discriminative\+PCNetwork (\begin{DoxyP
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a2ca6add042ecc71ca17c197b44ce17ae} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{size}{, }\item[{int}]{next\+Size}{, }\item[{float}]{lr}{, }\item[{float}]{ir}{, }\item[{float}]{pr}{, }\item[{float}]{lmbda}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}}}]{a\+Type}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Deep::\+\+Activation\+Type}}}]{d\+Type}{}\end{DoxyParamCaption})}
 
+
+
+Adds a layer to the network, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & input size \\
+\hline
+{\em next\+Size} & output size \\
+\hline
+{\em lr} & learning rate for beliefs \\
+\hline
+{\em ir} & learning rate for weights \\
+\hline
+{\em pr} & learning rate for precision \\
+\hline
+{\em lmbda} & weight decay (L2 regularization) coefficient \\
+\hline
+{\em a\+Type} & activation type \\
+\hline
+{\em d\+Type} & activation derivative type \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a671f20780865ad65050178fc8852cd6d}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!AddLayer@{AddLayer}}
 \index{AddLayer@{AddLayer}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
@@ -214,29 +249,59 @@ Returns the batch size for the network\textquotesingle{}s layers.
 \begin{DoxyReturn}{Returns}
 size\+\_\+t batch\+Size 
 \end{DoxyReturn}
-\Hypertarget{classDeep_1_1DiscriminativePCNetwork_a9c441171237a3afd9f734d3ad7583c65}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!GetLayers@{GetLayers}}
+\Hypertarget{classDeep_1_1DiscriminativePCNetwork_a5da4bce672bccaa72a56bd61179cf317}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!GetLayers@{GetLayers}}
 \index{GetLayers@{GetLayers}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}}
-{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a9c441171237a3afd9f734d3ad7583c65} 
-const std::\+vector$<$ \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*} $>$ \& Deep::\+\+Discriminative\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a5da4bce672bccaa72a56bd61179cf317} 
+const auto \& Deep::\+\+Discriminative\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
 
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A const reference to the internal layer list. 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a050d1f0bea20b911fd2804baf6ab44f9}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!GetTerminalLayer@{GetTerminalLayer}}
 \index{GetTerminalLayer@{GetTerminalLayer}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{GetTerminalLayer()}{GetTerminalLayer()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a050d1f0bea20b911fd2804baf6ab44f9} 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCLayer}{Discriminative\+PCLayer}} \texorpdfstring{$\ast$}{*} Deep::\+\+Discriminative\+PCNetwork::\+\+Get\+Terminal\+Layer (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Returns the network\textquotesingle{}s terminal (final) layer. 
+
+\begin{DoxyReturn}{Returns}
+Pointer to the last layer added via \doxylink{classDeep_1_1DiscriminativePCNetwork_a671f20780865ad65050178fc8852cd6d}{Add\+Layer()}, or nullptr if no layers have been added. 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a897d0a5bea0b22c1634ae5338cb11b72}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!Load@{Load}}
 \index{Load@{Load}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{Load()}{Load()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a897d0a5bea0b22c1634ae5338cb11b72} 
 bool Deep::\+\+Discriminative\+PCNetwork::\+\+Load (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{filename}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
 
+
+
+Loads the network\textquotesingle{}s learned parameters from disk. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & The source file path. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True on success, false otherwise. 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a7e8373c911697c531b75b1a3cbb413bd}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!operator=@{operator=}}
 \index{operator=@{operator=}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a7e8373c911697c531b75b1a3cbb413bd} 
 \doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{Discriminative\+PCNetwork}} \& Deep::\+\+Discriminative\+PCNetwork::\+operator= (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{classDeep_1_1DiscriminativePCNetwork_a3b3ba3c36d6dcb7c16bb353236ec830c}{Discriminative\+PCNetwork}} \&\&}]{other}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [default]}, {\ttfamily [noexcept]}}
+
+
+
+Move assignment operator. 
 
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a4b9bfb6b75743cb26253f4c0ed2451e8}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!Predict@{Predict}}
 \index{Predict@{Predict}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
@@ -258,6 +323,36 @@ Runs a forward prediction pass (clamp, settle, read).
 \begin{DoxyReturn}{Returns}
 A vector containing the batched predictions 
 \end{DoxyReturn}
+\Hypertarget{classDeep_1_1DiscriminativePCNetwork_a1ad7b16c8e583fb681dfd77d4c9aa06b}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!PredictWithProjection@{PredictWithProjection}}
+\index{PredictWithProjection@{PredictWithProjection}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
+\doxysubsubsection{\texorpdfstring{PredictWithProjection()}{PredictWithProjection()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a1ad7b16c8e583fb681dfd77d4c9aa06b} 
+std::\+vector$<$ float $>$ Deep::\+\+Discriminative\+PCNetwork::\+\+Predict\+With\+Projection (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Same as \doxylink{classDeep_1_1DiscriminativePCNetwork_a4b9bfb6b75743cb26253f4c0ed2451e8}{Predict()}, but with \doxylink{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}{Project\+Forward()} called once after clamping the input, before the settling loop. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & The batched input data \\
+\hline
+{\em inference\+Steps} & The number of relaxation iterations \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+A vector containing the batched predictions 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!ProjectForward@{ProjectForward}}
+\index{ProjectForward@{ProjectForward}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
+\doxysubsubsection{\texorpdfstring{ProjectForward()}{ProjectForward()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d} 
+void Deep::\+\+Discriminative\+PCNetwork::\+\+Project\+Forward (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Seeds every hidden layer\textquotesingle{}s belief from a genuine forward pass through current weights, rather than zero-\/init. Assumes the input layer is already clamped. 
+
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_ad7b33441b523389418b95d305d1e42ac}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!RandomizeWeights@{RandomizeWeights}}
 \index{RandomizeWeights@{RandomizeWeights}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{RandomizeWeights()}{RandomizeWeights()}}
@@ -279,36 +374,103 @@ Randomizes the weights of each layer.
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a5a5c10b33e3243deb69c9f25b79afb22} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Reset\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
 
+
+
+Resets each layer\textquotesingle{}s state without touching learned weights. 
+
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a4439ed71ceda4eb341c801ec5c17b65f}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!Save@{Save}}
 \index{Save@{Save}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{Save()}{Save()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a4439ed71ceda4eb341c801ec5c17b65f} 
 bool Deep::\+\+Discriminative\+PCNetwork::\+\+Save (\begin{DoxyParamCaption}\item[{const std::\+string \&}]{filename}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [noexcept]}}
 
+
+
+Saves the network\textquotesingle{}s learned parameters to disk. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em filename} & The destination file path. \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+True on success, false otherwise. 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_ae0fe75cacf06b0a48cd412020a673357}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!SetInferenceRate@{SetInferenceRate}}
 \index{SetInferenceRate@{SetInferenceRate}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{SetInferenceRate()}{SetInferenceRate()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_ae0fe75cacf06b0a48cd412020a673357} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Set\+Inference\+Rate (\begin{DoxyParamCaption}\item[{float}]{ir}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Sets the inference rate used for state updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em ir} & The new inference rate. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_acdd5b3cd172aa5a0787d1b45d3eaf28d}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!SetLambda@{SetLambda}}
 \index{SetLambda@{SetLambda}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{SetLambda()}{SetLambda()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_acdd5b3cd172aa5a0787d1b45d3eaf28d} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Set\+Lambda (\begin{DoxyParamCaption}\item[{float}]{l}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Sets the weight-\/decay (L2 regularization) coefficient, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em l} & The new lambda value. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a1746cd0c192acb515d38fbf99035b676}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!SetLearningRate@{SetLearningRate}}
 \index{SetLearningRate@{SetLearningRate}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{SetLearningRate()}{SetLearningRate()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a1746cd0c192acb515d38fbf99035b676} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Set\+Learning\+Rate (\begin{DoxyParamCaption}\item[{float}]{lr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Sets the learning rate used for weight updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lr} & The new learning rate. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1DiscriminativePCNetwork_afa8d85d6b6a23ca6b3d35ef2f602468a}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!SetOptimizer@{SetOptimizer}}
+\index{SetOptimizer@{SetOptimizer}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
+\doxysubsubsection{\texorpdfstring{SetOptimizer()}{SetOptimizer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_afa8d85d6b6a23ca6b3d35ef2f602468a} 
+void Deep::\+\+Discriminative\+PCNetwork::\+\+Set\+Optimizer (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}}}]{opt}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Sets the optimizer used for weight updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em opt} & The optimizer type to apply. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_a437d9414de038d84ab4607cfc067afef}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!SetPrecisionRate@{SetPrecisionRate}}
 \index{SetPrecisionRate@{SetPrecisionRate}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{SetPrecisionRate()}{SetPrecisionRate()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_a437d9414de038d84ab4607cfc067afef} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Set\+Precision\+Rate (\begin{DoxyParamCaption}\item[{float}]{pr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
 
+
+
+Sets the learning rate used for precision updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em pr} & The new precision rate. \\
+\hline
+\end{DoxyParams}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!TrainStep@{TrainStep}}
 \index{TrainStep@{TrainStep}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{TrainStep()}{TrainStep()}}
@@ -331,11 +493,37 @@ Runs a complete training step (clamp, settle, update, unclamp).
 \begin{DoxyReturn}{Returns}
 The final energy state of the network before weight updates 
 \end{DoxyReturn}
+\Hypertarget{classDeep_1_1DiscriminativePCNetwork_af7cac346a0aad294d5b0836b6161ddad}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!TrainStepWithProjection@{TrainStepWithProjection}}
+\index{TrainStepWithProjection@{TrainStepWithProjection}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
+\doxysubsubsection{\texorpdfstring{TrainStepWithProjection()}{TrainStepWithProjection()}}
+{\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_af7cac346a0aad294d5b0836b6161ddad} 
+float Deep::\+\+Discriminative\+PCNetwork::\+\+Train\+Step\+With\+Projection (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{const std::\+vector$<$ float $>$ \&}]{y}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Same as \doxylink{classDeep_1_1DiscriminativePCNetwork_ac234beb279bfd8ffa13e374624ba790a}{Train\+Step()}, but with \doxylink{classDeep_1_1DiscriminativePCNetwork_aa290dddfa4068d77c53ef27f79ef792d}{Project\+Forward()} called once after clamping the input, before the settling loop. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em x} & The batched input data \\
+\hline
+{\em y} & The batched target data \\
+\hline
+{\em inference\+Steps} & The number of relaxation iterations \\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+The final energy state of the network before weight updates 
+\end{DoxyReturn}
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_ab02e9d1cfe73dc69dda7939127675353}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!UpdatePrecision@{UpdatePrecision}}
 \index{UpdatePrecision@{UpdatePrecision}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}
 \doxysubsubsection{\texorpdfstring{UpdatePrecision()}{UpdatePrecision()}}
 {\footnotesize\ttfamily \label{classDeep_1_1DiscriminativePCNetwork_ab02e9d1cfe73dc69dda7939127675353} 
 void Deep::\+\+Discriminative\+PCNetwork::\+\+Update\+Precision (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Updates each layer\textquotesingle{}s precision weighting. 
 
 \Hypertarget{classDeep_1_1DiscriminativePCNetwork_ab4b28b777621923bec73aa1429548d0f}\index{Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}!UpdateState@{UpdateState}}
 \index{UpdateState@{UpdateState}!Deep::DiscriminativePCNetwork@{Deep::DiscriminativePCNetwork}}

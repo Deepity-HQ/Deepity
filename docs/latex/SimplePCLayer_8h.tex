@@ -23,7 +23,7 @@ class \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer}{Deep::\+\+Simple\+PCLayer
 \begin{DoxyCompactItemize}
 \item 
 namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
-\end{DoxyCompactItemize}
+\begin{DoxyCompactList}\small\item\em This is a Predictive Coding Network implemented with Direct Kolen-\/\+Pollock Feedback Alignment:\+ {\bfseries \+[https:\+/\+/\+arxiv.\+org/\+html/\+2602.\+15571v2]\+}. \end{DoxyCompactList}\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -39,7 +39,9 @@ Mirrors Discriminative\+PCLayer\textquotesingle{}s public interface as closely a
 Not yet gradient-\/checked independently -- this is a direct strip-\/down of Discriminative\+PCLayer\textquotesingle{}s already-\/verified math (same Calculate\+State/\+\+Update\+State/\+\+Update\+Weights formulas, precision terms removed), not new math, but the removal itself hasn\textquotesingle{}t been re-\/verified via finite-\/difference check. Do that before trusting this for real training -- same discipline as every other change this session.
 \end{DoxyWarning}
 \begin{DoxyNote}{Note}
-Optionally uses Adam (see \doxylink{AdamOptimizer_8h}{Adam\+Optimizer.\+h}) instead of plain SGD for weight updates, selected via Set\+Optimizer(); Adam\textquotesingle{}s moment buffers are only allocated when selected, keeping the SGD-\/only path free of their memory/\+compute cost. 
+Optionally uses Adam (see \doxylink{AdamOptimizer_8h}{Adam\+Optimizer.\+h}) instead of plain SGD for weight updates, selected via Set\+Optimizer(); Adam\textquotesingle{}s moment buffers are only allocated when selected, keeping the SGD-\/only path free of their memory/\+compute cost.
+
+Optionally caches a CLAMPED layer\textquotesingle{}s outgoing prediction (mu) across settling steps via Set\+Mu\+Caching() -- a clamped layer\textquotesingle{}s z is fixed for the whole settling loop, and W/\+b don\textquotesingle{}t change until Update\+Weights() runs afterward, so mu=f(W@z+b) is PROVABLY IDENTICAL every step while clamped. This is an EXACT optimization, not an approximation -- default OFF so both behaviors coexist for direct correctness/\+timing comparison before trusting it. 
 \end{DoxyNote}
 \begin{DoxyVersion}{Version}
 1.\+0 

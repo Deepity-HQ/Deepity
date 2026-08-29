@@ -1,0 +1,60 @@
+\doxysection{include/\+deepity/\+layers/\+\+Gauss\+Seidel\+PCLayer.h File Reference}
+\hypertarget{GaussSeidelPCLayer_8h}{}\label{GaussSeidelPCLayer_8h}\index{include/deepity/layers/GaussSeidelPCLayer.h@{include/deepity/layers/GaussSeidelPCLayer.h}}
+
+
+A PC layer whose settling dynamics follow a Gauss-\/\+Seidel (sequential-\/sweep) update, matching ngc-\/learn\textquotesingle{}s actual execution order -- NOT the Jacobi (fully-\/synchronous) update Simple\+PCLayer uses.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$stdexcept$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$cstdlib$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Adam\+Optimizer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Layer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Deep::\+\+Gauss\+Seidel\+PCLayer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\begin{DoxyCompactList}\small\item\em This is a Predictive Coding Network implemented with Direct Kolen-\/\+Pollock Feedback Alignment:\+ {\bfseries \+[https:\+/\+/\+arxiv.\+org/\+html/\+2602.\+15571v2]\+}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+A PC layer whose settling dynamics follow a Gauss-\/\+Seidel (sequential-\/sweep) update, matching ngc-\/learn\textquotesingle{}s actual execution order -- NOT the Jacobi (fully-\/synchronous) update Simple\+PCLayer uses. 
+
+\begin{DoxyNote}{Note}
+THIS IS AN UNPROVEN EXPERIMENT, not a confirmed improvement. Classical numerical-\/methods results suggest Gauss-\/\+Seidel typically needs fewer iterations than Jacobi for diagonally-\/dominant/\+symmetric systems, and our CPU/\+\+Open\+MP implementation was never exploiting cross-\/layer parallelism anyway (unlike a GPU/\+\+JAX backend, where Gauss-\/\+Seidel\textquotesingle{}s sequential dependency chain is a real cost) -- so the downside risk looks smaller here than it would for a GPU implementation. But this has NOT been empirically confirmed for this specific nonlinear, learned-\/weight system. Gradient-\/check independently before trusting it, same discipline as every other new formula this session.
+\end{DoxyNote}
+KEY STRUCTURAL DIFFERENCE from Simple\+PCLayer:\+ there is no single Calculate\+State() that does everything. Traced directly from ngc-\/learn\textquotesingle{}s real advance\+\_\+process chain (E2,E3 -\/\texorpdfstring{$>$}{>} z0,z1,z2,z3 -\/\texorpdfstring{$>$}{>} W1,W2, W3 -\/\texorpdfstring{$>$}{>} e1,e2,e3), a full Gauss-\/\+Seidel timestep is THREE separate sweeps across ALL layers, in this exact order:\+
+
+
+\begin{DoxyEnumerate}
+\item Update\+State() on every layer -- z updates using mu/\+e\+\_\+above HELD OVER from the end of the PREVIOUS timestep (not yet fresh for this timestep).
+\item Compute\+Prediction() on every layer -- mu recomputes fresh, using the JUST-\/updated z from step 1. Order among layers doesn\textquotesingle{}t matter here (each layer\textquotesingle{}s mu only depends on its OWN z).
+\item Compute\+Error() on every layer -- e recomputes fresh, using the JUST-\/updated z (step 1) as the target and layer\+Below\textquotesingle{}s FRESH mu (step 2) as the prediction. Order among layers doesn\textquotesingle{}t matter here either.
+\end{DoxyEnumerate}
+
+This differs from Simple\+PCLayer\textquotesingle{}s single-\/call Calculate\+State(), which computes error and prediction together, and whose settling loop is simply (Calculate\+State(); Update\+State();) x N -- fully synchronous (Jacobi):\+ every layer only ever reads values from the END of the PREVIOUS full step, never a value updated earlier in the SAME step.
+
+A Gauss\+Seidel\+PCNetwork class is required to actually orchestrate the three sweeps above in the correct order across all layers -- calling these methods directly, out of order, or on a single layer in isolation, will not reproduce the intended dynamics.
+
+IMPORTANT BUFFER-\/\+LIFETIME NOTE (the same class of bug mu-\/caching hit earlier):\+ mu must NOT be mutated in place into its own derivative the way Simple\+PCLayer\textquotesingle{}s Update\+State() does -- it needs to stay in its clean, activated form, since the layer ABOVE\textquotesingle{}s Compute\+Error() reads it later in this SAME timestep. Update\+State() and Update\+Weights() each compute mu\textquotesingle{}s derivative into a separate scratch buffer (mu\+Deriv) instead, leaving mu itself untouched.
+
+Deliberately does NOT include mu-\/caching or activate\+Before\+Transform in this first version -- isolating the Gauss-\/\+Seidel restructuring itself for independent verification before layering anything else on top.
+
+\begin{DoxyWarning}{Warning}
+Not yet gradient-\/checked. Do that before trusting this for real training. 
+\end{DoxyWarning}
+\begin{DoxyVersion}{Version}
+1.\+0 
+\end{DoxyVersion}
+\begin{DoxyDate}{Date}
+2026-\/08-\/26 
+\end{DoxyDate}

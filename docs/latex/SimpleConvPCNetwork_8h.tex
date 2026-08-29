@@ -1,0 +1,30 @@
+\doxysection{include/\+deepity/\+networks/\+\+Simple\+Conv\+PCNetwork.h File Reference}
+\hypertarget{SimpleConvPCNetwork_8h}{}\label{SimpleConvPCNetwork_8h}\index{include/deepity/networks/SimpleConvPCNetwork.h@{include/deepity/networks/SimpleConvPCNetwork.h}}
+
+
+Convolutional counterpart to Simple\+PCNetwork -- same public interface shape as Conv\+PCNetwork (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+ Update\+State/\+\+Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Simple\+Conv\+PCLayer instead, with Adam\+W/\+\+Adam support via Set\+Optimizer().  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Simple\+Conv\+PCLayer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1SimpleConvPCNetwork}{Deep::\+\+Simple\+Conv\+PCNetwork}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\begin{DoxyCompactList}\small\item\em This is a Predictive Coding Network implemented with Direct Kolen-\/\+Pollock Feedback Alignment:\+ {\bfseries \+[https:\+/\+/\+arxiv.\+org/\+html/\+2602.\+15571v2]\+}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Convolutional counterpart to Simple\+PCNetwork -- same public interface shape as Conv\+PCNetwork (Add\+Layer/\+\+Compile/\+\+Calculate\+State/\+ Update\+State/\+\+Update\+Weights/\+\+Train\+Step/\+\+Predict), wired to Simple\+Conv\+PCLayer instead, with Adam\+W/\+\+Adam support via Set\+Optimizer(). 
+
+Unlike using Simple\+Conv\+PCLayer standalone (today\textquotesingle{}s verification tests had to manually rebind memory after Set\+Optimizer(), since the constructor already runs Bind\+Memory() with whatever opt was at construction time), THIS class fixes that gap properly:\+ Set\+Optimizer() is safe to call any time before Compile(), and Compile() is what actually allocates memory (via a shared arena across all layers), mirroring Simple\+PCNetwork\textquotesingle{}s established, correct flow.
+
+Add\+Layer\textquotesingle{}s spatial dimensions (in\+Height/\+in\+Width) are NOT auto-\/inferred from the previous layer\textquotesingle{}s output shape -- pass them explicitly for each layer, matching Conv\+PCNetwork\textquotesingle{}s existing convention. 

@@ -80,9 +80,10 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "Activations_8h.html",
-"classDeep_1_1DiscriminativePCLayer.html#a8fc7a24ab49c7928a1ed0a936d44f35e",
-"classDeep_1_1SimpleConvPCLayer.html#a54f427e28c0ea482ccb9ed87d45d0694",
-"namespaceDeep.html"
+"classDeep_1_1DiscriminativePCLayer.html#a4f33d0cb0a2816d050a35e224fee3408",
+"classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0",
+"classDeep_1_1SimplePCLayer.html#a0a9b015b8a020bf3f730aadd800b7f5e",
+"stb__image_8h.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

@@ -15,8 +15,11 @@ var searchData=
   ['discriminativepcnetwork_12',['DiscriminativePCNetwork',['../classDeep_1_1DiscriminativePCNetwork.html',1,'Deep::DiscriminativePCNetwork'],['../classDeep_1_1DiscriminativePCNetwork.html#a3b3ba3c36d6dcb7c16bb353236ec830c',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork()'],['../classDeep_1_1DiscriminativePCNetwork.html#aa5f7d2e72477a8a3b59a11ae2bc23215',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork(int batchSize)'],['../classDeep_1_1DiscriminativePCNetwork.html#acef22b0bde2c8633af40fe8fdefae448',1,'Deep::DiscriminativePCNetwork::DiscriminativePCNetwork(DiscriminativePCNetwork &amp;&amp;other) noexcept=default']]],
   ['discriminativepcnetwork_2ecpp_13',['DiscriminativePCNetwork.cpp',['../DiscriminativePCNetwork_8cpp.html',1,'']]],
   ['discriminativepcnetwork_2eh_14',['DiscriminativePCNetwork.h',['../DiscriminativePCNetwork_8h.html',1,'']]],
-  ['dlinear_15',['dLINEAR',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7',1,'Deep']]],
-  ['drelu_16',['dRELU',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75',1,'Deep']]],
-  ['dsigmoid_17',['dSIGMOID',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01',1,'Deep']]],
-  ['dtanh_18',['dTANH',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd',1,'Deep']]]
+  ['dkp_5fpclayer_15',['DKP_PCLayer',['../classDeep_1_1DKP__PCLayer.html',1,'Deep::DKP_PCLayer'],['../classDeep_1_1DKP__PCLayer.html#aad38c3649d44c6ccb97747b98d13a4a8',1,'Deep::DKP_PCLayer::DKP_PCLayer()']]],
+  ['dkp_5fpclayer_2ecpp_16',['DKP_PCLayer.cpp',['../DKP__PCLayer_8cpp.html',1,'']]],
+  ['dkp_5fpclayer_2eh_17',['DKP_PCLayer.h',['../DKP__PCLayer_8h.html',1,'']]],
+  ['dlinear_18',['dLINEAR',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7',1,'Deep']]],
+  ['drelu_19',['dRELU',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75',1,'Deep']]],
+  ['dsigmoid_20',['dSIGMOID',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01',1,'Deep']]],
+  ['dtanh_21',['dTANH',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd',1,'Deep']]]
 ];

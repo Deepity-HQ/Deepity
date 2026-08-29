@@ -1,0 +1,40 @@
+\doxysection{include/\+deepity/\+networks/\+\+Gauss\+Seidel\+PCNetwork.h File Reference}
+\hypertarget{GaussSeidelPCNetwork_8h}{}\label{GaussSeidelPCNetwork_8h}\index{include/deepity/networks/GaussSeidelPCNetwork.h@{include/deepity/networks/GaussSeidelPCNetwork.h}}
+
+
+Orchestrates Gauss\+Seidel\+PCLayer\textquotesingle{}s three-\/phase settling step in the correct order -- the layer class alone cannot produce genuine Gauss-\/\+Seidel dynamics; the SWEEP ORDER across layers is what makes it Gauss-\/\+Seidel rather than Jacobi, and that only exists at this level.  
+
+
+{\ttfamily \+\#include $<$vector$>$}\newline
+{\ttfamily \+\#include $<$memory$>$}\newline
+{\ttfamily \+\#include $<$random$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+layers/\+\+Gauss\+Seidel\+PCLayer.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Memory\+Arena.\+h$>$}\newline
+{\ttfamily \+\#include $<$deepity/\+\+Activations.\+h$>$}\newline
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork}{Deep::\+\+Gauss\+Seidel\+PCNetwork}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Namespaces}
+\begin{DoxyCompactItemize}
+\item 
+namespace \doxymbox{\hyperlink{namespaceDeep}{Deep}}
+\begin{DoxyCompactList}\small\item\em This is a Predictive Coding Network implemented with Direct Kolen-\/\+Pollock Feedback Alignment:\+ {\bfseries \+[https:\+/\+/\+arxiv.\+org/\+html/\+2602.\+15571v2]\+}. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Orchestrates Gauss\+Seidel\+PCLayer\textquotesingle{}s three-\/phase settling step in the correct order -- the layer class alone cannot produce genuine Gauss-\/\+Seidel dynamics; the SWEEP ORDER across layers is what makes it Gauss-\/\+Seidel rather than Jacobi, and that only exists at this level. 
+
+Per settling step, in order:\+
+\begin{DoxyEnumerate}
+\item Update\+State() on EVERY layer (uses PREVIOUS timestep\textquotesingle{}s mu/\+e)
+\item Compute\+Prediction() on EVERY layer (uses THIS timestep\textquotesingle{}s fresh z)
+\item Compute\+Error() on EVERY layer (uses THIS timestep\textquotesingle{}s fresh z and layer\+Below\textquotesingle{}s fresh mu)
+\end{DoxyEnumerate}
+
+Order among layers WITHIN a single sweep does not matter (verified via the dependency analysis in \doxylink{GaussSeidelPCLayer_8h}{Gauss\+Seidel\+PCLayer.\+h}\textquotesingle{}s class docs -- each layer\textquotesingle{}s step-\/1/\+2/\+3 only depends on ITS OWN state plus a neighbor\textquotesingle{}s value from a sweep that has ALREADY fully completed). Only the ORDER OF THE THREE SWEEPS THEMSELVES is load-\/bearing.
+
+\begin{DoxyWarning}{Warning}
+Not yet gradient-\/checked at the network level. The individual layer\textquotesingle{}s math should be independently verified before trusting any accuracy conclusion drawn from real training with this class. 
+\end{DoxyWarning}

@@ -1,0 +1,72 @@
+\doxysection{Gauss\+Seidel\+PCNetwork.\+h}
+\hypertarget{GaussSeidelPCNetwork_8h_source}{}\label{GaussSeidelPCNetwork_8h_source}\index{include/deepity/networks/GaussSeidelPCNetwork.h@{include/deepity/networks/GaussSeidelPCNetwork.h}}
+\doxymbox{\hyperlink{GaussSeidelPCNetwork_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <random>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{GaussSeidelPCLayer_8h}{deepity/layers/GaussSeidelPCLayer.h}}>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{MemoryArena_8h}{deepity/MemoryArena.h}}>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Activations_8h}{deepity/Activations.h}}>}}
+\DoxyCodeLine{00008\ }
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00034\ \{}
+\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{GaussSeidelPCNetwork}}}
+\DoxyCodeLine{00036\ \ \ \ \ \{}
+\DoxyCodeLine{00037\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{GaussSeidelPCNetwork}}(\textcolor{keywordtype}{int}\ batchSize)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a84bc5c512c6b7fa4452b872c5f501edc}{\string~GaussSeidelPCNetwork}}()\ =\ \textcolor{keywordflow}{default};}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ad6d06431e8d5d7322692591ce312eb0b}{GaussSeidelPCNetwork}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{GaussSeidelPCNetwork}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{GaussSeidelPCNetwork}}\ \&\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_aba28860eab6b2339e7e31aaef5e8a718}{operator=}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{GaussSeidelPCNetwork}}\ \&)\ =\ \textcolor{keyword}{delete};}
+\DoxyCodeLine{00049\ }
+\DoxyCodeLine{00058\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085}{AddLayer}}(\textcolor{keywordtype}{int}\ size,\ \textcolor{keywordtype}{int}\ nextSize,\ \textcolor{keywordtype}{float}\ lr,\ \textcolor{keywordtype}{float}\ ir,\ \textcolor{keywordtype}{float}\ lmbda,}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t}),\ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool}));}
+\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085}{AddLayer}}(\textcolor{keywordtype}{int}\ size,\ \textcolor{keywordtype}{int}\ nextSize,\ \textcolor{keywordtype}{float}\ lr,\ \textcolor{keywordtype}{float}\ ir,\ \textcolor{keywordtype}{float}\ lmbda,}
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ aType,\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ dType);}
+\DoxyCodeLine{00071\ }
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ad8d3814e26856822905dd265eba70c4c}{RandomizeWeights}}(std::mt19937\ \&rng);}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a0285b027803e91813085e3eab72f7677}{ResetState}}()\ noexcept;}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a8539457b9f8466f1c5e9763a3b21de4e}{Clamp}}(const\ std::vector<\textcolor{keywordtype}{float}>\ \&input);}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a7747fc235a0de7b152c6e04d28be7502}{Step}}()\ noexcept;}
+\DoxyCodeLine{00087\ }
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a377223c31c277b8ea9cf492bcc5077c1}{UpdateWeights}}()\ noexcept;}
+\DoxyCodeLine{00092\ }
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821}{ProjectForward}}()\ noexcept;}
+\DoxyCodeLine{00099\ }
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a56abd5c693c3912a3ac798a1b80ec4bf}{SetOptimizer}}(\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}\ o)\ noexcept}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ \&layer\ :\ layers)}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ layer-\/>SetOptimizer(o);}
+\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00107\ }
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a795672cbea690c6a4039b0f224010d8d}{SetLearningRate}}(\textcolor{keywordtype}{float}\ lr)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keyword}{auto}\ \&layer\ :\ layers)}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ layer-\/>SetLearningRate(lr);}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{GaussSeidelPCLayer}}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a4fa4a52d0ac6d208033468a966801b2d}{GetTerminalLayer}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers.back().get();\ \}}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ std::vector<std::unique\_ptr<GaussSeidelPCLayer>>\ \&\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a9904ea16a85f16e38d9dd146f995aead}{GetLayers}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<std::unique\_ptr<GaussSeidelPCLayer>>\ \&\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a3e1d586c4e563e3e7fb6259c2d7adc24}{GetLayers}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ac1bb52309f09bb3126936c9706114292}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00133\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff}{TrainStep}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keyword}{const}\ std::vector<float>\ \&y,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
+\DoxyCodeLine{00134\ }
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a08cc43e63972f99b6a2d4d5b3a757fdf}{TrainStepWithProjection}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keyword}{const}\ std::vector<float>\ \&y,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ std::vector<float>\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a73f1e9385fd01832aa1f23a587069b02}{Predict}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
+\DoxyCodeLine{00142\ }
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ab431ef03e4de7ea0f946c90d543679bc}{Compile}}();}
+\DoxyCodeLine{00145\ }
+\DoxyCodeLine{00146\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ std::vector<std::unique\_ptr<GaussSeidelPCLayer>>\ layers;}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ std::unique\_ptr<MemoryArena>\ arena;}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00153\ \ \ \ \ \};}
+\DoxyCodeLine{00154\ \}}
+
+\end{DoxyCode}

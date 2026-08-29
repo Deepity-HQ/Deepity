@@ -19,7 +19,7 @@
 \DoxyCodeLine{00050\ \ \ \ \ \textcolor{keyword}{public}:}
 \DoxyCodeLine{00062\ \ \ \ \ \ \ \ \ \textcolor{keyword}{explicit}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a55e224271863dcc697941c83c905381a}{ConvPCNetwork}}(\textcolor{keywordtype}{int}\ batchSize)\ \textcolor{keyword}{noexcept};}
 \DoxyCodeLine{00063\ }
-\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_abd850e7ccfee1e12f43200b2000f381d}{\string~ConvPCNetwork}}();}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a8473a0415d06c743d77a0eb79417cecf}{\string~ConvPCNetwork}}()\ =\ \textcolor{keywordflow}{default};}
 \DoxyCodeLine{00069\ }
 \DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ No\ copy\ (owns\ raw\ pointers\ +\ a\ MemoryArena);\ move\ not\ implemented}}
 \DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ either,\ matching\ DiscriminativePCNetwork's\ conventions.}}
@@ -54,9 +54,9 @@
 \DoxyCodeLine{00197\ }
 \DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a69c0f3cec4ecb379c3deb08fe22354e2}{UpdatePrecision}}()\ noexcept;}
 \DoxyCodeLine{00204\ }
-\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{ConvPCLayer}}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d}{GetTerminalLayer}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers.back();\ \}}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1ConvPCLayer}{ConvPCLayer}}\ *\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a1929fa3dd5b810b349385c6837f5025d}{GetTerminalLayer}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers.back().get();\ \}}
 \DoxyCodeLine{00211\ }
-\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ std::vector<ConvPCLayer\ *>\ \&\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_a465c12d90051b982332835d10073dcc0}{GetLayers}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
+\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keyword}{auto}\ \&\doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_acfd2dd5c03d2eec350d271d3a003494f}{GetLayers}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ layers;\ \}}
 \DoxyCodeLine{00219\ }
 \DoxyCodeLine{00226\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_adeaa64c8b54bef23610dff7bc1127d0d}{GetBatchSize}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
 \DoxyCodeLine{00227\ }
@@ -65,7 +65,7 @@
 \DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ std::vector<float>\ \doxymbox{\hyperlink{classDeep_1_1ConvPCNetwork_ade6d0963dd15392166b03510a2b8849d}{Predict}}(\textcolor{keyword}{const}\ std::vector<float>\ \&x,\ \textcolor{keywordtype}{int}\ inferenceSteps);}
 \DoxyCodeLine{00256\ }
 \DoxyCodeLine{00257\ \ \ \ \ \textcolor{keyword}{private}:}
-\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ std::vector<ConvPCLayer\ *>\ layers;}
+\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ std::vector<std::unique\_ptr<ConvPCLayer>>\ layers;}
 \DoxyCodeLine{00261\ }
 \DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ std::unique\_ptr<MemoryArena>\ arena;}
 \DoxyCodeLine{00265\ }

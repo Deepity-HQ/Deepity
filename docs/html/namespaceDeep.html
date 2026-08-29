@@ -102,6 +102,9 @@ $(function(){initNavTree('namespaceDeep.html','',''); });
   <div class="headertitle"><div class="title">Deep Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>.  
+<a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
@@ -112,6 +115,8 @@ Classes</h2></td></tr>
 <tr class="memitem:PCNDiagnostics" id="r_PCNDiagnostics"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1PCNDiagnostics.html">PCNDiagnostics</a></td></tr>
 <tr class="memitem:ConvPCLayer" id="r_ConvPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a></td></tr>
 <tr class="memitem:DiscriminativePCLayer" id="r_DiscriminativePCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></td></tr>
+<tr class="memitem:DKP_5FPCLayer" id="r_DKP_5FPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DKP__PCLayer.html">DKP_PCLayer</a></td></tr>
+<tr class="memitem:GaussSeidelPCLayer" id="r_GaussSeidelPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCLayer.html">GaussSeidelPCLayer</a></td></tr>
 <tr class="memitem:Layer" id="r_Layer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html">Layer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A deepity layer virtual class.  <a href="classDeep_1_1Layer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:RBLayer" id="r_RBLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1RBLayer.html">RBLayer</a></td></tr>
@@ -126,6 +131,8 @@ Classes</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A convolutional Predictive Coding (PC) network: an ordered stack of <a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a> instances sharing a single contiguous <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a>, trained via iterative energy-relaxation rather than backpropagation.  <a href="classDeep_1_1ConvPCNetwork.html#details">More...</a><br /></td></tr>
 <tr class="memitem:DiscriminativePCNetwork" id="r_DiscriminativePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html">DiscriminativePCNetwork</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></span>.  <a href="classDeep_1_1DiscriminativePCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:GaussSeidelPCNetwork" id="r_GaussSeidelPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCNetwork.html">GaussSeidelPCNetwork</a></td></tr>
+<tr class="memitem:SimpleConvPCNetwork" id="r_SimpleConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCNetwork.html">SimpleConvPCNetwork</a></td></tr>
 <tr class="memitem:SimplePCNetwork" id="r_SimplePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimplePCNetwork.html">SimplePCNetwork</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a></span>.  <a href="classDeep_1_1SimplePCNetwork.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ProfileAccumulator" id="r_ProfileAccumulator"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structDeep_1_1ProfileAccumulator.html">ProfileAccumulator</a></td></tr>
@@ -185,7 +192,10 @@ Functions</h2></td></tr>
 <tr class="memitem:afc0c7bc2619873cb922f19a2eaf5ffd2 template"><td class="memItemLeft"><a class="el" href="structDeep_1_1ProfileAccumulator.html">ProfileAccumulator</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#afc0c7bc2619873cb922f19a2eaf5ffd2">LayerProfile</a> (LayerT *layer)</td></tr>
 <tr class="memitem:a7b797d1b36359f0bf39a7d0b55190eee" id="r_a7b797d1b36359f0bf39a7d0b55190eee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7b797d1b36359f0bf39a7d0b55190eee">PrintAllProfiles</a> (double wallClockSeconds)</td></tr>
 </table>
-<a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. </p>
+<dl class="section important"><dt>Important</dt><dd>This file is currently WIP! It is not suitable for use (yet). </dd></dl>
+</div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
 <a id="afa1dea57980a3726b01372a204121e16" name="afa1dea57980a3726b01372a204121e16"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afa1dea57980a3726b01372a204121e16">&#9670;&#160;</a></span>ActivationFn</h2>
 
@@ -668,7 +678,7 @@ Accumulates into <code class="param">outputImage</code> rather than overwriting 
 <p>Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">x</td><td>array, <em>assumed</em> to be 64-bit aligned! </td></tr>
+    <tr><td class="paramname">x</td><td>array, <em>does</em> not need to be aligned </td></tr>
     <tr><td class="paramname">n</td><td>x length </td></tr>
   </table>
   </dd>

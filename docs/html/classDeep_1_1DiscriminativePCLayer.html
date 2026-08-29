@@ -119,6 +119,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a20876cd300c0c080085a48e36498cc3c" id="r_a20876cd300c0c080085a48e36498cc3c"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float precisionRate=0.01f, float lmbda=1e-2f, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
 <tr class="memdesc:a20876cd300c0c080085a48e36498cc3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a Deepity <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>.  <br /></td></tr>
 <tr class="memitem:a5fdddc8507be2bde4e22bfbd48186c7b" id="r_a5fdddc8507be2bde4e22bfbd48186c7b"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a5fdddc8507be2bde4e22bfbd48186c7b">DiscriminativePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6, float inferenceRate=0.1f, float precisionRate=0.01f, float lmbda=1e-2f, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">ActivationType::RELU</a>, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a>)</td></tr>
+<tr class="memdesc:a5fdddc8507be2bde4e22bfbd48186c7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a Deepity <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers.  <br /></td></tr>
 <tr class="memitem:a4d50660fe8014f93db31e3478f98ee07" id="r_a4d50660fe8014f93db31e3478f98ee07"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a4d50660fe8014f93db31e3478f98ee07">CalculateState</a> () noexcept override</td></tr>
 <tr class="memdesc:a4d50660fe8014f93db31e3478f98ee07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state.  <br /></td></tr>
 <tr class="memitem:a40f4dbeedd94bdc369d45091bbbdf559" id="r_a40f4dbeedd94bdc369d45091bbbdf559"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a40f4dbeedd94bdc369d45091bbbdf559">UpdateState</a> () noexcept override</td></tr>
@@ -126,6 +127,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a39631620cf0d84cc97977b619fac2e9f" id="r_a39631620cf0d84cc97977b619fac2e9f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a39631620cf0d84cc97977b619fac2e9f">UpdateWeights</a> () noexcept override</td></tr>
 <tr class="memdesc:a39631620cf0d84cc97977b619fac2e9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes weight updates via gradient descent, with L2 weight decay.  <br /></td></tr>
 <tr class="memitem:a93d1fa602e1f5e824f87c9882807d7a3" id="r_a93d1fa602e1f5e824f87c9882807d7a3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93d1fa602e1f5e824f87c9882807d7a3">UpdatePrecision</a> () noexcept</td></tr>
+<tr class="memdesc:a93d1fa602e1f5e824f87c9882807d7a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates this layer's precision weighting based on the current prediction error.  <br /></td></tr>
 <tr class="memitem:a6d31245ccb390d8279da33f9d4014eda" id="r_a6d31245ccb390d8279da33f9d4014eda"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6d31245ccb390d8279da33f9d4014eda">Flush</a> () noexcept override</td></tr>
 <tr class="memdesc:a6d31245ccb390d8279da33f9d4014eda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Does nothing; exists for class extension.  <br /></td></tr>
 <tr class="memitem:a8fc7a24ab49c7928a1ed0a936d44f35e" id="r_a8fc7a24ab49c7928a1ed0a936d44f35e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8fc7a24ab49c7928a1ed0a936d44f35e">ResyncLogPrecision</a> () noexcept</td></tr>
@@ -138,6 +140,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:ac5cf3c7da1032b64442ea4317876ad15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns beliefs.  <br /></td></tr>
 <tr class="memitem:a274953fef6f8bbed0c30e50891b5acaf" id="r_a274953fef6f8bbed0c30e50891b5acaf"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a274953fef6f8bbed0c30e50891b5acaf">GetErrors</a> () const noexcept override</td></tr>
 <tr class="memdesc:a274953fef6f8bbed0c30e50891b5acaf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns errors.  <br /></td></tr>
+<tr class="memitem:a5a3a3db06625ed80f52a8239d8779d09" id="r_a5a3a3db06625ed80f52a8239d8779d09"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a5a3a3db06625ed80f52a8239d8779d09">GetMu</a> () const noexcept</td></tr>
+<tr class="memdesc:a5a3a3db06625ed80f52a8239d8779d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's outgoing prediction buffer.  <br /></td></tr>
 <tr class="memitem:a814d862eae4b8bce835f119b75d9900e" id="r_a814d862eae4b8bce835f119b75d9900e"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a814d862eae4b8bce835f119b75d9900e">GetInputSize</a> () const noexcept override</td></tr>
 <tr class="memdesc:a814d862eae4b8bce835f119b75d9900e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns size (input size).  <br /></td></tr>
 <tr class="memitem:a4f0e865011258493e4e2fa1dc4621b89" id="r_a4f0e865011258493e4e2fa1dc4621b89"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a4f0e865011258493e4e2fa1dc4621b89">GetOutputSize</a> () const noexcept override</td></tr>
@@ -147,18 +151,31 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae35bfeb5649e0869051495b5f35673b6" id="r_ae35bfeb5649e0869051495b5f35673b6"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#ae35bfeb5649e0869051495b5f35673b6">GetWeights</a> () const noexcept</td></tr>
 <tr class="memdesc:ae35bfeb5649e0869051495b5f35673b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only version of the stored weights.  <br /></td></tr>
 <tr class="memitem:abab65746562b3d62181266a938585de7" id="r_abab65746562b3d62181266a938585de7"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#abab65746562b3d62181266a938585de7">GetWeights</a> () noexcept</td></tr>
+<tr class="memdesc:abab65746562b3d62181266a938585de7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a mutable version of the stored weights.  <br /></td></tr>
 <tr class="memitem:af2a3a028661dd0f93a31a8da34aeeedf" id="r_af2a3a028661dd0f93a31a8da34aeeedf"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#af2a3a028661dd0f93a31a8da34aeeedf">GetBiases</a> () const noexcept</td></tr>
 <tr class="memdesc:af2a3a028661dd0f93a31a8da34aeeedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only version of the stored biases.  <br /></td></tr>
 <tr class="memitem:a75f6be3a401be268422e5faebcb20f97" id="r_a75f6be3a401be268422e5faebcb20f97"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#a75f6be3a401be268422e5faebcb20f97">GetBiases</a> () noexcept</td></tr>
+<tr class="memdesc:a75f6be3a401be268422e5faebcb20f97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a mutable version of the stored biases.  <br /></td></tr>
 <tr class="memitem:a4b745a7170681aabb7eff4ac8945a632" id="r_a4b745a7170681aabb7eff4ac8945a632"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a4b745a7170681aabb7eff4ac8945a632">GetPrecisions</a> () const</td></tr>
+<tr class="memdesc:a4b745a7170681aabb7eff4ac8945a632"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a read-only version of the stored precisions.  <br /></td></tr>
 <tr class="memitem:a44cceb7cb7b6c506ac605240b1c2385f" id="r_a44cceb7cb7b6c506ac605240b1c2385f"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a44cceb7cb7b6c506ac605240b1c2385f">GetLearningRate</a> () const noexcept</td></tr>
+<tr class="memdesc:a44cceb7cb7b6c506ac605240b1c2385f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the learning rate used for weight updates.  <br /></td></tr>
 <tr class="memitem:a587257ae27496b95823485b10b65dd8c" id="r_a587257ae27496b95823485b10b65dd8c"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a587257ae27496b95823485b10b65dd8c">GetInferenceRate</a> () const noexcept</td></tr>
+<tr class="memdesc:a587257ae27496b95823485b10b65dd8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the inference rate used for state updates.  <br /></td></tr>
 <tr class="memitem:a4c20694219bec114a09bc43192db6cd6" id="r_a4c20694219bec114a09bc43192db6cd6"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a4c20694219bec114a09bc43192db6cd6">GetPrecisionRate</a> () const noexcept</td></tr>
+<tr class="memdesc:a4c20694219bec114a09bc43192db6cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the learning rate used for precision updates.  <br /></td></tr>
 <tr class="memitem:ae2c3689fdc9ad5e24a881d668fecf4db" id="r_ae2c3689fdc9ad5e24a881d668fecf4db"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#ae2c3689fdc9ad5e24a881d668fecf4db">GetLambda</a> () const noexcept</td></tr>
+<tr class="memdesc:ae2c3689fdc9ad5e24a881d668fecf4db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the weight-decay (L2 regularization) coefficient.  <br /></td></tr>
 <tr class="memitem:af814ef60c24e2e9ec54d157a5ec3454e" id="r_af814ef60c24e2e9ec54d157a5ec3454e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af814ef60c24e2e9ec54d157a5ec3454e">SetLearningRate</a> (float lr) noexcept</td></tr>
+<tr class="memdesc:af814ef60c24e2e9ec54d157a5ec3454e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the learning rate used for weight updates.  <br /></td></tr>
 <tr class="memitem:ab19e152ef3075ddc9a53171d96beae8d" id="r_ab19e152ef3075ddc9a53171d96beae8d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab19e152ef3075ddc9a53171d96beae8d">SetInferenceRate</a> (float ir) noexcept</td></tr>
+<tr class="memdesc:ab19e152ef3075ddc9a53171d96beae8d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the inference rate used for state updates.  <br /></td></tr>
 <tr class="memitem:aa67aebb3e24a80b16887f6628b18775f" id="r_aa67aebb3e24a80b16887f6628b18775f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa67aebb3e24a80b16887f6628b18775f">SetPrecisionRate</a> (float pr) noexcept</td></tr>
+<tr class="memdesc:aa67aebb3e24a80b16887f6628b18775f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the learning rate used for precision updates.  <br /></td></tr>
 <tr class="memitem:a0af93749baa70dbcebdd3c95d0e4e523" id="r_a0af93749baa70dbcebdd3c95d0e4e523"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0af93749baa70dbcebdd3c95d0e4e523">SetLambda</a> (float l) noexcept</td></tr>
+<tr class="memdesc:a0af93749baa70dbcebdd3c95d0e4e523"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the weight-decay (L2 regularization) coefficient.  <br /></td></tr>
+<tr class="memitem:acef9457c35cd20b00bf9eeba5f492d14" id="r_acef9457c35cd20b00bf9eeba5f492d14"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#acef9457c35cd20b00bf9eeba5f492d14">SetOptimizer</a> (<a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> o) noexcept</td></tr>
+<tr class="memdesc:acef9457c35cd20b00bf9eeba5f492d14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Selects the optimizer used for weight updates.  <br /></td></tr>
 <tr class="memitem:a76ea705b1fd38a4e2ed0b4f6404fb7ee" id="r_a76ea705b1fd38a4e2ed0b4f6404fb7ee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a76ea705b1fd38a4e2ed0b4f6404fb7ee">SetLayerAbove</a> (<a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *above) noexcept</td></tr>
 <tr class="memdesc:a76ea705b1fd38a4e2ed0b4f6404fb7ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ties this layer to one above it.  <br /></td></tr>
 <tr class="memitem:abede165ae677fd873e41f4948ac8f11d" id="r_abede165ae677fd873e41f4948ac8f11d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abede165ae677fd873e41f4948ac8f11d">SetLayerBelow</a> (<a class="el" href="#a20876cd300c0c080085a48e36498cc3c">DiscriminativePCLayer</a> *below) noexcept</td></tr>
@@ -172,11 +189,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac0487aab6d212d0d35421ae3182f1fbe" id="r_ac0487aab6d212d0d35421ae3182f1fbe"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac0487aab6d212d0d35421ae3182f1fbe">RandomizeWeights</a> (std::mt19937 &amp;twister) noexcept</td></tr>
 <tr class="memdesc:ac0487aab6d212d0d35421ae3182f1fbe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Makes the weights W randomized to [0.0, 0.1] using an OpenMP-parallelized uniform real distribution.  <br /></td></tr>
 <tr class="memitem:a19c60f114c24e1acfe656bb457bd2fbf" id="r_a19c60f114c24e1acfe656bb457bd2fbf"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a19c60f114c24e1acfe656bb457bd2fbf">GetActivationType</a> () const noexcept</td></tr>
+<tr class="memdesc:a19c60f114c24e1acfe656bb457bd2fbf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's configured activation type.  <br /></td></tr>
 <tr class="memitem:aef19aa4132fdcc53eec41a3aec0df17f" id="r_aef19aa4132fdcc53eec41a3aec0df17f"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#aef19aa4132fdcc53eec41a3aec0df17f">GetDerivativeType</a> () const noexcept</td></tr>
+<tr class="memdesc:aef19aa4132fdcc53eec41a3aec0df17f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's configured activation-derivative type.  <br /></td></tr>
 <tr class="memitem:afd81ca54308b168546917a652043b5a9" id="r_afd81ca54308b168546917a652043b5a9"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#afd81ca54308b168546917a652043b5a9">GetRequiredFloats</a> () const noexcept</td></tr>
 <tr class="memdesc:afd81ca54308b168546917a652043b5a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates exact float count required by this layer's architecture.  <br /></td></tr>
 <tr class="memitem:acc0fa51c4675373a68e80fbeafe81867" id="r_acc0fa51c4675373a68e80fbeafe81867"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#acc0fa51c4675373a68e80fbeafe81867">BindMemory</a> (<a class="el" href="classDeep_1_1MemoryArena.html">MemoryArena</a> &amp;arena)</td></tr>
 <tr class="memdesc:acc0fa51c4675373a68e80fbeafe81867"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds all tensor pointers to the contiguous memory block.  <br /></td></tr>
+<tr class="memitem:a91974a53d4e2a130a6e3fbfaaab2ba36" id="r_a91974a53d4e2a130a6e3fbfaaab2ba36"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a91974a53d4e2a130a6e3fbfaaab2ba36">ComputeMuOnly</a> () noexcept</td></tr>
+<tr class="memdesc:a91974a53d4e2a130a6e3fbfaaab2ba36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes only mu (forward prediction), skipping error and energy computation entirely. Useful for callers that only need a forward pass through current weights (e.g. forward projection initialization) without the cost of the discarded error/energy values.  <br /></td></tr>
 <tr class="inherit_header pub_methods_classDeep_1_1Layer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classDeep_1_1Layer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td></tr>
 <tr class="memitem:a7345cceda85f2a8c845fc00db21c6d4d inherit pub_methods_classDeep_1_1Layer" id="r_a7345cceda85f2a8c845fc00db21c6d4d"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a7345cceda85f2a8c845fc00db21c6d4d">~Layer</a> ()=default</td></tr>
 </table><table class="memberdecls">
@@ -331,6 +352,22 @@ Additional Inherited Members</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Constructor for a Deepity <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname"><a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d" title="Size of input.">size</a></td><td>Size of layer </td></tr>
+    <tr><td class="paramname"><a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0" title="Size of output.">nextSize</a></td><td>Size of next layer (used for row size of W) </td></tr>
+    <tr><td class="paramname">batchSize</td><td>Batch size (default to 1 for simplicity) </td></tr>
+    <tr><td class="paramname">learningRate</td><td>Learning rate to update weights </td></tr>
+    <tr><td class="paramname">inferenceRate</td><td>Learning rate to update state </td></tr>
+    <tr><td class="paramname">precisionRate</td><td>Precition weight to update precision </td></tr>
+    <tr><td class="paramname">lmbda</td><td>Weight decay (L2 regularization) coefficient </td></tr>
+    <tr><td class="paramname">aType</td><td>Activation type </td></tr>
+    <tr><td class="paramname">dType</td><td>Activation derivative type </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
@@ -381,7 +418,8 @@ Additional Inherited Members</h2></td></tr>
 \[E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
 \]
 </p>
- 
+ <dl class="section return"><dt>Returns</dt><dd>This layer's energy contribution at the current state. </dd></dl>
+
 <p>Implements <a class="el" href="classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe">Deep::Layer</a>.</p>
 
 </div>
@@ -416,6 +454,33 @@ Additional Inherited Members</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a91974a53d4e2a130a6e3fbfaaab2ba36" name="a91974a53d4e2a130a6e3fbfaaab2ba36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91974a53d4e2a130a6e3fbfaaab2ba36">&#9670;&#160;</a></span>ComputeMuOnly()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DiscriminativePCLayer::ComputeMuOnly </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Computes only mu (forward prediction), skipping error and energy computation entirely. Useful for callers that only need a forward pass through current weights (e.g. forward projection initialization) without the cost of the discarded error/energy values. </p>
 
 </div>
 </div>
@@ -470,6 +535,9 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns this layer's configured activation type. </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> </dd></dl>
 
 </div>
 </div>
@@ -584,6 +652,9 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns a mutable version of the stored biases. </p>
+<dl class="section return"><dt>Returns</dt><dd>float *b </dd></dl>
+
 </div>
 </div>
 <a id="aef19aa4132fdcc53eec41a3aec0df17f" name="aef19aa4132fdcc53eec41a3aec0df17f"></a>
@@ -608,6 +679,9 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns this layer's configured activation-derivative type. </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> </dd></dl>
 
 </div>
 </div>
@@ -664,6 +738,9 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the inference rate used for state updates. </p>
+<dl class="section return"><dt>Returns</dt><dd>float ir </dd></dl>
+
 </div>
 </div>
 <a id="a814d862eae4b8bce835f119b75d9900e" name="a814d862eae4b8bce835f119b75d9900e"></a>
@@ -718,6 +795,9 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns the weight-decay (L2 regularization) coefficient. </p>
+<dl class="section return"><dt>Returns</dt><dd>float lmbda </dd></dl>
 
 </div>
 </div>
@@ -800,6 +880,37 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the learning rate used for weight updates. </p>
+<dl class="section return"><dt>Returns</dt><dd>float lr </dd></dl>
+
+</div>
+</div>
+<a id="a5a3a3db06625ed80f52a8239d8779d09" name="a5a3a3db06625ed80f52a8239d8779d09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a3a3db06625ed80f52a8239d8779d09">&#9670;&#160;</a></span>GetMu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float * Deep::DiscriminativePCLayer::GetMu </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns this layer's outgoing prediction buffer. </p>
+<dl class="section return"><dt>Returns</dt><dd>const float *mu </dd></dl>
+
 </div>
 </div>
 <a id="a4f0e865011258493e4e2fa1dc4621b89" name="a4f0e865011258493e4e2fa1dc4621b89"></a>
@@ -855,6 +966,9 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the learning rate used for precision updates. </p>
+<dl class="section return"><dt>Returns</dt><dd>float pr </dd></dl>
+
 </div>
 </div>
 <a id="a4b745a7170681aabb7eff4ac8945a632" name="a4b745a7170681aabb7eff4ac8945a632"></a>
@@ -879,6 +993,9 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns a read-only version of the stored precisions. </p>
+<dl class="section return"><dt>Returns</dt><dd>const float *p </dd></dl>
 
 </div>
 </div>
@@ -959,6 +1076,9 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns a mutable version of the stored weights. </p>
+<dl class="section return"><dt>Returns</dt><dd>float *W </dd></dl>
 
 </div>
 </div>
@@ -1072,6 +1192,14 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Sets the inference rate used for state updates. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ir</td><td>The new inference rate. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="a0af93749baa70dbcebdd3c95d0e4e523" name="a0af93749baa70dbcebdd3c95d0e4e523"></a>
@@ -1096,6 +1224,14 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Sets the weight-decay (L2 regularization) coefficient. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">l</td><td>The new lambda value. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1188,6 +1324,47 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Sets the learning rate used for weight updates. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">lr</td><td>The new learning rate. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="acef9457c35cd20b00bf9eeba5f492d14" name="acef9457c35cd20b00bf9eeba5f492d14"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acef9457c35cd20b00bf9eeba5f492d14">&#9670;&#160;</a></span>SetOptimizer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DiscriminativePCLayer::SetOptimizer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a></td>          <td class="paramname"><span class="paramname"><em>o</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Selects the optimizer used for weight updates. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">o</td><td>The optimizer type to use. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="aa67aebb3e24a80b16887f6628b18775f" name="aa67aebb3e24a80b16887f6628b18775f"></a>
@@ -1212,6 +1389,14 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Sets the learning rate used for precision updates. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pr</td><td>The new precision rate. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -1264,6 +1449,8 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Updates this layer's precision weighting based on the current prediction error. </p>
 
 </div>
 </div>

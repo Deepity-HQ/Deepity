@@ -124,6 +124,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>DiscriminativePCLayer with precision entirely removed. </p>
@@ -131,7 +132,9 @@ Namespaces</h2></td></tr>
 <p>This class removes all of that: energy reduces to plain E = 0.5*sum(e^2) (no precision weighting, no -0.5*log(p) term), and UpdateState()'s own term reduces to dz_dt = -e (no p multiplier, since p=1 always made that multiplication a no-op anyway).</p>
 <p>Mirrors DiscriminativePCLayer's public interface as closely as possible (same AddLayer-style construction pattern, same ActivationType-based constructor, same GetBeliefs/GetErrors/GetWeights/GetBiases accessors) so it's a near-drop-in swap for anyone not using precision &ndash; which, per the above, was everyone.</p>
 <dl class="section warning"><dt>Warning</dt><dd>Not yet gradient-checked independently &ndash; this is a direct strip-down of DiscriminativePCLayer's already-verified math (same CalculateState/UpdateState/UpdateWeights formulas, precision terms removed), not new math, but the removal itself hasn't been re-verified via finite-difference check. Do that before trusting this for real training &ndash; same discipline as every other change this session.</dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Optionally uses Adam (see <a class="el" href="AdamOptimizer_8h.html" title="Vectorized AdamW update, operating per-element over an array of weights (or biases) – NOT the single-...">AdamOptimizer.h</a>) instead of plain SGD for weight updates, selected via SetOptimizer(); Adam's moment buffers are only allocated when selected, keeping the SGD-only path free of their memory/compute cost. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Optionally uses Adam (see <a class="el" href="AdamOptimizer_8h.html" title="Vectorized AdamW update, operating per-element over an array of weights (or biases) – NOT the single-...">AdamOptimizer.h</a>) instead of plain SGD for weight updates, selected via SetOptimizer(); Adam's moment buffers are only allocated when selected, keeping the SGD-only path free of their memory/compute cost.</dd>
+<dd>
+Optionally caches a CLAMPED layer's outgoing prediction (mu) across settling steps via SetMuCaching() &ndash; a clamped layer's z is fixed for the whole settling loop, and W/b don't change until UpdateWeights() runs afterward, so mu=f(W@z+b) is PROVABLY IDENTICAL every step while clamped. This is an EXACT optimization, not an approximation &ndash; default OFF so both behaviors coexist for direct correctness/timing comparison before trusting it. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>

@@ -1,0 +1,32 @@
+\doxysection{DKP\+\_\+\+PCLayer.\+h}
+\hypertarget{DKP__PCLayer_8h_source}{}\label{DKP__PCLayer_8h_source}\index{include/deepity/layers/DKP\_PCLayer.h@{include/deepity/layers/DKP\_PCLayer.h}}
+\doxymbox{\hyperlink{DKP__PCLayer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ "{}\doxymbox{\hyperlink{Activations_8h}{deepity/Activations.h}}"{}}}
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00004\ }
+\DoxyCodeLine{00007\ }
+\DoxyCodeLine{00008\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00009\ \{}
+\DoxyCodeLine{00010\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}}
+\DoxyCodeLine{00011\ \ \ \ \ \{}
+\DoxyCodeLine{00012\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00013\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}(\doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}\ *prevLayer,\ \doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}\ *nextLayer,\ \textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize,\ \textcolor{keywordtype}{float}\ lr\ =\ 1e-\/4);}
+\DoxyCodeLine{00014\ }
+\DoxyCodeLine{00015\ \ \ \ \ \textcolor{keyword}{private}:}
+\DoxyCodeLine{00016\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr;}
+\DoxyCodeLine{00017\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ inSize;}
+\DoxyCodeLine{00018\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ outSize;}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00020\ \ \ \ \ \ \ \ \ std::unique\_ptr<float>\ feedback;}
+\DoxyCodeLine{00021\ }
+\DoxyCodeLine{00022\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}\ *prevLayer;}
+\DoxyCodeLine{00023\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1DKP__PCLayer_aad38c3649d44c6ccb97747b98d13a4a8}{DKP\_PCLayer}}\ *nextLayer;}
+\DoxyCodeLine{00024\ }
+\DoxyCodeLine{00025\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ act;}
+\DoxyCodeLine{00026\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ dAct;}
+\DoxyCodeLine{00027\ \ \ \ \ \};}
+\DoxyCodeLine{00028\ \}}
+
+\end{DoxyCode}

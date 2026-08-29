@@ -112,10 +112,9 @@ $(function(){initNavTree('classDeep_1_1SimplePCNetwork.html','','classDeep_1_1Si
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a2e9fea4af3192bea1d016ae25e9f0d48" id="r_a2e9fea4af3192bea1d016ae25e9f0d48"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a2e9fea4af3192bea1d016ae25e9f0d48">SimplePCNetwork</a> (int batchSize) noexcept</td></tr>
 <tr class="memdesc:a2e9fea4af3192bea1d016ae25e9f0d48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an empty network with a predetermined batch size.  <br /></td></tr>
-<tr class="memitem:a0dee15d9e8bc635bd713af7670845394" id="r_a0dee15d9e8bc635bd713af7670845394"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0dee15d9e8bc635bd713af7670845394">~SimplePCNetwork</a> ()</td></tr>
-<tr class="memdesc:a0dee15d9e8bc635bd713af7670845394"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default destructor; deletes each layer.  <br /></td></tr>
 <tr class="memitem:a8fd6812b4f86ad0727ed870a723b1d8d" id="r_a8fd6812b4f86ad0727ed870a723b1d8d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a8fd6812b4f86ad0727ed870a723b1d8d">SimplePCNetwork</a> (const SimplePCNetwork &amp;)=delete</td></tr>
 <tr class="memitem:a045dbcb6ded7afa0bf3d54bb90851b2f" id="r_a045dbcb6ded7afa0bf3d54bb90851b2f"><td class="memItemLeft"><a class="el" href="#a2e9fea4af3192bea1d016ae25e9f0d48">SimplePCNetwork</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a045dbcb6ded7afa0bf3d54bb90851b2f">operator=</a> (const <a class="el" href="#a2e9fea4af3192bea1d016ae25e9f0d48">SimplePCNetwork</a> &amp;)=delete</td></tr>
+<tr class="memitem:adf1a0c39d6f5306e4014340d6f87334f" id="r_adf1a0c39d6f5306e4014340d6f87334f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#adf1a0c39d6f5306e4014340d6f87334f">~SimplePCNetwork</a> ()=default</td></tr>
 <tr class="memitem:aa384bc2e4c8680e546fa30fadbe26097" id="r_aa384bc2e4c8680e546fa30fadbe26097"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa384bc2e4c8680e546fa30fadbe26097">AddLayer</a> (int size, int nextSize, float lr, float ir, float lmbda, void(*act)(float *, size_t), void(*dAct)(float *, size_t, bool))</td></tr>
 <tr class="memdesc:aa384bc2e4c8680e546fa30fadbe26097"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a layer to the network.  <br /></td></tr>
 <tr class="memitem:ab92a4ed5946ba59c9878386bcf8e755f" id="r_ab92a4ed5946ba59c9878386bcf8e755f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab92a4ed5946ba59c9878386bcf8e755f">AddLayer</a> (int size, int nextSize, float lr, float ir, float lmbda, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType)</td></tr>
@@ -133,10 +132,10 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a37cef4fd66daf8a0fe188e8d68f1fd16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates each layer's weights.  <br /></td></tr>
 <tr class="memitem:a005cc58fff7ac41f673df3a17d779b5c" id="r_a005cc58fff7ac41f673df3a17d779b5c"><td class="memItemLeft"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a005cc58fff7ac41f673df3a17d779b5c">GetTerminalLayer</a> () noexcept</td></tr>
 <tr class="memdesc:a005cc58fff7ac41f673df3a17d779b5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the network's terminal (final) layer.  <br /></td></tr>
-<tr class="memitem:a73ed2efc5d4b9668d1730480084c2fdc" id="r_a73ed2efc5d4b9668d1730480084c2fdc"><td class="memItemLeft">std::vector&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> * &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a73ed2efc5d4b9668d1730480084c2fdc">GetLayers</a> () noexcept</td></tr>
-<tr class="memdesc:a73ed2efc5d4b9668d1730480084c2fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
-<tr class="memitem:a0c20be6b03d7c36dbf56ac7d7594db00" id="r_a0c20be6b03d7c36dbf56ac7d7594db00"><td class="memItemLeft">const std::vector&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> * &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a0c20be6b03d7c36dbf56ac7d7594db00">GetLayers</a> () const noexcept</td></tr>
-<tr class="memdesc:a0c20be6b03d7c36dbf56ac7d7594db00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
+<tr class="memitem:abb259c8752958c2b6876fc0fe364b119" id="r_abb259c8752958c2b6876fc0fe364b119"><td class="memItemLeft">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#abb259c8752958c2b6876fc0fe364b119">GetLayers</a> () noexcept</td></tr>
+<tr class="memdesc:abb259c8752958c2b6876fc0fe364b119"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
+<tr class="memitem:acd576038cb77769d7506e4ca41fd7807" id="r_acd576038cb77769d7506e4ca41fd7807"><td class="memItemLeft">const std::vector&lt; std::unique_ptr&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#acd576038cb77769d7506e4ca41fd7807">GetLayers</a> () const noexcept</td></tr>
+<tr class="memdesc:acd576038cb77769d7506e4ca41fd7807"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
 <tr class="memitem:a55a9abe5da408b0520355d2fb43e64b0" id="r_a55a9abe5da408b0520355d2fb43e64b0"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a55a9abe5da408b0520355d2fb43e64b0">GetBatchSize</a> () const noexcept</td></tr>
 <tr class="memdesc:a55a9abe5da408b0520355d2fb43e64b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the batch size for the network's layers.  <br /></td></tr>
 <tr class="memitem:a93c9e277b76d47da05176f27925467a0" id="r_a93c9e277b76d47da05176f27925467a0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93c9e277b76d47da05176f27925467a0">SetOptimizer</a> (<a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> o) noexcept</td></tr>
@@ -145,6 +144,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a85b53cd16ead4c216534c799cf2c83a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a complete training step (clamp, settle, update, unclamp).  <br /></td></tr>
 <tr class="memitem:a9d0bb526df254fd0cb83cb8f0557128e" id="r_a9d0bb526df254fd0cb83cb8f0557128e"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a9d0bb526df254fd0cb83cb8f0557128e">Predict</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
 <tr class="memdesc:a9d0bb526df254fd0cb83cb8f0557128e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a forward prediction pass (clamp, settle, read).  <br /></td></tr>
+<tr class="memitem:ae3d61db38519b08544a5efa1fc9b4744" id="r_ae3d61db38519b08544a5efa1fc9b4744"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae3d61db38519b08544a5efa1fc9b4744">ProjectForward</a> () noexcept</td></tr>
+<tr class="memdesc:ae3d61db38519b08544a5efa1fc9b4744"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a single, non-iterative forward pass through current weights, seeding each hidden layer's z from the PREVIOUS layer's mu &ndash; giving the settling loop a genuine, current-weights-based starting point instead of zero-init.  <br /></td></tr>
+<tr class="memitem:a828bdc7ebc001561e1b7ae85262fe0b7" id="r_a828bdc7ebc001561e1b7ae85262fe0b7"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a828bdc7ebc001561e1b7ae85262fe0b7">TrainStepWithProjection</a> (const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td></tr>
+<tr class="memdesc:a828bdc7ebc001561e1b7ae85262fe0b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full train step WITH forward-projection initialization, all in ONE call &ndash; reset, clamp, project, settle, update weights, unclamp. Matches <a class="el" href="#a85b53cd16ead4c216534c799cf2c83a3" title="Runs a complete training step (clamp, settle, update, unclamp).">TrainStep()</a>'s signature/return convention exactly, just with <a class="el" href="#ae3d61db38519b08544a5efa1fc9b4744" title="Runs a single, non-iterative forward pass through current weights, seeding each hidden layer&#39;s z from...">ProjectForward()</a> inserted between clamping the input and clamping the target.  <br /></td></tr>
+<tr class="memitem:a438d2bac4b410623d373913e9029923f" id="r_a438d2bac4b410623d373913e9029923f"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a438d2bac4b410623d373913e9029923f">PredictWithProjection</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
+<tr class="memitem:ac44b3799242fc07fdb55a5b075cc0872" id="r_ac44b3799242fc07fdb55a5b075cc0872"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac44b3799242fc07fdb55a5b075cc0872">SetMuCacheThreshold</a> (float threshold) noexcept</td></tr>
+<tr class="memdesc:ac44b3799242fc07fdb55a5b075cc0872"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets mu-cache threshold on every layer &ndash; see <a class="el" href="classDeep_1_1SimplePCLayer.html#abcc9462a7aa38ec8cab0e6e707bb1176" title="Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_...">SimplePCLayer::SetMuCacheThreshold()</a> for semantics. Safe to call any time after <a class="el" href="#ab002be580e5752b5861d2dfa77072ede" title="Loads all layers into one contiguous block of memory.">Compile()</a>.  <br /></td></tr>
 <tr class="memitem:ab002be580e5752b5861d2dfa77072ede" id="r_ab002be580e5752b5861d2dfa77072ede"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab002be580e5752b5861d2dfa77072ede">Compile</a> ()</td></tr>
 <tr class="memdesc:ab002be580e5752b5861d2dfa77072ede"><td class="mdescLeft">&#160;</td><td class="mdescRight">Loads all layers into one contiguous block of memory.  <br /></td></tr>
 </table>
@@ -184,25 +190,6 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0dee15d9e8bc635bd713af7670845394" name="a0dee15d9e8bc635bd713af7670845394"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0dee15d9e8bc635bd713af7670845394">&#9670;&#160;</a></span>~SimplePCNetwork()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">Deep::SimplePCNetwork::~SimplePCNetwork </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Default destructor; deletes each layer. </p>
-
-</div>
-</div>
 <a id="a8fd6812b4f86ad0727ed870a723b1d8d" name="a8fd6812b4f86ad0727ed870a723b1d8d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8fd6812b4f86ad0727ed870a723b1d8d">&#9670;&#160;</a></span>SimplePCNetwork() <span class="overload">[2/2]</span></h2>
 
@@ -222,6 +209,31 @@ Public Member Functions</h2></td></tr>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel delete">delete</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adf1a0c39d6f5306e4014340d6f87334f" name="adf1a0c39d6f5306e4014340d6f87334f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf1a0c39d6f5306e4014340d6f87334f">&#9670;&#160;</a></span>~SimplePCNetwork()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Deep::SimplePCNetwork::~SimplePCNetwork </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel default">default</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -427,8 +439,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0c20be6b03d7c36dbf56ac7d7594db00" name="a0c20be6b03d7c36dbf56ac7d7594db00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c20be6b03d7c36dbf56ac7d7594db00">&#9670;&#160;</a></span>GetLayers() <span class="overload">[1/2]</span></h2>
+<a id="acd576038cb77769d7506e4ca41fd7807" name="acd576038cb77769d7506e4ca41fd7807"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd576038cb77769d7506e4ca41fd7807">&#9670;&#160;</a></span>GetLayers() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -437,7 +449,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> * &gt; &amp; Deep::SimplePCNetwork::GetLayers </td>
+          <td class="memname">const std::vector&lt; std::unique_ptr&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> &gt; &gt; &amp; Deep::SimplePCNetwork::GetLayers </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -455,8 +467,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a73ed2efc5d4b9668d1730480084c2fdc" name="a73ed2efc5d4b9668d1730480084c2fdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73ed2efc5d4b9668d1730480084c2fdc">&#9670;&#160;</a></span>GetLayers() <span class="overload">[2/2]</span></h2>
+<a id="abb259c8752958c2b6876fc0fe364b119" name="abb259c8752958c2b6876fc0fe364b119"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb259c8752958c2b6876fc0fe364b119">&#9670;&#160;</a></span>GetLayers() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -465,7 +477,7 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::vector&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> * &gt; &amp; Deep::SimplePCNetwork::GetLayers </td>
+          <td class="memname">std::vector&lt; std::unique_ptr&lt; <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a> &gt; &gt; &amp; Deep::SimplePCNetwork::GetLayers </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -567,6 +579,56 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a438d2bac4b410623d373913e9029923f" name="a438d2bac4b410623d373913e9029923f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a438d2bac4b410623d373913e9029923f">&#9670;&#160;</a></span>PredictWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; float &gt; Deep::SimplePCNetwork::PredictWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae3d61db38519b08544a5efa1fc9b4744" name="ae3d61db38519b08544a5efa1fc9b4744"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3d61db38519b08544a5efa1fc9b4744">&#9670;&#160;</a></span>ProjectForward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::SimplePCNetwork::ProjectForward </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Runs a single, non-iterative forward pass through current weights, seeding each hidden layer's z from the PREVIOUS layer's mu &ndash; giving the settling loop a genuine, current-weights-based starting point instead of zero-init. </p>
+<p>Reuses each layer's EXISTING <a class="el" href="#a413894fb1d5b5da37159f1b728339e66" title="Calculates the state of each layer.">CalculateState()</a> (already-verified forward computation, mu = f(W@z+b)) as a side effect &ndash; no new math, just a new sequence of existing calls. Assumes the input layer (layers[0]) is ALREADY clamped before this is called.</p>
+<dl class="section warning"><dt>Warning</dt><dd><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> 0's error (e) and this call's energy return value are meaningless here &ndash; <a class="el" href="#a413894fb1d5b5da37159f1b728339e66" title="Calculates the state of each layer.">CalculateState()</a> computes both mu (what we want) and e/energy (a side effect we're discarding, since the NEXT layer's z hasn't been set to a meaningful value yet at the point each layer's <a class="el" href="#a413894fb1d5b5da37159f1b728339e66" title="Calculates the state of each layer.">CalculateState()</a> runs). Only mu is used. </dd></dl>
+
+</div>
+</div>
 <a id="a727f5326dfd8e9b638a7cf2a4c6902b0" name="a727f5326dfd8e9b638a7cf2a4c6902b0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a727f5326dfd8e9b638a7cf2a4c6902b0">&#9670;&#160;</a></span>RandomizeWeights()</h2>
 
@@ -616,6 +678,33 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Resets each layer's state without touching learned weights. </p>
+
+</div>
+</div>
+<a id="ac44b3799242fc07fdb55a5b075cc0872" name="ac44b3799242fc07fdb55a5b075cc0872"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac44b3799242fc07fdb55a5b075cc0872">&#9670;&#160;</a></span>SetMuCacheThreshold()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::SimplePCNetwork::SetMuCacheThreshold </td>
+          <td>(</td>
+          <td class="paramtype">float</td>          <td class="paramname"><span class="paramname"><em>threshold</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets mu-cache threshold on every layer &ndash; see <a class="el" href="classDeep_1_1SimplePCLayer.html#abcc9462a7aa38ec8cab0e6e707bb1176" title="Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_...">SimplePCLayer::SetMuCacheThreshold()</a> for semantics. Safe to call any time after <a class="el" href="#ab002be580e5752b5861d2dfa77072ede" title="Loads all layers into one contiguous block of memory.">Compile()</a>. </p>
 
 </div>
 </div>
@@ -686,6 +775,35 @@ Public Member Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The final energy state of the network before weight updates </dd></dl>
+
+</div>
+</div>
+<a id="a828bdc7ebc001561e1b7ae85262fe0b7" name="a828bdc7ebc001561e1b7ae85262fe0b7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a828bdc7ebc001561e1b7ae85262fe0b7">&#9670;&#160;</a></span>TrainStepWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::SimplePCNetwork::TrainStepWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>y</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Full train step WITH forward-projection initialization, all in ONE call &ndash; reset, clamp, project, settle, update weights, unclamp. Matches <a class="el" href="#a85b53cd16ead4c216534c799cf2c83a3" title="Runs a complete training step (clamp, settle, update, unclamp).">TrainStep()</a>'s signature/return convention exactly, just with <a class="el" href="#ae3d61db38519b08544a5efa1fc9b4744" title="Runs a single, non-iterative forward pass through current weights, seeding each hidden layer&#39;s z from...">ProjectForward()</a> inserted between clamping the input and clamping the target. </p>
+<p>Exists specifically to eliminate the Python/pybind boundary- crossing overhead of doing this same sequence via many separate calls from Python (reset_state, clamp_input, project_forward, clamp_state, then STEPS*2 individual calculate_state/update_state calls, update_weights, unclamp_state &ndash; over 40 individual crossings per batch at STEPS=20). This does the whole sequence in ONE crossing instead. </p>
 
 </div>
 </div>

@@ -17,731 +17,716 @@
 \DoxyCodeLine{00013\ \textcolor{preprocessor}{\#define\ RESTRICT\ \_\_restrict\_\_}}
 \DoxyCodeLine{00014\ \textcolor{preprocessor}{\#endif}}
 \DoxyCodeLine{00015\ }
-\DoxyCodeLine{00033\ }
-\DoxyCodeLine{00034\ \textcolor{preprocessor}{\#ifndef\ MAX}}
-\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#define\ MAX(a,\ b)\ (((a)\ >\ (b))\ ?\ (a)\ :\ (b))}}
-\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00037\ }
-\DoxyCodeLine{00038\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
-\DoxyCodeLine{00039\ \{}
-\DoxyCodeLine{00040\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ =\ void\ (*)(\textcolor{keywordtype}{float}\ *,\ size\_t);}
-\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ =\ void\ (*)(\textcolor{keywordtype}{float}\ *,\ size\_t,\ bool);}
-\DoxyCodeLine{00042\ }
-\DoxyCodeLine{00043\ \ \ \ \ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ :\ uint8\_t}
-\DoxyCodeLine{00044\ \ \ \ \ \{}
-\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{RELU}},}
-\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{dRELU}},}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{SIGMOID}},}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{dSIGMOID}},}
-\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{eSIGMOID}},}
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{TANH}},}
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{dTANH}},}
-\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{LINEAR}},}
-\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{dLINEAR}},}
-\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{NONE}}}
-\DoxyCodeLine{00055\ \ \ \ \ \};}
-\DoxyCodeLine{00056\ }
-\DoxyCodeLine{00057\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ relu(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ sigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ e\_sigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ tanh(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ linear(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00062\ }
-\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dRelu(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dSigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dTanh(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dLinear(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
-\DoxyCodeLine{00067\ }
-\DoxyCodeLine{00068\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ To\_Fn(\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ type)}
-\DoxyCodeLine{00069\ \ \ \ \ \{}
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (type)}
-\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}}:}
-\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ relu;}
-\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{ActivationType::SIGMOID}}:}
-\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sigmoid;}
-\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{ActivationType::eSIGMOID}}:}
-\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ e\_sigmoid;}
-\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{ActivationType::TANH}}:}
-\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tanh;}
-\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{ActivationType::LINEAR}}:}
-\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ linear;}
-\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}}:}
-\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
-\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00086\ \ \ \ \ \}}
-\DoxyCodeLine{00087\ }
-\DoxyCodeLine{00088\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ To\_dFn(\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ dType)}
-\DoxyCodeLine{00089\ \ \ \ \ \{}
-\DoxyCodeLine{00090\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (dType)}
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}}:}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dRelu;}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{ActivationType::dSIGMOID}}:}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dSigmoid;}
-\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{ActivationType::dTANH}}:}
-\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dTanh;}
-\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{ActivationType::dLINEAR}}:}
-\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dLinear;}
-\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}}:}
-\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
-\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
-\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00104\ \ \ \ \ \}}
-\DoxyCodeLine{00105\ }
-\DoxyCodeLine{00106\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ To\_AType(\doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ fn)}
-\DoxyCodeLine{00107\ \ \ \ \ \{}
-\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ relu)}
-\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}};}
-\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ sigmoid)}
-\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{ActivationType::SIGMOID}};}
-\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ e\_sigmoid)}
-\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{ActivationType::eSIGMOID}};}
-\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ tanh)}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{ActivationType::TANH}};}
-\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ linear)}
-\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{ActivationType::LINEAR}};}
-\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}};}
-\DoxyCodeLine{00119\ \ \ \ \ \}}
-\DoxyCodeLine{00120\ }
-\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ To\_AType(\doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ dfn)}
-\DoxyCodeLine{00122\ \ \ \ \ \{}
-\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dRelu)}
-\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}};}
-\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dSigmoid)}
-\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{ActivationType::dSIGMOID}};}
-\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dTanh)}
-\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{ActivationType::dTANH}};}
-\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dLinear)}
-\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{ActivationType::dLINEAR}};}
-\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}};}
-\DoxyCodeLine{00132\ \ \ \ \ \}}
-\DoxyCodeLine{00133\ }
-\DoxyCodeLine{00134\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ expf\_v(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n)}
-\DoxyCodeLine{00135\ \ \ \ \ \{}
-\DoxyCodeLine{00136\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
-\DoxyCodeLine{00137\ }
-\DoxyCodeLine{00138\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00140\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00144\ }
+\DoxyCodeLine{00034\ }
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#ifndef\ MAX}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#define\ MAX(a,\ b)\ (((a)\ >\ (b))\ ?\ (a)\ :\ (b))}}
+\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00040\ \{}
+\DoxyCodeLine{00041\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ =\ void\ (*)(\textcolor{keywordtype}{float}\ *,\ size\_t);}
+\DoxyCodeLine{00042\ \ \ \ \ \textcolor{keyword}{using\ }\doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ =\ void\ (*)(\textcolor{keywordtype}{float}\ *,\ size\_t,\ bool);}
+\DoxyCodeLine{00043\ }
+\DoxyCodeLine{00044\ \ \ \ \ \textcolor{keyword}{enum\ class}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ :\ uint8\_t}
+\DoxyCodeLine{00045\ \ \ \ \ \{}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{RELU}},}
+\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{dRELU}},}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{SIGMOID}},}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{dSIGMOID}},}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{eSIGMOID}},}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{TANH}},}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{dTANH}},}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{LINEAR}},}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{dLINEAR}},}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{NONE}}}
+\DoxyCodeLine{00056\ \ \ \ \ \};}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ relu(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ sigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00060\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ e\_sigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00061\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ tanh(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00062\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ linear(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00063\ }
+\DoxyCodeLine{00064\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dRelu(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00065\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dSigmoid(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00066\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dTanh(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00067\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dLinear(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00069\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ To\_Fn(\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ type)}
+\DoxyCodeLine{00070\ \ \ \ \ \{}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (type)}
+\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}}:}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ relu;}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{ActivationType::SIGMOID}}:}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ sigmoid;}
+\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{ActivationType::eSIGMOID}}:}
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ e\_sigmoid;}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{ActivationType::TANH}}:}
+\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ tanh;}
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{ActivationType::LINEAR}}:}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ linear;}
+\DoxyCodeLine{00083\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}}:}
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00086\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00087\ \ \ \ \ \}}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00089\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ To\_dFn(\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ dType)}
+\DoxyCodeLine{00090\ \ \ \ \ \{}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{switch}\ (dType)}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}}:}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dRelu;}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{ActivationType::dSIGMOID}}:}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dSigmoid;}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{ActivationType::dTANH}}:}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dTanh;}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{ActivationType::dLINEAR}}:}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ dLinear;}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{case}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}}:}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{default}:}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \textcolor{keyword}{nullptr};}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00105\ \ \ \ \ \}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00107\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ To\_AType(\doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ fn)}
+\DoxyCodeLine{00108\ \ \ \ \ \{}
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ relu)}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}};}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ sigmoid)}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b}{ActivationType::SIGMOID}};}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ e\_sigmoid)}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4}{ActivationType::eSIGMOID}};}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ tanh)}
+\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1}{ActivationType::TANH}};}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (fn\ ==\ linear)}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046}{ActivationType::LINEAR}};}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}};}
+\DoxyCodeLine{00120\ \ \ \ \ \}}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ To\_AType(\doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ dfn)}
+\DoxyCodeLine{00123\ \ \ \ \ \{}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dRelu)}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}};}
+\DoxyCodeLine{00126\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dSigmoid)}
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01}{ActivationType::dSIGMOID}};}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dTanh)}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd}{ActivationType::dTANH}};}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (dfn\ ==\ dLinear)}
+\DoxyCodeLine{00131\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7}{ActivationType::dLINEAR}};}
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693}{ActivationType::NONE}};}
+\DoxyCodeLine{00133\ \ \ \ \ \}}
+\DoxyCodeLine{00134\ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ expf\_v(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n)}
+\DoxyCodeLine{00136\ \ \ \ \ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00139\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00141\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00142\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 16)}
+\DoxyCodeLine{00143\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00144\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
 \DoxyCodeLine{00145\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ Sleef\_expf16\_u10avx512f(x\_512);}
-\DoxyCodeLine{00146\ }
-\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00148\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00149\ }
-\DoxyCodeLine{00150\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00151\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
-\DoxyCodeLine{00152\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00156\ }
-\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_expf8\_u10avx2(x\_256);}
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00147\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00149\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00150\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00151\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00152\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 8)}
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00154\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_expf8\_u10avx2(x\_256);}
+\DoxyCodeLine{00156\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00157\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00158\ }
-\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00161\ }
-\DoxyCodeLine{00162\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE2\_\_)}}
-\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00164\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00168\ }
-\DoxyCodeLine{00169\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_expf4\_u10sse2(x\_128);}
-\DoxyCodeLine{00170\ }
-\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00173\ }
-\DoxyCodeLine{00174\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00159\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE2\_\_)}}
+\DoxyCodeLine{00160\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
+\DoxyCodeLine{00161\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 4)}
+\DoxyCodeLine{00163\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00164\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_expf4\_u10sse2(x\_128);}
+\DoxyCodeLine{00166\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00167\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00168\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00170\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ ++i)}
+\DoxyCodeLine{00171\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_expf\_u10(x[i]);}
+\DoxyCodeLine{00173\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00174\ \ \ \ \ \}}
 \DoxyCodeLine{00175\ }
-\DoxyCodeLine{00176\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ ++i)}
-\DoxyCodeLine{00177\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_expf\_u10(x[i]);}
-\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00180\ \ \ \ \ \}}
-\DoxyCodeLine{00181\ }
-\DoxyCodeLine{00182\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b}{logf\_v}}(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n)}
-\DoxyCodeLine{00183\ \ \ \ \ \{}
-\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
-\DoxyCodeLine{00185\ }
-\DoxyCodeLine{00186\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00188\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00189\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00190\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00192\ }
-\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ Sleef\_logf16\_u10avx512f(x\_512);}
-\DoxyCodeLine{00194\ }
-\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00197\ }
-\DoxyCodeLine{00198\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00199\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
-\DoxyCodeLine{00200\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00204\ }
-\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_logf8\_u10avx2(x\_256);}
-\DoxyCodeLine{00206\ }
-\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00176\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{namespaceDeep_afca3df42a9f8d541c51cf729a4c8b89b}{logf\_v}}(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n)}
+\DoxyCodeLine{00177\ \ \ \ \ \{}
+\DoxyCodeLine{00178\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
+\DoxyCodeLine{00179\ }
+\DoxyCodeLine{00180\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00181\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00182\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00183\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 16)}
+\DoxyCodeLine{00184\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00186\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ Sleef\_logf16\_u10avx512f(x\_512);}
+\DoxyCodeLine{00187\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00189\ }
+\DoxyCodeLine{00190\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00191\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00192\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 8)}
+\DoxyCodeLine{00194\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_logf8\_u10avx2(x\_256);}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00199\ }
+\DoxyCodeLine{00200\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00201\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
+\DoxyCodeLine{00202\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00203\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 4)}
+\DoxyCodeLine{00204\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00206\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_logf4\_u10sse2(x\_128);}
+\DoxyCodeLine{00207\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ res);}
 \DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00209\ }
-\DoxyCodeLine{00210\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00212\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00214\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00215\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_logf4\_u10(x\_128);}
-\DoxyCodeLine{00217\ }
-\DoxyCodeLine{00218\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00220\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00221\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ ++i)}
-\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_logf\_u10(x[i]);}
-\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00225\ \ \ \ \ \}}
+\DoxyCodeLine{00209\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00210\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ ++i)}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00212\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_logf\_u10(x[i]);}
+\DoxyCodeLine{00213\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00214\ \ \ \ \ \}}
+\DoxyCodeLine{00215\ }
+\DoxyCodeLine{00216\ \textcolor{preprocessor}{\#pragma\ region\ relu}}
+\DoxyCodeLine{00220\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ relu(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00221\ \ \ \ \ \{}
+\DoxyCodeLine{00222\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00223\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00224\ }
+\DoxyCodeLine{00225\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
 \DoxyCodeLine{00226\ }
-\DoxyCodeLine{00227\ \textcolor{preprocessor}{\#pragma\ region\ relu}}
-\DoxyCodeLine{00231\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ relu(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
-\DoxyCodeLine{00232\ \ \ \ \ \{}
-\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00235\ }
-\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
-\DoxyCodeLine{00237\ }
-\DoxyCodeLine{00238\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \_\_m512\ zeros\ =\ \_mm512\_setzero\_ps();}
-\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 64);}
-\DoxyCodeLine{00241\ }
-\DoxyCodeLine{00242\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00243\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 64)}
-\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x1\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 16);}
-\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x2\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 32);}
-\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x3\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 48);}
+\DoxyCodeLine{00227\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00228\ \ \ \ \ \ \ \ \ \_\_m512\ zeros\ =\ \_mm512\_setzero\_ps();}
+\DoxyCodeLine{00229\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 64);}
+\DoxyCodeLine{00230\ }
+\DoxyCodeLine{00231\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00232\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 64)}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00234\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x1\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 16);}
+\DoxyCodeLine{00236\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x2\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 32);}
+\DoxyCodeLine{00237\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x3\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 48);}
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00239\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm512\_max\_ps(zeros,\ x0);}
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm512\_max\_ps(zeros,\ x1);}
+\DoxyCodeLine{00241\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm512\_max\_ps(zeros,\ x2);}
+\DoxyCodeLine{00242\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm512\_max\_ps(zeros,\ x3);}
+\DoxyCodeLine{00243\ }
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ x0);}
+\DoxyCodeLine{00245\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 16,\ x1);}
+\DoxyCodeLine{00246\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 32,\ x2);}
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 48,\ x3);}
+\DoxyCodeLine{00248\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00249\ }
-\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm512\_max\_ps(zeros,\ x0);}
-\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm512\_max\_ps(zeros,\ x1);}
-\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm512\_max\_ps(zeros,\ x2);}
-\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm512\_max\_ps(zeros,\ x3);}
-\DoxyCodeLine{00254\ }
-\DoxyCodeLine{00255\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ x0);}
-\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 16,\ x1);}
-\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 32,\ x2);}
-\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 48,\ x3);}
-\DoxyCodeLine{00259\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00260\ }
-\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ \_mm512\_max\_ps(zeros,\ \_mm512\_load\_ps(x\ +\ i)));}
-\DoxyCodeLine{00265\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00266\ }
-\DoxyCodeLine{00267\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
-\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \_\_m256\ zeros\ =\ \_mm256\_setzero\_ps();}
-\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 32);}
-\DoxyCodeLine{00270\ }
-\DoxyCodeLine{00271\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00272\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 32)}
-\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x1\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 8);}
-\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x2\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 16);}
-\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x3\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 24);}
+\DoxyCodeLine{00250\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00251\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00253\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ \_mm512\_max\_ps(zeros,\ \_mm512\_loadu\_ps(x\ +\ i)));}
+\DoxyCodeLine{00254\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00255\ }
+\DoxyCodeLine{00256\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
+\DoxyCodeLine{00257\ \ \ \ \ \ \ \ \ \_\_m256\ zeros\ =\ \_mm256\_setzero\_ps();}
+\DoxyCodeLine{00258\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 32);}
+\DoxyCodeLine{00259\ }
+\DoxyCodeLine{00260\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00261\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 32)}
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00263\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x1\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 8);}
+\DoxyCodeLine{00265\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x2\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 16);}
+\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x3\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 24);}
+\DoxyCodeLine{00267\ }
+\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm256\_max\_ps(zeros,\ x0);}
+\DoxyCodeLine{00269\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm256\_max\_ps(zeros,\ x1);}
+\DoxyCodeLine{00270\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm256\_max\_ps(zeros,\ x2);}
+\DoxyCodeLine{00271\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm256\_max\_ps(zeros,\ x3);}
+\DoxyCodeLine{00272\ }
+\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ x0);}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 8,\ x1);}
+\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 16,\ x2);}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 24,\ x3);}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00278\ }
-\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm256\_max\_ps(zeros,\ x0);}
-\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm256\_max\_ps(zeros,\ x1);}
-\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm256\_max\_ps(zeros,\ x2);}
-\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm256\_max\_ps(zeros,\ x3);}
-\DoxyCodeLine{00283\ }
-\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ x0);}
-\DoxyCodeLine{00285\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 8,\ x1);}
-\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 16,\ x2);}
-\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 24,\ x3);}
-\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00289\ }
-\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
-\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ \_mm256\_max\_ps(zeros,\ \_mm256\_load\_ps(x\ +\ i)));}
-\DoxyCodeLine{00294\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00295\ }
-\DoxyCodeLine{00296\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \_\_m128\ zeros\ =\ \_mm\_setzero\_ps();}
-\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00299\ }
-\DoxyCodeLine{00300\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00301\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 16)}
-\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x1\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 4);}
-\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x2\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 8);}
-\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x3\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 12);}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00280\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00282\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ \_mm256\_max\_ps(zeros,\ \_mm256\_loadu\_ps(x\ +\ i)));}
+\DoxyCodeLine{00283\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00284\ }
+\DoxyCodeLine{00285\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \_\_m128\ zeros\ =\ \_mm\_setzero\_ps();}
+\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00288\ }
+\DoxyCodeLine{00289\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 16)}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x1\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 4);}
+\DoxyCodeLine{00294\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x2\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 8);}
+\DoxyCodeLine{00295\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x3\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 12);}
+\DoxyCodeLine{00296\ }
+\DoxyCodeLine{00297\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm\_max\_ps(zeros,\ x0);}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm\_max\_ps(zeros,\ x1);}
+\DoxyCodeLine{00299\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm\_max\_ps(zeros,\ x2);}
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm\_max\_ps(zeros,\ x3);}
+\DoxyCodeLine{00301\ }
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ x0);}
+\DoxyCodeLine{00303\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 4,\ x1);}
+\DoxyCodeLine{00304\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 8,\ x2);}
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 12,\ x3);}
+\DoxyCodeLine{00306\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00307\ }
-\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm\_max\_ps(zeros,\ x0);}
-\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm\_max\_ps(zeros,\ x1);}
-\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm\_max\_ps(zeros,\ x2);}
-\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm\_max\_ps(zeros,\ x3);}
-\DoxyCodeLine{00312\ }
-\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ x0);}
-\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 4,\ x1);}
-\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 8,\ x2);}
-\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 12,\ x3);}
-\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00318\ }
-\DoxyCodeLine{00319\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00321\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00322\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ \_mm\_max\_ps(zeros,\ \_mm\_load\_ps(x\ +\ i)));}
-\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00324\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00308\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00310\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ \_mm\_max\_ps(zeros,\ \_mm\_loadu\_ps(x\ +\ i)));}
+\DoxyCodeLine{00312\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00313\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00314\ }
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
+\DoxyCodeLine{00316\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ \doxymbox{\hyperlink{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}{MAX}}(0.0f,\ x[i]);}
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00319\ \ \ \ \ \}}
+\DoxyCodeLine{00320\ }
+\DoxyCodeLine{00321\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dRelu(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ [[maybe\_unused]]\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
+\DoxyCodeLine{00322\ \ \ \ \ \{}
+\DoxyCodeLine{00323\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
 \DoxyCodeLine{00325\ }
-\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00327\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ \doxymbox{\hyperlink{Activations_8h_afa99ec4acc4ecb2dc3c2d05da15d0e3f}{MAX}}(0.0f,\ x[i]);}
-\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00330\ \ \ \ \ \}}
-\DoxyCodeLine{00331\ }
-\DoxyCodeLine{00332\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dRelu(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ [[maybe\_unused]]\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
-\DoxyCodeLine{00333\ \ \ \ \ \{}
-\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00336\ }
-\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
-\DoxyCodeLine{00338\ }
-\DoxyCodeLine{00339\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00340\ \ \ \ \ \ \ \ \ \_\_m512\ ones\ =\ \_mm512\_set1\_ps(1.0f);}
-\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \_\_m512\ zeros\ =\ \_mm512\_setzero\_ps();}
-\DoxyCodeLine{00342\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 64);}
-\DoxyCodeLine{00343\ }
-\DoxyCodeLine{00344\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00345\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 64)}
-\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00347\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x1\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 16);}
-\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x2\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 32);}
-\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x3\ =\ \_mm512\_load\_ps(x\ +\ i\ +\ 48);}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
+\DoxyCodeLine{00327\ }
+\DoxyCodeLine{00328\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \_\_m512\ ones\ =\ \_mm512\_set1\_ps(1.0f);}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \_\_m512\ zeros\ =\ \_mm512\_setzero\_ps();}
+\DoxyCodeLine{00331\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 64);}
+\DoxyCodeLine{00332\ }
+\DoxyCodeLine{00333\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00334\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 64)}
+\DoxyCodeLine{00335\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00336\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00337\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x1\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 16);}
+\DoxyCodeLine{00338\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x2\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 32);}
+\DoxyCodeLine{00339\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x3\ =\ \_mm512\_loadu\_ps(x\ +\ i\ +\ 48);}
+\DoxyCodeLine{00340\ }
+\DoxyCodeLine{00341\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m0\ =\ \_mm512\_cmp\_ps\_mask(x0,\ zeros,\ \_CMP\_GT\_OQ);}
+\DoxyCodeLine{00342\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m1\ =\ \_mm512\_cmp\_ps\_mask(x1,\ zeros,\ \_CMP\_GT\_OQ);}
+\DoxyCodeLine{00343\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m2\ =\ \_mm512\_cmp\_ps\_mask(x2,\ zeros,\ \_CMP\_GT\_OQ);}
+\DoxyCodeLine{00344\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m3\ =\ \_mm512\_cmp\_ps\_mask(x3,\ zeros,\ \_CMP\_GT\_OQ);}
+\DoxyCodeLine{00345\ }
+\DoxyCodeLine{00346\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ \_mm512\_mask\_blend\_ps(m0,\ zeros,\ ones));}
+\DoxyCodeLine{00347\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 16,\ \_mm512\_mask\_blend\_ps(m1,\ zeros,\ ones));}
+\DoxyCodeLine{00348\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 32,\ \_mm512\_mask\_blend\_ps(m2,\ zeros,\ ones));}
+\DoxyCodeLine{00349\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i\ +\ 48,\ \_mm512\_mask\_blend\_ps(m3,\ zeros,\ ones));}
+\DoxyCodeLine{00350\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00351\ }
-\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m0\ =\ \_mm512\_cmp\_ps\_mask(x0,\ zeros,\ \_CMP\_GT\_OQ);}
-\DoxyCodeLine{00353\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m1\ =\ \_mm512\_cmp\_ps\_mask(x1,\ zeros,\ \_CMP\_GT\_OQ);}
-\DoxyCodeLine{00354\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m2\ =\ \_mm512\_cmp\_ps\_mask(x2,\ zeros,\ \_CMP\_GT\_OQ);}
-\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m3\ =\ \_mm512\_cmp\_ps\_mask(x3,\ zeros,\ \_CMP\_GT\_OQ);}
-\DoxyCodeLine{00356\ }
-\DoxyCodeLine{00357\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ \_mm512\_mask\_blend\_ps(m0,\ zeros,\ ones));}
-\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 16,\ \_mm512\_mask\_blend\_ps(m1,\ zeros,\ ones));}
-\DoxyCodeLine{00359\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 32,\ \_mm512\_mask\_blend\_ps(m2,\ zeros,\ ones));}
-\DoxyCodeLine{00360\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i\ +\ 48,\ \_mm512\_mask\_blend\_ps(m3,\ zeros,\ ones));}
-\DoxyCodeLine{00361\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00362\ }
-\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00364\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00365\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00367\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m0\ =\ \_mm512\_cmp\_ps\_mask(x0,\ zeros,\ \_CMP\_GT\_OQ);}
-\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ \_mm512\_mask\_blend\_ps(m0,\ zeros,\ ones));}
-\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00370\ }
-\DoxyCodeLine{00371\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
-\DoxyCodeLine{00372\ \ \ \ \ \ \ \ \ \_\_m256\ ones\ =\ \_mm256\_set1\_ps(1.0f);}
-\DoxyCodeLine{00373\ \ \ \ \ \ \ \ \ \_\_m256\ zeros\ =\ \_mm256\_setzero\_ps();}
-\DoxyCodeLine{00374\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 32);}
-\DoxyCodeLine{00375\ }
-\DoxyCodeLine{00376\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00377\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 32)}
-\DoxyCodeLine{00378\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00379\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00380\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x1\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 8);}
-\DoxyCodeLine{00381\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x2\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 16);}
-\DoxyCodeLine{00382\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x3\ =\ \_mm256\_load\_ps(x\ +\ i\ +\ 24);}
+\DoxyCodeLine{00352\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00353\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00354\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00355\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x0\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00356\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_mmask16\ m0\ =\ \_mm512\_cmp\_ps\_mask(x0,\ zeros,\ \_CMP\_GT\_OQ);}
+\DoxyCodeLine{00357\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ \_mm512\_mask\_blend\_ps(m0,\ zeros,\ ones));}
+\DoxyCodeLine{00358\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00359\ }
+\DoxyCodeLine{00360\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)\ ||\ defined(\_\_AVX\_\_)}}
+\DoxyCodeLine{00361\ \ \ \ \ \ \ \ \ \_\_m256\ ones\ =\ \_mm256\_set1\_ps(1.0f);}
+\DoxyCodeLine{00362\ \ \ \ \ \ \ \ \ \_\_m256\ zeros\ =\ \_mm256\_setzero\_ps();}
+\DoxyCodeLine{00363\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 32);}
+\DoxyCodeLine{00364\ }
+\DoxyCodeLine{00365\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00366\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 32)}
+\DoxyCodeLine{00367\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00368\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00369\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x1\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 8);}
+\DoxyCodeLine{00370\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x2\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 16);}
+\DoxyCodeLine{00371\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x3\ =\ \_mm256\_loadu\_ps(x\ +\ i\ +\ 24);}
+\DoxyCodeLine{00372\ }
+\DoxyCodeLine{00373\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x0,\ zeros,\ \_CMP\_GT\_OQ));}
+\DoxyCodeLine{00374\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x1,\ zeros,\ \_CMP\_GT\_OQ));}
+\DoxyCodeLine{00375\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x2,\ zeros,\ \_CMP\_GT\_OQ));}
+\DoxyCodeLine{00376\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x3,\ zeros,\ \_CMP\_GT\_OQ));}
+\DoxyCodeLine{00377\ }
+\DoxyCodeLine{00378\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ x0);}
+\DoxyCodeLine{00379\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 8,\ x1);}
+\DoxyCodeLine{00380\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 16,\ x2);}
+\DoxyCodeLine{00381\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i\ +\ 24,\ x3);}
+\DoxyCodeLine{00382\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00383\ }
-\DoxyCodeLine{00384\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x0,\ zeros,\ \_CMP\_GT\_OQ));}
-\DoxyCodeLine{00385\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x1,\ zeros,\ \_CMP\_GT\_OQ));}
-\DoxyCodeLine{00386\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x2,\ zeros,\ \_CMP\_GT\_OQ));}
-\DoxyCodeLine{00387\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x3,\ zeros,\ \_CMP\_GT\_OQ));}
-\DoxyCodeLine{00388\ }
-\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ x0);}
-\DoxyCodeLine{00390\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 8,\ x1);}
-\DoxyCodeLine{00391\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 16,\ x2);}
-\DoxyCodeLine{00392\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i\ +\ 24,\ x3);}
-\DoxyCodeLine{00393\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00394\ }
-\DoxyCodeLine{00395\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
-\DoxyCodeLine{00396\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00397\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00398\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00399\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x0,\ zeros,\ \_CMP\_GT\_OQ)));}
-\DoxyCodeLine{00400\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00401\ }
-\DoxyCodeLine{00402\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00403\ \ \ \ \ \ \ \ \ \_\_m128\ ones\ =\ \_mm\_set1\_ps(1.0f);}
-\DoxyCodeLine{00404\ \ \ \ \ \ \ \ \ \_\_m128\ zeros\ =\ \_mm\_setzero\_ps();}
-\DoxyCodeLine{00405\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00406\ }
-\DoxyCodeLine{00407\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00408\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end4;\ i\ +=\ 16)}
-\DoxyCodeLine{00409\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x1\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 4);}
-\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x2\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 8);}
-\DoxyCodeLine{00413\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x3\ =\ \_mm\_load\_ps(x\ +\ i\ +\ 12);}
+\DoxyCodeLine{00384\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00385\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00386\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00387\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x0\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00388\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ \_mm256\_and\_ps(ones,\ \_mm256\_cmp\_ps(x0,\ zeros,\ \_CMP\_GT\_OQ)));}
+\DoxyCodeLine{00389\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00390\ }
+\DoxyCodeLine{00391\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00392\ \ \ \ \ \ \ \ \ \_\_m128\ ones\ =\ \_mm\_set1\_ps(1.0f);}
+\DoxyCodeLine{00393\ \ \ \ \ \ \ \ \ \_\_m128\ zeros\ =\ \_mm\_setzero\_ps();}
+\DoxyCodeLine{00394\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end4\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00395\ }
+\DoxyCodeLine{00396\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00397\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end4);\ i\ +=\ 16)}
+\DoxyCodeLine{00398\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00399\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00400\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x1\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 4);}
+\DoxyCodeLine{00401\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x2\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 8);}
+\DoxyCodeLine{00402\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x3\ =\ \_mm\_loadu\_ps(x\ +\ i\ +\ 12);}
+\DoxyCodeLine{00403\ }
+\DoxyCodeLine{00404\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x0,\ zeros));}
+\DoxyCodeLine{00405\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x1,\ zeros));}
+\DoxyCodeLine{00406\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x2,\ zeros));}
+\DoxyCodeLine{00407\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x3,\ zeros));}
+\DoxyCodeLine{00408\ }
+\DoxyCodeLine{00409\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ x0);}
+\DoxyCodeLine{00410\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 4,\ x1);}
+\DoxyCodeLine{00411\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 8,\ x2);}
+\DoxyCodeLine{00412\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i\ +\ 12,\ x3);}
+\DoxyCodeLine{00413\ \ \ \ \ \ \ \ \ \}}
 \DoxyCodeLine{00414\ }
-\DoxyCodeLine{00415\ \ \ \ \ \ \ \ \ \ \ \ \ x0\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x0,\ zeros));}
-\DoxyCodeLine{00416\ \ \ \ \ \ \ \ \ \ \ \ \ x1\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x1,\ zeros));}
-\DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \ \ \ \ x2\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x2,\ zeros));}
-\DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \ \ \ \ x3\ =\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x3,\ zeros));}
-\DoxyCodeLine{00419\ }
-\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ x0);}
-\DoxyCodeLine{00421\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 4,\ x1);}
-\DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 8,\ x2);}
-\DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i\ +\ 12,\ x3);}
-\DoxyCodeLine{00424\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00425\ }
-\DoxyCodeLine{00426\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00427\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00428\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00429\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00430\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x0,\ zeros)));}
-\DoxyCodeLine{00431\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00432\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00415\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
+\DoxyCodeLine{00416\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end4;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00417\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00418\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x0\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00419\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ \_mm\_and\_ps(ones,\ \_mm\_cmpgt\_ps(x0,\ zeros)));}
+\DoxyCodeLine{00420\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00421\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00422\ }
+\DoxyCodeLine{00423\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
+\DoxyCodeLine{00424\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00425\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ (x[i]\ >\ 0.0f)\ ?\ 1.0f\ :\ 0.0f;}
+\DoxyCodeLine{00426\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00427\ \ \ \ \ \}}
+\DoxyCodeLine{00428\ \textcolor{preprocessor}{\#pragma\ endregion}}
+\DoxyCodeLine{00429\ }
+\DoxyCodeLine{00430\ \textcolor{preprocessor}{\#define\ TANH\_TINYLIMIT\ 0.000244140625f}}
+\DoxyCodeLine{00431\ \textcolor{preprocessor}{\#define\ TANH\_POLY\_LIMIT\ 0.625f}}
+\DoxyCodeLine{00432\ \textcolor{preprocessor}{\#define\ TANH\_BIGLIMIT\ 6.0f}}
 \DoxyCodeLine{00433\ }
-\DoxyCodeLine{00434\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00435\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00436\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ (x[i]\ >\ 0.0f)\ ?\ 1.0f\ :\ 0.0f;}
-\DoxyCodeLine{00437\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00438\ \ \ \ \ \}}
-\DoxyCodeLine{00439\ \textcolor{preprocessor}{\#pragma\ endregion}}
-\DoxyCodeLine{00440\ }
-\DoxyCodeLine{00441\ \textcolor{preprocessor}{\#define\ TANH\_TINYLIMIT\ 0.000244140625f}}
-\DoxyCodeLine{00442\ \textcolor{preprocessor}{\#define\ TANH\_POLY\_LIMIT\ 0.625f}}
-\DoxyCodeLine{00443\ \textcolor{preprocessor}{\#define\ TANH\_BIGLIMIT\ 6.0f}}
-\DoxyCodeLine{00444\ }
-\DoxyCodeLine{00445\ \textcolor{preprocessor}{\#define\ P0\ -\/0.9643991794f}}
-\DoxyCodeLine{00446\ \textcolor{preprocessor}{\#define\ P1\ -\/99.28772310f}}
-\DoxyCodeLine{00447\ \textcolor{preprocessor}{\#define\ P2\ -\/1614.687684f}}
-\DoxyCodeLine{00448\ }
-\DoxyCodeLine{00449\ \textcolor{preprocessor}{\#define\ Q0\ 112.8116785f}}
-\DoxyCodeLine{00450\ \textcolor{preprocessor}{\#define\ Q1\ 2235.488391f}}
-\DoxyCodeLine{00451\ \textcolor{preprocessor}{\#define\ Q2\ 4844.063053f}}
-\DoxyCodeLine{00452\ }
-\DoxyCodeLine{00453\ \textcolor{preprocessor}{\#pragma\ region\ tanh}}
-\DoxyCodeLine{00454\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ tanh(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
-\DoxyCodeLine{00455\ \ \ \ \ \{}
-\DoxyCodeLine{00456\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00457\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00458\ }
-\DoxyCodeLine{00459\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
-\DoxyCodeLine{00460\ }
-\DoxyCodeLine{00461\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00462\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00463\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00464\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00465\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00466\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00467\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ u10\ guarantees\ 1.0\ ULP\ accuracy\ (highly\ precise)}}
-\DoxyCodeLine{00468\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ Sleef\_tanhf16\_u10avx512f(x\_512);}
-\DoxyCodeLine{00469\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00470\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00471\ }
-\DoxyCodeLine{00472\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00473\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
-\DoxyCodeLine{00474\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00475\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00476\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00477\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00478\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_tanhf8\_u10avx2(x\_256);}
-\DoxyCodeLine{00479\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00480\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00481\ }
-\DoxyCodeLine{00482\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE4\_1\_\_)\ ||\ defined(\_\_SSE2\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00483\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00484\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536)}}
-\DoxyCodeLine{00485\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ 0;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00434\ \textcolor{preprocessor}{\#define\ P0\ -\/0.9643991794f}}
+\DoxyCodeLine{00435\ \textcolor{preprocessor}{\#define\ P1\ -\/99.28772310f}}
+\DoxyCodeLine{00436\ \textcolor{preprocessor}{\#define\ P2\ -\/1614.687684f}}
+\DoxyCodeLine{00437\ }
+\DoxyCodeLine{00438\ \textcolor{preprocessor}{\#define\ Q0\ 112.8116785f}}
+\DoxyCodeLine{00439\ \textcolor{preprocessor}{\#define\ Q1\ 2235.488391f}}
+\DoxyCodeLine{00440\ \textcolor{preprocessor}{\#define\ Q2\ 4844.063053f}}
+\DoxyCodeLine{00441\ }
+\DoxyCodeLine{00442\ \textcolor{preprocessor}{\#pragma\ region\ tanh}}
+\DoxyCodeLine{00443\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ tanh(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00444\ \ \ \ \ \{}
+\DoxyCodeLine{00445\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00446\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00447\ }
+\DoxyCodeLine{00448\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ 0;}
+\DoxyCodeLine{00449\ }
+\DoxyCodeLine{00450\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00451\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00452\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00453\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 16)}
+\DoxyCodeLine{00454\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00455\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00456\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ Sleef\_tanhf16\_u10avx512f(x\_512);}
+\DoxyCodeLine{00457\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00458\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00459\ }
+\DoxyCodeLine{00460\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00461\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00462\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00463\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 8)}
+\DoxyCodeLine{00464\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00465\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00466\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ Sleef\_tanhf8\_u10avx2(x\_256);}
+\DoxyCodeLine{00467\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00468\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00469\ }
+\DoxyCodeLine{00470\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE4\_1\_\_)\ ||\ defined(\_\_SSE2\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00471\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
+\DoxyCodeLine{00472\ \textcolor{preprocessor}{\#pragma\ omp\ parallel\ for\ schedule(static)\ if\ (n\ >\ 65536\ \&\&\ !omp\_in\_parallel())}}
+\DoxyCodeLine{00473\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (ptrdiff\_t\ i\ =\ 0;\ i\ <\ (ptrdiff\_t)(simd\_end);\ i\ +=\ 4)}
+\DoxyCodeLine{00474\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00475\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00476\ \textcolor{preprocessor}{\#if\ defined(\_\_SSE4\_1\_\_)}}
+\DoxyCodeLine{00477\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_tanhf4\_u10sse4(x\_128);}
+\DoxyCodeLine{00478\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00479\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_tanhf4\_u10sse2(x\_128);}
+\DoxyCodeLine{00480\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00481\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00482\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00483\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00484\ }
+\DoxyCodeLine{00485\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
 \DoxyCodeLine{00486\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00487\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00488\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Fallback\ to\ sse4\ or\ sse2\ depending\ on\ what\ your\ SLEEF\ build\ exposes}}
-\DoxyCodeLine{00489\ \textcolor{preprocessor}{\#if\ defined(\_\_SSE4\_1\_\_)}}
-\DoxyCodeLine{00490\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_tanhf4\_u10sse4(x\_128);}
-\DoxyCodeLine{00491\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00492\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ Sleef\_tanhf4\_u10sse2(x\_128);}
-\DoxyCodeLine{00493\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00494\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00495\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00496\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00497\ }
-\DoxyCodeLine{00498\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Scalar\ remainder}}
-\DoxyCodeLine{00499\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (\textcolor{keywordtype}{size\_t}\ i\ =\ simd\_end;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00500\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00501\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_tanhf\_u10(x[i]);}
-\DoxyCodeLine{00502\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00503\ \ \ \ \ \}}
-\DoxyCodeLine{00504\ }
-\DoxyCodeLine{00505\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dTanh(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
-\DoxyCodeLine{00506\ \ \ \ \ \{}
-\DoxyCodeLine{00507\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00508\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00487\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ Sleef\_tanhf\_u10(x[i]);}
+\DoxyCodeLine{00488\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00489\ \ \ \ \ \}}
+\DoxyCodeLine{00490\ }
+\DoxyCodeLine{00491\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dTanh(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
+\DoxyCodeLine{00492\ \ \ \ \ \{}
+\DoxyCodeLine{00493\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00494\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00495\ }
+\DoxyCodeLine{00496\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!activated)}
+\DoxyCodeLine{00497\ \ \ \ \ \ \ \ \ \ \ \ \ tanh(x,\ n);}
+\DoxyCodeLine{00498\ }
+\DoxyCodeLine{00499\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00500\ \ \ \ \ \ \ \ \ [[maybe\_unused]]\ \textcolor{keywordtype}{size\_t}\ simd\_end;}
+\DoxyCodeLine{00501\ }
+\DoxyCodeLine{00502\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00503\ \ \ \ \ \ \ \ \ \_\_m512\ ones\ =\ \_mm512\_set1\_ps(1.0f);}
+\DoxyCodeLine{00504\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
+\DoxyCodeLine{00505\ }
+\DoxyCodeLine{00506\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00507\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00508\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ t\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
 \DoxyCodeLine{00509\ }
-\DoxyCodeLine{00510\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!activated)}
-\DoxyCodeLine{00511\ \ \ \ \ \ \ \ \ \ \ \ \ tanh(x,\ n);}
-\DoxyCodeLine{00512\ }
-\DoxyCodeLine{00513\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
-\DoxyCodeLine{00514\ \ \ \ \ \ \ \ \ [[maybe\_unused]]\ \textcolor{keywordtype}{size\_t}\ simd\_end;}
-\DoxyCodeLine{00515\ }
-\DoxyCodeLine{00516\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00517\ \ \ \ \ \ \ \ \ \_\_m512\ ones\ =\ \_mm512\_set1\_ps(1.0f);}
-\DoxyCodeLine{00518\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 16);}
-\DoxyCodeLine{00519\ }
-\DoxyCodeLine{00520\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00521\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00522\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ t\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00523\ }
-\DoxyCodeLine{00524\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00525\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ \_mm512\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
-\DoxyCodeLine{00526\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00527\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ \_mm512\_sub\_ps(ones,\ \_mm512\_mul\_ps(t,\ t));}
-\DoxyCodeLine{00528\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00529\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00530\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00531\ }
-\DoxyCodeLine{00532\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00533\ \ \ \ \ \ \ \ \ \_\_m256\ ones\ =\ \_mm256\_set1\_ps(1.0f);}
-\DoxyCodeLine{00534\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00510\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00511\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ \_mm512\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
+\DoxyCodeLine{00512\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00513\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ res\ =\ \_mm512\_sub\_ps(ones,\ \_mm512\_mul\_ps(t,\ t));}
+\DoxyCodeLine{00514\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00515\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00516\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00517\ }
+\DoxyCodeLine{00518\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00519\ \ \ \ \ \ \ \ \ \_\_m256\ ones\ =\ \_mm256\_set1\_ps(1.0f);}
+\DoxyCodeLine{00520\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 8);}
+\DoxyCodeLine{00521\ }
+\DoxyCodeLine{00522\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00523\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00524\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ t\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00525\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00526\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ \_mm256\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
+\DoxyCodeLine{00527\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00528\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ \_mm256\_sub\_ps(ones,\ \_mm256\_mul\_ps(t,\ t));}
+\DoxyCodeLine{00529\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00530\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00531\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00532\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE4\_1\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00533\ \ \ \ \ \ \ \ \ \_\_m128\ ones\ =\ \_mm\_set1\_ps(1.0f);}
+\DoxyCodeLine{00534\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
 \DoxyCodeLine{00535\ }
-\DoxyCodeLine{00536\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00536\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
 \DoxyCodeLine{00537\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00538\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ t\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00539\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00540\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ \_mm256\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
-\DoxyCodeLine{00541\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00542\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ res\ =\ \_mm256\_sub\_ps(ones,\ \_mm256\_mul\_ps(t,\ t));}
-\DoxyCodeLine{00543\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00544\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00545\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00546\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE4\_1\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00547\ \ \ \ \ \ \ \ \ \_\_m128\ ones\ =\ \_mm\_set1\_ps(1.0f);}
-\DoxyCodeLine{00548\ \ \ \ \ \ \ \ \ simd\_end\ =\ n\ -\/\ (n\ \%\ 4);}
-\DoxyCodeLine{00549\ }
-\DoxyCodeLine{00550\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00551\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00552\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ t\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00553\ }
-\DoxyCodeLine{00554\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00555\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ \_mm\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
-\DoxyCodeLine{00556\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00557\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ \_mm\_sub\_ps(ones,\ \_mm\_mul\_ps(t,\ t));}
-\DoxyCodeLine{00558\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00559\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ res);}
-\DoxyCodeLine{00560\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00561\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00562\ }
-\DoxyCodeLine{00563\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ ++i)}
-\DoxyCodeLine{00564\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 1.0f\ -\/\ x[i]\ *\ x[i];}
-\DoxyCodeLine{00565\ \ \ \ \ \}}
+\DoxyCodeLine{00538\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ t\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00539\ }
+\DoxyCodeLine{00540\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00541\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ \_mm\_fnmadd\_ps(t,\ t,\ ones);\ \textcolor{comment}{//\ 1\ -\/\ t*t}}
+\DoxyCodeLine{00542\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00543\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ res\ =\ \_mm\_sub\_ps(ones,\ \_mm\_mul\_ps(t,\ t));}
+\DoxyCodeLine{00544\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00545\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ res);}
+\DoxyCodeLine{00546\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00547\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00548\ }
+\DoxyCodeLine{00549\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ ++i)}
+\DoxyCodeLine{00550\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 1.0f\ -\/\ x[i]\ *\ x[i];}
+\DoxyCodeLine{00551\ \ \ \ \ \}}
+\DoxyCodeLine{00552\ }
+\DoxyCodeLine{00553\ \textcolor{preprocessor}{\#pragma\ endregion}}
+\DoxyCodeLine{00554\ }
+\DoxyCodeLine{00555\ \textcolor{preprocessor}{\#pragma\ region\ sigmoid}}
+\DoxyCodeLine{00556\ }
+\DoxyCodeLine{00560\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ sigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00561\ \ \ \ \ \{}
+\DoxyCodeLine{00562\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00563\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00564\ }
+\DoxyCodeLine{00565\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
 \DoxyCodeLine{00566\ }
-\DoxyCodeLine{00567\ \textcolor{preprocessor}{\#pragma\ endregion}}
-\DoxyCodeLine{00568\ }
-\DoxyCodeLine{00569\ \textcolor{preprocessor}{\#pragma\ region\ sigmoid}}
-\DoxyCodeLine{00570\ }
-\DoxyCodeLine{00574\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ sigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
-\DoxyCodeLine{00575\ \ \ \ \ \{}
-\DoxyCodeLine{00576\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00577\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00578\ }
-\DoxyCodeLine{00579\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
-\DoxyCodeLine{00580\ }
-\DoxyCodeLine{00581\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00582\ \ \ \ \ \ \ \ \ \_\_m512\ one\ =\ \_mm512\_set1\_ps(1.0f);}
-\DoxyCodeLine{00583\ \ \ \ \ \ \ \ \ \_\_m512\ neg\_one\ =\ \_mm512\_set1\_ps(-\/1.0f);}
-\DoxyCodeLine{00584\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00567\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00568\ \ \ \ \ \ \ \ \ \_\_m512\ one\ =\ \_mm512\_set1\_ps(1.0f);}
+\DoxyCodeLine{00569\ \ \ \ \ \ \ \ \ \_\_m512\ neg\_one\ =\ \_mm512\_set1\_ps(-\/1.0f);}
+\DoxyCodeLine{00570\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00571\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00572\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00573\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00574\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00575\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ neg\_x\ =\ \_mm512\_mul\_ps(x\_512,\ neg\_one);}
+\DoxyCodeLine{00576\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ exp\_neg\_x\ =\ Sleef\_expf16\_u10avx512f(neg\_x);}
+\DoxyCodeLine{00577\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ den\ =\ \_mm512\_add\_ps(exp\_neg\_x,\ one);}
+\DoxyCodeLine{00578\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ sig\ =\ \_mm512\_div\_ps(one,\ den);}
+\DoxyCodeLine{00579\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00580\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00581\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00582\ \ \ \ \ \ \ \ \ \_\_m256\ one\ =\ \_mm256\_set1\_ps(1.0f);}
+\DoxyCodeLine{00583\ \ \ \ \ \ \ \ \ \_\_m256\ neg\_one\ =\ \_mm256\_set1\_ps(-\/1.0f);}
+\DoxyCodeLine{00584\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
 \DoxyCodeLine{00585\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00586\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00586\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
 \DoxyCodeLine{00587\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00588\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00589\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ neg\_x\ =\ \_mm512\_mul\_ps(x\_512,\ neg\_one);}
-\DoxyCodeLine{00590\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ exp\_neg\_x\ =\ Sleef\_expf16\_u10avx512f(neg\_x);}
-\DoxyCodeLine{00591\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ den\ =\ \_mm512\_add\_ps(exp\_neg\_x,\ one);}
-\DoxyCodeLine{00592\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ sig\ =\ \_mm512\_div\_ps(one,\ den);}
-\DoxyCodeLine{00593\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00588\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00589\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ neg\_x\ =\ \_mm256\_mul\_ps(x\_256,\ neg\_one);}
+\DoxyCodeLine{00590\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ exp\_neg\_x\ =\ Sleef\_expf8\_u10avx2(neg\_x);}
+\DoxyCodeLine{00591\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ den\ =\ \_mm256\_add\_ps(exp\_neg\_x,\ one);}
+\DoxyCodeLine{00592\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_div\_ps(one,\ den);}
+\DoxyCodeLine{00593\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ sig);}
 \DoxyCodeLine{00594\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00595\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00596\ \ \ \ \ \ \ \ \ \_\_m256\ one\ =\ \_mm256\_set1\_ps(1.0f);}
-\DoxyCodeLine{00597\ \ \ \ \ \ \ \ \ \_\_m256\ neg\_one\ =\ \_mm256\_set1\_ps(-\/1.0f);}
-\DoxyCodeLine{00598\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
+\DoxyCodeLine{00595\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00596\ \ \ \ \ \ \ \ \ \_\_m128\ one\ =\ \_mm\_set1\_ps(1.0f);}
+\DoxyCodeLine{00597\ \ \ \ \ \ \ \ \ \_\_m128\ neg\_one\ =\ \_mm\_set1\_ps(-\/1.0f);}
+\DoxyCodeLine{00598\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
 \DoxyCodeLine{00599\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00600\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00600\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
 \DoxyCodeLine{00601\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00602\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00603\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ neg\_x\ =\ \_mm256\_mul\_ps(x\_256,\ neg\_one);}
-\DoxyCodeLine{00604\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ exp\_neg\_x\ =\ Sleef\_expf8\_u10avx2(neg\_x);}
-\DoxyCodeLine{00605\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ den\ =\ \_mm256\_add\_ps(exp\_neg\_x,\ one);}
-\DoxyCodeLine{00606\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_div\_ps(one,\ den);}
-\DoxyCodeLine{00607\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00602\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00603\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ neg\_x\ =\ \_mm\_mul\_ps(x\_128,\ neg\_one);}
+\DoxyCodeLine{00604\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ exp\_neg\_x\ =\ Sleef\_expf4\_u10sse2(neg\_x);}
+\DoxyCodeLine{00605\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ den\ =\ \_mm\_add\_ps(exp\_neg\_x,\ one);}
+\DoxyCodeLine{00606\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_div\_ps(one,\ den);}
+\DoxyCodeLine{00607\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ sig);}
 \DoxyCodeLine{00608\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00609\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00610\ \ \ \ \ \ \ \ \ \_\_m128\ one\ =\ \_mm\_set1\_ps(1.0f);}
-\DoxyCodeLine{00611\ \ \ \ \ \ \ \ \ \_\_m128\ neg\_one\ =\ \_mm\_set1\_ps(-\/1.0f);}
-\DoxyCodeLine{00612\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
-\DoxyCodeLine{00613\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00614\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00615\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00616\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00617\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ neg\_x\ =\ \_mm\_mul\_ps(x\_128,\ neg\_one);}
-\DoxyCodeLine{00618\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ exp\_neg\_x\ =\ Sleef\_expf4\_u10(neg\_x);}
-\DoxyCodeLine{00619\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ den\ =\ \_mm\_add\_ps(exp\_neg\_x,\ one);}
-\DoxyCodeLine{00620\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_div\_ps(one,\ den);}
-\DoxyCodeLine{00621\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ sig);}
-\DoxyCodeLine{00622\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00623\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00624\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00625\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00626\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 1.0f\ /\ (1.0f\ +\ std::exp(-\/x[i]));}
-\DoxyCodeLine{00627\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00628\ \ \ \ \ \}}
-\DoxyCodeLine{00629\ }
-\DoxyCodeLine{00633\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ e\_sigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
-\DoxyCodeLine{00634\ \ \ \ \ \{}
-\DoxyCodeLine{00635\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00636\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00637\ }
-\DoxyCodeLine{00638\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00609\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00610\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
+\DoxyCodeLine{00611\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00612\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 1.0f\ /\ (1.0f\ +\ std::exp(-\/x[i]));}
+\DoxyCodeLine{00613\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00614\ \ \ \ \ \}}
+\DoxyCodeLine{00615\ }
+\DoxyCodeLine{00619\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ e\_sigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00620\ \ \ \ \ \{}
+\DoxyCodeLine{00621\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00622\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
+\DoxyCodeLine{00623\ }
+\DoxyCodeLine{00624\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00625\ }
+\DoxyCodeLine{00626\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00627\ \ \ \ \ \ \ \ \ \_\_m512\ half\ =\ \_mm512\_set1\_ps(0.5f);}
+\DoxyCodeLine{00628\ \ \ \ \ \ \ \ \ \_\_m512\ one\ =\ \_mm512\_set1\_ps(1.0f);}
+\DoxyCodeLine{00629\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00630\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00631\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00632\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00633\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00634\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ den\ =\ \_mm512\_add\_ps(}
+\DoxyCodeLine{00635\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_abs\_ps(x\_512),}
+\DoxyCodeLine{00636\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
+\DoxyCodeLine{00637\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ div\ =\ \_mm512\_div\_ps(x\_512,\ den);}
+\DoxyCodeLine{00638\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ sig\ =\ \_mm512\_fmadd\_ps(div,\ half,\ half);}
 \DoxyCodeLine{00639\ }
-\DoxyCodeLine{00640\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00641\ \ \ \ \ \ \ \ \ \_\_m512\ half\ =\ \_mm512\_set1\_ps(0.5f);}
-\DoxyCodeLine{00642\ \ \ \ \ \ \ \ \ \_\_m512\ one\ =\ \_mm512\_set1\_ps(1.0f);}
-\DoxyCodeLine{00643\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
-\DoxyCodeLine{00644\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00645\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00646\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00647\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00648\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ den\ =\ \_mm512\_add\_ps(}
-\DoxyCodeLine{00649\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_abs\_ps(x\_512),}
-\DoxyCodeLine{00650\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
-\DoxyCodeLine{00651\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ div\ =\ \_mm512\_div\_ps(x\_512,\ den);}
-\DoxyCodeLine{00652\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ sig\ =\ \_mm512\_fmadd\_ps(div,\ half,\ half);}
-\DoxyCodeLine{00653\ }
-\DoxyCodeLine{00654\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ sig);}
-\DoxyCodeLine{00655\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00656\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00657\ \ \ \ \ \ \ \ \ \_\_m256\ half\ =\ \_mm256\_set1\_ps(0.5f);}
-\DoxyCodeLine{00658\ \ \ \ \ \ \ \ \ \_\_m256\ one\ =\ \_mm256\_set1\_ps(1.0f);}
-\DoxyCodeLine{00659\ \ \ \ \ \ \ \ \ \_\_m256\ mask\ =\ \_mm256\_castsi256\_ps(\_mm256\_set1\_epi32(0x7FFFFFFF));\ \textcolor{comment}{//\ for\ 256-\/bit\ abs}}
-\DoxyCodeLine{00660\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
-\DoxyCodeLine{00661\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00662\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00663\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00664\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00665\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ den\ =\ \_mm256\_add\_ps(}
-\DoxyCodeLine{00666\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_and\_ps(x\_256,\ mask),}
-\DoxyCodeLine{00667\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
-\DoxyCodeLine{00668\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ div\ =\ \_mm256\_div\_ps(x\_256,\ den);}
-\DoxyCodeLine{00669\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00670\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_fmadd\_ps(div,\ half,\ half);}
-\DoxyCodeLine{00671\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00672\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(div,\ half),\ half);}
-\DoxyCodeLine{00673\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00674\ }
-\DoxyCodeLine{00675\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ sig);}
-\DoxyCodeLine{00676\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00677\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00678\ \ \ \ \ \ \ \ \ \_\_m128\ half\ =\ \_mm\_set1\_ps(0.5f);}
-\DoxyCodeLine{00679\ \ \ \ \ \ \ \ \ \_\_m128\ one\ =\ \_mm\_set1\_ps(1.0f);}
-\DoxyCodeLine{00680\ \ \ \ \ \ \ \ \ \_\_m128\ mask\ =\ \_mm\_castsi128\_ps(\_mm\_set1\_epi32(0x7FFFFFFF));\ \textcolor{comment}{//\ for\ 256-\/bit\ abs}}
-\DoxyCodeLine{00681\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
-\DoxyCodeLine{00682\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00683\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00684\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00685\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00686\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ den\ =\ \_mm\_add\_ps(}
-\DoxyCodeLine{00687\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_and\_ps(x\_128,\ mask),}
-\DoxyCodeLine{00688\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
-\DoxyCodeLine{00689\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ div\ =\ \_mm\_div\_ps(x\_128,\ den);}
-\DoxyCodeLine{00690\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00691\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_fmadd\_ps(div,\ half,\ half);}
-\DoxyCodeLine{00692\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00693\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(div,\ half),\ half);}
-\DoxyCodeLine{00694\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00640\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00641\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00642\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00643\ \ \ \ \ \ \ \ \ \_\_m256\ half\ =\ \_mm256\_set1\_ps(0.5f);}
+\DoxyCodeLine{00644\ \ \ \ \ \ \ \ \ \_\_m256\ one\ =\ \_mm256\_set1\_ps(1.0f);}
+\DoxyCodeLine{00645\ \ \ \ \ \ \ \ \ \_\_m256\ mask\ =\ \_mm256\_castsi256\_ps(\_mm256\_set1\_epi32(0x7FFFFFFF));\ \textcolor{comment}{//\ for\ 256-\/bit\ abs}}
+\DoxyCodeLine{00646\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
+\DoxyCodeLine{00647\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00648\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00649\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00650\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00651\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ den\ =\ \_mm256\_add\_ps(}
+\DoxyCodeLine{00652\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_and\_ps(x\_256,\ mask),}
+\DoxyCodeLine{00653\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
+\DoxyCodeLine{00654\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ div\ =\ \_mm256\_div\_ps(x\_256,\ den);}
+\DoxyCodeLine{00655\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00656\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_fmadd\_ps(div,\ half,\ half);}
+\DoxyCodeLine{00657\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00658\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ sig\ =\ \_mm256\_add\_ps(\_mm256\_mul\_ps(div,\ half),\ half);}
+\DoxyCodeLine{00659\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00660\ }
+\DoxyCodeLine{00661\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00662\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00663\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00664\ \ \ \ \ \ \ \ \ \_\_m128\ half\ =\ \_mm\_set1\_ps(0.5f);}
+\DoxyCodeLine{00665\ \ \ \ \ \ \ \ \ \_\_m128\ one\ =\ \_mm\_set1\_ps(1.0f);}
+\DoxyCodeLine{00666\ \ \ \ \ \ \ \ \ \_\_m128\ mask\ =\ \_mm\_castsi128\_ps(\_mm\_set1\_epi32(0x7FFFFFFF));\ \textcolor{comment}{//\ for\ 256-\/bit\ abs}}
+\DoxyCodeLine{00667\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
+\DoxyCodeLine{00668\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00669\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00670\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00671\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00672\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ den\ =\ \_mm\_add\_ps(}
+\DoxyCodeLine{00673\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_and\_ps(x\_128,\ mask),}
+\DoxyCodeLine{00674\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ one);}
+\DoxyCodeLine{00675\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ div\ =\ \_mm\_div\_ps(x\_128,\ den);}
+\DoxyCodeLine{00676\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00677\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_fmadd\_ps(div,\ half,\ half);}
+\DoxyCodeLine{00678\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00679\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ sig\ =\ \_mm\_add\_ps(\_mm\_mul\_ps(div,\ half),\ half);}
+\DoxyCodeLine{00680\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00681\ }
+\DoxyCodeLine{00682\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ sig);}
+\DoxyCodeLine{00683\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00684\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00685\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
+\DoxyCodeLine{00686\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00687\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 0.5f\ *\ (x[i]\ /\ (1.0f\ +\ fabsf(x[i]))\ +\ 1.0f);}
+\DoxyCodeLine{00688\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00689\ \ \ \ \ \}}
+\DoxyCodeLine{00690\ }
+\DoxyCodeLine{00691\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dSigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
+\DoxyCodeLine{00692\ \ \ \ \ \{}
+\DoxyCodeLine{00693\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
+\DoxyCodeLine{00694\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
 \DoxyCodeLine{00695\ }
-\DoxyCodeLine{00696\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ sig);}
-\DoxyCodeLine{00697\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00698\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00699\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00700\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00701\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ 0.5f\ *\ (x[i]\ /\ (1.0f\ +\ fabsf(x[i]))\ +\ 1.0f);}
-\DoxyCodeLine{00702\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00703\ \ \ \ \ \}}
-\DoxyCodeLine{00704\ }
-\DoxyCodeLine{00705\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dSigmoid(\textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{Activations_8h_aae3356b63849abbe8789dd41648ee90a}{RESTRICT}}\ x,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{size\_t}\ n,\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
-\DoxyCodeLine{00706\ \ \ \ \ \{}
-\DoxyCodeLine{00707\ \ \ \ \ \ \ \ \ assert(n\ !=\ 0\ \&\&\ \textcolor{stringliteral}{"{}n\ must\ not\ be\ 0."{}});}
-\DoxyCodeLine{00708\ \ \ \ \ \ \ \ \ assert(x\ !=\ \textcolor{keyword}{nullptr}\ \&\&\ \textcolor{stringliteral}{"{}x\ must\ not\ be\ null."{}});}
-\DoxyCodeLine{00709\ }
-\DoxyCodeLine{00710\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!activated)}
-\DoxyCodeLine{00711\ \ \ \ \ \ \ \ \ \ \ \ \ sigmoid(x,\ n);}
-\DoxyCodeLine{00712\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
-\DoxyCodeLine{00713\ }
-\DoxyCodeLine{00714\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
-\DoxyCodeLine{00715\ }
-\DoxyCodeLine{00716\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
-\DoxyCodeLine{00717\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00718\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
-\DoxyCodeLine{00719\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00720\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00721\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ d\ =\ \_mm512\_fnmadd\_ps(x\_512,\ x\_512,\ x\_512);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
-\DoxyCodeLine{00722\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_store\_ps(x\ +\ i,\ d);}
+\DoxyCodeLine{00696\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (!activated)}
+\DoxyCodeLine{00697\ \ \ \ \ \ \ \ \ \ \ \ \ sigmoid(x,\ n);}
+\DoxyCodeLine{00698\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ i\ =\ 0;}
+\DoxyCodeLine{00699\ }
+\DoxyCodeLine{00700\ \textcolor{preprocessor}{\#if\ defined(\_\_AVX512F\_\_)}}
+\DoxyCodeLine{00701\ }
+\DoxyCodeLine{00702\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 16;}
+\DoxyCodeLine{00703\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00704\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 16)}
+\DoxyCodeLine{00705\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00706\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ x\_512\ =\ \_mm512\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00707\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m512\ d\ =\ \_mm512\_fnmadd\_ps(x\_512,\ x\_512,\ x\_512);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
+\DoxyCodeLine{00708\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm512\_storeu\_ps(x\ +\ i,\ d);}
+\DoxyCodeLine{00709\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00710\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
+\DoxyCodeLine{00711\ }
+\DoxyCodeLine{00712\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
+\DoxyCodeLine{00713\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00714\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
+\DoxyCodeLine{00715\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00716\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00717\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
+\DoxyCodeLine{00718\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ d\ =\ \_mm256\_fnmadd\_ps(x\_256,\ x\_256,\ x\_256);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
+\DoxyCodeLine{00719\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00720\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ d\ =\ \_mm256\_sub\_ps(x\_256,\ \_mm256\_mul\_ps(x\_256,\ x\_256));}
+\DoxyCodeLine{00721\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00722\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_storeu\_ps(x\ +\ i,\ d);}
 \DoxyCodeLine{00723\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00724\ \textcolor{preprocessor}{\#elif\ defined(\_\_AVX2\_\_)}}
-\DoxyCodeLine{00725\ }
-\DoxyCodeLine{00726\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 8;}
-\DoxyCodeLine{00727\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00728\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 8)}
-\DoxyCodeLine{00729\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00730\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ x\_256\ =\ \_mm256\_load\_ps(x\ +\ i);}
+\DoxyCodeLine{00724\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
+\DoxyCodeLine{00725\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
+\DoxyCodeLine{00726\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
+\DoxyCodeLine{00727\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
+\DoxyCodeLine{00728\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00729\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_loadu\_ps(x\ +\ i);}
+\DoxyCodeLine{00730\ }
 \DoxyCodeLine{00731\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00732\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ d\ =\ \_mm256\_fnmadd\_ps(x\_256,\ x\_256,\ x\_256);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
+\DoxyCodeLine{00732\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ d\ =\ \_mm\_fnmadd\_ps(x\_128,\ x\_128,\ x\_128);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
 \DoxyCodeLine{00733\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00734\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m256\ d\ =\ \_mm256\_sub\_ps(x\_256,\ \_mm256\_mul\_ps(x\_256,\ x\_256));}
+\DoxyCodeLine{00734\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ d\ =\ \_mm\_sub\_ps(x\_128,\ \_mm\_mul\_ps(x\_128,\ x\_128));}
 \DoxyCodeLine{00735\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00736\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm256\_store\_ps(x\ +\ i,\ d);}
+\DoxyCodeLine{00736\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_storeu\_ps(x\ +\ i,\ d);}
 \DoxyCodeLine{00737\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00738\ \textcolor{preprocessor}{\#elif\ defined(\_\_SSE\_\_)\ ||\ defined(\_M\_AMD64)\ ||\ defined(\_M\_X64)}}
-\DoxyCodeLine{00739\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ r\ =\ n\ \%\ 4;}
-\DoxyCodeLine{00740\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ simd\_end\ =\ n\ -\/\ r;}
-\DoxyCodeLine{00741\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ simd\_end;\ i\ +=\ 4)}
-\DoxyCodeLine{00742\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00743\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ x\_128\ =\ \_mm\_load\_ps(x\ +\ i);}
-\DoxyCodeLine{00744\ }
-\DoxyCodeLine{00745\ \textcolor{preprocessor}{\#ifdef\ \_\_FMA\_\_}}
-\DoxyCodeLine{00746\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ d\ =\ \_mm\_fnmadd\_ps(x\_128,\ x\_128,\ x\_128);\ \textcolor{comment}{//\ d\ =\ x\ *\ (1\ -\/\ x)\ =\ x\ -\/\ x\string^2\ =\ -\/x*x\ +\ x}}
-\DoxyCodeLine{00747\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00748\ \ \ \ \ \ \ \ \ \ \ \ \ \_\_m128\ d\ =\ \_mm\_sub\_ps(x\_128,\ \_mm\_mul\_ps(x\_128,\ x\_128));}
-\DoxyCodeLine{00749\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00750\ \ \ \ \ \ \ \ \ \ \ \ \ \_mm\_store\_ps(x\ +\ i,\ d);}
-\DoxyCodeLine{00751\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00752\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00753\ }
-\DoxyCodeLine{00754\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
-\DoxyCodeLine{00755\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00756\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ x[i]\ *\ (1.0f\ -\/\ x[i]);}
-\DoxyCodeLine{00757\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00758\ \ \ \ \ \}}
-\DoxyCodeLine{00759\ \textcolor{preprocessor}{\#pragma\ endregion}}
-\DoxyCodeLine{00760\ }
-\DoxyCodeLine{00761\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ linear([[maybe\_unused]]\ \textcolor{keywordtype}{float}\ *x,\ [[maybe\_unused]]\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}\ \{\}}
-\DoxyCodeLine{00762\ }
-\DoxyCodeLine{00763\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dLinear(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n,\ [[maybe\_unused]]\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
-\DoxyCodeLine{00764\ \ \ \ \ \{}
-\DoxyCodeLine{00765\ \ \ \ \ \ \ \ \ std::fill\_n(x,\ n,\ 1.0f);}
-\DoxyCodeLine{00766\ \ \ \ \ \}}
-\DoxyCodeLine{00767\ \}}
+\DoxyCodeLine{00738\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00739\ }
+\DoxyCodeLine{00740\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (;\ i\ <\ n;\ i++)}
+\DoxyCodeLine{00741\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00742\ \ \ \ \ \ \ \ \ \ \ \ \ x[i]\ =\ x[i]\ *\ (1.0f\ -\/\ x[i]);}
+\DoxyCodeLine{00743\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00744\ \ \ \ \ \}}
+\DoxyCodeLine{00745\ \textcolor{preprocessor}{\#pragma\ endregion}}
+\DoxyCodeLine{00746\ }
+\DoxyCodeLine{00747\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ linear([[maybe\_unused]]\ \textcolor{keywordtype}{float}\ *x,\ [[maybe\_unused]]\ \textcolor{keywordtype}{size\_t}\ n)\ \textcolor{keyword}{noexcept}\ \{\}}
+\DoxyCodeLine{00748\ }
+\DoxyCodeLine{00749\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ dLinear(\textcolor{keywordtype}{float}\ *x,\ \textcolor{keywordtype}{size\_t}\ n,\ [[maybe\_unused]]\ \textcolor{keywordtype}{bool}\ activated\ =\ \textcolor{keyword}{false})\ noexcept}
+\DoxyCodeLine{00750\ \ \ \ \ \{}
+\DoxyCodeLine{00751\ \ \ \ \ \ \ \ \ std::fill\_n(x,\ n,\ 1.0f);}
+\DoxyCodeLine{00752\ \ \ \ \ \}}
+\DoxyCodeLine{00753\ \}}
 
 \end{DoxyCode}

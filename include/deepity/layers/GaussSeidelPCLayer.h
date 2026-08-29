@@ -98,6 +98,15 @@ namespace Deep
 
         /// @brief Constructor using a named ActivationType instead of raw
         /// function pointers.
+        /// @param size Size of this layer's own belief (z)
+        /// @param nextSize Size of the layer above's belief (this layer's
+        ///        outgoing prediction target); 0 marks a terminal layer
+        /// @param batchSize Batch size
+        /// @param learningRate Learning rate for weight updates
+        /// @param inferenceRate Inference rate (Euler integration step size)
+        /// @param lmbda Weight decay (L2 regularization) coefficient
+        /// @param aType Activation type
+        /// @param dType Activation derivative type
         GaussSeidelPCLayer(int size, int nextSize, int batchSize = 1,
                            float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
                            ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
@@ -140,56 +149,125 @@ namespace Deep
         void Flush() noexcept override {}
 
         /// @brief Clamps this layer's beliefs to externally-provided data.
+        /// @param inputData Flattened input data of length `size`.
         void ClampState(const std::vector<float> &inputData) noexcept;
         /// @brief Releases a previous ClampState() call.
         void UnclampState() noexcept;
 
+        /// @brief Returns this layer's belief buffer.
+        /// @return Pointer to this layer's beliefs.
         float *GetBeliefs() noexcept override { return z; }
+        /// @brief Returns this layer's outgoing prediction buffer.
+        /// @return const float *mu
         const float *GetMu() const noexcept { return mu; }
+        /// @brief Returns this layer's prediction-error buffer.
+        /// @return const float *e
         const float *GetErrors() const noexcept override { return e; }
+        /// @brief Returns this layer's own belief size.
+        /// @return size_t size
         size_t GetInputSize() const noexcept override { return size; }
+        /// @brief Returns this layer's outgoing prediction size (0 for a
+        /// terminal layer).
+        /// @return size_t nextSize
         size_t GetOutputSize() const noexcept override { return nextSize; }
+        /// @brief Returns the batch size this layer was constructed with.
+        /// @return size_t batchSize
         size_t GetBatchSize() const noexcept override { return batchSize; }
 
+        /// @brief Returns a read-only version of the stored weights.
+        /// @return const float *W
         const float *GetWeights() const noexcept { return W; }
+        /// @brief Returns a mutable version of the stored weights.
+        /// @return float *W
         float *GetWeights() noexcept { return W; }
+        /// @brief Returns a read-only version of the stored biases.
+        /// @return const float *b
         const float *GetBiases() const noexcept { return b; }
+        /// @brief Returns a mutable version of the stored biases.
+        /// @return float *b
         float *GetBiases() noexcept { return b; }
 
+        /// @brief Returns the learning rate used for weight updates.
+        /// @return float lr
         float GetLearningRate() const noexcept { return lr; }
+        /// @brief Returns the inference rate (Euler integration step size).
+        /// @return float ir
         float GetInferenceRate() const noexcept { return ir; }
+        /// @brief Returns the weight-decay (L2 regularization) coefficient.
+        /// @return float lmbda
         float GetLambda() const noexcept { return lmbda; }
 
+        /// @brief Sets the learning rate used for weight updates.
+        /// @param lr The new learning rate.
         void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        /// @brief Sets the inference rate (Euler integration step size).
+        /// @param ir The new inference rate.
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+        /// @brief Sets the weight-decay (L2 regularization) coefficient.
+        /// @param l The new lambda value.
         void SetLambda(float l) noexcept { this->lmbda = l; }
+        /// @brief Selects the optimizer used for weight updates.
+        /// @param o The optimizer type to use.
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
 
+        /// @brief Sets the layer immediately above this one in the network.
+        /// @param above Pointer to the layer above; may be nullptr for a
+        /// terminal layer.
         void SetLayerAbove(GaussSeidelPCLayer *above) noexcept { layerAbove = above; }
+        /// @brief Sets the layer immediately below this one in the network.
+        /// @param below Pointer to the layer below; may be nullptr for the
+        /// input layer.
         void SetLayerBelow(GaussSeidelPCLayer *below) noexcept { layerBelow = below; }
 
         /// @brief Resets beliefs/errors/predictions back to their initial
         /// values, without touching learned weights.
         void ResetState() noexcept;
 
+        /// @brief Returns the layer immediately above this one.
+        /// @warning Dereferences layerAbove without a null check; only
+        /// valid if SetLayerAbove() was previously called with a non-null
+        /// pointer.
         const GaussSeidelPCLayer &GetLayerAbove() const noexcept { return *layerAbove; }
+        /// @brief Returns the layer immediately below this one.
+        /// @warning Dereferences layerBelow without a null check; only
+        /// valid if SetLayerBelow() was previously called with a non-null
+        /// pointer.
         const GaussSeidelPCLayer &GetLayerBelow() const noexcept { return *layerBelow; }
 
+        /// @brief Randomizes this layer's weights (and the E
+        /// feedback-alignment matrix) in place.
+        /// @param twister The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
+        /// @brief Returns this layer's configured activation type.
+        /// @return ActivationType
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
+        /// @brief Returns this layer's configured activation-derivative type.
+        /// @return ActivationType
         ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
 
+        /// @brief Computes the total number of floats this layer requires
+        /// from a MemoryArena.
+        /// @return The required float count.
         size_t GetRequiredFloats() const noexcept;
+        /// @brief Binds this layer's weight/state/scratch buffers into the
+        /// supplied arena. Must be called before any other operation.
+        /// @param arena The MemoryArena to bind into.
         void BindMemory(MemoryArena &arena);
 
     private:
+        /// @brief Local fallback memory for standalone layer instantiation.
         std::unique_ptr<MemoryArena> localArena;
+        /// @brief Weights.
         float *W;
+        /// @brief Biases.
         float *b;
+        /// @brief Errors.
         float *e;
+        /// @brief Internal state.
         float *z;
 
+        /// @brief Used for `cblas_sgemm` optimization.
         int batchSize;
 
         float *mu;      // this layer's OWN outgoing prediction -- stays
@@ -199,8 +277,12 @@ namespace Deep
                         // fresh whenever needed (UpdateState(),
                         // UpdateWeights()) -- copy mu here, derive in
                         // place, leaving the real mu untouched
+        /// @brief Buffer holding the current state derivative (dz/dt).
         float *dz_dt;
-	float *z_deriv;
+        /// @brief Scratch buffer for the activation derivative of z,
+        /// used in the feedback term of UpdateState().
+        float *z_deriv;
+        /// @brief Scratch buffer for the bottom-up feedback term.
         float *bottom_up;
         float *E; // feedback-alignment matrix -- SEPARATE from W, same
                   // shape, randomly initialized once, NEVER updated.
@@ -210,24 +292,41 @@ namespace Deep
                   // is feedback alignment (Lillicrap et al.), not
                   // backprop-style transposed-weight feedback.
 
+        /// @brief Learning rate for weights.
         float lr;
+        /// @brief Inference rate (Euler integration step size).
         float ir;
+        /// @brief Weight decay (L2 regularization) coefficient.
         float lmbda;
+        /// @brief Flag to tell if `ClampState` was called.
         bool isClamped = false;
 
+        /// @brief Pointer to the layer above (or `nullptr` if terminal).
         GaussSeidelPCLayer *layerAbove;
+        /// @brief Pointer to the layer below (or `nullptr` if the input layer).
         GaussSeidelPCLayer *layerBelow;
+        /// @brief Activation function, with parameters `(float *array, size_t arraysize)`.
         ActivationFn activation;
+        /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize, bool activated)`.
         DerivativeFn activationDerivative;
+        /// @brief The named activation type this layer was constructed with.
         ActivationType activationType;
+        /// @brief The optimizer currently selected for weight updates.
         OptimizerType opt = OptimizerType::SGD;
 
+        /// @brief Scratch buffer for the weight gradient (Adam/AdamW only).
         float *grad_W = nullptr;
+        /// @brief Scratch buffer for the bias gradient (Adam/AdamW only).
         float *grad_b = nullptr;
+        /// @brief Adam/AdamW first-moment estimate for the weights.
         float *m_W = nullptr;
+        /// @brief Adam/AdamW second-moment estimate for the weights.
         float *v_W = nullptr;
+        /// @brief Adam/AdamW first-moment estimate for the biases.
         float *m_b = nullptr;
+        /// @brief Adam/AdamW second-moment estimate for the biases.
         float *v_b = nullptr;
+        /// @brief Adam/AdamW time step counter.
         int t = 0;
 
         friend class GaussSeidelPCNDiagnostics;

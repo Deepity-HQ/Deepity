@@ -1,0 +1,142 @@
+\doxysection{Gauss\+Seidel\+PCLayer.\+h}
+\hypertarget{GaussSeidelPCLayer_8h_source}{}\label{GaussSeidelPCLayer_8h_source}\index{include/deepity/layers/GaussSeidelPCLayer.h@{include/deepity/layers/GaussSeidelPCLayer.h}}
+\doxymbox{\hyperlink{GaussSeidelPCLayer_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ \textcolor{preprocessor}{\#pragma\ once}}
+\DoxyCodeLine{00002\ }
+\DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <vector>}}
+\DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <stdexcept>}}
+\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#include\ <random>}}
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <memory>}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <cstdlib>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Activations_8h}{deepity/Activations.h}}>}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{AdamOptimizer_8h}{deepity/AdamOptimizer.h}}>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{Layer_8h}{deepity/layers/Layer.h}}>}}
+\DoxyCodeLine{00011\ \textcolor{preprocessor}{\#include\ <\doxymbox{\hyperlink{MemoryArena_8h}{deepity/MemoryArena.h}}>}}
+\DoxyCodeLine{00012\ }
+\DoxyCodeLine{00076\ }
+\DoxyCodeLine{00077\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00078\ \{}
+\DoxyCodeLine{00079\ \ \ \ \ \textcolor{keyword}{class\ }GaussSeidelPCNDiagnostics;}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \ \ \ \ \textcolor{keyword}{class\ }\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}\ :\ \textcolor{keyword}{public}\ \doxymbox{\hyperlink{classDeep_1_1Layer}{Layer}}}
+\DoxyCodeLine{00082\ \ \ \ \ \{}
+\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keyword}{public}:}
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}(\textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}},\ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}},\ \textcolor{keywordtype}{int}\ batchSize\ =\ 1,}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ learningRate\ =\ 1e-\/6f,\ \textcolor{keywordtype}{float}\ inferenceRate\ =\ 0.1f,\ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/2f,}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*act)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t})\ =\ relu,}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ (*dAct)(\textcolor{keywordtype}{float}\ *,\ \textcolor{keywordtype}{size\_t},\ \textcolor{keywordtype}{bool})\ =\ dRelu);}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}(\textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}},\ \textcolor{keywordtype}{int}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}},\ \textcolor{keywordtype}{int}\ batchSize\ =\ 1,}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ learningRate\ =\ 1e-\/6f,\ \textcolor{keywordtype}{float}\ inferenceRate\ =\ 0.1f,\ \textcolor{keywordtype}{float}\ lmbda\ =\ 1e-\/2f,}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ aType\ =\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{ActivationType::RELU}},\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ dType\ =\ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{ActivationType::dRELU}});}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a4ac63225106c6fb4b541bd938579a0ab}{CalculateState}}()\ noexcept\textcolor{keyword}{\ override}}
+\DoxyCodeLine{00121\ \textcolor{keyword}{\ \ \ \ \ \ \ \ }\{}
+\DoxyCodeLine{00122\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ad8a166dd2069cd5244bea6e3fa940727}{UpdateState}}();}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 0.0f;}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ad8a166dd2069cd5244bea6e3fa940727}{UpdateState}}()\ noexcept\ override;}
+\DoxyCodeLine{00129\ }
+\DoxyCodeLine{00134\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a681bb408d157a7318260304709bc845f}{ComputePrediction}}()\ noexcept;}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_acce67b42b91f70bcdb1289156c60863e}{ComputeError}}()\ noexcept;}
+\DoxyCodeLine{00142\ }
+\DoxyCodeLine{00146\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a7524a3727b15c82b33e831732e963914}{UpdateWeights}}()\ noexcept\ override;}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00149\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ab0afc9099a0b7b2e13cb62c956cf327b}{Flush}}()\ noexcept\textcolor{keyword}{\ override\ }\{\}}
+\DoxyCodeLine{00150\ }
+\DoxyCodeLine{00153\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a69cb785b8712f001b493111ceb68b34b}{ClampState}}(\textcolor{keyword}{const}\ std::vector<float>\ \&inputData)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00155\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ade06089e505f29333d71ab04850469eb}{UnclampState}}()\ noexcept;}
+\DoxyCodeLine{00156\ }
+\DoxyCodeLine{00159\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a1907690abd81efb0f17bcc924553a063}{GetBeliefs}}()\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ z;\ \}}
+\DoxyCodeLine{00162\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a7242c125aaadcafc19d529e2aea3bf34}{GetMu}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ mu;\ \}}
+\DoxyCodeLine{00165\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a81d2213e2bfb3c41889cec7e2c5d4811}{GetErrors}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ e;\ \}}
+\DoxyCodeLine{00168\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ac8a4a8107f59e8d198d5c7ab9a0532e7}{GetInputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}};\ \}}
+\DoxyCodeLine{00172\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a015177afd4635f03c15763b7b6dae6b8}{GetOutputSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{nextSize}};\ \}}
+\DoxyCodeLine{00175\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_af67a5d52e441a538faf277a837499565}{GetBatchSize}}()\ const\ noexcept\textcolor{keyword}{\ override\ }\{\ \textcolor{keywordflow}{return}\ batchSize;\ \}}
+\DoxyCodeLine{00176\ }
+\DoxyCodeLine{00179\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a2400bcc52dff0393258e141636d7a26f}{GetWeights}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00182\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a0dcbd0b87995c6c6996b2e976bf7d589}{GetWeights}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ W;\ \}}
+\DoxyCodeLine{00185\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a44011aa0b884409873656c4c3f5891bd}{GetBiases}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00188\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a05abe3f73c55c88856613ffda8e32ec7}{GetBiases}}()\ noexcept\ \{\ \textcolor{keywordflow}{return}\ b;\ \}}
+\DoxyCodeLine{00189\ }
+\DoxyCodeLine{00192\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a6501ac3f74cb6c36fb8bdfd094819752}{GetLearningRate}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lr;\ \}}
+\DoxyCodeLine{00195\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ab149dec9548ea6f567c742dffa438b82}{GetInferenceRate}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ ir;\ \}}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ad345836b9bacabe863dfb040c8f13997}{GetLambda}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ lmbda;\ \}}
+\DoxyCodeLine{00199\ }
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_acebb43c7298bb63bc9f7518a407ddbf1}{SetLearningRate}}(\textcolor{keywordtype}{float}\ lr)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lr\ =\ lr;\ \}}
+\DoxyCodeLine{00205\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a64350c62b984df63c2f1c2d1f831b41c}{SetInferenceRate}}(\textcolor{keywordtype}{float}\ ir)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>ir\ =\ ir;\ \}}
+\DoxyCodeLine{00208\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ab99e3bc1659dbc96098feb6fdea69d89}{SetLambda}}(\textcolor{keywordtype}{float}\ l)\ \textcolor{keyword}{noexcept}\ \{\ this-\/>lmbda\ =\ l;\ \}}
+\DoxyCodeLine{00211\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a2126f5451fb2cd273a16cb0ee5ddade0}{SetOptimizer}}(\textcolor{keyword}{const}\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}\ o)\ \textcolor{keyword}{noexcept}\ \{\ opt\ =\ o;\ \}}
+\DoxyCodeLine{00212\ }
+\DoxyCodeLine{00216\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_af6aaa40ce3958c541d61cd6d3dffe84e}{SetLayerAbove}}(\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}\ *above)\ \textcolor{keyword}{noexcept}\ \{\ layerAbove\ =\ above;\ \}}
+\DoxyCodeLine{00220\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ac344e47f15f6c5a2613ad67d9d90bcfd}{SetLayerBelow}}(\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}\ *below)\ \textcolor{keyword}{noexcept}\ \{\ layerBelow\ =\ below;\ \}}
+\DoxyCodeLine{00221\ }
+\DoxyCodeLine{00224\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a6de7f0b8f55b2c010aeae627609b2216}{ResetState}}()\ noexcept;}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00230\ \ \ \ \ \ \ \ \ const\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_aad796dc209ac399b7c068adc87dd8d5b}{GetLayerAbove}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerAbove;\ \}}
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a575992d8dcebc442236cd986ef7d1ef0}{GaussSeidelPCLayer}}\ \&\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a6a5b4d53300ad526a4a51bb95586bd8b}{GetLayerBelow}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ *layerBelow;\ \}}
+\DoxyCodeLine{00236\ }
+\DoxyCodeLine{00240\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a055a381259185fb2d2448cc22201a373}{RandomizeWeights}}(std::mt19937\ \&twister)\ \textcolor{keyword}{noexcept};}
+\DoxyCodeLine{00241\ }
+\DoxyCodeLine{00244\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a96a5d0f91ce266b6255658fd6f342c4b}{GetActivationType}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activation);\ \}}
+\DoxyCodeLine{00247\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a65fa75ad1832bb06c259ca3a02528622}{GetDerivativeType}}()\ const\ noexcept\ \{\ \textcolor{keywordflow}{return}\ To\_AType(activationDerivative);\ \}}
+\DoxyCodeLine{00248\ }
+\DoxyCodeLine{00252\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ac8baa90414d136dbaf1e1e61e9e9a1ba}{GetRequiredFloats}}()\ const\ noexcept;}
+\DoxyCodeLine{00256\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_ac3a1db83db4119bff4528250f1a9f426}{BindMemory}}(\doxymbox{\hyperlink{classDeep_1_1MemoryArena}{MemoryArena}}\ \&arena);}
+\DoxyCodeLine{00257\ }
+\DoxyCodeLine{00258\ \ \ \ \ private:}
+\DoxyCodeLine{00260\ \ \ \ \ \ \ \ \ std::unique\_ptr<\doxymbox{\hyperlink{classDeep_1_1MemoryArena}{MemoryArena}}>\ localArena;}
+\DoxyCodeLine{00262\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *W;}
+\DoxyCodeLine{00264\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *b;}
+\DoxyCodeLine{00266\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *e;}
+\DoxyCodeLine{00268\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *z;}
+\DoxyCodeLine{00269\ }
+\DoxyCodeLine{00271\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ batchSize;}
+\DoxyCodeLine{00272\ }
+\DoxyCodeLine{00273\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *mu;\ \ \ \ \ \ \textcolor{comment}{//\ this\ layer's\ OWN\ outgoing\ prediction\ -\/-\/\ stays}}
+\DoxyCodeLine{00274\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ CLEAN/activated\ at\ all\ times;\ never\ mutated}}
+\DoxyCodeLine{00275\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ into\ a\ derivative\ in\ place}}
+\DoxyCodeLine{00276\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *muDeriv;\ \textcolor{comment}{//\ scratch\ buffer\ for\ mu's\ derivative,\ computed}}
+\DoxyCodeLine{00277\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ fresh\ whenever\ needed\ (UpdateState(),}}
+\DoxyCodeLine{00278\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ UpdateWeights())\ -\/-\/\ copy\ mu\ here,\ derive\ in}}
+\DoxyCodeLine{00279\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ place,\ leaving\ the\ real\ mu\ untouched}}
+\DoxyCodeLine{00281\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *dz\_dt;}
+\DoxyCodeLine{00284\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *z\_deriv;}
+\DoxyCodeLine{00286\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *bottom\_up;}
+\DoxyCodeLine{00287\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *E;\ \textcolor{comment}{//\ feedback-\/alignment\ matrix\ -\/-\/\ SEPARATE\ from\ W,\ same}}
+\DoxyCodeLine{00288\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ shape,\ randomly\ initialized\ once,\ NEVER\ updated.}}
+\DoxyCodeLine{00289\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Matches\ ngc-\/learn's\ REAL\ wiring:\ e2.dmu\ >>\ E2.inputs;}}
+\DoxyCodeLine{00290\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ E2.outputs\ >>\ z1.j,\ where\ E2\ is\ an\ independently}}
+\DoxyCodeLine{00291\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ initialized\ StaticSynapse\ -\/-\/\ NOT\ W\ transposed.\ This}}
+\DoxyCodeLine{00292\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ is\ feedback\ alignment\ (Lillicrap\ et\ al.),\ not}}
+\DoxyCodeLine{00293\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ backprop-\/style\ transposed-\/weight\ feedback.}}
+\DoxyCodeLine{00294\ }
+\DoxyCodeLine{00296\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lr;}
+\DoxyCodeLine{00298\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ ir;}
+\DoxyCodeLine{00300\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ lmbda;}
+\DoxyCodeLine{00302\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{bool}\ isClamped\ =\ false;}
+\DoxyCodeLine{00303\ }
+\DoxyCodeLine{00305\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{GaussSeidelPCLayer}}\ *layerAbove;}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{GaussSeidelPCLayer}}\ *layerBelow;}
+\DoxyCodeLine{00309\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_afa1dea57980a3726b01372a204121e16}{ActivationFn}}\ activation;}
+\DoxyCodeLine{00311\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_aac769fa213f2bba46034c471e75d58fa}{DerivativeFn}}\ activationDerivative;}
+\DoxyCodeLine{00313\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{ActivationType}}\ activationType;}
+\DoxyCodeLine{00315\ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}\ opt\ =\ \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{OptimizerType}}::\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2}{SGD}};}
+\DoxyCodeLine{00316\ }
+\DoxyCodeLine{00318\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *grad\_W\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00320\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *grad\_b\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00322\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *m\_W\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *v\_W\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *m\_b\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{float}\ *v\_b\ =\ \textcolor{keywordtype}{nullptr};}
+\DoxyCodeLine{00330\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ t\ =\ 0;}
+\DoxyCodeLine{00331\ }
+\DoxyCodeLine{00332\ \ \ \ \ \ \ \ \ friend\ class\ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer_a725ac3f7910a888e9dc63de71c9c477a}{GaussSeidelPCNDiagnostics}};}
+\DoxyCodeLine{00333\ \ \ \ \ \};}
+\DoxyCodeLine{00334\ }
+\DoxyCodeLine{00335\ \}\ \textcolor{comment}{//\ namespace\ Deep}}
+
+\end{DoxyCode}

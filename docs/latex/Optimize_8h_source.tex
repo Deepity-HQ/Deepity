@@ -6,105 +6,127 @@
 \DoxyCodeLine{00002\ \textcolor{preprocessor}{\#include\ <cstddef>}}
 \DoxyCodeLine{00003\ \textcolor{preprocessor}{\#include\ <memory>}}
 \DoxyCodeLine{00004\ \textcolor{preprocessor}{\#include\ <omp.h>}}
-\DoxyCodeLine{00005\ \textcolor{preprocessor}{\#ifdef\ \_\_linux\_\_}}
-\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#include\ <fstream>}}
-\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#elif\ defined(\_WIN32)}}
-\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#include\ <windows.h>}}
-\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00010\ }
-\DoxyCodeLine{00011\ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}}
-\DoxyCodeLine{00012\ \{}
-\DoxyCodeLine{00013\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(\textcolor{keywordtype}{int}\ num\_threads);}
-\DoxyCodeLine{00014\ \}}
-\DoxyCodeLine{00015\ }
-\DoxyCodeLine{00033\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
-\DoxyCodeLine{00034\ \{}
-\DoxyCodeLine{00035\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}()}
-\DoxyCodeLine{00036\ \ \ \ \ \{}
-\DoxyCodeLine{00037\ \textcolor{preprocessor}{\#ifdef\ \_\_linux\_\_}}
-\DoxyCodeLine{00038\ \ \ \ \ \ \ \ \ std::ifstream\ f(\textcolor{stringliteral}{"{}/sys/devices/system/cpu/cpu0/cache/index2/size"{}});}
-\DoxyCodeLine{00039\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ kb\ =\ 0;}
-\DoxyCodeLine{00040\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{char}\ unit;}
-\DoxyCodeLine{00041\ \ \ \ \ \ \ \ \ f\ >>\ kb\ >>\ unit;}
-\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ kb\ *\ 1024;}
-\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#elif\ defined(\_WIN32)}}
-\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ DWORD\ bufSize\ =\ 0;}
-\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ GetLogicalProcessorInformation(\textcolor{keyword}{nullptr},\ \&bufSize);}
-\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ buf\ =\ std::make\_unique<SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION[]>(bufSize\ /\ \textcolor{keyword}{sizeof}(SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION));}
-\DoxyCodeLine{00047\ \ \ \ \ \ \ \ \ GetLogicalProcessorInformation(buf.get(),\ \&bufSize);}
-\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (DWORD\ i\ =\ 0;\ i\ <\ bufSize\ /\ \textcolor{keyword}{sizeof}(SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION);\ i++)}
-\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (buf[i].Relationship\ ==\ RelationCache\ \&\&\ buf[i].Cache.Level\ ==\ 2)}
-\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ buf[i].Cache.Size;}
-\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 512\ *\ 1024;\ \textcolor{comment}{//\ fallback}}
-\DoxyCodeLine{00054\ \textcolor{preprocessor}{\#else}}
-\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 512\ *\ 1024;\ \textcolor{comment}{//\ fallback\ for\ unknown\ platforms}}
-\DoxyCodeLine{00056\ \textcolor{preprocessor}{\#endif}}
-\DoxyCodeLine{00057\ \ \ \ \ \}}
-\DoxyCodeLine{00058\ }
-\DoxyCodeLine{00059\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004}{AutoBatchSize}}(\textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize)}
-\DoxyCodeLine{00060\ \ \ \ \ \{}
-\DoxyCodeLine{00061\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ l2\ =\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}();}
+\DoxyCodeLine{00005\ }
+\DoxyCodeLine{00006\ \textcolor{preprocessor}{\#ifdef\ \_\_linux\_\_}}
+\DoxyCodeLine{00007\ \textcolor{preprocessor}{\#include\ <fstream>}}
+\DoxyCodeLine{00008\ \textcolor{preprocessor}{\#elif\ defined(\_WIN32)}}
+\DoxyCodeLine{00009\ \textcolor{preprocessor}{\#include\ <windows.h>}}
+\DoxyCodeLine{00010\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00011\ }
+\DoxyCodeLine{00012\ \textcolor{preprocessor}{\#ifdef\ DEEPITY\_USE\_MKL}}
+\DoxyCodeLine{00013\ \textcolor{preprocessor}{\#include\ <mkl\_service.h>}}
+\DoxyCodeLine{00014\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00015\ \textcolor{keyword}{extern}\ \textcolor{stringliteral}{"{}C"{}}\ \{}
+\DoxyCodeLine{00016\ \ \ \ \ \textcolor{keywordtype}{void}\ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(\textcolor{keywordtype}{int}\ num\_threads);}
+\DoxyCodeLine{00017\ \}}
+\DoxyCodeLine{00018\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00019\ }
+\DoxyCodeLine{00037\ \textcolor{keyword}{namespace\ }\doxymbox{\hyperlink{namespaceDeep}{Deep}}}
+\DoxyCodeLine{00038\ \{}
+\DoxyCodeLine{00039\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}()}
+\DoxyCodeLine{00040\ \ \ \ \ \{}
+\DoxyCodeLine{00041\ \textcolor{preprocessor}{\#ifdef\ \_\_linux\_\_}}
+\DoxyCodeLine{00042\ \ \ \ \ \ \ \ \ std::ifstream\ f(\textcolor{stringliteral}{"{}/sys/devices/system/cpu/cpu0/cache/index2/size"{}});}
+\DoxyCodeLine{00043\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ kb\ =\ 0;}
+\DoxyCodeLine{00044\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{char}\ unit;}
+\DoxyCodeLine{00045\ \ \ \ \ \ \ \ \ f\ >>\ kb\ >>\ unit;}
+\DoxyCodeLine{00046\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ kb\ *\ 1024;}
+\DoxyCodeLine{00047\ \textcolor{preprocessor}{\#elif\ defined(\_WIN32)}}
+\DoxyCodeLine{00048\ \ \ \ \ \ \ \ \ DWORD\ bufSize\ =\ 0;}
+\DoxyCodeLine{00049\ \ \ \ \ \ \ \ \ GetLogicalProcessorInformation(\textcolor{keyword}{nullptr},\ \&bufSize);}
+\DoxyCodeLine{00050\ \ \ \ \ \ \ \ \ \textcolor{keyword}{auto}\ buf\ =\ std::make\_unique<SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION[]>(bufSize\ /\ \textcolor{keyword}{sizeof}(SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION));}
+\DoxyCodeLine{00051\ \ \ \ \ \ \ \ \ GetLogicalProcessorInformation(buf.get(),\ \&bufSize);}
+\DoxyCodeLine{00052\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{for}\ (DWORD\ i\ =\ 0;\ i\ <\ bufSize\ /\ \textcolor{keyword}{sizeof}(SYSTEM\_LOGICAL\_PROCESSOR\_INFORMATION);\ i++)}
+\DoxyCodeLine{00053\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00054\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (buf[i].Relationship\ ==\ RelationCache\ \&\&\ buf[i].Cache.Level\ ==\ 2)}
+\DoxyCodeLine{00055\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ buf[i].Cache.Size;}
+\DoxyCodeLine{00056\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00057\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 512\ *\ 1024;\ \textcolor{comment}{//\ fallback}}
+\DoxyCodeLine{00058\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00059\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ 512\ *\ 1024;\ \textcolor{comment}{//\ fallback\ for\ unknown\ platforms}}
+\DoxyCodeLine{00060\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00061\ \ \ \ \ \}}
 \DoxyCodeLine{00062\ }
-\DoxyCodeLine{00063\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ wSize\ =\ inSize\ *\ outSize\ *\ \textcolor{keyword}{sizeof}(float);}
-\DoxyCodeLine{00064\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ bytesPerBatch\ =\ (outSize\ +\ inSize\ +\ inSize)\ *\ \textcolor{keyword}{sizeof}(\textcolor{keywordtype}{float});}
-\DoxyCodeLine{00065\ }
-\DoxyCodeLine{00066\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ remaining\ =\ (l2\ >\ wSize)\ ?\ l2\ -\/\ wSize\ :\ l2\ /\ 2;}
-\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ B\ =\ remaining\ /\ bytesPerBatch;}
-\DoxyCodeLine{00068\ }
-\DoxyCodeLine{00069\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Round\ down\ to\ nearest\ power\ of\ 2}}
-\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ pow2\ =\ 1;}
-\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (pow2\ *\ 2\ <=\ B)}
-\DoxyCodeLine{00072\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ *=\ 2;}
-\DoxyCodeLine{00073\ }
-\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pow2\ <\ 64)}
-\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ =\ 64;}
-\DoxyCodeLine{00076\ }
-\DoxyCodeLine{00077\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pow2\ >\ 512)}
-\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ =\ 512;}
-\DoxyCodeLine{00079\ }
-\DoxyCodeLine{00080\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pow2;}
-\DoxyCodeLine{00081\ \ \ \ \ \}}
-\DoxyCodeLine{00082\ }
-\DoxyCodeLine{00083\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ DynamicThread(\textcolor{keywordtype}{int}\ batchSize)\ \textcolor{keyword}{noexcept}}
-\DoxyCodeLine{00084\ \ \ \ \ \{}
-\DoxyCodeLine{00085\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ currentThreads\ =\ -\/1;}
+\DoxyCodeLine{00063\ \ \ \ \ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}\ \doxymbox{\hyperlink{namespaceDeep_a94bef4184e1ca26cb5f79296395b4004}{AutoBatchSize}}(\textcolor{keywordtype}{size\_t}\ inSize,\ \textcolor{keywordtype}{size\_t}\ outSize)}
+\DoxyCodeLine{00064\ \ \ \ \ \{}
+\DoxyCodeLine{00065\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ l2\ =\ \doxymbox{\hyperlink{namespaceDeep_a1f6c92c5abb579ef6bf96a0047d54342}{GetL2CacheBytes}}();}
+\DoxyCodeLine{00066\ }
+\DoxyCodeLine{00067\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ wSize\ =\ inSize\ *\ outSize\ *\ \textcolor{keyword}{sizeof}(float);}
+\DoxyCodeLine{00068\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ bytesPerBatch\ =\ (outSize\ +\ inSize\ +\ inSize)\ *\ \textcolor{keyword}{sizeof}(\textcolor{keywordtype}{float});}
+\DoxyCodeLine{00069\ }
+\DoxyCodeLine{00070\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ remaining\ =\ (l2\ >\ wSize)\ ?\ l2\ -\/\ wSize\ :\ l2\ /\ 2;}
+\DoxyCodeLine{00071\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ B\ =\ remaining\ /\ bytesPerBatch;}
+\DoxyCodeLine{00072\ }
+\DoxyCodeLine{00073\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Round\ down\ to\ nearest\ power\ of\ 2}}
+\DoxyCodeLine{00074\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ pow2\ =\ 1;}
+\DoxyCodeLine{00075\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{while}\ (pow2\ *\ 2\ <=\ B)}
+\DoxyCodeLine{00076\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ *=\ 2;}
+\DoxyCodeLine{00077\ }
+\DoxyCodeLine{00078\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pow2\ <\ 64)}
+\DoxyCodeLine{00079\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ =\ 64;}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (pow2\ >\ 512)}
+\DoxyCodeLine{00082\ \ \ \ \ \ \ \ \ \ \ \ \ pow2\ =\ 512;}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00084\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ pow2;}
+\DoxyCodeLine{00085\ \ \ \ \ \}}
 \DoxyCodeLine{00086\ }
-\DoxyCodeLine{00087\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Threshold\ found\ during\ benchmarking:\ 512}}
-\DoxyCodeLine{00088\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ THRESHOLD\ =\ 32;\ \textcolor{comment}{//\ Safer}}
-\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ targetThreads\ =\ (batchSize\ <\ THRESHOLD)\ ?\ 1\ :\ omp\_get\_num\_procs();}
+\DoxyCodeLine{00087\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{void}\ DynamicThread(\textcolor{keywordtype}{int}\ batchSize)\ \textcolor{keyword}{noexcept}}
+\DoxyCodeLine{00088\ \ \ \ \ \{}
+\DoxyCodeLine{00089\ \ \ \ \ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keywordtype}{int}\ currentThreads\ =\ -\/1;}
 \DoxyCodeLine{00090\ }
-\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentThreads\ !=\ targetThreads)}
-\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \{}
-\DoxyCodeLine{00093\ \ \ \ \ \ \ \ \ \ \ \ \ omp\_set\_num\_threads(targetThreads);}
-\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(targetThreads);}
-\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \ \ \ \ currentThreads\ =\ targetThreads;}
-\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \}}
-\DoxyCodeLine{00097\ \ \ \ \ \}}
-\DoxyCodeLine{00098\ }
-\DoxyCodeLine{00099\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ hsum256\_ps(\_\_m256\ x)}
-\DoxyCodeLine{00100\ \ \ \ \ \{}
-\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \_\_m128\ lo\ =\ \_mm256\_castps256\_ps128(x);}
-\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \_\_m128\ hi\ =\ \_mm256\_extractf128\_ps(x,\ 1);}
-\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ lo\ =\ \_mm\_add\_ps(lo,\ hi);}
-\DoxyCodeLine{00104\ }
-\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \_\_m128\ shuf\ =\ \_mm\_movehdup\_ps(lo);}
-\DoxyCodeLine{00106\ \ \ \ \ \ \ \ \ \_\_m128\ sums\ =\ \_mm\_add\_ps(lo,\ shuf);}
-\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ shuf\ =\ \_mm\_movehl\_ps(shuf,\ sums);}
-\DoxyCodeLine{00108\ \ \ \ \ \ \ \ \ sums\ =\ \_mm\_add\_ss(sums,\ shuf);}
-\DoxyCodeLine{00109\ }
-\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_mm\_cvtss\_f32(sums);}
-\DoxyCodeLine{00111\ \ \ \ \ \}}
-\DoxyCodeLine{00112\ }
-\DoxyCodeLine{00113\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ hsum128\_ps(\_\_m128\ x)}
-\DoxyCodeLine{00114\ \ \ \ \ \{}
-\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \_\_m128\ shuf\ =\ \_mm\_movehdup\_ps(x);}
-\DoxyCodeLine{00116\ \ \ \ \ \ \ \ \ \_\_m128\ sums\ =\ \_mm\_add\_ps(x,\ shuf);}
-\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ shuf\ =\ \_mm\_movehl\_ps(shuf,\ sums);}
-\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ sums\ =\ \_mm\_add\_ss(sums,\ shuf);}
-\DoxyCodeLine{00119\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_mm\_cvtss\_f32(sums);}
-\DoxyCodeLine{00120\ \ \ \ \ \}}
-\DoxyCodeLine{00121\ \}}
+\DoxyCodeLine{00091\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ THRESHOLD\ =\ 32;}
+\DoxyCodeLine{00092\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ maxProcs\ =\ omp\_get\_num\_procs();}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00094\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ Confirmed\ via\ extended\ sweep\ (batch=1024/2048/4096,\ threads\ up\ to}}
+\DoxyCodeLine{00095\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ 48):\ the\ optimum\ drifts\ mildly\ upward\ with\ batch\ size\ (8\ -\/>\ \string~12\ -\/>}}
+\DoxyCodeLine{00096\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ \string~16)\ but\ the\ difference\ is\ small\ and\ noisy\ at\ this\ scale\ (\string~7\%}}
+\DoxyCodeLine{00097\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ between\ 8/12/16\ at\ batch=4096)\ -\/-\/\ NOT\ worth\ a\ hard\ per-\/batch-\/size}}
+\DoxyCodeLine{00098\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ table.\ What\ IS\ solid\ and\ unambiguous:\ 48\ threads\ is\ always\ the}}
+\DoxyCodeLine{00099\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ worst\ choice\ tested,\ by\ 1.8-\/2.9x,\ at\ every\ batch\ size\ -\/-\/\ likely}}
+\DoxyCodeLine{00100\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ cross-\/CCD/Infinity\ Fabric\ synchronization\ cost\ on\ this\ many-\/core}}
+\DoxyCodeLine{00101\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ part.\ A\ smooth,\ capped\ scaling\ curve\ fits\ the\ real\ trend\ better}}
+\DoxyCodeLine{00102\ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ than\ another\ single\ hardcoded\ number.}}
+\DoxyCodeLine{00103\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ scaled\ =\ 8\ +\ (batchSize\ /\ 1024)\ *\ 4;\ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ 8\ @\ <1024,\ \string~12\ @\ 2048,\ \string~16\ @\ 4096,\ etc.}}
+\DoxyCodeLine{00104\ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{int}\ MAX\_USEFUL\_THREADS\ =\ std::min(scaled,\ 16);\ \textcolor{comment}{//\ cap\ -\/-\/\ 48\ was\ confirmed\ worse}}
+\DoxyCodeLine{00105\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{comment}{//\ every\ time,\ no\ reason\ to\ extrapolate\ past\ 16}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00107\ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ targetThreads\ =\ (batchSize\ <\ THRESHOLD)\ ?\ 1\ :\ std::min(maxProcs,\ MAX\_USEFUL\_THREADS);}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00109\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{if}\ (currentThreads\ !=\ targetThreads)}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ \ \ \{}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \ \ \ \ \ \ omp\_set\_num\_threads(targetThreads);}
+\DoxyCodeLine{00112\ \textcolor{preprocessor}{\#ifdef\ DEEPITY\_USE\_MKL}}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ \ \ \ \ \ \ mkl\_set\_num\_threads(targetThreads);}
+\DoxyCodeLine{00114\ \textcolor{preprocessor}{\#else}}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \ \ \doxymbox{\hyperlink{Optimize_8h_aa406a94b91fca1119d42385c388ff1ff}{openblas\_set\_num\_threads}}(targetThreads);}
+\DoxyCodeLine{00116\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00117\ \ \ \ \ \ \ \ \ \ \ \ \ currentThreads\ =\ targetThreads;}
+\DoxyCodeLine{00118\ \ \ \ \ \ \ \ \ \}}
+\DoxyCodeLine{00119\ \ \ \ \ \}}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00121\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ hsum256\_ps(\_\_m256\ x)}
+\DoxyCodeLine{00122\ \ \ \ \ \{}
+\DoxyCodeLine{00123\ \ \ \ \ \ \ \ \ \_\_m128\ lo\ =\ \_mm256\_castps256\_ps128(x);}
+\DoxyCodeLine{00124\ \ \ \ \ \ \ \ \ \_\_m128\ hi\ =\ \_mm256\_extractf128\_ps(x,\ 1);}
+\DoxyCodeLine{00125\ \ \ \ \ \ \ \ \ lo\ =\ \_mm\_add\_ps(lo,\ hi);}
+\DoxyCodeLine{00126\ }
+\DoxyCodeLine{00127\ \ \ \ \ \ \ \ \ \_\_m128\ shuf\ =\ \_mm\_movehdup\_ps(lo);}
+\DoxyCodeLine{00128\ \ \ \ \ \ \ \ \ \_\_m128\ sums\ =\ \_mm\_add\_ps(lo,\ shuf);}
+\DoxyCodeLine{00129\ \ \ \ \ \ \ \ \ shuf\ =\ \_mm\_movehl\_ps(shuf,\ sums);}
+\DoxyCodeLine{00130\ \ \ \ \ \ \ \ \ sums\ =\ \_mm\_add\_ss(sums,\ shuf);}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00132\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_mm\_cvtss\_f32(sums);}
+\DoxyCodeLine{00133\ \ \ \ \ \}}
+\DoxyCodeLine{00134\ }
+\DoxyCodeLine{00135\ \ \ \ \ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{float}\ hsum128\_ps(\_\_m128\ x)}
+\DoxyCodeLine{00136\ \ \ \ \ \{}
+\DoxyCodeLine{00137\ \ \ \ \ \ \ \ \ \_\_m128\ shuf\ =\ \_mm\_movehdup\_ps(x);}
+\DoxyCodeLine{00138\ \ \ \ \ \ \ \ \ \_\_m128\ sums\ =\ \_mm\_add\_ps(x,\ shuf);}
+\DoxyCodeLine{00139\ \ \ \ \ \ \ \ \ shuf\ =\ \_mm\_movehl\_ps(shuf,\ sums);}
+\DoxyCodeLine{00140\ \ \ \ \ \ \ \ \ sums\ =\ \_mm\_add\_ss(sums,\ shuf);}
+\DoxyCodeLine{00141\ \ \ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ \_mm\_cvtss\_f32(sums);}
+\DoxyCodeLine{00142\ \ \ \ \ \}}
+\DoxyCodeLine{00143\ \}}
 
 \end{DoxyCode}

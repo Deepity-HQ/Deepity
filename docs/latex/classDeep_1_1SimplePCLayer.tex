@@ -18,7 +18,7 @@ Inheritance diagram for Deep::\+Simple\+PCLayer:\+\begin{figure}[H]
 \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_ad25610566363e33be901dec8c1ae43dc}{Simple\+PCLayer}} (int \doxymbox{\hyperlink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}}, int \doxymbox{\hyperlink{classDeep_1_1Layer_a5a538a25f3064996bbe651e6d48918d0}{next\+Size}}, int batch\+Size=1, float learning\+Rate=1e-\/6f, float inference\+Rate=0.\+1f, float lmbda=1e-\/2f, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} a\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c}{Activation\+Type::\+\+RELU}}, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} d\+Type=\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75}{Activation\+Type::\+d\+RELU}})
 \begin{DoxyCompactList}\small\item\em Constructor for a \doxylink{classDeep_1_1SimplePCLayer}{Simple\+PCLayer}, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. \end{DoxyCompactList}\item 
 float \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a717e90d966a9de3e88d79e05a734aa27}{Calculate\+State}} () noexcept override
-\begin{DoxyCompactList}\small\item\em Calculates the total network energy state. \end{DoxyCompactList}\item 
+\begin{DoxyCompactList}\small\item\em Calculates the total network energy state, and this layer\textquotesingle{}s outgoing prediction (mu). \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a2c75fb7c9b4fa075de9d0ab966ee2c83}{Update\+State}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Computes the state derivatives for inference. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a757530f0f89a4debc267b82d70ff40a7}{Update\+Weights}} () noexcept override
@@ -31,6 +31,8 @@ void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a0a34de6fd0a87f8c6d6228100d
 \begin{DoxyCompactList}\small\item\em Releases a previous \doxylink{classDeep_1_1SimplePCLayer_a0a9b015b8a020bf3f730aadd800b7f5e}{Clamp\+State()} call, allowing this layer\textquotesingle{}s beliefs to update normally again. \end{DoxyCompactList}\item 
 float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a78c8d51a29309aa9e17e36f745a3c759}{Get\+Beliefs}} () noexcept override
 \begin{DoxyCompactList}\small\item\em Returns this layer\textquotesingle{}s belief buffer. \end{DoxyCompactList}\item 
+const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a2e282de8650d363f1e6c62fdf43124b0}{Get\+Mu}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns a prediction buffer exposed specifically for forward-\/projection initialization (seeding the next layer\textquotesingle{}s z from a genuine, current-\/weights forward pass, rather than zero-\/init). nullptr for a terminal layer (next\+Size=0). \end{DoxyCompactList}\item 
 const float \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_aff8fbe6df1887a55eda3413a23a7e4bf}{Get\+Errors}} () const noexcept override
 \begin{DoxyCompactList}\small\item\em Returns this layer\textquotesingle{}s prediction-\/error buffer. \end{DoxyCompactList}\item 
 size\+\_\+t \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a5769f40787ec4f3ee8405f2acd7a19fe}{Get\+Input\+Size}} () const noexcept override
@@ -61,6 +63,12 @@ void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_aead7b1e4c88ce5a15216e275ac
 \begin{DoxyCompactList}\small\item\em Sets the weight-\/decay (L2 regularization) coefficient. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a5e70ea45e8650ab0c704bdf160cebf16}{Set\+Optimizer}} (const \doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} o) noexcept
 \begin{DoxyCompactList}\small\item\em Selects the optimizer used for weight updates (SGD or Adam). Adam\textquotesingle{}s moment buffers are lazily allocated on first use. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_abcc9462a7aa38ec8cab0e6e707bb1176}{Set\+Mu\+Cache\+Threshold}} (float threshold) noexcept
+\begin{DoxyCompactList}\small\item\em Sets the mu-\/cache staleness threshold:\+ mu is recomputed only when \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}z -\/ z\+\_\+at\+\_\+last\+\_\+recompute\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} /\+ (\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}z\+\_\+at\+\_\+last\+\_\+recompute\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a2a5566aff827e29aa79d85e2a864687b}{Get\+Mu\+Cache\+Threshold}} () const noexcept
+\item 
+void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_aa3edc3797d6f8bbfa822f7c5fed216b4}{Compute\+Mu\+Only}} () noexcept
+\begin{DoxyCompactList}\small\item\em Computes only mu (forward prediction), skipping error/\+energy entirely. Extracted from \doxylink{classDeep_1_1SimplePCLayer_a717e90d966a9de3e88d79e05a734aa27}{Calculate\+State()} for callers (like Project\+Forward()) that don\textquotesingle{}t need the discarded error/\+energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-\/before-\/transform convention (mu=W@phi(z)+b). \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_a902139c1ba87a3bab91a15cb1e639ea3}{Set\+Layer\+Above}} (\doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_ad41325b19ae3d590d6a660c3dce0b31f}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*}above) noexcept
 \begin{DoxyCompactList}\small\item\em Sets the layer immediately above this one in the network. \end{DoxyCompactList}\item 
 void \doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_adca11e0dd4abf38757686f42db9f778d}{Set\+Layer\+Below}} (\doxymbox{\hyperlink{classDeep_1_1SimplePCLayer_ad41325b19ae3d590d6a660c3dce0b31f}{Simple\+PCLayer}} \texorpdfstring{$\ast$}{*}below) noexcept
@@ -190,10 +198,10 @@ float Deep::\+\+Simple\+PCLayer::\+\+Calculate\+State (\begin{DoxyParamCaption}{
 
 
 
-Calculates the total network energy state. 
+Calculates the total network energy state, and this layer\textquotesingle{}s outgoing prediction (mu). 
 
 \[E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
-\] (No precision weighting -- see file-\/level note.) \begin{DoxyReturn}{Returns}
+\] mu is now computed as mu = W @ phi(z) + b -- activation applied to z BEFORE the linear transform, matching ngc-\/learn\textquotesingle{}s documented convention exactly (was previously mu = phi(W@z+b), activation AFTER the transform). (No precision weighting -- see file-\/level note.) \begin{DoxyReturn}{Returns}
 This layer\textquotesingle{}s energy contribution at the current state. 
 \end{DoxyReturn}
 
@@ -215,6 +223,16 @@ Clamps this layer\textquotesingle{}s beliefs to externally-\/provided data, prev
 {\em input\+Data} & Flattened input data of length {\ttfamily \doxylink{classDeep_1_1Layer_a7480249662a3bd8ad458dcdcde68a37d}{size}}. \\
 \hline
 \end{DoxyParams}
+\Hypertarget{classDeep_1_1SimplePCLayer_aa3edc3797d6f8bbfa822f7c5fed216b4}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!ComputeMuOnly@{ComputeMuOnly}}
+\index{ComputeMuOnly@{ComputeMuOnly}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
+\doxysubsubsection{\texorpdfstring{ComputeMuOnly()}{ComputeMuOnly()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCLayer_aa3edc3797d6f8bbfa822f7c5fed216b4} 
+void Deep::\+\+Simple\+PCLayer::\+\+Compute\+Mu\+Only (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Computes only mu (forward prediction), skipping error/\+energy entirely. Extracted from \doxylink{classDeep_1_1SimplePCLayer_a717e90d966a9de3e88d79e05a734aa27}{Calculate\+State()} for callers (like Project\+Forward()) that don\textquotesingle{}t need the discarded error/\+energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-\/before-\/transform convention (mu=W@phi(z)+b). 
+
 \Hypertarget{classDeep_1_1SimplePCLayer_af3923745e4d2aa6ed2e0b8d62d06ba1b}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!Flush@{Flush}}
 \index{Flush@{Flush}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
 \doxysubsubsection{\texorpdfstring{Flush()}{Flush()}}
@@ -387,6 +405,25 @@ float Deep::\+\+Simple\+PCLayer::\+\+Get\+Learning\+Rate (\begin{DoxyParamCaptio
 
 Returns the learning rate used for weight updates. 
 
+\Hypertarget{classDeep_1_1SimplePCLayer_a2e282de8650d363f1e6c62fdf43124b0}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!GetMu@{GetMu}}
+\index{GetMu@{GetMu}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
+\doxysubsubsection{\texorpdfstring{GetMu()}{GetMu()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCLayer_a2e282de8650d363f1e6c62fdf43124b0} 
+const float \texorpdfstring{$\ast$}{*} Deep::\+\+Simple\+PCLayer::\+\+Get\+Mu (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns a prediction buffer exposed specifically for forward-\/projection initialization (seeding the next layer\textquotesingle{}s z from a genuine, current-\/weights forward pass, rather than zero-\/init). nullptr for a terminal layer (next\+Size=0). 
+
+\begin{DoxyReturn}{Returns}
+Outgoing prediction buffer 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1SimplePCLayer_a2a5566aff827e29aa79d85e2a864687b}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!GetMuCacheThreshold@{GetMuCacheThreshold}}
+\index{GetMuCacheThreshold@{GetMuCacheThreshold}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
+\doxysubsubsection{\texorpdfstring{GetMuCacheThreshold()}{GetMuCacheThreshold()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCLayer_a2a5566aff827e29aa79d85e2a864687b} 
+float Deep::\+\+Simple\+PCLayer::\+\+Get\+Mu\+Cache\+Threshold (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
 \Hypertarget{classDeep_1_1SimplePCLayer_a45f98604688f1ba990d5dde51e3e173f}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!GetOutputSize@{GetOutputSize}}
 \index{GetOutputSize@{GetOutputSize}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
 \doxysubsubsection{\texorpdfstring{GetOutputSize()}{GetOutputSize()}}
@@ -534,7 +571,20 @@ Sets the learning rate used for weight updates.
 {\em lr} & The new learning rate. \\
 \hline
 \end{DoxyParams}
-\Hypertarget{classDeep_1_1SimplePCLayer_a5e70ea45e8650ab0c704bdf160cebf16}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!SetOptimizer@{SetOptimizer}}
+\Hypertarget{classDeep_1_1SimplePCLayer_abcc9462a7aa38ec8cab0e6e707bb1176}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!SetMuCacheThreshold@{SetMuCacheThreshold}}
+\index{SetMuCacheThreshold@{SetMuCacheThreshold}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
+\doxysubsubsection{\texorpdfstring{SetMuCacheThreshold()}{SetMuCacheThreshold()}}
+{\footnotesize\ttfamily \label{classDeep_1_1SimplePCLayer_abcc9462a7aa38ec8cab0e6e707bb1176} 
+void Deep::\+\+Simple\+PCLayer::\+\+Set\+Mu\+Cache\+Threshold (\begin{DoxyParamCaption}\item[{float}]{threshold}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Sets the mu-\/cache staleness threshold:\+ mu is recomputed only when \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}z -\/ z\+\_\+at\+\_\+last\+\_\+recompute\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} /\+ (\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}z\+\_\+at\+\_\+last\+\_\+recompute\texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|}. 
+
+
+\begin{DoxyItemize}
+\item eps) exceeds this value. threshold=-\/1 disables caching entirely (default). threshold=0 reproduces the original, EXACT clamped-\/only behavior (a clamped layer\textquotesingle{}s z never changes, so its ratio is always exactly 0, always below any threshold\texorpdfstring{$>$}{>}=0). threshold\texorpdfstring{$>$}{>}0 extends caching to UNCLAMPED layers too, as a genuine approximation -- correctness there means "{}close enough for real training,"{} not "{}bit-\/identical,"{} and needs its own accuracy-\/impact validation, not just a trajectory diff. 
+\end{DoxyItemize}\Hypertarget{classDeep_1_1SimplePCLayer_a5e70ea45e8650ab0c704bdf160cebf16}\index{Deep::SimplePCLayer@{Deep::SimplePCLayer}!SetOptimizer@{SetOptimizer}}
 \index{SetOptimizer@{SetOptimizer}!Deep::SimplePCLayer@{Deep::SimplePCLayer}}
 \doxysubsubsection{\texorpdfstring{SetOptimizer()}{SetOptimizer()}}
 {\footnotesize\ttfamily \label{classDeep_1_1SimplePCLayer_a5e70ea45e8650ab0c704bdf160cebf16} 
@@ -569,8 +619,8 @@ void Deep::\+\+Simple\+PCLayer::\+\+Update\+State (\begin{DoxyParamCaption}{}{}\
 
 Computes the state derivatives for inference. 
 
-\[\frac{dz^{(l)}}{dt} = -e^{(l)} + (W^{(l-1)})^T e^{(l-1)} \odot \sigma\textnormal{\textquotesingle}(W^{(l-1)}z^{(l)})
-\] 
+\[\frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma\textnormal{\textquotesingle}(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
+\] The derivative multiply now applies AFTER the W transform, using f\textquotesingle{}(z) (this layer\textquotesingle{}s OWN state derivative), not f\textquotesingle{}(mu) applied before -- matching the activate-\/before-\/transform convention. 
 
 Implements \doxymbox{\hyperlink{classDeep_1_1Layer_ac87e63b18ef8aa27bd975031477e33f7}{Deep::\+\+Layer}}.
 

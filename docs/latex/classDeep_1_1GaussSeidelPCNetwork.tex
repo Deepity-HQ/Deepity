@@ -1,0 +1,366 @@
+\doxysection{Deep::\+Gauss\+Seidel\+PCNetwork Class Reference}
+\hypertarget{classDeep_1_1GaussSeidelPCNetwork}{}\label{classDeep_1_1GaussSeidelPCNetwork}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+
+
+{\ttfamily \+\#include $<$Gauss\+Seidel\+PCNetwork.\+h$>$}
+
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{Gauss\+Seidel\+PCNetwork}} (int batch\+Size) noexcept
+\begin{DoxyCompactList}\small\item\em Constructs an empty network with a predetermined batch size. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a84bc5c512c6b7fa4452b872c5f501edc}{\texorpdfstring{$\sim$}{\string~}\+Gauss\+Seidel\+PCNetwork}} ()=default
+\begin{DoxyCompactList}\small\item\em Default destructor. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ad6d06431e8d5d7322692591ce312eb0b}{Gauss\+Seidel\+PCNetwork}} (const Gauss\+Seidel\+PCNetwork \&)=delete
+\begin{DoxyCompactList}\small\item\em Copy construction is disabled; a network owns its layers\textquotesingle{} memory arena and is not meant to be duplicated. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{Gauss\+Seidel\+PCNetwork}} \& \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_aba28860eab6b2339e7e31aaef5e8a718}{operator=}} (const \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{Gauss\+Seidel\+PCNetwork}} \&)=delete
+\begin{DoxyCompactList}\small\item\em Copy assignment is disabled; see the copy constructor. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float lmbda, void(\texorpdfstring{$\ast$}{*}act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t), void(\texorpdfstring{$\ast$}{*}d\+Act)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool))
+\begin{DoxyCompactList}\small\item\em Adds a layer to the network. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ae50ed17d5e1ddcef07c9c08cb663d0ad}{Add\+Layer}} (int size, int next\+Size, float lr, float ir, float lmbda, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} a\+Type, \doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}} d\+Type)
+\begin{DoxyCompactList}\small\item\em Adds a layer to the network, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ad8d3814e26856822905dd265eba70c4c}{Randomize\+Weights}} (std::\+mt19937 \&rng)
+\begin{DoxyCompactList}\small\item\em Randomizes the weights of each layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a0285b027803e91813085e3eab72f7677}{Reset\+State}} () noexcept
+\begin{DoxyCompactList}\small\item\em Resets each layer\textquotesingle{}s state without touching learned weights. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a8539457b9f8466f1c5e9763a3b21de4e}{Clamp}} (const std::\+vector$<$ float $>$ \&input)
+\begin{DoxyCompactList}\small\item\em Clamps the input to the first layer. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a7747fc235a0de7b152c6e04d28be7502}{Step}} () noexcept
+\begin{DoxyCompactList}\small\item\em Runs ONE full Gauss-\/\+Seidel settling step (all three sweeps, in order) across every layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a377223c31c277b8ea9cf492bcc5077c1}{Update\+Weights}} () noexcept
+\begin{DoxyCompactList}\small\item\em Updates every non-\/terminal layer\textquotesingle{}s weights. Called ONCE after the full settling loop completes, matching ngc-\/learn\textquotesingle{}s evolve\+\_\+process. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821}{Project\+Forward}} () noexcept
+\begin{DoxyCompactList}\small\item\em Seeds every hidden layer\textquotesingle{}s z from a genuine forward pass through current weights (Compute\+Prediction() only, no error/\+energy side effects) -- an orthogonal optimization to the Gauss-\/\+Seidel restructuring itself. Assumes layers\+[0]\+ is already clamped. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a56abd5c693c3912a3ac798a1b80ec4bf}{Set\+Optimizer}} (\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}} o) noexcept
+\begin{DoxyCompactList}\small\item\em Sets the optimizer used for weight updates, on every layer. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a795672cbea690c6a4039b0f224010d8d}{Set\+Learning\+Rate}} (float lr) noexcept
+\begin{DoxyCompactList}\small\item\em Sets the learning rate used for weight updates, on every layer. \end{DoxyCompactList}\item 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} \texorpdfstring{$\ast$}{*} \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a4fa4a52d0ac6d208033468a966801b2d}{Get\+Terminal\+Layer}} () noexcept
+\begin{DoxyCompactList}\small\item\em Returns the network\textquotesingle{}s terminal (final) layer. \end{DoxyCompactList}\item 
+std::\+vector$<$ std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} $>$ $>$ \& \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a9904ea16a85f16e38d9dd146f995aead}{Get\+Layers}} () noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
+const std::\+vector$<$ std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} $>$ $>$ \& \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a3e1d586c4e563e3e7fb6259c2d7adc24}{Get\+Layers}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns every layer in the network, in the order they were added. \end{DoxyCompactList}\item 
+int \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ac1bb52309f09bb3126936c9706114292}{Get\+Batch\+Size}} () const noexcept
+\begin{DoxyCompactList}\small\item\em Returns the batch size for the network\textquotesingle{}s layers. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff}{Train\+Step}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Full train step:\+ reset, clamp input+target, settle for inference\+Steps, update weights once, unclamp. \end{DoxyCompactList}\item 
+float \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a08cc43e63972f99b6a2d4d5b3a757fdf}{Train\+Step\+With\+Projection}} (const std::\+vector$<$ float $>$ \&x, const std::\+vector$<$ float $>$ \&y, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Same as \doxylink{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff}{Train\+Step()}, but with \doxylink{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821}{Project\+Forward()} called once after clamping the input, before the settling loop. \end{DoxyCompactList}\item 
+std::\+vector$<$ float $>$ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a73f1e9385fd01832aa1f23a587069b02}{Predict}} (const std::\+vector$<$ float $>$ \&x, int inference\+Steps)
+\begin{DoxyCompactList}\small\item\em Forward prediction:\+ clamp input, settle (no target clamped), read the terminal\textquotesingle{}s beliefs. \end{DoxyCompactList}\item 
+void \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_ab431ef03e4de7ea0f946c90d543679bc}{Compile}} ()
+\begin{DoxyCompactList}\small\item\em Loads all layers into one contiguous block of memory. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\label{doc-constructors}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_doc-constructors}
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GaussSeidelPCNetwork@{GaussSeidelPCNetwork}}
+\index{GaussSeidelPCNetwork@{GaussSeidelPCNetwork}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GaussSeidelPCNetwork()}{GaussSeidelPCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3} 
+Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Gauss\+Seidel\+PCNetwork (\begin{DoxyParamCaption}\item[{int}]{batch\+Size}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}, {\ttfamily [noexcept]}}
+
+
+
+Constructs an empty network with a predetermined batch size. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em batch\+Size} & Batch size \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a84bc5c512c6b7fa4452b872c5f501edc}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!````~GaussSeidelPCNetwork@{\texorpdfstring{$\sim$}{\string~}GaussSeidelPCNetwork}}
+\index{````~GaussSeidelPCNetwork@{\texorpdfstring{$\sim$}{\string~}GaussSeidelPCNetwork}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{\texorpdfstring{$\sim$}{\string~}GaussSeidelPCNetwork()}{\string~GaussSeidelPCNetwork()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a84bc5c512c6b7fa4452b872c5f501edc} 
+Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\texorpdfstring{$\sim$}{\string~}\+Gauss\+Seidel\+PCNetwork (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [default]}}
+
+
+
+Default destructor. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_ad6d06431e8d5d7322692591ce312eb0b}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GaussSeidelPCNetwork@{GaussSeidelPCNetwork}}
+\index{GaussSeidelPCNetwork@{GaussSeidelPCNetwork}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GaussSeidelPCNetwork()}{GaussSeidelPCNetwork()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_ad6d06431e8d5d7322692591ce312eb0b} 
+Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Gauss\+Seidel\+PCNetwork (\begin{DoxyParamCaption}\item[{const Gauss\+Seidel\+PCNetwork \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Copy construction is disabled; a network owns its layers\textquotesingle{} memory arena and is not meant to be duplicated. 
+
+
+
+\label{doc-func-members}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_doc-func-members}
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_ae50ed17d5e1ddcef07c9c08cb663d0ad}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!AddLayer@{AddLayer}}
+\index{AddLayer@{AddLayer}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_ae50ed17d5e1ddcef07c9c08cb663d0ad} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{size}{, }\item[{int}]{next\+Size}{, }\item[{float}]{lr}{, }\item[{float}]{ir}{, }\item[{float}]{lmbda}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{a\+Type}{, }\item[{\doxymbox{\hyperlink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type}}}]{d\+Type}{}\end{DoxyParamCaption})}
+
+
+
+Adds a layer to the network, using a named \doxylink{namespaceDeep_a4b7606ca838be34029bd134f319e0f61}{Activation\+Type} instead of raw function pointers. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & input size \\
+\hline
+{\em next\+Size} & output size \\
+\hline
+{\em lr} & learning rate for weight updates \\
+\hline
+{\em ir} & inference rate (Euler integration step size) \\
+\hline
+{\em lmbda} & weight decay (L2 regularization) coefficient \\
+\hline
+{\em a\+Type} & activation type \\
+\hline
+{\em d\+Type} & activation derivative type \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!AddLayer@{AddLayer}}
+\index{AddLayer@{AddLayer}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{AddLayer()}{AddLayer()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Add\+Layer (\begin{DoxyParamCaption}\item[{int}]{size}{, }\item[{int}]{next\+Size}{, }\item[{float}]{lr}{, }\item[{float}]{ir}{, }\item[{float}]{lmbda}{, }\item[{void(\texorpdfstring{$\ast$}{*}}]{act~}{)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t), }\item[{void(\texorpdfstring{$\ast$}{*}}]{d\+Act~}{)(float \texorpdfstring{$\ast$}{*}, size\+\_\+t, bool)}\end{DoxyParamCaption})}
+
+
+
+Adds a layer to the network. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em size} & input size \\
+\hline
+{\em next\+Size} & output size \\
+\hline
+{\em lr} & learning rate for weight updates \\
+\hline
+{\em ir} & inference rate (Euler integration step size) \\
+\hline
+{\em lmbda} & weight decay (L2 regularization) coefficient \\
+\hline
+{\em act} & activation function \\
+\hline
+{\em d\+Act} & derivative of previous activation function \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a8539457b9f8466f1c5e9763a3b21de4e}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!Clamp@{Clamp}}
+\index{Clamp@{Clamp}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Clamp()}{Clamp()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a8539457b9f8466f1c5e9763a3b21de4e} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Clamp (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{input}{}\end{DoxyParamCaption})}
+
+
+
+Clamps the input to the first layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em input} & Reference to the input vector. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_ab431ef03e4de7ea0f946c90d543679bc}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!Compile@{Compile}}
+\index{Compile@{Compile}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Compile()}{Compile()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_ab431ef03e4de7ea0f946c90d543679bc} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Compile (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})}
+
+
+
+Loads all layers into one contiguous block of memory. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_ac1bb52309f09bb3126936c9706114292}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GetBatchSize@{GetBatchSize}}
+\index{GetBatchSize@{GetBatchSize}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetBatchSize()}{GetBatchSize()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_ac1bb52309f09bb3126936c9706114292} 
+int Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Get\+Batch\+Size (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the batch size for the network\textquotesingle{}s layers. 
+
+\begin{DoxyReturn}{Returns}
+int batch\+Size 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a3e1d586c4e563e3e7fb6259c2d7adc24}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GetLayers@{GetLayers}}
+\index{GetLayers@{GetLayers}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}\hspace{0.1cm}{\footnotesize\ttfamily [1/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a3e1d586c4e563e3e7fb6259c2d7adc24} 
+const std::\+vector$<$ std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} $>$ $>$ \& Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A const reference to the internal layer list. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a9904ea16a85f16e38d9dd146f995aead}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GetLayers@{GetLayers}}
+\index{GetLayers@{GetLayers}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetLayers()}{GetLayers()}\hspace{0.1cm}{\footnotesize\ttfamily [2/2]}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a9904ea16a85f16e38d9dd146f995aead} 
+std::\+vector$<$ std::\+unique\+\_\+ptr$<$ \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} $>$ $>$ \& Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Get\+Layers (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns every layer in the network, in the order they were added. 
+
+\begin{DoxyReturn}{Returns}
+A reference to the internal layer list. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a4fa4a52d0ac6d208033468a966801b2d}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!GetTerminalLayer@{GetTerminalLayer}}
+\index{GetTerminalLayer@{GetTerminalLayer}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{GetTerminalLayer()}{GetTerminalLayer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a4fa4a52d0ac6d208033468a966801b2d} 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCLayer}{Gauss\+Seidel\+PCLayer}} \texorpdfstring{$\ast$}{*} Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Get\+Terminal\+Layer (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Returns the network\textquotesingle{}s terminal (final) layer. 
+
+\begin{DoxyReturn}{Returns}
+Pointer to the last layer added via \doxylink{classDeep_1_1GaussSeidelPCNetwork_a299dc1cc90255743c74cf9b0f2ad5085}{Add\+Layer()}. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_aba28860eab6b2339e7e31aaef5e8a718}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!operator=@{operator=}}
+\index{operator=@{operator=}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{operator=()}{operator=()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_aba28860eab6b2339e7e31aaef5e8a718} 
+\doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{Gauss\+Seidel\+PCNetwork}} \& Deep::\+\+Gauss\+Seidel\+PCNetwork::\+operator= (\begin{DoxyParamCaption}\item[{const \doxymbox{\hyperlink{classDeep_1_1GaussSeidelPCNetwork_a1aa884d0117c7b48c9d547d74d7684a3}{Gauss\+Seidel\+PCNetwork}} \&}]{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [delete]}}
+
+
+
+Copy assignment is disabled; see the copy constructor. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a73f1e9385fd01832aa1f23a587069b02}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!Predict@{Predict}}
+\index{Predict@{Predict}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Predict()}{Predict()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a73f1e9385fd01832aa1f23a587069b02} 
+std::\+vector$<$ float $>$ Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Predict (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Forward prediction:\+ clamp input, settle (no target clamped), read the terminal\textquotesingle{}s beliefs. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!ProjectForward@{ProjectForward}}
+\index{ProjectForward@{ProjectForward}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{ProjectForward()}{ProjectForward()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Project\+Forward (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Seeds every hidden layer\textquotesingle{}s z from a genuine forward pass through current weights (Compute\+Prediction() only, no error/\+energy side effects) -- an orthogonal optimization to the Gauss-\/\+Seidel restructuring itself. Assumes layers\+[0]\+ is already clamped. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_ad8d3814e26856822905dd265eba70c4c}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!RandomizeWeights@{RandomizeWeights}}
+\index{RandomizeWeights@{RandomizeWeights}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{RandomizeWeights()}{RandomizeWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_ad8d3814e26856822905dd265eba70c4c} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Randomize\+Weights (\begin{DoxyParamCaption}\item[{std::\+mt19937 \&}]{rng}{}\end{DoxyParamCaption})}
+
+
+
+Randomizes the weights of each layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em rng} & The classic Mersenne Twister \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a0285b027803e91813085e3eab72f7677}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!ResetState@{ResetState}}
+\index{ResetState@{ResetState}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{ResetState()}{ResetState()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a0285b027803e91813085e3eab72f7677} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Reset\+State (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Resets each layer\textquotesingle{}s state without touching learned weights. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a795672cbea690c6a4039b0f224010d8d}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!SetLearningRate@{SetLearningRate}}
+\index{SetLearningRate@{SetLearningRate}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{SetLearningRate()}{SetLearningRate()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a795672cbea690c6a4039b0f224010d8d} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Set\+Learning\+Rate (\begin{DoxyParamCaption}\item[{float}]{lr}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Sets the learning rate used for weight updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em lr} & The new learning rate. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a56abd5c693c3912a3ac798a1b80ec4bf}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!SetOptimizer@{SetOptimizer}}
+\index{SetOptimizer@{SetOptimizer}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{SetOptimizer()}{SetOptimizer()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a56abd5c693c3912a3ac798a1b80ec4bf} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Set\+Optimizer (\begin{DoxyParamCaption}\item[{\doxymbox{\hyperlink{namespaceDeep_a76c7b5d078cce2bed29f6f592560bf02}{Optimizer\+Type}}}]{o}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}, {\ttfamily [noexcept]}}
+
+
+
+Sets the optimizer used for weight updates, on every layer. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em o} & The optimizer type to apply. \\
+\hline
+\end{DoxyParams}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a7747fc235a0de7b152c6e04d28be7502}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!Step@{Step}}
+\index{Step@{Step}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{Step()}{Step()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a7747fc235a0de7b152c6e04d28be7502} 
+float Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Step (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Runs ONE full Gauss-\/\+Seidel settling step (all three sweeps, in order) across every layer. 
+
+\begin{DoxyReturn}{Returns}
+Total energy, summed from every layer\textquotesingle{}s Compute\+Error() -- meaningful only after all three sweeps have run for this step. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!TrainStep@{TrainStep}}
+\index{TrainStep@{TrainStep}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{TrainStep()}{TrainStep()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff} 
+float Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Train\+Step (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{const std::\+vector$<$ float $>$ \&}]{y}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Full train step:\+ reset, clamp input+target, settle for inference\+Steps, update weights once, unclamp. 
+
+\begin{DoxyReturn}{Returns}
+The final step\textquotesingle{}s total energy, before weight updates. 
+\end{DoxyReturn}
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a08cc43e63972f99b6a2d4d5b3a757fdf}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!TrainStepWithProjection@{TrainStepWithProjection}}
+\index{TrainStepWithProjection@{TrainStepWithProjection}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{TrainStepWithProjection()}{TrainStepWithProjection()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a08cc43e63972f99b6a2d4d5b3a757fdf} 
+float Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Train\+Step\+With\+Projection (\begin{DoxyParamCaption}\item[{const std::\+vector$<$ float $>$ \&}]{x}{, }\item[{const std::\+vector$<$ float $>$ \&}]{y}{, }\item[{int}]{inference\+Steps}{}\end{DoxyParamCaption})}
+
+
+
+Same as \doxylink{classDeep_1_1GaussSeidelPCNetwork_aa03d3d08f47aee41758ead5e2948fbff}{Train\+Step()}, but with \doxylink{classDeep_1_1GaussSeidelPCNetwork_a654381cb93d350ae632d940b2e08d821}{Project\+Forward()} called once after clamping the input, before the settling loop. 
+
+\Hypertarget{classDeep_1_1GaussSeidelPCNetwork_a377223c31c277b8ea9cf492bcc5077c1}\index{Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}!UpdateWeights@{UpdateWeights}}
+\index{UpdateWeights@{UpdateWeights}!Deep::GaussSeidelPCNetwork@{Deep::GaussSeidelPCNetwork}}
+\doxysubsubsection{\texorpdfstring{UpdateWeights()}{UpdateWeights()}}
+{\footnotesize\ttfamily \label{classDeep_1_1GaussSeidelPCNetwork_a377223c31c277b8ea9cf492bcc5077c1} 
+void Deep::\+\+Gauss\+Seidel\+PCNetwork::\+\+Update\+Weights (\begin{DoxyParamCaption}{}{}\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [noexcept]}}
+
+
+
+Updates every non-\/terminal layer\textquotesingle{}s weights. Called ONCE after the full settling loop completes, matching ngc-\/learn\textquotesingle{}s evolve\+\_\+process. 
+
+
+
+The documentation for this class was generated from the following files:\+\begin{DoxyCompactItemize}
+\item 
+include/\+deepity/\+networks/\+\doxymbox{\hyperlink{GaussSeidelPCNetwork_8h}{Gauss\+Seidel\+PCNetwork.\+h}}\item 
+src/\+\doxymbox{\hyperlink{GaussSeidelPCNetwork_8cpp}{Gauss\+Seidel\+PCNetwork.\+cpp}}\end{DoxyCompactItemize}

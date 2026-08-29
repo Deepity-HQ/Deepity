@@ -114,13 +114,16 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a3b3ba3c36d6dcb7c16bb353236ec830c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor.  <br /></td></tr>
 <tr class="memitem:aa5f7d2e72477a8a3b59a11ae2bc23215" id="r_aa5f7d2e72477a8a3b59a11ae2bc23215"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aa5f7d2e72477a8a3b59a11ae2bc23215">DiscriminativePCNetwork</a> (int batchSize)</td></tr>
 <tr class="memdesc:aa5f7d2e72477a8a3b59a11ae2bc23215"><td class="mdescLeft">&#160;</td><td class="mdescRight">Batched constructor.  <br /></td></tr>
-<tr class="memitem:aaa4eadf99e0cf9e0aa669b549ce89189" id="r_aaa4eadf99e0cf9e0aa669b549ce89189"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aaa4eadf99e0cf9e0aa669b549ce89189">~DiscriminativePCNetwork</a> ()</td></tr>
-<tr class="memdesc:aaa4eadf99e0cf9e0aa669b549ce89189"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor; deletes each layer.  <br /></td></tr>
+<tr class="memitem:afa273d4c2d0eb3787fcbea497c09b5e9" id="r_afa273d4c2d0eb3787fcbea497c09b5e9"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#afa273d4c2d0eb3787fcbea497c09b5e9">~DiscriminativePCNetwork</a> ()=default</td></tr>
+<tr class="memdesc:afa273d4c2d0eb3787fcbea497c09b5e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default constructor; deletes each layer.  <br /></td></tr>
 <tr class="memitem:acef22b0bde2c8633af40fe8fdefae448" id="r_acef22b0bde2c8633af40fe8fdefae448"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#acef22b0bde2c8633af40fe8fdefae448">DiscriminativePCNetwork</a> (DiscriminativePCNetwork &amp;&amp;other) noexcept=default</td></tr>
+<tr class="memdesc:acef22b0bde2c8633af40fe8fdefae448"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor.  <br /></td></tr>
 <tr class="memitem:a7e8373c911697c531b75b1a3cbb413bd" id="r_a7e8373c911697c531b75b1a3cbb413bd"><td class="memItemLeft"><a class="el" href="#a3b3ba3c36d6dcb7c16bb353236ec830c">DiscriminativePCNetwork</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a7e8373c911697c531b75b1a3cbb413bd">operator=</a> (<a class="el" href="#a3b3ba3c36d6dcb7c16bb353236ec830c">DiscriminativePCNetwork</a> &amp;&amp;other) noexcept=default</td></tr>
+<tr class="memdesc:a7e8373c911697c531b75b1a3cbb413bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment operator.  <br /></td></tr>
 <tr class="memitem:a671f20780865ad65050178fc8852cd6d" id="r_a671f20780865ad65050178fc8852cd6d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a671f20780865ad65050178fc8852cd6d">AddLayer</a> (int size, int nextSize, float lr, float ir, float pr, float lmbda, void(*act)(float *, size_t), void(*dAct)(float *, size_t, bool))</td></tr>
 <tr class="memdesc:a671f20780865ad65050178fc8852cd6d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a layer to the network.  <br /></td></tr>
 <tr class="memitem:a2ca6add042ecc71ca17c197b44ce17ae" id="r_a2ca6add042ecc71ca17c197b44ce17ae"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2ca6add042ecc71ca17c197b44ce17ae">AddLayer</a> (int size, int nextSize, float lr, float ir, float pr, float lmbda, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">Deep::ActivationType</a> aType, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">Deep::ActivationType</a> dType)</td></tr>
+<tr class="memdesc:a2ca6add042ecc71ca17c197b44ce17ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a layer to the network, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers.  <br /></td></tr>
 <tr class="memitem:ad7b33441b523389418b95d305d1e42ac" id="r_ad7b33441b523389418b95d305d1e42ac"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad7b33441b523389418b95d305d1e42ac">RandomizeWeights</a> (std::mt19937 &amp;rng)</td></tr>
 <tr class="memdesc:ad7b33441b523389418b95d305d1e42ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomizes the weights of each layer.  <br /></td></tr>
 <tr class="memitem:aad6a69dcf213a6d2dfaa345995cb3d84" id="r_aad6a69dcf213a6d2dfaa345995cb3d84"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aad6a69dcf213a6d2dfaa345995cb3d84">Clamp</a> (const std::vector&lt; float &gt; &amp;input)</td></tr>
@@ -132,21 +135,39 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aaad5c950048825e4795ac73c23b218a2" id="r_aaad5c950048825e4795ac73c23b218a2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aaad5c950048825e4795ac73c23b218a2">UpdateWeights</a> ()</td></tr>
 <tr class="memdesc:aaad5c950048825e4795ac73c23b218a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates each layer's weights.  <br /></td></tr>
 <tr class="memitem:ab02e9d1cfe73dc69dda7939127675353" id="r_ab02e9d1cfe73dc69dda7939127675353"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab02e9d1cfe73dc69dda7939127675353">UpdatePrecision</a> ()</td></tr>
+<tr class="memdesc:ab02e9d1cfe73dc69dda7939127675353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates each layer's precision weighting.  <br /></td></tr>
+<tr class="memitem:aa290dddfa4068d77c53ef27f79ef792d" id="r_aa290dddfa4068d77c53ef27f79ef792d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa290dddfa4068d77c53ef27f79ef792d">ProjectForward</a> () noexcept</td></tr>
+<tr class="memdesc:aa290dddfa4068d77c53ef27f79ef792d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Seeds every hidden layer's belief from a genuine forward pass through current weights, rather than zero-init. Assumes the input layer is already clamped.  <br /></td></tr>
+<tr class="memitem:af7cac346a0aad294d5b0836b6161ddad" id="r_af7cac346a0aad294d5b0836b6161ddad"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#af7cac346a0aad294d5b0836b6161ddad">TrainStepWithProjection</a> (const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td></tr>
+<tr class="memdesc:af7cac346a0aad294d5b0836b6161ddad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <a class="el" href="#ac234beb279bfd8ffa13e374624ba790a" title="Runs a complete training step (clamp, settle, update, unclamp).">TrainStep()</a>, but with <a class="el" href="#aa290dddfa4068d77c53ef27f79ef792d" title="Seeds every hidden layer&#39;s belief from a genuine forward pass through current weights,...">ProjectForward()</a> called once after clamping the input, before the settling loop.  <br /></td></tr>
+<tr class="memitem:a1ad7b16c8e583fb681dfd77d4c9aa06b" id="r_a1ad7b16c8e583fb681dfd77d4c9aa06b"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a1ad7b16c8e583fb681dfd77d4c9aa06b">PredictWithProjection</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
+<tr class="memdesc:a1ad7b16c8e583fb681dfd77d4c9aa06b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as <a class="el" href="#a4b9bfb6b75743cb26253f4c0ed2451e8" title="Runs a forward prediction pass (clamp, settle, read).">Predict()</a>, but with <a class="el" href="#aa290dddfa4068d77c53ef27f79ef792d" title="Seeds every hidden layer&#39;s belief from a genuine forward pass through current weights,...">ProjectForward()</a> called once after clamping the input, before the settling loop.  <br /></td></tr>
 <tr class="memitem:a5a5c10b33e3243deb69c9f25b79afb22" id="r_a5a5c10b33e3243deb69c9f25b79afb22"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5a5c10b33e3243deb69c9f25b79afb22">ResetState</a> () noexcept</td></tr>
-<tr class="memitem:a9c441171237a3afd9f734d3ad7583c65" id="r_a9c441171237a3afd9f734d3ad7583c65"><td class="memItemLeft">const std::vector&lt; <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a> * &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a9c441171237a3afd9f734d3ad7583c65">GetLayers</a> () const noexcept</td></tr>
+<tr class="memdesc:a5a5c10b33e3243deb69c9f25b79afb22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets each layer's state without touching learned weights.  <br /></td></tr>
+<tr class="memitem:a5da4bce672bccaa72a56bd61179cf317" id="r_a5da4bce672bccaa72a56bd61179cf317"><td class="memItemLeft">const auto &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a5da4bce672bccaa72a56bd61179cf317">GetLayers</a> () const noexcept</td></tr>
+<tr class="memdesc:a5da4bce672bccaa72a56bd61179cf317"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
 <tr class="memitem:ab96c81ab2171d59dc4c3bc7d1e02dd08" id="r_ab96c81ab2171d59dc4c3bc7d1e02dd08"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ab96c81ab2171d59dc4c3bc7d1e02dd08">GetBatchSize</a> () const noexcept</td></tr>
 <tr class="memdesc:ab96c81ab2171d59dc4c3bc7d1e02dd08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the batch size for the network's layers.  <br /></td></tr>
 <tr class="memitem:a050d1f0bea20b911fd2804baf6ab44f9" id="r_a050d1f0bea20b911fd2804baf6ab44f9"><td class="memItemLeft"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a> *&#160;</td><td class="memItemRight"><a class="el" href="#a050d1f0bea20b911fd2804baf6ab44f9">GetTerminalLayer</a> () const</td></tr>
+<tr class="memdesc:a050d1f0bea20b911fd2804baf6ab44f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the network's terminal (final) layer.  <br /></td></tr>
 <tr class="memitem:a1746cd0c192acb515d38fbf99035b676" id="r_a1746cd0c192acb515d38fbf99035b676"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1746cd0c192acb515d38fbf99035b676">SetLearningRate</a> (float lr)</td></tr>
+<tr class="memdesc:a1746cd0c192acb515d38fbf99035b676"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the learning rate used for weight updates, on every layer.  <br /></td></tr>
 <tr class="memitem:ae0fe75cacf06b0a48cd412020a673357" id="r_ae0fe75cacf06b0a48cd412020a673357"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae0fe75cacf06b0a48cd412020a673357">SetInferenceRate</a> (float ir)</td></tr>
+<tr class="memdesc:ae0fe75cacf06b0a48cd412020a673357"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the inference rate used for state updates, on every layer.  <br /></td></tr>
 <tr class="memitem:a437d9414de038d84ab4607cfc067afef" id="r_a437d9414de038d84ab4607cfc067afef"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a437d9414de038d84ab4607cfc067afef">SetPrecisionRate</a> (float pr)</td></tr>
+<tr class="memdesc:a437d9414de038d84ab4607cfc067afef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the learning rate used for precision updates, on every layer.  <br /></td></tr>
 <tr class="memitem:acdd5b3cd172aa5a0787d1b45d3eaf28d" id="r_acdd5b3cd172aa5a0787d1b45d3eaf28d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#acdd5b3cd172aa5a0787d1b45d3eaf28d">SetLambda</a> (float l)</td></tr>
+<tr class="memdesc:acdd5b3cd172aa5a0787d1b45d3eaf28d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the weight-decay (L2 regularization) coefficient, on every layer.  <br /></td></tr>
+<tr class="memitem:afa8d85d6b6a23ca6b3d35ef2f602468a" id="r_afa8d85d6b6a23ca6b3d35ef2f602468a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afa8d85d6b6a23ca6b3d35ef2f602468a">SetOptimizer</a> (<a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> opt) noexcept</td></tr>
+<tr class="memdesc:afa8d85d6b6a23ca6b3d35ef2f602468a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the optimizer used for weight updates, on every layer.  <br /></td></tr>
 <tr class="memitem:ac234beb279bfd8ffa13e374624ba790a" id="r_ac234beb279bfd8ffa13e374624ba790a"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#ac234beb279bfd8ffa13e374624ba790a">TrainStep</a> (const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td></tr>
 <tr class="memdesc:ac234beb279bfd8ffa13e374624ba790a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a complete training step (clamp, settle, update, unclamp).  <br /></td></tr>
 <tr class="memitem:a4b9bfb6b75743cb26253f4c0ed2451e8" id="r_a4b9bfb6b75743cb26253f4c0ed2451e8"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a4b9bfb6b75743cb26253f4c0ed2451e8">Predict</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
 <tr class="memdesc:a4b9bfb6b75743cb26253f4c0ed2451e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs a forward prediction pass (clamp, settle, read).  <br /></td></tr>
 <tr class="memitem:a4439ed71ceda4eb341c801ec5c17b65f" id="r_a4439ed71ceda4eb341c801ec5c17b65f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a4439ed71ceda4eb341c801ec5c17b65f">Save</a> (const std::string &amp;filename) const noexcept</td></tr>
+<tr class="memdesc:a4439ed71ceda4eb341c801ec5c17b65f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Saves the network's learned parameters to disk.  <br /></td></tr>
 <tr class="memitem:a897d0a5bea0b22c1634ae5338cb11b72" id="r_a897d0a5bea0b22c1634ae5338cb11b72"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a897d0a5bea0b22c1634ae5338cb11b72">Load</a> (const std::string &amp;filename) noexcept</td></tr>
+<tr class="memdesc:a897d0a5bea0b22c1634ae5338cb11b72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Loads the network's learned parameters from disk.  <br /></td></tr>
 <tr class="memitem:a2883834ad1affdadafae000829c025d8" id="r_a2883834ad1affdadafae000829c025d8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2883834ad1affdadafae000829c025d8">Compile</a> ()</td></tr>
 <tr class="memdesc:a2883834ad1affdadafae000829c025d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Loads all layers into one contiguous block of memory.  <br /></td></tr>
 </table><table class="memberdecls">
@@ -220,11 +241,14 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="aaa4eadf99e0cf9e0aa669b549ce89189" name="aaa4eadf99e0cf9e0aa669b549ce89189"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa4eadf99e0cf9e0aa669b549ce89189">&#9670;&#160;</a></span>~DiscriminativePCNetwork()</h2>
+<a id="afa273d4c2d0eb3787fcbea497c09b5e9" name="afa273d4c2d0eb3787fcbea497c09b5e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa273d4c2d0eb3787fcbea497c09b5e9">&#9670;&#160;</a></span>~DiscriminativePCNetwork()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
           <td class="memname">Deep::DiscriminativePCNetwork::~DiscriminativePCNetwork </td>
@@ -233,6 +257,11 @@ Friends</h2></td></tr>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel default">default</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 <p>Default constructor; deletes each layer. </p>
@@ -261,6 +290,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Move constructor. </p>
 
 </div>
 </div>
@@ -313,6 +344,21 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Adds a layer to the network, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">size</td><td>input size </td></tr>
+    <tr><td class="paramname">nextSize</td><td>output size </td></tr>
+    <tr><td class="paramname">lr</td><td>learning rate for beliefs </td></tr>
+    <tr><td class="paramname">ir</td><td>learning rate for weights </td></tr>
+    <tr><td class="paramname">pr</td><td>learning rate for precision </td></tr>
+    <tr><td class="paramname">lmbda</td><td>weight decay (L2 regularization) coefficient </td></tr>
+    <tr><td class="paramname">aType</td><td>activation type </td></tr>
+    <tr><td class="paramname">dType</td><td>activation derivative type </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -474,8 +520,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a9c441171237a3afd9f734d3ad7583c65" name="a9c441171237a3afd9f734d3ad7583c65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9c441171237a3afd9f734d3ad7583c65">&#9670;&#160;</a></span>GetLayers()</h2>
+<a id="a5da4bce672bccaa72a56bd61179cf317" name="a5da4bce672bccaa72a56bd61179cf317"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5da4bce672bccaa72a56bd61179cf317">&#9670;&#160;</a></span>GetLayers()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -484,7 +530,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const std::vector&lt; <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a> * &gt; &amp; Deep::DiscriminativePCNetwork::GetLayers </td>
+          <td class="memname">const auto &amp; Deep::DiscriminativePCNetwork::GetLayers </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -496,6 +542,9 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns every layer in the network, in the order they were added. </p>
+<dl class="section return"><dt>Returns</dt><dd>A const reference to the internal layer list. </dd></dl>
 
 </div>
 </div>
@@ -522,6 +571,9 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the network's terminal (final) layer. </p>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to the last layer added via <a class="el" href="#a671f20780865ad65050178fc8852cd6d" title="Adds a layer to the network.">AddLayer()</a>, or nullptr if no layers have been added. </dd></dl>
+
 </div>
 </div>
 <a id="a897d0a5bea0b22c1634ae5338cb11b72" name="a897d0a5bea0b22c1634ae5338cb11b72"></a>
@@ -547,6 +599,15 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Loads the network's learned parameters from disk. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filename</td><td>The source file path. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success, false otherwise. </dd></dl>
+
 </div>
 </div>
 <a id="a7e8373c911697c531b75b1a3cbb413bd" name="a7e8373c911697c531b75b1a3cbb413bd"></a>
@@ -571,6 +632,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Move assignment operator. </p>
 
 </div>
 </div>
@@ -602,6 +665,64 @@ Friends</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A vector containing the batched predictions </dd></dl>
+
+</div>
+</div>
+<a id="a1ad7b16c8e583fb681dfd77d4c9aa06b" name="a1ad7b16c8e583fb681dfd77d4c9aa06b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ad7b16c8e583fb681dfd77d4c9aa06b">&#9670;&#160;</a></span>PredictWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; float &gt; Deep::DiscriminativePCNetwork::PredictWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same as <a class="el" href="#a4b9bfb6b75743cb26253f4c0ed2451e8" title="Runs a forward prediction pass (clamp, settle, read).">Predict()</a>, but with <a class="el" href="#aa290dddfa4068d77c53ef27f79ef792d" title="Seeds every hidden layer&#39;s belief from a genuine forward pass through current weights,...">ProjectForward()</a> called once after clamping the input, before the settling loop. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>The batched input data </td></tr>
+    <tr><td class="paramname">inferenceSteps</td><td>The number of relaxation iterations </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>A vector containing the batched predictions </dd></dl>
+
+</div>
+</div>
+<a id="aa290dddfa4068d77c53ef27f79ef792d" name="aa290dddfa4068d77c53ef27f79ef792d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa290dddfa4068d77c53ef27f79ef792d">&#9670;&#160;</a></span>ProjectForward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DiscriminativePCNetwork::ProjectForward </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Seeds every hidden layer's belief from a genuine forward pass through current weights, rather than zero-init. Assumes the input layer is already clamped. </p>
 
 </div>
 </div>
@@ -653,6 +774,8 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Resets each layer's state without touching learned weights. </p>
+
 </div>
 </div>
 <a id="a4439ed71ceda4eb341c801ec5c17b65f" name="a4439ed71ceda4eb341c801ec5c17b65f"></a>
@@ -677,6 +800,15 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Saves the network's learned parameters to disk. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filename</td><td>The destination file path. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>True on success, false otherwise. </dd></dl>
 
 </div>
 </div>
@@ -703,6 +835,14 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Sets the inference rate used for state updates, on every layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ir</td><td>The new inference rate. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="acdd5b3cd172aa5a0787d1b45d3eaf28d" name="acdd5b3cd172aa5a0787d1b45d3eaf28d"></a>
@@ -727,6 +867,14 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Sets the weight-decay (L2 regularization) coefficient, on every layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">l</td><td>The new lambda value. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -753,6 +901,47 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Sets the learning rate used for weight updates, on every layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">lr</td><td>The new learning rate. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="afa8d85d6b6a23ca6b3d35ef2f602468a" name="afa8d85d6b6a23ca6b3d35ef2f602468a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa8d85d6b6a23ca6b3d35ef2f602468a">&#9670;&#160;</a></span>SetOptimizer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DiscriminativePCNetwork::SetOptimizer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a></td>          <td class="paramname"><span class="paramname"><em>opt</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets the optimizer used for weight updates, on every layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">opt</td><td>The optimizer type to apply. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="a437d9414de038d84ab4607cfc067afef" name="a437d9414de038d84ab4607cfc067afef"></a>
@@ -777,6 +966,14 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Sets the learning rate used for precision updates, on every layer. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pr</td><td>The new precision rate. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -817,6 +1014,43 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="af7cac346a0aad294d5b0836b6161ddad" name="af7cac346a0aad294d5b0836b6161ddad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7cac346a0aad294d5b0836b6161ddad">&#9670;&#160;</a></span>TrainStepWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::DiscriminativePCNetwork::TrainStepWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>y</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Same as <a class="el" href="#ac234beb279bfd8ffa13e374624ba790a" title="Runs a complete training step (clamp, settle, update, unclamp).">TrainStep()</a>, but with <a class="el" href="#aa290dddfa4068d77c53ef27f79ef792d" title="Seeds every hidden layer&#39;s belief from a genuine forward pass through current weights,...">ProjectForward()</a> called once after clamping the input, before the settling loop. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>The batched input data </td></tr>
+    <tr><td class="paramname">y</td><td>The batched target data </td></tr>
+    <tr><td class="paramname">inferenceSteps</td><td>The number of relaxation iterations </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The final energy state of the network before weight updates </dd></dl>
+
+</div>
+</div>
 <a id="ab02e9d1cfe73dc69dda7939127675353" name="ab02e9d1cfe73dc69dda7939127675353"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab02e9d1cfe73dc69dda7939127675353">&#9670;&#160;</a></span>UpdatePrecision()</h2>
 
@@ -831,6 +1065,8 @@ Friends</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Updates each layer's precision weighting. </p>
 
 </div>
 </div>
