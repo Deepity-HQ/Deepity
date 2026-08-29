@@ -1,7 +1,8 @@
 import numpy as np
 import os
-from pydeepity import SequentialPCN
+import sys
 from time import perf_counter
+from pydeepity import SimplePCN
 
 def load_full_mnist():
     import gzip
@@ -45,74 +46,37 @@ def load_full_mnist():
 
 
 def main() -> None:
-    import sys
-    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7  # pass a seed on the
-                                                            # command line to
-                                                            # actually vary it,
-                                                            # e.g. `python
-                                                            # mnist_final_validated.py 123`
+    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7 
+    EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
-    BATCH_SIZE = 250       # CONFIRMED from their canonical train_pcn.py's
-                             # mb_size=250, not our own 256
-    STEPS = 20              # matches ngc-learn's T=20
-    EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15  # pass a 2nd arg
-                                                               # to try more
-                                                               # epochs, e.g.
-                                                               # `python
-                                                               # mnist_final_validated.py 7 25`
-    LR = 0.001               # Adam-appropriate scale, matches ngc-learn's own
-                              # stated eta=0.001 directly
-    DECAY_RATE = 0.98
-    LMBDA = 0.0              # CONFIRMED from HebbianSynapse's real source:
-                              # prior defaults to ("constant", 0.), never
-                              # overridden anywhere in pcn_model.py -- ngc-learn
-                              # runs with NO weight decay, not our own 0.0001
+    BATCH_SIZE = 250
+    STEPS = 30
+    LR = 0.00373
+    DECAY_RATE = 0.94
+    LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = SequentialPCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, lr=LR, ir=0.08, pr=0.0, act="linear", lmbda=LMBDA)
-    net.add_layer(512, 512, lr=LR, ir=0.08, pr=0.0, act="sigmoid", lmbda=LMBDA)
-    net.add_layer(512, 10, lr=LR, ir=0.08, pr=0.0, act="sigmoid", lmbda=LMBDA)
-    # Explicit TERMINAL layer -- outChannels/nextSize=0. Without this,
-    # net[-1] is the 512->10 layer itself, whose OWN beliefs are its
-    # 512-dim INPUT, not the 10-dim prediction it produces -- exactly
-    # the bug that just crashed this script (and was already silently
-    # corrupting every batch before that: clamp_state() truncates rather
-    # than erroring on a size mismatch).
-    net.add_layer(10, 0, lr=LR, ir=0.08, pr=0.0, act="linear", lmbda=LMBDA)
-    net.set_optimizer("ADAM")  # CONFIRMED from the real Adam source: plain Adam,
-                                 # no decoupled weight-decay term at all -- was
-                                 # "ADAMW" before, a real, if likely small, mismatch
-                                 # now that lmbda=0 anyway (AdamW's decay term would
-                                 # be inert at lmbda=0, but matching their exact
-                                 # optimizer type removes any doubt).
+    net = SimplePCN(batch_size=BATCH_SIZE)
+    
+    net.add_layer(784, 512, lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
+    net.add_layer(512, 512, lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
+    net.add_layer(512, 10,  lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
+    net.add_layer(10, 0,    lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
+    
+    # 1. Engage decoupled AdamW
+    net.set_optimizer("ADAMW")
     net.compile()
+    
+    # 2. Engage C++ zero-energy bypass and mu caching
+    net.set_mu_cache_threshold(0.0) 
+    
     net.randomize_weights()
-    # net.set_mu_cache_threshold(0.0)  # REVERTED from 0.05 -- that showed genuine
-                                       # instability under real, sustained AdamW
-                                       # training (energy trending UP, a 62-point
-                                       # accuracy crash at epoch 8), not just noise.
-                                       # Likely cause: small caching-approximation
-                                       # bias accumulating in Adam's momentum/
-                                       # variance buffers over many updates --
-                                       # something the earlier single-trajectory,
-                                       # no-weight-update speed test structurally
-                                       # could not have caught. threshold=0 is
-                                       # exact (proven bit-identical to no caching)
-                                       # and confirmed safe with this exact stack.
 
-    # Override weight init to match ngc-learn's actual convention: fixed
-    # uniform range +-0.3, INDEPENDENT of layer size -- not our own
-    # size-scaled Gaussian (std ~0.039 for the 784->512 layer, ~8x
-    # smaller). This directly affects how informative the very first
-    # forward-projection pass is -- larger initial weights produce more
-    # differentiated activations from a single forward pass. Biases
-    # already default to 0 in Deepity (never touched by
-    # RandomizeWeights()), matching ngc-learn's own bias_init=constant(0).
+    # Match exact +-0.3 bounds for forward-projection initialization
     rng_init = np.random.default_rng(SEED)
-    for layer in net.layers[:-1]:  # skip the terminal -- it has no weights (nextSize=0)
+    for layer in net.layers[:-1]:
         w_shape = layer.weights.shape
         layer.weights[:] = rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32)
 
@@ -130,6 +94,7 @@ def main() -> None:
         current_lr = LR * (DECAY_RATE ** epoch)
         net.set_learning_rate(current_lr)
 
+        # Standard randomized batches
         indices = rng.permutation(len(X_train))
         X_shuf, Y_shuf = X_train[indices], Y_train[indices]
 
@@ -141,13 +106,11 @@ def main() -> None:
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
+            # 3. Call C++ Native Loop (avoid Nanobind overhead)
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
 
-        # REAL accuracy check -- genuine UNCLAMPED settle on a cheap
-        # subset, not reading beliefs right after unclamp_state() (which
-        # only flips a flag, never resets z -- that was reading back the
-        # clamped TARGET itself, trivially "matching" 100% every time).
+        # Real accuracy check on a subset
         N_ACC_BATCHES = 10
         for b in range(min(N_ACC_BATCHES, n_batches)):
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
@@ -156,7 +119,7 @@ def main() -> None:
             net.reset_state()
             net.clamp_input(X_batch)
             net.project_forward()
-            for _ in range(STEPS):  # same step count as training, genuinely unclamped
+            for _ in range(STEPS): 
                 net.calculate_state()
                 net.update_state()
 
@@ -195,12 +158,9 @@ def main() -> None:
 
     test_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"Deepity + forward-projection test accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%)")
+    print(f"Deepity Peak Test Accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%)")
     print(f"Train time: {train_time:.1f}s")
     print(f"\nDeepity per-epoch: {[round(a,2) for a in epoch_accs]}")
-    print(f"ngc-learn per-epoch: [26.91, 42.96, 60.12, 75.20, 84.68, 89.52, 91.90,")
-    print(f"                      93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95]")
-
 
 if __name__ == "__main__":
     main()

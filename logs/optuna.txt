@@ -1,0 +1,44 @@
+Fetching canonical MNIST dataset...
+[I 2026-08-29 15:37:24,368] A new study created in memory with name: no-name-d91f817d-a1d1-4702-8aa8-85e3f22b6a2e
+
+Starting Optuna Hyperparameter Optimization...
+[I 2026-08-29 15:37:48,115] Trial 0 finished with value: 93.24 and parameters: {'lr': 0.0029423782258076103, 'ir': 0.14386314324273888, 'steps': 10, 'decay': 0.9409673235884121}. Best is trial 0 with value: 93.24.
+[I 2026-08-29 15:38:11,846] Trial 1 finished with value: 92.08 and parameters: {'lr': 0.0013847671351600174, 'ir': 0.06568736344536659, 'steps': 10, 'decay': 0.9458174213572446}. Best is trial 0 with value: 93.24.
+[I 2026-08-29 15:38:37,284] Trial 2 finished with value: 83.6 and parameters: {'lr': 0.00016489013372337368, 'ir': 0.11338572582812091, 'steps': 10, 'decay': 0.9300093517680132}. Best is trial 0 with value: 93.24.
+[I 2026-08-29 15:39:30,441] Trial 3 finished with value: 93.36 and parameters: {'lr': 0.00482807890480627, 'ir': 0.12509682493204674, 'steps': 20, 'decay': 0.9540494793373555}. Best is trial 3 with value: 93.36.
+[I 2026-08-29 15:40:16,040] Trial 4 finished with value: 92.92 and parameters: {'lr': 0.0019550877176760747, 'ir': 0.11984195635415548, 'steps': 15, 'decay': 0.9626126893691378}. Best is trial 3 with value: 93.36.
+[I 2026-08-29 15:41:04,131] Trial 5 pruned.
+[I 2026-08-29 15:41:29,077] Trial 6 pruned.
+[I 2026-08-29 15:41:56,617] Trial 7 pruned.
+[I 2026-08-29 15:42:10,223] Trial 8 pruned.
+[I 2026-08-29 15:42:43,946] Trial 9 pruned.
+[I 2026-08-29 15:43:03,893] Trial 10 pruned.
+[I 2026-08-29 15:44:00,313] Trial 11 finished with value: 93.36 and parameters: {'lr': 0.004946246528149119, 'ir': 0.14823088865512718, 'steps': 20, 'decay': 0.9473310395036815}. Best is trial 3 with value: 93.36.
+[I 2026-08-29 15:44:47,290] Trial 12 finished with value: 93.6 and parameters: {'lr': 0.0049557581660003526, 'ir': 0.14793770719289312, 'steps': 20, 'decay': 0.9634094890927373}. Best is trial 12 with value: 93.6.
+[I 2026-08-29 15:45:44,681] Trial 13 finished with value: 93.6 and parameters: {'lr': 0.004830730342917375, 'ir': 0.0972105101131882, 'steps': 25, 'decay': 0.9626881414087349}. Best is trial 12 with value: 93.6.
+[I 2026-08-29 15:46:05,291] Trial 14 pruned.
+[I 2026-08-29 15:46:59,067] Trial 15 finished with value: 93.48 and parameters: {'lr': 0.003405872311490331, 'ir': 0.09346848202726887, 'steps': 25, 'decay': 0.9614571819702133}. Best is trial 12 with value: 93.6.
+[I 2026-08-29 15:47:12,334] Trial 16 pruned.
+[I 2026-08-29 15:47:41,829] Trial 17 pruned.
+[I 2026-08-29 15:47:58,583] Trial 18 pruned.
+[I 2026-08-29 15:48:33,761] Trial 19 pruned.
+[I 2026-08-29 15:49:25,622] Trial 20 finished with value: 93.68 and parameters: {'lr': 0.00350955083698581, 'ir': 0.08810736625859228, 'steps': 25, 'decay': 0.9559403462193032}. Best is trial 20 with value: 93.68.
+[I 2026-08-29 15:49:46,287] Trial 21 pruned.
+[I 2026-08-29 15:50:03,956] Trial 22 pruned.
+[I 2026-08-29 15:50:29,919] Trial 23 pruned.
+[I 2026-08-29 15:51:40,597] Trial 24 finished with value: 93.88 and parameters: {'lr': 0.0037284830572000814, 'ir': 0.09090207919186437, 'steps': 30, 'decay': 0.9406354061646502}. Best is trial 24 with value: 93.88.
+[I 2026-08-29 15:52:05,249] Trial 25 pruned.
+[I 2026-08-29 15:53:06,949] Trial 26 finished with value: 93.76 and parameters: {'lr': 0.00371923467196632, 'ir': 0.08889393345634727, 'steps': 30, 'decay': 0.9442271942055904}. Best is trial 24 with value: 93.88.
+[I 2026-08-29 15:53:31,625] Trial 27 pruned.
+[I 2026-08-29 15:53:56,326] Trial 28 pruned.
+[I 2026-08-29 15:54:30,114] Trial 29 pruned.
+
+Optimization complete in 1025.7s.
+
+=== Best Trial ===
+Accuracy: 93.88%
+Hyperparameters:
+  lr: 0.0037284830572000814
+  ir: 0.09090207919186437
+  steps: 30
+  decay: 0.9406354061646502

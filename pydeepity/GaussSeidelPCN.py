@@ -2,10 +2,10 @@ from ._backend import dy
 from typing import Optional
 import numpy as np
 import numpy.typing as npt
-from .utils import _PCNMixin
+from .utils import _fit_with_progress
 
 
-class GaussSeidelPCN(dy.GaussSeidelPCNetwork, _PCNMixin):
+class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
     """
     A Predictive Coding Network with Gauss-Seidel (sequential-sweep)
     settling dynamics, rather than the fully-synchronous (Jacobi) dynamics
@@ -78,3 +78,20 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork, _PCNMixin):
 
     def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
         return super().predict(X.flatten(), steps)
+
+    def fit(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        epochs: int,
+        steps: int,
+        initial_lr: float = 0.01,
+        decay_rate: float = 1.0,
+        shuffle: bool = True,
+    ) -> "GaussSeidelPCN":
+        """
+        Runs a full multi-epoch training loop with a live rich progress display.
+        Delegates per-batch execution to `train_step()`.
+        """
+        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
+        return self

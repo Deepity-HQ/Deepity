@@ -42,8 +42,6 @@ namespace Deep
 
     size_t ConvPCLayer::GetRequiredFloats() const noexcept
     {
-        // Same 16-float rounding MemoryArena::AllocateFloats() applies per
-        // call -- see the analogous fix in DiscriminativePCLayer.cpp.
         auto pad16 = [](size_t n)
         { return (n + 15) & ~(size_t)15; };
 
@@ -64,12 +62,12 @@ namespace Deep
 
             total += pad16((size_t)outChannels * colRows);   // W
             total += pad16((size_t)outChannels);             // b
-            total += pad16(outStateSize);                    // mu
+            total += pad16(outStateSize) * 2;                // mu, cachedMu
             total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
             total += pad16(outStateSize);                    // bottom_up_cols
-            total += pad16((size_t)batchSize * colSize);     // colsRepacked (same total size as colBuffer)
-            total += pad16(outStateSize);                    // lgRepacked (same total size as bottom_up_cols)
-            total += pad16(outStateSize);                    // muRepacked (same total size as mu)
+            total += pad16((size_t)batchSize * colSize);     // colsRepacked
+            total += pad16(outStateSize);                    // lgRepacked
+            total += pad16(outStateSize);                    // muRepacked
         }
 
         return total;
@@ -102,6 +100,7 @@ namespace Deep
             W = arena.AllocateFloats((size_t)outChannels * colRows);
             b = arena.AllocateFloats(outChannels);
             mu = arena.AllocateFloats(outStateSize);
+            cachedMu = arena.AllocateFloats(outStateSize);
             colBuffer = arena.AllocateFloats(colSize);
             feedbackScratch = arena.AllocateFloats(colSize);
             bottom_up_cols = arena.AllocateFloats(outStateSize);
@@ -111,6 +110,7 @@ namespace Deep
 
             std::memset(b, 0, outChannels * sizeof(float));
             std::memset(mu, 0, outStateSize * sizeof(float));
+            std::memset(cachedMu, 0, outStateSize * sizeof(float));
             std::memset(colBuffer, 0, colSize * sizeof(float));
             std::memset(feedbackScratch, 0, colSize * sizeof(float));
             std::memset(bottom_up_cols, 0, outStateSize * sizeof(float));
@@ -123,6 +123,7 @@ namespace Deep
             W = nullptr;
             b = nullptr;
             mu = nullptr;
+            cachedMu = nullptr;
             colBuffer = nullptr;
             feedbackScratch = nullptr;
             bottom_up_cols = nullptr;
@@ -142,7 +143,7 @@ namespace Deep
 
         size_t colRows = (size_t)inChannels * kernelH * kernelW;
         size_t Wsz = (size_t)outChannels * colRows;
-        float limit = std::sqrt(2.0f / (float)colRows); // He-style, fan-in = true receptive-field fan-in
+        float limit = std::sqrt(2.0f / (float)colRows);
 
         std::uniform_int_distribution<uint32_t> seedDist;
         std::vector<uint32_t> seeds(omp_get_max_threads());
@@ -164,15 +165,22 @@ namespace Deep
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
 
+        // Zero-Energy bypass
         if (layerBelow == nullptr)
         {
             std::memset(e, 0, ownStateSize * sizeof(float));
+            float totalEnergy = 0.0f;
+            for (size_t i = 0; i < ownSize; ++i)
+            {
+                totalEnergy -= 0.5f * log_p[i] * batchSize;
+            }
+            if (outChannels > 0)
+                ComputeMuOnly();
+            return totalEnergy;
         }
-        else
-        {
-            cblas_scopy((int)ownStateSize, z, 1, e, 1);
-            cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
-        }
+
+        cblas_scopy((int)ownStateSize, z, 1, e, 1);
+        cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
 
         float totalEnergy = 0.0f;
 #pragma omp parallel for schedule(static) reduction(+ : totalEnergy) collapse(2)
@@ -189,58 +197,62 @@ namespace Deep
 
         if (outChannels > 0)
         {
-            size_t colRows = (size_t)inChannels * kernelH * kernelW;
-            size_t colCols = (size_t)outHeight * outWidth;
-
-            // REVERTED to the original per-batch-item loop (2025 session
-            // note): a repack-then-single-GEMM version of this forward pass
-            // was tried and measured SLOWER (554s vs 300s/epoch) than this
-            // version. Unlike UpdateState()'s feedback loop (which had ZERO
-            // parallelization and got a genuine free win from adding it),
-            // this loop was ALREADY parallelized from the start -- the only
-            // remaining lever was reducing GEMM call-count via repacking,
-            // and for these data sizes (e.g. layer with colRows=400,
-            // colCols=49, batchSize=256 needs a ~19.6MB repack buffer,
-            // copied twice per call) the repack/scatter memory-bandwidth
-            // cost exceeded the GEMM-count savings. Do not re-attempt this
-            // exact restructure without first profiling to confirm repack
-            // cost vs GEMM-count savings actually favors batching at the
-            // specific shapes involved.
-#pragma omp parallel for schedule(static)
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                const float *z_item = z + (size_t)batch * ownSize;
-                float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
-
-                Im2Col(z_item, inChannels, inHeight, inWidth,
-                       kernelH, kernelW, strideH, strideW, padH, padW,
-                       cols_item);
-
-                float *mu_item = mu + (size_t)batch * outChannels * colCols;
-
-                cblas_sgemm(
-                    CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                    outChannels, (int)colCols, (int)colRows,
-                    1.0f,
-                    W, (int)colRows,
-                    cols_item, (int)colCols,
-                    0.0f,
-                    mu_item, (int)colCols);
-
-                for (int oc = 0; oc < outChannels; ++oc)
-                {
-                    float bias = b[oc];
-                    float *row = mu_item + (size_t)oc * colCols;
-                    for (size_t j = 0; j < colCols; ++j)
-                        row[j] += bias;
-                }
-            }
-
-            size_t outTotal = (size_t)batchSize * outChannels * colCols;
-            activation(mu, outTotal);
+            ComputeMuOnly();
         }
 
         return totalEnergy;
+    }
+
+    void ConvPCLayer::ComputeMuOnly() noexcept
+    {
+        if (outChannels == 0)
+            return;
+
+        size_t colRows = (size_t)inChannels * kernelH * kernelW;
+        size_t colCols = (size_t)outHeight * outWidth;
+        size_t Nout = (size_t)batchSize * outChannels * colCols;
+        size_t ownSize = (size_t)inChannels * inHeight * inWidth;
+
+        if (isClamped && muCacheValid)
+        {
+            cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+            return;
+        }
+
+#pragma omp parallel for schedule(static)
+        for (int batch = 0; batch < batchSize; ++batch)
+        {
+            const float *z_item = z + (size_t)batch * ownSize;
+            float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
+
+            Im2Col(z_item, inChannels, inHeight, inWidth,
+                   kernelH, kernelW, strideH, strideW, padH, padW,
+                   cols_item);
+
+            float *mu_item = mu + (size_t)batch * outChannels * colCols;
+
+            cblas_sgemm(
+                CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                outChannels, (int)colCols, (int)colRows,
+                1.0f, W, (int)colRows, cols_item, (int)colCols,
+                0.0f, mu_item, (int)colCols);
+
+            for (int oc = 0; oc < outChannels; ++oc)
+            {
+                float bias = b[oc];
+                float *row = mu_item + (size_t)oc * colCols;
+                for (size_t j = 0; j < colCols; ++j)
+                    row[j] += bias;
+            }
+        }
+
+        activation(mu, Nout);
+
+        if (isClamped)
+        {
+            cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+            muCacheValid = true;
+        }
     }
 
     void ConvPCLayer::UpdateState() noexcept
@@ -259,10 +271,8 @@ namespace Deep
         if (isClamped)
             return;
 
-        // 1. Bulletproof initialization
         std::memset(dz_dt, 0, ownStateSize * sizeof(float));
 
-        // 2. Compute top-down feedback into dz_dt FIRST
         if (layerAbove != nullptr && outChannels > 0)
         {
             const float *e_above = layerAbove->GetErrors();
@@ -288,11 +298,8 @@ namespace Deep
                 cblas_sgemm(
                     CblasRowMajor, CblasTrans, CblasNoTrans,
                     (int)colRows, (int)colCols, outChannels,
-                    1.0f,
-                    W, (int)colRows,
-                    lg_item, (int)colCols,
-                    0.0f,
-                    scratch_item, (int)colCols);
+                    1.0f, W, (int)colRows, lg_item, (int)colCols,
+                    0.0f, scratch_item, (int)colCols);
 
                 float *dz_item = dz_dt + (size_t)batch * ownSize;
                 Col2Im(scratch_item, inChannels, inHeight, inWidth,
@@ -301,7 +308,6 @@ namespace Deep
             }
         }
 
-        // 3. Now SUBTRACT the own term (-p * e) safely
 #pragma omp parallel for schedule(static) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
@@ -314,6 +320,7 @@ namespace Deep
 
         cblas_saxpy((int)ownStateSize, ir, dz_dt, 1, z, 1);
     }
+
     void ConvPCLayer::UpdateWeights() noexcept
     {
         if (layerAbove == nullptr || outChannels == 0)
@@ -340,17 +347,6 @@ namespace Deep
             cblas_sscal((int)((size_t)outChannels * colRows), 1.0f - lmbda, W, 1);
 
         float lr_batch = lr / batchSize;
-
-        // Repack colBuffer (batch-major: batch,row,col) into colsRepacked
-        // (row,batch,col), and bottom_up_cols into lgRepacked the same way
-        // -- this is what lets a SINGLE GEMM compute what used to be 256
-        // separate small GEMM calls, via the identity sum_b(A_b @ B_b^T)
-        // == A_stacked @ B_stacked^T. Restored here explicitly: an earlier
-        // version of this function relied on CalculateState() producing
-        // colsRepacked directly, but that forward-pass restructure was
-        // reverted (see CalculateState()'s comment -- it regressed
-        // performance), so this function must repack colBuffer itself
-        // again, or it would silently read stale data.
 
         const ptrdiff_t maxRows = static_cast<ptrdiff_t>(colRows);
         const ptrdiff_t maxBatch1 = static_cast<ptrdiff_t>(batchSize);
@@ -382,21 +378,13 @@ namespace Deep
             }
         }
 
-        // dW(outC,colRows) += lr_batch * LG(outC, batchSize*colCols) @ COLS(colRows, batchSize*colCols)^T
-        // ONE GEMM replaces the previous 256-iteration serial loop.
         size_t M = (size_t)batchSize * colCols;
         cblas_sgemm(
             CblasRowMajor, CblasNoTrans, CblasTrans,
             outChannels, (int)colRows, (int)M,
-            lr_batch,
-            lgRepacked, (int)M,
-            colsRepacked, (int)M,
-            1.0f, // accumulate onto existing W
-            W, (int)colRows);
+            lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
+            1.0f, W, (int)colRows);
 
-        // Bias gradient: unchanged -- a cheap reduction, not a GEMM, was
-        // never the bottleneck. Reads from the original (unrepacked)
-        // bottom_up_cols directly.
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const float *lg_item = bottom_up_cols + (size_t)batch * outSize;
@@ -446,6 +434,7 @@ namespace Deep
         size_t copySize = std::min(inputData.size(), ownStateSize) * sizeof(float);
         std::memcpy(z, inputData.data(), copySize);
         isClamped = true;
+        muCacheValid = false; // FLAG RESET
     }
 
     void ConvPCLayer::UnclampState() noexcept

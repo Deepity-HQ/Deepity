@@ -13,9 +13,9 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
-from .utils import _PCNMixin
+from .utils import _fit_with_progress
 
-class SimplePCN(dy.SimplePCNetwork, _PCNMixin):
+class SimplePCN(dy.SimplePCNetwork):
     """
     A Sequential Predictive Coding Network built from precision-stripped SimplePCLayers.
     """
@@ -71,6 +71,23 @@ class SimplePCN(dy.SimplePCNetwork, _PCNMixin):
             self.update_state()
 
         return np.array(self[-1].beliefs)
+
+    def fit(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        epochs: int,
+        steps: int,
+        initial_lr: float = 0.01,
+        decay_rate: float = 1.0,
+        shuffle: bool = True,
+    ) -> "SimplePCN":
+        """
+        Runs a full multi-epoch training loop with a live rich progress display.
+        Delegates per-batch execution to `train_step()`.
+        """
+        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
+        return self
 
     def set_mu_cache_threshold(self, threshold: float) -> None:
         """Sets the mu-cache staleness threshold on every layer: -1 disables
@@ -220,4 +237,3 @@ class SimplePCN(dy.SimplePCNetwork, _PCNMixin):
 
         console.print("\n[bold green]✓ I_avg Training complete.[/bold green]\n")
         return self
-

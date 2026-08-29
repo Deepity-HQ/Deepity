@@ -62,7 +62,7 @@ namespace Deep
 
             total += pad16(Wsize);                           // W
             total += pad16((size_t)outChannels);             // b
-            total += pad16(outStateSize);                    // mu
+            total += pad16(outStateSize) * 2;                // mu, cachedMu
             total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
             total += pad16(outStateSize);                    // bottom_up_cols
             total += pad16((size_t)batchSize * colSize);     // colsRepacked
@@ -103,6 +103,7 @@ namespace Deep
             W = arena.AllocateFloats(Wsize);
             b = arena.AllocateFloats(outChannels);
             mu = arena.AllocateFloats(outStateSize);
+            cachedMu = arena.AllocateFloats(outStateSize);
             colBuffer = arena.AllocateFloats(colSize);
             feedbackScratch = arena.AllocateFloats(colSize);
             bottom_up_cols = arena.AllocateFloats(outStateSize);
@@ -112,6 +113,7 @@ namespace Deep
 
             std::memset(b, 0, outChannels * sizeof(float));
             std::memset(mu, 0, outStateSize * sizeof(float));
+            std::memset(cachedMu, 0, outStateSize * sizeof(float));
             std::memset(colBuffer, 0, colSize * sizeof(float));
             std::memset(feedbackScratch, 0, colSize * sizeof(float));
             std::memset(bottom_up_cols, 0, outStateSize * sizeof(float));
@@ -141,6 +143,7 @@ namespace Deep
             W = nullptr;
             b = nullptr;
             mu = nullptr;
+            cachedMu = nullptr;
             colBuffer = nullptr;
             feedbackScratch = nullptr;
             bottom_up_cols = nullptr;
@@ -182,17 +185,18 @@ namespace Deep
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
 
+        // Zero-Energy Bypass
         if (layerBelow == nullptr)
         {
             std::memset(e, 0, ownStateSize * sizeof(float));
-        }
-        else
-        {
-            cblas_scopy((int)ownStateSize, z, 1, e, 1);
-            cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
+            if (outChannels > 0)
+                ComputeMuOnly();
+            return 0.0f;
         }
 
-        // No precision weighting: E = 0.5*sum(e^2), plain SSE.
+        cblas_scopy((int)ownStateSize, z, 1, e, 1);
+        cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
+
         float totalEnergy = 0.0f;
 #pragma omp parallel for schedule(static) reduction(+ : totalEnergy) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
@@ -206,41 +210,63 @@ namespace Deep
 
         if (outChannels > 0)
         {
-            size_t colRows = (size_t)inChannels * kernelH * kernelW;
-            size_t colCols = (size_t)outHeight * outWidth;
-
-#pragma omp parallel for schedule(static)
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                const float *z_item = z + (size_t)batch * ownSize;
-                float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
-
-                Im2Col(z_item, inChannels, inHeight, inWidth,
-                       kernelH, kernelW, strideH, strideW, padH, padW,
-                       cols_item);
-
-                float *mu_item = mu + (size_t)batch * outChannels * colCols;
-
-                cblas_sgemm(
-                    CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                    outChannels, (int)colCols, (int)colRows,
-                    1.0f, W, (int)colRows, cols_item, (int)colCols,
-                    0.0f, mu_item, (int)colCols);
-
-                for (int oc = 0; oc < outChannels; ++oc)
-                {
-                    float bias = b[oc];
-                    float *row = mu_item + (size_t)oc * colCols;
-                    for (size_t j = 0; j < colCols; ++j)
-                        row[j] += bias;
-                }
-            }
-
-            size_t outTotal = (size_t)batchSize * outChannels * colCols;
-            activation(mu, outTotal);
+            ComputeMuOnly();
         }
 
         return totalEnergy;
+    }
+
+    void SimpleConvPCLayer::ComputeMuOnly() noexcept
+    {
+        if (outChannels == 0)
+            return;
+
+        size_t colRows = (size_t)inChannels * kernelH * kernelW;
+        size_t colCols = (size_t)outHeight * outWidth;
+        size_t Nout = (size_t)batchSize * outChannels * colCols;
+        size_t ownSize = (size_t)inChannels * inHeight * inWidth;
+
+        // The Cache Fast-Path
+        if (isClamped && muCacheValid)
+        {
+            cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+            return;
+        }
+
+#pragma omp parallel for schedule(static)
+        for (int batch = 0; batch < batchSize; ++batch)
+        {
+            const float *z_item = z + (size_t)batch * ownSize;
+            float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
+
+            Im2Col(z_item, inChannels, inHeight, inWidth,
+                   kernelH, kernelW, strideH, strideW, padH, padW,
+                   cols_item);
+
+            float *mu_item = mu + (size_t)batch * outChannels * colCols;
+
+            cblas_sgemm(
+                CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                outChannels, (int)colCols, (int)colRows,
+                1.0f, W, (int)colRows, cols_item, (int)colCols,
+                0.0f, mu_item, (int)colCols);
+
+            for (int oc = 0; oc < outChannels; ++oc)
+            {
+                float bias = b[oc];
+                float *row = mu_item + (size_t)oc * colCols;
+                for (size_t j = 0; j < colCols; ++j)
+                    row[j] += bias;
+            }
+        }
+
+        activation(mu, Nout);
+
+        if (isClamped)
+        {
+            cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+            muCacheValid = true;
+        }
     }
 
     void SimpleConvPCLayer::UpdateState() noexcept
@@ -261,8 +287,7 @@ namespace Deep
 
         std::memset(dz_dt, 0, ownStateSize * sizeof(float));
 
-        // Top-down feedback -- NO p_above multiply (was e_above*p_above*mu;
-        // p_above=1 always made that a no-op).
+        // Top-down feedback
         if (layerAbove != nullptr && outChannels > 0)
         {
             const float *e_above = layerAbove->GetErrors();
@@ -297,7 +322,7 @@ namespace Deep
             }
         }
 
-        // Own term: dz_dt -= e (was -p*e; p=1 always made this a no-op multiply).
+        // Own term
 #pragma omp parallel for schedule(static) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
@@ -323,7 +348,6 @@ namespace Deep
 
         const float *e_above = layerAbove->GetErrors();
 
-        // local_grad = e_above * mu(f') -- NO p_above multiply.
 #pragma omp parallel for schedule(static) collapse(2)
         for (int batch = 0; batch < batchSize; ++batch)
         {
@@ -334,7 +358,6 @@ namespace Deep
             }
         }
 
-        // Repack (shared by both optimizer paths -- identical to ConvPCLayer's).
         const int maxRow = static_cast<int>(colRows);
         const int maxBatch = static_cast<int>(batchSize);
         const int maxOc = static_cast<int>(outChannels);
@@ -403,14 +426,6 @@ namespace Deep
         {
             t++;
 
-            // NEGATIVE scale, matching SimplePCLayer's confirmed sign fix:
-            // this GEMM's un-negated form was verified (via the SGD path
-            // above, and ConvPCLayer's own gradient check) to compute a
-            // quantity that's already the NEGATIVE of the true dE/dW --
-            // AdamWUpdate/AdamUpdate expect the TRUE (positive) gradient,
-            // so this needs the explicit sign flip SimplePCLayer's AdamW
-            // integration needed. NOT yet independently re-verified for
-            // conv specifically -- see file-level warning.
             float grad_scale = -1.0f / batchSize;
 
             cblas_sgemm(
@@ -456,6 +471,7 @@ namespace Deep
         size_t copySize = std::min(inputData.size(), ownStateSize) * sizeof(float);
         std::memcpy(z, inputData.data(), copySize);
         isClamped = true;
+        muCacheValid = false; // FLAG RESET
     }
 
     void SimpleConvPCLayer::UnclampState() noexcept

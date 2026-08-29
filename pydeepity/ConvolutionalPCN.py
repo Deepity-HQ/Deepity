@@ -1,10 +1,10 @@
 from ._backend import dy
-from .utils import _PCNMixin
+from .utils import _fit_with_progress
 from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
-class ConvolutionalPCN(dy.ConvPCNetwork, _PCNMixin):
+class ConvolutionalPCN(dy.ConvPCNetwork):
     """
     A Convolutional Predictive Coding Network (PCN) wrapper for the Deepity C++ backend.
     """
@@ -77,3 +77,20 @@ class ConvolutionalPCN(dy.ConvPCNetwork, _PCNMixin):
 
     def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
         return super().predict(X.flatten(), steps)
+
+    def fit(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        epochs: int,
+        steps: int,
+        initial_lr: float = 0.01,
+        decay_rate: float = 1.0,
+        shuffle: bool = True,
+    ) -> "ConvolutionalPCN":
+        """
+        Runs a full multi-epoch training loop with a live rich progress display.
+        Delegates per-batch execution to `train_step()`.
+        """
+        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
+        return self

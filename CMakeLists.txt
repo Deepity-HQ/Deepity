@@ -60,8 +60,13 @@ if(DEEPITY_ENABLE_CUDA)
 endif()
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS)
-    set(PYBIND11_FINDPYTHON ON)
-    find_package(pybind11 REQUIRED)
+    find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
+
+    # Detect the installed nanobind package and import it into CMake
+    execute_process(
+        COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE nanobind_ROOT)
+    find_package(nanobind CONFIG REQUIRED)
 endif()
 
 include(FetchContent)
@@ -253,7 +258,7 @@ set_target_properties(Deepity PROPERTIES
 # --- pydeepity ------------------------------------------------------
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    pybind11_add_module(pydeepity bindings/pybinding.cpp)
+    nanobind_add_module(pydeepity bindings/pybinding.cpp)
 
     target_link_libraries(pydeepity PRIVATE Deepity)
 
@@ -294,7 +299,7 @@ if(DEEPITY_BUILD_TESTS)
     target_link_libraries(GaussSeidelVerify PRIVATE Deepity)
     set_target_properties(GaussSeidelVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
-    
+
     if(WIN32)
         add_custom_command(TARGET GaussSeidelVerify POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelVerify>>,copy_if_different,true>
@@ -311,7 +316,7 @@ if(DEEPITY_BUILD_TESTS)
     target_link_libraries(GaussSeidelMiddleLayerVerify PRIVATE Deepity)
     set_target_properties(GaussSeidelMiddleLayerVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
     add_test(NAME GaussSeidelMiddleLayerVerify COMMAND GaussSeidelMiddleLayerVerify)
-    
+
     if(WIN32)
         add_custom_command(TARGET GaussSeidelMiddleLayerVerify POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelMiddleLayerVerify>>,copy_if_different,true>
@@ -336,9 +341,9 @@ if(DEEPITY_BUILD_TESTS)
         src/StreamAlignedBatcher.cpp
     )
 
-if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
-    	target_compile_definitions(DeepityProfiled PUBLIC DEEPITY_USE_MKL)
-endif()
+    if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
+        target_compile_definitions(DeepityProfiled PUBLIC DEEPITY_USE_MKL)
+    endif()
 
     target_include_directories(DeepityProfiled PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include

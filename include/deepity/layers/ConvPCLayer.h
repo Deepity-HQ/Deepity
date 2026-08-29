@@ -186,6 +186,9 @@ namespace Deep
         /// same p/log_p desync issue found in ModelIO::Load()).
         void ResyncLogPrecision() noexcept;
 
+        /// @brief Fast-path forward projection that skips state initialization
+         void ComputeMuOnly() noexcept;
+
         /// @brief Returns this layer's configured activation type.
         /// @return The activation type.
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
@@ -236,18 +239,18 @@ namespace Deep
 
         /// @name Weight and bias buffers
         /// @{
-        float *W; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
-        float *b; ///< Biases: (outChannels)
+        float *W = nullptr; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
+        float *b = nullptr; ///< Biases: (outChannels)
 
-        float *z;     ///< Beliefs/activations: (outChannels, outHeight, outWidth) per batch item
-        float *e;     ///< Prediction errors: (outChannels, outHeight, outWidth) per batch item
-        float *dz_dt; ///< State derivatives: (outChannels, outHeight, outWidth) per batch item
-        float *p;     ///< Precisions: (outChannels,)
-        float *log_p; ///< Log-precisions: (outChannels,)
+        float *z = nullptr;     ///< Beliefs/activations: (outChannels, outHeight, outWidth) per batch item
+        float *e = nullptr;     ///< Prediction errors: (outChannels, outHeight, outWidth) per batch item
+        float *dz_dt = nullptr; ///< State derivatives: (outChannels, outHeight, outWidth) per batch item
+        float *p = nullptr;     ///< Precisions: (outChannels,)
+        float *log_p = nullptr; ///< Log-precisions: (outChannels,)
         /// @}
 
         /// @brief Predictions from above (incoming error feedback)
-        float *mu;
+        float *mu = nullptr;
 
         /// @name Scratch buffers for convolution operations
         /// @{
@@ -255,26 +258,31 @@ namespace Deep
         /// Holds this layer's im2col(z) result computed in CalculateState().
         /// Reused by UpdateWeights() for weight-gradient GEMM.
         /// Must NOT be overwritten between CalculateState() and UpdateWeights().
-        float *colBuffer;
+        float *colBuffer = nullptr;
 
         /// Feedback term scratch: holds transposed-GEMM result before Col2Im scatter into dz_dt.
         /// Separate from colBuffer to avoid ordering dependencies between UpdateState() and UpdateWeights().
-        float *feedbackScratch;
+        float *feedbackScratch = nullptr;
 
         /// Bottom-up error modulation: (outChannels, outHeight*outWidth) per batch item.
         /// Holds (e_above * p_above * mu(f')). Recomputed independently in both
         /// UpdateState() and UpdateWeights() (cheap elementwise, not cached).
-        float *bottom_up_cols;
+        float *bottom_up_cols = nullptr;
 
         /// Repacked column buffer: row-major layout (row, batch, col) for single-batched GEMM.
         /// Holds colBuffer's data transposed from batch-major to enable efficient GEMM operations.
         /// Separate buffer to avoid buffer-reuse fragility across UpdateState() and UpdateWeights().
-        float *colsRepacked;
+        float *colsRepacked = nullptr;
         /// Repacked bottom-up gradient: row-major layout for efficient GEMM operations.
-        float *lgRepacked;
+        float *lgRepacked = nullptr;
         /// Forward-pass GEMM output: (outChannels, batchSize*colCols), scattered back to mu.
-        float *muRepacked;
+        float *muRepacked = nullptr;
         /// @}
+
+        /// @brief Cache for the clamped input forward-projection 
+        float *cachedMu = nullptr;
+        /// @brief Flag to determine if the mu cache is currently valid
+        bool muCacheValid = false;
 
         float lr, ir, pr, lmbda;
         bool isClamped = false;

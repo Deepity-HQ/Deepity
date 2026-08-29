@@ -87,27 +87,3 @@ def _fit_with_progress(
             )
 
     console.print("\n[bold green]✓ Training complete.[/bold green]\n")
-
-
-class _PCNMixin:
-    """
-    Provides shared top-level Python functionality (like fit()) to all Network wrappers.
-    """
-    def fit(
-        self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
-        epochs: int,
-        steps: int,
-        initial_lr: float = 0.01,
-        decay_rate: float = 1.0,
-        shuffle: bool = True,
-    ):
-        """
-        Runs a full multi-epoch training loop with a live rich progress display.
-        Delegates per-batch execution to the class's `train_step()` method.
-        """
-        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
-        return self
-
-

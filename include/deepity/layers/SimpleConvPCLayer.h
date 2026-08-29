@@ -96,6 +96,8 @@ namespace Deep
         void SetLayerAbove(SimpleConvPCLayer *above) noexcept { layerAbove = above; }
         void SetLayerBelow(SimpleConvPCLayer *below) noexcept { layerBelow = below; }
 
+        void ComputeMuOnly() noexcept;
+
         void ResetState() noexcept;
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
@@ -125,21 +127,24 @@ namespace Deep
         int padH, padW;
         int batchSize;
 
-        float *W;
-        float *b;
+        float *W = nullptr;
+        float *b = nullptr;
 
         // State -- NO p/log_p (precision removed entirely, unlike ConvPCLayer)
-        float *z;
-        float *e;
-        float *dz_dt;
+        float *z = nullptr;
+        float *e = nullptr;
+        float *dz_dt = nullptr;
 
-        float *mu;
-        float *colBuffer;
-        float *feedbackScratch;
-        float *bottom_up_cols;
-        float *colsRepacked;
-        float *lgRepacked;
-        float *muRepacked;
+        float *mu = nullptr;
+        float *colBuffer = nullptr;
+        float *feedbackScratch = nullptr;
+        float *bottom_up_cols = nullptr;
+        float *colsRepacked = nullptr;
+        float *lgRepacked = nullptr;
+        float *muRepacked = nullptr;
+
+        float *cachedMu = nullptr;
+        bool muCacheValid = false;
 
         // Adam-only scratch (allocated conditionally, same pattern as
         // SimplePCLayer -- see GetRequiredFloats/BindMemory)
@@ -154,14 +159,14 @@ namespace Deep
         float lr, ir, lmbda;
         bool isClamped = false;
 
-        SimpleConvPCLayer *layerAbove;
-        SimpleConvPCLayer *layerBelow;
+        SimpleConvPCLayer *layerAbove = nullptr;
+        SimpleConvPCLayer *layerBelow = nullptr;
         ActivationFn activation;
         DerivativeFn activationDerivative;
         ActivationType activationType;
         OptimizerType opt = OptimizerType::SGD; // explicit default -- see the real bug
-                                                  // this exact omission caused in
-                                                  // SimplePCLayer earlier this session
+                                                // this exact omission caused in
+                                                // SimplePCLayer earlier this session
 
         friend class SimpleConvPCNDiagnostics;
     };
