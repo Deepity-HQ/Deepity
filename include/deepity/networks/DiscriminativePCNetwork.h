@@ -90,6 +90,10 @@ namespace Deep
 
         void UpdatePrecision();
 
+        void ProjectForward() noexcept;
+        float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+        std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
+
         void ResetState() noexcept;
 
         const auto &GetLayers() const noexcept { return layers; }
@@ -125,6 +129,12 @@ namespace Deep
             for (auto &layer : layers)
                 layer->SetLambda(l);
         }
+
+	void SetOptimizer(OptimizerType opt) noexcept
+	{
+		for (auto &layer : layers)
+			layer->SetOptimizer(opt);
+	}
 
         /// @brief Runs a complete training step (clamp, settle, update, unclamp)
         /// @param x The batched input data

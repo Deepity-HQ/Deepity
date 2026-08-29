@@ -117,8 +117,6 @@ namespace Deep
         const float inv_beta1_t = 1.0f / beta1_t;
         const float inv_beta2_t = 1.0f / beta2_t;
 
-        size_t i = 0;
-
 #if defined(__AVX512F__)
         __m512 beta1_v = _mm512_set1_ps(beta1);
         __m512 one_minus_beta1 = _mm512_set1_ps(1.0f - beta1);
@@ -132,7 +130,8 @@ namespace Deep
 
         size_t r = n % 16;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 16)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 16)
         {
             __m512 g = _mm512_loadu_ps(&grad[i]);
             __m512 m_old = _mm512_loadu_ps(&m[i]);
@@ -169,7 +168,8 @@ namespace Deep
 
         size_t r = n % 8;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 8)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 8)
         {
             __m256 g = _mm256_loadu_ps(&grad[i]);
             __m256 m_old = _mm256_loadu_ps(&m[i]);
@@ -209,7 +209,8 @@ namespace Deep
 
         size_t r = n % 4;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 4)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 4)
         {
             __m128 g = _mm_loadu_ps(&grad[i]);
             __m128 m_old = _mm_loadu_ps(&m[i]);
@@ -239,7 +240,10 @@ namespace Deep
 #endif
         // Scalar tail
         float decay = 1.0f - lr * lambda;
-        for (; i < n; ++i)
+#if !defined(__AVX512F__) && !defined(__AVX2__) && !defined(__AVX__) && !defined(__SSE__) && !defined(_M_AMD64) && !defined(_M_X64)
+        #pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+#endif
+        for (ptrdiff_t i=simd_end; i < (ptrdiff_t)n; ++i)
         {
             float g = grad[i];
             m[i] = beta1 * m[i] + (1.0f - beta1) * g;
@@ -297,8 +301,6 @@ namespace Deep
         const float inv_beta1_t = 1.0f / beta1_t;
         const float inv_beta2_t = 1.0f / beta2_t;
 
-        size_t i = 0;
-
 #if defined(__AVX512F__)
         __m512 beta1_v = _mm512_set1_ps(beta1);
         __m512 one_minus_beta1 = _mm512_set1_ps(1.0f - beta1);
@@ -311,7 +313,8 @@ namespace Deep
 
         size_t r = n % 16;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 16)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 16)
         {
             __m512 g = _mm512_loadu_ps(&grad[i]);
             __m512 m_old = _mm512_loadu_ps(&m[i]);
@@ -345,7 +348,8 @@ namespace Deep
 
         size_t r = n % 8;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 8)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 8)
         {
             __m256 g = _mm256_loadu_ps(&grad[i]);
             __m256 m_old = _mm256_loadu_ps(&m[i]);
@@ -384,7 +388,8 @@ namespace Deep
 
         size_t r = n % 4;
         size_t simd_end = n - r;
-        for (; i < simd_end; i += 4)
+#pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+        for (ptrdiff_t; i < (ptrdiff_t)simd_end; i += 4)
         {
             __m128 g = _mm_loadu_ps(&grad[i]);
             __m128 m_old = _mm_loadu_ps(&m[i]);
@@ -412,8 +417,10 @@ namespace Deep
             _mm_storeu_ps(&v[i], v_new);
         }
 #endif
-        // Scalar tail
-        for (; i < n; ++i)
+#if !defined(__AVX512F__) && !defined(__AVX2__) && !defined(__AVX__) && !defined(__SSE__) && !defined(_M_AMD64) && !defined(_M_X64)
+        #pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
+#endif
+        for (ptrdiff_t i=simd_end; i < (ptrdiff_t)n; ++i)
         {
             float g = grad[i];
             m[i] = beta1 * m[i] + (1.0f - beta1) * g;

@@ -30,6 +30,9 @@ class SequentialPCN(dy.DiscriminativePCNetwork, _PCNMixin):
     def set_learning_rate(self, lr: float) -> None:
         super().set_learning_rate(lr)
 
+    def set_optimizer(self, opt: str) -> None:
+        super().set_optimizer(opt)
+
     def compile(self) -> None:
         super().compile()
 

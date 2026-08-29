@@ -350,9 +350,31 @@ void bind_networks(py::module_ &m)
         .def("set_learning_rate", &Deep::DiscriminativePCNetwork::SetLearningRate, "Sets the learning rate of each layer.", py::arg("lr"))
         .def("set_precision_rate", &Deep::DiscriminativePCNetwork::SetPrecisionRate, "Sets the precision rate of each layer.", py::arg("pr"))
         .def("set_lambda", &Deep::DiscriminativePCNetwork::SetLambda, "Sets lambda of each layer.", py::arg("l"))
+	        .def("set_optimizer", [](Deep::DiscriminativePCNetwork &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetOptimizer(Deep::OptimizerType::SGD); }, py::arg("optimizer"))
         .def("save", &Deep::DiscriminativePCNetwork::Save, "Saves the network architecture and weights to a structured directory.", py::arg("dir_path"))
         .def("load", &Deep::DiscriminativePCNetwork::Load, "Loads network weights from a structured directory into the compiled MemoryArena.", py::arg("dir_path"))
-        .def("update_precision", &Deep::DiscriminativePCNetwork::UpdatePrecision, "Apply precision updates to every layer.");
+        .def("update_precision", &Deep::DiscriminativePCNetwork::UpdatePrecision, "Apply precision updates to every layer.")
+        .def("project_forward", &Deep::DiscriminativePCNetwork::ProjectForward)
+        .def("train_step_with_projection", [](Deep::DiscriminativePCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, py::array_t<float, py::array::c_style | py::array::forcecast> y, int steps)
+             {
+                 auto xbuf = x.request(); auto ybuf = y.request();
+                 std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+                 std::vector<float> yvec(static_cast<float *>(ybuf.ptr), static_cast<float *>(ybuf.ptr) + ybuf.size);
+                 return self.TrainStepWithProjection(xvec, yvec, steps); 
+             }, py::arg("x"), py::arg("y"), py::arg("steps"))
+        .def("predict_with_projection", [](Deep::DiscriminativePCNetwork &self, py::array_t<float, py::array::c_style | py::array::forcecast> x, int steps)
+             {
+                 auto xbuf = x.request();
+                 std::vector<float> xvec(static_cast<float *>(xbuf.ptr), static_cast<float *>(xbuf.ptr) + xbuf.size);
+                 std::vector<float> result = self.PredictWithProjection(xvec, steps);
+                 Deep::DiscriminativePCLayer *terminal = self.GetTerminalLayer();
+                 py::array_t<float> out({(py::ssize_t)terminal->GetBatchSize(), (py::ssize_t)terminal->GetInputSize()});
+                 std::memcpy(out.mutable_data(), result.data(), result.size() * sizeof(float));
+                 return out; 
+             }, py::arg("x"), py::arg("steps"));
 
     auto simpleNetCls = py::class_<Deep::SimplePCNetwork>(m, "SimplePCNetwork", "Predictive Coding Network built from SimplePCLayers.");
     BindCommonPCNetwork<Deep::SimplePCNetwork>(simpleNetCls, "SimplePCNetwork");

@@ -4,9 +4,17 @@
 #include <cstring>
 #include <cmath>
 #include <limits>
+#include <xmmintrin.h>
+#include <pmmintrin.h>
 
 namespace Deep
 {
+
+    static inline void ProtectFPU() {
+        _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+        _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+    }
+
     void DiscriminativePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                                            void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
@@ -89,6 +97,60 @@ namespace Deep
     {
         for (size_t i = 0; i + 1 < layers.size(); i++)
             layers[i]->UpdatePrecision();
+    }
+
+    void DiscriminativePCNetwork::ProjectForward() noexcept
+    {
+        for (size_t i = 0; i + 1 < layers.size(); ++i)
+        {
+            layers[i]->ComputeMuOnly();
+            const float *mu = layers[i]->GetMu();
+            float *nextZ = layers[i + 1]->GetBeliefs();
+            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+            std::memcpy(nextZ, mu, n * sizeof(float));
+        }
+    }
+
+    float DiscriminativePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
+    {
+        ProtectFPU();
+        ResetState();
+        Clamp(x);
+        ProjectForward();
+        GetTerminalLayer()->ClampState(y);
+
+        float finalEnergy = 0.0f;
+        for (int t = 0; t < inferenceSteps; ++t)
+        {
+            finalEnergy = CalculateState();
+            UpdateState();
+        }
+
+        UpdatePrecision();
+        UpdateWeights();
+        GetTerminalLayer()->UnclampState();
+
+        return finalEnergy;
+    }
+
+    std::vector<float> DiscriminativePCNetwork::PredictWithProjection(const std::vector<float> &x, int inferenceSteps)
+    {
+        ProtectFPU();
+        ResetState();
+        Clamp(x);
+        ProjectForward();
+
+        for (int t = 0; t < inferenceSteps; t++)
+        {
+            CalculateState();
+            UpdateState();
+        }
+
+        DiscriminativePCLayer *terminal = GetTerminalLayer();
+        const float *beliefs = terminal->GetBeliefs();
+        size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
+
+        return std::vector<float>(beliefs, beliefs + count);
     }
 
     float DiscriminativePCNetwork::TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)

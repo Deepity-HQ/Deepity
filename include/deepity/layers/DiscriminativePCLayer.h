@@ -8,6 +8,7 @@
 #include <deepity/Activations.h>
 #include <deepity/layers/Layer.h>
 #include <deepity/MemoryArena.h>
+#include <deepity/AdamOptimizer.h>
 
 /**
  * @file DiscriminativePCLayer.h
@@ -108,6 +109,8 @@ namespace Deep
         /// @brief Returns errors
         /// @return float *e
         const float *GetErrors() const noexcept override { return e; }
+
+        const float *GetMu() const noexcept { return mu; }
         /// @brief Returns size (input size)
         /// @return size_t size
         size_t GetInputSize() const noexcept override { return size; }
@@ -138,6 +141,7 @@ namespace Deep
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
         void SetPrecisionRate(float pr) noexcept { this->pr = pr; }
         void SetLambda(float l) noexcept { this->lmbda = l; }
+	void SetOptimizer(OptimizerType o) noexcept { this->opt = o; }
 
         /// @brief Ties this layer to one above it
         /// @param above DiscriminativePCLayer*
@@ -169,6 +173,8 @@ namespace Deep
         /// @brief Binds all tensor pointers to the contiguous memory block
         void BindMemory(MemoryArena &arena);
 
+	void ComputeMuOnly() noexcept;
+
     private:
         /// @brief Local fallback memory for standalone layer instantiation
         std::unique_ptr<MemoryArena> localArena;
@@ -184,6 +190,13 @@ namespace Deep
         float *p;
         /// @brief Log of Precision
         float *log_p;
+
+	float *cachedMu = nullptr;
+	bool muCacheValid = false;
+
+        float *zF = nullptr;            
+        float *zFDeriv = nullptr;        
+        float *feedbackScratch = nullptr; 
 
         /// @brief Used for `cblas_sgemm` optimization
         int batchSize;
@@ -204,6 +217,15 @@ namespace Deep
         float lmbda;
         /// @brief Flag to tell if `ClampState` was called.
         bool isClamped = false;
+
+	OptimizerType opt = OptimizerType::SGD;
+        int t = 0;
+        float *grad_W = nullptr;
+        float *m_W = nullptr;
+        float *v_W = nullptr;
+        float *grad_b = nullptr;
+        float *m_b = nullptr;
+        float *v_b = nullptr;
 
         /// @brief Pointer to next layer (or `nullptr` if last one)
         DiscriminativePCLayer *layerAbove;

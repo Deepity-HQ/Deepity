@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from pydeepity import SimplePCN
+from pydeepity import SequentialPCN
 from time import perf_counter
 
 def load_full_mnist():
@@ -71,17 +71,17 @@ def main() -> None:
                               # runs with NO weight decay, not our own 0.0001
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = SimplePCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, lr=LR, ir=0.08, act="linear", lmbda=LMBDA)
-    net.add_layer(512, 512, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
-    net.add_layer(512, 10, lr=LR, ir=0.08, act="tanh", lmbda=LMBDA)
+    net = SequentialPCN(batch_size=BATCH_SIZE)
+    net.add_layer(784, 512, lr=LR, ir=0.08, pr=0.0, act="linear", lmbda=LMBDA)
+    net.add_layer(512, 512, lr=LR, ir=0.08, pr=0.0, act="sigmoid", lmbda=LMBDA)
+    net.add_layer(512, 10, lr=LR, ir=0.08, pr=0.0, act="sigmoid", lmbda=LMBDA)
     # Explicit TERMINAL layer -- outChannels/nextSize=0. Without this,
     # net[-1] is the 512->10 layer itself, whose OWN beliefs are its
     # 512-dim INPUT, not the 10-dim prediction it produces -- exactly
     # the bug that just crashed this script (and was already silently
     # corrupting every batch before that: clamp_state() truncates rather
     # than erroring on a size mismatch).
-    net.add_layer(10, 0, lr=LR, ir=0.08, act="linear", lmbda=LMBDA)
+    net.add_layer(10, 0, lr=LR, ir=0.08, pr=0.0, act="linear", lmbda=LMBDA)
     net.set_optimizer("ADAM")  # CONFIRMED from the real Adam source: plain Adam,
                                  # no decoupled weight-decay term at all -- was
                                  # "ADAMW" before, a real, if likely small, mismatch
@@ -90,7 +90,7 @@ def main() -> None:
                                  # optimizer type removes any doubt).
     net.compile()
     net.randomize_weights()
-    net.set_mu_cache_threshold(0.0)  # REVERTED from 0.05 -- that showed genuine
+    # net.set_mu_cache_threshold(0.0)  # REVERTED from 0.05 -- that showed genuine
                                        # instability under real, sustained AdamW
                                        # training (energy trending UP, a 62-point
                                        # accuracy crash at epoch 8), not just noise.

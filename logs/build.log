@@ -1,9 +1,9 @@
 --- Deepity Build Log (Release, arch=native) ---
 
 === Compilation ===
-[1/8] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
-[2/8] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.o
-[3/8] Linking CXX static library bin/libDeepity.a
+[1/8] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
+[2/8] Linking CXX static library bin/libDeepity.a
+[3/8] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.o
 [4/8] Linking CXX static library bin/libDeepityProfiled.a
 [5/8] Linking CXX executable bin/GaussSeidelVerify
 [6/8] Linking CXX executable bin/GaussSeidelMiddleLayerVerify
@@ -16,12 +16,12 @@ Test project /home/rose0/Projects/deepity/build/Release
     Start 3: DeepityProfile
     Start 1: GaussSeidelVerify
     Start 2: GaussSeidelMiddleLayerVerify
-1/3 Test #2: GaussSeidelMiddleLayerVerify .....   Passed    0.12 sec
-2/3 Test #1: GaussSeidelVerify ................   Passed    0.19 sec
-3/3 Test #3: DeepityProfile ...................   Passed    1.27 sec
+1/3 Test #2: GaussSeidelMiddleLayerVerify .....   Passed    0.16 sec
+2/3 Test #1: GaussSeidelVerify ................   Passed    0.36 sec
+3/3 Test #3: DeepityProfile ...................   Passed    1.26 sec
 
 100% tests passed, 0 tests failed out of 3
 
-Total Test time (real) =   1.27 sec
+Total Test time (real) =   1.26 sec
 
 
