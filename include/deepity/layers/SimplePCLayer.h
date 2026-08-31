@@ -74,7 +74,7 @@ namespace Deep
         /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param act Activation function
         /// @param dAct Derivative of activation function
-        SimplePCLayer(int size, int nextSize, int batchSize = 1,
+        SimplePCLayer(size_t size, size_t nextSize, size_t batchSize = 1,
                       float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
                       void (*act)(float *, size_t) = relu,
                       void (*dAct)(float *, size_t, bool) = dRelu);
@@ -90,7 +90,7 @@ namespace Deep
         /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param aType Activation type
         /// @param dType Activation derivative type
-        SimplePCLayer(int size, int nextSize, int batchSize = 1,
+        SimplePCLayer(size_t size, size_t nextSize, size_t batchSize = 1,
                       float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
                       ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
 
@@ -200,12 +200,12 @@ namespace Deep
         void SetMuCacheThreshold(float threshold) noexcept { muCacheThreshold = threshold; }
         float GetMuCacheThreshold() const noexcept { return muCacheThreshold; }
 
-	/// @brief Computes only mu (forward prediction), skipping error/energy
-	/// entirely. Extracted from CalculateState() for callers (like
-	/// ProjectForward()) that don't need the discarded error/energy values.
-	/// Computes zF=phi(z) internally and uses it for the GEMM, matching
-	/// the activate-before-transform convention (mu=W@phi(z)+b).
-	void ComputeMuOnly() noexcept;
+        /// @brief Computes only mu (forward prediction), skipping error/energy
+        /// entirely. Extracted from CalculateState() for callers (like
+        /// ProjectForward()) that don't need the discarded error/energy values.
+        /// Computes zF=phi(z) internally and uses it for the GEMM, matching
+        /// the activate-before-transform convention (mu=W@phi(z)+b).
+        void ComputeMuOnly() noexcept;
 
         /// @brief Sets the layer immediately above this one in the network.
         /// @param above Pointer to the layer above; may be nullptr for a
@@ -260,27 +260,27 @@ namespace Deep
         int batchSize;
 
         float *mu;
-        float *cachedMu; // separate from mu -- mu gets mutated in-place by
-                         // UpdateState() every step (converted to its
-                         // derivative), so caching must copy a preserved
-                         // value back INTO mu each skipped step, not just
-                         // skip writing to mu entirely
-       float *zF;              // this layer's OWN activated belief,
-                                 // phi(z) -- needed both for the forward
-                                 // GEMM (mu=zF@W+b) AND the weight
-                                 // gradient (dW uses zF, not raw z),
-                                 // matching ngc-learn's documented
-                                 // convention: mu_l = W_l . phi(z_{l-1})
+        float *cachedMu;        // separate from mu -- mu gets mutated in-place by
+                                // UpdateState() every step (converted to its
+                                // derivative), so caching must copy a preserved
+                                // value back INTO mu each skipped step, not just
+                                // skip writing to mu entirely
+        float *zF;              // this layer's OWN activated belief,
+                                // phi(z) -- needed both for the forward
+                                // GEMM (mu=zF@W+b) AND the weight
+                                // gradient (dW uses zF, not raw z),
+                                // matching ngc-learn's documented
+                                // convention: mu_l = W_l . phi(z_{l-1})
         float *zFDeriv;         // SEPARATE scratch for f'(z), computed
-                                 // from RAW z (activated=false flag) --
-                                 // zF itself must stay clean/activated
-                                 // for the weight-gradient step
+                                // from RAW z (activated=false flag) --
+                                // zF itself must stay clean/activated
+                                // for the weight-gradient step
         float *feedbackScratch; // own_state_size scratch for the raw
-                                 // feedback GEMM's output -- the f'(z)
-                                 // multiply applies ONLY to the feedback
-                                 // term, not the -e term already in
-                                 // dz_dt, so it can't accumulate directly
-                                 // into dz_dt via the GEMM itself
+                                // feedback GEMM's output -- the f'(z)
+                                // multiply applies ONLY to the feedback
+                                // term, not the -e term already in
+                                // dz_dt, so it can't accumulate directly
+                                // into dz_dt via the GEMM itself
         float lr;
         float ir;
         float lmbda;
@@ -298,9 +298,9 @@ namespace Deep
         ActivationFn activation;
         DerivativeFn activationDerivative;
         DerivativeFn2 activationDerivativeInto; // fused two-buffer derivative
-                                                  // (dst, src, n), resolved once
-                                                  // at construction alongside
-                                                  // activation/activationDerivative
+                                                // (dst, src, n), resolved once
+                                                // at construction alongside
+                                                // activation/activationDerivative
         ActivationType activationType;
         OptimizerType opt = OptimizerType::SGD;
         // @private Optional Adam weights

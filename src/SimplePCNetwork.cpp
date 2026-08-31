@@ -111,9 +111,6 @@ namespace Deep
 {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
     {
-        // Optimization #3: Compute mu directly. 
-        // Bypasses the CalculateState() trap that wastes cycles 
-        // computing meaningless errors and energies during initialization.
         layers[i]->ComputeMuOnly();
 
         const float *mu = layers[i]->GetMu();

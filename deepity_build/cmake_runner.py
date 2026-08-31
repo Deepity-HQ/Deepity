@@ -45,9 +45,17 @@ def configure_command(config: BuildConfig, ninja: str | None, pgo_phase: str | N
     if sys.platform == "win32":
         if ninja:
             cmd.extend(["-G", "Ninja"])
-            if "clang" in os.environ.get("CC", "").lower():
+
+            # CC being unset doesn't mean clang isn't in play -- CMake can
+            # auto-detect and pick it up on its own (as this project's own
+            # builds have shown), so check what's actually on PATH rather
+            # than an environment variable that may never have been set.
+            clang_path = shutil.which("clang")
+            cc_env = os.environ.get("CC", "").lower()
+            using_clang = clang_path is not None or "clang" in cc_env
+
+            if using_clang:
                 # Locate libomp.lib next to the clang.exe on PATH
-                clang_path = shutil.which("clang")
                 omp_lib = None
                 if clang_path:
                     llvm_lib_dir = Path(clang_path).parent.parent / "lib"

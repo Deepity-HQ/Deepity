@@ -13,43 +13,45 @@ namespace Deep
     class DirectKPPCLayer : public Layer
     {
     protected:
-        int size;
-        int nextSize;
-        int terminalSize; // NEW: The size of the final output layer (e.g., 10 for MNIST)
-        int batchSize;
+        size_t size;
+        size_t nextSize;
+        size_t terminalSize; // The size of the final output layer (e.g., 10 for MNIST)
+        size_t batchSize;
 
         float lr;
         float ir;
+        float fl;
         float lmbda;
 
         bool isClamped = false;
         bool muCacheValid = false;
 
-        Layer *layerAbove = nullptr;
-        Layer *layerBelow = nullptr;
-        Layer *terminalLayer = nullptr; // NEW: Direct pathway to \epsilon_L
+        DirectKPPCLayer *layerAbove = nullptr;
+        DirectKPPCLayer *layerBelow = nullptr;
+        DirectKPPCLayer *terminalLayer = nullptr; // Direct pathway to \epsilon_L
 
         ActivationType activationType;
-        void (*activation)(float *, size_t);
-        void (*activationDerivative)(float *, size_t, bool);
+        ActivationFn activation;
+        DerivativeFn activationDerivative;
+        DerivativeFn2 activationDerivativeInto;
 
         OptimizerType opt = OptimizerType::SGD;
+        OptimizerType optPsi = OptimizerType::SGD;
         int t = 0;
+        int tPsi = 0;
 
         // --- Memory Pointers ---
         // State
         float *z = nullptr;
         float *e = nullptr;
-        float *dz_dt = nullptr;
 
         // Forward Weights
         float *W = nullptr;
         float *b = nullptr;
         float *mu = nullptr;
         float *cachedMu = nullptr;
-
-        // NEW: Direct Feedback Weights
         float *Psi = nullptr; // Maps \epsilon_L directly to this layer's state
+        float *proj = nullptr;
 
         // Forward Optimizer Buffers
         float *grad_W = nullptr;
@@ -59,7 +61,7 @@ namespace Deep
         float *m_b = nullptr;
         float *v_b = nullptr;
 
-        // NEW: Direct Feedback Optimizer Buffers
+        // Direct Feedback Optimizer Buffers
         float *grad_Psi = nullptr;
         float *m_Psi = nullptr;
         float *v_Psi = nullptr;
@@ -72,47 +74,50 @@ namespace Deep
         std::unique_ptr<MemoryArena> localArena;
 
     public:
-        DirectKPPCLayer(int size, int nextSize, int terminalSize, int batchSize,
-                        float learningRate, float inferenceRate, float lmbda,
+        DirectKPPCLayer(size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
+                        float learningRate, float inferenceRate, float feedback, float lmbda,
                         ActivationType aType, ActivationType dType);
 
         ~DirectKPPCLayer() override = default;
 
         // Setup
-        void BindMemory(MemoryArena &arena) override;
-        size_t GetRequiredFloats() const noexcept override;
-        void RandomizeWeights(std::mt19937 &seedGenerator) noexcept override;
+        void BindMemory(MemoryArena &arena);
+        size_t GetRequiredFloats() const noexcept;
+        void RandomizeWeights(std::mt19937 &seedGenerator) noexcept;
 
         // Topology
-        void SetLayerAbove(Layer *l) noexcept { layerAbove = l; }
-        void SetLayerBelow(Layer *l) noexcept { layerBelow = l; }
-        void SetTerminalLayer(Layer *l) noexcept { terminalLayer = l; } // NEW: Bind this during network compilation
+        void SetLayerAbove(DirectKPPCLayer *l) noexcept { layerAbove = l; }
+        void SetLayerBelow(DirectKPPCLayer *l) noexcept { layerBelow = l; }
+        void SetTerminalLayer(DirectKPPCLayer *l) noexcept { terminalLayer = l; }
 
         // Core DKP-PC Mechanics
         float CalculateState() noexcept override;
         void ComputeMuOnly() noexcept;
         void UpdateState() noexcept override;   // Will now pull from terminalLayer->GetErrors()
         void UpdateWeights() noexcept override; // Must compute \Delta W AND \Delta \Psi
+        void DirectFeedbackUpdate() noexcept;
 
         // Getters / Setters
-        void ClampState(const std::vector<float> &inputData) noexcept override;
-        void UnclampState() noexcept override;
-        void ResetState() noexcept override;
+        void ClampState(const std::vector<float> &inputData) noexcept;
+        void UnclampState() noexcept;
+        void ResetState() noexcept;
 
         void SetOptimizer(OptimizerType o) noexcept { opt = o; }
-        void SetLearningRate(float learningRate) noexcept override { lr = learningRate; }
-        void SetInferenceRate(float inferenceRate) noexcept override { ir = inferenceRate; }
+        void SetPsiOptimizer(OptimizerType o) noexcept { optPsi = o; }
+        void SetLearningRate(float learningRate) noexcept { lr = learningRate; }
+        void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
+        void SetFeedbackRate(float feedbackRate) noexcept { fl = feedbackRate; }
 
         float *GetBeliefs() noexcept override { return z; }
         const float *GetErrors() const noexcept override { return e; }
         const float *GetMu() const noexcept { return mu; }
-        const float *GetWeights() const noexcept override { return W; }
+        const float *GetWeights() const noexcept { return W; }
         const float *GetDirectFeedbackWeights() const noexcept { return Psi; }
-        const float *GetBiases() const noexcept override { return b; }
+        const float *GetBiases() const noexcept { return b; }
 
-        int GetBatchSize() const noexcept override { return batchSize; }
-        int GetInputSize() const noexcept override { return size; }
-        int GetOutputSize() const noexcept override { return nextSize; }
-        int GetTerminalSize() const noexcept { return terminalSize; }
+        size_t GetBatchSize() const noexcept override { return batchSize; }
+        size_t GetInputSize() const noexcept override { return size; }
+        size_t GetOutputSize() const noexcept override { return nextSize; }
+        size_t GetTerminalSize() const noexcept { return terminalSize; }
     };
 }

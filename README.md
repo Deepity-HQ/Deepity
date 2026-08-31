@@ -143,7 +143,7 @@ Naive multithreading across small batch sizes made performance worse, not better
 
 For the algorithmic details behind these (including a couple of surprising findings from comparing against other implementations), see [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 
-## C++
+## C++ Native
 
 ```cpp
 #include <deepity/networks/SimplePCNetwork.h>
@@ -167,7 +167,7 @@ std::vector<float> predictions = net.Predict(X, 150);
 ## Requirements
 
 - CMake
-- A C++20 compiler with AVX2/AVX-512 support (Clang recommended for the SIMD-heavy activation kernels; GCC also supported)
+- A C++20 compiler with AVX2/AVX-512 support (Clang recommended for the SIMD-heavy activation kernels; GCC also supported) and OpenMP
 - [Ninja](https://ninja-build.org/), optional and auto-detected
 - Python 3.9+, for the pydeepity bindings and build.py itself
 
@@ -189,9 +189,9 @@ doxygen Doxyfile
 - [x] Optional Intel MKL backend
 - [x] Optional huge-pages memory backend
 - [x] GaussSeidelPCN sequential-sweep settling
-- [ ] Re-verify GaussSeidelPCN under the corrected activation configuration
-- [ ] CUDA-accelerated engine
+- [ ] [Direct Kolen-Pollack Predictive Coding](https://arxiv.org/pdf/2602.15571) (🚧)
 - [ ] File IO support (save/load trained models)
+- [ ] CuBLAS
 
 ## Contributing
 
@@ -211,6 +211,7 @@ tests/                      C++ gradient-check and verification suites
 resources/                  Images and benchmark assets
 CMakeLists.txt               Build configuration (OpenBLAS/MKL, CUDA, arch profiles)
 build.py                    Cross-platform CMake build and test runner
+mnist.py                    Train a Simple PCN to learn MNIST
 ```
 
 ## License

@@ -16,7 +16,7 @@
 
 namespace Deep
 {
-    SimplePCLayer::SimplePCLayer(int size, int nextSize, int batchSize,
+    SimplePCLayer::SimplePCLayer(size_t size, size_t nextSize, size_t batchSize,
                                  float learningRate, float inferenceRate, float lmbda,
                                  void (*act)(float *, size_t),
                                  void (*dAct)(float *, size_t, bool))
@@ -32,7 +32,7 @@ namespace Deep
         BindMemory(*localArena);
     }
 
-    SimplePCLayer::SimplePCLayer(int size, int nextSize, int batchSize,
+    SimplePCLayer::SimplePCLayer(size_t size, size_t nextSize, size_t batchSize,
                                  float learningRate, float inferenceRate, float lmbda,
                                  ActivationType aType, ActivationType dType)
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda), isClamped(false),
@@ -52,14 +52,14 @@ namespace Deep
     void SimplePCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
     {
         std::uniform_int_distribution<uint32_t> seedDist;
-        size_t Wsz = (size_t)size * nextSize;
+        size_t Wsz = size * nextSize;
         float limit = std::sqrt(2.0f / (size + nextSize));
 
         std::vector<uint32_t> seeds(omp_get_max_threads());
         for (auto &s : seeds)
             s = seedDist(seedGenerator);
 
-#pragma omp parallel if(!omp_in_parallel())
+#pragma omp parallel if (!omp_in_parallel())
         {
             std::mt19937 rng(seeds[omp_get_thread_num()]);
             std::normal_distribution<float> dist(0.0f, limit);
@@ -72,8 +72,8 @@ namespace Deep
 
     float SimplePCLayer::CalculateState() noexcept
     {
-        const size_t N = (size_t)batchSize * size;
-        
+        const size_t N = batchSize * size;
+
         if (layerBelow == nullptr)
         {
             std::memset(e, 0, N * sizeof(float));
@@ -81,7 +81,7 @@ namespace Deep
             {
                 ComputeMuOnly();
             }
-            return 0.0f; 
+            return 0.0f;
         }
 
         cblas_scopy(N, z, 1, e, 1);
@@ -89,7 +89,7 @@ namespace Deep
 
         float totalEnergy = 0.0f;
 
-#pragma omp parallel for schedule(static) reduction(+ : totalEnergy) if(batchSize > 4 && !omp_in_parallel())
+#pragma omp parallel for schedule(static) reduction(+ : totalEnergy) if (batchSize > 4 && !omp_in_parallel())
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const size_t offset = (size_t)batch * size;
@@ -156,8 +156,8 @@ namespace Deep
         if (nextSize == 0)
             return;
 
-        size_t Nout = (size_t)batchSize * nextSize;
-        size_t N = (size_t)batchSize * size;
+        size_t Nout = batchSize * nextSize;
+        size_t N = batchSize * size;
 
         if (isClamped && muCacheValid)
         {
@@ -168,12 +168,24 @@ namespace Deep
         cblas_scopy((int)N, z, 1, zF, 1);
         switch (activationType)
         {
-        case ActivationType::RELU: Deep::relu(zF, N); break;
-        case ActivationType::SIGMOID: Deep::sigmoid(zF, N); break;
-        case ActivationType::eSIGMOID: Deep::e_sigmoid(zF, N); break;
-        case ActivationType::TANH: Deep::tanh(zF, N); break;
-        case ActivationType::LINEAR: Deep::linear(zF, N); break;
-        default: activation(zF, N); break; // custom/unrecognized function pointer
+        case ActivationType::RELU:
+            Deep::relu(zF, N);
+            break;
+        case ActivationType::SIGMOID:
+            Deep::sigmoid(zF, N);
+            break;
+        case ActivationType::eSIGMOID:
+            Deep::e_sigmoid(zF, N);
+            break;
+        case ActivationType::TANH:
+            Deep::tanh(zF, N);
+            break;
+        case ActivationType::LINEAR:
+            Deep::linear(zF, N);
+            break;
+        default:
+            activation(zF, N);
+            break; // custom/unrecognized function pointer
         }
 
         cblas_sgemm(
@@ -181,8 +193,9 @@ namespace Deep
             batchSize, nextSize, size,
             1.0f, zF, size, W, size, 0.0f, mu, nextSize);
 
-        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch) {
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+        for (int batch = 0; batch < batchSize; ++batch)
+        {
             cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
         }
 
@@ -195,7 +208,7 @@ namespace Deep
 
     void SimplePCLayer::UpdateState() noexcept
     {
-        size_t N = (size_t)batchSize * size;
+        size_t N = batchSize * size;
 
         if (isClamped)
             return;
@@ -206,11 +219,21 @@ namespace Deep
 
             switch (activationType)
             {
-            case ActivationType::RELU: Deep::dReluInto(zFDeriv, z, N); break;
-            case ActivationType::SIGMOID: Deep::dSigmoidInto(zFDeriv, z, N); break;
-            case ActivationType::TANH: Deep::dTanhInto(zFDeriv, z, N); break;
-            case ActivationType::LINEAR: Deep::dLinearInto(zFDeriv, z, N); break;
-            default: activationDerivativeInto(zFDeriv, z, N); break; // custom/unrecognized, or eSIGMOID (no dedicated derivative variant exists)
+            case ActivationType::RELU:
+                Deep::dReluInto(zFDeriv, z, N);
+                break;
+            case ActivationType::SIGMOID:
+                Deep::dSigmoidInto(zFDeriv, z, N);
+                break;
+            case ActivationType::TANH:
+                Deep::dTanhInto(zFDeriv, z, N);
+                break;
+            case ActivationType::LINEAR:
+                Deep::dLinearInto(zFDeriv, z, N);
+                break;
+            default:
+                activationDerivativeInto(zFDeriv, z, N);
+                break; // custom/unrecognized, or eSIGMOID (no dedicated derivative variant exists)
             }
 
             cblas_sgemm(
@@ -219,14 +242,16 @@ namespace Deep
                 1.0f, e_above, nextSize, W, size,
                 0.0f, feedbackScratch, size);
 
-            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch) {
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+            for (int batch = 0; batch < batchSize; ++batch)
+            {
                 float *RESTRICT zPtr = z;
                 const float *RESTRICT feedbackPtr = feedbackScratch;
                 const float *RESTRICT zFDerivPtr = zFDeriv;
                 const float *RESTRICT ePtr = e;
                 size_t offset = (size_t)batch * size;
-                for (size_t i = 0; i < size; ++i) {
+                for (size_t i = 0; i < size; ++i)
+                {
                     size_t idx = offset + i;
                     // Fused dz_dt directly into the z update to save memory writes
                     zPtr[idx] += ir * ((feedbackPtr[idx] * zFDerivPtr[idx]) - ePtr[idx]);
@@ -235,12 +260,14 @@ namespace Deep
         }
         else // Output Layer
         {
-            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch) {
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+            for (int batch = 0; batch < batchSize; ++batch)
+            {
                 float *RESTRICT zPtr = z;
                 const float *RESTRICT ePtr = e;
                 size_t offset = (size_t)batch * size;
-                for (size_t i = 0; i < size; ++i) {
+                for (size_t i = 0; i < size; ++i)
+                {
                     size_t idx = offset + i;
                     zPtr[idx] += ir * -ePtr[idx];
                 }
@@ -315,10 +342,10 @@ namespace Deep
 
     void SimplePCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
-        size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
+        size_t copySize = (std::min)(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
         memcpy(z, inputData.data(), copySize);
         isClamped = true;
-        muCacheValid = false; 
+        muCacheValid = false;
     }
 
     void SimplePCLayer::UnclampState() noexcept
@@ -345,8 +372,8 @@ namespace Deep
             total += pad16(w_size);
             total += pad16(nextSize);
             total += pad16(out_state_size) * 2;
-            // E, prevZ, and bottom_up removed 
-            total += pad16(own_state_size) * 3;  // zF, zFDeriv, feedbackScratch
+            // E, prevZ, and bottom_up removed
+            total += pad16(own_state_size) * 3; // zF, zFDeriv, feedbackScratch
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {

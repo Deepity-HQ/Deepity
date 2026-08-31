@@ -15,33 +15,28 @@
 #include <deepity/Optimize.h>
 #include <deepity/StreamAlignedBatcher.h>
 
-// Deepity Layers
 #include <deepity/layers/Layer.h>
 #include <deepity/layers/ConvPCLayer.h>
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/layers/RBLayer.h>
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/layers/SimplePCLayer.h>
+#include <deepity/layers/GaussSeidelPCLayer.h>
+#include <deepity/layers/DirectKPPCLayer.h>
 
-// Deepity Networks
 #include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/networks/DiscriminativePCNetwork.h>
 #include <deepity/networks/SimplePCNetwork.h>
 #include <deepity/networks/SimpleConvPCNetwork.h>
-#include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/networks/GaussSeidelPCNetwork.h>
+#include <deepity/networks/DirectKPPCNetwork.h>
 
 namespace nb = nanobind;
 
 // Convenience alias for the "give me a flat/any-shape, contiguous, CPU,
 // dtype=float32" arrays that the original code obtained via
 // py::array_t<float, py::array::c_style | py::array::forcecast>.
-//
-// NOTE: nanobind's ndarray does not auto-cast mismatched dtypes the way
-// pybind11's `forcecast` did. Callers must pass a real float32 array (or a
-// non-writeable view is fine); if this matters for your Python call sites,
-// you may want `x.astype(np.float32)` on the Python side. Non-contiguous
-// callers will fail to bind rather than being silently copied.
+
 using FloatArray = nb::ndarray<float, nb::c_contig, nb::device::cpu>;
 using IntArray = nb::ndarray<int, nb::c_contig, nb::device::cpu>;
 
@@ -274,6 +269,12 @@ void bind_layers(nb::module_ &m)
         .def("__repr__", [](const Deep::RBLayer &self)
              { return "<RBLayer in=" + std::to_string(self.GetInputSize()) + ", out=" + std::to_string(self.GetOutputSize()) + ", batch=" + std::to_string(self.GetBatchSize()) + ">"; });
 
+    // auto dkpLayerCls = nb::class_<Deep::DirectKPPCLayer, Deep::Layer>(m, "DKPPCLayer", "Direct Kolen-Pollack Predictive Coding layer.")
+    //     .def("__init__", [](Deep::DirectKPPCLayer *self, size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
+    //                         float learningRate, float inferenceRate, float lmbda,
+    //                         ActivationType aType, ActivationType dType)
+    //          { new (self) Deep::DirectKPPCLayer(size, nextSize, terminalSize, batchSize, learningRate, inferenceRate, lmbda, aType, dType); });
+
     nb::class_<Deep::ConvPCLayer, Deep::Layer>(m, "ConvPCLayer", "Convolutional Predictive Coding layer.")
         .def("__init__", [](Deep::ConvPCLayer *self, int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, int batch_size, float learning_rate, float inference_rate, float precision_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
              { new (self) Deep::ConvPCLayer(in_channels, out_channels, in_height, in_width, kernel_h, kernel_w, stride_h, stride_w, pad_h, pad_w, batch_size, learning_rate, inference_rate, precision_rate, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("in_channels"), nb::arg("out_channels"), nb::arg("in_height"), nb::arg("in_width"), nb::arg("kernel_h"), nb::arg("kernel_w"), nb::arg("stride_h") = 1, nb::arg("stride_w") = 1, nb::arg("pad_h") = 0, nb::arg("pad_w") = 0, nb::arg("batch_size") = 1, nb::arg("learning_rate") = 1e-6f, nb::arg("inference_rate") = 0.1f, nb::arg("precision_rate") = 0.0f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu")
@@ -470,7 +471,7 @@ void bind_networks(nb::module_ &m)
            if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
            if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
            return layers[index].get(); }, nb::rv_policy::reference_internal);
-    
+
     nb::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
         .def("add_layer", [](Deep::ConvPCNetwork &self, int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, float lr, float ir, float pr, float lmbda, const std::string &activation, const std::string &activation_deriv)

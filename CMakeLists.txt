@@ -291,11 +291,13 @@ add_library(Deepity
     src/SimpleConvPCLayer.cpp
     src/SimplePCLayer.cpp
     src/GaussSeidelPCLayer.cpp
+    src/DirectKPPCLayer.cpp
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp
     src/SimplePCNetwork.cpp
     src/GaussSeidelPCNetwork.cpp
     src/SimpleConvPCNetwork.cpp
+    src/DirectKPPCNetwork.cpp
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
 )
@@ -426,13 +428,13 @@ endif()
 # --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
-    add_executable(GaussSeidelVerify tests/tGaussSeidelVerify.cpp)
-    target_link_libraries(GaussSeidelVerify PRIVATE Deepity)
-    set_target_properties(GaussSeidelVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
+    add_executable(DirectKPVerify tests/tDirectKPVerify.cpp)
+    target_link_libraries(DirectKPVerify PRIVATE Deepity)
+    set_target_properties(DirectKPVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+    add_test(NAME DirectKPVerify COMMAND DirectKPVerify)
 
     if(WIN32)
-        deepity_copy_runtime_dlls(GaussSeidelVerify)
+        deepity_copy_runtime_dlls(DirectKPVerify)
     endif()
 endif()
 
