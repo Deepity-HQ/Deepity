@@ -76,12 +76,13 @@ namespace Deep
         Clamp(x);
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
         for (int t = 0; t < inferenceSteps; t++)
         {
-            finalEnergy = CalculateState();
+            CalculateState();
             UpdateState();
         }
+
+        float finalEnergy = CalculateState();
 
         UpdateWeights();
         GetTerminalLayer()->UnclampState();
@@ -107,19 +108,19 @@ namespace Deep
         return std::vector<float>(beliefs, beliefs + count);
     }
 
-	void SimplePCNetwork::ProjectForward() noexcept
-{
-    for (size_t i = 0; i + 1 < layers.size(); ++i)
+    void SimplePCNetwork::ProjectForward() noexcept
     {
-        layers[i]->ComputeMuOnly();
+        for (size_t i = 0; i + 1 < layers.size(); ++i)
+        {
+            layers[i]->ComputeMuOnly();
 
-        const float *mu = layers[i]->GetMu();
-        float *nextZ = layers[i + 1]->GetBeliefs();
-        size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+            const float *mu = layers[i]->GetMu();
+            float *nextZ = layers[i + 1]->GetBeliefs();
+            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-        std::memcpy(nextZ, mu, n * sizeof(float));
+            std::memcpy(nextZ, mu, n * sizeof(float));
+        }
     }
-}
 
     float SimplePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
     {
@@ -131,10 +132,11 @@ namespace Deep
         float finalEnergy = 0.0f;
         for (int t = 0; t < inferenceSteps; ++t)
         {
-            finalEnergy = CalculateState();
+            CalculateState();
             UpdateState();
         }
 
+        finalEnergy = CalculateState();
         UpdateWeights();
         GetTerminalLayer()->UnclampState();
 
@@ -168,11 +170,11 @@ namespace Deep
 
     void SimplePCNetwork::Compile()
     {
-#pragma omp parallel 
-	{ // Broadcast FTZ/DAZ hardware flags to ALL OpenMP worker threads
-		_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-		_MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-	}
+#pragma omp parallel
+        { // Broadcast FTZ/DAZ hardware flags to ALL OpenMP worker threads
+            _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+            _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+        }
         size_t total_floats_needed = 0;
         for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();

@@ -107,6 +107,7 @@ namespace Deep
         void SetLearningRate(float learningRate) noexcept { lr = learningRate; }
         void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
         void SetFeedbackRate(float feedbackRate) noexcept { fl = feedbackRate; }
+        void SetLambda(float lmbda) noexcept { lmbda = lmbda; }
 
         float *GetBeliefs() noexcept override { return z; }
         const float *GetErrors() const noexcept override { return e; }

@@ -269,11 +269,28 @@ void bind_layers(nb::module_ &m)
         .def("__repr__", [](const Deep::RBLayer &self)
              { return "<RBLayer in=" + std::to_string(self.GetInputSize()) + ", out=" + std::to_string(self.GetOutputSize()) + ", batch=" + std::to_string(self.GetBatchSize()) + ">"; });
 
-    // auto dkpLayerCls = nb::class_<Deep::DirectKPPCLayer, Deep::Layer>(m, "DKPPCLayer", "Direct Kolen-Pollack Predictive Coding layer.")
-    //     .def("__init__", [](Deep::DirectKPPCLayer *self, size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
-    //                         float learningRate, float inferenceRate, float lmbda,
-    //                         ActivationType aType, ActivationType dType)
-    //          { new (self) Deep::DirectKPPCLayer(size, nextSize, terminalSize, batchSize, learningRate, inferenceRate, lmbda, aType, dType); });
+    auto dkpLayerCls = nb::class_<Deep::DirectKPPCLayer, Deep::Layer>(m, "DirectKPPCLayer", "Direct Kolen-Pollack Predictive Coding layer.")
+                           .def("__init__", [](Deep::DirectKPPCLayer *self, size_t size, size_t next_size, size_t terminal_size, size_t batch_size, float learning_rate, float inference_rate, float feedback_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
+                                { new (self) Deep::DirectKPPCLayer(size, next_size, terminal_size, batch_size, learning_rate, inference_rate, feedback_rate, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("size"), nb::arg("next_size"), nb::arg("terminal_size"), nb::arg("batch_size") = 1, nb::arg("learning_rate") = 1e-6f, nb::arg("inference_rate") = 0.01f, nb::arg("feedback_rate") = 1e-4f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu");
+    BindCommonPCLayer<Deep::DirectKPPCLayer>(dkpLayerCls, "DirectKPPCLayer");
+    dkpLayerCls.def("direct_feedback_update", &Deep::DirectKPPCLayer::DirectFeedbackUpdate,
+                    "Perturbs W using the layer above's Psi and the terminal layer's error -- "
+                    "the DFA phase, run once per batch before settling begins.")
+        .def("set_terminal_layer", &Deep::DirectKPPCLayer::SetTerminalLayer, nb::arg("layer"))
+        .def("set_psi_optimizer", [](Deep::DirectKPPCLayer &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetPsiOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetPsiOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetPsiOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"))
+        .def("set_optimizer", [](Deep::DirectKPPCLayer &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"))
+        .def("set_feedback_rate", &Deep::DirectKPPCLayer::SetFeedbackRate, nb::arg("fl"))
+        .def_prop_ro("terminal_size", &Deep::DirectKPPCLayer::GetTerminalSize)
+        .def_prop_ro("psi", [](Deep::DirectKPPCLayer &self)
+                     { return ViewOwnedBy(self.GetDirectFeedbackWeights(), {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()}, self); })
+        .def_prop_ro("biases", [](Deep::DirectKPPCLayer &self)
+                     { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); });
 
     nb::class_<Deep::ConvPCLayer, Deep::Layer>(m, "ConvPCLayer", "Convolutional Predictive Coding layer.")
         .def("__init__", [](Deep::ConvPCLayer *self, int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, int batch_size, float learning_rate, float inference_rate, float precision_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
@@ -471,6 +488,57 @@ void bind_networks(nb::module_ &m)
            if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
            if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
            return layers[index].get(); }, nb::rv_policy::reference_internal);
+
+    nb::class_<Deep::DirectKPPCNetwork>(m, "DirectKPPCNetwork", "Predictive Coding Network with Direct Kolen-Pollack feedback alignment.")
+        .def(nb::init<int>(), nb::arg("batch_size"))
+        .def("add_layer", [](Deep::DirectKPPCNetwork &self, size_t size, size_t next_size, size_t terminal_size, float lr, float ir, float fl, float lmbda, const std::string &activation, const std::string &activation_deriv)
+             { self.AddLayer(size, next_size, terminal_size, lr, ir, fl, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("size"), nb::arg("next_size"), nb::arg("terminal_size"), nb::arg("lr") = 1e-6f, nb::arg("ir") = 0.1f, nb::arg("fl") = 1e-4f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu")
+        .def("compile", &Deep::DirectKPPCNetwork::Compile)
+        .def("randomize_weights", [](Deep::DirectKPPCNetwork &self)
+             { std::random_device rd; std::mt19937 rng(rd()); self.RandomizeWeights(rng); })
+        .def("reset_state", &Deep::DirectKPPCNetwork::ResetState)
+        .def("clamp_input", [](Deep::DirectKPPCNetwork &self, FloatArray input)
+             { std::vector<float> values(input.data(), input.data() + input.size());
+           self.Clamp(values); }, nb::arg("input"))
+        .def("project_forward", &Deep::DirectKPPCNetwork::ProjectForward)
+        .def("calculate_terminal_error", &Deep::DirectKPPCNetwork::CalculateTerminalError)
+        .def("direct_feedback_update", &Deep::DirectKPPCNetwork::DirectFeedbackUpdate)
+        .def("step", &Deep::DirectKPPCNetwork::Step)
+        .def("update_weights", &Deep::DirectKPPCNetwork::UpdateWeights)
+        .def("set_optimizer", [](Deep::DirectKPPCNetwork &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"))
+        .def("set_psi_optimizer", [](Deep::DirectKPPCNetwork &self, const std::string &opt)
+             { if (opt == "ADAM") self.SetPsiOptimizer(Deep::OptimizerType::ADAM);
+           else if (opt == "ADAMW") self.SetPsiOptimizer(Deep::OptimizerType::ADAMW);
+           else self.SetPsiOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"))
+        .def("set_learning_rate", &Deep::DirectKPPCNetwork::SetLearningRate, nb::arg("lr"))
+        .def("set_feedback_rate", &Deep::DirectKPPCNetwork::SetFeedbackRate, nb::arg("fl"))
+        .def("train_step", [](Deep::DirectKPPCNetwork &self, FloatArray x, FloatArray y, int inference_steps)
+             { std::vector<float> xvec(x.data(), x.data() + x.size());
+           std::vector<float> yvec(y.data(), y.data() + y.size());
+           return self.TrainStep(xvec, yvec, inference_steps); }, nb::arg("x"), nb::arg("y"), nb::arg("inference_steps") = 1)
+        .def("predict", [](Deep::DirectKPPCNetwork &self, FloatArray x, int inference_steps)
+             { std::vector<float> xvec(x.data(), x.data() + x.size());
+           std::vector<float> result = self.Predict(xvec, inference_steps);
+           Deep::DirectKPPCLayer *terminal = self.GetTerminalLayer();
+           return CopyToNewArray(result.data(), {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()}); }, nb::arg("x"), nb::arg("inference_steps"))
+        .def_prop_ro("batch_size", &Deep::DirectKPPCNetwork::GetBatchSize)
+        .def_prop_ro("layers", [](Deep::DirectKPPCNetwork &self)
+                     { nb::list result;
+                   for (auto &layer : self.GetLayers()) result.append(nb::cast(layer.get(), nb::rv_policy::reference));
+                   return result; })
+        .def("get_terminal_layer", &Deep::DirectKPPCNetwork::GetTerminalLayer, nb::rv_policy::reference)
+        .def("__len__", [](const Deep::DirectKPPCNetwork &self)
+             { return self.GetLayers().size(); })
+        .def("__getitem__", [](Deep::DirectKPPCNetwork &self, std::ptrdiff_t index)
+             { auto &layers = self.GetLayers();
+           if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
+           if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
+           return layers[index].get(); }, nb::rv_policy::reference_internal)
+        .def("__repr__", [](const Deep::DirectKPPCNetwork &self)
+             { return "<DirectKPPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
 
     nb::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")

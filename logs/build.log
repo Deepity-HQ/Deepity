@@ -1,21 +1,27 @@
 --- Deepity Build Log (Release, arch=native) ---
 
 === Compilation ===
-[1/2] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.obj
-[2/2] Linking CXX executable bin\DirectKPVerify.exe
+[1/8] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.obj
+[2/8] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj
+[3/8] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj
+[4/8] Linking CXX static library bin\Deepity.lib
+[5/8] Linking CXX executable bin\GaussSeidelMiddleLayerVerify.exe
+[6/8] Linking CXX executable bin\DirectKPVerify.exe
+[7/8] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.obj
+[8/8] Linking CXX shared module bin\pydeepity.cp312-win_amd64.pyd
 
 
 === Tests ===
 Test project C:/Users/Jack/Projects/deepity/build/Release
-    Start 1: DirectKPVerify
     Start 3: DeepityProfile
     Start 2: GaussSeidelMiddleLayerVerify
-1/3 Test #1: DirectKPVerify ...................   Passed    0.04 sec
+    Start 1: DirectKPVerify
+1/3 Test #1: DirectKPVerify ...................   Passed    0.03 sec
 2/3 Test #2: GaussSeidelMiddleLayerVerify .....   Passed    0.05 sec
-3/3 Test #3: DeepityProfile ...................   Passed    1.08 sec
+3/3 Test #3: DeepityProfile ...................   Passed    1.11 sec
 
 100% tests passed, 0 tests failed out of 3
 
-Total Test time (real) =   1.10 sec
+Total Test time (real) =   1.12 sec
 
 
