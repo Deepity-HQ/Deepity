@@ -12,9 +12,9 @@
 namespace Deep
 {
     GaussSeidelPCLayer::GaussSeidelPCLayer(int size, int nextSize, int batchSize,
-                                            float learningRate, float inferenceRate, float lmbda,
-                                            void (*act)(float *, size_t),
-                                            void (*dAct)(float *, size_t, bool))
+                                           float learningRate, float inferenceRate, float lmbda,
+                                           void (*act)(float *, size_t),
+                                           void (*dAct)(float *, size_t, bool))
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda),
           layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct),
           activationType(ActivationType::NONE)
@@ -26,8 +26,8 @@ namespace Deep
     }
 
     GaussSeidelPCLayer::GaussSeidelPCLayer(int size, int nextSize, int batchSize,
-                                            float learningRate, float inferenceRate, float lmbda,
-                                            ActivationType aType, ActivationType dType)
+                                           float learningRate, float inferenceRate, float lmbda,
+                                           ActivationType aType, ActivationType dType)
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda),
           layerAbove(nullptr), layerBelow(nullptr),
           activation(To_Fn(aType)), activationDerivative(To_dFn(dType)), activationType(aType)
@@ -64,11 +64,12 @@ namespace Deep
         isClamped = false;
     }
 
-	void GaussSeidelPCLayer::UpdateState() noexcept
+    void GaussSeidelPCLayer::UpdateState() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * size;
 
-        if (isClamped) return;
+        if (isClamped)
+            return;
 
         // 1. Heavy lifting: BLAS Matrix Multiplication
         if (layerAbove != nullptr && nextSize > 0)
@@ -89,13 +90,14 @@ namespace Deep
         // We chunk the operations so z_deriv never leaves the L1 cache.
         constexpr int CHUNK_SIZE = 2048;
 
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
         {
             int chunk = std::min(CHUNK_SIZE, (int)ownStateSize - i);
 
             // Step A: Copy z into z_deriv for this chunk only
-            for (int j = 0; j < chunk; ++j) {
+            for (int j = 0; j < chunk; ++j)
+            {
                 z_deriv[i + j] = z[i + j];
             }
 
@@ -103,7 +105,8 @@ namespace Deep
             activationDerivative(z_deriv + i, chunk, false);
 
             // Step C: Apply E-M feedback and Euler step immediately
-            for (int j = 0; j < chunk; ++j) {
+            for (int j = 0; j < chunk; ++j)
+            {
                 float feedback = dz_dt[i + j];
                 float dz = -e[i + j] + (feedback * z_deriv[i + j]);
                 z[i + j] += ir * dz;
@@ -111,20 +114,22 @@ namespace Deep
         }
     }
 
-	void GaussSeidelPCLayer::ComputePrediction() noexcept
+    void GaussSeidelPCLayer::ComputePrediction() noexcept
     {
-        if (nextSize == 0) return;
+        if (nextSize == 0)
+            return;
 
         size_t ownStateSize = (size_t)batchSize * size;
         size_t Nout = (size_t)batchSize * nextSize;
-        
+
         // FUSED: Chunked copy + activation
         constexpr int CHUNK_SIZE = 2048;
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
         {
-            int chunk = std::min(CHUNK_SIZE, (int)ownStateSize - i);
-            for (int j = 0; j < chunk; ++j) dz_dt[i + j] = z[i + j];
+            int chunk = (std::min)(CHUNK_SIZE, (int)ownStateSize - i);
+            for (int j = 0; j < chunk; ++j)
+                dz_dt[i + j] = z[i + j];
             activation(dz_dt + i, chunk);
         }
 
@@ -135,20 +140,24 @@ namespace Deep
             1.0f, dz_dt, size, W, size, 0.0f, mu, nextSize);
 
         // FUSED: Bias addition
-        #pragma omp parallel for schedule(static) collapse(2)
-        for (int batch = 0; batch < batchSize; ++batch) {
-            for (size_t out = 0; out < nextSize; ++out) {
-                mu[batch * nextSize + out] += b[out];
+        const int nb = batchSize;
+        const int no = nextSize;
+#pragma omp parallel for schedule(static) collapse(2)
+        for (int batch = 0; batch < nb; ++batch)
+        {
+            for (int out = 0; out < no; ++out)
+            {
+                mu[batch * no + out] += b[out];
             }
         }
     }
-    
+
     // ------------------------------------------------------------------
     // Step 3: fresh error, using this layer's own (just-updated) z as
     // the target and layerBelow's FRESH mu (from its ComputePrediction()
     // call, earlier in this same timestep) as the prediction.
     // ------------------------------------------------------------------
-float GaussSeidelPCLayer::ComputeError() noexcept
+    float GaussSeidelPCLayer::ComputeError() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * size;
 
@@ -158,11 +167,11 @@ float GaussSeidelPCLayer::ComputeError() noexcept
             return 0.0f;
         }
 
-        const float* mu_below = layerBelow->GetMu();
+        const float *mu_below = layerBelow->GetMu();
         float totalEnergy = 0.0f;
 
-        // FUSED: Subtract prediction and accumulate energy in one single pass
-        #pragma omp parallel for schedule(static) reduction(+:totalEnergy)
+// FUSED: Subtract prediction and accumulate energy in one single pass
+#pragma omp parallel for schedule(static) reduction(+ : totalEnergy)
         for (int i = 0; i < (int)ownStateSize; ++i)
         {
             float err = z[i] - mu_below[i];
@@ -173,20 +182,22 @@ float GaussSeidelPCLayer::ComputeError() noexcept
         return totalEnergy;
     }
 
-void GaussSeidelPCLayer::UpdateWeights() noexcept
+    void GaussSeidelPCLayer::UpdateWeights() noexcept
     {
-	if (layerAbove == nullptr || nextSize == 0) return;
+        if (layerAbove == nullptr || nextSize == 0)
+            return;
 
         const float *local_grad = layerAbove->GetErrors();
         size_t ownStateSize = (size_t)batchSize * size;
-        
+
         // FUSED: Chunked copy + activation
         constexpr int CHUNK_SIZE = 2048;
-        #pragma omp parallel for schedule(static)
+#pragma omp parallel for schedule(static)
         for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
         {
             int chunk = std::min(CHUNK_SIZE, (int)ownStateSize - i);
-            for (int j = 0; j < chunk; ++j) dz_dt[i + j] = z[i + j];
+            for (int j = 0; j < chunk; ++j)
+                dz_dt[i + j] = z[i + j];
             activation(dz_dt + i, chunk);
         }
 
@@ -236,7 +247,7 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
         }
     }
 
-       void GaussSeidelPCLayer::RandomizeWeights(std::mt19937 &twister) noexcept
+    void GaussSeidelPCLayer::RandomizeWeights(std::mt19937 &twister) noexcept
     {
         if (nextSize == 0)
             return;
@@ -295,10 +306,10 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
             size_t w_size = (size_t)size * nextSize;
             size_t out_state_size = (size_t)batchSize * nextSize;
 
-            total += pad16(w_size);              // W
-            total += pad16(nextSize);            // b
-            total += pad16(out_state_size) * 3;  // mu, muDeriv, bottom_up
-            total += pad16(w_size);              // E (feedback alignment, same shape as W)
+            total += pad16(w_size);             // W
+            total += pad16(nextSize);           // b
+            total += pad16(out_state_size) * 3; // mu, muDeriv, bottom_up
+            total += pad16(w_size);             // E (feedback alignment, same shape as W)
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
@@ -317,12 +328,12 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
         z = arena.AllocateFloats(own_state_size);
         e = arena.AllocateFloats(own_state_size);
         dz_dt = arena.AllocateFloats(own_state_size);
-	z_deriv = arena.AllocateFloats(own_state_size);
+        z_deriv = arena.AllocateFloats(own_state_size);
 
         std::memset(z, 0, own_state_size * sizeof(float));
         std::memset(e, 0, own_state_size * sizeof(float));
         std::memset(dz_dt, 0, own_state_size * sizeof(float));
-	std::memset(z_deriv, 0, own_state_size * sizeof(float));
+        std::memset(z_deriv, 0, own_state_size * sizeof(float));
 
         if (nextSize > 0)
         {

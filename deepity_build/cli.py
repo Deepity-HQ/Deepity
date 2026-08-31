@@ -4,6 +4,8 @@ import argparse
 import multiprocessing
 import shutil
 import sys
+import os
+import stat
 import time
 from pathlib import Path
 
@@ -18,6 +20,12 @@ from .git_info import get_git_info
 from .process import run_captured_command, run_streaming_command
 from .reporting import make_reporter
 
+def _rmtree_onexc(func, path, exc_info):
+    """shutil.rmtree fails on Windows for read-only files (e.g. inside a
+    FetchContent'd repo's .git/objects/pack/) because it never clears the
+    read-only attribute before unlinking. Clear it and retry once."""
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -190,7 +198,7 @@ def _run_configure_build_test(
         if not config.deps_dir.is_dir():
             reporter.clean_reconfigure()
             if config.build_dir.exists():
-                shutil.rmtree(config.build_dir)
+                shutil.rmtree(config.build_dir, onexc=_rmtree_onexc)
 
         # ────────────────────────────────────────────────────────────
         # Configure
@@ -293,7 +301,7 @@ def main(argv: list[str] | None = None) -> None:
     config = build_config_from_args(args)
 
     if config.clean and config.build_dir.exists():
-        shutil.rmtree(config.build_dir)
+        shutil.rmtree(config.build_dir, onexc=_rmtree_onexc)
 
     ninja, generator = find_generator()
 

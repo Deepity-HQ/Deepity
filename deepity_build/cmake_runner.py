@@ -43,20 +43,28 @@ def configure_command(config: BuildConfig, ninja: str | None, pgo_phase: str | N
         cmd.append(f"-DDEEPITY_MSVC_ARCH_FLAGS={profile.msvc_flags}")
 
     if sys.platform == "win32":
-        cmd.extend(["-A", "x64"])
-        vcpkg_root = os.environ.get("VCPKG_ROOT")
-        if vcpkg_root:
-            toolchain = Path(vcpkg_root) / "scripts/buildsystems/vcpkg.cmake"
-            if toolchain.is_file():
-                cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={toolchain.as_posix()}")
-    else:
         if ninja:
             cmd.extend(["-G", "Ninja"])
+            if "clang" in os.environ.get("CC", "").lower():
+                # Locate libomp.lib next to the clang.exe on PATH
+                clang_path = shutil.which("clang")
+                omp_lib = None
+                if clang_path:
+                    llvm_lib_dir = Path(clang_path).parent.parent / "lib"
+                    candidate = llvm_lib_dir / "libomp.lib"
+                    if candidate.is_file():
+                        omp_lib = candidate.as_posix()
 
-        vcpkg_root = os.environ.get("VCPKG_ROOT")
-        if vcpkg_root:
-            cmd.append(f"-DCMAKE_TOOLCHAIN_FILE={vcpkg_root}/scripts/buildsystems/vcpkg.cmake")
-
+                cmd.extend([
+                    f"-DCMAKE_C_COMPILER=clang",
+                    f"-DCMAKE_CXX_COMPILER=clang++",
+                    "-DOpenMP_C_FLAGS=-fopenmp",
+                    "-DOpenMP_CXX_FLAGS=-fopenmp",
+                    "-DOpenMP_C_LIB_NAMES=omp",
+                    "-DOpenMP_CXX_LIB_NAMES=omp",
+                ])
+                if omp_lib:
+                    cmd.append(f"-DOpenMP_omp_LIBRARY={omp_lib}")
     return cmd
 
 

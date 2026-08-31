@@ -98,6 +98,51 @@ message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}")
 
 find_package(OpenMP REQUIRED)
 
+# find_package(OpenMP) only learns the *import* library (via
+# OpenMP_omp_LIBRARY, set by build.py on the clang/Ninja Windows path) --
+# it has no idea where the runtime DLL lives, so $<TARGET_RUNTIME_DLLS:...>
+# further down can't discover or copy it (unlike OPENBLAS_DLL above, which
+# is resolved explicitly). Locate it here so it can be bundled the same way.
+if(WIN32 AND NOT DEEPITY_OMP_DLL)
+    # Don't key off OpenMP_omp_LIBRARY -- it's only populated when
+    # cmake_runner.py's CC=clang branch happened to fire. CMake can pick
+    # clang as the effective compiler even when that branch never ran
+    # (e.g. no MSVC dev shell active, clang just happens to be on PATH),
+    # so derive the LLVM install location from CMAKE_CXX_COMPILER itself,
+    # which is always correct regardless of how the compiler was chosen.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER)
+        get_filename_component(_clang_bin_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+        get_filename_component(_llvm_root "${_clang_bin_dir}" DIRECTORY)
+        find_file(DEEPITY_OMP_DLL
+            NAMES libomp.dll
+            PATHS "${_clang_bin_dir}" "${_llvm_root}/bin" "${_llvm_root}/lib"
+            NO_DEFAULT_PATH
+        )
+    endif()
+    if(NOT DEEPITY_OMP_DLL AND OpenMP_omp_LIBRARY)
+        # Fall back to the old lookup in case it IS set (e.g. someone
+        # invokes cmake directly with -DOpenMP_omp_LIBRARY=...).
+        get_filename_component(_omp_lib_dir "${OpenMP_omp_LIBRARY}" DIRECTORY)
+        find_file(DEEPITY_OMP_DLL NAMES libomp.dll PATHS "${_omp_lib_dir}" "${_omp_lib_dir}/../bin")
+    endif()
+    if(NOT DEEPITY_OMP_DLL AND MSVC)
+        # MSVC's own OpenMP runtime ships with the VC redistributables --
+        # unless /openmp:llvm is in play (see target_compile_options
+        # below), in which case MSVC uses LLVM's runtime instead, typically
+        # named libomp140.x86_64.dll and shipped inside the VC toolset's
+        # own redist tree rather than a standalone LLVM install.
+        find_file(DEEPITY_OMP_DLL NAMES vcomp140.dll vcomp140d.dll libomp140.x86_64.dll)
+    endif()
+    if(DEEPITY_OMP_DLL)
+        message(STATUS "DEEPITY_OMP_DLL resolved to: ${DEEPITY_OMP_DLL}")
+    else()
+        message(WARNING "Could not locate the OpenMP runtime DLL automatically. "
+            "You may need to copy it (e.g. libomp.dll from your LLVM install, "
+            "or vcomp140.dll for MSVC) next to the build outputs manually, or "
+            "reconfigure with -DDEEPITY_OMP_DLL=<path>.")
+    endif()
+endif()
+
 if(DEEPITY_ENABLE_CUDA)
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
@@ -304,6 +349,28 @@ set_target_properties(Deepity PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
 )
 
+# --- Runtime DLL copying (Windows) -----------------------------------
+# $<TARGET_RUNTIME_DLLS:...> only knows about DLLs CMake can see a full
+# IMPORTED_LOCATION for (e.g. openblas_dll above). It can't discover
+# libomp.dll on its own, so DEEPITY_OMP_DLL (resolved earlier) is copied
+# alongside it explicitly. Centralized here instead of repeating both
+# copy steps for every executable below.
+function(deepity_copy_runtime_dlls target)
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:${target}>>,copy_if_different,true>
+        $<TARGET_RUNTIME_DLLS:${target}>
+        $<TARGET_FILE_DIR:${target}>
+        COMMAND_EXPAND_LISTS
+    )
+    if(DEEPITY_OMP_DLL)
+        add_custom_command(TARGET ${target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DEEPITY_OMP_DLL}"
+            $<TARGET_FILE_DIR:${target}>
+        )
+    endif()
+endfunction()
+
 # --- pydeepity ------------------------------------------------------
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -335,6 +402,13 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         ${CMAKE_SOURCE_DIR}/pydeepity/
         COMMAND_EXPAND_LISTS
     )
+    if(DEEPITY_OMP_DLL)
+        add_custom_command(TARGET pydeepity POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${DEEPITY_OMP_DLL}"
+            ${CMAKE_SOURCE_DIR}/pydeepity/
+        )
+    endif()
 
     install(TARGETS pydeepity
         LIBRARY DESTINATION pydeepity
@@ -344,6 +418,9 @@ endif()
 
 if(WIN32)
     install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
+    if(DEEPITY_OMP_DLL)
+        install(FILES ${DEEPITY_OMP_DLL} DESTINATION pydeepity)
+    endif()
 endif()
 
 # --- Tests ----------------------------------------------------------
@@ -355,12 +432,7 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
 
     if(WIN32)
-        add_custom_command(TARGET GaussSeidelVerify POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelVerify>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:GaussSeidelVerify>
-            $<TARGET_FILE_DIR:GaussSeidelVerify>
-            COMMAND_EXPAND_LISTS
-        )
+        deepity_copy_runtime_dlls(GaussSeidelVerify)
     endif()
 endif()
 
@@ -373,12 +445,7 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME GaussSeidelMiddleLayerVerify COMMAND GaussSeidelMiddleLayerVerify)
 
     if(WIN32)
-        add_custom_command(TARGET GaussSeidelMiddleLayerVerify POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GaussSeidelMiddleLayerVerify>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:GaussSeidelMiddleLayerVerify>
-            $<TARGET_FILE_DIR:GaussSeidelMiddleLayerVerify>
-            COMMAND_EXPAND_LISTS
-        )
+        deepity_copy_runtime_dlls(GaussSeidelMiddleLayerVerify)
     endif()
 endif()
 
@@ -438,12 +505,7 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME DeepityProfile COMMAND DeepityProfile)
 
     if(WIN32)
-        add_custom_command(TARGET DeepityProfile POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityProfile>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:DeepityProfile>
-            $<TARGET_FILE_DIR:DeepityProfile>
-            COMMAND_EXPAND_LISTS
-        )
+        deepity_copy_runtime_dlls(DeepityProfile)
     endif()
 
     # --- README benchmark: std-library vs Deep:: activations ---------
@@ -455,12 +517,7 @@ if(DEEPITY_BUILD_TESTS)
     )
 
     if(WIN32)
-        add_custom_command(TARGET ActivationBenchmark POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ActivationBenchmark>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:ActivationBenchmark>
-            $<TARGET_FILE_DIR:ActivationBenchmark>
-            COMMAND_EXPAND_LISTS
-        )
+        deepity_copy_runtime_dlls(ActivationBenchmark)
     endif()
 
     # --- README benchmark: sustained GFLOPS during a real train step -
@@ -472,11 +529,6 @@ if(DEEPITY_BUILD_TESTS)
     )
 
     if(WIN32)
-        add_custom_command(TARGET GflopsBenchmark POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GflopsBenchmark>>,copy_if_different,true>
-            $<TARGET_RUNTIME_DLLS:GflopsBenchmark>
-            $<TARGET_FILE_DIR:GflopsBenchmark>
-            COMMAND_EXPAND_LISTS
-        )
+        deepity_copy_runtime_dlls(GflopsBenchmark)
     endif()
 endif()
