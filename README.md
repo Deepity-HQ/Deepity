@@ -5,123 +5,35 @@
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://github.com/ra4ster/deepity/blob/main/CMakeLists.txt)
 [![Stars](https://img.shields.io/github/stars/ra4ster/deepity?style=social)](https://github.com/ra4ster/deepity/stargazers)
 
-![](resources/Deepity.png)
+![](resources/chicken_100.png)
 
-Deepity is a Predictive Coding (PC) library built from scratch in C++ for low-overhead, CPU-optimized inference and learning, with an optional CUDA backend in development. It implements the same class of algorithm as [ngc-learn](https://github.com/NACLab/ngc-learn), the JAX-based reference library for predictive coding networks, but as an independent C++ engine rather than a wrapper or port.
+## What is this?
 
-Building from source:
+Most neural networks learn using backpropagation: a single error signal computed at the output gets sent backward through every layer in sequence. Predictive coding is a different way to train a network. Instead of one long backward pass, each layer keeps its own internal guess about what it expects to see, compares that guess to what actually arrived from the layer below, and adjusts locally to reduce the difference. No signal has to travel end to end, and no layer needs to know anything about layers it isn't directly connected to.
+
+Deepity is a predictive coding library for Python and C++, built to make this style of network fast and practical to actually run. It's written from scratch in C++, tuned for CPU (hand-written SIMD kernels, a contiguous memory layout, an optional Intel MKL backend), with GPU support in development.
+
+## Installation
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/ra4ster/deepity
-
-# 2. Build with Python
+cd deepity
 python build.py
-
-# python build.py [Release/Debug] [OpenBLAS/MKL] [--native/--fast/--distributed] [--clean] [--jobs=N] [--no-cuda] [--verbose]
 ```
 
-We recommend `pip install rich` for a live build dashboard.
+```bash
+python build.py [Release/Debug] [OpenBLAS/MKL] [--native/--fast/--distributed] [--clean] [--jobs=N] [--no-cuda] [--pgo] [--verbose]
+```
+
+`--pgo` runs a full profile-guided optimization pass: builds an instrumented binary, runs a short representative workload to collect real branch and call-frequency data, then rebuilds using it. Roughly doubles build time; the workload itself takes well under a minute.
+
+`pip install rich` first for a live build dashboard.
 
 <div align="center">
 <img src="resources/buildingdeepity.png" alt="Rich build visuals" width="700" />
 </div>
 
-### Training MNIST on CPU
-
-<div align="center">
-<img src="resources/MNIST_results.png" alt="Results training mnist" width="500"/>
-</div>
-
----
-
-## Matching and exceeding a reference implementation
-
-We spent a significant part of this project's development reconstructing ngc-learn's predictive coding algorithm directly from its documentation and source, rather than assuming the textbook description was the whole story. Two specific findings from that process:
-
-**The activation function is applied before the linear transform, not after.** The commonly cited form is `mu = phi(Wz + b)`. The formula ngc-learn actually runs is `mu = W * phi(z) + b`, confirmed against both its documented differential equations and its real synapse wiring code.
-
-**The feedback pathway uses a separate, independently initialized matrix, not the transpose of the forward weights.** The clean textbook notation for the backward error signal is `(W)^T * e`. The actual implementation wires a distinct StaticSynapse, randomly initialized and never updated during training: feedback alignment (Lillicrap et al., 2016) rather than symmetric backprop-style weights.
-
-Once both of these were implemented and matched against ngc-learn's own documented hyperparameters (weight init range, optimizer, learning rate schedule), our SimplePCN variant trained on MNIST outperformed ngc-learn's published reference run, on CPU, with no JIT compilation:
-
-<div align="center">
-<img src="resources/accuracy_comparison.png" alt="Accuracy comparison against ngc-learn" width="650" />
-</div>
-
-Both curves use the same 784-512-512-10 architecture and the same 20-step settling budget per batch. Deepity's run reached 96.72% test accuracy versus ngc-learn's 95.09%, and converged faster in the earlier epochs.
-
-Extending training to 50 epochs pushes test accuracy to 97.99%, though the gains past epoch 30 are modest, likely some combination of the learning rate schedule decaying toward its floor and the accuracy curve itself having less room left to climb. We haven't isolated which effect dominates.
-
-Deepity also includes GaussSeidelPCN, a second settling scheme (sequential-sweep rather than fully synchronous updates) that separately reached 96.86% test accuracy in earlier testing, though under a different activation configuration than the run above and not yet re-verified under the corrected setup. We are treating that as an open item rather than a confirmed second result.
-
----
-
-## Core architecture and optimizations
-
-**Custom SIMD micro-kernels.** Activation functions are implemented with raw AVX2 and AVX-512 intrinsics rather than relying on standard library calls.
-
-<div align="center">
-<img src="resources/ActivationCPUMetrics.png" alt="Error and speedup versus standard library" width="500" />
-</div>
-
-**Mu-caching.** A clamped layer's outgoing prediction is provably constant for the duration of a settling loop, since neither its state nor the weights change mid-settle. Skipping its recomputation is an exact optimization rather than an approximation, and it targets a class of redundant work that a statically JIT-compiled computation graph cannot skip as cheaply at runtime.
-
-**Contiguous arena allocator.** All layer buffers within a network are packed into a single contiguous memory block, improving L1/L2 cache locality and removing pointer-chasing across the layer hierarchy.
-
-**Optional Intel MKL backend.** Build with `-DDEEPITY_USE_MKL=ON` (falls back to OpenBLAS automatically if MKL isn't found on the system) for a further speedup on Intel hardware.
-
----
-
-## Benchmarks
-
-<div align="center">
-<img src="resources/perf.svg" alt="Flamegraph" width="500" />
-</div>
-
-On a Dell Inspiron 16 Plus 7620 (12th Gen Intel Core i7-12700H, 20 logical processors), Deepity sustains approximately 123 GFLOPS during predictive-coding inference and learning when compiled with Clang.
-
-Benchmark configuration: architecture 784-512-256-64-10, batch size 256, 157 iterations, average runtime approximately 1.175s CPU time. The dominant computation is batched single-precision GEMM, corresponding to roughly 144.4 GFLOPs of floating-point work.
-
-<div align="center">
-<img src="resources/PyTest.png" width="500" alt="Comparing deepity to a naive NumPy implementation" />
-</div>
-
-| Implementation | Avg (ms) | Min (ms) | Max (ms) |
-| :-------------- | -------: | -------: | -------: |
-| Deepity (Python/Clang) | 1169.1 | 1167.8 | 1172.5 |
-| NumPy (naive) | 4201.6 | 4147.5 | 4281.3 |
-
-### Batching
-
-<div align="center">
-<img src="resources/batchsize.png" alt="Batch size vs performance" width="500" />
-</div>
-
-| Batch Size | Time (ms) |
-| ---------- | --------- |
-| 1 (none) | 4484 |
-| 16 | 3149 |
-| 64 | 2338 |
-| 256 | 2233 |
-| 512 | 2265 |
-
-A batch size of 256 was the sweet spot before cache eviction penalties began to outweigh the throughput gains of larger batches.
-
-### Threading
-
-Naive multithreading across small batch sizes made performance worse, not better, since the CPU spent more time waking threads than doing matrix math. The break-even point where matrix payloads outgrow thread spin-up latency:
-
-| Batch Size | Threads | Throughput (items/sec) | Result |
-| ---------- | ------- | ----------------------: | ------ |
-| 16-256 | 1 | ~2.6k | Single-thread dominates |
-| 16-256 | 4 | ~2.5k | Multithreading penalizes performance |
-| 1024 | Max | ~11.7k | 4.5x speedup |
-| 16384 | Max | ~14.3k | Peak multi-threaded scaling |
-
----
-
-## Python
+## Quick start
 
 ```python
 import numpy as np
@@ -141,6 +53,95 @@ predictions = net.predict_with_projection(X_batch, steps=20)
 ```
 
 Working examples live in [`examples/`](examples/), including full MNIST training, XOR, and comparisons against feed-forward and PyTorch baselines.
+
+<div align="center">
+<img src="resources/MNIST_results.png" alt="Results training mnist" width="500"/>
+</div>
+
+---
+
+## Performance
+
+Deepity is built CPU-first, and most of its design choices exist to make that fast rather than just correct.
+
+### Training speed
+
+Training a 784-512-512-10 network on MNIST, measured directly against two other predictive-coding libraries on the same task:
+
+<div align="center">
+<img src="resources/mnist_speed_comparison.png" alt="Training time per epoch comparison" width="550" />
+</div>
+
+Deepity also reached higher test accuracy than the JAX-based reference implementation on this task (97.04% vs 95.09%), though the two use meaningfully different architectural configurations, and this isn't the main point: the speed difference holds regardless of which one happens to score higher on a given run.
+
+### Activation functions
+
+Custom SIMD kernels (AVX2/AVX-512, backed by SLEEF) versus naive standard-library loops, across a range of array sizes:
+
+<div align="center">
+<img src="resources/ActivationCPUMetrics.png" alt="Activation function benchmark" width="650" />
+</div>
+
+The custom kernels are meaningfully faster for `tanh` and `sigmoid`, both of which lean on expensive transcendental math where a hand-tuned vectorized implementation has real room to win. `relu` is the exception: it's simple enough that the compiler's own auto-vectorizer handles a plain loop just as well, and our hand-written version actually runs slower there. We're keeping this result visible rather than only showing the wins.
+
+### Batching
+
+<div align="center">
+<img src="resources/batchsize.png" alt="Batch size vs performance" width="600" />
+</div>
+
+Throughput rises with batch size up to a point (peaking around batch size 512 on the hardware this was measured on) before cache-eviction costs start eating into the gains from larger batches.
+
+### GEMM throughput
+
+<div align="center">
+<img src="resources/perf.svg" alt="Flamegraph" width="500" />
+</div>
+
+On a Dell Inspiron 16 Plus 7620 (12th Gen Intel Core i7-12700H, 20 logical processors), Deepity sustains approximately 123 GFLOPS during predictive-coding inference and learning when compiled with Clang. Benchmark configuration: architecture 784-512-256-64-10, batch size 256, 157 iterations, ~1.175s average CPU time, dominated by batched single-precision GEMM (~144.4 GFLOPs of floating-point work).
+
+<div align="center">
+<img src="resources/PyTest.png" width="500" alt="Comparing Deepity to a naive NumPy implementation" />
+</div>
+
+| Implementation         | Avg (ms) | Min (ms) | Max (ms) |
+| :--------------------- | -------: | -------: | -------: |
+| Deepity (Python/Clang) |   1169.1 |   1167.8 |   1172.5 |
+| NumPy (naive)          |   4201.6 |   4147.5 |   4281.3 |
+
+### Threading
+
+Naive multithreading across small batch sizes made performance worse, not better, since the CPU spent more time waking threads than doing matrix math:
+
+| Batch Size | Threads | Throughput (items/sec) | Result                               |
+| ---------- | ------- | ---------------------: | ------------------------------------ |
+| 16-256     | 1       |                  ~2.6k | Single-thread dominates              |
+| 16-256     | 4       |                  ~2.5k | Multithreading penalizes performance |
+| 1024       | Max     |                 ~11.7k | 4.5x speedup                         |
+| 16384      | Max     |                 ~14.3k | Peak multi-threaded scaling          |
+
+---
+
+## How it's built
+
+**Custom SIMD micro-kernels.** Activation functions are implemented with raw AVX2/AVX-512 intrinsics and SLEEF, not generic standard-library calls.
+
+**Mu-caching.** While a layer is clamped, its outgoing prediction is provably constant for the whole settling loop, since nothing feeding into it changes mid-settle. Skipping that recomputation is an exact optimization, not an approximation.
+
+**Contiguous memory arena.** Every layer's buffers live in one flat, cache-aligned allocation instead of scattered individual heap allocations, with an optional huge-pages backend for workloads that benefit from it.
+
+**Multiple network variants, choose what fits.** Deepity isn't a single fixed algorithm:
+
+| Variant                     | What it is                                                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SimplePCN`                 | Synchronous (Jacobi) settling, every layer updates together each step. The default starting point.                                                              |
+| `GaussSeidelPCN`            | Sequential-sweep settling, layers see each other's already-updated values within the same step. Generally higher accuracy per epoch, at a real throughput cost. |
+| `DiscriminativePCN`         | The original, precision-weighted variant, closest to the classical Whittington & Bogacz formulation.                                                            |
+| `ConvPCN` / `SimpleConvPCN` | Convolutional predictive coding layers, for image-shaped input rather than flat vectors.                                                                        |
+
+**Optional Intel MKL backend.** Build with `-DDEEPITY_USE_MKL=ON` for a further speedup on Intel hardware (falls back to OpenBLAS automatically if MKL isn't found).
+
+For the algorithmic details behind these (including a couple of surprising findings from comparing against other implementations), see [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
 
 ## C++
 
@@ -162,8 +163,6 @@ for (int epoch = 0; epoch < 1500; ++epoch) {
 
 std::vector<float> predictions = net.Predict(X, 150);
 ```
-
----
 
 ## Requirements
 
@@ -188,14 +187,15 @@ doxygen Doxyfile
 - [x] Python bindings (pybind11 and NumPy support)
 - [x] Mu-caching
 - [x] Optional Intel MKL backend
+- [x] Optional huge-pages memory backend
 - [x] GaussSeidelPCN sequential-sweep settling
 - [ ] Re-verify GaussSeidelPCN under the corrected activation configuration
 - [ ] CUDA-accelerated engine
-- [ ] File IO support
+- [ ] File IO support (save/load trained models)
 
 ## Contributing
 
-Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) before opening a pull request. We are particularly interested in hearing from anyone working in predictive coding, computational neuroscience, or CPU numerical performance.
+Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) before opening a pull request.
 
 ## Project structure
 
@@ -217,4 +217,4 @@ build.py                    Cross-platform CMake build and test runner
 
 Deepity is distributed under the terms in [`LICENSE`](LICENSE).
 
-<small><i>Ra4ster (Jack R) @ 2026</i></small>
+<small><i>Ra4ster (Jack R) @ 2026 ❤️</i></small>

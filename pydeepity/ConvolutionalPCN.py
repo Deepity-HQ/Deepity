@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 class ConvolutionalPCN(dy.ConvPCNetwork):
     """
-    A Convolutional Predictive Coding Network (PCN) wrapper for the Deepity C++ backend.
+    A Convolutional Predictive Coding Network (PCN) wrapper for the standard precision-weighted Deepity C++ backend.
     """
     def __init__(self, batch_size: int) -> None:
         super().__init__(batch_size)
@@ -35,9 +35,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         if n_given == 0:
             if self._last_shape is None:
-                raise ValueError(
-                    "First add_layer() call must specify in_channels, in_height, and in_width explicitly."
-                )
+                raise ValueError("First add_layer() call must specify in_channels, in_height, and in_width explicitly.")
             in_channels, in_height, in_width = self._last_shape
         elif n_given != 3:
             raise ValueError("in_channels/in_height/in_width must be given ALL together or OMITTED all together.")
@@ -54,43 +52,27 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         else:
             self._last_shape = None
 
-    def compile(self) -> None:
-        super().compile()
-
-    def randomize_weights(self) -> None:
-        super().randomize_weights()
-
     def set_learning_rate(self, lr: float) -> None:
         for layer in self.layers:
             layer.set_learning_rate(lr)
 
-    def set_inference_rate(self, ir: float) -> None:
-        for layer in self.layers:
-            layer.set_inference_rate(ir)
-
-    def set_precision_rate(self, pr: float) -> None:
-        for layer in self.layers:
-            layer.set_precision_rate(pr)
+    def clamp_input(self, X: npt.NDArray[np.float32]) -> None:
+        super().clamp_input(X.flatten())
+        
+    def project_forward(self) -> None:
+        super().project_forward()
 
     def train_step(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
         return super().train_step(X.flatten(), Y.flatten(), steps)
 
+    def train_step_with_projection(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
+        return super().train_step_with_projection(X.flatten(), Y.flatten(), steps)
+
     def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
         return super().predict(X.flatten(), steps)
 
-    def fit(
-        self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
-        epochs: int,
-        steps: int,
-        initial_lr: float = 0.01,
-        decay_rate: float = 1.0,
-        shuffle: bool = True,
-    ) -> "ConvolutionalPCN":
-        """
-        Runs a full multi-epoch training loop with a live rich progress display.
-        Delegates per-batch execution to `train_step()`.
-        """
-        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
-        return self
+    def predict_with_projection(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
+        return super().predict_with_projection(X.flatten(), steps)
+
+    def update_precision(self) -> None:
+        super().update_precision()

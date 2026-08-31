@@ -1,0 +1,24 @@
+rose0  ~/Projects/deepity  ‹ main ● ›  ❯ python TEMP2.py
+Loading MNIST dataset into memory...
+Initializing Optuna study for ConvolutionalPCN...
+[I 2026-08-29 23:31:24,999] A new study created in memory with name: ConvPCN_MNIST
+[I 2026-08-29 23:33:38,542] Trial 0 finished with value: 0.942 and parameters: {'lr': 0.0006310026691282312, 'ir': 0.0414526419837795, 'steps': 31, 'decay_rate': 0.9743623692570923}. Best is trial 0 with value: 0.942.
+[I 2026-08-29 23:35:09,939] Trial 1 finished with value: 0.9452 and parameters: {'lr': 0.0010867510864429998, 'ir': 0.018665333590043652, 'steps': 21, 'decay_rate': 0.8761708526118538}. Best is trial 1 with value: 0.9452.
+[I 2026-08-29 23:37:03,768] Trial 2 finished with value: 0.944 and parameters: {'lr': 0.002412977465635889, 'ir': 0.050699772236432225, 'steps': 26, 'decay_rate': 0.9703319044058035}. Best is trial 1 with value: 0.9452.
+[I 2026-08-29 23:40:01,434] Trial 3 finished with value: 0.9524 and parameters: {'lr': 0.0011401305352746914, 'ir': 0.015273047218833016, 'steps': 42, 'decay_rate': 0.8629120486170989}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:43:02,741] Trial 4 finished with value: 0.9444 and parameters: {'lr': 0.0022444380979099463, 'ir': 0.04210382262649487, 'steps': 43, 'decay_rate': 0.9778341480574667}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:45:46,159] Trial 5 finished with value: 0.9404 and parameters: {'lr': 0.0007867847542750829, 'ir': 0.05644276771372289, 'steps': 38, 'decay_rate': 0.984848032897873}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:48:10,718] Trial 6 finished with value: 0.6104 and parameters: {'lr': 0.00212766897747769, 'ir': 0.13774569368914488, 'steps': 34, 'decay_rate': 0.9872774928387382}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:50:04,614] Trial 7 finished with value: 0.9228 and parameters: {'lr': 0.0003613057691321846, 'ir': 0.04624925182635542, 'steps': 29, 'decay_rate': 0.8867362497549087}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:51:51,450] Trial 8 finished with value: 0.7088 and parameters: {'lr': 0.002938673617454498, 'ir': 0.1452848540403547, 'steps': 27, 'decay_rate': 0.8699034581425609}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:53:25,002] Trial 9 finished with value: 0.8764 and parameters: {'lr': 0.00010727447528290434, 'ir': 0.13069122317890916, 'steps': 23, 'decay_rate': 0.8869211698371259}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:56:17,743] Trial 10 finished with value: 0.9024 and parameters: {'lr': 0.00017195847050884827, 'ir': 0.09996662714408143, 'steps': 44, 'decay_rate': 0.9317805755661411}. Best is trial 3 with value: 0.9524.
+[I 2026-08-29 23:57:43,423] Trial 11 finished with value: 0.9544 and parameters: {'lr': 0.0010498171103973616, 'ir': 0.012333324299187445, 'steps': 20, 'decay_rate': 0.8500012000045811}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:00:12,410] Trial 12 finished with value: 0.9484 and parameters: {'lr': 0.0012085742653280072, 'ir': 0.010175718449271134, 'steps': 38, 'decay_rate': 0.852019167558876}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:02:35,662] Trial 13 finished with value: 0.9316 and parameters: {'lr': 0.0004296964922591072, 'ir': 0.02338597750313778, 'steps': 37, 'decay_rate': 0.8513706159862302}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:05:17,587] Trial 14 finished with value: 0.9432 and parameters: {'lr': 0.0013202007127542184, 'ir': 0.06919191388170062, 'steps': 41, 'decay_rate': 0.9058244017374865}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:07:27,100] Trial 15 finished with value: 0.936 and parameters: {'lr': 0.0006077429294295449, 'ir': 0.030538860678498998, 'steps': 33, 'decay_rate': 0.9101690422321176}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:08:54,143] Trial 16 finished with value: 0.9456 and parameters: {'lr': 0.001610272960696377, 'ir': 0.07567395782936522, 'steps': 20, 'decay_rate': 0.8661717766060747}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:10:35,501] Trial 17 finished with value: 0.9444 and parameters: {'lr': 0.0008524614418046672, 'ir': 0.013809273204056558, 'steps': 25, 'decay_rate': 0.8507183546618092}. Best is trial 11 with value: 0.9544.
+[I 2026-08-30 00:42:05,447] Trial 18 finished with value: 0.9316 and parameters: {'lr': 0.0002852524417655904, 'ir': 0.0320175159901368, 'steps': 35, 'decay_rate': 0.9025538083938672}. Best is trial 11 with value: 0.9544.
+^C[W 2026-08-30 00:44:01,159] Trial 19 failed with parameters: {'lr': 0.0004975274154461764, 'ir': 0.07224452094136122, 'steps': 30, 'decay_rate': 0.9445376949804368} because of the following error: KeyboardInterrupt().

@@ -180,7 +180,7 @@ namespace Deep
         for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();
 
-        arena = std::make_unique<MemoryArena>(total_floats_needed);
+        arena = std::make_unique<MemoryArena>(total_floats_needed, true);
         for (auto &layer : layers)
             layer->BindMemory(*arena);
     }

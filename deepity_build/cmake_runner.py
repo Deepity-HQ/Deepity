@@ -16,7 +16,11 @@ def find_generator() -> tuple[str | None, str]:
     return ninja, "Ninja" if ninja else "CMake"
 
 
-def configure_command(config: BuildConfig, ninja: str | None) -> list[str]:
+def configure_command(config: BuildConfig, ninja: str | None, pgo_phase: str | None = None) -> list[str]:
+    """pgo_phase: None (no PGO), "GENERATE", or "USE" -- distinguishes
+    which pass of the two-pass PGO workflow this configure call is for.
+    A single config.pgo boolean can't express this on its own, since
+    both passes share the same BuildConfig."""
     profile = config.profile
 
     cmd = [
@@ -26,10 +30,14 @@ def configure_command(config: BuildConfig, ninja: str | None) -> list[str]:
         f"-DCMAKE_BUILD_TYPE={config.build_type}",
         f"-DDEEPITY_BUILD_TESTS={'ON' if config.build_tests else 'OFF'}",
         f"-DDEEPITY_ENABLE_CUDA={'ON' if config.cuda else 'OFF'}",
-        f"-DDEEPITY_USE_MKL={'ON' if config.blas else 'OFF'}",
+        f"-DDEEPITY_USE_MKL={'ON' if config.blas == 'MKL' else 'OFF'}",
         f"-DDEEPITY_BUILD_PYTHON_BINDINGS={'ON' if config.python_bindings else 'OFF'}",
         f"-DDEEPITY_ARCH_FLAGS={profile.unix_flags}",
     ]
+
+    if pgo_phase in ("GENERATE", "USE"):
+        cmd.append(f"-DDEEPITY_PGO_MODE={pgo_phase}")
+        cmd.append(f"-DDEEPITY_PGO_DATA_DIR={config.pgo_data_dir}")
 
     if profile.msvc_flags:
         cmd.append(f"-DDEEPITY_MSVC_ARCH_FLAGS={profile.msvc_flags}")

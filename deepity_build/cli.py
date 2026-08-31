@@ -117,6 +117,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="Print available --native/--fast/--distributed profiles and exit",
     )
+    parser.add_argument(
+        "--pgo",
+        action="store_true",
+        help=(
+            "Profile-Guided Optimization: builds an instrumented binary, "
+            "runs a short representative workload against it to collect "
+            "real branch/call-frequency data, then rebuilds using that "
+            "data. GCC/Clang only. Roughly doubles total build time (two "
+            "full compiles) but the workload run itself is short -- a few "
+            "dozen batches, not a full training run."
+        ),
+    )
 
     args = parser.parse_args(argv)
 
@@ -153,7 +165,127 @@ def build_config_from_args(args: argparse.Namespace) -> BuildConfig:
         python_bindings=not args.no_python_bindings,
         clean=args.clean,
         verbose=args.verbose,
+        pgo=args.pgo,
     )
+
+
+def _run_configure_build_test(
+    config: BuildConfig,
+    ninja: str | None,
+    generator: str,
+    log_output,
+    pgo_phase: str | None = None,
+    run_tests_override: bool | None = None,
+) -> None:
+    """One full configure+build[+test] pass, reported through its own
+    reporter session. Used directly for the normal (non-PGO) path, and
+    called twice (once per phase) for the PGO workflow -- each phase gets
+    a clean reporter lifecycle rather than sharing one across two builds.
+    """
+    git = get_git_info()
+    reporter = make_reporter(config, git, generator)
+    run_tests = config.run_tests if run_tests_override is None else run_tests_override
+
+    with reporter:
+        if not config.deps_dir.is_dir():
+            reporter.clean_reconfigure()
+            if config.build_dir.exists():
+                shutil.rmtree(config.build_dir)
+
+        # ────────────────────────────────────────────────────────────
+        # Configure
+        # ────────────────────────────────────────────────────────────
+        configure_time: float | None = None
+
+        if pgo_phase is not None or not config.cache_file.is_file():
+            # PGO phases always reconfigure -- GENERATE and USE need
+            # genuinely different compiler flags, so a cached
+            # configuration from a previous phase can't be reused.
+            cmd = configure_command(config, ninja, pgo_phase=pgo_phase)
+
+            reporter.configure_started()
+            start = time.perf_counter()
+
+            return_code, config_output = run_captured_command(cmd)
+            log_output("CMake Configuration", config_output)
+
+            configure_time = time.perf_counter() - start
+
+            if return_code != 0:
+                reporter.configure_failed(config_output)
+                sys.exit(return_code)
+
+            reporter.configure_complete(configure_time)
+        else:
+            reporter.configure_cached()
+
+        # ────────────────────────────────────────────────────────────
+        # Build
+        # ────────────────────────────────────────────────────────────
+        reporter.build_started()
+        start = time.perf_counter()
+
+        return_code, build_output = run_streaming_command(
+            build_command(config),
+            on_line=reporter.build_line,
+        )
+        log_output("Compilation", build_output)
+
+        build_time = time.perf_counter() - start
+
+        if return_code != 0:
+            reporter.build_failed(build_output)
+            sys.exit(return_code)
+
+        reporter.build_complete(build_time)
+
+        if not run_tests:
+            reporter.success(configure_time, build_time, 0.0)
+            return
+
+        # ────────────────────────────────────────────────────────────
+        # Run tests via CTest
+        # ────────────────────────────────────────────────────────────
+        reporter.tests_started()
+        start = time.perf_counter()
+
+        cmd = test_command(config)
+
+        return_code, test_output = run_streaming_command(
+            cmd,
+            on_line=reporter.test_line,
+        )
+        log_output("Tests", test_output)
+
+        test_time = time.perf_counter() - start
+
+        if return_code != 0:
+            reporter.tests_failed(test_output)
+            sys.exit(return_code)
+
+        reporter.tests_complete(test_time)
+        reporter.success(configure_time, build_time, test_time)
+
+
+def _run_pgo_workload(config: BuildConfig) -> None:
+    """Runs the short, dedicated profile-collection workload against the
+    just-built instrumented binary. Deliberately NOT the full mnist.py
+    training run -- PGO only needs to see which code paths are hot, and
+    the settling loop's structure repeats identically on batch 1 and
+    batch 234, so a few dozen batches already captures the same
+    branch/call-frequency information a full run would, at a fraction of
+    the cost. This cost is paid on every --pgo build, not once."""
+    import subprocess
+
+    print("\n--- PGO: running representative workload to collect profile data ---")
+    result = subprocess.run(
+        [sys.executable, "pgo_workload.py"],
+        cwd=Path(__file__).resolve().parent.parent,
+    )
+    if result.returncode != 0:
+        print("PGO workload run failed -- aborting before the optimized rebuild.")
+        sys.exit(result.returncode)
+    print("--- PGO: profile data collected, proceeding to optimized rebuild ---\n")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -181,88 +313,26 @@ def main(argv: list[str] | None = None) -> None:
             f.write(output)
             f.write("\n\n")
 
-    git = get_git_info()
-    reporter = make_reporter(config, git, generator)
+    if not config.pgo:
+        _run_configure_build_test(config, ninja, generator, log_output)
+        return
 
-    with reporter:
-        # ────────────────────────────────────────────────────────────────
-        # Dependencies: force a clean reconfigure if _deps is missing
-        # ────────────────────────────────────────────────────────────────
-        if not config.deps_dir.is_dir():
-            reporter.clean_reconfigure()
-            if config.build_dir.exists():
-                shutil.rmtree(config.build_dir)
+    # ────────────────────────────────────────────────────────────────────
+    # PGO: two full passes. GENERATE builds an instrumented binary (tests
+    # skipped -- irrelevant for a throwaway instrumented build); the
+    # workload run collects real profile data; USE rebuilds with it.
+    # ────────────────────────────────────────────────────────────────────
+    if config.pgo_data_dir.exists():
+        shutil.rmtree(config.pgo_data_dir)
+    config.pgo_data_dir.mkdir(parents=True, exist_ok=True)
 
-        # ────────────────────────────────────────────────────────────────
-        # Configure
-        # ────────────────────────────────────────────────────────────────
-        configure_time: float | None = None
+    print("=== PGO pass 1/2: instrumented (GENERATE) build ===")
+    _run_configure_build_test(config, ninja, generator, log_output, pgo_phase="GENERATE", run_tests_override=False)
 
-        if not config.cache_file.is_file():
-            cmd = configure_command(config, ninja)
+    _run_pgo_workload(config)
 
-            reporter.configure_started()
-            start = time.perf_counter()
-
-            return_code, config_output = run_captured_command(cmd)
-            log_output("CMake Configuration", config_output)
-
-            configure_time = time.perf_counter() - start
-
-            if return_code != 0:
-                reporter.configure_failed(config_output)
-                sys.exit(return_code)
-
-            reporter.configure_complete(configure_time)
-        else:
-            reporter.configure_cached()
-
-        # ────────────────────────────────────────────────────────────────
-        # Build
-        # ────────────────────────────────────────────────────────────────
-        reporter.build_started()
-        start = time.perf_counter()
-
-        return_code, build_output = run_streaming_command(
-            build_command(config),
-            on_line=reporter.build_line,
-        )
-        log_output("Compilation", build_output)
-
-        build_time = time.perf_counter() - start
-
-        if return_code != 0:
-            reporter.build_failed(build_output)
-            sys.exit(return_code)
-
-        reporter.build_complete(build_time)
-
-        if not config.run_tests:
-            reporter.success(configure_time, build_time, 0.0)
-            return
-
-        # ────────────────────────────────────────────────────────────────
-        # Run tests via CTest
-        # ────────────────────────────────────────────────────────────────
-        reporter.tests_started()
-        start = time.perf_counter()
-
-        cmd = test_command(config)
-
-        return_code, test_output = run_streaming_command(
-            cmd,
-            on_line=reporter.test_line,
-        )
-        log_output("Tests", test_output)
-
-        test_time = time.perf_counter() - start
-
-        if return_code != 0:
-            reporter.tests_failed(test_output)
-            sys.exit(return_code)
-
-        reporter.tests_complete(test_time)
-        reporter.success(configure_time, build_time, test_time)
+    print("=== PGO pass 2/2: optimized (USE) build ===")
+    _run_configure_build_test(config, ninja, generator, log_output, pgo_phase="USE")
 
 
 if __name__ == "__main__":

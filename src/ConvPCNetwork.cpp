@@ -115,4 +115,55 @@ namespace Deep
 
         return std::vector<float>(beliefs, beliefs + count);
     }
+
+    void ConvPCNetwork::ProjectForward() noexcept
+    {
+        for (size_t i = 0; i + 1 < layers.size(); ++i)
+        {
+            layers[i]->ComputeMuOnly();
+            const float *mu = layers[i]->GetMu();
+            float *nextZ = layers[i + 1]->GetBeliefs();
+            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+            std::memcpy(nextZ, mu, n * sizeof(float));
+        }
+    }
+
+    float ConvPCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
+    {
+        ResetState();
+        Clamp(x);
+        ProjectForward();
+        GetTerminalLayer()->ClampState(y);
+
+        float finalEnergy = 0.0f;
+        for (int t = 0; t < inferenceSteps; ++t)
+        {
+            finalEnergy = CalculateState();
+            UpdateState();
+        }
+
+        UpdateWeights();
+        GetTerminalLayer()->UnclampState();
+
+        return finalEnergy;
+    }
+
+    std::vector<float> ConvPCNetwork::PredictWithProjection(const std::vector<float> &x, int inferenceSteps)
+    {
+        ResetState();
+        Clamp(x);
+        ProjectForward();
+
+        for (int t = 0; t < inferenceSteps; ++t)
+        {
+            CalculateState();
+            UpdateState();
+        }
+
+        ConvPCLayer *terminal = GetTerminalLayer();
+        const float *beliefs = terminal->GetBeliefs();
+        size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
+
+        return std::vector<float>(beliefs, beliefs + count);
+    }
 }

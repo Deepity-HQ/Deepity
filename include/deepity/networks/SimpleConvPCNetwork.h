@@ -92,6 +92,10 @@ namespace Deep
         /// layer's settled beliefs (flattened, batched).
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
+        void ProjectForward() noexcept;
+        float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+        std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
+
     private:
         std::vector<std::unique_ptr<SimpleConvPCLayer>> layers;
         std::unique_ptr<MemoryArena> arena;

@@ -74,6 +74,7 @@ class BuildConfig:
     python_bindings: bool
     clean: bool
     verbose: bool
+    pgo: bool = False
     build_root: Path = Path("build")
 
     @property
@@ -91,3 +92,10 @@ class BuildConfig:
     @property
     def cache_file(self) -> Path:
         return self.build_dir / "CMakeCache.txt"
+
+    @property
+    def pgo_data_dir(self) -> Path:
+        """Where GCC/Clang -fprofile-generate writes .gcda/.profraw files,
+        and where -fprofile-use reads them back from. Shared by both
+        phases of the PGO workflow."""
+        return self.build_root / "pgo-data"

@@ -40,6 +40,11 @@ namespace Deep
 {
     using ActivationFn = void (*)(float *, size_t);
     using DerivativeFn = void (*)(float *, size_t, bool);
+    // Two-buffer variant: reads from src, writes the derivative directly
+    // into dst, in one pass. Eliminates the copy-then-derive pattern
+    // (cblas_scopy + DerivativeFn) callers currently need when they can't
+    // afford to mutate src in place -- src stays untouched throughout.
+    using DerivativeFn2 = void (*)(float *RESTRICT, const float *RESTRICT, size_t);
 
     enum class ActivationType : uint8_t
     {
@@ -65,6 +70,11 @@ namespace Deep
     static inline void dSigmoid(float *, size_t, bool) noexcept;
     static inline void dTanh(float *, size_t, bool) noexcept;
     static inline void dLinear(float *, size_t, bool) noexcept;
+
+    static inline void dReluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+    static inline void dSigmoidInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+    static inline void dTanhInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+    static inline void dLinearInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
 
     static inline ActivationFn To_Fn(ActivationType type)
     {
@@ -98,6 +108,26 @@ namespace Deep
             return dTanh;
         case ActivationType::dLINEAR:
             return dLinear;
+        case ActivationType::NONE:
+        default:
+            return nullptr;
+        }
+    }
+
+    /// @brief Dispatches to the two-buffer (dst, src, n) derivative
+    /// variant for the given activation type -- see DerivativeFn2.
+    static inline DerivativeFn2 To_dFn2(ActivationType dType)
+    {
+        switch (dType)
+        {
+        case ActivationType::dRELU:
+            return dReluInto;
+        case ActivationType::dSIGMOID:
+            return dSigmoidInto;
+        case ActivationType::dTANH:
+            return dTanhInto;
+        case ActivationType::dLINEAR:
+            return dLinearInto;
         case ActivationType::NONE:
         default:
             return nullptr;
@@ -425,6 +455,58 @@ namespace Deep
             x[i] = (x[i] > 0.0f) ? 1.0f : 0.0f;
         }
     }
+
+    /// @brief Two-buffer variant of dRelu: reads src, writes the
+    /// derivative directly into dst.
+    static inline void dReluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
+    {
+        assert(n != 0 && "n must not be 0.");
+        assert(dst != nullptr && "dst must not be null.");
+        assert(src != nullptr && "src must not be null.");
+
+        size_t i = 0;
+
+#if defined(__AVX512F__)
+        __m512 ones = _mm512_set1_ps(1.0f);
+        __m512 zeros = _mm512_setzero_ps();
+        size_t simd_end = n - (n % 16);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 16)
+        {
+            __m512 s = _mm512_loadu_ps(src + j);
+            __mmask16 m = _mm512_cmp_ps_mask(s, zeros, _CMP_GT_OQ);
+            _mm512_storeu_ps(dst + j, _mm512_mask_blend_ps(m, zeros, ones));
+        }
+        i = simd_end;
+#elif defined(__AVX2__) || defined(__AVX__)
+        __m256 ones = _mm256_set1_ps(1.0f);
+        __m256 zeros = _mm256_setzero_ps();
+        size_t simd_end = n - (n % 8);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 8)
+        {
+            __m256 s = _mm256_loadu_ps(src + j);
+            _mm256_storeu_ps(dst + j, _mm256_and_ps(ones, _mm256_cmp_ps(s, zeros, _CMP_GT_OQ)));
+        }
+        i = simd_end;
+#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 ones = _mm_set1_ps(1.0f);
+        __m128 zeros = _mm_setzero_ps();
+        size_t simd_end = n - (n % 4);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 4)
+        {
+            __m128 s = _mm_loadu_ps(src + j);
+            _mm_storeu_ps(dst + j, _mm_and_ps(ones, _mm_cmpgt_ps(s, zeros)));
+        }
+        i = simd_end;
+#endif
+
+        for (; i < n; i++)
+        {
+            dst[i] = (src[i] > 0.0f) ? 1.0f : 0.0f;
+        }
+    }
 #pragma endregion
 
 #define TANH_TINYLIMIT 0.000244140625f
@@ -548,6 +630,82 @@ namespace Deep
 
         for (; i < n; ++i)
             x[i] = 1.0f - x[i] * x[i];
+    }
+
+    /// @brief Two-buffer, single-pass tanh derivative: reads src, writes
+    /// 1-tanh(src)^2 directly into dst. Unlike dTanh(x, n, false), which
+    /// needs two full passes internally (activate in place, then derive
+    /// in place) plus a separate copy beforehand if src can't be
+    /// mutated, this computes tanh(src[i]) into a register and derives
+    /// from that same register immediately, with only one read of src
+    /// and one write to dst -- no intermediate array pass at all.
+    static inline void dTanhInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
+    {
+        assert(n != 0 && "n must not be 0.");
+        assert(dst != nullptr && "dst must not be null.");
+        assert(src != nullptr && "src must not be null.");
+
+        size_t i = 0;
+
+#if defined(__AVX512F__)
+        __m512 ones = _mm512_set1_ps(1.0f);
+        size_t simd_end = n - (n % 16);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 16)
+        {
+            __m512 s = _mm512_loadu_ps(src + j);
+            __m512 t = Sleef_tanhf16_u10avx512f(s);
+#ifdef __FMA__
+            __m512 res = _mm512_fnmadd_ps(t, t, ones); // 1 - t*t
+#else
+            __m512 res = _mm512_sub_ps(ones, _mm512_mul_ps(t, t));
+#endif
+            _mm512_storeu_ps(dst + j, res);
+        }
+        i = simd_end;
+#elif defined(__AVX2__)
+        __m256 ones = _mm256_set1_ps(1.0f);
+        size_t simd_end = n - (n % 8);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 8)
+        {
+            __m256 s = _mm256_loadu_ps(src + j);
+            __m256 t = Sleef_tanhf8_u10avx2(s);
+#ifdef __FMA__
+            __m256 res = _mm256_fnmadd_ps(t, t, ones); // 1 - t*t
+#else
+            __m256 res = _mm256_sub_ps(ones, _mm256_mul_ps(t, t));
+#endif
+            _mm256_storeu_ps(dst + j, res);
+        }
+        i = simd_end;
+#elif defined(__SSE4_1__) || defined(__SSE2__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 ones = _mm_set1_ps(1.0f);
+        size_t simd_end = n - (n % 4);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 4)
+        {
+            __m128 s = _mm_loadu_ps(src + j);
+#if defined(__SSE4_1__)
+            __m128 t = Sleef_tanhf4_u10sse4(s);
+#else
+            __m128 t = Sleef_tanhf4_u10sse2(s);
+#endif
+#ifdef __FMA__
+            __m128 res = _mm_fnmadd_ps(t, t, ones); // 1 - t*t
+#else
+            __m128 res = _mm_sub_ps(ones, _mm_mul_ps(t, t));
+#endif
+            _mm_storeu_ps(dst + j, res);
+        }
+        i = simd_end;
+#endif
+
+        for (; i < n; ++i)
+        {
+            float t = Sleef_tanhf_u10(src[i]);
+            dst[i] = 1.0f - t * t;
+        }
     }
 
 #pragma endregion
@@ -742,6 +900,84 @@ namespace Deep
             x[i] = x[i] * (1.0f - x[i]);
         }
     }
+
+    /// @brief Two-buffer, single-pass sigmoid derivative: reads src,
+    /// writes sigmoid(src)*(1-sigmoid(src)) directly into dst. Computes
+    /// the sigmoid into a register and derives from that same register
+    /// immediately -- one read of src, one write to dst, no intermediate
+    /// array pass.
+    static inline void dSigmoidInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
+    {
+        assert(n != 0 && "n must not be 0.");
+        assert(dst != nullptr && "dst must not be null.");
+        assert(src != nullptr && "src must not be null.");
+
+        size_t i = 0;
+
+#if defined(__AVX512F__)
+        __m512 one = _mm512_set1_ps(1.0f);
+        __m512 neg_one = _mm512_set1_ps(-1.0f);
+        size_t simd_end = n - (n % 16);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 16)
+        {
+            __m512 s = _mm512_loadu_ps(src + j);
+            __m512 neg_s = _mm512_mul_ps(s, neg_one);
+            __m512 exp_neg_s = Sleef_expf16_u10avx512f(neg_s);
+            __m512 den = _mm512_add_ps(exp_neg_s, one);
+            __m512 sig = _mm512_div_ps(one, den);
+            __m512 d = _mm512_fnmadd_ps(sig, sig, sig); // sig - sig^2 = sig*(1-sig)
+            _mm512_storeu_ps(dst + j, d);
+        }
+        i = simd_end;
+#elif defined(__AVX2__)
+        __m256 one = _mm256_set1_ps(1.0f);
+        __m256 neg_one = _mm256_set1_ps(-1.0f);
+        size_t simd_end = n - (n % 8);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 8)
+        {
+            __m256 s = _mm256_loadu_ps(src + j);
+            __m256 neg_s = _mm256_mul_ps(s, neg_one);
+            __m256 exp_neg_s = Sleef_expf8_u10avx2(neg_s);
+            __m256 den = _mm256_add_ps(exp_neg_s, one);
+            __m256 sig = _mm256_div_ps(one, den);
+#ifdef __FMA__
+            __m256 d = _mm256_fnmadd_ps(sig, sig, sig);
+#else
+            __m256 d = _mm256_sub_ps(sig, _mm256_mul_ps(sig, sig));
+#endif
+            _mm256_storeu_ps(dst + j, d);
+        }
+        i = simd_end;
+#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
+        __m128 one = _mm_set1_ps(1.0f);
+        __m128 neg_one = _mm_set1_ps(-1.0f);
+        size_t simd_end = n - (n % 4);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t j = 0; j < (ptrdiff_t)simd_end; j += 4)
+        {
+            __m128 s = _mm_loadu_ps(src + j);
+            __m128 neg_s = _mm_mul_ps(s, neg_one);
+            __m128 exp_neg_s = Sleef_expf4_u10sse2(neg_s);
+            __m128 den = _mm_add_ps(exp_neg_s, one);
+            __m128 sig = _mm_div_ps(one, den);
+#ifdef __FMA__
+            __m128 d = _mm_fnmadd_ps(sig, sig, sig);
+#else
+            __m128 d = _mm_sub_ps(sig, _mm_mul_ps(sig, sig));
+#endif
+            _mm_storeu_ps(dst + j, d);
+        }
+        i = simd_end;
+#endif
+
+        for (; i < n; i++)
+        {
+            float sig = 1.0f / (1.0f + std::exp(-src[i]));
+            dst[i] = sig * (1.0f - sig);
+        }
+    }
 #pragma endregion
 
     static inline void linear([[maybe_unused]] float *x, [[maybe_unused]] size_t n) noexcept {}
@@ -749,5 +985,13 @@ namespace Deep
     static inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
         std::fill_n(x, n, 1.0f);
+    }
+
+    /// @brief Two-buffer variant of dLinear -- src is unused (the
+    /// derivative of a linear function is a constant), kept for
+    /// signature consistency with To_dFn2's dispatch table.
+    static inline void dLinearInto(float *RESTRICT dst, [[maybe_unused]] const float *RESTRICT src, size_t n) noexcept
+    {
+        std::fill_n(dst, n, 1.0f);
     }
 }

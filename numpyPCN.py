@@ -135,7 +135,7 @@ class NumpyPCN:
 def main():
     X_train, Y_train, X_test, y_test_labels = load_canonical_mnist()
     
-    BATCH_SIZE = 250 # Match train_pcn.py's mb_size=250 exactly
+    BATCH_SIZE = 250 
     STEPS = 20
     EPOCHS = 15
     

@@ -5,6 +5,9 @@
 #include <stdexcept>
 #if defined(_WIN32)
 #include <malloc.h>
+#include <windows.h>
+#else
+#include <sys/mman.h>
 #endif
 
 /**
@@ -68,6 +71,66 @@ namespace Deep
             std::free(ptr);
 #endif
         }
+
+        /// @brief Attempts to allocate @p size bytes backed by huge pages.
+        /// This is genuinely opt-in and best-effort: on Linux, requests
+        /// Transparent Huge Pages via madvise(MADV_HUGEPAGE) on a normal
+        /// anonymous mmap -- this is a HINT to the kernel, not a
+        /// guarantee, and requires zero system-level configuration
+        /// (unlike explicit hugetlbfs, which needs pages pre-reserved via
+        /// /proc/sys/vm/nr_hugepages). On Windows, requests
+        /// MEM_LARGE_PAGES via VirtualAlloc, which requires the process
+        /// to hold SeLockMemoryPrivilege -- NOT granted by default, so
+        /// this will typically fail unless explicitly configured by an
+        /// administrator.
+        /// @param size Number of bytes to allocate.
+        /// @param[out] succeeded Set to true if huge-page-backed memory
+        /// was actually obtained, false otherwise. Never throws on
+        /// failure -- callers should fall back to AlignedAllocPortable()
+        /// when this is false.
+        /// @return Pointer to the allocated block if succeeded is true;
+        /// nullptr otherwise.
+        /// @warning A pointer returned here (when succeeded=true) must be
+        /// freed with HugePageFree(), never AlignedFreePortable() or
+        /// plain free() -- the underlying allocator (mmap/VirtualAlloc)
+        /// is incompatible with aligned_alloc's pairing.
+        inline void *HugePageAllocPortable(size_t size, bool &succeeded)
+        {
+            succeeded = false;
+#if defined(_WIN32)
+            void *ptr = VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+            if (ptr)
+                succeeded = true;
+            return ptr;
+#else
+            void *ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
+                              MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+            if (ptr == MAP_FAILED)
+                return nullptr;
+
+            // Best-effort hint -- if this fails, we still have valid,
+            // page-aligned (though not huge-page-backed) memory from the
+            // mmap itself, so this isn't treated as a hard failure.
+            madvise(ptr, size, MADV_HUGEPAGE);
+            succeeded = true;
+            return ptr;
+#endif
+        }
+
+        /// @brief Frees a block previously returned by
+        /// HugePageAllocPortable() with succeeded=true.
+        /// @param ptr Pointer to free.
+        /// @param size The exact size originally passed to
+        /// HugePageAllocPortable() -- required on POSIX systems, where
+        /// munmap() needs to know the mapping's length.
+        inline void HugePageFreePortable(void *ptr, size_t size)
+        {
+#if defined(_WIN32)
+            VirtualFree(ptr, 0, MEM_RELEASE);
+#else
+            munmap(ptr, size);
+#endif
+        }
     } // namespace detail
 
     /// @brief A 64-byte-aligned bump-pointer allocator over a single
@@ -86,6 +149,12 @@ namespace Deep
         /// Advances monotonically with each AllocateFloats() call and is
         /// never reset or reclaimed.
         size_t offset_bytes;
+        /// @brief True if base_ptr was obtained via HugePageAllocPortable()
+        /// and must therefore be freed with HugePageFreePortable(), not
+        /// AlignedFreePortable(). Huge pages are best-effort and opt-in
+        /// (see the constructor) -- this can be false even when huge
+        /// pages were requested, if the request wasn't honored.
+        bool used_huge_pages;
 
     public:
         /// @brief Allocates a single 64-byte-aligned buffer large enough
@@ -93,13 +162,38 @@ namespace Deep
         /// 64-byte boundary.
         /// @param total_floats Total number of floats this arena can
         /// hand out across all future AllocateFloats() calls combined.
-        /// @throws std::bad_alloc if the underlying aligned allocation
-        /// fails.
-        MemoryArena(size_t total_floats)
+        /// @param use_huge_pages Opt-in, best-effort request for
+        /// huge-page-backed memory (see HugePageAllocPortable() for the
+        /// platform-specific caveats). Defaults to false, preserving
+        /// existing behavior exactly for anyone not explicitly opting
+        /// in. Falls back safely to the standard aligned allocator if
+        /// the request isn't honored -- this never causes a hard
+        /// failure on its own.
+        /// @throws std::bad_alloc if the underlying allocation fails
+        /// (including the fallback path, if huge pages were requested
+        /// but unavailable).
+        explicit MemoryArena(size_t total_floats, bool use_huge_pages = false)
+            : used_huge_pages(false)
         {
             // Guarantee total capacity is a multiple of 64 bytes
             capacity_bytes = (total_floats * sizeof(float) + 63) & ~63;
-            base_ptr = static_cast<float *>(detail::AlignedAllocPortable(64, capacity_bytes));
+
+            if (use_huge_pages)
+            {
+                bool succeeded = false;
+                base_ptr = static_cast<float *>(detail::HugePageAllocPortable(capacity_bytes, succeeded));
+                used_huge_pages = succeeded;
+            }
+
+            if (!used_huge_pages)
+            {
+                // Either huge pages weren't requested, or the request
+                // wasn't honored (mmap/VirtualAlloc failed, or the
+                // system lacks the required configuration/privilege) --
+                // fall back to the standard aligned allocator rather
+                // than treating this as a hard failure.
+                base_ptr = static_cast<float *>(detail::AlignedAllocPortable(64, capacity_bytes));
+            }
 
             if (!base_ptr)
             {
@@ -108,12 +202,17 @@ namespace Deep
             offset_bytes = 0;
         }
 
-        /// @brief Frees the underlying aligned allocation, if any.
+        /// @brief Frees the underlying allocation, via whichever
+        /// deallocator matches the allocator actually used (see
+        /// used_huge_pages).
         ~MemoryArena()
         {
             if (base_ptr)
             {
-                detail::AlignedFreePortable(base_ptr);
+                if (used_huge_pages)
+                    detail::HugePageFreePortable(base_ptr, capacity_bytes);
+                else
+                    detail::AlignedFreePortable(base_ptr);
             }
         }
 
@@ -161,5 +260,13 @@ namespace Deep
         /// @brief Returns the arena's total capacity.
         /// @return The capacity, in bytes, rounded up to a multiple of 64.
         size_t GetCapacityBytes() const { return capacity_bytes; }
+        /// @brief Returns whether this arena's memory is actually
+        /// huge-page-backed. Since huge pages are requested on a
+        /// best-effort basis, this can be false even if use_huge_pages
+        /// was passed to the constructor, if the request wasn't honored
+        /// (system lacks configuration/privilege, or the allocation
+        /// call failed) and the arena silently fell back to the
+        /// standard aligned allocator instead.
+        bool UsedHugePages() const { return used_huge_pages; }
     };
 } // namespace Deep

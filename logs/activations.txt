@@ -1,0 +1,44 @@
+rose0  ~/Projects/deepity/build/Release/bin  ‹ main ● ›  ❯ ./ActivationBenchmark
+2026-08-30T20:23:30-04:00
+Running ./ActivationBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 3.29, 2.18, 1.04
+---------------------------------------------------------------------------------
+Benchmark                       Time             CPU   Iterations UserCounters...
+---------------------------------------------------------------------------------
+BM_Deep_Tanh/256              653 ns          653 ns      1063926 items_per_second=391.832M/s
+BM_Deep_Tanh/512             1058 ns         1059 ns       653563 items_per_second=483.294M/s
+BM_Deep_Tanh/784             1539 ns         1540 ns       464841 items_per_second=509.179M/s
+BM_Deep_Tanh/16384          29077 ns        28369 ns        25345 items_per_second=577.535M/s
+BM_Deep_Tanh/131072        130630 ns       108518 ns         5616 items_per_second=1.20783G/s
+BM_Std_Tanh/256              1104 ns         1103 ns       633281 items_per_second=232.168M/s
+BM_Std_Tanh/512              2052 ns         2049 ns       341578 items_per_second=249.93M/s
+BM_Std_Tanh/784              3061 ns         3056 ns       229250 items_per_second=256.526M/s
+BM_Std_Tanh/16384           61095 ns        60977 ns        11453 items_per_second=268.69M/s
+BM_Std_Tanh/131072         487335 ns       486194 ns         1439 items_per_second=269.588M/s
+BM_Deep_Sigmoid/256           275 ns          276 ns      2515014 items_per_second=927.447M/s
+BM_Deep_Sigmoid/512           384 ns          384 ns      1810932 items_per_second=1.33301G/s
+BM_Deep_Sigmoid/784           505 ns          506 ns      1408542 items_per_second=1.55036G/s
+BM_Deep_Sigmoid/16384        7658 ns         7648 ns        92314 items_per_second=2.14218G/s
+BM_Deep_Sigmoid/131072      60758 ns        60593 ns        11532 items_per_second=2.16314G/s
+BM_Std_Sigmoid/256            647 ns          647 ns      1077126 items_per_second=395.851M/s
+BM_Std_Sigmoid/512           1138 ns         1137 ns       617446 items_per_second=450.212M/s
+BM_Std_Sigmoid/784           1659 ns         1657 ns       422773 items_per_second=473.251M/s
+BM_Std_Sigmoid/16384        31588 ns        31536 ns        22213 items_per_second=519.539M/s
+BM_Std_Sigmoid/131072      250292 ns       249768 ns         2796 items_per_second=524.775M/s
+BM_Deep_Relu/256              256 ns          259 ns      2696386 items_per_second=988.961M/s
+BM_Deep_Relu/512              262 ns          266 ns      2626842 items_per_second=1.9219G/s
+BM_Deep_Relu/784              272 ns          275 ns      2552497 items_per_second=2.85401G/s
+BM_Deep_Relu/16384           1064 ns         1064 ns       658101 items_per_second=15.3922G/s
+BM_Deep_Relu/131072         16439 ns        16369 ns        42854 items_per_second=8.00725G/s
+BM_Std_Relu/256               166 ns          167 ns      3745898 items_per_second=1.53457G/s
+BM_Std_Relu/512               172 ns          173 ns      3902715 items_per_second=2.96393G/s
+BM_Std_Relu/784               187 ns          188 ns      3674571 items_per_second=4.17129G/s
+BM_Std_Relu/16384             924 ns          925 ns       760776 items_per_second=17.7066G/s
+BM_Std_Relu/131072           7961 ns         7907 ns        87504 items_per_second=16.577G/s
+rose0  ~/Projects/deepity/build/Release/bin  ‹ main ● ›  ❯ 

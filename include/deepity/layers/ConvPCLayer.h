@@ -110,6 +110,9 @@ namespace Deep
         /// per batch item.
         const float *GetErrors() const noexcept override { return e; }
 
+        /// @brief Returns this layer's top-down prediction buffer.
+        const float *GetMu() const noexcept { return mu; }
+
         /// @brief Flattened element count per batch item (inChannels*H*W).
         size_t GetInputSize() const noexcept override { return (size_t)inChannels * inHeight * inWidth; }
         /// @brief Flattened element count of this layer's OUTGOING

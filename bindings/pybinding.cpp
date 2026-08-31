@@ -421,14 +421,10 @@ void bind_networks(nb::module_ &m)
     return self.TrainStepWithProjection(xvec, yvec, steps); }, nb::arg("x"), nb::arg("y"), nb::arg("steps"))
         .def("predict_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, int steps)
              {
-    // 1. Extract the numpy buffer
-    // 2. Convert to std::vector for the C++ backend
     std::vector<float> xvec(x.data(), x.data() + x.size());
 
-    // 3. Run the C++ settling loop
     std::vector<float> out_beliefs = self.PredictWithProjection(xvec, steps);
 
-    // 4. Return directly as a (freshly allocated, copied) numpy array for Python
     return CopyToNewArray(out_beliefs.data(), {out_beliefs.size()}); }, nb::arg("x"), nb::arg("steps"), "Runs forward-projection init and settling loop entirely in C++, returning terminal beliefs.");
     nb::class_<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
         .def(nb::init<int>(), nb::arg("batch_size"))
@@ -474,7 +470,7 @@ void bind_networks(nb::module_ &m)
            if (index < 0) index += static_cast<std::ptrdiff_t>(layers.size());
            if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
            return layers[index].get(); }, nb::rv_policy::reference_internal);
-
+    
     nb::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
         .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
         .def("add_layer", [](Deep::ConvPCNetwork &self, int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, float lr, float ir, float pr, float lmbda, const std::string &activation, const std::string &activation_deriv)
@@ -519,7 +515,10 @@ void bind_networks(nb::module_ &m)
             if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
             return layers[index].get(); }, nb::rv_policy::reference_internal)
         .def("__repr__", [](const Deep::ConvPCNetwork &self)
-             { return "<ConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
+             { return "<ConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; })
+        .def("train_step_with_projection", &Deep::ConvPCNetwork::TrainStepWithProjection)
+        .def("predict_with_projection", &Deep::ConvPCNetwork::PredictWithProjection)
+        .def("project_forward", &Deep::ConvPCNetwork::ProjectForward);
 
     nb::class_<Deep::SimpleConvPCNetwork>(m, "SimpleConvPCNetwork", "Convolutional Predictive Coding Network built from SimpleConvPCLayers (precision-free, AdamW-capable).")
         .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
@@ -569,7 +568,10 @@ void bind_networks(nb::module_ &m)
             if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size())) throw nb::index_error();
             return layers[index].get(); }, nb::rv_policy::reference_internal)
         .def("__repr__", [](const Deep::SimpleConvPCNetwork &self)
-             { return "<SimpleConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; });
+             { return "<SimpleConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) + " batch_size=" + std::to_string(self.GetBatchSize()) + ">"; })
+        .def("train_step_with_projection", &Deep::SimpleConvPCNetwork::TrainStepWithProjection)
+        .def("predict_with_projection", &Deep::SimpleConvPCNetwork::PredictWithProjection)
+        .def("project_forward", &Deep::SimpleConvPCNetwork::ProjectForward);
 }
 
 // ============================================================================

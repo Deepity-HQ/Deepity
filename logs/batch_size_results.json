@@ -1,0 +1,37 @@
+[
+  {
+    "batch_size": 1,
+    "ms_per_batch": 1.03,
+    "items_per_sec": 967.6
+  },
+  {
+    "batch_size": 16,
+    "ms_per_batch": 6.67,
+    "items_per_sec": 2397.1
+  },
+  {
+    "batch_size": 64,
+    "ms_per_batch": 11.74,
+    "items_per_sec": 5450.0
+  },
+  {
+    "batch_size": 256,
+    "ms_per_batch": 39.1,
+    "items_per_sec": 6547.3
+  },
+  {
+    "batch_size": 512,
+    "ms_per_batch": 75.0,
+    "items_per_sec": 6826.6
+  },
+  {
+    "batch_size": 1024,
+    "ms_per_batch": 185.82,
+    "items_per_sec": 5510.7
+  },
+  {
+    "batch_size": 2048,
+    "ms_per_batch": 422.99,
+    "items_per_sec": 4841.8
+  }
+]

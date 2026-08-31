@@ -104,6 +104,7 @@ namespace Deep
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
         ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
 
+        const float *GetMu() const noexcept { return mu; }
         int GetInChannels() const noexcept { return inChannels; }
         int GetOutChannels() const noexcept { return outChannels; }
         int GetInHeight() const noexcept { return inHeight; }

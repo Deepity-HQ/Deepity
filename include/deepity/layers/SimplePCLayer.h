@@ -265,13 +265,7 @@ namespace Deep
                          // derivative), so caching must copy a preserved
                          // value back INTO mu each skipped step, not just
                          // skip writing to mu entirely
-        float *prevZ;    // z AT THE LAST RECOMPUTE, not the immediately
-                         // preceding step -- so cumulative drift across
-                         // several skipped steps is measured correctly,
-                         // rather than only ever comparing step-to-step
-        float *dz_dt;
-        float *bottom_up;
-        float *zF;              // this layer's OWN activated belief,
+       float *zF;              // this layer's OWN activated belief,
                                  // phi(z) -- needed both for the forward
                                  // GEMM (mu=zF@W+b) AND the weight
                                  // gradient (dW uses zF, not raw z),
@@ -287,13 +281,6 @@ namespace Deep
                                  // term, not the -e term already in
                                  // dz_dt, so it can't accumulate directly
                                  // into dz_dt via the GEMM itself
-        float *E;                // feedback-alignment matrix -- SEPARATE
-                                 // from W, same shape, randomly
-                                 // initialized once, NEVER updated.
-                                 // Matches ngc-learn's real wiring:
-                                 // feedback alignment (Lillicrap et al.),
-                                 // not W transposed.
-
         float lr;
         float ir;
         float lmbda;
@@ -310,6 +297,10 @@ namespace Deep
         SimplePCLayer *layerBelow;
         ActivationFn activation;
         DerivativeFn activationDerivative;
+        DerivativeFn2 activationDerivativeInto; // fused two-buffer derivative
+                                                  // (dst, src, n), resolved once
+                                                  // at construction alongside
+                                                  // activation/activationDerivative
         ActivationType activationType;
         OptimizerType opt = OptimizerType::SGD;
         // @private Optional Adam weights

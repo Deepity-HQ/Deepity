@@ -70,7 +70,7 @@ def main() -> None:
     net.compile()
     
     # 2. Engage C++ zero-energy bypass and mu caching
-    net.set_mu_cache_threshold(0.0) 
+    # net.set_mu_cache_threshold(0) 
     
     net.randomize_weights()
 

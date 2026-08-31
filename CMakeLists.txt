@@ -10,13 +10,12 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
 option(DEEPITY_BUILD_TESTS "Build the DeepityTests target" OFF)
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
+# Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
 
-# --- Global Architecture & SIMD Flags -------------------------------
-# NOTE: build.py always sets these explicitly based on --native/--fast/
-# --distributed. These CACHE defaults only matter if someone invokes cmake
-# directly. Default to the portable "fast" profile (AVX2+FMA, x86-64-v3)
-# rather than -march=native, since native binaries crash on other CPUs.
+# AMD ROCm Coming soon...
+
+# These are set automatically in build.py based on --native/distributed/fast
 set(DEEPITY_ARCH_FLAGS "-march=x86-64-v3 -mtune=generic" CACHE STRING "Architecture/SIMD flags (e.g., -march=native, -march=x86-64-v2)")
 set(DEEPITY_MSVC_ARCH_FLAGS "/arch:AVX2" CACHE STRING "Architecture flags for MSVC (empty = compiler default / most portable)")
 
@@ -43,6 +42,55 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# --- Profile-Guided Optimization (PGO) --------------------------------
+# Two-pass workflow driven by build.py, not something to invoke directly:
+# GENERATE builds an instrumented binary, a representative workload runs
+# against it to collect real branch/call-frequency data, then USE
+# rebuilds using that data. GCC/Clang only -- MSVC's PGO mechanism
+# (/GENPROFILE, a Visual-Studio-integrated flow) is different enough that
+# a single unified code path here isn't practical; MSVC falls back to a
+# plain, un-instrumented build with a warning instead of silently doing
+# something unexpected.
+set(DEEPITY_PGO_MODE "OFF" CACHE STRING "PGO mode: OFF, GENERATE, or USE")
+set_property(CACHE DEEPITY_PGO_MODE PROPERTY STRINGS OFF GENERATE USE)
+set(DEEPITY_PGO_DATA_DIR "${CMAKE_BINARY_DIR}/pgo-data" CACHE PATH "Directory for PGO profile data (shared by both GENERATE and USE passes)")
+
+if(NOT DEEPITY_PGO_MODE STREQUAL "OFF")
+    if(MSVC)
+        message(WARNING "DEEPITY_PGO_MODE=${DEEPITY_PGO_MODE} was requested, but "
+            "this codebase's PGO support targets GCC/Clang only -- MSVC's PGO "
+            "workflow differs significantly and isn't implemented here. "
+            "Building without PGO instrumentation.")
+    elseif(DEEPITY_PGO_MODE STREQUAL "GENERATE")
+        add_compile_options(-fprofile-generate=${DEEPITY_PGO_DATA_DIR})
+        add_link_options(-fprofile-generate=${DEEPITY_PGO_DATA_DIR})
+        message(STATUS "PGO: instrumented (GENERATE) build -- profile data will be written to ${DEEPITY_PGO_DATA_DIR}")
+    elseif(DEEPITY_PGO_MODE STREQUAL "USE")
+        add_compile_options(-fprofile-use=${DEEPITY_PGO_DATA_DIR})
+        add_link_options(-fprofile-use=${DEEPITY_PGO_DATA_DIR})
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+            # GCC-specific: tolerates minor profile/source mismatches
+            # gracefully instead of hard-failing. Clang doesn't need or
+            # recognize this flag.
+            add_compile_options(-fprofile-correction)
+        endif()
+        message(STATUS "PGO: optimized (USE) build -- reading profile data from ${DEEPITY_PGO_DATA_DIR}")
+    endif()
+endif()
+
+# --- Link-Time Optimization (LTO/IPO) --------------------------------
+# Uses CMake's portable INTERPROCEDURAL_OPTIMIZATION property rather than
+# a raw -flto flag: this correctly maps to -flto on GCC/Clang and
+# /GL+/LTCG on MSVC, and check_ipo_supported() lets this degrade
+# gracefully (a warning, not a hard build failure) on toolchains that
+# don't support it at all. Applied to Release builds only -- LTO
+# meaningfully slows compilation with no benefit for Debug builds.
+include(CheckIPOSupported)
+check_ipo_supported(RESULT DEEPITY_IPO_SUPPORTED OUTPUT DEEPITY_IPO_ERROR)
+if(NOT DEEPITY_IPO_SUPPORTED)
+    message(WARNING "LTO/IPO not supported by this toolchain: ${DEEPITY_IPO_ERROR}. Building without it.")
+endif()
 
 message(STATUS "CXX compiler: ${CMAKE_CXX_COMPILER}")
 
@@ -253,6 +301,7 @@ endif()
 set_target_properties(Deepity PROPERTIES
     POSITION_INDEPENDENT_CODE ON
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
 )
 
 # --- pydeepity ------------------------------------------------------
@@ -261,6 +310,10 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     nanobind_add_module(pydeepity bindings/pybinding.cpp)
 
     target_link_libraries(pydeepity PRIVATE Deepity)
+
+    set_target_properties(pydeepity PROPERTIES
+        INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
+    )
 
     if(WIN32)
         target_compile_definitions(pydeepity PRIVATE NOMINMAX)
@@ -292,6 +345,7 @@ endif()
 if(WIN32)
     install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
 endif()
+
 # --- Tests ----------------------------------------------------------
 
 if(DEEPITY_BUILD_TESTS)
@@ -311,6 +365,7 @@ if(DEEPITY_BUILD_TESTS)
 endif()
 
 # --- Profiling ------------------------------------------------------
+
 if(DEEPITY_BUILD_TESTS)
     add_executable(GaussSeidelMiddleLayerVerify tests/tGaussSeidelMiddleLayerVerify.cpp)
     target_link_libraries(GaussSeidelMiddleLayerVerify PRIVATE Deepity)
@@ -387,6 +442,40 @@ if(DEEPITY_BUILD_TESTS)
             COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:DeepityProfile>>,copy_if_different,true>
             $<TARGET_RUNTIME_DLLS:DeepityProfile>
             $<TARGET_FILE_DIR:DeepityProfile>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+
+    # --- README benchmark: std-library vs Deep:: activations ---------
+    add_executable(ActivationBenchmark tests/tActivations.cpp)
+    target_link_libraries(ActivationBenchmark PRIVATE DeepityProfiled benchmark)
+
+    set_target_properties(ActivationBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    if(WIN32)
+        add_custom_command(TARGET ActivationBenchmark POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:ActivationBenchmark>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:ActivationBenchmark>
+            $<TARGET_FILE_DIR:ActivationBenchmark>
+            COMMAND_EXPAND_LISTS
+        )
+    endif()
+
+    # --- README benchmark: sustained GFLOPS during a real train step -
+    add_executable(GflopsBenchmark tests/tGflopsBenchmark.cpp)
+    target_link_libraries(GflopsBenchmark PRIVATE DeepityProfiled benchmark)
+
+    set_target_properties(GflopsBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    if(WIN32)
+        add_custom_command(TARGET GflopsBenchmark POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:GflopsBenchmark>>,copy_if_different,true>
+            $<TARGET_RUNTIME_DLLS:GflopsBenchmark>
+            $<TARGET_FILE_DIR:GflopsBenchmark>
             COMMAND_EXPAND_LISTS
         )
     endif()

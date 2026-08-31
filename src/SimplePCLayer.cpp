@@ -21,10 +21,11 @@ namespace Deep
                                  void (*act)(float *, size_t),
                                  void (*dAct)(float *, size_t, bool))
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda), isClamped(false),
-          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct), activationType(ActivationType::RELU), opt(OptimizerType::SGD)
+          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct), activationType(To_AType(act)), opt(OptimizerType::SGD)
     {
         this->size = size;
         this->nextSize = nextSize;
+        activationDerivativeInto = To_dFn2(To_AType(dAct));
         DynamicThread(batchSize);
 
         localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
@@ -39,6 +40,7 @@ namespace Deep
     {
         this->activation = To_Fn(aType);
         this->activationDerivative = To_dFn(dType);
+        this->activationDerivativeInto = To_dFn2(dType);
         this->size = size;
         this->nextSize = nextSize;
         DynamicThread(batchSize);
@@ -66,34 +68,12 @@ namespace Deep
             for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
                 W[i] = dist(rng);
         }
-
-        // E: feedback-alignment matrix -- INDEPENDENT random draw (fresh
-        // seeds, matching ngc-learn's use of a separate subkey for E vs
-        // W), uniform +-0.3 (matching ngc-learn's ACTUAL StaticSynapse
-        // init convention exactly). Never touched again after this -- no
-        // UpdateWeights() involvement at all, matching "Static" in
-        // StaticSynapse.
-        std::vector<uint32_t> eSeeds(omp_get_max_threads());
-        for (auto &s : eSeeds)
-            s = seedDist(seedGenerator);
-
-#pragma omp parallel if(!omp_in_parallel())
-        {
-            std::mt19937 rng(eSeeds[omp_get_thread_num()]);
-            std::uniform_real_distribution<float> eDist(-0.3f, 0.3f);
-
-#pragma omp for
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
-                E[i] = eDist(rng);
-        }
     }
 
-	float SimplePCLayer::CalculateState() noexcept
+    float SimplePCLayer::CalculateState() noexcept
     {
         const size_t N = (size_t)batchSize * size;
         
-        // OPTIMIZATION: The input layer's errors are always exactly 0. 
-        // Skip the massive AVX reduction loop entirely to save memory bandwidth.
         if (layerBelow == nullptr)
         {
             std::memset(e, 0, N * sizeof(float));
@@ -104,7 +84,6 @@ namespace Deep
             return 0.0f; 
         }
 
-        // For all middle/output layers, compute e = z - mu
         cblas_scopy(N, z, 1, e, 1);
         cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
 
@@ -172,104 +151,108 @@ namespace Deep
         return totalEnergy;
     }
 
-	void SimplePCLayer::ComputeMuOnly() noexcept
-{
-    if (nextSize == 0)
-        return;
-
-    size_t Nout = (size_t)batchSize * nextSize;
-    size_t N = (size_t)batchSize * size;
-
-    // Fast-path: A clamped layer's state never changes during inference.
-    // Copy from cache instead of doing 20 redundant GEMMs per step.
-    if (isClamped && muCacheValid)
+    void SimplePCLayer::ComputeMuOnly() noexcept
     {
-        cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
-        return;
-    }
+        if (nextSize == 0)
+            return;
 
-    // MATCHES ngc-learn's documented convention: mu = W @ phi(z) + b
-    cblas_scopy((int)N, z, 1, zF, 1);
-    activation(zF, N);
+        size_t Nout = (size_t)batchSize * nextSize;
+        size_t N = (size_t)batchSize * size;
 
-    cblas_sgemm(
-        CblasRowMajor, CblasNoTrans, CblasTrans,
-        batchSize, nextSize, size,
-        1.0f, zF, size, W, size, 0.0f, mu, nextSize);
+        if (isClamped && muCacheValid)
+        {
+            cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+            return;
+        }
 
-    #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-    for (int batch = 0; batch < batchSize; ++batch) {
-        cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
-    }
+        cblas_scopy((int)N, z, 1, zF, 1);
+        switch (activationType)
+        {
+        case ActivationType::RELU: Deep::relu(zF, N); break;
+        case ActivationType::SIGMOID: Deep::sigmoid(zF, N); break;
+        case ActivationType::eSIGMOID: Deep::e_sigmoid(zF, N); break;
+        case ActivationType::TANH: Deep::tanh(zF, N); break;
+        case ActivationType::LINEAR: Deep::linear(zF, N); break;
+        default: activation(zF, N); break; // custom/unrecognized function pointer
+        }
 
-    // Only cache if it's actually a clamped layer
-    if (isClamped)
-    {
-        cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
-        muCacheValid = true;
-    }
-}
-
-	void SimplePCLayer::UpdateState() noexcept
-{
-    size_t N = (size_t)batchSize * size;
-
-    if (isClamped)
-        return;
-
-    if (layerAbove != nullptr && nextSize > 0)
-    {
-        const float *e_above = layerAbove->GetErrors();
-
-        // 1. zFDeriv = f'(z)
-        cblas_scopy((int)N, z, 1, zFDeriv, 1);
-        activationDerivative(zFDeriv, N, false);
-
-        // 2. Exact Tied-Weights Feedback GEMM (Replace 'E' with 'W')
-        // e_above is (batchSize, nextSize), W is (nextSize, size). 
-        // Result is (batchSize, size).
         cblas_sgemm(
-            CblasRowMajor, CblasNoTrans, CblasNoTrans,
-            batchSize, size, nextSize,
-            1.0f, e_above, nextSize, W, size,
-            0.0f, feedbackScratch, size);
+            CblasRowMajor, CblasNoTrans, CblasTrans,
+            batchSize, nextSize, size,
+            1.0f, zF, size, W, size, 0.0f, mu, nextSize);
 
-        // 3. Clean element-wise update. Let the compiler auto-vectorize.
         #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
         for (int batch = 0; batch < batchSize; ++batch) {
-            size_t offset = (size_t)batch * size;
-            for (size_t i = 0; i < size; ++i) {
-                size_t idx = offset + i;
-                dz_dt[idx] = (feedbackScratch[idx] * zFDeriv[idx]) - e[idx];
-                z[idx] += ir * dz_dt[idx];
-            }
+            cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+        }
+
+        if (isClamped)
+        {
+            cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+            muCacheValid = true;
         }
     }
-    else // Output Layer (No Feedback)
+
+    void SimplePCLayer::UpdateState() noexcept
     {
-        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch) {
-            size_t offset = (size_t)batch * size;
-            for (size_t i = 0; i < size; ++i) {
-                size_t idx = offset + i;
-                dz_dt[idx] = -e[idx];
-                z[idx] += ir * dz_dt[idx];
+        size_t N = (size_t)batchSize * size;
+
+        if (isClamped)
+            return;
+
+        if (layerAbove != nullptr && nextSize > 0)
+        {
+            const float *e_above = layerAbove->GetErrors();
+
+            switch (activationType)
+            {
+            case ActivationType::RELU: Deep::dReluInto(zFDeriv, z, N); break;
+            case ActivationType::SIGMOID: Deep::dSigmoidInto(zFDeriv, z, N); break;
+            case ActivationType::TANH: Deep::dTanhInto(zFDeriv, z, N); break;
+            case ActivationType::LINEAR: Deep::dLinearInto(zFDeriv, z, N); break;
+            default: activationDerivativeInto(zFDeriv, z, N); break; // custom/unrecognized, or eSIGMOID (no dedicated derivative variant exists)
+            }
+
+            cblas_sgemm(
+                CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                batchSize, size, nextSize,
+                1.0f, e_above, nextSize, W, size,
+                0.0f, feedbackScratch, size);
+
+            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
+            for (int batch = 0; batch < batchSize; ++batch) {
+                float *RESTRICT zPtr = z;
+                const float *RESTRICT feedbackPtr = feedbackScratch;
+                const float *RESTRICT zFDerivPtr = zFDeriv;
+                const float *RESTRICT ePtr = e;
+                size_t offset = (size_t)batch * size;
+                for (size_t i = 0; i < size; ++i) {
+                    size_t idx = offset + i;
+                    // Fused dz_dt directly into the z update to save memory writes
+                    zPtr[idx] += ir * ((feedbackPtr[idx] * zFDerivPtr[idx]) - ePtr[idx]);
+                }
+            }
+        }
+        else // Output Layer
+        {
+            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
+            for (int batch = 0; batch < batchSize; ++batch) {
+                float *RESTRICT zPtr = z;
+                const float *RESTRICT ePtr = e;
+                size_t offset = (size_t)batch * size;
+                for (size_t i = 0; i < size; ++i) {
+                    size_t idx = offset + i;
+                    zPtr[idx] += ir * -ePtr[idx];
+                }
             }
         }
     }
-}
-
 
     void SimplePCLayer::UpdateWeights() noexcept
     {
         if (layerAbove == nullptr || nextSize == 0)
             return;
 
-        // MATCHES ngc-learn's documented weight-update ODE: dW ~ e_l .
-        // phi(z_{l-1})^T -- PLAIN e_above directly (mu is linear now,
-        // d(mu)/d(zF)=W, so no elementwise derivative multiply is
-        // needed at all), and zF (activated z) as the outer-product
-        // factor, not raw z.
         const float *local_grad = layerAbove->GetErrors();
 
         switch (opt)
@@ -351,7 +334,8 @@ namespace Deep
         size_t total = 0;
         size_t own_state_size = (size_t)batchSize * size;
 
-        total += pad16(own_state_size) * 3;
+        // dz_dt removed: state size drops from 3 arrays to 2
+        total += pad16(own_state_size) * 2;
 
         if (nextSize > 0)
         {
@@ -360,10 +344,9 @@ namespace Deep
 
             total += pad16(w_size);
             total += pad16(nextSize);
-            total += pad16(out_state_size) * 3;
-            total += pad16(own_state_size);      // prevZ
+            total += pad16(out_state_size) * 2;
+            // E, prevZ, and bottom_up removed 
             total += pad16(own_state_size) * 3;  // zF, zFDeriv, feedbackScratch
-            total += pad16(w_size);              // E (feedback alignment, same shape as W)
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
@@ -382,11 +365,9 @@ namespace Deep
 
         z = arena.AllocateFloats(own_state_size);
         e = arena.AllocateFloats(own_state_size);
-        dz_dt = arena.AllocateFloats(own_state_size);
 
         std::memset(z, 0, own_state_size * sizeof(float));
         std::memset(e, 0, own_state_size * sizeof(float));
-        std::memset(dz_dt, 0, own_state_size * sizeof(float));
 
         if (nextSize > 0)
         {
@@ -396,25 +377,16 @@ namespace Deep
             b = arena.AllocateFloats(nextSize);
             mu = arena.AllocateFloats(out_state_size);
             cachedMu = arena.AllocateFloats(out_state_size);
-            bottom_up = arena.AllocateFloats(out_state_size); // no longer
-                                       // used by UpdateState/UpdateWeights
-                                       // after activate-before-transform --
-                                       // harmless, left allocated for now
-            prevZ = arena.AllocateFloats(own_state_size);
             zF = arena.AllocateFloats(own_state_size);
             zFDeriv = arena.AllocateFloats(own_state_size);
             feedbackScratch = arena.AllocateFloats(own_state_size);
-            E = arena.AllocateFloats(w_size);
 
             std::memset(b, 0, nextSize * sizeof(float));
             std::memset(mu, 0, out_state_size * sizeof(float));
             std::memset(cachedMu, 0, out_state_size * sizeof(float));
-            std::memset(bottom_up, 0, out_state_size * sizeof(float));
-            std::memset(prevZ, 0, own_state_size * sizeof(float));
             std::memset(zF, 0, own_state_size * sizeof(float));
             std::memset(zFDeriv, 0, own_state_size * sizeof(float));
             std::memset(feedbackScratch, 0, own_state_size * sizeof(float));
-            std::memset(E, 0, w_size * sizeof(float));
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {

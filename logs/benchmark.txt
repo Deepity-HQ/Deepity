@@ -1,0 +1,24 @@
+rose0  ~/Projects/deepity  ‹ main ● ›  ✗ 130  ❯ python benchmark.py
+
+[Jacobi Dense] Starting 3-Epoch Sprint...
+[Jacobi Dense] Finished in 5.2s | Test Acc: 79.50%
+
+[Gauss-Seidel Dense] Starting 3-Epoch Sprint...
+[Gauss-Seidel Dense] Finished in 21.6s | Test Acc: 76.81%
+
+[AdamW CNN] Starting 3-Epoch Sprint...
+[AdamW CNN] Finished in 152.4s | Test Acc: 96.22%
+
+[Standard SGD CNN] Starting 3-Epoch Sprint...
+[Standard SGD CNN] Finished in 168.2s | Test Acc: 13.26%
+
+========================================
+🏆 DEEPITY CPU BENCHMARK SCOREBOARD 🏆
+========================================
+Architecture         | Time (s)   | Test Acc
+---------------------------------------------
+Jacobi Dense         | 5.2        | 79.50%
+Gauss-Seidel Dense   | 21.6       | 76.81%
+AdamW CNN            | 152.4      | 96.22%
+Standard SGD CNN     | 168.2      | 13.26%
+========================================
