@@ -373,7 +373,7 @@ namespace Deep
             return;
 
         const float *local_grad = layerAbove->GetErrors();
-        float grad_scale = -1.0f;
+        float grad_scale = -1.0f / batchSize;
 
         switch (opt)
         {
@@ -400,16 +400,17 @@ namespace Deep
             t++;
 
             size_t num_weights = (size_t)nextSize * size;
+            float adam_scale = -1.0f;
 
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 nextSize, size, batchSize,
-                grad_scale, local_grad, nextSize, zF, size,
+                adam_scale, local_grad, nextSize, zF, size,
                 0.0f, grad_W, size);
 
             std::memset(grad_b, 0, nextSize * sizeof(float));
             for (int batch = 0; batch < batchSize; batch++)
-                cblas_saxpy(nextSize, grad_scale, local_grad + batch * nextSize, 1, grad_b, 1);
+                cblas_saxpy(nextSize, adam_scale, local_grad + batch * nextSize, 1, grad_b, 1);
 
             if (opt == OptimizerType::ADAMW)
                 Deep::AdamWUpdate(W, grad_W, m_W, v_W, num_weights, t, lr, lmbda);
@@ -438,11 +439,12 @@ namespace Deep
             tPsi++;
 
             size_t num_weights_psi = size * terminalSize;
+            float adam_scale = -1.0f;
 
             cblas_sgemm(
                 CblasRowMajor, CblasTrans, CblasNoTrans,
                 size, terminalSize, batchSize,
-                grad_scale, z, size, terminalLayer->GetErrors(), terminalSize,
+                adam_scale, z, size, terminalLayer->GetErrors(), terminalSize,
                 0.0f, grad_Psi, terminalSize);
 
             if (optPsi == OptimizerType::ADAMW)
@@ -457,6 +459,10 @@ namespace Deep
 
     void DirectKPPCLayer::DirectFeedbackUpdate() noexcept
     {
+        // If the layer above has no Psi weights (i.e. it is the terminal layer), skip DFA
+        if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)
+            return;
+
         // proj = terminalLayer->GetErrors() @ layerAbove->GetDirectFeedbackWeights()^T
         cblas_sgemm(
             CblasRowMajor, CblasNoTrans, CblasTrans,
@@ -464,6 +470,7 @@ namespace Deep
             1.0f, terminalLayer->GetErrors(), terminalSize,
             layerAbove->GetDirectFeedbackWeights(), terminalSize,
             0.0f, proj, nextSize);
+            
         // W += fl * proj^T @ zF
         cblas_sgemm(
             CblasRowMajor, CblasTrans, CblasTrans,

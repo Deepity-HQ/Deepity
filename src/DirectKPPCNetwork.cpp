@@ -92,6 +92,9 @@ namespace Deep
         ProjectForward();
         GetTerminalLayer()->ClampState(y);
 
+        CalculateTerminalError();
+        DirectFeedbackUpdate();
+
         for (int t = 0; t < inferenceSteps; t++)
             Step();
 
@@ -116,6 +119,7 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
+        ProjectForward();
 
         for (int t = 0; t < inferenceSteps; t++)
         {
