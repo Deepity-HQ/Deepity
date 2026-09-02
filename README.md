@@ -5,7 +5,9 @@
 [![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://github.com/ra4ster/deepity/blob/main/CMakeLists.txt)
 [![Stars](https://img.shields.io/github/stars/ra4ster/deepity?style=social)](https://github.com/ra4ster/deepity/stargazers)
 
-![](resources/chicken_100.png)
+![](resources/Deepity.png)
+
+**97.73% accuracy on MNIST in 60 seconds, on a laptop CPU, with a training algorithm that isn't backpropagation.** That's within 1% of standard PyTorch backprop trained on the same architecture, and roughly 50x faster than this same library's own results from a few months ago.
 
 ## What is this?
 
@@ -57,6 +59,24 @@ Working examples live in [`examples/`](examples/), including full MNIST training
 <div align="center">
 <img src="resources/MNIST_results.png" alt="Results training mnist" width="500"/>
 </div>
+
+---
+
+## Latest: one settling step, real accuracy
+
+Every predictive coding network has to "settle" toward an answer over several iterative steps before it can learn from a batch, usually 20 to 30 of them. Deepity's newest variant, `DKPPCN`, implements Direct Kolen-Pollack feedback alignment (a 2026 addition to the predictive coding literature) to cut that down to a single step, without giving up accuracy:
+
+<div align="center">
+<img src="resources/dkppcn_results.png" alt="DKPPCN accuracy over 50 epochs, compared against ngc-learn and PyTorch backprop" width="650" />
+</div>
+
+And the runtime difference this makes, compared against a standard backprop baseline, the JAX-based reference implementation for predictive coding, another PyTorch-based PC library, and this project's own previous results:
+
+<div align="center">
+<img src="resources/bargraph.png" alt="MNIST training runtime across implementations" width="600" />
+</div>
+
+Two of those bars are extrapolated from a real, measured per-epoch rate rather than a completed run (marked and labeled accordingly); everything else is a real, complete, timed 50-epoch run.
 
 ---
 
@@ -136,6 +156,7 @@ Naive multithreading across small batch sizes made performance worse, not better
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SimplePCN`                 | Synchronous (Jacobi) settling, every layer updates together each step. The default starting point.                                                              |
 | `GaussSeidelPCN`            | Sequential-sweep settling, layers see each other's already-updated values within the same step. Generally higher accuracy per epoch, at a real throughput cost. |
+| `DKPPCN`                    | Direct Kolen-Pollack feedback alignment. Needs only one settling step per batch instead of 20-30, at comparable accuracy. See above.                            |
 | `DiscriminativePCN`         | The original, precision-weighted variant, closest to the classical Whittington & Bogacz formulation.                                                            |
 | `ConvPCN` / `SimpleConvPCN` | Convolutional predictive coding layers, for image-shaped input rather than flat vectors.                                                                        |
 
@@ -189,9 +210,9 @@ doxygen Doxyfile
 - [x] Optional Intel MKL backend
 - [x] Optional huge-pages memory backend
 - [x] GaussSeidelPCN sequential-sweep settling
-- [ ] [Direct Kolen-Pollack Predictive Coding](https://arxiv.org/pdf/2602.15571) (🚧)
+- [x] [Direct Kolen-Pollack Predictive Coding](https://arxiv.org/pdf/2602.15571)
 - [ ] File IO support (save/load trained models)
-- [ ] CuBLAS
+- [ ] CUDA backend (in progress, `IComputeBackend` abstraction and cuBLAS-backed matmul first)
 
 ## Contributing
 
@@ -201,8 +222,8 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and 
 
 ```plaintext
 include/deepity/           Public headers: Layer hierarchy, Activations, MemoryArena
-include/deepity/layers/    SimplePCLayer, GaussSeidelPCLayer, ConvPCLayer, and others
-include/deepity/networks/  SimplePCNetwork, GaussSeidelPCNetwork, and others
+include/deepity/layers/    SimplePCLayer, GaussSeidelPCLayer, DirectKPPCLayer, ConvPCLayer, and others
+include/deepity/networks/  SimplePCNetwork, GaussSeidelPCNetwork, DirectKPPCNetwork, and others
 src/                        C++ source implementations
 bindings/                   Python bindings (pybind11)
 pydeepity/                  Compiled Python extension module (generated)
