@@ -55,6 +55,24 @@ class FFNN(nn.Module):
         return self.net(x)
 
 
+def evaluate(model, test_loader, device):
+    """Full test-set accuracy. Cheap here since inference is a single
+    forward pass (no iterative settling like the PC variants) -- running
+    this every epoch adds negligible overhead relative to training time."""
+    model.eval()
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for X_batch, y_batch in test_loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            logits = model(X_batch)
+            preds = torch.argmax(logits, dim=1)
+            correct += (preds == y_batch).sum().item()
+            total += y_batch.size(0)
+    model.train()
+    return 100.0 * correct / total
+
+
 def main():
     X_train_t, y_train_t, X_test_t, y_test_t = load_full_mnist_torch()
 
@@ -76,6 +94,7 @@ def main():
           f"architecture=784->512->10 (matches SequentialPCN exactly)...\n")
 
     start_time = perf_counter()
+    epoch_accs = []
 
     for epoch in range(EPOCHS):
         model.train()
@@ -95,32 +114,23 @@ def main():
             n_batches += 1
 
         avg_loss = epoch_loss / n_batches
+        epoch_acc = evaluate(model, test_loader, device)
+        epoch_accs.append(epoch_acc)
         elapsed = perf_counter() - start_time
 
-        if epoch % 5 == 0 or epoch == EPOCHS - 1:
-            print(f"  Epoch {epoch+1}/{EPOCHS} | avg loss: {avg_loss:.4f} | elapsed: {elapsed:.1f}s")
+        print(f"  Epoch {epoch+1}/{EPOCHS} | avg loss: {avg_loss:.4f} | "
+              f"test acc: {epoch_acc:.2f}% | elapsed: {elapsed:.1f}s")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.\n")
 
-    print("Evaluating on held-out test set...")
-    model.eval()
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for X_batch, y_batch in test_loader:
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            logits = model(X_batch)
-            preds = torch.argmax(logits, dim=1)
-            correct += (preds == y_batch).sum().item()
-            total += y_batch.size(0)
-
-    accuracy = 100.0 * correct / total
-    print(f"\nTest Accuracy: {correct}/{total} ({accuracy:.2f}%)")
+    final_acc = epoch_accs[-1]
+    print(f"\nTest Accuracy: {final_acc:.2f}%")
     print(f"\n--- Summary ---")
     print(f"Architecture: 784 -> 512 -> 10 (tanh hidden)")
     print(f"Training time: {train_time:.1f}s for {EPOCHS} epochs")
-    print(f"Test accuracy: {accuracy:.2f}%")
+    print(f"Test accuracy: {final_acc:.2f}%")
+    print(f"\nPer-epoch test accuracy: {[round(a, 2) for a in epoch_accs]}")
 
 
 if __name__ == "__main__":

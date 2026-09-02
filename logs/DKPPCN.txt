@@ -1,0 +1,58 @@
+Epoch 1/50 | Time: 1.5s | Acc: 89.36% | Avg energy: 73.6639                                                                                                                                                                                        [0/1356]
+Epoch 2/50 | Time: 2.6s | Acc: 93.44% | Avg energy: 27.2043
+Epoch 3/50 | Time: 3.7s | Acc: 94.16% | Avg energy: 19.8701
+Epoch 4/50 | Time: 4.7s | Acc: 94.48% | Avg energy: 16.4172
+Epoch 5/50 | Time: 5.8s | Acc: 95.44% | Avg energy: 14.4112
+Epoch 6/50 | Time: 7.1s | Acc: 96.52% | Avg energy: 13.1640
+Epoch 7/50 | Time: 8.2s | Acc: 96.40% | Avg energy: 12.2229
+Epoch 8/50 | Time: 9.2s | Acc: 96.56% | Avg energy: 11.3922
+Epoch 9/50 | Time: 10.3s | Acc: 96.84% | Avg energy: 10.7782
+Epoch 10/50 | Time: 11.3s | Acc: 97.52% | Avg energy: 10.2237
+Epoch 11/50 | Time: 12.4s | Acc: 97.68% | Avg energy: 9.7482
+Epoch 12/50 | Time: 13.5s | Acc: 97.32% | Avg energy: 9.3749
+Epoch 13/50 | Time: 14.5s | Acc: 97.72% | Avg energy: 8.9998
+Epoch 14/50 | Time: 15.5s | Acc: 97.76% | Avg energy: 8.6476
+Epoch 15/50 | Time: 16.6s | Acc: 97.96% | Avg energy: 8.3889
+Epoch 16/50 | Time: 17.9s | Acc: 97.80% | Avg energy: 8.1355
+Epoch 17/50 | Time: 18.9s | Acc: 98.44% | Avg energy: 7.8819
+Epoch 18/50 | Time: 20.0s | Acc: 98.32% | Avg energy: 7.6322
+Epoch 19/50 | Time: 21.1s | Acc: 97.80% | Avg energy: 7.4387
+Epoch 20/50 | Time: 22.3s | Acc: 98.80% | Avg energy: 7.2326
+Epoch 21/50 | Time: 23.4s | Acc: 98.80% | Avg energy: 7.0622
+Epoch 22/50 | Time: 24.4s | Acc: 98.44% | Avg energy: 6.8517
+Epoch 23/50 | Time: 25.5s | Acc: 98.64% | Avg energy: 6.7020
+Epoch 24/50 | Time: 26.7s | Acc: 98.68% | Avg energy: 6.5540
+Epoch 25/50 | Time: 27.7s | Acc: 98.32% | Avg energy: 6.4361
+Epoch 26/50 | Time: 28.7s | Acc: 98.32% | Avg energy: 6.2921
+Epoch 27/50 | Time: 29.8s | Acc: 98.64% | Avg energy: 6.1584
+Epoch 28/50 | Time: 30.8s | Acc: 99.04% | Avg energy: 6.0362
+Epoch 29/50 | Time: 31.9s | Acc: 98.80% | Avg energy: 5.9129
+Epoch 30/50 | Time: 33.0s | Acc: 99.16% | Avg energy: 5.8137
+Epoch 31/50 | Time: 34.0s | Acc: 98.96% | Avg energy: 5.7227
+Epoch 32/50 | Time: 35.0s | Acc: 99.24% | Avg energy: 5.6208
+Epoch 33/50 | Time: 36.1s | Acc: 99.28% | Avg energy: 5.5347
+Epoch 34/50 | Time: 37.5s | Acc: 99.12% | Avg energy: 5.4268
+Epoch 35/50 | Time: 38.8s | Acc: 98.96% | Avg energy: 5.3651
+Epoch 36/50 | Time: 40.3s | Acc: 99.20% | Avg energy: 5.2901
+Epoch 37/50 | Time: 41.6s | Acc: 99.40% | Avg energy: 5.2270
+Epoch 38/50 | Time: 42.9s | Acc: 99.04% | Avg energy: 5.1471
+Epoch 39/50 | Time: 44.3s | Acc: 99.32% | Avg energy: 5.0916
+Epoch 40/50 | Time: 45.6s | Acc: 99.36% | Avg energy: 5.0318
+Epoch 41/50 | Time: 47.0s | Acc: 98.72% | Avg energy: 4.9741
+Epoch 42/50 | Time: 48.3s | Acc: 99.32% | Avg energy: 4.9169
+Epoch 43/50 | Time: 49.6s | Acc: 98.96% | Avg energy: 4.8654
+Epoch 44/50 | Time: 51.0s | Acc: 99.24% | Avg energy: 4.8257
+Epoch 45/50 | Time: 52.3s | Acc: 99.28% | Avg energy: 4.7859
+Epoch 46/50 | Time: 53.7s | Acc: 99.36% | Avg energy: 4.7384
+Epoch 47/50 | Time: 55.5s | Acc: 99.20% | Avg energy: 4.7051
+Epoch 48/50 | Time: 56.9s | Acc: 99.12% | Avg energy: 4.6667
+Epoch 49/50 | Time: 58.2s | Acc: 99.36% | Avg energy: 4.6335
+Epoch 50/50 | Time: 59.5s | Acc: 99.48% | Avg energy: 4.5987
+
+Training complete in 59.5s.
+
+Running final test evaluation...
+
+=== Result ===
+DKPPCN test accuracy: 97.73%
+Train time: 59.5s

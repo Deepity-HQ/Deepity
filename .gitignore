@@ -2,6 +2,8 @@
 build/
 bin/
 __pycache__/*
+tiny-imagenet-200/*
+tiny-imagenet-200/
 MNIST/*
 pyrightconfig.json
 /CLAUDE.md

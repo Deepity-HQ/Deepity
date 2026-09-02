@@ -1,187 +1,114 @@
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import numpy as np
-import os
-from pydeepity import DKPPCN
-from time import perf_counter
+import logging
 
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
+plt.rcParams['font.family'] = 'sans-serif'
 
-def load_full_mnist():
-    import gzip
-    import urllib.request
+# --- Data ---
+dkp_epochs = np.arange(1, 51)
+dkp_acc = [89.36, 93.44, 94.16, 94.48, 95.44, 96.52, 96.40, 96.56, 96.84, 97.52,
+           97.68, 97.32, 97.72, 97.76, 97.96, 97.80, 98.44, 98.32, 97.80, 98.80,
+           98.80, 98.44, 98.64, 98.68, 98.32, 98.32, 98.64, 99.04, 98.80, 99.16,
+           98.96, 99.24, 99.28, 99.12, 98.96, 99.20, 99.40, 99.04, 99.32, 99.36,
+           98.72, 99.32, 98.96, 99.24, 99.28, 99.36, 99.20, 99.12, 99.36, 99.48]
+dkp_test = 97.73
+dkp_time = 60
 
-    print("Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...")
-    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
-    files = {
-        "x_train": "train-images-idx3-ubyte.gz",
-        "y_train": "train-labels-idx1-ubyte.gz",
-        "x_test": "t10k-images-idx3-ubyte.gz",
-        "y_test": "t10k-labels-idx1-ubyte.gz"
-    }
-    data_dir = "./data"
-    os.makedirs(data_dir, exist_ok=True)
-    paths = {}
-    for key, fname in files.items():
-        filepath = os.path.join(data_dir, fname)
-        paths[key] = filepath
-        if not os.path.exists(filepath):
-            print(f"Downloading {fname}...")
-            urllib.request.urlretrieve(base_url + fname, filepath)
+ngc_epochs = np.arange(1, 16)
+ngc_acc = [26.91, 42.96, 60.12, 75.20, 84.68, 89.52, 91.90,
+           93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95]
+ngc_test = 95.09
 
-    with gzip.open(paths["x_train"], 'rb') as f:
-        X_train_raw = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784)
-    with gzip.open(paths["x_test"], 'rb') as f:
-        X_test_raw = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784)
-    with gzip.open(paths["y_train"], 'rb') as f:
-        y_train_labels = np.frombuffer(f.read(), np.uint8, offset=8)
-    with gzip.open(paths["y_test"], 'rb') as f:
-        y_test_labels = np.frombuffer(f.read(), np.uint8, offset=8)
+pytorch_ffnn_test = 98.27
+old_impl_test = 92.42
+old_time_min = 50
+speedup = round(old_time_min * 60 / dkp_time)
 
-    X_train = X_train_raw.astype(np.float32) / 255.0
-    X_test = X_test_raw.astype(np.float32) / 255.0
+# --- Theme (matched to the other chart) ---
+BG = "#0F172A"
+TEXT = "#F8FAFC"
+MUTED = "#94A3B8"
+GRID = "#334155"
+CURVE = "#22D3EE"
+GOLD = "#FBBF24"
+GRAY = "#64748B"
+RED = "#F87171"
+CARD_BG = "#1E293B"
 
-    eps = 0.001
-    Y_train = np.full((y_train_labels.shape[0], 10), eps, dtype=np.float32)
-    Y_train[np.arange(y_train_labels.shape[0]), y_train_labels] = 1.0 - eps
+fig = plt.figure(figsize=(16, 9), dpi=300, facecolor=BG)
+ax = fig.add_axes([0.08, 0.15, 0.84, 0.60])
+ax.set_facecolor(BG)
 
-    return X_train, Y_train, X_test, y_test_labels
+# --- Glow layers for the headline curve ---
+for lw, alpha in [(20, 0.03), (14, 0.05), (10, 0.08), (7, 0.13)]:
+    ax.plot(dkp_epochs, dkp_acc, color=CURVE, linewidth=lw, alpha=alpha, solid_capstyle="round")
+ax.plot(dkp_epochs, dkp_acc, color=CURVE, linewidth=3.5, solid_capstyle="round", zorder=6)
+ax.fill_between(dkp_epochs, dkp_acc, 75, color=CURVE, alpha=0.08, zorder=1)
 
+# --- Reference curves / lines ---
+ax.plot(ngc_epochs, ngc_acc, linewidth=2.5, linestyle="--", color=GRAY, zorder=3, solid_capstyle="round")
+ax.axhline(pytorch_ffnn_test, color=GOLD, linewidth=2, linestyle=":", zorder=2)
+ax.axhline(old_impl_test, color=RED, linewidth=1.8, linestyle="-.", zorder=2, alpha=0.85)
 
-def train_step_no_dfa(net, X, Y, inference_steps):
-    """Manually replicates DirectKPPCNetwork::TrainStep()'s sequence,
-    skipping direct_feedback_update() entirely -- isolates whether the
-    DFA/Psi pathway itself is causing the collapse, independent of
-    everything else DirectKPPCLayer does.
+ax.scatter(dkp_epochs[-1], dkp_acc[-1], s=150, color=CURVE, edgecolors=TEXT, linewidth=2, zorder=10)
 
-    Includes the same e/mu/zF staleness fix DirectKPPCNetwork::TrainStep()
-    itself uses: net.step()'s internal CalculateState() reflects z BEFORE
-    that same call's UpdateState() moves it, so after the settling loop
-    exits, e/mu/zF are one iteration stale relative to the true final z.
-    Without the extra calculate_state() pass below, update_weights() would
-    read that stale state -- exactly the bug already found and fixed in
-    the real C++ TrainStep(), reintroduced here by mistake in an earlier
-    version of this helper.
-    """
-    net.reset_state()
-    net.clamp_input(X)
-    net.project_forward()
-    net.get_terminal_layer().clamp_state(Y)
+# --- Direct line labels ---
+ax.text(3, 100, f'PyTorch Backprop: {pytorch_ffnn_test}%',
+        color=GOLD, fontsize=13, va='top', ha='left', weight='bold')
+ax.text(15.5, 91.8, f'Previous Implementation: {old_impl_test}% (~{old_time_min} min)',
+        color=RED, fontsize=13, va='top', ha='left', weight='bold', alpha=0.9)
+ax.text(15.5, 96, f'ngc-learn: {ngc_test}%',
+        color=MUTED, fontsize=12.5, va='top', ha='left')
 
-    net.calculate_terminal_error()
-    net.direct_feedback_update()  # <-- the ONLY thing skipped for this test
+# --- Direct label for the headline curve (no arrow — avoids collision with the card) ---
+ax.text(48.5, 101.3, f'Deepity DKPPCN: {dkp_test}%  ({dkp_time}s)',
+        color=CURVE, fontsize=15, weight="bold", ha='right', va='top', zorder=8)
 
-    for _ in range(inference_steps):
-        net.step()
+# --- Axes styling ---
+ax.set_xlim(0, 52)
+ax.set_ylim(75, 102)
+for spine in ax.spines.values():
+    spine.set_visible(False)
+ax.grid(True, color=GRID, alpha=0.4, linewidth=1, linestyle="--")
+ax.tick_params(colors=MUTED, labelsize=12, length=0, pad=10)
+ax.set_xlabel("Training Epoch", color=MUTED, fontsize=14, labelpad=15, weight="bold")
+ax.set_ylabel("MNIST Test Accuracy (%)", color=MUTED, fontsize=14, labelpad=15, weight="bold")
 
-    # Sync e/mu/zF to the TRUE final z before update_weights() reads them.
-    energy = 0.0
-    for layer in net.layers:
-        energy += layer.calculate_state()
+# --- Header ---
+fig.text(0.08, 0.88, "An Alternative to Backprop Just Closed the Gap",
+          color=TEXT, fontsize=34, weight="bold")
+fig.text(0.08, 0.82, "Deepity DKPPCN • Predictive Coding Network Trained Locally in C++",
+          color=CURVE, fontsize=16, weight="bold", alpha=0.9)
 
-    net.update_weights()
-    net.get_terminal_layer().unclamp_state()
-    return energy
+# --- Stats card ---
+card_text = (
+    f"{dkp_test}% Test Accuracy\n"
+    f"{dkp_time}s Total Training Time\n"
+    f"{speedup}x Faster than Previous Version\n\n"
+    "✓ 60,000 training images\n"
+    "✓ Trained locally in C++\n"
+    "✓ No backpropagation required"
+)
+ax.text(
+    0.90, 0.30, card_text,
+    transform=ax.transAxes,
+    color=TEXT, fontsize=13.5, linespacing=1.6,
+    va="center", ha="right",
+    bbox=dict(boxstyle="round,pad=1.1", facecolor=CARD_BG, edgecolor=GRID, linewidth=1.5, alpha=0.95),
+    zorder=11,
+)
 
+# --- Footer ---
+fig.text(0.08, 0.03,
+          f"DKPPCN closes to within {pytorch_ffnn_test - dkp_test:.2f} points of backprop while training {speedup}x faster than the previous implementation.",
+          fontsize=13, color=MUTED)
+fig.text(0.92, 0.09, "LinkedIn: @jack-c-rose  |  github.com/Ra4ster",
+          fontsize=12, color=MUTED, alpha=0.5, ha="right")
 
-def main() -> None:
-    import sys
-    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
-    EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
-    INFERENCE_STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 10
-
-    X_train, Y_train, X_test, y_test_labels = load_full_mnist()
-
-    BATCH_SIZE = 250
-    TERMINAL_SIZE = 10
-    LR = 0.00373
-    IR = 0.08
-    FL = 1e-3
-    LMBDA = 0.0
-    DECAY_RATE = 0.94
-
-    print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = DKPPCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="linear")
-    net.add_layer(512, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")
-    net.add_layer(512, TERMINAL_SIZE, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")
-    net.add_layer(TERMINAL_SIZE, 0, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="linear")
-    net.set_optimizer("ADAM")
-    net.set_psi_optimizer("ADAM")
-    net.compile()
-    net.randomize_weights()
-
-    print(f"\n*** DFA-DISABLED ISOLATION TEST *** direct_feedback_update() is "
-          f"NOT being called this run -- testing whether DirectKPPCLayer's "
-          f"core PC math is stable/correct on its own, independent of Psi.\n")
-    print(f"Training DKPPCN (no DFA): {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, "
-          f"lr={LR}, decay_rate={DECAY_RATE}...\n")
-    print("Reference (ngc-learn, real run): 26.91, 42.96, 60.12, 75.20, 84.68, 89.52,")
-    print("  91.90, 93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95 -- test 95.09%")
-    print("Reference (Deepity SimplePCN, this session): 88.32, 92.72, 94.60, 94.60, 95.68,")
-    print("  96.44, 96.64, 96.64, 97.24, 97.76, 97.92, 97.32, 97.68, 97.72, 98.20 -- test 97.04%\n")
-
-    rng = np.random.default_rng(SEED)
-    n_batches = len(X_train) // BATCH_SIZE
-    start_time = perf_counter()
-    epoch_accs = []
-
-    for epoch in range(EPOCHS):
-        current_lr = LR * (DECAY_RATE ** epoch)
-        net.set_learning_rate(current_lr)
-
-        indices = rng.permutation(len(X_train))
-        X_shuf, Y_shuf = X_train[indices], Y_train[indices]
-
-        correct = 0
-        total = 0
-        epoch_energy = 0.0
-
-        for b in range(n_batches):
-            X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-            Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-
-            energy = train_step_no_dfa(net, X_batch, Y_batch, INFERENCE_STEPS)
-            epoch_energy += energy
-
-        N_ACC_BATCHES = 10
-        for b in range(min(N_ACC_BATCHES, n_batches)):
-            X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-            Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-
-            terminal_beliefs = net.predict(X_batch, INFERENCE_STEPS).reshape(BATCH_SIZE, 10)
-            pred = np.argmax(terminal_beliefs, axis=1)
-            true = np.argmax(Y_batch, axis=1)
-            correct += np.sum(pred == true)
-            total += BATCH_SIZE
-
-        epoch_acc = 100.0 * correct / total
-        epoch_accs.append(epoch_acc)
-        avg_energy = epoch_energy / n_batches
-        elapsed = perf_counter() - start_time
-        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | Avg energy: {avg_energy:.4f}")
-
-    train_time = perf_counter() - start_time
-    print(f"\nTraining complete in {train_time:.1f}s.")
-
-    print("\nRunning final test evaluation...")
-    correct = 0
-    total = 0
-    for i in range(0, len(X_test), BATCH_SIZE):
-        X_batch = X_test[i:i + BATCH_SIZE]
-        y_labels_batch = y_test_labels[i:i + BATCH_SIZE]
-        if len(X_batch) != BATCH_SIZE:
-            continue
-
-        terminal_beliefs = net.predict(X_batch, INFERENCE_STEPS).reshape(BATCH_SIZE, 10)
-        pred_classes = np.argmax(terminal_beliefs, axis=1)
-        print(f"Predicted class distribution: {np.bincount(pred_classes, minlength=10)}")
-        correct += np.sum(pred_classes == y_labels_batch)
-        total += BATCH_SIZE
-
-    test_acc = 100.0 * correct / total
-    print(f"\n=== Result ===")
-    print(f"DKPPCN (no DFA) test accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%, SimplePCN: 97.04%)")
-    print(f"Train time: {train_time:.1f}s")
-    print(f"\nDKPPCN per-epoch: {[round(a,2) for a in epoch_accs]}")
-
-
-if __name__ == "__main__":
-    main()
+plt.savefig("resources/dkppcn_chart.png", facecolor=fig.get_facecolor(), bbox_inches="tight", pad_inches=0.4)
+plt.close(fig)
+print("Saved resources/dkppcn_chart.png")

@@ -1,113 +1,166 @@
-from pydeepity import SequentialPCN
 import numpy as np
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+import os
+import sys
+from time import perf_counter
+from pydeepity import SimplePCN
 
-# ----------------------------
-# Hyperparameters
-# ----------------------------
+def load_full_mnist():
+    import gzip
+    import urllib.request
 
-BATCH = 256
-LR = 5e-4
-IR = 0.05
-PR = 0.0         # Disabled adaptive precision to prevent energy collapse
-LAMBDA = 1e-4
+    print("Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...")
+    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    files = {
+        "x_train": "train-images-idx3-ubyte.gz",
+        "y_train": "train-labels-idx1-ubyte.gz",
+        "x_test": "t10k-images-idx3-ubyte.gz",
+        "y_test": "t10k-labels-idx1-ubyte.gz"
+    }
+    data_dir = "./data"
+    os.makedirs(data_dir, exist_ok=True)
+    paths = {}
+    for key, fname in files.items():
+        filepath = os.path.join(data_dir, fname)
+        paths[key] = filepath
+        if not os.path.exists(filepath):
+            print(f"Downloading {fname}...")
+            urllib.request.urlretrieve(base_url + fname, filepath)
 
-EPOCHS = 50
-INFERENCE_STEPS = 30
+    with gzip.open(paths["x_train"], 'rb') as f:
+        X_train_raw = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784)
+    with gzip.open(paths["x_test"], 'rb') as f:
+        X_test_raw = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784)
+    with gzip.open(paths["y_train"], 'rb') as f:
+        y_train_labels = np.frombuffer(f.read(), np.uint8, offset=8)
+    with gzip.open(paths["y_test"], 'rb') as f:
+        y_test_labels = np.frombuffer(f.read(), np.uint8, offset=8)
 
-# ----------------------------
-# Dataset
-# ----------------------------
+    X_train = X_train_raw.astype(np.float32) / 255.0
+    X_test = X_test_raw.astype(np.float32) / 255.0
 
-# Zero-center the data to [-1.0, 1.0] to prevent tanh saturation
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5,), (0.5,))
-])
+    eps = 0.001
+    Y_train = np.full((y_train_labels.shape[0], 10), eps, dtype=np.float32)
+    Y_train[np.arange(y_train_labels.shape[0]), y_train_labels] = 1.0 - eps
 
-train = datasets.MNIST(
-    "./data",
-    train=True,
-    download=True,
-    transform=transform,
-)
+    return X_train, Y_train, X_test, y_test_labels
 
-test = datasets.MNIST(
-    "./data",
-    train=False,
-    transform=transform,
-)
 
-trainloader = DataLoader(
-    train,
-    batch_size=BATCH,
-    shuffle=True,
-    drop_last=True,
-)
+def main() -> None:
+    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7 
+    EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
 
-testloader = DataLoader(
-    test,
-    batch_size=BATCH,
-    shuffle=False,
-    drop_last=True,
-)
+    X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
-# ----------------------------
-# Network
-# ----------------------------
+    BATCH_SIZE = 250
+    STEPS = 30
+    LR = 0.00373
+    DECAY_RATE = 0.94
+    LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
-# SequentialPCN wraps the raw DiscriminativePCNetwork backend and exposes
-# the friendlier act= API (auto-derives the activation_deriv string), plus
-# train_step()/predict() convenience methods -- it's the public class this
-# architecture is meant to be built with, not the raw backend directly.
-net = SequentialPCN(batch_size=BATCH)
+    print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
+    net = SimplePCN(batch_size=BATCH_SIZE)
+    
+    net.add_layer(784, 512, lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
+    net.add_layer(512, 512, lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
+    net.add_layer(512, 10,  lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
+    net.add_layer(10, 0,    lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
+    
+    # 1. Engage decoupled AdamW
+    net.set_optimizer("ADAMW")
+    net.compile()
+    
+    # 2. Engage C++ zero-energy bypass and mu caching
+    # net.set_mu_cache_threshold(0) 
+    
+    net.randomize_weights()
 
-net.add_layer(784, 512, lr=LR, ir=IR, pr=PR, act="tanh", lmbda=LAMBDA)
-net.add_layer(512, 256, lr=LR, ir=IR, pr=PR, act="tanh", lmbda=LAMBDA)
-net.add_layer(256, 10, lr=LR, ir=IR, pr=PR, act="tanh", lmbda=LAMBDA)
+    # Match exact +-0.3 bounds for forward-projection initialization
+    rng_init = np.random.default_rng(SEED)
+    for layer in net.layers[:-1]:
+        w_shape = layer.weights.shape
+        layer.weights[:] = rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32)
 
-# Terminal layer: next_size=0 marks this as the network's output/terminal layer
-net.add_layer(10, 0, lr=LR, ir=IR, pr=PR, act="linear", lmbda=LAMBDA)
+    print(f"\nTraining with FORWARD-PROJECTION init: {EPOCHS} epochs, {STEPS} steps, "
+          f"lr={LR}, decay_rate={DECAY_RATE}...\n")
+    print("Reference (ngc-learn, real run): 26.91, 42.96, 60.12, 75.20, 84.68, 89.52,")
+    print("  91.90, 93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95 -- test 95.09%\n")
 
-# Compile BEFORE randomize_weights()/training -- this allocates the
-# contiguous weight arena every layer's beliefs/errors/weights views are
-# backed by. Skipping it (as the original script did) touches uninitialized
-# memory.
-net.compile()
-net.randomize_weights()
+    rng = np.random.default_rng(SEED)
+    n_batches = len(X_train) // BATCH_SIZE
+    start_time = perf_counter()
+    epoch_accs = []
 
-# ----------------------------
-# Utilities
-# ----------------------------
+    for epoch in range(EPOCHS):
+        current_lr = LR * (DECAY_RATE ** epoch)
+        net.set_learning_rate(current_lr)
 
-def one_hot(labels):
-    # Scale targets to [-0.9, 0.9] to match the tanh output bounds
-    y = np.full((len(labels), 10), -0.9, dtype=np.float32)
-    y[np.arange(len(labels)), labels] = 0.9
-    return y
+        # Standard randomized batches
+        indices = rng.permutation(len(X_train))
+        X_shuf, Y_shuf = X_train[indices], Y_train[indices]
 
-# ----------------------------
-# Training
-# ----------------------------
+        correct = 0
+        total = 0
+        epoch_energy = 0.0
 
-for epoch in range(EPOCHS):
+        for b in range(n_batches):
+            X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
+            Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-    energy_sum = 0.0
+            # 3. Call C++ Native Loop (avoid Nanobind overhead)
+            energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
+            epoch_energy += energy
 
-    for images, labels in trainloader:
+        # Real accuracy check on a subset
+        N_ACC_BATCHES = 10
+        for b in range(min(N_ACC_BATCHES, n_batches)):
+            X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
+            Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-        x = images.numpy().reshape(BATCH, -1).astype(np.float32)
-        y = one_hot(labels.numpy())
+            net.reset_state()
+            net.clamp_input(X_batch)
+            net.project_forward()
+            for _ in range(STEPS): 
+                net.calculate_state()
+                net.update_state()
 
-        # SequentialPCN.train_step() handles reset_state/clamp_input/
-        # clamp_state/settle/update_weights/update_precision/unclamp_state
-        # internally in one call.
-        energy = net.train_step(x, y, steps=INFERENCE_STEPS)
+            terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)
+            pred = np.argmax(terminal_beliefs, axis=1)
+            true = np.argmax(Y_batch, axis=1)
+            correct += np.sum(pred == true)
+            total += BATCH_SIZE
 
-        energy_sum += energy
+        epoch_acc = 100.0 * correct / total
+        epoch_accs.append(epoch_acc)
+        avg_energy = epoch_energy / n_batches
+        elapsed = perf_counter() - start_time
+        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | Avg energy: {avg_energy:.4f}")
 
-    print(
-        epoch,
-        energy_sum / len(trainloader)
-    )
+    train_time = perf_counter() - start_time
+    print(f"\nTraining complete in {train_time:.1f}s.")
+
+    print("\nRunning final test evaluation (with forward-projection init)...")
+    correct = 0
+    total = 0
+    for i in range(0, len(X_test), BATCH_SIZE):
+        X_batch = X_test[i:i + BATCH_SIZE]
+        y_labels_batch = y_test_labels[i:i + BATCH_SIZE]
+        if len(X_batch) != BATCH_SIZE:
+            continue
+
+        net.reset_state()
+        net.clamp_input(X_batch)
+        flat_beliefs = net.predict_with_projection(X_batch, STEPS)
+        terminal_beliefs = flat_beliefs.reshape(BATCH_SIZE, 10)
+
+        pred_classes = np.argmax(terminal_beliefs, axis=1)
+        correct += np.sum(pred_classes == y_labels_batch)
+        total += BATCH_SIZE
+
+    test_acc = 100.0 * correct / total
+    print(f"\n=== Result ===")
+    print(f"Deepity Peak Test Accuracy: {test_acc:.2f}%   (ngc-learn: 95.09%)")
+    print(f"Train time: {train_time:.1f}s")
+    print(f"\nDeepity per-epoch: {[round(a,2) for a in epoch_accs]}")
+
+if __name__ == "__main__":
+    main()
