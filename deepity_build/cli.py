@@ -8,6 +8,7 @@ import os
 import stat
 import time
 from pathlib import Path
+import subprocess
 
 from .cmake_runner import (
     build_command,
@@ -26,6 +27,57 @@ def _rmtree_onexc(func, path, exc_info):
     read-only attribute before unlinking. Clear it and retry once."""
     os.chmod(path, stat.S_IWRITE)
     func(path)
+
+def _merge_pgo_profiles(config):
+    profile_dir = config.pgo_data_dir
+    profraw_files = list(profile_dir.glob("*.profraw"))
+
+    if not profraw_files:
+        raise RuntimeError(
+            f"PGO workload produced no .profraw files in {profile_dir}"
+        )
+
+    llvm_profdata = shutil.which("llvm-profdata")
+
+    if llvm_profdata is None and sys.platform == "win32":
+        clang = shutil.which("clang")
+        if clang:
+            candidate = Path(clang).resolve().parent / "llvm-profdata.exe"
+            if candidate.is_file():
+                llvm_profdata = str(candidate)
+
+    if llvm_profdata is None:
+        raise RuntimeError(
+            "PGO requires llvm-profdata, but it was not found. "
+            "Install LLVM's profiling tools or add llvm-profdata to PATH."
+        )
+
+    output = profile_dir / "default.profdata"
+
+    if output.exists():
+        output.unlink()
+
+    cmd = [
+        llvm_profdata,
+        "merge",
+        "-o",
+        str(output),
+        *[str(p) for p in profraw_files],
+    ]
+
+    print(
+        f"--- PGO: merging {len(profraw_files)} profile files "
+        f"into {output} ---"
+    )
+
+    subprocess.run(cmd, check=True)
+
+    if not output.is_file():
+        raise RuntimeError(
+            f"llvm-profdata completed but {output} was not created"
+        )
+
+    print(f"--- PGO: profile ready: {output} ---")
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -338,6 +390,7 @@ def main(argv: list[str] | None = None) -> None:
     _run_configure_build_test(config, ninja, generator, log_output, pgo_phase="GENERATE", run_tests_override=False)
 
     _run_pgo_workload(config)
+    _merge_pgo_profiles(config)
 
     print("=== PGO pass 2/2: optimized (USE) build ===")
     _run_configure_build_test(config, ninja, generator, log_output, pgo_phase="USE")

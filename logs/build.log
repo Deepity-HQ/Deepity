@@ -1,1024 +1,366 @@
 --- Deepity Build Log (Release, arch=native) ---
 
 === CMake Configuration ===
--- PGO: instrumented (GENERATE) build -- profile data will be written to /home/rose0/Projects/deepity/build/pgo-data
--- CXX compiler: /usr/bin/c++
--- Found OpenMP_C: -fopenmp (found version "5.2")
--- Found OpenMP_CXX: -fopenmp (found version "5.2")
--- Using Intel MKL (found via MKLConfig.cmake).
+-- The C compiler identification is Clang 22.1.8 with GNU-like command-line
+-- The CXX compiler identification is Clang 22.1.8 with GNU-like command-line
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Program Files/LLVM/bin/clang.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Program Files/LLVM/bin/clang++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- PGO: instrumented (GENERATE) build -- profile data will be written to C:/Users/Jack/Projects/deepity/build/pgo-data
+-- CXX compiler: C:/Program Files/LLVM/bin/clang++.exe
+-- Found OpenMP_C: -fopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fopenmp (found version "5.1")
+-- Found OpenMP: TRUE (found version "5.1")
+-- DEEPITY_OMP_DLL resolved to: C:/Program Files/LLVM/bin/libomp.dll
+-- Found Python: C:/Python312/python.exe (found suitable version "3.12.1", minimum required is "3.8") found components: Interpreter Development.Module
+-- OPENBLAS_DLL resolved to: C:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/bin/libopenblas.dll
 -- Configuring SLEEF 3.9.0
+-- Building with Clang on Windows
 -- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
--- Found OpenMP_C: -fopenmp (found version "5.2")
--- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Could NOT find PkgConfig (missing: PKG_CONFIG_EXECUTABLE) 
+-- Found OpenMP_C: -fopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fopenmp (found version "5.1")
 -- Configuring build for SLEEF-v3.9.0
-   Target system: Linux-7.1.12-200.fc44.x86_64
-   Target processor: x86_64
-   Host system: Linux-7.1.12-200.fc44.x86_64
-   Host processor: x86_64
-   Detected C compiler: GNU @ /usr/bin/cc
-   CMake: 4.3.0
-   Make program: /usr/bin/gmake
+   Target system: Windows-10.0.26200
+   Target processor: AMD64
+   Host system: Windows-10.0.26200
+   Host processor: AMD64
+   Detected C compiler: Clang @ C:/Program Files/LLVM/bin/clang.exe
+   CMake: 4.3.3
+   Make program: C:/ProgramData/chocolatey/bin/ninja.exe
    CMake build type: Release
--- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
+-- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -Wno-deprecated-declarations -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
 -- Building shared libs : OFF
 -- Building static test bins: OFF
 -- MPFR : LIB_MPFR-NOTFOUND
 -- GMP : LIBGMP-NOTFOUND
--- RT : /usr/lib64/librt.a
+-- RT : 
 -- FFTW3 : LIBFFTW3-NOTFOUND
 -- FFTW3F : LIBFFTW3F-NOTFOUND
 -- OPENSSL : 
 -- SDE : SDE_COMMAND-NOTFOUND
 -- COMPILER_SUPPORTS_OPENMP : 1
--- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
--- Failed to find LLVM FileCheck
+-- Found Git: C:/Program Files/Git/cmd/git.exe (found version "2.53.0.windows.2")
 -- Google Benchmark version: v1.9.1, normalized to 1.9.1
+-- Enabling additional flags: -DINCLUDE_DIRECTORIES=C:/Users/Jack/Projects/deepity/build/Release/_deps/benchmark-src/include
+-- Compiling and running to test HAVE_THREAD_SAFETY_ATTRIBUTES
+-- Performing Test HAVE_THREAD_SAFETY_ATTRIBUTES -- success
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Compiling and running to test HAVE_STD_REGEX
 -- Performing Test HAVE_STD_REGEX -- success
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Compiling and running to test HAVE_GNU_POSIX_REGEX
 -- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
--- Performing Test HAVE_POSIX_REGEX -- success
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Compiling and running to test HAVE_POSIX_REGEX
+-- Performing Test HAVE_POSIX_REGEX -- failed to compile
+-- Compiling and running to test HAVE_STEADY_CLOCK
 -- Performing Test HAVE_STEADY_CLOCK -- success
--- Performing Test HAVE_PTHREAD_AFFINITY -- success
--- Configuring done (1.0s)
--- Generating done (0.1s)
--- Build files have been written to: /home/rose0/Projects/deepity/build/Release
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+-- Check if compiler accepts -pthread
+-- Check if compiler accepts -pthread - no
+-- Looking for pthread_create in pthreads
+-- Looking for pthread_create in pthreads - not found
+-- Looking for pthread_create in pthread
+-- Looking for pthread_create in pthread - not found
+-- Found Threads: TRUE
+-- Compiling and running to test HAVE_PTHREAD_AFFINITY
+-- Performing Test HAVE_PTHREAD_AFFINITY -- failed to compile
+-- Configuring done (1588.2s)
+-- Generating done (0.4s)
+-- Build files have been written to: C:/Users/Jack/Projects/deepity/build/Release
 
 
 === Compilation ===
-[  0%] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.o
-[  1%] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.o
-[  1%] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.o
-[  2%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.o
-[  2%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.o
-[  2%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.o
-[  2%] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.o
-[  3%] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.o
-[  3%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkdisp.dir/mkdisp.c.o
-[  3%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename.dir/mkrename.c.o
-[  4%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_func.cpp.o
-[  4%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_type.cpp.o
-[  4%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp.o
-[  5%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_ndarray.cpp.o
-[  6%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.cpp.o
-[  6%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp.o
-[  6%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/error.cpp.o
-[  6%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_static_property.cpp.o
-[  7%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/common.cpp.o
-[  8%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
-[  8%] Built target common
-[  8%] Linking C executable ../../bin/mkrename_gnuabi
-[  9%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/trampoline.cpp.o
-[  9%] Linking C executable ../../bin/mkalias
-[  9%] Built target mkrename_gnuabi
-[  9%] Built target qtesterutil_obj
-[  9%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
-[  9%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/implicit.cpp.o
-[ 10%] Linking C executable ../../bin/mkmasked_gnuabi
-[ 10%] Built target testerutil_obj
-[ 11%] Linking C executable ../../bin/mkdisp
-[ 11%] Built target mkalias
-[ 11%] Linking C executable ../../bin/addSuffix
-[ 12%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
-[ 13%] Generating include/renamesse2_gnuabi.h
-Generating renamesse2_gnuabi.h: mkrename_gnuabi sse2 b 2 4 _mm128d _mm128 _mm128i _mm128i __SSE2__
-[ 13%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2dp.dir/sleefsimddp.c.o
-[ 13%] Built target mkdisp
-[ 13%] Built target addSuffix
-[ 13%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
-[ 13%] Built target mkmasked_gnuabi
-[ 13%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
-[ 13%] Generating include/renameavx_gnuabi.h
-Generating renameavx_gnuabi.h: mkrename_gnuabi avx c 4 8 __m256d __m256 __m128i struct\ {\ __m128i\ x,\ y;\ } __AVX__
-[ 14%] Linking C executable ../../bin/mkrename
-[ 14%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
-[ 14%] Built target psha_obj
-[ 14%] Built target mkrename
-[ 15%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o
-[ 15%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxsp.dir/sleefsimdsp.c.o
-[ 16%] Generating include/renameavx2_gnuabi.h
-Generating renameavx2_gnuabi.h: mkrename_gnuabi avx2 d 4 8 __m256d __m256 __m128i __m256i __AVX2__
-[ 16%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2dp.dir/sleefsimddp.c.o
-[ 16%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
-[ 17%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
-[ 18%] Generating include/masked_avx512f_dp_gnuabi.h
-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
-[ 18%] Generating include/masked_avx512f_sp_gnuabi.h
-[ 18%] Built target maskedAVX512F_generated
-[ 19%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
-[ 19%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
-[ 19%] Generating sleeflibm_SSE_.h.tmp
-[ 19%] Generating sleeflibm_SSE2.h.tmp
-[ 20%] Generating sleeflibm_SSE4.h.tmp
-[ 20%] Generating sleeflibm_AVX_.h.tmp
-[ 21%] Generating sleeflibm_AVX.h.tmp
-[ 21%] Generating sleeflibm_FMA4.h.tmp
-[ 22%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
-[ 22%] Generating sleeflibm_AVX2.h.tmp
-[ 23%] Generating sleeflibm_AVX2128.h.tmp
-[ 24%] Generating sleeflibm_AVX512F_.h.tmp
-[ 24%] Generating sleeflibm_AVX512F.h.tmp
-[ 24%] Generating sleeflibm_AVX512FNOFMA.h.tmp
-[ 24%] Generating sleeflibm_PUREC_SCALAR.h.tmp
-[ 25%] Generating sleeflibm_PURECFMA_SCALAR.h.tmp
-[ 26%] Generating sleeflibm_DSP_SCALAR.h.tmp
-[ 26%] Generating include/renameavx512fnofma.h
-Generating renameavx512fnofma.h: mkrename cinz_ 8 16 avx512fnofma
-[ 26%] Generating include/renameavx512f.h
-Generating renameavx512f.h: mkrename finz_ 8 16 avx512f
-[ 27%] Generating include/renameavx2.h
-Generating renameavx2.h: mkrename finz_ 4 8 avx2
-[ 27%] Generating include/renameavx2128.h
-[ 27%] Built target renameAVX512FNOFMA.h_generated
-Generating renameavx2128.h: mkrename finz_ 2 4 avx2128
-[ 27%] Generating alias_AVX512F_dp.h.tmp
-[ 27%] Generating include/renamefma4.h
-Generating renamefma4.h: mkrename finz_ 4 8 fma4
-[ 27%] Built target renameAVX512F.h_generated
-[ 27%] Generating include/renamesse4.h
-Generating renamesse4.h: mkrename cinz_ 2 4 sse4
-[ 27%] Generating alias_AVX512F_sp.h.tmp
-[ 27%] Generating include/renameavx.h
-Generating renameavx.h: mkrename cinz_ 4 8 avx
-[ 29%] Generating include/alias_avx512f.h
-[ 29%] Generating include/renamesse2.h
-[ 29%] Built target renameAVX2.h_generated
-Generating renamesse2.h: mkrename cinz_ 2 4 sse2
-[ 29%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
-[ 30%] Generating include/renamepurec_scalar.h
-Generating renamepurec_scalar.h: mkrename cinz_ 1 1 purec
-[ 30%] Built target alias_avx512f.h_generated
-[ 30%] Generating include/renamepurecfma_scalar.h
-Generating renamepurecfma_scalar.h: mkrename finz_ 1 1 purecfma
-[ 31%] Generating include/renamecuda.h
-Generating renamecuda.h: mkrename finz_ 1 1 cuda
-[ 32%] Built target renameAVX2128.h_generated
-[ 33%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o
-[ 33%] Generating include/renameavx512f_gnuabi.h
-Generating renameavx512f_gnuabi.h: mkrename_gnuabi avx512f e 8 16 __m512d __m512 __m256i __m512i __AVX512F__
-[ 33%] Generating ../../include/sleef.h
-[ 34%] Built target headers
-[ 35%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
-[ 35%] Built target renameFMA4.h_generated
-[ 35%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.o
-[ 36%] Built target sleefgnuabisse2sp
-[ 37%] Built target renameAVX.h_generated
-[ 38%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.o
-[ 38%] Built target sleefgnuabisse2dp
-[ 38%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.o
-[ 38%] Built target sleefgnuabiavx2dp
-[ 39%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
-[ 39%] Built target sleefgnuabiavxdp
-[ 40%] Built target renameSSE4.h_generated
-[ 40%] Built target renameSSE2.h_generated
-[ 40%] Built target renamePUREC_SCALAR.h_generated
-[ 40%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
-[ 41%] Built target renamePURECFMA_SCALAR.h_generated
-[ 41%] Generating include/renamedspscalar.h
-[ 41%] Built target renamedspscalar.h_generated
-[ 41%] Generating include/renamedsp128.h
-[ 41%] Generating dispscalar.c.body
-[ 41%] Generating dispsse.c.tmp
-[ 42%] Generating dispscalar.c
-[ 43%] Generating dispsse.c
-[ 43%] Built target renamedsp128.h_generated
-[ 43%] Built target dispsse.c_generated
-[ 43%] Built target dispscalar.c_generated
-[ 44%] Generating include/renamedsp256.h
-[ 45%] Built target sleefgnuabiavxsp
-[ 45%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
-[ 45%] Generating dispavx.c.tmp
-[ 45%] Built target renamedsp256.h_generated
-[ 45%] Built target sleefgnuabiavx2sp
-[ 46%] Generating dispavx.c
-[ 47%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
-[ 48%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
-[ 49%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.o
-[ 49%] Built target dispavx.c_generated
-[ 49%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.o
-[ 52%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.o
-[ 53%] Linking CXX static library bin/libnanobind-static.a
-[ 53%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.o
-[ 54%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.o
-[ 54%] Built target nanobind-static
-[ 54%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.o
-[ 55%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.o
-[ 56%] Built target sleefdetavx512fnofma
-[ 56%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.o
-[ 57%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.o
-[ 57%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.o
-[ 58%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.o
-[ 59%] Built target sleefdetavx512f
-[ 60%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.o
-[ 60%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.o
-[ 60%] Built target sleefdetavx2
-[ 60%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.o
-[ 60%] Built target sleefgnuabiavx512fsp
-[ 60%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.o
-[ 61%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.o
-[ 61%] Built target sleefgnuabiavx512fdp
-[ 62%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.o
-[ 62%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.o
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.o
-[ 63%] Built target sleefavx512f
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.o
-[ 63%] Built target sleefavx512fnofma
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.o
-[ 63%] Built target sleefdetavx2128
-[ 64%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.o
-[ 64%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.o
-[ 65%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.o
-[ 66%] Built target sleefavx2128
-[ 67%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.o
-[ 68%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.o
-[ 68%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.o
-[ 69%] Built target sleefavx2
-[ 69%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.o
-[ 69%] Built target sleefdetfma4
-[ 69%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.o
-[ 69%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.o
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.o
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.o
-[ 71%] Built target sleefdetavx
-[ 71%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.o
-[ 72%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.o
-[ 72%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.o
-[ 72%] Built target sleefdetsse4
-[ 72%] Built target sleeffma4
-[ 73%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
-[ 73%] Linking C static library ../../lib/libsleefgnuabi.a
-[ 73%] Built target sleefgnuabi
-[ 74%] Built target sleefdetpurecfma_scalar
-[ 75%] Built target sleefdetsse2
-[ 75%] Built target sleefdetpurec_scalar
-[ 75%] Built target sleefavx
-[ 75%] Built target sleefsse4
-[ 75%] Built target sleefsse2
-[ 76%] Built target dispscalar_obj
-[ 77%] Built target sleefpurecfma_scalar
-[ 77%] Built target sleefpurec_scalar
-[ 78%] Built target dispsse_obj
-[ 79%] Built target dispavx_obj
-[ 79%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefld.c.o
-[ 80%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.o
-[ 80%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefqp.c.o
-[ 81%] Linking C static library ../../lib/libsleef.a
-[ 81%] Built target sleef
-[ 82%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.o
-[ 82%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.o
-[ 83%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCNetwork.cpp.o
-[ 83%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCNetwork.cpp.o
-[ 83%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCNetwork.cpp.o
-[ 83%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.o
-[ 84%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.o
-[ 84%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.o
-[ 85%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/StreamAlignedBatcher.cpp.o
-[ 85%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ModelIO.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
-[ 88%] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.o
-[ 89%] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.o
-[ 89%] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
-[ 89%] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.o
-[ 90%] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
-[ 91%] Linking CXX static library ../../../bin/libbenchmark.a
-[ 91%] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.o
-[ 91%] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.o
-[ 91%] Built target benchmark
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.o
-[ 92%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.o
-[ 93%] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
-[ 94%] Linking CXX static library ../../../bin/libbenchmark_main.a
-[ 94%] Built target benchmark_main
-[ 95%] Linking CXX static library bin/libDeepityProfiled.a
-[ 95%] Built target DeepityProfiled
-[ 96%] Building CXX object CMakeFiles/DeepityProfile.dir/tests/tProfile.cpp.o
-[ 97%] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.o
-[ 97%] Building CXX object CMakeFiles/ActivationBenchmark.dir/tests/tActivations.cpp.o
-[ 97%] Linking CXX static library bin/libDeepity.a
-[ 97%] Built target Deepity
-[ 97%] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.o
-[ 97%] Building CXX object CMakeFiles/GaussSeidelMiddleLayerVerify.dir/tests/tGaussSeidelMiddleLayerVerify.cpp.o
-[ 97%] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.o
-[ 97%] Linking CXX executable bin/DeepityProfile
-[ 97%] Linking CXX executable bin/GflopsBenchmark
-[ 98%] Linking CXX executable bin/DirectKPVerify
-[ 98%] Linking CXX executable bin/GaussSeidelMiddleLayerVerify
-[ 98%] Built target DeepityProfile
-[ 98%] Linking CXX executable bin/ActivationBenchmark
-[ 98%] Built target GflopsBenchmark
-[ 98%] Built target ActivationBenchmark
-[ 98%] Built target GaussSeidelMiddleLayerVerify
-[ 98%] Built target DirectKPVerify
-[100%] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
-[100%] Built target pydeepity
-
-
-=== CMake Configuration ===
--- PGO: optimized (USE) build -- reading profile data from /home/rose0/Projects/deepity/build/pgo-data
--- CXX compiler: /usr/bin/c++
--- Found OpenMP_C: -fopenmp (found version "5.2")
--- Found OpenMP_CXX: -fopenmp (found version "5.2")
--- Using Intel MKL (found via MKLConfig.cmake).
--- Configuring SLEEF 3.9.0
--- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
--- Found OpenMP_C: -fopenmp (found version "5.2")
--- Found OpenMP_CXX: -fopenmp (found version "5.2")
--- Configuring build for SLEEF-v3.9.0
-   Target system: Linux-7.1.12-200.fc44.x86_64
-   Target processor: x86_64
-   Host system: Linux-7.1.12-200.fc44.x86_64
-   Host processor: x86_64
-   Detected C compiler: GNU @ /usr/bin/cc
-   CMake: 4.3.0
-   Make program: /usr/bin/gmake
-   CMake build type: Release
--- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
--- Building shared libs : OFF
--- Building static test bins: OFF
--- MPFR : LIB_MPFR-NOTFOUND
--- GMP : LIBGMP-NOTFOUND
--- RT : /usr/lib64/librt.a
--- FFTW3 : LIBFFTW3-NOTFOUND
--- FFTW3F : LIBFFTW3F-NOTFOUND
--- OPENSSL : 
--- SDE : SDE_COMMAND-NOTFOUND
--- COMPILER_SUPPORTS_OPENMP : 1
--- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
--- Failed to find LLVM FileCheck
--- Google Benchmark version: v1.9.1, normalized to 1.9.1
--- Performing Test HAVE_STD_REGEX -- success
--- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
--- Performing Test HAVE_POSIX_REGEX -- success
--- Performing Test HAVE_STEADY_CLOCK -- success
--- Performing Test HAVE_PTHREAD_AFFINITY -- success
--- Configuring done (1.1s)
--- Generating done (0.1s)
--- Build files have been written to: /home/rose0/Projects/deepity/build/Release
-
-
-=== Compilation ===
-[  0%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename.dir/mkrename.c.o
-[  1%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.o
-[  1%] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.o
-[  1%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.o
-[  2%] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.o
-[  2%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkdisp.dir/mkdisp.c.o
-[  2%] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.o
-[  2%] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.o
-[  3%] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.o
-[  3%] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.o
-[  5%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.o
-[  5%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.o
-[  5%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.o
-[  6%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.o
-[  6%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.o
-[  6%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.o
-[  7%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.o
-[  7%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.o
-[  7%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/psha2_capi.cpp: In function ‘void EVP_MD_CTX_free(EVP_MD_CTX*)’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/psha2_capi.cpp:57:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#common#CMakeFiles#psha_obj.dir#psha2_capi.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   57 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/testerutil.c: In function ‘memrand’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/testerutil.c:116:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#common#CMakeFiles#testerutil_obj.dir#testerutil.c.gcda’ profile count data file not found [-Wmissing-profile]
-  116 | }
-      | ^
-[  8%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.cpp.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/addSuffix.c: In function ‘main’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/addSuffix.c:247:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#common#CMakeFiles#addSuffix.dir#addSuffix.c.gcda’ profile count data file not found [-Wmissing-profile]
-  247 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/qtesterutil.c: In function ‘sprintf128’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/common/qtesterutil.c:597:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#common#CMakeFiles#qtesterutil_obj.dir#qtesterutil.c.gcda’ profile count data file not found [-Wmissing-profile]
-  597 | }
-      | ^
-[  8%] Built target common
-[  9%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.o
-[  9%] Linking C executable ../../bin/mkrename_gnuabi
-[  9%] Linking C executable ../../bin/mkalias
-[ 10%] Linking C executable ../../bin/mkmasked_gnuabi
-[ 10%] Built target qtesterutil_obj
-[ 10%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_func.cpp.o
-[ 10%] Built target mkrename_gnuabi
-[ 10%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.o
-[ 10%] Built target mkalias
-[ 11%] Linking C executable ../../bin/mkdisp
-[ 11%] Built target mkmasked_gnuabi
-[ 12%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_type.cpp.o
-[ 12%] Linking C executable ../../bin/addSuffix
-[ 13%] Generating include/renamesse2_gnuabi.h
-Generating renamesse2_gnuabi.h: mkrename_gnuabi sse2 b 2 4 _mm128d _mm128 _mm128i _mm128i __SSE2__
-[ 13%] Built target psha_obj
-[ 13%] Built target testerutil_obj
-[ 13%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp.o
-[ 14%] Linking C executable ../../bin/mkrename
-[ 14%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.o
-[ 14%] Built target mkdisp
-[ 14%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2dp.dir/sleefsimddp.c.o
-[ 15%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.o
-[ 15%] Built target mkrename
-[ 15%] Built target addSuffix
-[ 16%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_ndarray.cpp.o
-[ 16%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/check.cc: In function ‘void (*& benchmark::internal::GetAbortHandler())()’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/check.cc:11:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#check.cc.gcda’ profile count data file not found [-Wmissing-profile]
-   11 | }  // namespace benchmark
-      | ^
-[ 17%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_name.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_name.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_name.cc:59:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#benchmark_name.cc.gcda’ profile count data file not found [-Wmissing-profile]
-   59 | }  // namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/colorprint.cc: In member function ‘void std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::_M_construct(_InIterator, _InIterator, std::forward_iterator_tag) [with _FwdIterator = const char*; _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/colorprint.cc:206:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#colorprint.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  206 | }  // end namespace benchmark
-      | ^
-[ 17%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/counter.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/counter.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/counter.cc:80:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#counter.cc.gcda’ profile count data file not found [-Wmissing-profile]
-   80 | }  // end namespace benchmark
-      | ^
-[ 17%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_api_internal.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_api_internal.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_api_internal.cc:119:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#benchmark_api_internal.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  119 | }  // namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/commandlineflags.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/commandlineflags.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/commandlineflags.cc:298:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#commandlineflags.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  298 | }  // end namespace benchmark
-      | ^
-[ 18%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/complexity.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/complexity.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/complexity.cc:255:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#complexity.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  255 | }  // end namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/csv_reporter.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/csv_reporter.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/csv_reporter.cc:169:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#csv_reporter.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  169 | }  // end namespace benchmark
-      | ^
-[ 18%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_static_property.cpp.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/console_reporter.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/console_reporter.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/console_reporter.cc:210:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#console_reporter.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  210 | }  // end namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘_ZGVbN2v_erfc’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3736:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabisse2dp.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3736 | EXPORT CONST VECTOR_CC vdouble __tgamma_u1_finite(vdouble)          __attribute__((weak, alias(str_xtgamma_u1)));
-      | ^~~~~~
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/perf_counters.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/perf_counters.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/perf_counters.cc:282:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#perf_counters.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  282 | }  // namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/json_reporter.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/json_reporter.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/json_reporter.cc:327:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#json_reporter.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  327 | }  // end namespace benchmark
-      | ^
-[ 18%] Generating include/renameavx_gnuabi.h
-Generating renameavx_gnuabi.h: mkrename_gnuabi avx c 4 8 __m256d __m256 __m128i struct\ {\ __m128i\ x,\ y;\ } __AVX__
-[ 18%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
-[ 18%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/reporter.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/reporter.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/reporter.cc:118:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#reporter.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  118 | }  // end namespace benchmark
-      | ^
-[ 19%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/common.cpp.o
-[ 19%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxsp.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘_ZGVbN4v_erfcf’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3693:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabisse2sp.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3693 | EXPORT CONST VECTOR_CC vfloat __tgammaf_u1_finite(vfloat)         __attribute__((weak, alias(str_xtgammaf_u1)));
-      | ^~~~~~
-[ 19%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.o
-In file included from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/include/nanobind/nanobind.h:51,
-                 from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.h:14,
-                 from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp:1:
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = tsl::detail_robin_hash::bucket_entry<std::pair<void*, void*>, true>]’:
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/include/nanobind/nb_defs.h:23:31: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#nanobind-static.dir#.venv#lib#python3.14#site-packages#nanobind#src#nb_enum.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   23 | #  define NAMESPACE_END(name) }
-      |                               ^
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp:433:1: note: in expansion of macro ‘NAMESPACE_END’
-  433 | NAMESPACE_END(NB_NAMESPACE)
-      | ^~~~~~~~~~~~~
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/statistics.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/statistics.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/statistics.cc:214:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#statistics.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  214 | }  // end namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/string_util.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/string_util.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/string_util.cc:254:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#string_util.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  254 | }  // end namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_runner.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_runner.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_runner.cc:539:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#benchmark_runner.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  539 | }  // end namespace benchmark
-      | ^
-[ 19%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.o
-[ 19%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/error.cpp.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark.cc:832:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#benchmark.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  832 | }  // end namespace benchmark
-      | ^
-[ 20%] Generating include/renameavx2_gnuabi.h
-Generating renameavx2_gnuabi.h: mkrename_gnuabi avx2 d 4 8 __m256d __m256 __m128i __m256i __AVX2__
-[ 20%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2dp.dir/sleefsimddp.c.o
-[ 21%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/trampoline.cpp.o
-[ 22%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘_ZGVcN4v_erfc’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3736:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavxdp.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3736 | EXPORT CONST VECTOR_CC vdouble __tgamma_u1_finite(vdouble)          __attribute__((weak, alias(str_xtgamma_u1)));
-      | ^~~~~~
-[ 23%] Generating include/masked_avx512f_dp_gnuabi.h
-[ 23%] Generating include/masked_avx512f_sp_gnuabi.h
-[ 23%] Generating sleeflibm_SSE_.h.tmp
-[ 23%] Generating sleeflibm_SSE2.h.tmp
-[ 23%] Built target maskedAVX512F_generated
-[ 24%] Generating sleeflibm_SSE4.h.tmp
-[ 24%] Generating include/renameavx512fnofma.h
-[ 24%] Generating sleeflibm_AVX_.h.tmp
-Generating renameavx512fnofma.h: mkrename cinz_ 8 16 avx512fnofma
-[ 25%] Generating sleeflibm_AVX.h.tmp
-[ 25%] Built target renameAVX512FNOFMA.h_generated
-[ 25%] Generating sleeflibm_FMA4.h.tmp
-[ 25%] Generating sleeflibm_AVX2.h.tmp
-[ 26%] Generating sleeflibm_AVX2128.h.tmp
-[ 26%] Generating alias_AVX512F_dp.h.tmp
-[ 27%] Generating sleeflibm_AVX512F_.h.tmp
-[ 27%] Generating alias_AVX512F_sp.h.tmp
-[ 27%] Generating sleeflibm_AVX512F.h.tmp
-[ 28%] Generating include/alias_avx512f.h
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘_ZGVcN8v_erfcf’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3693:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavxsp.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3693 | EXPORT CONST VECTOR_CC vfloat __tgammaf_u1_finite(vfloat)         __attribute__((weak, alias(str_xtgammaf_u1)));
-      | ^~~~~~
-[ 28%] Generating sleeflibm_AVX512FNOFMA.h.tmp
-[ 28%] Built target alias_avx512f.h_generated
-[ 28%] Generating sleeflibm_PUREC_SCALAR.h.tmp
-[ 29%] Generating sleeflibm_PURECFMA_SCALAR.h.tmp
-[ 30%] Generating sleeflibm_DSP_SCALAR.h.tmp
-[ 30%] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/implicit.cpp.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_register.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_register.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_register.cc:521:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#benchmark_register.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  521 | }  // end namespace benchmark
-      | ^
-[ 30%] Generating include/renameavx512f.h
-Generating renameavx512f.h: mkrename finz_ 8 16 avx512f
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/timers.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/timers.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/timers.cc:284:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#timers.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  284 | }  // end namespace benchmark
-      | ^
-[ 31%] Generating include/renameavx2.h
-Generating renameavx2.h: mkrename finz_ 4 8 avx2
-[ 31%] Generating include/renameavx2128.h
-Generating renameavx2128.h: mkrename finz_ 2 4 avx2128
-[ 31%] Generating include/renamefma4.h
-Generating renamefma4.h: mkrename finz_ 4 8 fma4
-[ 31%] Generating include/renameavx.h
-Generating renameavx.h: mkrename cinz_ 4 8 avx
-[ 31%] Built target renameAVX512F.h_generated
-[ 32%] Generating include/renamesse2.h
-[ 32%] Generating include/renamesse4.h
-Generating renamesse2.h: mkrename cinz_ 2 4 sse2
-Generating renamesse4.h: mkrename cinz_ 2 4 sse4
-In file included from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/include/nanobind/nanobind.h:51,
-                 from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.h:14,
-                 from /home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp:11:
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp: In function ‘PyObject* nanobind::detail::datetime_pack(nb_internals*, uint32_t, const int32_t*)’:
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/include/nanobind/nb_defs.h:23:31: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#nanobind-static.dir#.venv#lib#python3.14#site-packages#nanobind#src#nb_datetime.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   23 | #  define NAMESPACE_END(name) }
-      |                               ^
-/home/rose0/Projects/deepity/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp:241:1: note: in expansion of macro ‘NAMESPACE_END’
-  241 | NAMESPACE_END(NB_NAMESPACE)
-      | ^~~~~~~~~~~~~
-[ 32%] Built target renameAVX2.h_generated
-[ 32%] Generating include/renamepurecfma_scalar.h
-Generating renamepurecfma_scalar.h: mkrename finz_ 1 1 purecfma
-[ 33%] Generating include/renamepurec_scalar.h
-Generating renamepurec_scalar.h: mkrename cinz_ 1 1 purec
-[ 34%] Generating include/renamecuda.h
-Generating renamecuda.h: mkrename finz_ 1 1 cuda
-[ 35%] Generating include/renameavx512f_gnuabi.h
-Generating renameavx512f_gnuabi.h: mkrename_gnuabi avx512f e 8 16 __m512d __m512 __m256i __m512i __AVX512F__
-[ 36%] Built target renameAVX2128.h_generated
-[ 36%] Built target renameFMA4.h_generated
-[ 36%] Generating ../../include/sleef.h
-[ 37%] Built target renameSSE4.h_generated
-[ 38%] Built target renameAVX.h_generated
-[ 38%] Built target sleefgnuabisse2dp
-[ 38%] Built target renameSSE2.h_generated
-[ 39%] Built target headers
-[ 39%] Built target renamePUREC_SCALAR.h_generated
-[ 39%] Generating dispscalar.c.body
-[ 40%] Generating include/renamedspscalar.h
-[ 40%] Built target renamePURECFMA_SCALAR.h_generated
-[ 41%] Generating dispscalar.c
-[ 41%] Built target renamedspscalar.h_generated
-[ 41%] Generating include/renamedsp128.h
-[ 42%] Generating include/renamedsp256.h
-[ 42%] Generating dispsse.c.tmp
-[ 43%] Built target renamedsp128.h_generated
-[ 43%] Generating dispsse.c
-[ 43%] Generating dispavx.c.tmp
-[ 43%] Built target renamedsp256.h_generated
-[ 43%] Built target dispscalar.c_generated
-[ 44%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
-[ 44%] Built target dispsse.c_generated
-[ 45%] Generating dispavx.c
-[ 46%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
-[ 47%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.o
-[ 47%] Built target dispavx.c_generated
-[ 47%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.o
-[ 48%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.o
-[ 48%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/sysinfo.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/sysinfo.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/sysinfo.cc:877:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark.dir#sysinfo.cc.gcda’ profile count data file not found [-Wmissing-profile]
-  877 | }  // end namespace benchmark
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘_ZGVdN4v_erfc’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3736:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavx2dp.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3736 | EXPORT CONST VECTOR_CC vdouble __tgamma_u1_finite(vdouble)          __attribute__((weak, alias(str_xtgamma_u1)));
-      | ^~~~~~
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘_ZGVdN8v_erfcf’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3693:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavx2sp.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3693 | EXPORT CONST VECTOR_CC vfloat __tgammaf_u1_finite(vfloat)         __attribute__((weak, alias(str_xtgammaf_u1)));
-      | ^~~~~~
-[ 49%] Built target sleefgnuabisse2sp
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.o
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_cinz_getPtrf16_avx512fnofma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx512fnofma.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_cinz_getPtrd8_avx512fnofma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx512fnofma.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf16_avx512f’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3671: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx512f.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3671 | #endif
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘_ZGVeM16v_erfcf’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3697: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavx512fsp.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3697 | #endif
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘_ZGVeM8v_erfc’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3740: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefgnuabiavx512fdp.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3740 | #endif
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf16_avx512fnofma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx512fnofma.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 50%] Built target sleefgnuabiavxdp
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_finz_getPtrf16_avx512f’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx512f.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 50%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.o
-[ 51%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.o
-[ 52%] Linking CXX static library bin/libnanobind-static.a
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd8_avx512f’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3684: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx512f.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3684 | #endif
-[ 52%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.o
-[ 52%] Built target sleefgnuabiavx2dp
-[ 52%] Built target sleefgnuabiavx2sp
-[ 53%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_finz_getPtrd8_avx512f’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx512f.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 53%] Built target nanobind-static
-[ 53%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.o
-[ 54%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd8_avx512fnofma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx512fnofma.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 55%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_finz_getPtrf8_avx2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx2.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 56%] Built target sleefdetavx512fnofma
-[ 57%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.o
-[ 58%] Built target sleefgnuabiavxsp
-[ 59%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.o
-[ 59%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.o
-[ 59%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.o
-[ 60%] Built target sleefdetavx512f
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_finz_getPtrd4_avx2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx2.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 60%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd4_avx2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx2.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_finz_getPtrf4_avx2128’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx2128.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_finz_getPtrd2_avx2128’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx2128.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf4_avx2128’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx2128.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 60%] Built target sleefgnuabiavx512fsp
-[ 60%] Built target sleefgnuabiavx512fdp
-[ 61%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.o
-[ 61%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.o
-[ 62%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd2_avx2128’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx2128.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf8_fma4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleeffma4.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_finz_getPtrf8_fma4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetfma4.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 62%] Built target sleefavx512f
-[ 62%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.o
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.o
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_finz_getPtrd4_fma4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetfma4.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 63%] Built target sleefdetavx2
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_cinz_getPtrf8_avx’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 63%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.o
-[ 63%] Built target sleefavx512fnofma
-[ 64%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.o
-[ 64%] Built target sleefdetavx2128
-[ 64%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.o
-[ 65%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.o
-[ 66%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf8_avx’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd4_fma4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleeffma4.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_cinz_getPtrd4_avx’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetavx.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_cinz_getPtrf4_sse4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetsse4.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd4_avx’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefavx.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 67%] Built target sleefavx2
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf4_sse4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefsse4.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 68%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.o
-[ 68%] Built target sleefdetfma4
-[ 68%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.o
-[ 68%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd2_sse4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefsse4.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_cinz_getPtrf1_purec’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetpurec_scalar.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 69%] Built target sleefavx2128
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_getPtrf4_sse2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefsse2.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.o
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_cinz_getPtrd2_sse4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetsse4.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_cinz_getPtrf4_sse2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetsse2.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: In function ‘Sleef_finz_getPtrf1_purecfma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c:3666:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetpurecfma_scalar.dir#sleefsimdsp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3666 | }
-      | ^
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_cinz_getPtrd2_sse2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetsse2.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_getPtrd2_sse2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefsse2.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 70%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.o
-[ 71%] Built target sleefdetavx
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_finz_getPtrd1_purecfma’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetpurecfma_scalar.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 72%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.o
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: In function ‘Sleef_cinz_getPtrd1_purec’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c:3679:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleefdetpurec_scalar.dir#sleefsimddp.c.gcda’ profile count data file not found [-Wmissing-profile]
- 3679 | }
-      | ^
-[ 72%] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.o
-[ 73%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
-[ 73%] Linking C static library ../../lib/libsleefgnuabi.a
-[ 73%] Built target sleefdetsse4
-[ 73%] Built target sleefgnuabi
-[ 73%] Built target sleeffma4
-[ 74%] Built target sleefdetpurecfma_scalar
-[ 75%] Built target sleefdetsse2
-[ 75%] Built target sleefdetpurec_scalar
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-build/src/libm/dispsse.c: In function ‘Sleef_getPtrd2’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-build/src/libm/dispsse.c:214:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#dispsse_obj.dir#dispsse.c.gcda’ profile count data file not found [-Wmissing-profile]
-  214 | DISPATCH_p_i(2, Sleef_getPtr, Sleef_getPtrd1, Sleef_getPtrd2, pnt_getPtrd2, disp_getPtrd2, Sleef_getPtrd2_sse2, Sleef_getPtrd2_sse4, Sleef_getPtrd2_avx2128)
-      | ^~~~~~~~~~~~
-[ 75%] Built target sleefsse4
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-build/src/libm/dispavx.c: In function ‘Sleef_getPtrd4’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-build/src/libm/dispavx.c:221:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#dispavx_obj.dir#dispavx.c.gcda’ profile count data file not found [-Wmissing-profile]
-  221 | DISPATCH_p_i(4, Sleef_getPtr, Sleef_getPtrd1, Sleef_getPtrd4, pnt_getPtrd4, disp_getPtrd4, Sleef_getPtrd4_avx, Sleef_getPtrd4_fma4, Sleef_getPtrd4_avx2)
-      | ^~~~~~~~~~~~
-[ 75%] Built target sleefavx
-[ 76%] Built target sleefpurecfma_scalar
-[ 77%] Built target dispscalar_obj
-[ 77%] Built target sleefpurec_scalar
-[ 77%] Built target sleefsse2
-[ 78%] Linking CXX static library ../../../bin/libbenchmark.a
-[ 78%] Built target benchmark
-[ 78%] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.o
-[ 79%] Built target dispsse_obj
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_main.cc: In function ‘(static initializers for /home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_main.cc)’:
-/home/rose0/Projects/deepity/build/Release/_deps/benchmark-src/src/benchmark_main.cc:18:17: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#benchmark-build#src#CMakeFiles#benchmark_main.dir#benchmark_main.cc.gcda’ profile count data file not found [-Wmissing-profile]
-   18 | BENCHMARK_MAIN();
-      |                 ^
-[ 80%] Linking CXX static library ../../../bin/libbenchmark_main.a
-[ 81%] Built target dispavx_obj
-[ 82%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.o
-[ 82%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefqp.c.o
-[ 82%] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefld.c.o
-[ 82%] Built target benchmark_main
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefld.c: In function ‘Sleef_sincospil_u35’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefld.c:419:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleef.dir#sleefld.c.gcda’ profile count data file not found [-Wmissing-profile]
-  419 | }
-      | ^
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefqp.c: In function ‘Sleef_sincospiq_u35’:
-/home/rose0/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefqp.c:445:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#_deps#sleef-build#src#libm#CMakeFiles#sleef.dir#sleefqp.c.gcda’ profile count data file not found [-Wmissing-profile]
-  445 | }
-      | ^
-[ 83%] Linking C static library ../../lib/libsleef.a
-[ 83%] Built target sleef
-[ 84%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.o
-[ 84%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.o
-[ 85%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCNetwork.cpp.o
-[ 85%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.o
-[ 86%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.o
-[ 86%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCNetwork.cpp.o
-[ 86%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.o
-[ 86%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCNetwork.cpp.o
-[ 86%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/StreamAlignedBatcher.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
-[ 87%] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
-[ 89%] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
-[ 89%] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ModelIO.cpp.o
-[ 90%] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.o
-[ 91%] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.o
-[ 91%] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
-[ 91%] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.o
-/home/rose0/Projects/deepity/src/StreamAlignedBatcher.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = long unsigned int]’:
-/home/rose0/Projects/deepity/src/StreamAlignedBatcher.cpp:77:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#StreamAlignedBatcher.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   77 | }
-      | ^
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.o
-/home/rose0/Projects/deepity/src/RBLayer.cpp: In member function ‘void std::mersenne_twister_engine<_UIntType, __w, __n, __m, __r, __a, __u, __d, __s, __b, __t, __c, __l, __f>::_M_gen_rand() [with _UIntType = long unsigned int; long unsigned int __w = 32; long unsigned int __n = 624; long unsigned int __m = 397; long unsigned int __r = 31; _UIntType __a = 2567483615; long unsigned int __u = 11; _UIntType __d = 4294967295; long unsigned int __s = 7; _UIntType __b = 2636928640; long unsigned int __t = 15; _UIntType __c = 4022730752; long unsigned int __l = 18; _UIntType __f = 1812433253]’:
-/home/rose0/Projects/deepity/src/RBLayer.cpp:300:73: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#RBLayer.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  300 | const float *RBLayer::GetInferenceError() const noexcept { return e_bu; }
-      |                                                                         ^
-/home/rose0/Projects/deepity/src/ConvPCNetwork.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = std::unique_ptr<Deep::ConvPCLayer>]’:
-/home/rose0/Projects/deepity/src/ConvPCNetwork.cpp:169:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#ConvPCNetwork.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  169 | }
-      | ^
-[ 92%] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.o
-[ 93%] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.o
-/home/rose0/Projects/deepity/src/DiscriminativePCNetwork.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = std::unique_ptr<Deep::DiscriminativePCLayer>]’:
-/home/rose0/Projects/deepity/src/DiscriminativePCNetwork.cpp:233:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#DiscriminativePCNetwork.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  233 | }
-      | ^
-[ 93%] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.o
-[ 94%] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
-/home/rose0/Projects/deepity/src/ConvPCLayer.cpp: In function ‘_ZN4Deep11ConvPCLayer15UpdatePrecisionEv._omp_fn.0’:
-/home/rose0/Projects/deepity/src/ConvPCLayer.cpp:451:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#ConvPCLayer.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  451 | }
-      | ^
-/home/rose0/Projects/deepity/src/SimplePCNetwork.cpp: In function ‘_ZN4Deep15SimplePCNetwork7CompileEv._omp_fn.0’:
-/home/rose0/Projects/deepity/src/SimplePCNetwork.cpp:186:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#SimplePCNetwork.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  186 | }
-      | ^
-/home/rose0/Projects/deepity/src/SimpleConvPCLayer.cpp: In function ‘_ZN4Deep10AdamUpdateEPfPKfS0_S0_miffff._omp_fn.0’:
-/home/rose0/Projects/deepity/src/SimpleConvPCLayer.cpp:481:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#SimpleConvPCLayer.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  481 | }
-      | ^
-/home/rose0/Projects/deepity/src/ModelIO.cpp: In function ‘_ZN4DeepL4reluEPfm._omp_fn.0’:
-/home/rose0/Projects/deepity/src/ModelIO.cpp:182:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#ModelIO.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  182 | }
-      | ^
-/home/rose0/Projects/deepity/src/DiscriminativePCLayer.cpp: In function ‘_ZN4Deep21DiscriminativePCLayer15UpdatePrecisionEv._omp_fn.0’:
-/home/rose0/Projects/deepity/src/DiscriminativePCLayer.cpp:595:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#DiscriminativePCLayer.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  595 | }
-      | ^
-/home/rose0/Projects/deepity/src/SimplePCLayer.cpp: In function ‘_ZN4Deep10AdamUpdateEPfPKfS0_S0_miffff._omp_fn.0’:
-/home/rose0/Projects/deepity/src/SimplePCLayer.cpp:443:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfiled.dir#src#SimplePCLayer.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  443 | }
-      | ^
-[ 94%] Linking CXX static library bin/libDeepity.a
-[ 94%] Built target Deepity
-[ 94%] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.o
-[ 94%] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.o
-[ 94%] Building CXX object CMakeFiles/GaussSeidelMiddleLayerVerify.dir/tests/tGaussSeidelMiddleLayerVerify.cpp.o
-[ 95%] Linking CXX static library bin/libDeepityProfiled.a
-[ 95%] Built target DeepityProfiled
-[ 96%] Building CXX object CMakeFiles/DeepityProfile.dir/tests/tProfile.cpp.o
-[ 96%] Building CXX object CMakeFiles/ActivationBenchmark.dir/tests/tActivations.cpp.o
-[ 97%] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.o
-/home/rose0/Projects/deepity/tests/tDirectKPVerify.cpp: In destructor ‘virtual Deep::DirectKPPCLayer::~DirectKPPCLayer()’:
-/home/rose0/Projects/deepity/tests/tDirectKPVerify.cpp:149:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DirectKPVerify.dir#tests#tDirectKPVerify.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  149 | }
-      | ^
-/home/rose0/Projects/deepity/tests/tGaussSeidelMiddleLayerVerify.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = float]’:
-/home/rose0/Projects/deepity/tests/tGaussSeidelMiddleLayerVerify.cpp:123:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#GaussSeidelMiddleLayerVerify.dir#tests#tGaussSeidelMiddleLayerVerify.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  123 | }
-      | ^
-[ 98%] Linking CXX executable bin/DirectKPVerify
-[ 98%] Linking CXX executable bin/GaussSeidelMiddleLayerVerify
-/home/rose0/Projects/deepity/tests/tActivations.cpp: In function ‘_ZN4DeepL4tanhEPfm._omp_fn.0’:
-/home/rose0/Projects/deepity/tests/tActivations.cpp:163:17: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#ActivationBenchmark.dir#tests#tActivations.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-  163 | BENCHMARK_MAIN();
-      |                 ^
-/home/rose0/Projects/deepity/tests/tGflopsBenchmark.cpp: In function ‘(static initializers for /home/rose0/Projects/deepity/tests/tGflopsBenchmark.cpp)’:
-/home/rose0/Projects/deepity/tests/tGflopsBenchmark.cpp:75:17: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#GflopsBenchmark.dir#tests#tGflopsBenchmark.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   75 | BENCHMARK_MAIN();
-      |                 ^
-/home/rose0/Projects/deepity/tests/tProfile.cpp: In member function ‘constexpr _Tp* std::__new_allocator<_Tp>::allocate(size_type, const void*) [with _Tp = float]’:
-/home/rose0/Projects/deepity/tests/tProfile.cpp:95:1: warning: ‘/home/rose0/Projects/deepity/build/pgo-data/#home#rose0#Projects#deepity#build#Release#CMakeFiles#DeepityProfile.dir#tests#tProfile.cpp.gcda’ profile count data file not found [-Wmissing-profile]
-   95 | }
-      | ^
-[ 98%] Linking CXX executable bin/GflopsBenchmark
-[ 98%] Linking CXX executable bin/DeepityProfile
-[ 98%] Linking CXX executable bin/ActivationBenchmark
-[ 98%] Built target GflopsBenchmark
-[ 98%] Built target DeepityProfile
-[ 98%] Built target DirectKPVerify
-[ 98%] Built target GaussSeidelMiddleLayerVerify
-[ 98%] Built target ActivationBenchmark
-[100%] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
-[100%] Built target pydeepity
-
-
-=== Tests ===
-Test project /home/rose0/Projects/deepity/build/Release
-    Start 3: DeepityProfile
-    Start 2: GaussSeidelMiddleLayerVerify
-    Start 1: DirectKPVerify
-1/3 Test #1: DirectKPVerify ...................   Passed    0.02 sec
-2/3 Test #2: GaussSeidelMiddleLayerVerify .....   Passed    0.16 sec
-3/3 Test #3: DeepityProfile ...................   Passed    1.31 sec
-
-100% tests passed, 0 tests failed out of 3
-
-Total Test time (real) =   1.31 sec
+[1/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename.dir/mkrename.c.obj
+[2/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.obj
+[3/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkdisp.dir/mkdisp.c.obj
+[4/172] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.obj
+[5/172] Linking C executable _deps\sleef-build\bin\mkrename.exe
+[6/172] Linking C executable _deps\sleef-build\bin\mkalias.exe
+[7/172] Linking C executable _deps\sleef-build\bin\mkdisp.exe
+[8/172] Generating sleeflibm_AVX.h.tmp
+[9/172] Generating sleeflibm_AVX2.h.tmp
+[10/172] Generating sleeflibm_AVX2128.h.tmp
+[11/172] Generating sleeflibm_AVX512F.h.tmp
+[12/172] Generating sleeflibm_AVX512FNOFMA.h.tmp
+[13/172] Generating sleeflibm_AVX512F_.h.tmp
+[14/172] Generating sleeflibm_AVX_.h.tmp
+[15/172] Generating sleeflibm_DSP_SCALAR.h.tmp
+[16/172] Generating sleeflibm_FMA4.h.tmp
+[17/172] Generating sleeflibm_PURECFMA_SCALAR.h.tmp
+[18/172] Generating sleeflibm_PUREC_SCALAR.h.tmp
+[19/172] Generating sleeflibm_SSE2.h.tmp
+[20/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.obj
+[21/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_static_property.cpp.obj
+[22/172] Generating sleeflibm_SSE4.h.tmp
+[23/172] Generating sleeflibm_SSE_.h.tmp
+[24/172] Generating alias_AVX512F_dp.h.tmp
+[25/172] Generating alias_AVX512F_sp.h.tmp
+[26/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_datetime.cpp.obj
+[27/172] Generating dispscalar.c.body
+[28/172] Generating dispavx.c.tmp
+[29/172] Generating dispsse.c.tmp
+[30/172] Generating include/renameavx512fnofma.h
+Generating renameavx512fnofma.h: mkrename "cinz_" "8" "16" "avx512fnofma" 
+[31/172] Generating include/renameavx512f.h
+Generating renameavx512f.h: mkrename "finz_" "8" "16" "avx512f" 
+[32/172] Generating include/renameavx2.h
+Generating renameavx2.h: mkrename "finz_" "4" "8" "avx2" 
+[33/172] Generating include/renameavx2128.h
+Generating renameavx2128.h: mkrename "finz_" "2" "4" "avx2128" 
+[34/172] Generating include/renamefma4.h
+Generating renamefma4.h: mkrename "finz_" "4" "8" "fma4" 
+[35/172] Generating include/renameavx.h
+Generating renameavx.h: mkrename "cinz_" "4" "8" "avx" 
+[36/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/trampoline.cpp.obj
+[37/172] Generating include/renamepurec_scalar.h
+Generating renamepurec_scalar.h: mkrename "cinz_" "1" "1" "purec" 
+[38/172] Generating include/renamesse4.h
+Generating renamesse4.h: mkrename "cinz_" "2" "4" "sse4" 
+[39/172] Generating include/renamepurecfma_scalar.h
+Generating renamepurecfma_scalar.h: mkrename "finz_" "1" "1" "purecfma" 
+[40/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/error.cpp.obj
+[41/172] Generating include/renamesse2.h
+Generating renamesse2.h: mkrename "cinz_" "2" "4" "sse2" 
+[42/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/implicit.cpp.obj
+[43/172] Generating include/alias_avx512f.h
+[44/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_ndarray.cpp.obj
+[45/172] Generating dispscalar.c
+[46/172] Generating include/renamecuda.h
+Generating renamecuda.h: mkrename "finz_" "1" "1" "cuda" 
+[47/172] Generating include/renamedspscalar.h
+[48/172] Generating dispsse.c
+[49/172] Generating include/renamedsp128.h
+[50/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/common.cpp.obj
+[51/172] Generating dispavx.c
+[52/172] Generating ../../include/sleef.h
+[53/172] Generating include/renamedsp256.h
+[54/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_func.cpp.obj
+[55/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.obj
+[56/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_internals.cpp.obj
+[57/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.obj
+[58/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.obj
+[59/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.obj
+[60/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_enum.cpp.obj
+[61/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_type.cpp.obj
+[62/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.obj
+[63/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.obj
+[64/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.obj
+[65/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.obj
+[66/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.obj
+[67/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.obj
+[68/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.obj
+[69/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.obj
+[70/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.obj
+[71/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.obj
+[72/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.obj
+[73/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.obj
+[74/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.obj
+[75/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.obj
+[76/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.obj
+[77/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.obj
+[78/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.obj
+[79/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.obj
+[80/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.obj
+[81/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.obj
+[82/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.obj
+[83/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.obj
+[84/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.obj
+[85/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.obj
+[86/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.obj
+[87/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.obj
+[88/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.obj
+[89/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.obj
+[90/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.obj
+[91/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.obj
+[92/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.obj
+[93/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.obj
+[94/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.obj
+[95/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.obj
+[96/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.obj
+[97/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.obj
+[98/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.obj
+[99/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.obj
+[100/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.obj
+[101/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.obj
+[102/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.obj
+[103/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.obj
+[104/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.obj
+[105/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.obj
+[106/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.obj
+[107/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\GaussSeidelPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/GaussSeidelPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/GaussSeidelPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/GaussSeidelPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[108/172] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\ConvPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[109/172] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimpleConvPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[110/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\DiscriminativePCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/DiscriminativePCNetwork.h:5:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[111/172] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\ConvPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/ConvPCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/ConvPCNetwork.h:5:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[112/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\DiscriminativePCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[113/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimplePCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimplePCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/SimplePCNetwork.h:5:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[114/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimplePCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[115/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\GaussSeidelPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/GaussSeidelPCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/GaussSeidelPCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/GaussSeidelPCNetwork.h:5:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/GaussSeidelPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[116/172] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimpleConvPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/SimpleConvPCNetwork.h:6:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[117/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\DirectKPPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DirectKPPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/DirectKPPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/DirectKPPCLayer.h:4:10: fatal error: 'deepity/MemoryArena.h' file not found
+    4 | #include <deepity/MemoryArena.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[118/172] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\RBLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/RBLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/RBLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/RBLayer.h:4:10: fatal error: 'deepity/Activations.h' file not found
+    4 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[119/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\DirectKPPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DirectKPPCNetwork.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/DirectKPPCNetwork.cpp:1:
+In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/DirectKPPCNetwork.h:5:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/DirectKPPCLayer.h:4:10: fatal error: 'deepity/MemoryArena.h' file not found
+    4 | #include <deepity/MemoryArena.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[120/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\RBLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/RBLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/RBLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/RBLayer.h:4:10: fatal error: 'deepity/Activations.h' file not found
+    4 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[121/172] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj -MF CMakeFiles\Deepity.dir\src\StreamAlignedBatcher.cpp.obj.d -o CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj -c C:/Users/Jack/Projects/deepity/src/StreamAlignedBatcher.cpp
+C:/Users/Jack/Projects/deepity/src/StreamAlignedBatcher.cpp:1:10: fatal error: 'deepity/StreamAlignedBatcher.h' file not found
+    1 | #include <deepity/StreamAlignedBatcher.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[122/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\ConvPCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[123/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\DiscriminativePCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[124/172] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj
+FAILED: [code=1] CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj -MF CMakeFiles\Deepity.dir\src\ModelIO.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ModelIO.cpp
+C:/Users/Jack/Projects/deepity/src/ModelIO.cpp:1:10: fatal error: 'deepity/ModelIO.h' file not found
+    1 | #include <deepity/ModelIO.h>
+      |          ^~~~~~~~~~~~~~~~~~~
+1 error generated.
+[125/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\SimpleConvPCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+[126/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj
+FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj 
+C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\SimplePCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp
+In file included from C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp:1:
+C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
+    8 | #include <deepity/Activations.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+ninja: build stopped: subcommand failed.
 
 
