@@ -3,7 +3,7 @@
 #include <memory>
 #include <random>
 #include <deepity/layers/SimplePCLayer.h>
-#include <deepity/MemoryArena.h>
+#include <deepity/utils/MemoryArena.h>
 
 /**
  * @file SimplePCNetwork.h

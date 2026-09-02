@@ -1,25 +1,10 @@
 --- Deepity Build Log (Release, arch=native) ---
 
 === CMake Configuration ===
--- The C compiler identification is Clang 22.1.8 with GNU-like command-line
--- The CXX compiler identification is Clang 22.1.8 with GNU-like command-line
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: C:/Program Files/LLVM/bin/clang.exe - skipped
--- Detecting C compile features
--- Detecting C compile features - done
--- Detecting CXX compiler ABI info
--- Detecting CXX compiler ABI info - done
--- Check for working CXX compiler: C:/Program Files/LLVM/bin/clang++.exe - skipped
--- Detecting CXX compile features
--- Detecting CXX compile features - done
 -- PGO: instrumented (GENERATE) build -- profile data will be written to C:/Users/Jack/Projects/deepity/build/pgo-data
 -- CXX compiler: C:/Program Files/LLVM/bin/clang++.exe
 -- Found OpenMP_C: -fopenmp (found version "5.1")
 -- Found OpenMP_CXX: -fopenmp (found version "5.1")
--- Found OpenMP: TRUE (found version "5.1")
--- DEEPITY_OMP_DLL resolved to: C:/Program Files/LLVM/bin/libomp.dll
--- Found Python: C:/Python312/python.exe (found suitable version "3.12.1", minimum required is "3.8") found components: Interpreter Development.Module
 -- OPENBLAS_DLL resolved to: C:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/bin/libopenblas.dll
 -- Configuring SLEEF 3.9.0
 -- Building with Clang on Windows
@@ -47,34 +32,135 @@
 -- OPENSSL : 
 -- SDE : SDE_COMMAND-NOTFOUND
 -- COMPILER_SUPPORTS_OPENMP : 1
--- Found Git: C:/Program Files/Git/cmd/git.exe (found version "2.53.0.windows.2")
 -- Google Benchmark version: v1.9.1, normalized to 1.9.1
 -- Enabling additional flags: -DINCLUDE_DIRECTORIES=C:/Users/Jack/Projects/deepity/build/Release/_deps/benchmark-src/include
--- Compiling and running to test HAVE_THREAD_SAFETY_ATTRIBUTES
 -- Performing Test HAVE_THREAD_SAFETY_ATTRIBUTES -- success
 -- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
--- Compiling and running to test HAVE_STD_REGEX
 -- Performing Test HAVE_STD_REGEX -- success
 -- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
--- Compiling and running to test HAVE_GNU_POSIX_REGEX
 -- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
 -- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
--- Compiling and running to test HAVE_POSIX_REGEX
 -- Performing Test HAVE_POSIX_REGEX -- failed to compile
--- Compiling and running to test HAVE_STEADY_CLOCK
 -- Performing Test HAVE_STEADY_CLOCK -- success
--- Performing Test CMAKE_HAVE_LIBC_PTHREAD
--- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
--- Check if compiler accepts -pthread
--- Check if compiler accepts -pthread - no
--- Looking for pthread_create in pthreads
--- Looking for pthread_create in pthreads - not found
--- Looking for pthread_create in pthread
--- Looking for pthread_create in pthread - not found
--- Found Threads: TRUE
--- Compiling and running to test HAVE_PTHREAD_AFFINITY
 -- Performing Test HAVE_PTHREAD_AFFINITY -- failed to compile
--- Configuring done (1588.2s)
+-- Configuring done (6.2s)
+-- Generating done (0.3s)
+-- Build files have been written to: C:/Users/Jack/Projects/deepity/build/Release
+
+
+=== Compilation ===
+[1/66] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj
+[2/66] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj
+[3/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj
+[4/66] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj
+[5/66] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj
+[6/66] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj
+[7/66] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj
+[8/66] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj
+[9/66] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj
+[10/66] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj
+[11/66] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj
+[12/66] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj
+[13/66] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj
+[14/66] Linking C static library _deps\sleef-build\lib\sleef.lib
+[15/66] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj
+[16/66] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj
+[17/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj
+[18/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj
+[19/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj
+[20/66] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj
+[21/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.obj
+[22/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCNetwork.cpp.obj
+[23/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/StreamAlignedBatcher.cpp.obj
+[24/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.obj
+[25/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj
+[26/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCNetwork.cpp.obj
+[27/66] Linking CXX static library bin\Deepity.lib
+[28/66] Linking CXX static library bin\nanobind-static.lib
+[29/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCNetwork.cpp.obj
+[30/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.obj
+[31/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.obj
+[32/66] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.obj
+[33/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.obj
+[34/66] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.obj
+[35/66] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.obj
+[36/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.obj
+[37/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.obj
+[38/66] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.obj
+[39/66] Linking C executable _deps\sleef-build\bin\mkmasked_gnuabi.exe
+[40/66] Linking C executable _deps\sleef-build\bin\mkrename_gnuabi.exe
+[41/66] Linking C executable _deps\sleef-build\bin\addSuffix.exe
+[42/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.obj
+[43/66] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.obj
+[44/66] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.obj
+[45/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.obj
+[46/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.obj
+[47/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.obj
+[48/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.obj
+[49/66] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ModelIO.cpp.obj
+[50/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.obj
+[51/66] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.obj
+[52/66] Building CXX object CMakeFiles/ActivationBenchmark.dir/tests/tActivations.cpp.obj
+[53/66] Linking CXX static library bin\DeepityProfiled.lib
+[54/66] Linking CXX static library bin\benchmark.lib
+[55/66] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.obj
+[56/66] Building CXX object CMakeFiles/GaussSeidelMiddleLayerVerify.dir/tests/tGaussSeidelMiddleLayerVerify.cpp.obj
+[57/66] Linking CXX static library bin\benchmark_main.lib
+[58/66] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.obj
+[59/66] Building CXX object CMakeFiles/DeepityProfile.dir/tests/tProfile.cpp.obj
+[60/66] Linking CXX executable bin\ActivationBenchmark.exe
+[61/66] Linking CXX executable bin\DirectKPVerify.exe
+[62/66] Linking CXX executable bin\GaussSeidelMiddleLayerVerify.exe
+[63/66] Linking CXX executable bin\GflopsBenchmark.exe
+[64/66] Linking CXX executable bin\DeepityProfile.exe
+[65/66] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.obj
+[66/66] Linking CXX shared module bin\pydeepity.cp312-win_amd64.pyd
+
+
+=== CMake Configuration ===
+-- PGO: optimized (USE) build -- reading profile data from C:/Users/Jack/Projects/deepity/build/pgo-data
+-- CXX compiler: C:/Program Files/LLVM/bin/clang++.exe
+-- Found OpenMP_C: -fopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fopenmp (found version "5.1")
+-- OPENBLAS_DLL resolved to: C:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/bin/libopenblas.dll
+-- Configuring SLEEF 3.9.0
+-- Building with Clang on Windows
+-- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
+-- Could NOT find PkgConfig (missing: PKG_CONFIG_EXECUTABLE) 
+-- Found OpenMP_C: -fopenmp (found version "5.1")
+-- Found OpenMP_CXX: -fopenmp (found version "5.1")
+-- Configuring build for SLEEF-v3.9.0
+   Target system: Windows-10.0.26200
+   Target processor: AMD64
+   Host system: Windows-10.0.26200
+   Host processor: AMD64
+   Detected C compiler: Clang @ C:/Program Files/LLVM/bin/clang.exe
+   CMake: 4.3.3
+   Make program: C:/ProgramData/chocolatey/bin/ninja.exe
+   CMake build type: Release
+-- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -Wno-deprecated-declarations -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
+-- Building shared libs : OFF
+-- Building static test bins: OFF
+-- MPFR : LIB_MPFR-NOTFOUND
+-- GMP : LIBGMP-NOTFOUND
+-- RT : 
+-- FFTW3 : LIBFFTW3-NOTFOUND
+-- FFTW3F : LIBFFTW3F-NOTFOUND
+-- OPENSSL : 
+-- SDE : SDE_COMMAND-NOTFOUND
+-- COMPILER_SUPPORTS_OPENMP : 1
+-- Google Benchmark version: v1.9.1, normalized to 1.9.1
+-- Enabling additional flags: -DINCLUDE_DIRECTORIES=C:/Users/Jack/Projects/deepity/build/Release/_deps/benchmark-src/include
+-- Performing Test HAVE_THREAD_SAFETY_ATTRIBUTES -- success
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Performing Test HAVE_STD_REGEX -- success
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+-- Enabling additional flags: -DCMAKE_CXX_STANDARD=14
+-- Performing Test HAVE_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_STEADY_CLOCK -- success
+-- Performing Test HAVE_PTHREAD_AFFINITY -- failed to compile
+-- Configuring done (6.4s)
 -- Generating done (0.4s)
 -- Build files have been written to: C:/Users/Jack/Projects/deepity/build/Release
 
@@ -86,9 +172,9 @@
 [4/172] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.obj
 [5/172] Linking C executable _deps\sleef-build\bin\mkrename.exe
 [6/172] Linking C executable _deps\sleef-build\bin\mkalias.exe
-[7/172] Linking C executable _deps\sleef-build\bin\mkdisp.exe
-[8/172] Generating sleeflibm_AVX.h.tmp
-[9/172] Generating sleeflibm_AVX2.h.tmp
+[7/172] Generating sleeflibm_AVX.h.tmp
+[8/172] Generating sleeflibm_AVX2.h.tmp
+[9/172] Linking C executable _deps\sleef-build\bin\mkdisp.exe
 [10/172] Generating sleeflibm_AVX2128.h.tmp
 [11/172] Generating sleeflibm_AVX512F.h.tmp
 [12/172] Generating sleeflibm_AVX512FNOFMA.h.tmp
@@ -98,269 +184,220 @@
 [16/172] Generating sleeflibm_FMA4.h.tmp
 [17/172] Generating sleeflibm_PURECFMA_SCALAR.h.tmp
 [18/172] Generating sleeflibm_PUREC_SCALAR.h.tmp
-[19/172] Generating sleeflibm_SSE2.h.tmp
-[20/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.obj
+[19/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_name.cc.obj
+[20/172] Generating sleeflibm_SSE2.h.tmp
 [21/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_static_property.cpp.obj
 [22/172] Generating sleeflibm_SSE4.h.tmp
 [23/172] Generating sleeflibm_SSE_.h.tmp
-[24/172] Generating alias_AVX512F_dp.h.tmp
-[25/172] Generating alias_AVX512F_sp.h.tmp
-[26/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_datetime.cpp.obj
+[24/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_datetime.cpp.obj
+[25/172] Generating alias_AVX512F_dp.h.tmp
+[26/172] Generating alias_AVX512F_sp.h.tmp
 [27/172] Generating dispscalar.c.body
-[28/172] Generating dispavx.c.tmp
-[29/172] Generating dispsse.c.tmp
-[30/172] Generating include/renameavx512fnofma.h
-Generating renameavx512fnofma.h: mkrename "cinz_" "8" "16" "avx512fnofma" 
-[31/172] Generating include/renameavx512f.h
-Generating renameavx512f.h: mkrename "finz_" "8" "16" "avx512f" 
-[32/172] Generating include/renameavx2.h
+[28/172] Generating dispsse.c.tmp
+[29/172] Generating dispavx.c.tmp
+[30/172] Generating include/renameavx2.h
 Generating renameavx2.h: mkrename "finz_" "4" "8" "avx2" 
-[33/172] Generating include/renameavx2128.h
-Generating renameavx2128.h: mkrename "finz_" "2" "4" "avx2128" 
-[34/172] Generating include/renamefma4.h
+[31/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/implicit.cpp.obj
+[32/172] Generating include/renameavx512fnofma.h
+Generating renameavx512fnofma.h: mkrename "cinz_" "8" "16" "avx512fnofma" 
+[33/172] Generating include/renameavx512f.h
+Generating renameavx512f.h: mkrename "finz_" "8" "16" "avx512f" 
+[34/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/trampoline.cpp.obj
+[35/172] Generating include/renamefma4.h
 Generating renamefma4.h: mkrename "finz_" "4" "8" "fma4" 
-[35/172] Generating include/renameavx.h
+[36/172] Generating include/renameavx.h
 Generating renameavx.h: mkrename "cinz_" "4" "8" "avx" 
-[36/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/trampoline.cpp.obj
-[37/172] Generating include/renamepurec_scalar.h
-Generating renamepurec_scalar.h: mkrename "cinz_" "1" "1" "purec" 
-[38/172] Generating include/renamesse4.h
+[37/172] Generating include/renameavx2128.h
+Generating renameavx2128.h: mkrename "finz_" "2" "4" "avx2128" 
+[38/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/common.cpp.obj
+[39/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/error.cpp.obj
+[40/172] Generating include/renamesse4.h
 Generating renamesse4.h: mkrename "cinz_" "2" "4" "sse4" 
-[39/172] Generating include/renamepurecfma_scalar.h
-Generating renamepurecfma_scalar.h: mkrename "finz_" "1" "1" "purecfma" 
-[40/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/error.cpp.obj
-[41/172] Generating include/renamesse2.h
+[41/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_ndarray.cpp.obj
+[42/172] Generating include/renamesse2.h
 Generating renamesse2.h: mkrename "cinz_" "2" "4" "sse2" 
-[42/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/implicit.cpp.obj
 [43/172] Generating include/alias_avx512f.h
-[44/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_ndarray.cpp.obj
+[44/172] Generating include/renamepurec_scalar.h
+Generating renamepurec_scalar.h: mkrename "cinz_" "1" "1" "purec" 
 [45/172] Generating dispscalar.c
-[46/172] Generating include/renamecuda.h
+[46/172] Generating include/renamedspscalar.h
+[47/172] Generating include/renamepurecfma_scalar.h
+Generating renamepurecfma_scalar.h: mkrename "finz_" "1" "1" "purecfma" 
+[48/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_internals.cpp.obj
+[49/172] Generating dispsse.c
+[50/172] Generating include/renamedsp128.h
+[51/172] Generating include/renamecuda.h
 Generating renamecuda.h: mkrename "finz_" "1" "1" "cuda" 
-[47/172] Generating include/renamedspscalar.h
-[48/172] Generating dispsse.c
-[49/172] Generating include/renamedsp128.h
-[50/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/common.cpp.obj
-[51/172] Generating dispavx.c
-[52/172] Generating ../../include/sleef.h
-[53/172] Generating include/renamedsp256.h
-[54/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_func.cpp.obj
-[55/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.obj
-[56/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_internals.cpp.obj
-[57/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.obj
-[58/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.obj
-[59/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.obj
+[52/172] Generating dispavx.c
+[53/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_func.cpp.obj
+[54/172] Generating include/renamedsp256.h
+[55/172] Generating ../../include/sleef.h
+[56/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_api_internal.cc.obj
+[57/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.obj
+[58/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.obj
+[59/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_type.cpp.obj
 [60/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_enum.cpp.obj
-[61/172] Building CXX object CMakeFiles/nanobind-static.dir/C_/Python312/Lib/site-packages/nanobind/src/nb_type.cpp.obj
-[62/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.obj
-[63/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.obj
-[64/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.obj
-[65/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.obj
-[66/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.obj
-[67/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.obj
-[68/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.obj
-[69/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.obj
-[70/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.obj
-[71/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.obj
-[72/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.obj
-[73/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.obj
-[74/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.obj
-[75/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.obj
-[76/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.obj
-[77/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.obj
-[78/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.obj
-[79/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.obj
-[80/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.obj
-[81/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.obj
-[82/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.obj
-[83/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.obj
-[84/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.obj
-[85/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.obj
-[86/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.obj
-[87/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.obj
-[88/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.obj
-[89/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.obj
-[90/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.obj
-[91/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.obj
-[92/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.obj
-[93/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.obj
-[94/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.obj
-[95/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.obj
-[96/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.obj
-[97/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.obj
-[98/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.obj
+[61/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/check.cc.obj
+[62/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.obj
+[63/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.obj
+[64/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.obj
+[65/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.obj
+[66/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.obj
+[67/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_runner.cc.obj
+[68/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.obj
+[69/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark.cc.obj
+[70/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.obj
+[71/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.obj
+[72/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.obj
+[73/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.obj
+[74/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/benchmark_register.cc.obj
+[75/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.obj
+[76/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.obj
+[77/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.obj
+[78/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.obj
+[79/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.obj
+[80/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.obj
+[81/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.obj
+[82/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.obj
+[83/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.obj
+[84/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: function control flow change detected (hash mismatch) gammafk Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[85/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: function control flow change detected (hash mismatch) gammafk Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[86/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[87/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007059655560962 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[88/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: function control flow change detected (hash mismatch) gammafk Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[89/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[90/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007059655560962 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[91/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.obj
+[92/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.obj
+[93/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.obj
+[94/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.obj
+[95/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[96/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007059655560962 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[97/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.obj
+[98/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.obj
 [99/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.obj
-[100/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.obj
-[101/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.obj
-[102/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.obj
-[103/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.obj
-[104/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.obj
-[105/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.obj
-[106/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.obj
-[107/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\GaussSeidelPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/GaussSeidelPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/GaussSeidelPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/GaussSeidelPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
+[100/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.obj
+[101/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.obj
+[102/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.obj
+[103/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[104/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimddp.c: function control flow change detected (hash mismatch) gammak Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[105/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: function control flow change detected (hash mismatch) gammafk Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[106/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.obj
+warning: C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/src/libm/sleefsimdsp.c: function control flow change detected (hash mismatch) gammafk Hash = 784007056844089447 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[107/172] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj
 [108/172] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\ConvPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
 [109/172] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimpleConvPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[110/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\DiscriminativePCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/DiscriminativePCNetwork.h:5:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[111/172] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\ConvPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/ConvPCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/ConvPCNetwork.h:5:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[112/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\DiscriminativePCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[113/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimplePCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimplePCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/SimplePCNetwork.h:5:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[114/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimplePCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[115/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\GaussSeidelPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/GaussSeidelPCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/GaussSeidelPCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/GaussSeidelPCNetwork.h:5:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/GaussSeidelPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[116/172] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\SimpleConvPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/SimpleConvPCNetwork.h:6:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[117/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\DirectKPPCLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DirectKPPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/DirectKPPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/DirectKPPCLayer.h:4:10: fatal error: 'deepity/MemoryArena.h' file not found
-    4 | #include <deepity/MemoryArena.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[118/172] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj -MF CMakeFiles\Deepity.dir\src\RBLayer.cpp.obj.d -o CMakeFiles/Deepity.dir/src/RBLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/RBLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/RBLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/RBLayer.h:4:10: fatal error: 'deepity/Activations.h' file not found
-    4 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[119/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj -MF CMakeFiles\Deepity.dir\src\DirectKPPCNetwork.cpp.obj.d -o CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DirectKPPCNetwork.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/DirectKPPCNetwork.cpp:1:
-In file included from C:/Users/Jack/Projects/deepity/include\deepity/networks/DirectKPPCNetwork.h:5:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/DirectKPPCLayer.h:4:10: fatal error: 'deepity/MemoryArena.h' file not found
-    4 | #include <deepity/MemoryArena.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
+[110/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.obj
+[111/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.obj
+[112/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.obj
+[113/172] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.obj
+[114/172] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj
+[115/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.obj
+[116/172] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.obj
+[117/172] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCNetwork.cpp.obj
+[118/172] Linking C static library _deps\sleef-build\lib\sleef.lib
+[119/172] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.obj
 [120/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\RBLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/RBLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/RBLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/RBLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/RBLayer.h:4:10: fatal error: 'deepity/Activations.h' file not found
-    4 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[121/172] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj -MF CMakeFiles\Deepity.dir\src\StreamAlignedBatcher.cpp.obj.d -o CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.obj -c C:/Users/Jack/Projects/deepity/src/StreamAlignedBatcher.cpp
-C:/Users/Jack/Projects/deepity/src/StreamAlignedBatcher.cpp:1:10: fatal error: 'deepity/StreamAlignedBatcher.h' file not found
-    1 | #include <deepity/StreamAlignedBatcher.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[122/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\ConvPCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/ConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[123/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\DiscriminativePCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/DiscriminativePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[124/172] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj
-FAILED: [code=1] CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -flto=thin -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -fopenmp -MD -MT CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj -MF CMakeFiles\Deepity.dir\src\ModelIO.cpp.obj.d -o CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj -c C:/Users/Jack/Projects/deepity/src/ModelIO.cpp
-C:/Users/Jack/Projects/deepity/src/ModelIO.cpp:1:10: fatal error: 'deepity/ModelIO.h' file not found
-    1 | #include <deepity/ModelIO.h>
-      |          ^~~~~~~~~~~~~~~~~~~
-1 error generated.
-[125/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\SimpleConvPCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimpleConvPCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-[126/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj
-FAILED: [code=1] CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj 
-C:\PROGRA~1\LLVM\bin\CLANG_~1.EXE -DNOMINMAX -DPCN_PROFILE -DSLEEF_STATIC_LIBS -IC:/Users/Jack/Projects/deepity/include -IC:/Users/Jack/Projects/deepity/build/Release/_deps/openblas_prebuilt-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-src/include -isystem C:/Users/Jack/Projects/deepity/build/Release/_deps/sleef-build/include -O3 -DNDEBUG -std=gnu++20 -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -march=native -fprofile-generate=C:/Users/Jack/Projects/deepity/build/pgo-data -Wno-c2y-extensions -O3 -ffast-math -fvectorize -fslp-vectorize -fopenmp -MD -MT CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj -MF CMakeFiles\DeepityProfiled.dir\src\SimplePCLayer.cpp.obj.d -o CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj -c C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp
-In file included from C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp:1:
-C:/Users/Jack/Projects/deepity/include\deepity/layers/SimplePCLayer.h:8:10: fatal error: 'deepity/Activations.h' file not found
-    8 | #include <deepity/Activations.h>
-      |          ^~~~~~~~~~~~~~~~~~~~~~~
-1 error generated.
-ninja: build stopped: subcommand failed.
+[121/172] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.obj
+[122/172] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCNetwork.cpp.obj
+[123/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCNetwork.cpp.obj
+[124/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/counter.cc.obj
+[125/172] Building CXX object CMakeFiles/Deepity.dir/src/ModelIO.cpp.obj
+[126/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/StreamAlignedBatcher.cpp.obj
+[127/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/colorprint.cc.obj
+[128/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCLayer.cpp.obj
+warning: C:/Users/Jack/Projects/deepity/src/ConvPCLayer.cpp: function control flow change detected (hash mismatch) ?relu@Deep@@YAXPEAM_K@Z Hash = 287486625703819114 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[129/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimpleConvPCLayer.cpp.obj
+warning: C:/Users/Jack/Projects/deepity/src/SimpleConvPCLayer.cpp: function control flow change detected (hash mismatch) ?relu@Deep@@YAXPEAM_K@Z Hash = 287486625703819114 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[130/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/DiscriminativePCLayer.cpp.obj
+warning: C:/Users/Jack/Projects/deepity/src/DiscriminativePCLayer.cpp: function control flow change detected (hash mismatch) ?relu@Deep@@YAXPEAM_K@Z Hash = 287486625703819114 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[131/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ConvPCNetwork.cpp.obj
+[132/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCNetwork.cpp.obj
+[133/172] Linking CXX static library bin\Deepity.lib
+[134/172] Linking CXX static library bin\nanobind-static.lib
+[135/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/commandlineflags.cc.obj
+[136/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/complexity.cc.obj
+[137/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/console_reporter.cc.obj
+[138/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.obj
+[139/172] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.obj
+[140/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/SimplePCLayer.cpp.obj
+warning: C:/Users/Jack/Projects/deepity/src/SimplePCLayer.cpp: function control flow change detected (hash mismatch) ?relu@Deep@@YAXPEAM_K@Z Hash = 287486625703819114 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[141/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/csv_reporter.cc.obj
+[142/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/perf_counters.cc.obj
+[143/172] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.obj
+[144/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/reporter.cc.obj
+[145/172] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.obj
+[146/172] Linking C executable _deps\sleef-build\bin\mkmasked_gnuabi.exe
+[147/172] Linking C executable _deps\sleef-build\bin\mkrename_gnuabi.exe
+[148/172] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.obj
+[149/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/json_reporter.cc.obj
+[150/172] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.obj
+[151/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/string_util.cc.obj
+[152/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/statistics.cc.obj
+[153/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/timers.cc.obj
+[154/172] Linking C executable _deps\sleef-build\bin\addSuffix.exe
+[155/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark.dir/sysinfo.cc.obj
+[156/172] Building CXX object _deps/benchmark-build/src/CMakeFiles/benchmark_main.dir/benchmark_main.cc.obj
+[157/172] Building CXX object CMakeFiles/DeepityProfiled.dir/src/ModelIO.cpp.obj
+warning: C:/Users/Jack/Projects/deepity/src/ModelIO.cpp: function control flow change detected (hash mismatch) ?relu@Deep@@YAXPEAM_K@Z Hash = 287486625703819114 up to 0 count discarded [-Wbackend-plugin]
+1 warning generated.
+[158/172] Linking CXX static library bin\benchmark.lib
+[159/172] Linking CXX static library bin\DeepityProfiled.lib
+[160/172] Linking CXX static library bin\benchmark_main.lib
+[161/172] Building CXX object CMakeFiles/ActivationBenchmark.dir/tests/tActivations.cpp.obj
+[162/172] Building CXX object CMakeFiles/DirectKPVerify.dir/tests/tDirectKPVerify.cpp.obj
+[163/172] Building CXX object CMakeFiles/GaussSeidelMiddleLayerVerify.dir/tests/tGaussSeidelMiddleLayerVerify.cpp.obj
+[164/172] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.obj
+[165/172] Building CXX object CMakeFiles/DeepityProfile.dir/tests/tProfile.cpp.obj
+[166/172] Linking CXX executable bin\ActivationBenchmark.exe
+[167/172] Linking CXX executable bin\DirectKPVerify.exe
+[168/172] Linking CXX executable bin\GaussSeidelMiddleLayerVerify.exe
+[169/172] Linking CXX executable bin\GflopsBenchmark.exe
+[170/172] Linking CXX executable bin\DeepityProfile.exe
+[171/172] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.obj
+[172/172] Linking CXX shared module bin\pydeepity.cp312-win_amd64.pyd
+
+
+=== Tests ===
+Test project C:/Users/Jack/Projects/deepity/build/Release
+    Start 1: DirectKPVerify
+    Start 2: GaussSeidelMiddleLayerVerify
+    Start 3: DeepityProfile
+1/3 Test #1: DirectKPVerify ...................   Passed    0.05 sec
+2/3 Test #2: GaussSeidelMiddleLayerVerify .....   Passed    0.05 sec
+3/3 Test #3: DeepityProfile ...................   Passed    1.21 sec
+
+100% tests passed, 0 tests failed out of 3
+
+Total Test time (real) =   1.25 sec
 
 

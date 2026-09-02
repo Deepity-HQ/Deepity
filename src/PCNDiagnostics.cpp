@@ -1,6 +1,6 @@
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/networks/DiscriminativePCNetwork.h>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 #include <iostream>
 #include <vector>
 #include <cmath>

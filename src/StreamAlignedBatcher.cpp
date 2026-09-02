@@ -1,4 +1,4 @@
-#include <deepity/StreamAlignedBatcher.h>
+#include <deepity/utils/StreamAlignedBatcher.h>
 #include <algorithm>
 
 namespace Deep

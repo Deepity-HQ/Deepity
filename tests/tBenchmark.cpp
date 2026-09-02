@@ -2,7 +2,7 @@
 #include <vector>
 #include <random>
 #include <deepity/networks/DiscriminativePCNetwork.h>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 
 using namespace Deep;
 

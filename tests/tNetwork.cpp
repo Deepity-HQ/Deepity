@@ -4,7 +4,7 @@
 #include <vector>
 #include <cmath>
 #include <deepity/networks/DiscriminativePCNetwork.h>
-#include <deepity/Profile.h> // Included for profiling output
+#include <deepity/utils/Profile.h> // Included for profiling output
 
 #define PCN_PROFILE
 

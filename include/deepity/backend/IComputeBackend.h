@@ -1,6 +1,6 @@
 #pragma once
 #include <cstddef>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 
 /**
  * @file IComputeBackend.h

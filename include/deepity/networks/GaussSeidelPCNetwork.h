@@ -3,8 +3,8 @@
 #include <memory>
 #include <random>
 #include <deepity/layers/GaussSeidelPCLayer.h>
-#include <deepity/MemoryArena.h>
-#include <deepity/Activations.h>
+#include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/Activations.h>
 
 /**
  * @file GaussSeidelPCNetwork.h

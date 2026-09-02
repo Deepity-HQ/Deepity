@@ -1,9 +1,9 @@
 #pragma once
 
 #include <deepity/layers/Layer.h>
-#include <deepity/MemoryArena.h>
-#include <deepity/Activations.h>
-#include <deepity/AdamOptimizer.h>
+#include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/Activations.h>
+#include <deepity/utils/AdamOptimizer.h>
 #include <memory>
 #include <vector>
 #include <random>

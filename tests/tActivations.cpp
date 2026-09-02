@@ -18,7 +18,7 @@
  * project's existing benchmark-result convention (see logs/results.json).
  */
 #include <benchmark/benchmark.h>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 #include <vector>
 #include <cmath>
 #include <random>

@@ -11,9 +11,9 @@
 #include <omp.h>
 
 // Core Deepity
-#include <deepity/Activations.h>
-#include <deepity/Optimize.h>
-#include <deepity/StreamAlignedBatcher.h>
+#include <deepity/utils/Activations.h>
+#include <deepity/utils/Optimize.h>
+#include <deepity/utils/StreamAlignedBatcher.h>
 
 #include <deepity/layers/Layer.h>
 #include <deepity/layers/ConvPCLayer.h>

@@ -3,7 +3,7 @@
 #include <memory>
 #include <random>
 #include <deepity/layers/DirectKPPCLayer.h>
-#include <deepity/MemoryArena.h>
+#include <deepity/utils/MemoryArena.h>
 
 /**
  * @file DirectKPPCNetwork.h

@@ -5,10 +5,10 @@
 #include <random>
 #include <memory>
 #include <cstdlib>
-#include <deepity/Activations.h>
-#include <deepity/AdamOptimizer.h>
+#include <deepity/utils/Activations.h>
+#include <deepity/utils/AdamOptimizer.h>
 #include <deepity/layers/Layer.h>
-#include <deepity/MemoryArena.h>
+#include <deepity/utils/MemoryArena.h>
 
 /**
  * @file GaussSeidelPCLayer.h

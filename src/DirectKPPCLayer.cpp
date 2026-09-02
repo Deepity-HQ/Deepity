@@ -1,5 +1,5 @@
 #include "deepity/layers/DirectKPPCLayer.h"
-#include "deepity/Optimize.h"
+#include "deepity/utils/Optimize.h"
 
 namespace Deep
 {

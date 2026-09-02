@@ -24,7 +24,7 @@ extern "C" {
  * This header currently only includes implementation of an L2 Cache size lookup.
  *
  * Usage:
- *  #include <deepity/Optimize.h>
+ *  #include <deepity/utils/Optimize.h>
  *
  * Example:
  *  size_t sizeofL2 = GetL2CacheBytes();

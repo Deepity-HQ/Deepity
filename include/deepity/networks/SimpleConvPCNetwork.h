@@ -4,7 +4,7 @@
 #include <memory>
 #include <random>
 #include <deepity/layers/SimpleConvPCLayer.h>
-#include <deepity/MemoryArena.h>
+#include <deepity/utils/MemoryArena.h>
 
 /**
  * @file SimpleConvPCNetwork.h

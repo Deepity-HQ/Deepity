@@ -1,6 +1,6 @@
 #include <deepity/networks/DiscriminativePCNetwork.h>
-#include <deepity/Optimize.h>
-#include <deepity/ModelIO.h>
+#include <deepity/utils/Optimize.h>
+#include <deepity/utils/ModelIO.h>
 #include <cstring>
 #include <cmath>
 #include <limits>

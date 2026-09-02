@@ -1,5 +1,5 @@
 #include <deepity/layers/SimplePCLayer.h>
-#include <deepity/Optimize.h>
+#include <deepity/utils/Optimize.h>
 #include <cstdlib>
 #include <iostream>
 #include <chrono>

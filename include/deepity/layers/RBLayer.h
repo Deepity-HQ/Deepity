@@ -1,7 +1,7 @@
 #pragma once
 
 #include <deepity/layers/Layer.h>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 #include <cstddef>
 #include <memory>
 

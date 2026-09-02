@@ -3,8 +3,8 @@
 #include <vector>
 #include <memory>
 #include <deepity/layers/DiscriminativePCLayer.h>
-#include <deepity/Optimize.h>
-#include <deepity/MemoryArena.h>
+#include <deepity/utils/Optimize.h>
+#include <deepity/utils/MemoryArena.h>
 
 /**
  * @file DiscriminativePCLayer.h

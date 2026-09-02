@@ -5,10 +5,10 @@
 #include <random>
 #include <memory>
 #include <cstdlib>
-#include <deepity/Activations.h>
+#include <deepity/utils/Activations.h>
 #include <deepity/layers/Layer.h>
-#include <deepity/MemoryArena.h>
-#include <deepity/Im2Col.h>
+#include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/Im2Col.h>
 
 /**
  * @file ConvPCLayer.h
