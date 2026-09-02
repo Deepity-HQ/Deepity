@@ -57,7 +57,7 @@ predictions = net.predict_with_projection(X_batch, steps=20)
 Working examples live in [`examples/`](examples/), including full MNIST training, XOR, and comparisons against feed-forward and PyTorch baselines.
 
 <div align="center">
-<img src="resources/MNIST_results.png" alt="Results training mnist" width="500"/>
+<img src="resources/dkppcn_proof.png" alt="Results training mnist" width="500"/>
 </div>
 
 ---
