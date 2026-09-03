@@ -100,14 +100,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
         return self
 
-    def train_step(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
-        return super().train_step(X.flatten(), Y.flatten(), steps)
-
     def train_step_with_projection(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
         return super().train_step_with_projection(X.flatten(), Y.flatten(), steps)
-
-    def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
-        return super().predict(X.flatten(), steps)
 
     def predict_with_projection(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
         return super().predict_with_projection(X.flatten(), steps)

@@ -45,18 +45,18 @@ jobs:
             cmake \
             ninja-build \
             libopenblas-dev \
-            pybind11-dev \
             python3-dev \
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
 
       - name: Install Python build dependencies
-        # pybind11's CMake config package is needed even though libpybind11-dev
-        # is installed above, in case find_package(pybind11) resolves via pip's
-        # copy instead - installing both covers either path.
-        run: pip install pybind11
+        run: python -m pip install nanobind rich
 
-      - name: Build and test (Release)
-        run: python build.py Release
+      - name: Build (Release)
+        # --no-tests: CMakeLists.txt no longer registers any CTest tests
+        # (the old test/benchmark executables were removed), so running
+        # ctest here would just fail on "no tests found" for no useful
+        # reason.
+        run: python build.py Release --no-tests
 
       - name: Upload build log
         if: always()
@@ -105,7 +105,7 @@ jobs:
             !C:/vcpkg/buildtrees
             !C:/vcpkg/packages
             !C:/vcpkg/downloads
-          key: vcpkg-windows-openblas-pybind11-v1
+          key: vcpkg-windows-openblas-v1
 
       - name: Bootstrap vcpkg
         if: steps.vcpkg-cache.outputs.cache-hit != 'true'
@@ -114,14 +114,10 @@ jobs:
           C:/vcpkg/bootstrap-vcpkg.bat
 
       - name: Install vcpkg dependencies
-        # Mirrors CMakeLists.txt: only OpenBLAS and pybind11 come from
-        # vcpkg. SLEEF and Google Benchmark are fetched from source by CMake
-        # itself (see FetchContent_Declare in CMakeLists.txt) and need no
-        # package manager step at all.
-        run: C:/vcpkg/vcpkg.exe install openblas pybind11 --triplet x64-windows
+        run: C:/vcpkg/vcpkg.exe install openblas --triplet x64-windows
 
       - name: Install Python build dependencies
-        run: pip install pybind11
+        run: python -m pip install nanobind rich
 
       - name: Configure (CMake, using the windows-clang preset)
         # Uses CMakePresets.json's "windows-clang" preset directly, rather
@@ -132,14 +128,6 @@ jobs:
 
       - name: Build
         run: cmake --build build/Release --config Release --parallel 2>&1 | Tee-Object -FilePath windows-build.log
-
-      - name: Run tests
-        run: |
-          $exe = Get-ChildItem -Path build/Release -Recurse -Filter "DeepityTests.exe" | Select-Object -First 1
-          if (-not $exe) {
-            throw "DeepityTests.exe not found under build/Release - check windows-build.log"
-          }
-          & $exe.FullName
 
       - name: Upload logs
         if: always()

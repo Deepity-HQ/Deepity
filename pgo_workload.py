@@ -29,13 +29,13 @@ def load_pgo_subset():
 
     print("PGO workload: fetching MNIST (cached after first run)...")
     base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
-    files = {
+    files: dict[str, str] = {
         "x_train": "train-images-idx3-ubyte.gz",
         "y_train": "train-labels-idx1-ubyte.gz",
     }
     data_dir = "./data"
     os.makedirs(data_dir, exist_ok=True)
-    paths = {}
+    paths: dict[str, str] = {}
     for key, fname in files.items():
         filepath = os.path.join(data_dir, fname)
         paths[key] = filepath

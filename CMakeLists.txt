@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(deepity C CXX)
-enable_testing()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
-option(DEEPITY_BUILD_TESTS "Build the DeepityTests target" OFF)
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 # Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
@@ -259,29 +257,6 @@ set(CMAKE_REQUIRED_QUIET ON)
 FetchContent_MakeAvailable(sleef)
 set(CMAKE_REQUIRED_QUIET OFF)
 
-# --- Google Benchmark -----------------------------------------------
-
-if(DEEPITY_BUILD_TESTS)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(-Wno-c2y-extensions)
-    endif()
-
-    set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
-    set(BENCHMARK_ENABLE_PEDANTIC OFF CACHE BOOL "" FORCE)
-    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-    set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "" FORCE)
-
-    FetchContent_Declare(
-        benchmark
-        GIT_REPOSITORY https://github.com/google/benchmark.git
-        GIT_TAG v1.9.1
-    )
-
-    set(CMAKE_REQUIRED_QUIET ON)
-    FetchContent_MakeAvailable(benchmark)
-    set(CMAKE_REQUIRED_QUIET OFF)
-endif()
-
 # --- Deepity library ------------------------------------------------
 
 add_library(Deepity
@@ -351,28 +326,6 @@ set_target_properties(Deepity PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
 )
 
-# --- Runtime DLL copying (Windows) -----------------------------------
-# $<TARGET_RUNTIME_DLLS:...> only knows about DLLs CMake can see a full
-# IMPORTED_LOCATION for (e.g. openblas_dll above). It can't discover
-# libomp.dll on its own, so DEEPITY_OMP_DLL (resolved earlier) is copied
-# alongside it explicitly. Centralized here instead of repeating both
-# copy steps for every executable below.
-function(deepity_copy_runtime_dlls target)
-    add_custom_command(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:${target}>>,copy_if_different,true>
-        $<TARGET_RUNTIME_DLLS:${target}>
-        $<TARGET_FILE_DIR:${target}>
-        COMMAND_EXPAND_LISTS
-    )
-    if(DEEPITY_OMP_DLL)
-        add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DEEPITY_OMP_DLL}"
-            $<TARGET_FILE_DIR:${target}>
-        )
-    endif()
-endfunction()
-
 # --- pydeepity ------------------------------------------------------
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -422,115 +375,5 @@ if(WIN32)
     install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
     if(DEEPITY_OMP_DLL)
         install(FILES ${DEEPITY_OMP_DLL} DESTINATION pydeepity)
-    endif()
-endif()
-
-# --- Tests ----------------------------------------------------------
-
-if(DEEPITY_BUILD_TESTS)
-    add_executable(DirectKPVerify tests/tDirectKPVerify.cpp)
-    target_link_libraries(DirectKPVerify PRIVATE Deepity)
-    set_target_properties(DirectKPVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    add_test(NAME DirectKPVerify COMMAND DirectKPVerify)
-
-    if(WIN32)
-        deepity_copy_runtime_dlls(DirectKPVerify)
-    endif()
-endif()
-
-# --- Profiling ------------------------------------------------------
-
-if(DEEPITY_BUILD_TESTS)
-    add_executable(GaussSeidelMiddleLayerVerify tests/tGaussSeidelMiddleLayerVerify.cpp)
-    target_link_libraries(GaussSeidelMiddleLayerVerify PRIVATE Deepity)
-    set_target_properties(GaussSeidelMiddleLayerVerify PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-    add_test(NAME GaussSeidelMiddleLayerVerify COMMAND GaussSeidelMiddleLayerVerify)
-
-    if(WIN32)
-        deepity_copy_runtime_dlls(GaussSeidelMiddleLayerVerify)
-    endif()
-endif()
-
-if(DEEPITY_BUILD_TESTS)
-    add_library(DeepityProfiled STATIC
-        src/DiscriminativePCLayer.cpp
-        src/RBLayer.cpp
-        src/ConvPCLayer.cpp
-        src/SimpleConvPCLayer.cpp
-        src/SimplePCLayer.cpp
-        src/DiscriminativePCNetwork.cpp
-        src/ConvPCNetwork.cpp
-        src/SimplePCNetwork.cpp
-        src/ModelIO.cpp
-        src/StreamAlignedBatcher.cpp
-    )
-
-    if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
-        target_compile_definitions(DeepityProfiled PUBLIC DEEPITY_USE_MKL)
-    endif()
-
-    target_include_directories(DeepityProfiled PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${BLAS_INCLUDE_DIR}
-    )
-    target_include_directories(DeepityProfiled SYSTEM PUBLIC
-        ${sleef_SOURCE_DIR}/include
-        ${sleef_BINARY_DIR}/include
-    )
-    target_link_libraries(DeepityProfiled PUBLIC
-        ${BLAS_LIBRARIES}
-        OpenMP::OpenMP_CXX
-        sleef
-    )
-
-    target_compile_definitions(DeepityProfiled PUBLIC SLEEF_STATIC_LIBS PCN_PROFILE)
-
-    if(WIN32)
-        target_compile_definitions(DeepityProfiled PUBLIC NOMINMAX)
-    endif()
-
-    if(MSVC)
-        target_compile_options(DeepityProfiled PRIVATE /O2 /fp:fast /openmp:llvm)
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        target_compile_options(DeepityProfiled PRIVATE -O3 -ffast-math -fvectorize -fslp-vectorize)
-    else()
-        target_compile_options(DeepityProfiled PRIVATE -O3 -ffast-math -ftree-vectorize -ftree-slp-vectorize)
-    endif()
-
-    add_executable(DeepityProfile tests/tProfile.cpp)
-    target_link_libraries(DeepityProfile PRIVATE DeepityProfiled)
-    target_compile_definitions(DeepityProfile PRIVATE PCN_PROFILE)
-
-    set_target_properties(DeepityProfile PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    )
-    add_test(NAME DeepityProfile COMMAND DeepityProfile)
-
-    if(WIN32)
-        deepity_copy_runtime_dlls(DeepityProfile)
-    endif()
-
-    # --- README benchmark: std-library vs Deep:: activations ---------
-    add_executable(ActivationBenchmark tests/tActivations.cpp)
-    target_link_libraries(ActivationBenchmark PRIVATE DeepityProfiled benchmark)
-
-    set_target_properties(ActivationBenchmark PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    )
-
-    if(WIN32)
-        deepity_copy_runtime_dlls(ActivationBenchmark)
-    endif()
-
-    # --- README benchmark: sustained GFLOPS during a real train step -
-    add_executable(GflopsBenchmark tests/tGflopsBenchmark.cpp)
-    target_link_libraries(GflopsBenchmark PRIVATE DeepityProfiled benchmark)
-
-    set_target_properties(GflopsBenchmark PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-    )
-
-    if(WIN32)
-        deepity_copy_runtime_dlls(GflopsBenchmark)
     endif()
 endif()

@@ -1,6 +1,9 @@
 #pragma once
+#include <algorithm>
 #include <cstddef>
 #include <memory>
+#include <vector>
+#include <immintrin.h>
 #include <omp.h>
 
 #ifdef __linux__
@@ -47,9 +50,17 @@ namespace Deep
 #elif defined(_WIN32)
         DWORD bufSize = 0;
         GetLogicalProcessorInformation(nullptr, &bufSize);
-        auto buf = std::make_unique<SYSTEM_LOGICAL_PROCESSOR_INFORMATION[]>(bufSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
-        GetLogicalProcessorInformation(buf.get(), &bufSize);
-        for (DWORD i = 0; i < bufSize / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION); i++)
+
+        // Computed once, by name, instead of repeating `bufSize /
+        // sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION)` inline at both the
+        // allocation site and the loop condition -- and std::vector instead
+        // of make_unique<T[]>(count), since that's the far more common,
+        // heavily-exercised pattern for a runtime-sized buffer like this.
+        const size_t count = static_cast<size_t>(bufSize) / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
+        std::vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> buf(count);
+        GetLogicalProcessorInformation(buf.data(), &bufSize);
+
+        for (size_t i = 0; i < count; ++i)
         {
             if (buf[i].Relationship == RelationCache && buf[i].Cache.Level == 2)
                 return buf[i].Cache.Size;

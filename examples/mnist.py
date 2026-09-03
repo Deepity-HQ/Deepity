@@ -7,10 +7,9 @@ from pydeepity import SimplePCN
 def load_full_mnist():
     import gzip
     import urllib.request
-
     print("Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...")
     base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
-    files = {
+    files: dict[str, str] = {
         "x_train": "train-images-idx3-ubyte.gz",
         "y_train": "train-labels-idx1-ubyte.gz",
         "x_test": "t10k-images-idx3-ubyte.gz",
@@ -18,14 +17,13 @@ def load_full_mnist():
     }
     data_dir = "./data"
     os.makedirs(data_dir, exist_ok=True)
-    paths = {}
+    paths: dict[str, str] = {}
     for key, fname in files.items():
         filepath = os.path.join(data_dir, fname)
         paths[key] = filepath
         if not os.path.exists(filepath):
             print(f"Downloading {fname}...")
             urllib.request.urlretrieve(base_url + fname, filepath)
-
     with gzip.open(paths["x_train"], 'rb') as f:
         X_train_raw = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784)
     with gzip.open(paths["x_test"], 'rb') as f:
@@ -34,16 +32,12 @@ def load_full_mnist():
         y_train_labels = np.frombuffer(f.read(), np.uint8, offset=8)
     with gzip.open(paths["y_test"], 'rb') as f:
         y_test_labels = np.frombuffer(f.read(), np.uint8, offset=8)
-
     X_train = X_train_raw.astype(np.float32) / 255.0
     X_test = X_test_raw.astype(np.float32) / 255.0
-
     eps = 0.001
     Y_train = np.full((y_train_labels.shape[0], 10), eps, dtype=np.float32)
     Y_train[np.arange(y_train_labels.shape[0]), y_train_labels] = 1.0 - eps
-
     return X_train, Y_train, X_test, y_test_labels
-
 
 def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7 

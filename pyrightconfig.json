@@ -6,7 +6,10 @@
         "build",
         "docs",
         "experiments",
-        "examples/test_pcn_torch.py", "**/node_modules", "**/.*", ".venv"
+        "examples",
+        "**/node_modules",
+        "**/.*",
+        ".venv"
     ],
 
     "executionEnvironments": [

@@ -3,6 +3,16 @@ from typing import Optional
 import numpy as np
 import numpy.typing as npt
 from .utils import _fit_with_progress
+from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 class SequentialPCN(dy.DiscriminativePCNetwork):
     """

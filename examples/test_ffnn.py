@@ -6,24 +6,17 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from time import perf_counter
 
-# Standard backprop feedforward baseline -- matches SequentialPCN's EXACT
-# architecture (784 -> 512 -> 10, single hidden layer, tanh) for a true
-# apples-to-apples comparison: same network shape, same data, different
-# training algorithm (ordinary backprop vs. predictive coding settling).
-#
-# Worth knowing going in: PC networks are generally understood in the
-# literature to be substantially slower than backprop to reach comparable
-# accuracy, because of the iterative settling cost per batch (T_infer steps
-# of forward+backward-like computation, vs. backprop's single forward +
-# single backward pass). This script exists to measure that gap directly
-# for this specific architecture/dataset, not to assume the answer.
-
+# Standard backprop feedforward baseline -- matches DKPPCN EXACTLY
+# architecture (784 -> 512 -> 10, single hidden layer, sigmoid) for a true
+# apples-to-apples comparison: same network shape, same data, same LR decay,
+# same batch size, but ordinary backprop vs. predictive coding settling.
 
 def load_full_mnist_torch():
     print("Fetching full MNIST dataset (70,000 images)...")
     X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False, parser='auto')
 
-    X = (X.astype(np.float32) / 127.5) - 1.0
+    # MATCHED: Scale from 0 to 1 exactly like the C++ script
+    X = X.astype(np.float32) / 255.0
     y = y.astype(int)
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -38,16 +31,12 @@ def load_full_mnist_torch():
 
 
 class FFNN(nn.Module):
-    """784 -> 512 -> 10, tanh hidden activation -- matches SequentialPCN's
-    add_layer(784, 512, act="tanh") / add_layer(512, 10, act="tanh") /
-    add_layer(10, 0, act="linear") exactly in shape and hidden activation.
-    Output layer is linear (raw logits), standard for CrossEntropyLoss."""
-
+    """784 -> 512 -> 10, sigmoid hidden activation."""
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(784, 512),
-            nn.Tanh(),
+            nn.Sigmoid(), # MATCHED: act="sigmoid" from DKPPCN
             nn.Linear(512, 10),
         )
 
@@ -56,9 +45,6 @@ class FFNN(nn.Module):
 
 
 def evaluate(model, test_loader, device):
-    """Full test-set accuracy. Cheap here since inference is a single
-    forward pass (no iterative settling like the PC variants) -- running
-    this every epoch adds negligible overhead relative to training time."""
     model.eval()
     correct = 0
     total = 0
@@ -76,22 +62,26 @@ def evaluate(model, test_loader, device):
 def main():
     X_train_t, y_train_t, X_test_t, y_test_t = load_full_mnist_torch()
 
-    BATCH_SIZE = 256
-    EPOCHS = 50  # matching the PC run's epoch count for direct comparison
+    BATCH_SIZE = 250 # MATCHED: DKPPCN uses 250
+    EPOCHS = 50 
 
     print(f"\nBuilding PyTorch DataLoader (batch_size={BATCH_SIZE})...")
     train_loader = DataLoader(TensorDataset(X_train_t, y_train_t), batch_size=BATCH_SIZE, shuffle=True)
     test_loader = DataLoader(TensorDataset(X_test_t, y_test_t), batch_size=BATCH_SIZE, shuffle=False)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # MATCHED: Hardcode to CPU to compare against C++ CPU performance
+    device = torch.device("cpu")
     print(f"Using device: {device}")
 
     model = FFNN().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+    
+    # MATCHED: Initial LR and Decay Rate from DKPPCN
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.00373)
+    scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.94)
     criterion = nn.CrossEntropyLoss()
 
     print(f"\nTraining: {EPOCHS} epochs, batch_size={BATCH_SIZE}, "
-          f"architecture=784->512->10 (matches SequentialPCN exactly)...\n")
+          f"architecture=784->512->10 (matches DKPPCN exactly)...\n")
 
     start_time = perf_counter()
     epoch_accs = []
@@ -112,6 +102,9 @@ def main():
 
             epoch_loss += loss.item()
             n_batches += 1
+            
+        # MATCHED: Step the LR decay per epoch
+        scheduler.step()
 
         avg_loss = epoch_loss / n_batches
         epoch_acc = evaluate(model, test_loader, device)
@@ -127,11 +120,10 @@ def main():
     final_acc = epoch_accs[-1]
     print(f"\nTest Accuracy: {final_acc:.2f}%")
     print(f"\n--- Summary ---")
-    print(f"Architecture: 784 -> 512 -> 10 (tanh hidden)")
+    print(f"Architecture: 784 -> 512 -> 10 (sigmoid hidden)")
     print(f"Training time: {train_time:.1f}s for {EPOCHS} epochs")
     print(f"Test accuracy: {final_acc:.2f}%")
     print(f"\nPer-epoch test accuracy: {[round(a, 2) for a in epoch_accs]}")
-
 
 if __name__ == "__main__":
     main()

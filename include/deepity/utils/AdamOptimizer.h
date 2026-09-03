@@ -389,7 +389,7 @@ namespace Deep
         size_t r = n % 4;
         size_t simd_end = n - r;
 #pragma omp parallel for schedule(static) if(n >= 4096 && !omp_in_parallel())
-        for (ptrdiff_t; i < (ptrdiff_t)simd_end; i += 4)
+        for (ptrdiff_t i=0; i < (ptrdiff_t)simd_end; i += 4)
         {
             __m128 g = _mm_loadu_ps(&grad[i]);
             __m128 m_old = _mm_loadu_ps(&m[i]);
