@@ -52,6 +52,8 @@ namespace
             return Deep::tanh;
         if (act == "sigmoid")
             return Deep::sigmoid;
+        if (act == "esigmoid")
+            return Deep::e_sigmoid;
         if (act == "relu")
             return Deep::relu;
         if (act == "linear")
@@ -65,6 +67,8 @@ namespace
             return Deep::dTanh;
         if (act == "dsigmoid")
             return Deep::dSigmoid;
+        if (act == "d_esigmoid")
+            return Deep::d_eSigmoid;
         if (act == "drelu")
             return Deep::dRelu;
         if (act == "dLinear")
@@ -88,6 +92,8 @@ namespace
             return Deep::ActivationType::dSIGMOID;
         if (act == "esigmoid")
             return Deep::ActivationType::eSIGMOID;
+        if (act == "d_esigmoid")
+            return Deep::ActivationType::d_eSIGMOID;
         if (act == "dlinear")
             return Deep::ActivationType::dLINEAR;
         return Deep::ActivationType::LINEAR;

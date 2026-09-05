@@ -199,10 +199,6 @@ else()
     set(DEEPITY_BLAS_RESOLVED FALSE)
 
     if(DEEPITY_USE_MKL)
-        # Modern, recommended integration: Intel's own MKLConfig.cmake,
-        # present if oneAPI/MKL is properly installed and sourced (e.g.
-        # via `source /opt/intel/oneapi/setvars.sh`). Exposes a single
-        # target (MKL::MKL) with both include dirs and link libraries.
         find_package(MKL CONFIG QUIET)
         if(MKL_FOUND)
             message(STATUS "Using Intel MKL (found via MKLConfig.cmake).")
@@ -275,6 +271,10 @@ add_library(Deepity
     src/DirectKPPCNetwork.cpp
     src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
+    src/backend/Backend.cpp
+    src/backend/CPUBackend.cpp
+    src/backend/CUDABackend.cpp
+    src/backend/Tensor.cpp
 )
 
 if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)

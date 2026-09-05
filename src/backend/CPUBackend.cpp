@@ -154,6 +154,4 @@ namespace Deep
             param[i] -= step_size * m[i] / (Sleef_sqrtf(v[i]) + eps);
         }
     }
-
-    // ... (remaining methods stubbed out for you to map to cblas) ...
 }
