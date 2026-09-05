@@ -5,5 +5,5 @@ namespace Deep
     CUDABackend::CUDABackend() {}
     CUDABackend::~CUDABackend() {}
 
-        // ... (remaining methods left completely blank for your CUDA implementation) ...
+    // ... (remaining methods left completely blank for your CUDA implementation) ...
 }
