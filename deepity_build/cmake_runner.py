@@ -40,6 +40,9 @@ def configure_command(config: BuildConfig, ninja: str | None, pgo_phase: str | N
     if profile.msvc_flags:
         cmd.append(f"-DDEEPITY_MSVC_ARCH_FLAGS={profile.msvc_flags}")
 
+    if config.extra_cmake_args:
+        cmd.extend(config.extra_cmake_args)
+
     if sys.platform == "win32" and ninja:
         # CC being unset doesn't mean clang isn't in play -- CMake can
         # auto-detect and pick it up on its own (as this project's own

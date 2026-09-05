@@ -79,7 +79,7 @@ def _merge_pgo_profiles(config):
 
     print(f"--- PGO: profile ready: {output} ---")
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> tuple[argparse.Namespace, list[str]]:
     parser = argparse.ArgumentParser(
         description="Deepity Cross-Platform Build & Test Runner"
     )
@@ -190,7 +190,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
 
-    args = parser.parse_args(argv)
+    args, unknown_args = parser.parse_known_args(argv)
 
     if args.list_profiles:
         for profile in ARCH_PROFILES.values():
@@ -206,14 +206,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         args.arch_profile = DEFAULT_ARCH_PROFILE
 
     if args.cuda is None:
-        # Distributed builds default to CPU-only, since a CUDA-linked binary
-        # isn't portable either. Everything else keeps the old default (ON).
         args.cuda = args.arch_profile != "distributed"
 
-    return args
+    return args, unknown_args
 
 
-def build_config_from_args(args: argparse.Namespace) -> BuildConfig:
+def build_config_from_args(args: argparse.Namespace, extra_args: list[str]) -> BuildConfig:
     return BuildConfig(
         build_type=args.build_type,
         jobs=args.jobs,
@@ -226,6 +224,7 @@ def build_config_from_args(args: argparse.Namespace) -> BuildConfig:
         clean=args.clean,
         verbose=args.verbose,
         pgo=args.pgo,
+        extra_cmake_args=tuple(extra_args)
     )
 
 
@@ -349,8 +348,8 @@ def _run_pgo_workload(config: BuildConfig) -> None:
 
 
 def main(argv: list[str] | None = None) -> None:
-    args = parse_args(argv)
-    config = build_config_from_args(args)
+    args, extra_args = parse_args(argv)
+    config = build_config_from_args(args, extra_args)
 
     if config.clean and config.build_dir.exists():
         shutil.rmtree(config.build_dir, onexc=_rmtree_onexc)

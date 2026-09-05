@@ -75,6 +75,7 @@ class BuildConfig:
     clean: bool
     verbose: bool
     pgo: bool = False
+    extra_cmake_args: tuple[str,...] = ()
     build_root: Path = Path("build")
 
     @property
