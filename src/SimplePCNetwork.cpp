@@ -2,6 +2,7 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #include <omp.h>
+#include <iostream>
 
 namespace Deep
 {
@@ -143,15 +144,45 @@ namespace Deep
         ProjectForward();
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
+        if (device == DeviceType::DEVICE_GPU)
         {
-            CalculateState(false);
-            UpdateState();
+            if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+            {
+                // Warm-up pass, uncaptured: runs the exact same operation
+                // sequence once so any lazy cuBLAS internal workspace
+                // allocation (a documented cuBLAS + CUDA Graphs interaction)
+                // happens before capture begins, not during it.
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+                std::cerr << "=== Warm-up pass complete, beginning capture ===\n";
+                backend->BeginGraphCapture();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+                backend->EndGraphCapture();
+                graphCaptured = true;
+                capturedInferenceSteps = inferenceSteps;
+            }
+            backend->ReplayGraph();
+        }
+        else
+        {
+            for (int t = 0; t < inferenceSteps; ++t)
+            {
+                CalculateState(false);
+                UpdateState();
+            }
+            UpdateWeights();
         }
 
-        finalEnergy = CalculateState(true);
-        UpdateWeights();
+        float finalEnergy = CalculateState(true);
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;

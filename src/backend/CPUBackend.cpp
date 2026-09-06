@@ -170,14 +170,16 @@ namespace Deep
             e[i] = z[i] - mu[i];
     }
 
+    void CPUBackend::IncrementCounter(int *counter) noexcept { ++(*counter); }
+
     void CPUBackend::AdamStep(float *param, const float *grad, float *m, float *v,
-                              size_t n, int t, float lr,
+                              size_t n, const int *t, const float *lr,
                               float beta1, float beta2, float eps) noexcept
     {
         // Precompute bias correction
-        float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(t));
-        float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(t));
-        float step_size = lr * Sleef_sqrtf(beta2_t) / beta1_t;
+        float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(*t));
+        float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(*t));
+        float step_size = *lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
 #pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
         for (size_t i = 0; i < n; ++i)
@@ -191,12 +193,12 @@ namespace Deep
     }
 
     void CPUBackend::AdamWStep(float *param, const float *grad, float *m, float *v,
-                               size_t n, int t, float lr, float weightDecay,
+                               size_t n, const int *t, const float *lr, float weightDecay,
                                float beta1, float beta2, float eps) noexcept
     {
-        float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(t));
-        float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(t));
-        float step_size = lr * Sleef_sqrtf(beta2_t) / beta1_t;
+        float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(*t));
+        float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(*t));
+        float step_size = *lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
 #pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
         for (size_t i = 0; i < n; ++i)
@@ -205,7 +207,7 @@ namespace Deep
             m[i] = beta1 * m[i] + (1.0f - beta1) * g;
             v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
 
-            param[i] -= lr * weightDecay * param[i];
+            param[i] -= *lr * weightDecay * param[i];
             param[i] -= step_size * m[i] / (Sleef_sqrtf(v[i]) + eps);
         }
     }

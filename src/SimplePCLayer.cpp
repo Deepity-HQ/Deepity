@@ -214,7 +214,7 @@ namespace Deep
         case OptimizerType::ADAM:
         case OptimizerType::ADAMW:
         {
-            t++;
+            backend->IncrementCounter(t_device); // was: t++
 
             size_t num_weights = (size_t)nextSize * size;
             float grad_scale = -1.0f;
@@ -230,15 +230,11 @@ namespace Deep
                 backend->AxpyInto(grad_b, local_grad + batch * nextSize, nextSize, grad_scale);
 
             if (opt == OptimizerType::ADAMW)
-            {
-                backend->AdamWStep(W, grad_W, m_W, v_W, num_weights, t, lr, lmbda);
-            }
+                backend->AdamWStep(W, grad_W, m_W, v_W, num_weights, t_device, lr_device, lmbda);
             else
-            {
-                backend->AdamStep(W, grad_W, m_W, v_W, num_weights, t, lr);
-            }
+                backend->AdamStep(W, grad_W, m_W, v_W, num_weights, t_device, lr_device);
 
-            backend->AdamStep(b, grad_b, m_b, v_b, nextSize, t, lr);
+            backend->AdamStep(b, grad_b, m_b, v_b, nextSize, t_device, lr_device);
             break;
         }
         }
@@ -287,10 +283,17 @@ namespace Deep
             {
                 total += pad16(w_size) * 3;
                 total += pad16(nextSize) * 3;
+                total += pad16(1) * 2; // t_device, lr_device
             }
         }
 
         return total;
+    }
+
+    void SimplePCLayer::SetLearningRate(float lr) noexcept
+    {
+        this->lr = lr;
+        backend->CopyFromHost(lr_device, &this->lr, 1);
     }
 
     template <typename ArenaT>
@@ -341,6 +344,13 @@ namespace Deep
 
                 backend->Zero(grad_W, w_size);
                 backend->Zero(grad_b, nextSize);
+
+                t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+                lr_device = arena.AllocateFloats(1);
+
+                int zero = 0;
+                backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+                backend->CopyFromHost(lr_device, &lr, 1);
             }
         }
         if constexpr (std::is_same_v<ArenaT, MemoryArena>)

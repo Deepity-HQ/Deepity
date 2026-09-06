@@ -147,11 +147,24 @@ namespace Deep
 
         // Optimizer
 
+        /// @brief Increments *counter by 1, on-device (a single, dedicated
+        /// kernel launch on GPU; a plain ++ on CPU). Exists so Adam/AdamW's
+        /// timestep can live entirely inside a captured CUDA graph -- see
+        /// AdamStep's own note for why t and lr moved from by-value host
+        /// arguments to device-resident pointers.
+        virtual void IncrementCounter(int *counter) noexcept = 0;
+
+        /// @brief t and lr are now device-resident pointers, not host values
+        /// taken by copy -- a graph captures the ARGUMENTS baked in at capture
+        /// time, so a host int/float would freeze t and lr at whatever they
+        /// were during the one-time capture call, silently never advancing on
+        /// any later replay. Reading them from device memory each call lets
+        /// the kernel itself see up-to-date values every replay.
         virtual void AdamStep(float *param, const float *grad, float *m, float *v,
-                              size_t n, int t, float lr,
+                              size_t n, const int *t, const float *lr,
                               float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
         virtual void AdamWStep(float *param, const float *grad, float *m, float *v,
-                               size_t n, int t, float lr, float weightDecay,
+                               size_t n, const int *t, const float *lr, float weightDecay,
                                float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
 
         virtual DeviceType GetDeviceType() const noexcept = 0;

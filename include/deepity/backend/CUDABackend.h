@@ -42,11 +42,13 @@ namespace Deep
         float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept override;
         void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept override;
 
+        void IncrementCounter(int *ptr) noexcept override;
+
         void AdamStep(float *param, const float *grad, float *m, float *v,
-                      size_t n, int t, float lr,
+                      size_t n, const int *t, const float *lr,
                       float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
         void AdamWStep(float *param, const float *grad, float *m, float *v,
-                       size_t n, int t, float lr, float weightDecay,
+                       size_t n, const int *t, const float *lr, float weightDecay,
                        float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
 
         DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_GPU; }
@@ -54,5 +56,8 @@ namespace Deep
     private:
         cublasHandle_t handle;
         cudaStream_t stream;
+        cudaGraph_t graph = nullptr;
+        cudaGraphExec_t graphExec = nullptr;
+        bool hasGraph = false;
     };
 }

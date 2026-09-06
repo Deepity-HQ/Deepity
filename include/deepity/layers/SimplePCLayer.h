@@ -199,7 +199,7 @@ namespace Deep
 
         /// @brief Sets the learning rate used for weight updates.
         /// @param lr The new learning rate.
-        void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        void SetLearningRate(float lr) noexcept;
         /// @brief Sets the inference rate (Euler integration step size).
         /// @param ir The new inference rate.
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
@@ -329,6 +329,9 @@ namespace Deep
         float ir;
         float lmbda;
         bool isClamped = false;
+
+        int *t_device = nullptr;
+        float *lr_device = nullptr;
 
         float muCacheThreshold = -1.0f; // -1 = disabled. 0 = exact clamped-only
                                         // (today's validated behavior). >0 =

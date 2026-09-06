@@ -191,6 +191,9 @@ namespace Deep
         /// and Compile() needs to know which arena type to construct.
         DeviceType device;
 
+        bool graphCaptured = false;
+        int capturedInferenceSteps = -1;
+
         /// @brief Used when device == DEVICE_CPU. Only one of
         /// cpuArena/gpuArena is ever actually constructed for a given
         /// network -- they're kept as two separate members (rather than

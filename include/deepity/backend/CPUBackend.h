@@ -10,6 +10,11 @@ namespace Deep
         CPUBackend() = default;
         ~CPUBackend() override = default;
 
+        // @remark these are no-ops for backend purposes
+        void BeginGraphCapture() noexcept override {}
+        void EndGraphCapture() noexcept override {}
+        void ReplayGraph() noexcept override {}
+
         float *Allocate(size_t numFloats) override;
         void Free(float *ptr) noexcept override;
         void Zero(float *ptr, size_t numFloats) noexcept override;
@@ -38,11 +43,13 @@ namespace Deep
         float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept override;
         void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept override;
 
+        void IncrementCounter(int *counter) noexcept override;
+
         void AdamStep(float *param, const float *grad, float *m, float *v,
-                      size_t n, int t, float lr,
+                      size_t n, const int *t, const float *lr,
                       float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
         void AdamWStep(float *param, const float *grad, float *m, float *v,
-                       size_t n, int t, float lr, float weightDecay,
+                       size_t n, const int *t, const float *lr, float weightDecay,
                        float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
 
         DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_CPU; };
