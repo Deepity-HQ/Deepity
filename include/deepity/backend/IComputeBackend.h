@@ -89,6 +89,14 @@ namespace Deep
         /// adds and Adam/AdamW's own internal accumulation today.
         virtual void AxpyInto(float *y, const float *x, size_t n, float alpha) noexcept = 0;
 
+        /// @brief buf[b, :] += bias[:] for every row b in [0, batchSize). Replaces
+        /// a batchSize-iteration loop of individual AxpyInto calls with one
+        /// launch -- on GPU, 250 separate kernel launches per call (each with
+        /// real, fixed host-side dispatch overhead regardless of how little work
+        /// it does) was the actual dominant cost in the settling loop, not the
+        /// energy-reduction syncs this was originally suspected to be.
+        virtual void AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept = 0;
+
         // --- Activation -----------------------------------------------
 
         /// @brief In-place activation, matching Deep::relu/sigmoid/etc's
@@ -121,6 +129,15 @@ namespace Deep
         /// 0.5 * sum(e[i]^2). Matches CalculateState()'s error+energy
         /// computation exactly (the fused AVX loop from earlier tonight).
         virtual float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
+
+        /// @brief e[i] = z[i] - mu[i], for all i in [0, n). Same computation as
+        /// ComputeErrorAndEnergy but WITHOUT the energy reduction -- no cuBLAS
+        /// dot-product call, no host/device sync. Use this during a settling
+        /// loop's discarded intermediate iterations, where only the final
+        /// energy value (from ComputeErrorAndEnergy) is ever actually used;
+        /// every earlier call was needlessly forcing a full GPU pipeline stall
+        /// just to compute a number nobody reads.
+        virtual void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
 
         // --- Optimizer ---------------------------------------------------
 

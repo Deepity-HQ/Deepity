@@ -2,11 +2,11 @@
 #include <deepity/backend/CPUBackend.h>
 #include <deepity/utils/Optimize.h>
 #include <cstdlib>
-#include <iostream>
 #include <chrono>
 #include <omp.h>
 #include <algorithm>
 #include <cstring>
+#include <type_traits>
 
 namespace Deep
 {
@@ -102,7 +102,7 @@ namespace Deep
             backend->RandomizeNormal(W, Wsz, 0.0f, std::sqrt(2.0f / (size + nextSize)), seed);
     }
 
-    float SimplePCLayer::CalculateState() noexcept
+    float SimplePCLayer::CalculateState(bool needEnergy) noexcept
     {
         const size_t N = batchSize * size;
 
@@ -110,18 +110,18 @@ namespace Deep
         {
             backend->Zero(e, N);
             if (nextSize > 0)
-            {
                 ComputeMuOnly();
-            }
             return 0.0f;
         }
 
-        float totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, N);
+        float totalEnergy = 0.0f;
+        if (needEnergy)
+            totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, N);
+        else
+            backend->ComputeError(e, z, layerBelow->mu, N);
 
         if (nextSize > 0)
-        {
             ComputeMuOnly();
-        }
 
         return totalEnergy;
     }
@@ -147,12 +147,7 @@ namespace Deep
             (int)batchSize, (int)nextSize, (int)size,
             1.0f, zF, (int)size, W, (int)size, 0.0f, mu, (int)nextSize);
 
-        bool parallelOk = backend->GetDeviceType() == DeviceType::DEVICE_CPU;
-#pragma omp parallel for schedule(static) if (batchSize > 4 && parallelOk && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            backend->AxpyInto(mu + batch * nextSize, b, nextSize, 1.0f);
-        }
+        backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
         if (isClamped)
         {
@@ -348,8 +343,12 @@ namespace Deep
                 backend->Zero(grad_b, nextSize);
             }
         }
-
-        if (localArena && localArena.get() != &arena)
+        if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+        {
+            if (localArena && localArena.get() != &arena)
+                localArena.reset();
+        }
+        else
         {
             localArena.reset();
         }

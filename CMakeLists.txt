@@ -312,12 +312,12 @@ target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
 
-add_executable(GaussSeidelVerify tests/tGaussSeidelVerify.cpp)
-target_link_libraries(GaussSeidelVerify PRIVATE Deepity)
-set_target_properties(GaussSeidelVerify PROPERTIES
+add_executable(AddBiasBroadcastVerify tests/tAddBiasBroadcastVerify.cpp)
+target_link_libraries(AddBiasBroadcastVerify PRIVATE Deepity)
+set_target_properties(AddBiasBroadcastVerify PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
-add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
+add_test(NAME AddBiasBroadcastVerify COMMAND AddBiasBroadcastVerify)
 
 # --- Compiler flags -------------------------------------------------
 

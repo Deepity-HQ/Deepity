@@ -110,6 +110,13 @@ namespace Deep
         cblas_saxpy(n, alpha, x, 1, y, 1);
     }
 
+    void CPUBackend::AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept
+    {
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+        for (size_t b = 0; b < batchSize; ++b)
+            cblas_saxpy(width, 1.0f, bias, 1, buf + b * width, 1);
+    }
+
     void CPUBackend::Activation(ActivationType type, float *buf, size_t n) noexcept
     {
         To_Fn(type)(buf, n);
@@ -154,6 +161,13 @@ namespace Deep
         }
 
         return 0.5f * energy;
+    }
+
+    void CPUBackend::ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept
+    {
+#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+        for (size_t i = 0; i < n; ++i)
+            e[i] = z[i] - mu[i];
     }
 
     void CPUBackend::AdamStep(float *param, const float *grad, float *m, float *v,

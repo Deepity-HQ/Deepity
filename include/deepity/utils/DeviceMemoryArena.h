@@ -3,6 +3,7 @@
 #include <deepity/backend/IComputeBackend.h>
 #include <new>
 #include <stdexcept>
+#include <iostream>
 
 /**
  * @file DeviceMemoryArena.h
@@ -116,8 +117,6 @@ namespace Deep
         float *AllocateFloats(size_t num_floats)
         {
             size_t allocation_size = (num_floats * sizeof(float) + 63) & ~(size_t)63;
-            std::cerr << "  DeviceMemoryArena chunk: requested=" << num_floats
-                      << " floats, offset=" << offset_bytes << ", size=" << allocation_size << "\n";
 
             if (offset_bytes + allocation_size > capacity_bytes)
             {

@@ -26,6 +26,8 @@ namespace Deep
 
         void Scale(float *buf, size_t n, float alpha) noexcept override;
         void AxpyInto(float *y, const float *x, size_t n, float alpha) noexcept override;
+        void AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept override;
+
         void Activation(ActivationType type, float *buf, size_t n) noexcept override;
         void ActivationInto(ActivationType type, float *dst, const float *src, size_t n) noexcept override;
         void ActivationDerivative(ActivationType type, float *buf, size_t n, bool activated) noexcept override;
@@ -34,6 +36,7 @@ namespace Deep
         void FusedStateUpdate(float *z, const float *feedback, const float *deriv,
                               const float *e, size_t n, float ir) noexcept override;
         float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept override;
+        void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept override;
 
         void AdamStep(float *param, const float *grad, float *m, float *v,
                       size_t n, int t, float lr,

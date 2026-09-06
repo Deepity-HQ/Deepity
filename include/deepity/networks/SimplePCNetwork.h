@@ -86,8 +86,9 @@ namespace Deep
         void Clamp(const std::vector<float> &input);
 
         /// @brief Calculates the state of each layer
-        /// @return Returns total energy
-        float CalculateState();
+        /// @param needEnergy ask for energy after
+        /// @return Returns total energy if asked for
+        float CalculateState(bool needEnergy = true);
 
         /// @brief Updates each layer's state
         void UpdateState();

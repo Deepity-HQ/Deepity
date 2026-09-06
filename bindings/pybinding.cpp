@@ -142,7 +142,7 @@ namespace
     template <typename LayerT>
     void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer> &cls, const char *className)
     {
-        cls.def("calculate_state", &LayerT::CalculateState)
+        cls.def("calculate_state", static_cast<float (LayerT::*)() noexcept>(&LayerT::CalculateState))
             .def("update_state", &LayerT::UpdateState)
             .def("update_weights", &LayerT::UpdateWeights)
             .def("flush", &LayerT::Flush)

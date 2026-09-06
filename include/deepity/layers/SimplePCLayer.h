@@ -128,8 +128,11 @@ namespace Deep
         /// ngc-learn's documented convention exactly (was previously
         /// mu = phi(W@z+b), activation AFTER the transform).
         /// (No precision weighting -- see file-level note.)
-        /// @return This layer's energy contribution at the current state.
-        float CalculateState() noexcept override;
+        /// @param needEnergy Asks for energy
+        /// @return This layer's energy contribution at the current state, if asked for.
+        float CalculateState(bool needEnergy = true) noexcept;
+
+        float CalculateState() noexcept override { return CalculateState(true); }
 
         /// @brief Computes the state derivatives for inference.
         ///

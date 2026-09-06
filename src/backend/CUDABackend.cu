@@ -67,8 +67,6 @@ namespace Deep
     __global__ void uniform_generation(curandState *state, float *random_numbers, size_t n, float min, float range, uint32_t seed)
     {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
-        if (i == 0)
-            printf("[kernel] state ptr = %p, random_numbers ptr = %p, n = %llu\n", (void *)state, (void *)random_numbers, (unsigned long long)n);
         if (i < n)
         {
             curand_init(seed, static_cast<unsigned long long>(i), 0, &state[i]);
@@ -147,6 +145,21 @@ namespace Deep
     {
         if (cublasSaxpy(handle, n, &alpha, x, 1, y, 1))
             std::cerr << "Failed to perform CUDA Axpy.\n";
+    }
+
+    __global__ void AddBiasBroadcastKernel(float *buf, const float *bias, size_t batchSize, size_t width)
+    {
+        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < batchSize * width)
+            buf[i] += bias[i % width];
+    }
+
+    void CUDABackend::AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept
+    {
+        constexpr int BLOCK_SIZE = 256;
+        size_t total = batchSize * width;
+        const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        AddBiasBroadcastKernel<<<blocks, BLOCK_SIZE>>>(buf, bias, batchSize, width);
     }
 
 #pragma region ACTIVATIONS_AND_KERNELS
@@ -400,6 +413,13 @@ namespace Deep
         cublasSdot(handle, n, e, 1, e, 1, &sum_of_squares);
 
         return 0.5f * sum_of_squares;
+    }
+
+    void CUDABackend::ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept
+    {
+        constexpr int BLOCK_SIZE = 256;
+        const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        ComputeErrorKernel<<<blocks, BLOCK_SIZE>>>(e, z, mu, n);
     }
 
     void CUDABackend::AdamStep(float *param, const float *grad, float *m, float *v,

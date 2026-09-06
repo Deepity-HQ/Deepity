@@ -2,14 +2,12 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #include <omp.h>
-#include <iostream>
 
 namespace Deep
 {
     SimplePCNetwork::SimplePCNetwork(int batchSize, DeviceType device) noexcept
         : device(device), batchSize(batchSize)
     {
-        std::cerr << "SimplePCNetwork ctor: device=" << (device == DeviceType::DEVICE_GPU ? "GPU" : "CPU") << "\n";
         backend = CreateBackend(device);
     }
 
@@ -64,12 +62,12 @@ namespace Deep
         layers.front()->ClampState(input);
     }
 
-    float SimplePCNetwork::CalculateState()
+    float SimplePCNetwork::CalculateState(bool needEnergy)
     {
         float e = 0.0f;
         for (size_t i = 0; i < layers.size(); i++)
-            e += layers[i]->CalculateState();
-        return e;
+            e += layers[i]->CalculateState(needEnergy);
+        return needEnergy ? e : 0.0f;
     }
 
     void SimplePCNetwork::UpdateState()
@@ -92,11 +90,11 @@ namespace Deep
 
         for (int t = 0; t < inferenceSteps; t++)
         {
-            CalculateState();
+            CalculateState(false);
             UpdateState();
         }
 
-        float finalEnergy = CalculateState();
+        float finalEnergy = CalculateState(true);
 
         UpdateWeights();
         GetTerminalLayer()->UnclampState();
@@ -148,11 +146,11 @@ namespace Deep
         float finalEnergy = 0.0f;
         for (int t = 0; t < inferenceSteps; ++t)
         {
-            CalculateState();
+            CalculateState(false);
             UpdateState();
         }
 
-        finalEnergy = CalculateState();
+        finalEnergy = CalculateState(true);
         UpdateWeights();
         GetTerminalLayer()->UnclampState();
 
@@ -167,7 +165,7 @@ namespace Deep
 
         for (int t = 0; t < inferenceSteps; t++)
         {
-            CalculateState();
+            CalculateState(false);
             UpdateState();
         }
 
@@ -206,8 +204,6 @@ namespace Deep
 #if defined(DEEPITY_USE_CUDA)
         else
         {
-            std::cerr << "GPU arena: total_floats_needed=" << total_floats_needed
-                      << " (" << total_floats_needed * sizeof(float) << " bytes)\n";
             gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total_floats_needed);
             for (auto &layer : layers)
                 layer->BindMemory(*gpuArena);
