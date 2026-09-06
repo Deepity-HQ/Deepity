@@ -8,7 +8,9 @@
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/layers/Layer.h>
+#include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/backend/IComputeBackend.h>
 
 /**
  * @file SimplePCLayer.h
@@ -52,8 +54,18 @@
  * every step while clamped. This is an EXACT optimization, not an
  * approximation -- default OFF so both behaviors coexist for direct
  * correctness/timing comparison before trusting it.
- * @version 1.0
- * @date 2026-06-30
+ *
+ * @note As of this revision, all math is routed through an
+ * IComputeBackend rather than calling cblas_/Deep::* functions
+ * directly, so this layer can run on either CPUBackend or CUDABackend.
+ * `backend` defaults to nullptr, in which case the layer constructs and
+ * owns its own CPUBackend internally -- every existing call site
+ * (SimplePCNetwork::AddLayer, nanobind bindings, hand-written C++)
+ * keeps working completely unchanged, silently getting today's exact
+ * CPU-only behavior. Passing a real backend explicitly is only needed
+ * for new, GPU-aware call sites.
+ * @version 1.1
+ * @date 2026-09-05
  * @author Jack Rose
  */
 
@@ -74,10 +86,17 @@ namespace Deep
         /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param act Activation function
         /// @param dAct Derivative of activation function
+        /// @param backend Compute backend to route all math through.
+        ///        Defaults to nullptr, in which case this layer
+        ///        constructs and owns its own CPUBackend internally --
+        ///        existing callers don't need to change anything. Pass a
+        ///        real backend (owned elsewhere, e.g. by the network) to
+        ///        run this layer on GPU.
         SimplePCLayer(size_t size, size_t nextSize, size_t batchSize = 1,
                       float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
                       void (*act)(float *, size_t) = relu,
-                      void (*dAct)(float *, size_t, bool) = dRelu);
+                      void (*dAct)(float *, size_t, bool) = dRelu,
+                      IComputeBackend *backend = nullptr);
 
         /// @brief Constructor for a SimplePCLayer, using a named
         /// ActivationType instead of raw function pointers.
@@ -90,9 +109,13 @@ namespace Deep
         /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param aType Activation type
         /// @param dType Activation derivative type
+        /// @param backend Compute backend to route all math through.
+        ///        See the other constructor's doc for the default-nullptr
+        ///        behavior.
         SimplePCLayer(size_t size, size_t nextSize, size_t batchSize = 1,
                       float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
-                      ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
+                      ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU,
+                      IComputeBackend *backend = nullptr);
 
         /// @brief Calculates the total network energy state, and this
         /// layer's outgoing prediction (mu).
@@ -233,7 +256,8 @@ namespace Deep
 
         /// @brief Randomizes this layer's weights (and biases) in place.
         /// @param twister The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &twister) noexcept;
+        /// @param distribution The distribution of the randomization: (normal, uniform)
+        void RandomizeWeights(std::mt19937 &twister, const char *distribution = "normal") noexcept;
 
         /// @brief Returns this layer's configured activation type.
         ActivationType GetActivationType() const noexcept { return To_AType(activation); }
@@ -247,11 +271,28 @@ namespace Deep
         size_t GetRequiredFloats() const noexcept;
         /// @brief Binds this layer's weight/state/scratch buffers into the
         /// supplied arena. Must be called before any other operation.
-        /// @param arena The MemoryArena to bind into.
-        void BindMemory(MemoryArena &arena);
+        /// Templated so either MemoryArena (CPU) or DeviceMemoryArena
+        /// (GPU) can be bound, resolved entirely at compile time -- see
+        /// the .cpp's explicit instantiations for the two concrete types
+        /// actually used.
+        /// @param arena The arena to bind into.
+        template <typename ArenaT>
+        void BindMemory(ArenaT &arena);
 
     private:
         std::unique_ptr<MemoryArena> localArena;
+
+        /// @brief The compute backend this layer routes all math
+        /// through. A unique_ptr with a swappable deleter, rather than
+        /// two separate owning/non-owning members: when constructed with
+        /// an explicit external backend (network-owned, GPU case), the
+        /// deleter is a no-op; when this layer had to construct its own
+        /// fallback CPUBackend (backend=nullptr was passed in), the
+        /// deleter actually frees it. Every call site still just uses
+        /// backend->Something(), identical to a raw pointer.
+        using BackendDeleter = void (*)(IComputeBackend *);
+        std::unique_ptr<IComputeBackend, BackendDeleter> backend;
+
         float *W;
         float *b;
         float *e;

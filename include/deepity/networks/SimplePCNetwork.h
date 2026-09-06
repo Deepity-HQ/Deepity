@@ -4,6 +4,8 @@
 #include <random>
 #include <deepity/layers/SimplePCLayer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/backend/Backend.h>
 
 /**
  * @file SimplePCNetwork.h
@@ -22,8 +24,15 @@
  *  network.CalculateState();
  *
  * @note All layers are stored in a vector.
- * @version 1.0
- * @date 2026-06-30
+ *
+ * @note As of this revision, the network owns a single IComputeBackend
+ * (CPU by default, GPU if requested at construction) and passes it down
+ * into every layer it creates. `device` defaults to DEVICE_CPU, so every
+ * existing caller (nanobind bindings, hand-written C++) keeps compiling
+ * and behaving exactly as before -- passing DEVICE_GPU explicitly is
+ * only needed for new, GPU-aware call sites.
+ * @version 1.1
+ * @date 2026-09-05
  * @author Jack Rose
  */
 
@@ -35,7 +44,11 @@ namespace Deep
     public:
         /// @brief Constructs an empty network with a predetermined batch size.
         /// @param batchSize Batch size
-        explicit SimplePCNetwork(int batchSize) noexcept;
+        /// @param device Which device this network's layers should run
+        ///        on. Defaults to DEVICE_CPU, preserving existing
+        ///        behavior exactly for anyone not explicitly requesting
+        ///        DEVICE_GPU.
+        explicit SimplePCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
 
         SimplePCNetwork(const SimplePCNetwork &) = delete;
         SimplePCNetwork &operator=(const SimplePCNetwork &) = delete;
@@ -55,6 +68,11 @@ namespace Deep
 
         void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                       ActivationType aType, ActivationType dType);
+
+        /// @brief Randomizes the weights of each layer
+        /// @param rng The classic Mersenne Twister
+        /// @param distribution A string representation of (normal, uniform) distribution. For example: "normal(0, 1)" for a standard normal.
+        void RandomizeWeights(std::mt19937 &rng, const char *distribution);
 
         /// @brief Randomizes the weights of each layer
         /// @param rng The classic Mersenne Twister
@@ -94,6 +112,9 @@ namespace Deep
         /// @brief Returns the batch size for the network's layers
         /// @return size_t batchSize
         int GetBatchSize() const noexcept { return batchSize; }
+
+        /// @brief Returns which device this network's layers run on.
+        DeviceType GetDevice() const noexcept { return device; }
 
         /// @brief Sets the optimizer used for weight updates on every layer.
         /// @param o The optimizer type to apply.
@@ -148,18 +169,41 @@ namespace Deep
         /// ONE crossing instead.
         float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
 
-	std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
+        std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
         /// @brief Sets mu-cache threshold on every layer -- see
         /// SimplePCLayer::SetMuCacheThreshold() for semantics. Safe to call any
         /// time after Compile().
         void SetMuCacheThreshold(float threshold) noexcept;
 
-        /// @brief Loads all layers into one contiguous block of memory.
+        /// @brief Loads all layers into one contiguous block of memory
+        /// (MemoryArena for DEVICE_CPU, DeviceMemoryArena for DEVICE_GPU).
         void Compile();
 
     private:
         std::vector<std::unique_ptr<SimplePCLayer>> layers;
-        std::unique_ptr<MemoryArena> arena;
+
+        /// @brief The network's own compute backend, created once at
+        /// construction and shared by every layer added afterward.
+        std::unique_ptr<IComputeBackend> backend;
+        /// @brief Which device `backend` actually is -- kept alongside
+        /// it since IComputeBackend itself doesn't expose its own type,
+        /// and Compile() needs to know which arena type to construct.
+        DeviceType device;
+
+        /// @brief Used when device == DEVICE_CPU. Only one of
+        /// cpuArena/gpuArena is ever actually constructed for a given
+        /// network -- they're kept as two separate members (rather than
+        /// one unified type) because MemoryArena and DeviceMemoryArena
+        /// share no common base, matching the same reasoning already
+        /// applied when DeviceMemoryArena was designed.
+        std::unique_ptr<MemoryArena> cpuArena;
+        /// @brief Used when device == DEVICE_GPU. Only compiled at all
+        /// when DEEPITY_ENABLE_CUDA is defined, matching
+        /// DeviceMemoryArena.h's own guard.
+#if defined(DEEPITY_ENABLE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
+
         int batchSize;
     };
 }

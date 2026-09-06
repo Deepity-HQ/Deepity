@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
+#include <curand_kernel.h>
 
 namespace Deep
 {
@@ -52,14 +53,84 @@ namespace Deep
         cudaMemcpy(hostDst, deviceSrc, numFloats * sizeof(float), cudaMemcpyDeviceToHost);
     }
 
+    __global__ void normal_generation(curandState *state, float *random_numbers,
+                                      size_t n, float mean, float stddev, uint32_t seed)
+    {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n)
+        {
+            curand_init(seed, static_cast<unsigned long long>(i), 0, &state[i]);
+            random_numbers[i] = mean + stddev * curand_normal(&state[i]);
+        }
+    }
+
+    __global__ void uniform_generation(curandState *state, float *random_numbers, size_t n, float min, float range, uint32_t seed)
+    {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i == 0)
+            printf("[kernel] state ptr = %p, random_numbers ptr = %p, n = %llu\n", (void *)state, (void *)random_numbers, (unsigned long long)n);
+        if (i < n)
+        {
+            curand_init(seed, static_cast<unsigned long long>(i), 0, &state[i]);
+            random_numbers[i] = min + curand_uniform(&state[i]) * range;
+        }
+    }
+
+    void CUDABackend::RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept
+    {
+        if (n == 0)
+            return;
+
+        curandState *state = nullptr;
+        if (cudaMalloc(&state, n * sizeof(curandState)) != cudaSuccess)
+            return;
+
+        constexpr int BLOCK_SIZE = 256;
+        const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        normal_generation<<<blocks, BLOCK_SIZE>>>(state, buf, n, mean, stddev, seed);
+        cudaFree(state);
+    }
+
+    void CUDABackend::RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept
+    {
+        if (n == 0)
+            return;
+
+        curandState *state = nullptr;
+        cudaError_t mallocErr = cudaMalloc(&state, n * sizeof(curandState));
+        if (mallocErr != cudaSuccess)
+        {
+            std::cerr << "curandState cudaMalloc failed for n=" << n
+                      << " (" << n * sizeof(curandState) << " bytes): "
+                      << cudaGetErrorString(mallocErr) << "\n";
+            return;
+        }
+        std::cerr << "curandState allocated OK: n=" << n << ", ptr=" << (void *)state << "\n";
+
+        constexpr int BLOCK_SIZE = 256;
+        const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        uniform_generation<<<blocks, BLOCK_SIZE>>>(state, buf, n, min, max - min, seed);
+
+        cudaError_t launchErr = cudaGetLastError();
+        if (launchErr != cudaSuccess)
+            std::cerr << "uniform_generation kernel launch failed: " << cudaGetErrorString(launchErr) << "\n";
+
+        cudaDeviceSynchronize(); // force the kernel to finish and surface any async error HERE, before cudaFree
+        cudaError_t syncErr = cudaGetLastError();
+        if (syncErr != cudaSuccess)
+            std::cerr << "uniform_generation kernel execution failed: " << cudaGetErrorString(syncErr) << "\n";
+
+        cudaFree(state);
+    }
+
     void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K,
                              float alpha, const float *A, int lda,
                              const float *B, int ldb,
                              float beta, float *C, int ldc) noexcept
     {
         // CUDA is *column-major*.
-        cublasOperation_t cuTransA = transA ? CUBLAS_OP_N : CUBLAS_OP_T;
-        cublasOperation_t cuTransB = transB ? CUBLAS_OP_N : CUBLAS_OP_T;
+        cublasOperation_t cuTransA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+        cublasOperation_t cuTransB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
         if (cublasSgemm(handle, cuTransB, cuTransA,
                         N, M, K, &alpha, B, ldb, A, lda, &beta, C, ldc) != CUBLAS_STATUS_SUCCESS)
@@ -138,8 +209,9 @@ namespace Deep
         size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
         if (i < n)
         {
-            float y = src[i];
-            dst[i] = fmaf(-y, y, 1.0f);
+            float t;
+            asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(src[i]));
+            dst[i] = fmaf(-t, t, 1.0f);
         }
     }
 
@@ -337,7 +409,7 @@ namespace Deep
         // Compute scalars on host CPU
         float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(t));
         float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(t));
-        float step_size = lr * Sleef_sqrtf_u05(beta2_t) / beta1_t;
+        float step_size = lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
@@ -351,7 +423,7 @@ namespace Deep
     {
         float beta1_t = 1.0f - Sleef_powf_u10(beta1, static_cast<float>(t));
         float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(t));
-        float step_size = lr * Sleef_sqrtf_u05(beta2_t) / beta1_t;
+        float step_size = lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);

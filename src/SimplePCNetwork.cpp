@@ -2,15 +2,22 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #include <omp.h>
+#include <iostream>
 
 namespace Deep
 {
-    SimplePCNetwork::SimplePCNetwork(int batchSize) noexcept : batchSize(batchSize) {}
+    SimplePCNetwork::SimplePCNetwork(int batchSize, DeviceType device) noexcept
+        : device(device), batchSize(batchSize)
+    {
+        std::cerr << "SimplePCNetwork ctor: device=" << (device == DeviceType::DEVICE_GPU ? "GPU" : "CPU") << "\n";
+        backend = CreateBackend(device);
+    }
 
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                                    void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
-        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
+        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(
+            size, nextSize, batchSize, lr, ir, lmbda, act, dAct, backend.get());
 
         if (!layers.empty())
         {
@@ -23,7 +30,8 @@ namespace Deep
     void SimplePCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                                    ActivationType aType, ActivationType dType)
     {
-        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(size, nextSize, batchSize, lr, ir, lmbda, aType, dType);
+        std::unique_ptr<SimplePCLayer> l = std::make_unique<SimplePCLayer>(
+            size, nextSize, batchSize, lr, ir, lmbda, aType, dType, backend.get());
 
         if (!layers.empty())
         {
@@ -31,6 +39,12 @@ namespace Deep
             l->SetLayerBelow(layers.back().get());
         }
         layers.push_back(std::move(l));
+    }
+
+    void SimplePCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution)
+    {
+        for (auto &l : layers)
+            l->RandomizeWeights(rng, distribution);
     }
 
     void SimplePCNetwork::RandomizeWeights(std::mt19937 &rng)
@@ -105,7 +119,9 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 
     void SimplePCNetwork::ProjectForward() noexcept
@@ -118,7 +134,7 @@ namespace Deep
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-            std::memcpy(nextZ, mu, n * sizeof(float));
+            backend->Copy(nextZ, mu, n);
         }
     }
 
@@ -147,7 +163,7 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        ProjectForward(); // Add your forward projection initialization here
+        ProjectForward();
 
         for (int t = 0; t < inferenceSteps; t++)
         {
@@ -159,7 +175,9 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 
     void SimplePCNetwork::SetMuCacheThreshold(float threshold) noexcept
@@ -179,8 +197,21 @@ namespace Deep
         for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();
 
-        arena = std::make_unique<MemoryArena>(total_floats_needed, true);
-        for (auto &layer : layers)
-            layer->BindMemory(*arena);
+        if (device == DeviceType::DEVICE_CPU)
+        {
+            cpuArena = std::make_unique<MemoryArena>(total_floats_needed, true);
+            for (auto &layer : layers)
+                layer->BindMemory(*cpuArena);
+        }
+#if defined(DEEPITY_ENABLE_CUDA)
+        else
+        {
+            std::cerr << "GPU arena: total_floats_needed=" << total_floats_needed
+                      << " (" << total_floats_needed * sizeof(float) << " bytes)\n";
+            gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total_floats_needed);
+            for (auto &layer : layers)
+                layer->BindMemory(*gpuArena);
+        }
+#endif
     }
 }

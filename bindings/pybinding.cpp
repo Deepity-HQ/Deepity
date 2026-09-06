@@ -426,30 +426,39 @@ void bind_networks(nb::module_ &m)
 
     auto simpleNetCls = nb::class_<Deep::SimplePCNetwork>(m, "SimplePCNetwork", "Predictive Coding Network built from SimplePCLayers.");
     BindCommonPCNetwork<Deep::SimplePCNetwork>(simpleNetCls, "SimplePCNetwork");
+    simpleNetCls.def("__init__", [](Deep::SimplePCNetwork *self, int batch_size, const std::string &device)
+                     {
+    Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+        ? Deep::DeviceType::DEVICE_GPU
+        : Deep::DeviceType::DEVICE_CPU;
+    new (self) Deep::SimplePCNetwork(batch_size, dt); }, nb::arg("batch_size"), nb::arg("device") = "cpu", "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").");
     simpleNetCls.def("add_layer", [](Deep::SimplePCNetwork &self, int size, int next_size, float lr, float ir, float lmbda, const std::string &activation, const std::string &activation_deriv)
                      { self.AddLayer(size, next_size, lr, ir, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("size"), nb::arg("next_size"), nb::arg("lr") = 1e-6f, nb::arg("ir") = 0.1f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu", "Add a layer to the network.")
         .def("set_optimizer", [](Deep::SimplePCNetwork &self, const std::string &opt)
              {
-            if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
-            else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
-            else self.SetOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"), "Sets the optimizer: ADAM, ADAMW, or SGD.")
-
+        if (opt == "ADAM") self.SetOptimizer(Deep::OptimizerType::ADAM);
+        else if (opt == "ADAMW") self.SetOptimizer(Deep::OptimizerType::ADAMW);
+        else self.SetOptimizer(Deep::OptimizerType::SGD); }, nb::arg("optimizer"), "Sets the optimizer: ADAM, ADAMW, or SGD.")
         .def("project_forward", &Deep::SimplePCNetwork::ProjectForward, "Seeds hidden layers from a genuine forward pass through current "
                                                                         "weights, instead of zero-init. Call AFTER clamp_input(), BEFORE "
                                                                         "the settling loop.")
-
         .def("train_step_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, FloatArray y, int steps)
              {
-    std::vector<float> xvec(x.data(), x.data() + x.size());
-    std::vector<float> yvec(y.data(), y.data() + y.size());
-    return self.TrainStepWithProjection(xvec, yvec, steps); }, nb::arg("x"), nb::arg("y"), nb::arg("steps"))
+std::vector<float> xvec(x.data(), x.data() + x.size());
+std::vector<float> yvec(y.data(), y.data() + y.size());
+return self.TrainStepWithProjection(xvec, yvec, steps); }, nb::arg("x"), nb::arg("y"), nb::arg("steps"))
         .def("predict_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, int steps)
              {
-    std::vector<float> xvec(x.data(), x.data() + x.size());
+std::vector<float> xvec(x.data(), x.data() + x.size());
+std::vector<float> out_beliefs = self.PredictWithProjection(xvec, steps);
+return CopyToNewArray(out_beliefs.data(), {out_beliefs.size()}); }, nb::arg("x"), nb::arg("steps"), "Runs forward-projection init and settling loop entirely in C++, returning terminal beliefs.")
+        .def("randomize_weights", [](Deep::SimplePCNetwork &self, const std::string &distribution)
+             {
+    std::random_device rd;
+    std::mt19937 rng(rd());
+    self.RandomizeWeights(rng, distribution.c_str()); }, nb::arg("distribution"), "Initialize every layer's weights using a distribution string, "
+                                           "e.g. \"normal(0, 1)\" or \"uniform(-0.3, 0.3)\".");
 
-    std::vector<float> out_beliefs = self.PredictWithProjection(xvec, steps);
-
-    return CopyToNewArray(out_beliefs.data(), {out_beliefs.size()}); }, nb::arg("x"), nb::arg("steps"), "Runs forward-projection init and settling loop entirely in C++, returning terminal beliefs.");
     nb::class_<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
         .def(nb::init<int>(), nb::arg("batch_size"))
         .def("add_layer", [](Deep::GaussSeidelPCNetwork &self, int size, int next_size, float lr, float ir, float lmbda, const std::string &activation, const std::string &activation_deriv)
@@ -706,9 +715,7 @@ void bind_utilities(nb::module_ &m)
           { Deep::dSigmoid(x.data(), x.size()); });
 }
 
-// ============================================================================
 // Main Module Entry
-// ============================================================================
 NB_MODULE(pydeepity, m)
 {
     m.doc() = "Deepity: A high-performance Predictive Coding library.";

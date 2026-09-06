@@ -9,15 +9,16 @@
 #else
 #include <cblas.h>
 #endif
+#include <random>
 
 namespace Deep
 {
-    float *CPUBackend::Allocate(size_t numFloats) noexcept
+    float *CPUBackend::Allocate(size_t numFloats)
     {
 #ifdef _WIN32
         return (float *)_aligned_alloc(numFloats * sizeof(float), 16);
 #else
-        return (float *)aligned_alloc(16, numFloats);
+        return (float *)aligned_alloc(16, numFloats * sizeof(float));
 #endif
     }
 
@@ -42,12 +43,52 @@ namespace Deep
 
     void CPUBackend::CopyFromHost(float *deviceDst, const float *hostSrc, size_t numFloats) noexcept
     {
-        memcpy(deviceDst, hostSrc, numFloats);
+        memcpy(deviceDst, hostSrc, numFloats * sizeof(float));
     }
 
     void CPUBackend::CopyToHost(float *hostDst, const float *deviceSrc, size_t numFloats) noexcept
     {
-        memcpy(hostDst, deviceSrc, numFloats);
+        memcpy(hostDst, deviceSrc, numFloats * sizeof(float));
+    }
+
+    void CPUBackend::RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept
+    {
+        std::mt19937 seedGenerator(seed);
+        std::uniform_int_distribution<uint32_t> seedDist;
+
+        std::vector<uint32_t> seeds(omp_get_max_threads());
+        for (auto &s : seeds)
+            s = seedDist(seedGenerator);
+
+#pragma omp parallel if (!omp_in_parallel())
+        {
+            std::mt19937 rng(seeds[omp_get_thread_num()]);
+            std::normal_distribution<float> dist(mean, stddev);
+
+#pragma omp for
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)n; ++i)
+                buf[i] = dist(rng);
+        }
+    }
+
+    void CPUBackend::RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept
+    {
+        std::mt19937 seedGenerator(seed);
+        std::uniform_int_distribution<uint32_t> seedDist;
+
+        std::vector<uint32_t> seeds(omp_get_max_threads());
+        for (auto &s : seeds)
+            s = seedDist(seedGenerator);
+
+#pragma omp parallel if (!omp_in_parallel())
+        {
+            std::mt19937 rng(seeds[omp_get_thread_num()]);
+            std::uniform_real_distribution<float> dist(min, max);
+
+#pragma omp for
+            for (ptrdiff_t i = 0; i < (ptrdiff_t)n; ++i)
+                buf[i] = dist(rng);
+        }
     }
 
     void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K,

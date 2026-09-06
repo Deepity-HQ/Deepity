@@ -69,11 +69,13 @@ namespace Deep
 
     static inline void dRelu(float *, size_t, bool) noexcept;
     static inline void dSigmoid(float *, size_t, bool) noexcept;
+    static inline void d_eSigmoid(float *, size_t, bool) noexcept;
     static inline void dTanh(float *, size_t, bool) noexcept;
     static inline void dLinear(float *, size_t, bool) noexcept;
 
     static inline void dReluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
     static inline void dSigmoidInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+    static inline void d_eSigmoidInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
     static inline void dTanhInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
     static inline void dLinearInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
 
@@ -1332,7 +1334,7 @@ namespace Deep
 
     static inline void dLinear(float *x, size_t n, [[maybe_unused]] bool activated = false) noexcept
     {
-        std::memset(x, 1.0f, n);
+        std::fill(x, x + n, 1.0f);
     }
 
     /// @brief Two-buffer variant of dLinear -- src is unused (the
@@ -1340,6 +1342,6 @@ namespace Deep
     /// signature consistency with To_dFn2's dispatch table.
     static inline void dLinearInto(float *RESTRICT dst, [[maybe_unused]] const float *RESTRICT src, size_t n) noexcept
     {
-        std::memset(dst, 1.0f, n);
+        std::fill(dst, dst + n, 1.0f);
     }
 }

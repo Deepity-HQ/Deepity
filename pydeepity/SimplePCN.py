@@ -19,9 +19,9 @@ class SimplePCN(dy.SimplePCNetwork):
     """
     A Sequential Predictive Coding Network built from precision-stripped SimplePCLayers.
     """
-    def __init__(self, batch_size: Optional[int] = None) -> None:
+    def __init__(self, batch_size: Optional[int] = None, device: str = "cpu") -> None:
         bsz = dy.auto_batch_size() if batch_size is None else batch_size
-        super().__init__(bsz)
+        super().__init__(bsz, device)
     
     def add_layer(
         self, 
@@ -44,8 +44,8 @@ class SimplePCN(dy.SimplePCNetwork):
     def compile(self) -> None:
         super().compile()
 
-    def randomize_weights(self) -> None:
-        super().randomize_weights()
+    def randomize_weights(self, dist: str = "") -> None:
+        super().randomize_weights(dist)
 
     def train_step(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
         self.reset_state()

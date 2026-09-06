@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <vector>
 #include <deepity/backend/IComputeBackend.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file Tensor.h
@@ -22,12 +23,6 @@
 
 namespace Deep
 {
-    enum class DeviceType
-    {
-        DEVICE_CPU,
-        DEVICE_GPU
-    };
-
     class Tensor
     {
     public:

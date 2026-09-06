@@ -1,6 +1,7 @@
 #pragma once
 #include <deepity/backend/IComputeBackend.h>
 #include <cublas_v2.h>
+#include <deepity/backend/Tensor.h>
 
 namespace Deep
 {
@@ -16,6 +17,8 @@ namespace Deep
         void Copy(float *dst, const float *src, size_t numFloats) noexcept override;
         void CopyFromHost(float *deviceDst, const float *hostSrc, size_t numFloats) noexcept override;
         void CopyToHost(float *hostDst, const float *deviceSrc, size_t numFloats) noexcept override;
+        void RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept override;
+        void RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept override;
 
         void MatMul(bool transA, bool transB, int M, int N, int K,
                     float alpha, const float *A, int lda,
@@ -39,6 +42,8 @@ namespace Deep
         void AdamWStep(float *param, const float *grad, float *m, float *v,
                        size_t n, int t, float lr, float weightDecay,
                        float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
+
+        DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_GPU; }
 
     private:
         cublasHandle_t handle;

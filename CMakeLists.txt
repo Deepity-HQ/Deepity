@@ -144,6 +144,10 @@ endif()
 if(DEEPITY_ENABLE_CUDA)
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
+        enable_language(CUDA)
+        set(CMAKE_CUDA_STANDARD 17)
+        set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+        set(CMAKE_CUDA_ARCHITECTURES 86)
         message(STATUS "CUDA support enabled.")
     else()
         message(STATUS "CUDA toolkit not found. Building CPU-only.")
@@ -273,7 +277,7 @@ add_library(Deepity
     src/StreamAlignedBatcher.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
-    src/backend/CUDABackend.cpp
+    src/backend/CUDABackend.cu
     src/backend/Tensor.cpp
 )
 
@@ -303,6 +307,17 @@ if(CUDAToolkit_FOUND)
 endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
+
+# --- Tests -----------------------------------------------------------
+
+option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
+
+add_executable(GaussSeidelVerify tests/tGaussSeidelVerify.cpp)
+target_link_libraries(GaussSeidelVerify PRIVATE Deepity)
+set_target_properties(GaussSeidelVerify PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+add_test(NAME GaussSeidelVerify COMMAND GaussSeidelVerify)
 
 # --- Compiler flags -------------------------------------------------
 

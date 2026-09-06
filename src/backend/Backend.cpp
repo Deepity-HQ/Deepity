@@ -2,7 +2,7 @@
 #include <deepity/backend/CPUBackend.h>
 #include <stdexcept>
 
-#ifdef DEEPITY_ENABLE_CUDA
+#ifdef DEEPITY_USE_CUDA
 #include <deepity/backend/CUDABackend.h>
 #endif
 
@@ -16,13 +16,13 @@ namespace Deep
         }
         else if (device == DeviceType::DEVICE_GPU)
         {
-#ifdef DEEPITY_ENABLE_CUDA
+#ifdef DEEPITY_USE_CUDA
             return std::make_unique<CUDABackend>();
 #else
-            throw std::runtime_error("Deepity was compiled without CUDA support (-DDEEPITY_ENABLE_CUDA=OFF). Cannot create CUDABackend.");
+            throw std::runtime_error("Deepity was compiled without CUDA support (-DDEEPITY_USE_CUDA=OFF). Cannot create CUDABackend.");
 #endif
         }
-        
+
         throw std::invalid_argument("Unknown DeviceType requested from CreateBackend.");
     }
 }

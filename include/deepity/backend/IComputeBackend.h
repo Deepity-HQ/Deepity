@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <deepity/utils/Activations.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file IComputeBackend.h
@@ -29,6 +30,7 @@
 
 namespace Deep
 {
+
     class IComputeBackend
     {
     public:
@@ -52,6 +54,22 @@ namespace Deep
 
         /// @brief Device-to-host copy, e.g. for Save()/inspection.
         virtual void CopyToHost(float *hostDst, const float *deviceSrc, size_t numFloats) noexcept = 0;
+
+        /// @brief Randomizes floats using standard normal distribution.
+        /// @param buf Array of floats
+        /// @param n Size of buf
+        /// @param mean Mu parameter of Normal Dist.
+        /// @param stddev Sigma parameter of Normal Dist.
+        /// @param seed Random seed
+        virtual void RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept = 0;
+
+        /// @brief Randomizes floats using uniform distribution.
+        /// @param buf Array of floats
+        /// @param n Size of buf
+        /// @param mean Min value for random generation
+        /// @param stddev Max value for random generation
+        /// @param seed Random seed
+        virtual void RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept = 0;
 
         // --- GEMM ---------------------------------------------------------
 
@@ -112,5 +130,7 @@ namespace Deep
         virtual void AdamWStep(float *param, const float *grad, float *m, float *v,
                                size_t n, int t, float lr, float weightDecay,
                                float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
+
+        virtual DeviceType GetDeviceType() const noexcept = 0;
     };
 }
