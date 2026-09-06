@@ -10,6 +10,9 @@ namespace Deep
     public:
         CUDABackend();
         ~CUDABackend() override;
+        void BeginGraphCapture() noexcept override;
+        void EndGraphCapture() noexcept override;
+        void ReplayGraph() noexcept override;
 
         float *Allocate(size_t numFloats) override;
         void Free(float *ptr) noexcept override;
@@ -50,5 +53,6 @@ namespace Deep
 
     private:
         cublasHandle_t handle;
+        cudaStream_t stream;
     };
 }

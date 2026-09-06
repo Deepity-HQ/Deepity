@@ -8,12 +8,60 @@ namespace Deep
 {
     CUDABackend::CUDABackend()
     {
+        cudaStreamCreate(&this->stream);
         cublasCreate(&this->handle);
+        cublasSetStream(this->handle, this->stream);
     }
 
     CUDABackend::~CUDABackend()
     {
         cublasDestroy(this->handle);
+        cudaStreamDestroy(this->stream);
+    }
+
+    void CUDABackend::BeginGraphCapture() noexcept
+    {
+        cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal);
+    }
+
+    void CUDABackend::EndGraphCapture() noexcept
+    {
+        cudaGraph_t newGraph;
+        cudaError_t err = cudaStreamEndCapture(stream, &newGraph);
+        if (err != cudaSuccess)
+        {
+            std::cerr << "cudaStreamEndCapture failed: " << cudaGetErrorString(err) << "\n";
+            return;
+        }
+
+        if (hasGraph)
+        {
+            // Re-capturing (e.g. batch size or settling-step count changed)
+            // -- destroy the previous instantiated graph first.
+            cudaGraphExecDestroy(graphExec);
+            cudaGraphDestroy(graph);
+        }
+
+        graph = newGraph;
+        err = cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
+        if (err != cudaSuccess)
+        {
+            std::cerr << "cudaGraphInstantiate failed: " << cudaGetErrorString(err) << "\n";
+            hasGraph = false;
+            return;
+        }
+
+        hasGraph = true;
+    }
+
+    void CUDABackend::ReplayGraph() noexcept
+    {
+        if (!hasGraph)
+        {
+            std::cerr << "ReplayGraph() called before any graph was captured.\n";
+            return;
+        }
+        cudaGraphLaunch(graphExec, stream);
     }
 
     float *CUDABackend::Allocate(size_t numFloats)
@@ -113,7 +161,7 @@ namespace Deep
         if (launchErr != cudaSuccess)
             std::cerr << "uniform_generation kernel launch failed: " << cudaGetErrorString(launchErr) << "\n";
 
-        cudaDeviceSynchronize(); // force the kernel to finish and surface any async error HERE, before cudaFree
+        cudaDeviceSynchronize(); // force the kernel to finish and surface any async error
         cudaError_t syncErr = cudaGetLastError();
         if (syncErr != cudaSuccess)
             std::cerr << "uniform_generation kernel execution failed: " << cudaGetErrorString(syncErr) << "\n";

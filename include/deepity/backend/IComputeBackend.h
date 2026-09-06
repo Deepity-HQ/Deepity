@@ -36,7 +36,13 @@ namespace Deep
     public:
         virtual ~IComputeBackend() = default;
 
-        // --- Memory -----------------------------------------------------
+        // Graphs
+
+        virtual void BeginGraphCapture() noexcept = 0;
+        virtual void EndGraphCapture() noexcept = 0;
+        virtual void ReplayGraph() noexcept = 0;
+
+        // Memory
 
         virtual float *Allocate(size_t numFloats) = 0;
         virtual void Free(float *ptr) noexcept = 0;
@@ -71,7 +77,7 @@ namespace Deep
         /// @param seed Random seed
         virtual void RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept = 0;
 
-        // --- GEMM ---------------------------------------------------------
+        // GEMM
 
         virtual void MatMul(bool transA, bool transB,
                             int M, int N, int K,
@@ -79,7 +85,7 @@ namespace Deep
                             const float *B, int ldb,
                             float beta, float *C, int ldc) noexcept = 0;
 
-        // --- Elementwise scalar ops ---------------------------------------
+        // Elementwise scalar ops
 
         /// @brief buf *= alpha (cblas_sscal equivalent). Used for weight
         /// decay (W *= 1-lambda) today.
@@ -97,7 +103,7 @@ namespace Deep
         /// energy-reduction syncs this was originally suspected to be.
         virtual void AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept = 0;
 
-        // --- Activation -----------------------------------------------
+        // Activation
 
         /// @brief In-place activation, matching Deep::relu/sigmoid/etc's
         /// existing single-buffer signature.
@@ -117,7 +123,7 @@ namespace Deep
         /// to Activations.h this session.
         virtual void ActivationDerivativeInto(ActivationType type, float *dst, const float *src, size_t n) noexcept = 0;
 
-        // --- Fused PC-specific ops -------
+        // Fused PC-specific ops
 
         /// @brief z[i] += ir * (feedback[i] * deriv[i] - e[i]), for all i
         /// in [0, n). Matches SimplePCLayer/DirectKPPCLayer's UpdateState()
@@ -139,7 +145,7 @@ namespace Deep
         /// just to compute a number nobody reads.
         virtual void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
 
-        // --- Optimizer ---------------------------------------------------
+        // Optimizer
 
         virtual void AdamStep(float *param, const float *grad, float *m, float *v,
                               size_t n, int t, float lr,
