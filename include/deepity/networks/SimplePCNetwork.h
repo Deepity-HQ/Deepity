@@ -198,9 +198,9 @@ namespace Deep
         /// applied when DeviceMemoryArena was designed.
         std::unique_ptr<MemoryArena> cpuArena;
         /// @brief Used when device == DEVICE_GPU. Only compiled at all
-        /// when DEEPITY_ENABLE_CUDA is defined, matching
+        /// when DEEPITY_USE_CUDA is defined, matching
         /// DeviceMemoryArena.h's own guard.
-#if defined(DEEPITY_ENABLE_CUDA)
+#if defined(DEEPITY_USE_CUDA)
         std::unique_ptr<DeviceMemoryArena> gpuArena;
 #endif
 

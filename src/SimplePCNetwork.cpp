@@ -203,7 +203,7 @@ namespace Deep
             for (auto &layer : layers)
                 layer->BindMemory(*cpuArena);
         }
-#if defined(DEEPITY_ENABLE_CUDA)
+#if defined(DEEPITY_USE_CUDA)
         else
         {
             std::cerr << "GPU arena: total_floats_needed=" << total_floats_needed

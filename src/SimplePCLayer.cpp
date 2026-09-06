@@ -356,7 +356,7 @@ namespace Deep
     }
 
     template void SimplePCLayer::BindMemory<MemoryArena>(MemoryArena &arena);
-#if defined(DEEPITY_ENABLE_CUDA)
+#if defined(DEEPITY_USE_CUDA)
     template void SimplePCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena &arena);
 #endif
 }

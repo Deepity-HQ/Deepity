@@ -1,5 +1,5 @@
 #pragma once
-#if defined(DEEPITY_ENABLE_CUDA)
+#if defined(DEEPITY_USE_CUDA)
 #include <deepity/backend/IComputeBackend.h>
 #include <new>
 #include <stdexcept>
