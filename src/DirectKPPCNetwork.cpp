@@ -2,7 +2,6 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #include <iostream>
-#include <cstdio>
 
 namespace Deep
 {
@@ -51,14 +50,20 @@ namespace Deep
         {
             layers[i]->ComputeMuOnly();
 
+            // Skip a layer that's already clamped (the terminal layer,
+            // once ClampState(y) has run) -- overwriting its real target
+            // with a forward-projected guess is exactly the bug
+            // SimplePCNetwork::ProjectForward() had, fixed here before
+            // it gets exercised for the first time by moving this call
+            // inside graph capture, which requires ClampState(y) to run
+            // BEFORE this, not after, for the capture ordering to work.
+            if (layers[i + 1]->IsClamped())
+                continue;
+
             const float *mu = layers[i]->GetMu();
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-            // Was: std::memcpy(nextZ, mu, n * sizeof(float)) -- wrong if
-            // mu/nextZ are device pointers (DEVICE_GPU). backend->Copy()
-            // is device-to-device, matching SimplePCNetwork's own fix
-            // for the identical bug.
             backend->Copy(nextZ, mu, n);
         }
     }
@@ -71,7 +76,7 @@ namespace Deep
 
     float DirectKPPCNetwork::CalculateTerminalError() noexcept
     {
-        return GetTerminalLayer()->CalculateState(false); // only the error buffer matters here
+        return GetTerminalLayer()->CalculateState(false);
     }
 
     float DirectKPPCNetwork::Step(bool needEnergy) noexcept
@@ -94,12 +99,12 @@ namespace Deep
                                        const std::vector<float> &y,
                                        int inferenceSteps)
     {
-        printf("TrainStep: device=%s, graphCaptured=%d\n",
-               (device == DeviceType::DEVICE_GPU ? "GPU" : "CPU"), (int)graphCaptured);
-        fflush(stdout);
         ResetState();
         Clamp(x);
-        ProjectForward();
+        // Moved BEFORE ProjectForward() -- required for ProjectForward's
+        // new IsClamped() guard to actually protect the terminal layer,
+        // and required so ProjectForward() can safely move inside the
+        // captured region below.
         GetTerminalLayer()->ClampState(y);
 
         if (device == DeviceType::DEVICE_GPU)
@@ -107,6 +112,7 @@ namespace Deep
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
                 backend->BeginGraphCapture();
+                ProjectForward(); // now inside capture -- see note above
                 CalculateTerminalError();
                 DirectFeedbackUpdate();
                 for (int t = 0; t < inferenceSteps; t++)
@@ -131,6 +137,7 @@ namespace Deep
             }
             else
             {
+                ProjectForward();
                 CalculateTerminalError();
                 DirectFeedbackUpdate();
                 for (int t = 0; t < inferenceSteps; t++)
@@ -140,6 +147,7 @@ namespace Deep
         }
         else
         {
+            ProjectForward();
             CalculateTerminalError();
             DirectFeedbackUpdate();
             for (int t = 0; t < inferenceSteps; t++)
@@ -171,10 +179,6 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        // Was: std::vector<float>(beliefs, beliefs + count) -- the
-        // iterator-range constructor dereferences every element
-        // directly, wrong if beliefs is a device pointer. Allocate the
-        // host-side result first, then copy it out through the backend.
         std::vector<float> result(count);
         backend->CopyToHost(result.data(), beliefs, count);
         return result;
@@ -183,7 +187,7 @@ namespace Deep
     void DirectKPPCNetwork::Compile()
     {
 #pragma omp parallel
-        { // Broadcast FTZ/DAZ hardware flags to ALL OpenMP worker threads
+        {
             _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
             _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
         }
@@ -193,7 +197,7 @@ namespace Deep
 
         if (device == DeviceType::DEVICE_CPU)
         {
-            cpuArena = std::make_unique<MemoryArena>(total_floats_needed, false); // TODO: Consider adding huge pages as a param
+            cpuArena = std::make_unique<MemoryArena>(total_floats_needed, false);
             for (auto &layer : layers)
             {
                 layer->BindMemory(*cpuArena);

@@ -8,14 +8,6 @@ namespace Deep
 {
     namespace
     {
-        // Same mapping as SimplePCLayer.cpp -- see its own comment for
-        // why this is needed (activationType stores the FORWARD type,
-        // but ActivationDerivativeInto expects the DERIVATIVE type).
-        // Note this also closes a real gap the old code had: the
-        // original UpdateState()'s switch fell back to a raw function
-        // pointer for eSIGMOID (no dedicated derivative variant existed
-        // in that dispatch), whereas backend->ActivationDerivativeInto
-        // DOES have a real d_eSIGMOID case.
         ActivationType ToDerivativeType(ActivationType fwd)
         {
             switch (fwd)
@@ -77,8 +69,6 @@ namespace Deep
             backend->CopyFromHost(fl_device, &fl, 1);
     }
 
-    // --- Setup ---
-
     template <typename ArenaT>
     void DirectKPPCLayer::BindMemory(ArenaT &arena)
     {
@@ -106,6 +96,8 @@ namespace Deep
             zFDeriv = arena.AllocateFloats(own_state_size);
             feedbackScratch = arena.AllocateFloats(own_state_size);
 
+            biasGradScratch = arena.AllocateFloats(nextSize);
+
             backend->Zero(b, nextSize);
             backend->Zero(mu, out_state_size);
             backend->Zero(cachedMu, out_state_size);
@@ -114,6 +106,7 @@ namespace Deep
             backend->Zero(zF, own_state_size);
             backend->Zero(zFDeriv, own_state_size);
             backend->Zero(feedbackScratch, own_state_size);
+            backend->Zero(biasGradScratch, nextSize);
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
@@ -132,9 +125,6 @@ namespace Deep
                 backend->Zero(grad_W, w_size);
                 backend->Zero(grad_b, nextSize);
 
-                // Device-resident t/lr for W's optimizer -- see header's
-                // file-level note for why these can't just be host
-                // values once graph capture is in the picture.
                 t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
                 lr_device = arena.AllocateFloats(1);
                 int zero = 0;
@@ -152,14 +142,14 @@ namespace Deep
                 backend->Zero(v_Psi, direct_size);
                 backend->Zero(grad_Psi, direct_size);
 
-                // Same as above, but for Psi's SEPARATE optimizer state.
                 tPsi_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
                 fl_device = arena.AllocateFloats(1);
-                int zero = 0;
-                backend->CopyFromHost(reinterpret_cast<float *>(tPsi_device), reinterpret_cast<float *>(&zero), 1);
+                int zeroPsi = 0;
+                backend->CopyFromHost(reinterpret_cast<float *>(tPsi_device), reinterpret_cast<float *>(&zeroPsi), 1);
                 backend->CopyFromHost(fl_device, &fl, 1);
             }
         }
+
         if constexpr (std::is_same_v<ArenaT, MemoryArena>)
         {
             if (localArena && localArena.get() != &arena)
@@ -190,20 +180,21 @@ namespace Deep
             total += pad16(w_size);
             total += pad16(nextSize);
             total += pad16(out_state_size) * 3;
-            total += pad16(own_state_size) * 3; // zF, zFDeriv, feedbackScratch
-            total += pad16(direct_size);        // Psi
+            total += pad16(own_state_size) * 3;
+            total += pad16(direct_size);
+            total += pad16(nextSize);
 
             if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
             {
                 total += pad16(w_size) * 3;
                 total += pad16(nextSize) * 3;
-                total += pad16(1) * 2; // t_device, lr_device
+                total += pad16(1) * 2;
             }
 
             if (optPsi == OptimizerType::ADAM || optPsi == OptimizerType::ADAMW)
             {
                 total += pad16(direct_size) * 3;
-                total += pad16(1) * 2; // tPsi_device, fl_device
+                total += pad16(1) * 2;
             }
         }
 
@@ -227,8 +218,6 @@ namespace Deep
         backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
         backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
     }
-
-    // --- Core DKP-PC Mechanics ---
 
     float DirectKPPCLayer::CalculateState(bool needEnergy) noexcept
     {
@@ -275,11 +264,7 @@ namespace Deep
             (int)batchSize, (int)nextSize, (int)size,
             1.0f, zF, (int)size, W, (int)size, 0.0f, mu, (int)nextSize);
 
-#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            backend->AxpyInto(mu + batch * nextSize, b, nextSize, 1.0f);
-        }
+        backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
         if (isClamped)
         {
@@ -309,7 +294,7 @@ namespace Deep
 
             backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
         }
-        else // Output Layer
+        else
         {
             backend->AxpyInto(z, e, N, -ir);
         }
@@ -336,8 +321,8 @@ namespace Deep
                 1.0f, W, (int)size);
 
             float lr_batch = lr / batchSize;
-            for (int batch = 0; batch < batchSize; batch++)
-                backend->AxpyInto(b, local_grad + batch * nextSize, nextSize, lr_batch);
+            backend->SumRows(biasGradScratch, local_grad, batchSize, nextSize);
+            backend->AxpyInto(b, biasGradScratch, nextSize, lr_batch);
 
             break;
         }
@@ -355,9 +340,8 @@ namespace Deep
                 adam_scale, local_grad, (int)nextSize, zF, (int)size,
                 0.0f, grad_W, (int)size);
 
-            backend->Zero(grad_b, nextSize);
-            for (int batch = 0; batch < batchSize; batch++)
-                backend->AxpyInto(grad_b, local_grad + batch * nextSize, nextSize, adam_scale);
+            backend->SumRows(grad_b, local_grad, batchSize, nextSize);
+            backend->Scale(grad_b, nextSize, adam_scale);
 
             if (opt == OptimizerType::ADAMW)
                 backend->AdamWStep(W, grad_W, m_W, v_W, num_weights, t_device, lr_device, lmbda);
@@ -406,7 +390,6 @@ namespace Deep
 
     void DirectKPPCLayer::DirectFeedbackUpdate() noexcept
     {
-        // If the layer above has no Psi weights (i.e. it is the terminal layer), skip DFA
         if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)
             return;
 
@@ -418,16 +401,14 @@ namespace Deep
             layerAbove->GetDirectFeedbackWeights(), (int)terminalSize,
             0.0f, proj, (int)nextSize);
 
-        // W += fl * proj^T @ zF
+        // W += fl/batchSize * proj^T @ zF
         backend->MatMul(
-            /*transA=*/true, /*transB=*/true,
+            /*transA=*/true, /*transB=*/false,
             (int)nextSize, (int)size, (int)batchSize,
             fl / batchSize, proj, (int)nextSize,
             zF, (int)size,
             1.0f, W, (int)size);
     }
-
-    // --- Getters / Setters ---
 
     void DirectKPPCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {

@@ -12,26 +12,16 @@
 
 /**
  * @file DirectKPPCLayer.h
- * @brief Direct Kolen-Pollack predictive coding layer, now routed
- * through IComputeBackend rather than calling cblas_Deep::_ directly
- * -- same refactor discipline as SimplePCLayer's own backend port.
+ * @brief Direct Kolen-Pollack predictive coding layer, routed through
+ * IComputeBackend.
  *
- * @note Two independent optimizer timesteps/learning-rates exist here,
- * not one: `t`/`lr` for the forward weights W, `tPsi`/`fl` for the
- * direct-feedback weights Psi. Both need their own device-resident
- * mirrors (t_device/lr_device, tPsi_device/fl_device) for the same
- * reason SimplePCLayer's did -- IComputeBackend::AdamStep/AdamWStep take
- * device pointers so their values can live inside a captured CUDA graph
- * without freezing at capture time.
- *
- * @warning `backend` defaults to nullptr, in which case this layer
- * constructs and owns its own CPUBackend internally -- every existing
- * call site keeps working unchanged. Passing a real backend is only
- * needed for GPU-aware call sites.
- * @warning RandomizeWeights() is still host-only for the CPU fallback
- * path's seed-drawing logic, but the actual weight fill now goes through
- * backend->RandomizeNormal(), which is GPU-safe -- unlike
- * SimplePCLayer's still-open RandomizeWeights gap, this one is resolved.
+ * @note As of this revision, ComputeMuOnly()'s bias-add and
+ * UpdateWeights()'s bias-gradient accumulation both go through
+ * AddBiasBroadcast()/SumRows() instead of a per-batch-row AxpyInto loop
+ * -- same fix SimplePCLayer already had, ported here. biasGradScratch is
+ * a new, small (nextSize-length) buffer allocated unconditionally
+ * (regardless of optimizer) specifically for the SGD branch's
+ * accumulate-not-overwrite bias update, which SumRows alone can't do.
  */
 
 namespace Deep
@@ -41,7 +31,7 @@ namespace Deep
     protected:
         size_t size;
         size_t nextSize;
-        size_t terminalSize; // The size of the final output layer (e.g., 10 for MNIST)
+        size_t terminalSize;
         size_t batchSize;
 
         float lr;
@@ -54,7 +44,7 @@ namespace Deep
 
         DirectKPPCLayer *layerAbove = nullptr;
         DirectKPPCLayer *layerBelow = nullptr;
-        DirectKPPCLayer *terminalLayer = nullptr; // Direct pathway to \epsilon_L
+        DirectKPPCLayer *terminalLayer = nullptr;
 
         ActivationType activationType;
         ActivationFn activation;
@@ -66,29 +56,19 @@ namespace Deep
         int t = 0;
         int tPsi = 0;
 
-        /// @brief The compute backend this layer routes all math
-        /// through. unique_ptr with a swappable deleter: no-op when an
-        /// external backend was supplied (network-owned, GPU case),
-        /// real delete when this layer had to construct its own
-        /// fallback CPUBackend. See SimplePCLayer.h for the identical
-        /// pattern and rationale.
         using BackendDeleter = void (*)(IComputeBackend *);
         std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 
-        // --- Memory Pointers ---
-        // State
         float *z = nullptr;
         float *e = nullptr;
 
-        // Forward Weights
         float *W = nullptr;
         float *b = nullptr;
         float *mu = nullptr;
         float *cachedMu = nullptr;
-        float *Psi = nullptr; // Maps \epsilon_L directly to this layer's state
+        float *Psi = nullptr;
         float *proj = nullptr;
 
-        // Forward Optimizer Buffers
         float *grad_W = nullptr;
         float *grad_b = nullptr;
         float *m_W = nullptr;
@@ -96,29 +76,31 @@ namespace Deep
         float *m_b = nullptr;
         float *v_b = nullptr;
 
-        // Direct Feedback Optimizer Buffers
         float *grad_Psi = nullptr;
         float *m_Psi = nullptr;
         float *v_Psi = nullptr;
 
-        // Device-resident optimizer scalars -- see file-level note.
-        // Only allocated when the corresponding optimizer is ADAM/ADAMW.
         int *t_device = nullptr;
         float *lr_device = nullptr;
         int *tPsi_device = nullptr;
         float *fl_device = nullptr;
 
-        // Scratch
         float *zF = nullptr;
         float *zFDeriv = nullptr;
         float *feedbackScratch = nullptr;
 
+        /// @brief nextSize-length scratch buffer for SumRows' output in
+        /// UpdateWeights()'s SGD branch -- SGD needs `b += lr_batch *
+        /// sum(local_grad)`, an accumulate, which SumRows alone can't
+        /// express (it only overwrites). Allocated unconditionally
+        /// (regardless of which optimizer is selected) since it's cheap
+        /// -- at most `nextSize` floats -- and simpler than branching
+        /// allocation on optimizer choice for this one small buffer.
+        float *biasGradScratch = nullptr;
+
         std::unique_ptr<MemoryArena> localArena;
 
     public:
-        /// @param backend Compute backend to route all math through.
-        ///        Defaults to nullptr, in which case this layer
-        ///        constructs and owns its own CPUBackend internally.
         DirectKPPCLayer(size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
                         float learningRate, float inferenceRate, float feedback, float lmbda,
                         ActivationType aType, ActivationType dType,
@@ -126,52 +108,46 @@ namespace Deep
 
         ~DirectKPPCLayer() override = default;
 
-        // Setup
-        /// @brief Templated so either MemoryArena (CPU) or
-        /// DeviceMemoryArena (GPU) can be bound, resolved at compile
-        /// time -- see the .cpp's explicit instantiations.
         template <typename ArenaT>
         void BindMemory(ArenaT &arena);
         size_t GetRequiredFloats() const noexcept;
         void RandomizeWeights(std::mt19937 &seedGenerator) noexcept;
 
-        // Topology
         void SetLayerAbove(DirectKPPCLayer *l) noexcept { layerAbove = l; }
         void SetLayerBelow(DirectKPPCLayer *l) noexcept { layerBelow = l; }
         void SetTerminalLayer(DirectKPPCLayer *l) noexcept { terminalLayer = l; }
 
-        // Core DKP-PC Mechanics
+        /// @brief Matches Layer's virtual interface exactly (always
+        /// computes real energy).
         float CalculateState() noexcept override { return CalculateState(true); }
+        /// @brief NOT a virtual override -- see SimplePCLayer's
+        /// identical pattern. Lets the settling loop skip the
+        /// cublasSdot-based energy reduction (and its capture-time
+        /// sync) when the caller doesn't need the value.
         float CalculateState(bool needEnergy) noexcept;
+
         void ComputeMuOnly() noexcept;
-        void UpdateState() noexcept override;   // Will now pull from terminalLayer->GetErrors()
-        void UpdateWeights() noexcept override; // Must compute \Delta W AND \Delta \Psi
+        void UpdateState() noexcept override;
+        void UpdateWeights() noexcept override;
         void DirectFeedbackUpdate() noexcept;
 
-        // Getters / Setters
         void ClampState(const std::vector<float> &inputData) noexcept;
         void UnclampState() noexcept;
         void ResetState() noexcept;
 
+        /// @brief Whether this layer is currently clamped -- needed so
+        /// DirectKPPCNetwork::ProjectForward() can skip overwriting an
+        /// already-clamped layer's z with a forward-projected guess.
+        /// Same real bug SimplePCNetwork::ProjectForward() had; fixed
+        /// here for the same reason, before it gets exercised for the
+        /// first time by moving ProjectForward() inside graph capture.
+        bool IsClamped() const noexcept { return isClamped; }
+
         void SetOptimizer(OptimizerType o) noexcept { opt = o; }
         void SetPsiOptimizer(OptimizerType o) noexcept { optPsi = o; }
-        /// @brief Sets lr AND keeps its device-resident mirror
-        /// (lr_device) in sync -- required for a captured CUDA graph to
-        /// see an updated learning rate on later replays; a plain
-        /// member write alone would be invisible to already-captured
-        /// kernel arguments.
         void SetLearningRate(float learningRate) noexcept;
         void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
-        /// @brief Sets fl (feedback learning rate) AND keeps its
-        /// device-resident mirror (fl_device) in sync -- see
-        /// SetLearningRate's own note; fl has the identical requirement
-        /// since it drives Psi's own Adam/AdamW step.
         void SetFeedbackRate(float feedbackRate) noexcept;
-        /// @brief Fixed: the original had `lmbda = lmbda`, a
-        /// parameter-shadows-member bug that silently never updated the
-        /// actual member. Pre-existing, unrelated to the backend
-        /// refactor -- fixed here since it was noticed while reading
-        /// through the class closely.
         void SetLambda(float lmbda) noexcept { this->lmbda = lmbda; }
 
         float *GetBeliefs() noexcept override { return z; }

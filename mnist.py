@@ -39,26 +39,6 @@ def load_full_mnist():
     Y_train[np.arange(y_train_labels.shape[0]), y_train_labels] = 1.0 - eps
     return X_train, Y_train, X_test, y_test_labels
 
-def train_step_dfa(net, X, Y, inference_steps):
-    net.reset_state()
-    net.clamp_input(X)
-    net.project_forward()
-    net.get_terminal_layer().clamp_state(Y)
-
-    net.calculate_terminal_error()
-    net.direct_feedback_update()
-
-    for _ in range(inference_steps):
-        net.step(False)
-
-    energy = 0.0
-    for layer in net.layers:
-        energy += layer.calculate_state()
-
-    net.update_weights()
-    net.get_terminal_layer().unclamp_state()
-    return energy
-
 def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 50
@@ -112,7 +92,7 @@ def main() -> None:
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-            energy = train_step_dfa(net, X_batch, Y_batch, INFERENCE_STEPS)
+            energy = net.train_step(X_batch, Y_batch, INFERENCE_STEPS)
             epoch_energy += energy
 
         N_ACC_BATCHES = 10
