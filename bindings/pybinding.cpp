@@ -442,11 +442,11 @@ void bind_networks(nb::module_ &m)
         .def("project_forward", &Deep::SimplePCNetwork::ProjectForward, "Seeds hidden layers from a genuine forward pass through current "
                                                                         "weights, instead of zero-init. Call AFTER clamp_input(), BEFORE "
                                                                         "the settling loop.")
-        .def("train_step_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, FloatArray y, int steps)
+        .def("train_step_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, FloatArray y, int steps, bool computeEnergy)
              {
 std::vector<float> xvec(x.data(), x.data() + x.size());
 std::vector<float> yvec(y.data(), y.data() + y.size());
-return self.TrainStepWithProjection(xvec, yvec, steps); }, nb::arg("x"), nb::arg("y"), nb::arg("steps"))
+return self.TrainStepWithProjection(xvec, yvec, steps, computeEnergy); }, nb::arg("x"), nb::arg("y"), nb::arg("steps"), nb::arg("computeEnergy") = true)
         .def("predict_with_projection", [](Deep::SimplePCNetwork &self, FloatArray x, int steps)
              {
 std::vector<float> xvec(x.data(), x.data() + x.size());
@@ -505,7 +505,12 @@ return CopyToNewArray(out_beliefs.data(), {out_beliefs.size()}); }, nb::arg("x")
            return layers[index].get(); }, nb::rv_policy::reference_internal);
 
     nb::class_<Deep::DirectKPPCNetwork>(m, "DirectKPPCNetwork", "Predictive Coding Network with Direct Kolen-Pollack feedback alignment.")
-        .def(nb::init<int>(), nb::arg("batch_size"))
+        .def("__init__", [](Deep::DirectKPPCNetwork *self, int batch_size, const std::string &device)
+             {
+    Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+        ? Deep::DeviceType::DEVICE_GPU
+        : Deep::DeviceType::DEVICE_CPU;
+    new (self) Deep::DirectKPPCNetwork(batch_size, dt); }, nb::arg("batch_size"), nb::arg("device") = "cpu")
         .def("add_layer", [](Deep::DirectKPPCNetwork &self, size_t size, size_t next_size, size_t terminal_size, float lr, float ir, float fl, float lmbda, const std::string &activation, const std::string &activation_deriv)
              { self.AddLayer(size, next_size, terminal_size, lr, ir, fl, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("size"), nb::arg("next_size"), nb::arg("terminal_size"), nb::arg("lr") = 1e-6f, nb::arg("ir") = 0.1f, nb::arg("fl") = 1e-4f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu")
         .def("compile", &Deep::DirectKPPCNetwork::Compile)

@@ -129,6 +129,9 @@ namespace Deep
         {
             layers[i]->ComputeMuOnly();
 
+            if (layers[i + 1]->IsClamped())
+                continue; // never overwrite a clamped layer's real target with a forward guess
+
             const float *mu = layers[i]->GetMu();
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
@@ -137,43 +140,54 @@ namespace Deep
         }
     }
 
-    float SimplePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps)
+    float SimplePCNetwork::TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps, bool computeEnergy)
     {
         ResetState();
         Clamp(x);
-        ProjectForward();
         GetTerminalLayer()->ClampState(y);
 
         if (device == DeviceType::DEVICE_GPU)
         {
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
-                // Warm-up pass, uncaptured: runs the exact same operation
-                // sequence once so any lazy cuBLAS internal workspace
-                // allocation (a documented cuBLAS + CUDA Graphs interaction)
-                // happens before capture begins, not during it.
-                for (int t = 0; t < inferenceSteps; ++t)
-                {
-                    CalculateState(false);
-                    UpdateState();
-                }
-                UpdateWeights();
-                std::cerr << "=== Warm-up pass complete, beginning capture ===\n";
                 backend->BeginGraphCapture();
+                ProjectForward();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
                     CalculateState(false);
                     UpdateState();
                 }
                 UpdateWeights();
-                backend->EndGraphCapture();
-                graphCaptured = true;
-                capturedInferenceSteps = inferenceSteps;
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCaptured = true;
+                    capturedInferenceSteps = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed -- falling back to non-graph execution for this call.\n";
+                }
             }
-            backend->ReplayGraph();
+
+            if (graphCaptured)
+            {
+                backend->ReplayGraph();
+            }
+            else
+            {
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+            }
         }
         else
         {
+            ProjectForward();
             for (int t = 0; t < inferenceSteps; ++t)
             {
                 CalculateState(false);
@@ -182,7 +196,7 @@ namespace Deep
             UpdateWeights();
         }
 
-        float finalEnergy = CalculateState(true);
+        float finalEnergy = CalculateState(computeEnergy);
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;
@@ -218,13 +232,15 @@ namespace Deep
     void SimplePCNetwork::Compile()
     {
 #pragma omp parallel
-        { // Broadcast FTZ/DAZ hardware flags to ALL OpenMP worker threads
+        {
             _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
             _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
         }
         size_t total_floats_needed = 0;
         for (auto &layer : layers)
             total_floats_needed += layer->GetRequiredFloats();
+
+        backend->PrepareForBatchSize(batchSize);
 
         if (device == DeviceType::DEVICE_CPU)
         {

@@ -49,7 +49,7 @@ def train_step_dfa(net, X, Y, inference_steps):
     net.direct_feedback_update()
 
     for _ in range(inference_steps):
-        net.step()
+        net.step(False)
 
     energy = 0.0
     for layer in net.layers:
@@ -75,7 +75,7 @@ def main() -> None:
     DECAY_RATE = 0.94
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = DKPPCN(batch_size=BATCH_SIZE)
+    net = DKPPCN(batch_size=BATCH_SIZE, device="gpu")
     net.add_layer(784, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="linear")
 #     net.add_layer(512, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")
     net.add_layer(512, TERMINAL_SIZE, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")

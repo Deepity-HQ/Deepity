@@ -100,6 +100,13 @@ namespace Deep
                     M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
     }
 
+    void CPUBackend::SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept
+    {
+        memset(dst, 0, width * sizeof(float));
+        for (size_t b = 0; b < batchSize; ++b)
+            cblas_saxpy(width, 1.0f, src + b * width, 1, dst, 1);
+    }
+
     void CPUBackend::Scale(float *buf, size_t n, float alpha) noexcept
     {
         cblas_sscal(n, alpha, buf, 1);

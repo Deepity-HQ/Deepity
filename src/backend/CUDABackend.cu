@@ -11,35 +11,47 @@ namespace Deep
         cudaStreamCreate(&this->stream);
         cublasCreate(&this->handle);
         cublasSetStream(this->handle, this->stream);
+
+        //        constexpr size_t WORKSPACE_SIZE = 4 * 1024 * 1024;
+        //        cudaMalloc(&workspace, WORKSPACE_SIZE);
+        //        cublasSetWorkspace(handle, workspace, WORKSPACE_SIZE);
     }
 
     CUDABackend::~CUDABackend()
     {
+        if (hasGraph)
+        {
+            cudaGraphExecDestroy(graphExec);
+            cudaGraphDestroy(graph);
+        }
+        if (workspace)
+            cudaFree(workspace);
         cublasDestroy(this->handle);
         cudaStreamDestroy(this->stream);
     }
 
     void CUDABackend::BeginGraphCapture() noexcept
     {
-        cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal);
+        cudaError_t err = cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal);
+        if (err != cudaSuccess)
+            std::cerr << "cudaStreamBeginCapture failed: " << cudaGetErrorString(err) << "\n";
     }
 
-    void CUDABackend::EndGraphCapture() noexcept
+    bool CUDABackend::EndGraphCapture() noexcept
     {
         cudaGraph_t newGraph;
         cudaError_t err = cudaStreamEndCapture(stream, &newGraph);
         if (err != cudaSuccess)
         {
             std::cerr << "cudaStreamEndCapture failed: " << cudaGetErrorString(err) << "\n";
-            return;
+            return false;
         }
 
         if (hasGraph)
         {
-            // Re-capturing (e.g. batch size or settling-step count changed)
-            // -- destroy the previous instantiated graph first.
             cudaGraphExecDestroy(graphExec);
             cudaGraphDestroy(graph);
+            hasGraph = false;
         }
 
         graph = newGraph;
@@ -47,11 +59,13 @@ namespace Deep
         if (err != cudaSuccess)
         {
             std::cerr << "cudaGraphInstantiate failed: " << cudaGetErrorString(err) << "\n";
-            hasGraph = false;
-            return;
+            cudaGraphDestroy(graph);
+            graph = nullptr;
+            return false;
         }
 
         hasGraph = true;
+        return true;
     }
 
     void CUDABackend::ReplayGraph() noexcept
@@ -61,7 +75,9 @@ namespace Deep
             std::cerr << "ReplayGraph() called before any graph was captured.\n";
             return;
         }
-        cudaGraphLaunch(graphExec, stream);
+        cudaError_t err = cudaGraphLaunch(graphExec, stream);
+        if (err != cudaSuccess)
+            std::cerr << "cudaGraphLaunch failed: " << cudaGetErrorString(err) << "\n";
     }
 
     float *CUDABackend::Allocate(size_t numFloats)
@@ -83,12 +99,12 @@ namespace Deep
 
     void CUDABackend::Zero(float *ptr, size_t numFloats) noexcept
     {
-        cudaMemset(ptr, 0, numFloats * sizeof(float));
+        cudaMemsetAsync(ptr, 0, numFloats * sizeof(float), stream);
     }
 
     void CUDABackend::Copy(float *dst, const float *src, size_t numFloats) noexcept
     {
-        cudaMemcpy(dst, src, numFloats * sizeof(float), cudaMemcpyDefault);
+        cudaMemcpyAsync(dst, src, numFloats * sizeof(float), cudaMemcpyDefault, stream);
     }
 
     void CUDABackend::CopyFromHost(float *deviceDst, const float *hostSrc, size_t numFloats) noexcept
@@ -133,7 +149,8 @@ namespace Deep
 
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        normal_generation<<<blocks, BLOCK_SIZE>>>(state, buf, n, mean, stddev, seed);
+        normal_generation<<<blocks, BLOCK_SIZE, 0, stream>>>(state, buf, n, mean, stddev, seed);
+        cudaStreamSynchronize(stream);
         cudaFree(state);
     }
 
@@ -151,17 +168,16 @@ namespace Deep
                       << cudaGetErrorString(mallocErr) << "\n";
             return;
         }
-        std::cerr << "curandState allocated OK: n=" << n << ", ptr=" << (void *)state << "\n";
 
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        uniform_generation<<<blocks, BLOCK_SIZE>>>(state, buf, n, min, max - min, seed);
+        uniform_generation<<<blocks, BLOCK_SIZE, 0, stream>>>(state, buf, n, min, max - min, seed);
 
         cudaError_t launchErr = cudaGetLastError();
         if (launchErr != cudaSuccess)
             std::cerr << "uniform_generation kernel launch failed: " << cudaGetErrorString(launchErr) << "\n";
 
-        cudaDeviceSynchronize(); // force the kernel to finish and surface any async error
+        cudaStreamSynchronize(stream);
         cudaError_t syncErr = cudaGetLastError();
         if (syncErr != cudaSuccess)
             std::cerr << "uniform_generation kernel execution failed: " << cudaGetErrorString(syncErr) << "\n";
@@ -169,19 +185,49 @@ namespace Deep
         cudaFree(state);
     }
 
+    __global__ void FillOnesKernel(float *buf, size_t n)
+    {
+        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n)
+            buf[i] = 1.0f;
+    }
+
+    void CUDABackend::PrepareForBatchSize(size_t batchSize) noexcept
+    {
+        if (onesVector)
+            cudaFree(onesVector);
+        cudaMalloc(&onesVector, batchSize * sizeof(float));
+        constexpr int BLOCK_SIZE = 256;
+        const int blocks = static_cast<int>((batchSize + BLOCK_SIZE - 1) / BLOCK_SIZE);
+        FillOnesKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(onesVector, batchSize);
+        cudaStreamSynchronize(stream);
+    }
+
     void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K,
                              float alpha, const float *A, int lda,
                              const float *B, int ldb,
                              float beta, float *C, int ldc) noexcept
     {
-        // CUDA is *column-major*.
         cublasOperation_t cuTransA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
         cublasOperation_t cuTransB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
-
         cublasStatus_t status = cublasSgemm(handle, cuTransB, cuTransA,
                                             N, M, K, &alpha, B, ldb, A, lda, &beta, C, ldc);
         if (status != CUBLAS_STATUS_SUCCESS)
-            std::cerr << "cublasSgemm status: " << status << "\n";
+        {
+            cudaError_t cudaErr = cudaGetLastError();
+            std::cerr << "cublasSgemm status: " << status
+                      << ", underlying cudaError: " << cudaErr
+                      << " (" << cudaGetErrorString(cudaErr) << ")\n";
+        }
+    }
+
+    void CUDABackend::SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept
+    {
+        float alpha = 1.0f, beta = 0.0f;
+        cublasStatus_t status = cublasSgemv(handle, CUBLAS_OP_N, width, batchSize,
+                                            &alpha, src, width, onesVector, 1, &beta, dst, 1);
+        if (status != CUBLAS_STATUS_SUCCESS)
+            std::cerr << "cublasSgemv (SumRows) status: " << status << "\n";
     }
 
     void CUDABackend::Scale(float *buf, size_t n, float alpha) noexcept
@@ -208,7 +254,7 @@ namespace Deep
         constexpr int BLOCK_SIZE = 256;
         size_t total = batchSize * width;
         const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        AddBiasBroadcastKernel<<<blocks, BLOCK_SIZE>>>(buf, bias, batchSize, width);
+        AddBiasBroadcastKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, bias, batchSize, width);
     }
 
 #pragma region ACTIVATIONS_AND_KERNELS
@@ -348,7 +394,6 @@ namespace Deep
 
     void CUDABackend::Activation(ActivationType type, float *buf, size_t n) noexcept
     {
-        // For in-place, pass buf as both dst and src
         ActivationInto(type, buf, buf, n);
     }
 
@@ -360,19 +405,19 @@ namespace Deep
         switch (type)
         {
         case ActivationType::RELU:
-            ReluKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            ReluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::SIGMOID:
-            sigmoidKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            sigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::eSIGMOID:
-            eSigmoidKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            eSigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::TANH:
-            tanhKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            tanhKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::LINEAR:
-            linearKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            linearKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::NONE:
         default:
@@ -393,19 +438,19 @@ namespace Deep
         switch (type)
         {
         case ActivationType::dRELU:
-            dReluKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            dReluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::dSIGMOID:
-            dSigmoidKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            dSigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::d_eSIGMOID:
-            d_eSigmoidKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            d_eSigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::dTANH:
-            dTanhKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            dTanhKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::dLINEAR:
-            dLinearKernelInto<<<blocks, BLOCK_SIZE>>>(dst, src, n);
+            dLinearKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
         case ActivationType::NONE:
         default:
@@ -419,7 +464,7 @@ namespace Deep
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
 
-        FusedStateUpdateKernel<<<blocks, BLOCK_SIZE>>>(z, feedback, deriv, e, n, ir);
+        FusedStateUpdateKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(z, feedback, deriv, e, n, ir);
     }
 
     float CUDABackend::ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept
@@ -427,7 +472,7 @@ namespace Deep
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
 
-        ComputeErrorKernel<<<blocks, BLOCK_SIZE>>>(e, z, mu, n);
+        ComputeErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, n);
 
         float sum_of_squares = 0.0f;
         cublasSdot(handle, n, e, 1, e, 1, &sum_of_squares);
@@ -439,7 +484,7 @@ namespace Deep
     {
         constexpr int BLOCK_SIZE = 256;
         const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        ComputeErrorKernel<<<blocks, BLOCK_SIZE>>>(e, z, mu, n);
+        ComputeErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, n);
     }
 
     __global__ void IncrementCounterKernel(int *counter) { *counter += 1; }
@@ -463,7 +508,8 @@ namespace Deep
     }
 
     __global__ void AdamWStepKernel(float *param, const float *grad, float *m, float *v,
-                                    size_t n, const int *t_ptr, const float *lr_ptr, float weightDecay, float beta1, float beta2, float eps)
+                                    size_t n, const int *t_ptr, const float *lr_ptr, float weightDecay,
+                                    float beta1, float beta2, float eps)
     {
         size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
         if (i < n)
@@ -479,8 +525,6 @@ namespace Deep
             param[i] -= step_size * m[i] / (sqrtf(v[i]) + eps);
         }
     }
-
-    // AdamWStepKernel: same pattern, plus the weight-decay term
 
     void CUDABackend::IncrementCounter(int *counter) noexcept
     {

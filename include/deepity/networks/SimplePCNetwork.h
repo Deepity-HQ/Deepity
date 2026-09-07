@@ -168,7 +168,8 @@ namespace Deep
         /// calls, update_weights, unclamp_state -- over 40 individual
         /// crossings per batch at STEPS=20). This does the whole sequence in
         /// ONE crossing instead.
-        float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+        float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y,
+                                      int inferenceSteps, bool computeEnergy = true);
 
         std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
         /// @brief Sets mu-cache threshold on every layer -- see

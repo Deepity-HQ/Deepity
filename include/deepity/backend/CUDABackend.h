@@ -11,7 +11,7 @@ namespace Deep
         CUDABackend();
         ~CUDABackend() override;
         void BeginGraphCapture() noexcept override;
-        void EndGraphCapture() noexcept override;
+        bool EndGraphCapture() noexcept override;
         void ReplayGraph() noexcept override;
 
         float *Allocate(size_t numFloats) override;
@@ -22,6 +22,14 @@ namespace Deep
         void CopyToHost(float *hostDst, const float *deviceSrc, size_t numFloats) noexcept override;
         void RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept override;
         void RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept override;
+
+        void SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept override;
+
+        /// @brief Must be called once, before Compile()'s first
+        /// BeginGraphCapture(), for any backend that needs to prepare
+        /// batch-size-dependent state (e.g. CUDABackend's cached all-ones
+        /// vector for SumRows' GEMV). No-op on CPUBackend.
+        void PrepareForBatchSize(size_t batchSize) noexcept override;
 
         void MatMul(bool transA, bool transB, int M, int N, int K,
                     float alpha, const float *A, int lda,
@@ -59,5 +67,7 @@ namespace Deep
         cudaGraph_t graph = nullptr;
         cudaGraphExec_t graphExec = nullptr;
         bool hasGraph = false;
+        void *workspace = nullptr;
+        float *onesVector = nullptr;
     };
 }

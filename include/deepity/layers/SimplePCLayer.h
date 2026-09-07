@@ -159,6 +159,8 @@ namespace Deep
         /// layer's beliefs to update normally again.
         void UnclampState() noexcept;
 
+        bool IsClamped() const noexcept { return isClamped; }
+
         /// @brief Returns this layer's belief buffer.
         /// @return Pointer to this layer's `size`-length beliefs.
         float *GetBeliefs() noexcept override { return z; }

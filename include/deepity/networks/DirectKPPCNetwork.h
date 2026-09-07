@@ -4,6 +4,8 @@
 #include <random>
 #include <deepity/layers/DirectKPPCLayer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/backend/Backend.h>
 
 /**
  * @file DirectKPPCNetwork.h
@@ -31,7 +33,13 @@
  *      it does not depend on any ordering among layers -- each layer's
  *      update only reads Psi (which does not change during this phase)
  *      and epsilon_L, both already available. Unlike GaussSeidelPCLayer,
- *      there is no sweep-ordering constraint here.
+ *      there is no sweep-ordering constraint here. CONFIRMED by tracing
+ *      every read/write in DirectFeedbackUpdate(): every layer writes
+ *      only to its own proj/W, reads only from a shared, read-only
+ *      terminalLayer error buffer and its own layerAbove's Psi -- zero
+ *      cross-layer RAW/WAW hazard. This is the specific phase intended
+ *      as the first real parallelism target (multiple CUDA streams, one
+ *      per layer), once this class is confirmed correct on GPU.
  *
  *   2. Inference phase -- ordinary PC settling (CalculateState() +
  *      UpdateState() across every layer), for inferenceSteps steps.
@@ -47,10 +55,17 @@
  *      which (per DirectKPPCLayer) now updates both W (from the
  *      settled state) and Psi (from the settled state and epsilon_L).
  *
- * @warning Not yet gradient-checked at the network level. The
- * individual layer's math should be independently verified before
- * trusting any accuracy conclusion drawn from real training with this
- * class.
+ * @note As of this revision, routed through IComputeBackend -- same
+ * refactor as SimplePCNetwork's own GPU port. `device` defaults to
+ * DEVICE_CPU, preserving existing behavior for anyone not explicitly
+ * requesting DEVICE_GPU.
+ *
+ * @warning Not yet gradient-checked at the network level, and not yet
+ * tested on GPU at all. The individual layer's math should be
+ * independently verified before trusting any accuracy conclusion drawn
+ * from real training with this class. This is Stage 1 of a three-stage
+ * plan (CPU-correct port -> GPU-correct, sequential -> exploit phase 1's
+ * confirmed cross-layer parallelism) -- this revision is Stage 1 only.
  */
 
 namespace Deep
@@ -60,7 +75,11 @@ namespace Deep
     public:
         /// @brief Constructs an empty network with a predetermined batch size.
         /// @param batchSize Batch size
-        explicit DirectKPPCNetwork(int batchSize) noexcept;
+        /// @param device Which device this network's layers should run
+        ///        on. Defaults to DEVICE_CPU, preserving existing
+        ///        behavior exactly for anyone not explicitly requesting
+        ///        DEVICE_GPU.
+        explicit DirectKPPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
         /// @brief Default destructor.
         ~DirectKPPCNetwork() = default;
 
@@ -114,14 +133,16 @@ namespace Deep
         /// @brief Phase 1: runs DirectFeedbackUpdate() on every
         /// non-terminal layer. Order among layers does not matter (see
         /// class-level docs) -- unlike GaussSeidelPCNetwork, no sweep
-        /// ordering is required here.
+        /// ordering is required here. Still sequential in this
+        /// revision; see class-level warning.
         void DirectFeedbackUpdate() noexcept;
 
         /// @brief Phase 2: runs one ordinary PC settling step
         /// (CalculateState() + UpdateState()) across every layer.
+        /// @param computeEnergy asks for energy to be returned
         /// @return Total energy, summed from every layer's
         /// CalculateState().
-        float Step() noexcept;
+        float Step(bool computeEnergy = true) noexcept;
 
         /// @brief Phase 3: updates every non-terminal layer's W and Psi.
         /// Called once after the settling loop completes.
@@ -160,6 +181,8 @@ namespace Deep
         const std::vector<std::unique_ptr<DirectKPPCLayer>> &GetLayers() const noexcept { return layers; }
         /// @brief Returns the batch size for the network's layers.
         int GetBatchSize() const noexcept { return batchSize; }
+        /// @brief Returns which device this network's layers run on.
+        DeviceType GetDevice() const noexcept { return device; }
 
         /// @brief Full train step: reset, clamp input+target, run all
         /// four DKP-PC phases in order, unclamp.
@@ -178,17 +201,35 @@ namespace Deep
         /// perturbation and no target clamped, read the terminal's beliefs.
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
-        /// @brief Loads all layers into one contiguous block of memory,
-        /// and wires layerAbove/layerBelow/terminalLayer across every
-        /// layer.
+        /// @brief Loads all layers into one contiguous block of memory
+        /// (MemoryArena for DEVICE_CPU, DeviceMemoryArena for
+        /// DEVICE_GPU), and wires layerAbove/layerBelow/terminalLayer
+        /// across every layer.
         void Compile();
 
     private:
         /// @brief Every layer in the network, in the order they were added.
         std::vector<std::unique_ptr<DirectKPPCLayer>> layers;
-        /// @brief The contiguous memory block backing every layer's buffers.
-        std::unique_ptr<MemoryArena> arena;
+
+        /// @brief The network's own compute backend, created once at
+        /// construction and shared by every layer added afterward.
+        std::unique_ptr<IComputeBackend> backend;
+        /// @brief Which device `backend` actually is.
+        DeviceType device;
+
+        /// @brief Used when device == DEVICE_CPU.
+        std::unique_ptr<MemoryArena> cpuArena;
+        /// @brief Used when device == DEVICE_GPU. Only compiled when
+        /// DEEPITY_USE_CUDA is defined.
+#if defined(DEEPITY_USE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
+
         /// @brief The batch size shared by every layer in the network.
         int batchSize;
+
+        // @brief CUDA Graph:
+        bool graphCaptured = false;
+        int capturedInferenceSteps = -1;
     };
 }

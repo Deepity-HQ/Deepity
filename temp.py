@@ -95,7 +95,8 @@ def main() -> None:
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
             # 3. Call C++ Native Loop (avoid Nanobind overhead)
-            energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
+            compute_energy = (b == n_batches - 1)
+            energy = net.train_step_with_projection(X_batch, Y_batch, STEPS, compute_energy)
             epoch_energy += energy
 
 

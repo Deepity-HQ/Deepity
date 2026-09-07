@@ -37,8 +37,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
     until that verification is done.
     """
 
-    def __init__(self, batch_size: int) -> None:
-        super().__init__(batch_size)
+    def __init__(self, batch_size: int, device: str = "cpu") -> None:
+        super().__init__(batch_size, device)
 
     def add_layer(
         self,
