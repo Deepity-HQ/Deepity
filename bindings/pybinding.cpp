@@ -56,6 +56,8 @@ namespace
             return Deep::e_sigmoid;
         if (act == "relu")
             return Deep::relu;
+        if (act == "gelu")
+            return Deep::gelu;
         if (act == "linear")
             return Deep::linear;
         return Deep::relu;
@@ -71,6 +73,8 @@ namespace
             return Deep::d_eSigmoid;
         if (act == "drelu")
             return Deep::dRelu;
+        if (act == "dgelu")
+            return Deep::dGelu;
         if (act == "dLinear")
             return Deep::dLinear;
         return Deep::dRelu;
@@ -86,6 +90,10 @@ namespace
             return Deep::ActivationType::RELU;
         if (act == "drelu")
             return Deep::ActivationType::dRELU;
+        if (act == "gelu")
+            return Deep::ActivationType::GELU;
+        if (act == "dgelu")
+            return Deep::ActivationType::dGELU;
         if (act == "sigmoid")
             return Deep::ActivationType::SIGMOID;
         if (act == "dsigmoid")
