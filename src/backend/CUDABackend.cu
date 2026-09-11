@@ -456,6 +456,7 @@ namespace Deep
             break;
         case ActivationType::GELU:
             GeluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
+            break;
         case ActivationType::SIGMOID:
             sigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
@@ -491,6 +492,7 @@ namespace Deep
             break;
         case ActivationType::dGELU:
             dGeluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
+            break;
         case ActivationType::dSIGMOID:
             dSigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
