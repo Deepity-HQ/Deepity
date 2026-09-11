@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
+
+#ifdef DEEPITY_USE_CUDA
 #include <curand_kernel.h>
 
 namespace Deep
@@ -266,6 +268,25 @@ namespace Deep
             dst[i] = fmaxf(0.0f, src[i]);
     }
 
+    __global__ void GeluKernelInto(float *dst, const float *src, size_t n)
+    {
+        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n)
+        {
+            float xi = src[i];
+            float inner = MAGIC_GELU_1 * xi * (1.0f + MAGIC_GELU_2 * xi * xi);
+
+            float t;
+#if __CUDA_ARCH__ >= 800
+            asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(inner));
+#else
+            t = tanhf(inner);
+#endif
+
+            dst[i] = 0.5f * xi * (1.0f + t);
+        }
+    }
+
     __global__ void tanhKernelInto(float *dst, const float *src, size_t n)
     {
         size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
@@ -310,6 +331,32 @@ namespace Deep
         size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
         if (i < n)
             dst[i] = (float)(src[i] > 0.0f);
+    }
+
+    constexpr MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
+
+    __global__ void dGeluKernelInto(float *dst, const float *src, size_t n)
+    {
+        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n)
+        {
+            float x = src[i];
+            float xsq = x * x;
+            float inner = MAGIC_GELU_1 * x * (1.0f + MAGIC_GELU_2 * xsq);
+
+            float t;
+#if __CUDA_ARCH__ >= 800
+            asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(inner));
+#else
+            t = tanhf(inner);
+#endif
+
+            float gprime = MAGIC_GELU_1 * (1.0f + MAGIC_GELU_2_3 * xsq);
+            float term1 = 0.5f * (1.0f + t);
+            float term2 = 0.5f * x * gprime * (1.0f - t * t);
+
+            dst[i] = term1 + term2;
+        }
     }
 
     __global__ void dTanhKernelInto(float *dst, const float *src, size_t n)
@@ -407,6 +454,8 @@ namespace Deep
         case ActivationType::RELU:
             ReluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
+        case ActivationType::GELU:
+            GeluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
         case ActivationType::SIGMOID:
             sigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
@@ -440,6 +489,8 @@ namespace Deep
         case ActivationType::dRELU:
             dReluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
+        case ActivationType::dGELU:
+            dGeluKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
         case ActivationType::dSIGMOID:
             dSigmoidKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
             break;
@@ -549,3 +600,5 @@ namespace Deep
         AdamWStepKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(param, grad, m, v, n, t, lr, weightDecay, beta1, beta2, eps);
     }
 }
+
+#endif

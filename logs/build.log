@@ -49,7 +49,7 @@
 -- SDE : SDE_COMMAND-NOTFOUND
 -- COMPILER_SUPPORTS_OPENMP : 1
 -- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
--- Configuring done (5.1s)
+-- Configuring done (5.0s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/rose0/Projects/deepity/build/Release
 
@@ -58,34 +58,34 @@
 [1/152] Building C object _deps/sleef-build/src/common/CMakeFiles/common.dir/common.c.o
 [2/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename_gnuabi.dir/mkrename_gnuabi.c.o
 [3/152] Linking C executable _deps/sleef-build/bin/mkrename_gnuabi
-[4/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.o
+[4/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.o
 [5/152] Generating include/renameavx2_gnuabi.h
 Generating renameavx2_gnuabi.h: mkrename_gnuabi avx2 d 4 8 __m256d __m256 __m128i __m256i __AVX2__
-[6/152] Generating include/renameavx_gnuabi.h
-Generating renameavx_gnuabi.h: mkrename_gnuabi avx c 4 8 __m256d __m256 __m128i struct\ {\ __m128i\ x,\ y;\ } __AVX__
-[7/152] Generating include/renameavx512f_gnuabi.h
+[6/152] Generating include/renameavx512f_gnuabi.h
 Generating renameavx512f_gnuabi.h: mkrename_gnuabi avx512f e 8 16 __m512d __m512 __m256i __m512i __AVX512F__
+[7/152] Generating include/renameavx_gnuabi.h
+Generating renameavx_gnuabi.h: mkrename_gnuabi avx c 4 8 __m256d __m256 __m128i struct\ {\ __m128i\ x,\ y;\ } __AVX__
 [8/152] Generating include/renamesse2_gnuabi.h
 Generating renamesse2_gnuabi.h: mkrename_gnuabi sse2 b 2 4 _mm128d _mm128 _mm128i _mm128i __SSE2__
 [9/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkdisp.dir/mkdisp.c.o
-[10/152] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.o
-[11/152] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.o
-[12/152] Linking C executable _deps/sleef-build/bin/mkmasked_gnuabi
-[13/152] Generating include/masked_avx512f_dp_gnuabi.h
-[14/152] Generating include/masked_avx512f_sp_gnuabi.h
-[15/152] Linking C executable _deps/sleef-build/bin/mkdisp
-[16/152] Generating dispscalar.c.body
-[17/152] Generating dispsse.c.tmp
+[10/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkmasked_gnuabi.dir/mkmasked_gnuabi.c.o
+[11/152] Building C object _deps/sleef-build/src/common/CMakeFiles/addSuffix.dir/addSuffix.c.o
+[12/152] Linking C executable _deps/sleef-build/bin/mkdisp
+[13/152] Generating dispscalar.c.body
+[14/152] Linking C executable _deps/sleef-build/bin/mkalias
+[15/152] Generating dispsse.c.tmp
+[16/152] Generating alias_AVX512F_sp.h.tmp
+[17/152] Generating alias_AVX512F_dp.h.tmp
 [18/152] Building C object _deps/sleef-build/src/common/CMakeFiles/qtesterutil_obj.dir/qtesterutil.c.o
 [19/152] Generating dispavx.c.tmp
-[20/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkalias.dir/mkalias.c.o
-[21/152] Generating dispsse.c
-[22/152] Generating dispscalar.c
-[23/152] Generating dispavx.c
-[24/152] Linking C executable _deps/sleef-build/bin/mkalias
-[25/152] Generating alias_AVX512F_dp.h.tmp
-[26/152] Generating alias_AVX512F_sp.h.tmp
-[27/152] Generating include/alias_avx512f.h
+[20/152] Building C object _deps/sleef-build/src/common/CMakeFiles/testerutil_obj.dir/testerutil.c.o
+[21/152] Generating include/alias_avx512f.h
+[22/152] Linking C executable _deps/sleef-build/bin/mkmasked_gnuabi
+[23/152] Generating dispscalar.c
+[24/152] Generating dispsse.c
+[25/152] Generating include/masked_avx512f_dp_gnuabi.h
+[26/152] Generating include/masked_avx512f_sp_gnuabi.h
+[27/152] Generating dispavx.c
 [28/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/mkrename.dir/mkrename.c.o
 [29/152] Linking C executable _deps/sleef-build/bin/mkrename
 [30/152] Generating sleeflibm_AVX.h.tmp
@@ -116,92 +116,82 @@ Generating renamefma4.h: mkrename finz_ 4 8 fma4
 Generating renameavx.h: mkrename cinz_ 4 8 avx
 [50/152] Generating include/renamesse4.h
 Generating renamesse4.h: mkrename cinz_ 2 4 sse4
-[51/152] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.o
-[52/152] Generating include/renamesse2.h
+[51/152] Generating include/renamesse2.h
 Generating renamesse2.h: mkrename cinz_ 2 4 sse2
-[53/152] Generating include/renamepurec_scalar.h
+[52/152] Generating include/renamepurec_scalar.h
 Generating renamepurec_scalar.h: mkrename cinz_ 1 1 purec
-[54/152] Generating include/renamepurecfma_scalar.h
+[53/152] Generating include/renamepurecfma_scalar.h
 Generating renamepurecfma_scalar.h: mkrename finz_ 1 1 purecfma
-[55/152] Generating include/renamecuda.h
+[54/152] Generating include/renamecuda.h
 Generating renamecuda.h: mkrename finz_ 1 1 cuda
+[55/152] Generating ../../include/sleef.h
 [56/152] Generating include/renamedspscalar.h
 [57/152] Generating include/renamedsp128.h
-[58/152] Generating ../../include/sleef.h
-[59/152] Generating include/renamedsp256.h
-[60/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp.o
-[61/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_static_property.cpp.o
+[58/152] Generating include/renamedsp256.h
+[59/152] Building CXX object _deps/sleef-build/src/common/CMakeFiles/psha_obj.dir/psha2_capi.cpp.o
+[60/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_static_property.cpp.o
+[61/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/implicit.cpp.o
 [62/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/trampoline.cpp.o
-[63/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/implicit.cpp.o
+[63/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_datetime.cpp.o
 [64/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/error.cpp.o
-[65/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/common.cpp.o
-[66/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
-[67/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.o
+[65/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2sp.dir/sleefsimdsp.c.o
+[66/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/common.cpp.o
+[67/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_ndarray.cpp.o
 [68/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx2dp.dir/sleefsimddp.c.o
-[69/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
-[70/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_ndarray.cpp.o
-[71/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.o
-[72/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.o
-[73/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
+[69/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimdsp.c.o
+[70/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.o
+[71/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimdsp.c.o
+[72/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
+[73/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fdp.dir/sleefsimddp.c.o
 [74/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2dp.dir/sleefsimddp.c.o
-[75/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512fnofma.dir/sleefsimddp.c.o
-[76/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp.o
-[77/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabisse2sp.dir/sleefsimdsp.c.o
-[78/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.o
-[79/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.o
+[75/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimdsp.c.o
+[76/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.o
+[77/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxdp.dir/sleefsimddp.c.o
+[78/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.cpp.o
+[79/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.o
 [80/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavxsp.dir/sleefsimdsp.c.o
-[81/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512fnofma.dir/sleefsimddp.c.o
-[82/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_internals.cpp.o
-[83/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimdsp.c.o
-[84/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_func.cpp.o
+[81/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimdsp.c.o
+[82/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_enum.cpp.o
+[83/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx512f.dir/sleefsimddp.c.o
+[84/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.o
 [85/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx512f.dir/sleefsimddp.c.o
-[86/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimdsp.c.o
-[87/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.o
-[88/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.o
+[86/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2.dir/sleefsimddp.c.o
+[87/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_func.cpp.o
+[88/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx2128.dir/sleefsimddp.c.o
 [89/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimdsp.c.o
 [90/152] Building CXX object CMakeFiles/nanobind-static.dir/.venv/lib/python3.14/site-packages/nanobind/src/nb_type.cpp.o
-[91/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.o
-[92/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.o
-[93/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.o
+[91/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimdsp.c.o
+[92/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2.dir/sleefsimddp.c.o
+[93/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimdsp.c.o
 [94/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetfma4.dir/sleefsimddp.c.o
-[95/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.o
+[95/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.o
 [96/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimdsp.c.o
-[97/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx2128.dir/sleefsimddp.c.o
+[97/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimdsp.c.o
 [98/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetavx.dir/sleefsimddp.c.o
-[99/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.o
-[100/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.o
-[101/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.o
-[102/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.o
-[103/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefld.c.o
-[104/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.o
-[105/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefqp.c.o
-[106/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.o
-[107/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.o
+[99/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimdsp.c.o
+[100/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/rempitab.c.o
+[101/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefld.c.o
+[102/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.o
+[103/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimdsp.c.o
+[104/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimdsp.c.o
+[105/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimdsp.c.o
+[106/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleef.dir/sleefqp.c.o
+[107/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleeffma4.dir/sleefsimddp.c.o
 [108/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse2.dir/sleefsimddp.c.o
-[109/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetsse4.dir/sleefsimddp.c.o
+[109/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurec_scalar.dir/sleefsimddp.c.o
 [110/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefdetpurecfma_scalar.dir/sleefsimddp.c.o
 [111/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimdsp.c.o
-[112/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.o
-[113/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.o
+[112/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimddp.c.o
+[113/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse4.dir/sleefsimddp.c.o
 [114/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefavx.dir/sleefsimdsp.c.o
 [115/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimdsp.c.o
-[116/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.o
-[117/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.o
-[118/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.o
-[119/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.o
-[120/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.o
+[116/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimdsp.c.o
+[117/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispscalar_obj.dir/dispscalar.c.o
+[118/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurecfma_scalar.dir/sleefsimddp.c.o
+[119/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimdsp.c.o
+[120/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefsse2.dir/sleefsimddp.c.o
 [121/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefpurec_scalar.dir/sleefsimddp.c.o
-[122/152] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:8,
-                 from /home/rose0/Projects/deepity/src/ConvPCLayer.cpp:1:
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
-  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
-      |                        ^~~~~~~~~
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
-   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
-      |                        ^~~~~~~~~
-[123/152] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
-[124/152] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
+[122/152] Building CXX object CMakeFiles/Deepity.dir/src/RBLayer.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/layers/RBLayer.h:4,
                  from /home/rose0/Projects/deepity/src/RBLayer.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
@@ -210,17 +200,22 @@ In file included from /home/rose0/Projects/deepity/include/deepity/layers/RBLaye
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[125/152] Linking CXX static library bin/libnanobind-static.a
-[126/152] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/SimpleConvPCLayer.h:8,
-                 from /home/rose0/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
+[123/152] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCLayer.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:8,
+                 from /home/rose0/Projects/deepity/src/ConvPCLayer.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
   731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
       |                        ^~~~~~~~~
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[127/152] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.o
+[124/152] Building CXX object CMakeFiles/Deepity.dir/src/StreamAlignedBatcher.cpp.o
+[125/152] Linking CXX static library bin/libnanobind-static.a
+[126/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.o
+[127/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
+[128/152] Linking C executable _deps/sleef-build/bin/addSuffix
+[129/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.o
+[130/152] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCLayer.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/layers/GaussSeidelPCLayer.h:8,
                  from /home/rose0/Projects/deepity/src/GaussSeidelPCLayer.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
@@ -229,20 +224,16 @@ In file included from /home/rose0/Projects/deepity/include/deepity/layers/GaussS
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[128/152] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/DiscriminativePCLayer.h:8,
-                 from /home/rose0/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
+[131/152] Building CXX object CMakeFiles/Deepity.dir/src/SimpleConvPCLayer.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/SimpleConvPCLayer.h:8,
+                 from /home/rose0/Projects/deepity/src/SimpleConvPCLayer.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
   731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
       |                        ^~~~~~~~~
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[129/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabi.dir/rempitab.c.o
-[130/152] Linking C executable _deps/sleef-build/bin/addSuffix
-[131/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispavx_obj.dir/dispavx.c.o
-[132/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/dispsse_obj.dir/dispsse.c.o
-[133/152] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.o
+[132/152] Building CXX object CMakeFiles/Deepity.dir/src/DirectKPPCLayer.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/layers/DirectKPPCLayer.h:6,
                  from /home/rose0/Projects/deepity/src/DirectKPPCLayer.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
@@ -251,7 +242,16 @@ In file included from /home/rose0/Projects/deepity/include/deepity/layers/Direct
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[134/152] Linking C static library _deps/sleef-build/lib/libsleef.a
+[133/152] Linking C static library _deps/sleef-build/lib/libsleef.a
+[134/152] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCLayer.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/DiscriminativePCLayer.h:8,
+                 from /home/rose0/Projects/deepity/src/DiscriminativePCLayer.cpp:1:
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
+  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
+      |                        ^~~~~~~~~
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
+   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+      |                        ^~~~~~~~~
 [135/152] Building CXX object CMakeFiles/Deepity.dir/src/DiscriminativePCNetwork.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/layers/DiscriminativePCLayer.h:8,
                  from /home/rose0/Projects/deepity/include/deepity/networks/DiscriminativePCNetwork.h:5,
@@ -262,37 +262,7 @@ In file included from /home/rose0/Projects/deepity/include/deepity/layers/Discri
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[136/152] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/SimplePCLayer.h:8,
-                 from /home/rose0/Projects/deepity/include/deepity/networks/SimplePCNetwork.h:5,
-                 from /home/rose0/Projects/deepity/src/SimplePCNetwork.cpp:1:
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
-  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
-      |                        ^~~~~~~~~
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
-   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
-      |                        ^~~~~~~~~
-[137/152] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/GaussSeidelPCLayer.h:8,
-                 from /home/rose0/Projects/deepity/include/deepity/networks/GaussSeidelPCNetwork.h:5,
-                 from /home/rose0/Projects/deepity/src/GaussSeidelPCNetwork.cpp:1:
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
-  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
-      |                        ^~~~~~~~~
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
-   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
-      |                        ^~~~~~~~~
-[138/152] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:8,
-                 from /home/rose0/Projects/deepity/include/deepity/networks/ConvPCNetwork.h:5,
-                 from /home/rose0/Projects/deepity/src/ConvPCNetwork.cpp:1:
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
-  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
-      |                        ^~~~~~~~~
-/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
-   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
-      |                        ^~~~~~~~~
-[139/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/Tensor.cpp.o
+[136/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/Tensor.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComputeBackend.h:3,
                  from /home/rose0/Projects/deepity/include/deepity/backend/Tensor.h:4,
                  from /home/rose0/Projects/deepity/src/backend/Tensor.cpp:1:
@@ -302,7 +272,17 @@ In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComp
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[140/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/Backend.cpp.o
+[137/152] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCNetwork.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/SimplePCLayer.h:8,
+                 from /home/rose0/Projects/deepity/include/deepity/networks/SimplePCNetwork.h:5,
+                 from /home/rose0/Projects/deepity/src/SimplePCNetwork.cpp:1:
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
+  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
+      |                        ^~~~~~~~~
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
+   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+      |                        ^~~~~~~~~
+[138/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/Backend.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComputeBackend.h:3,
                  from /home/rose0/Projects/deepity/include/deepity/backend/Backend.h:3,
                  from /home/rose0/Projects/deepity/src/backend/Backend.cpp:1:
@@ -312,19 +292,39 @@ In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComp
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[141/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackend.cpp.o
-In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComputeBackend.h:3,
-                 from /home/rose0/Projects/deepity/include/deepity/backend/CPUBackend.h:2,
-                 from /home/rose0/Projects/deepity/src/backend/CPUBackend.cpp:1:
+[139/152] Building CXX object CMakeFiles/Deepity.dir/src/ConvPCNetwork.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:8,
+                 from /home/rose0/Projects/deepity/include/deepity/networks/ConvPCNetwork.h:5,
+                 from /home/rose0/Projects/deepity/src/ConvPCNetwork.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
   731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
       |                        ^~~~~~~~~
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
-[142/152] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
+[140/152] Building CXX object CMakeFiles/Deepity.dir/src/GaussSeidelPCNetwork.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/layers/GaussSeidelPCLayer.h:8,
+                 from /home/rose0/Projects/deepity/include/deepity/networks/GaussSeidelPCNetwork.h:5,
+                 from /home/rose0/Projects/deepity/src/GaussSeidelPCNetwork.cpp:1:
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
+  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
+      |                        ^~~~~~~~~
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
+   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+      |                        ^~~~~~~~~
+[141/152] Building CXX object CMakeFiles/Deepity.dir/src/SimplePCLayer.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/layers/SimplePCLayer.h:8,
                  from /home/rose0/Projects/deepity/src/SimplePCLayer.cpp:1:
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
+  731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
+      |                        ^~~~~~~~~
+/home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
+   81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+      |                        ^~~~~~~~~
+[142/152] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackend.cpp.o
+In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComputeBackend.h:3,
+                 from /home/rose0/Projects/deepity/include/deepity/backend/CPUBackend.h:2,
+                 from /home/rose0/Projects/deepity/src/backend/CPUBackend.cpp:1:
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:731:24: warning: declaration of ‘void Deep::dGeluInto(float*, const float*, size_t)’ has a different exception specifier
   731 |     static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
       |                        ^~~~~~~~~
@@ -363,9 +363,7 @@ In file included from /home/rose0/Projects/deepity/include/deepity/layers/Discri
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
 [146/152] Linking CXX static library bin/libDeepity.a
-[147/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
-[148/152] Linking C static library _deps/sleef-build/lib/libsleefgnuabi.a
-[149/152] Building CXX object CMakeFiles/MatMulLargeAsymmetricVerify.dir/tests/tMatMulLargeAsymmetricVerify.cpp.o
+[147/152] Building CXX object CMakeFiles/MatMulLargeAsymmetricVerify.dir/tests/tMatMulLargeAsymmetricVerify.cpp.o
 In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComputeBackend.h:3,
                  from /home/rose0/Projects/deepity/include/deepity/backend/Backend.h:3,
                  from /home/rose0/Projects/deepity/tests/tMatMulLargeAsymmetricVerify.cpp:15:
@@ -375,6 +373,8 @@ In file included from /home/rose0/Projects/deepity/include/deepity/backend/IComp
 /home/rose0/Projects/deepity/include/deepity/utils/Activations.h:81:24: note: from previous declaration ‘void Deep::dGeluInto(float*, const float*, size_t) noexcept’
    81 |     static inline void dGeluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
       |                        ^~~~~~~~~
+[148/152] Building C object _deps/sleef-build/src/libm/CMakeFiles/sleefgnuabiavx512fsp.dir/sleefsimdsp.c.o
+[149/152] Linking C static library _deps/sleef-build/lib/libsleefgnuabi.a
 [150/152] Linking CXX executable bin/MatMulLargeAsymmetricVerify
 [151/152] Building CXX object CMakeFiles/pydeepity.dir/bindings/pybinding.cpp.o
 In file included from /home/rose0/Projects/deepity/bindings/pybinding.cpp:14:

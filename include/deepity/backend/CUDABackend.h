@@ -1,6 +1,8 @@
 #pragma once
 #include <deepity/backend/IComputeBackend.h>
+#ifdef DEEPITY_USE_CUDA
 #include <cublas_v2.h>
+#endif
 #include <deepity/backend/Tensor.h>
 
 namespace Deep
