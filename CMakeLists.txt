@@ -308,16 +308,27 @@ endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
+# --- Optiona: Use Google Benchmark -----------------------------------
+
+include(FetchContent)
+FetchContent_Declare(
+    benchmark
+    GIT_REPOSITORY https://github.com/google/benchmark.git
+    GIT_TAG v1.9.1
+)
+set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(benchmark)
+
 # --- Tests -----------------------------------------------------------
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
 
-add_executable(MatMulLargeAsymmetricVerify tests/tMatMulLargeAsymmetricVerify.cpp)
-target_link_libraries(MatMulLargeAsymmetricVerify PRIVATE Deepity)
-set_target_properties(MatMulLargeAsymmetricVerify PROPERTIES
+add_executable(ActivationBenchmark tests/tActivations.cpp)
+target_link_libraries(ActivationBenchmark PRIVATE Deepity benchmark::benchmark)
+set_target_properties(ActivationBenchmark PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
-add_test(NAME MatMulLargeAsymmetricVerify COMMAND MatMulLargeAsymmetricVerify)
+add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 
 # --- Compiler flags -------------------------------------------------
 

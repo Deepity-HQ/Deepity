@@ -269,7 +269,7 @@ namespace Deep
 
 #pragma region relu
     /// @brief RELU(x) = MAX(0, x) for all x
-    /// @param x array, \em does not need to be aligned
+    /// @param x array
     /// @param n x length
     static inline void relu(float *RESTRICT x, const size_t n) noexcept
     {
@@ -279,90 +279,36 @@ namespace Deep
         size_t simd_end = 0;
 
 #if defined(__AVX512F__)
-        __m512 zeros = _mm512_setzero_ps();
-        size_t simd_end4 = n - (n % 64);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 64)
-        {
-            __m512 x0 = _mm512_loadu_ps(x + i);
-            __m512 x1 = _mm512_loadu_ps(x + i + 16);
-            __m512 x2 = _mm512_loadu_ps(x + i + 32);
-            __m512 x3 = _mm512_loadu_ps(x + i + 48);
-
-            x0 = _mm512_max_ps(zeros, x0);
-            x1 = _mm512_max_ps(zeros, x1);
-            x2 = _mm512_max_ps(zeros, x2);
-            x3 = _mm512_max_ps(zeros, x3);
-
-            _mm512_storeu_ps(x + i, x0);
-            _mm512_storeu_ps(x + i + 16, x1);
-            _mm512_storeu_ps(x + i + 32, x2);
-            _mm512_storeu_ps(x + i + 48, x3);
-        }
-
+        const __m512 zeros512 = _mm512_setzero_ps();
         simd_end = n - (n % 16);
-        for (size_t i = simd_end4; i < simd_end; i += 16)
+
+        for (size_t i = 0; i < simd_end; i += 16)
         {
-            _mm512_storeu_ps(x + i, _mm512_max_ps(zeros, _mm512_loadu_ps(x + i)));
+            __m512 xi = _mm512_loadu_ps(x + i);
+            xi = _mm512_max_ps(zeros512, xi);
+            _mm512_storeu_ps(x + i, xi);
         }
 
 #elif defined(__AVX2__) || defined(__AVX__)
-        __m256 zeros = _mm256_setzero_ps();
-        size_t simd_end4 = n - (n % 32);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 32)
-        {
-            __m256 x0 = _mm256_loadu_ps(x + i);
-            __m256 x1 = _mm256_loadu_ps(x + i + 8);
-            __m256 x2 = _mm256_loadu_ps(x + i + 16);
-            __m256 x3 = _mm256_loadu_ps(x + i + 24);
-
-            x0 = _mm256_max_ps(zeros, x0);
-            x1 = _mm256_max_ps(zeros, x1);
-            x2 = _mm256_max_ps(zeros, x2);
-            x3 = _mm256_max_ps(zeros, x3);
-
-            _mm256_storeu_ps(x + i, x0);
-            _mm256_storeu_ps(x + i + 8, x1);
-            _mm256_storeu_ps(x + i + 16, x2);
-            _mm256_storeu_ps(x + i + 24, x3);
-        }
-
+        const __m256 zeros256 = _mm256_setzero_ps();
         simd_end = n - (n % 8);
-        for (size_t i = simd_end4; i < simd_end; i += 8)
+
+        for (size_t i = 0; i < simd_end; i += 8)
         {
-            _mm256_storeu_ps(x + i, _mm256_max_ps(zeros, _mm256_loadu_ps(x + i)));
+            __m256 xi = _mm256_loadu_ps(x + i);
+            xi = _mm256_max_ps(zeros256, xi);
+            _mm256_storeu_ps(x + i, xi);
         }
 
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-        __m128 zeros = _mm_setzero_ps();
-        size_t simd_end4 = n - (n % 16);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-        for (ptrdiff_t i = 0; i < (ptrdiff_t)(simd_end4); i += 16)
-        {
-            __m128 x0 = _mm_loadu_ps(x + i);
-            __m128 x1 = _mm_loadu_ps(x + i + 4);
-            __m128 x2 = _mm_loadu_ps(x + i + 8);
-            __m128 x3 = _mm_loadu_ps(x + i + 12);
-
-            x0 = _mm_max_ps(zeros, x0);
-            x1 = _mm_max_ps(zeros, x1);
-            x2 = _mm_max_ps(zeros, x2);
-            x3 = _mm_max_ps(zeros, x3);
-
-            _mm_storeu_ps(x + i, x0);
-            _mm_storeu_ps(x + i + 4, x1);
-            _mm_storeu_ps(x + i + 8, x2);
-            _mm_storeu_ps(x + i + 12, x3);
-        }
-
+        const __m128 zeros128 = _mm_setzero_ps();
         simd_end = n - (n % 4);
-        for (size_t i = simd_end4; i < simd_end; i += 4)
+
+        for (size_t i = 0; i < simd_end; i += 4)
         {
-            _mm_storeu_ps(x + i, _mm_max_ps(zeros, _mm_loadu_ps(x + i)));
+            __m128 xi = _mm_loadu_ps(x + i);
+            xi = _mm_max_ps(zeros128, xi);
+            _mm_storeu_ps(x + i, xi);
         }
 #endif
 
@@ -554,13 +500,13 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)15;
         for (ptrdiff_t i = 0; i < simd_end; i += 16)
         {
-            __m512 x512 = _mm512_load_ps(x + i);
+            __m512 x512 = _mm512_loadu_ps(x + i);
             __m512 cube512 = _mm512_mul_ps(x512, _mm512_mul_ps(x512, x512));
             __m512 c1x512 = _mm512_mul_ps(sqrt2overpi512, x512);               // C1*x
             __m512 inner512 = _mm512_fmadd_ps(cube512, gelu_coeff512, c1x512); // x^3*C2 + C1*x
             __m512 t512 = Sleef_tanhf16_u10(inner512);
             __m512 res = _mm512_mul_ps(half512, _mm512_mul_ps(x512, _mm512_add_ps(t512, ones512)));
-            _mm512_store_ps(x + i, res);
+            _mm512_storeu_ps(x + i, res);
         }
 #elif defined(__AVX__)
         const __m256 ones256 = _mm256_set1_ps(1.0f);
@@ -571,7 +517,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)7;
         for (ptrdiff_t i = 0; i < simd_end; i += 8)
         {
-            __m256 x256 = _mm256_load_ps(x + i);
+            __m256 x256 = _mm256_loadu_ps(x + i);
             __m256 cube256 = _mm256_mul_ps(x256, _mm256_mul_ps(x256, x256));
             __m256 c1x256 = _mm256_mul_ps(sqrt2overpi256, x256); // C1*x
 #if defined(__AVX2__)
@@ -581,7 +527,7 @@ namespace Deep
 #endif
             __m256 t256 = Sleef_tanhf8_u10(inner256);
             __m256 res = _mm256_mul_ps(half256, _mm256_mul_ps(x256, _mm256_add_ps(t256, ones256)));
-            _mm256_store_ps(x + i, res);
+            _mm256_storeu_ps(x + i, res);
         }
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
         const __m128 ones128 = _mm_set1_ps(1.0f);
@@ -592,7 +538,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)3;
         for (ptrdiff_t i = 0; i < simd_end; i += 4)
         {
-            __m128 x128 = _mm_load_ps(x + i);
+            __m128 x128 = _mm_loadu_ps(x + i);
             __m128 cube128 = _mm_mul_ps(x128, _mm_mul_ps(x128, x128));
             __m128 c1x128 = _mm_mul_ps(sqrt2overpi128, x128); // C1*x
 #ifdef __FMA__
@@ -602,7 +548,7 @@ namespace Deep
 #endif
             __m128 t128 = Sleef_tanhf4_u10(inner128);
             __m128 res = _mm_mul_ps(half128, _mm_mul_ps(x128, _mm_add_ps(t128, ones128)));
-            _mm_store_ps(x + i, res);
+            _mm_storeu_ps(x + i, res);
         }
 #endif
         for (ptrdiff_t i = simd_end; i < n; ++i)
@@ -612,6 +558,7 @@ namespace Deep
             x[i] = 0.5f * xi * (1.0f + Sleef_tanhf_u10(inner));
         }
     }
+
     static inline void dGelu(float *RESTRICT x, const size_t n, const bool activated) noexcept
     {
         assert(n != 0 && "n must not be 0.");
@@ -629,7 +576,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)15;
         for (ptrdiff_t i = 0; i < simd_end; i += 16)
         {
-            __m512 x512 = _mm512_load_ps(x + i);
+            __m512 x512 = _mm512_loadu_ps(x + i);
             __m512 xsq512 = _mm512_mul_ps(x512, x512);
             __m512 xcube512 = _mm512_mul_ps(xsq512, x512);
             __m512 c1x512 = _mm512_mul_ps(c1_512, x512);
@@ -644,7 +591,7 @@ namespace Deep
             __m512 term1 = _mm512_mul_ps(half512, _mm512_add_ps(ones512, t512));
             __m512 term2 = _mm512_mul_ps(half512, _mm512_mul_ps(x512, _mm512_mul_ps(gprime512, one_minus_tsq512)));
             __m512 res = _mm512_add_ps(term1, term2);
-            _mm512_store_ps(x + i, res);
+            _mm512_storeu_ps(x + i, res);
         }
 #elif defined(__AVX__)
         const __m256 ones256 = _mm256_set1_ps(1.0f);
@@ -656,7 +603,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)7;
         for (ptrdiff_t i = 0; i < simd_end; i += 8)
         {
-            __m256 x256 = _mm256_load_ps(x + i);
+            __m256 x256 = _mm256_loadu_ps(x + i);
             __m256 xsq256 = _mm256_mul_ps(x256, x256);
             __m256 xcube256 = _mm256_mul_ps(xsq256, x256);
             __m256 c1x256 = _mm256_mul_ps(c1_256, x256);
@@ -676,7 +623,7 @@ namespace Deep
             __m256 term1 = _mm256_mul_ps(half256, _mm256_add_ps(ones256, t256));
             __m256 term2 = _mm256_mul_ps(half256, _mm256_mul_ps(x256, _mm256_mul_ps(gprime256, one_minus_tsq256)));
 
-            _mm256_store_ps(x + i, _mm256_add_ps(term1, term2));
+            _mm256_storeu_ps(x + i, _mm256_add_ps(term1, term2));
         }
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
         const __m128 ones128 = _mm_set1_ps(1.0f);
@@ -688,7 +635,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)3;
         for (ptrdiff_t i = 0; i < simd_end; i += 4)
         {
-            __m128 x128 = _mm_load_ps(x + i);
+            __m128 x128 = _mm_loadu_ps(x + i);
             __m128 xsq128 = _mm_mul_ps(x128, x128);
             __m128 xcube128 = _mm_mul_ps(xsq128, x128);
             __m128 c1x128 = _mm_mul_ps(c1_128, x128);
@@ -708,7 +655,7 @@ namespace Deep
             __m128 term1 = _mm_mul_ps(half128, _mm_add_ps(ones128, t128));
             __m128 term2 = _mm_mul_ps(half128, _mm_mul_ps(x128, _mm_mul_ps(gprime128, one_minus_tsq128)));
 
-            _mm_store_ps(x + i, _mm_add_ps(term1, term2));
+            _mm_storeu_ps(x + i, _mm_add_ps(term1, term2));
         }
 #endif
         for (ptrdiff_t i = simd_end; i < n; ++i)
@@ -728,7 +675,7 @@ namespace Deep
         }
     }
 
-    static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n)
+    static inline void dGeluInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
     {
 
         ptrdiff_t simd_end = 0;
@@ -743,7 +690,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)15;
         for (ptrdiff_t i = 0; i < simd_end; i += 16)
         {
-            __m512 x512 = _mm512_load_ps(src + i);
+            __m512 x512 = _mm512_loadu_ps(src + i);
             __m512 xsq512 = _mm512_mul_ps(x512, x512);
             __m512 xcube512 = _mm512_mul_ps(xsq512, x512);
             __m512 c1x512 = _mm512_mul_ps(c1_512, x512);
@@ -758,7 +705,7 @@ namespace Deep
             __m512 term1 = _mm512_mul_ps(half512, _mm512_add_ps(ones512, t512));
             __m512 term2 = _mm512_mul_ps(half512, _mm512_mul_ps(x512, _mm512_mul_ps(gprime512, one_minus_tsq512)));
             __m512 res = _mm512_add_ps(term1, term2);
-            _mm512_store_ps(dst + i, res);
+            _mm512_storeu_ps(dst + i, res);
         }
 #elif defined(__AVX__)
         const __m256 ones256 = _mm256_set1_ps(1.0f);
@@ -770,7 +717,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)7;
         for (ptrdiff_t i = 0; i < simd_end; i += 8)
         {
-            __m256 x256 = _mm256_load_ps(src + i);
+            __m256 x256 = _mm256_loadu_ps(src + i);
             __m256 xsq256 = _mm256_mul_ps(x256, x256);
             __m256 xcube256 = _mm256_mul_ps(xsq256, x256);
             __m256 c1x256 = _mm256_mul_ps(c1_256, x256);
@@ -790,7 +737,7 @@ namespace Deep
             __m256 term1 = _mm256_mul_ps(half256, _mm256_add_ps(ones256, t256));
             __m256 term2 = _mm256_mul_ps(half256, _mm256_mul_ps(x256, _mm256_mul_ps(gprime256, one_minus_tsq256)));
 
-            _mm256_store_ps(dst + i, _mm256_add_ps(term1, term2));
+            _mm256_storeu_ps(dst + i, _mm256_add_ps(term1, term2));
         }
 #elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
         const __m128 ones128 = _mm_set1_ps(1.0f);
@@ -802,7 +749,7 @@ namespace Deep
         simd_end = (ptrdiff_t)n & ~(ptrdiff_t)3;
         for (ptrdiff_t i = 0; i < simd_end; i += 4)
         {
-            __m128 x128 = _mm_load_ps(src + i);
+            __m128 x128 = _mm_loadu_ps(src + i);
             __m128 xsq128 = _mm_mul_ps(x128, x128);
             __m128 xcube128 = _mm_mul_ps(xsq128, x128);
             __m128 c1x128 = _mm_mul_ps(c1_128, x128);
@@ -822,7 +769,7 @@ namespace Deep
             __m128 term1 = _mm_mul_ps(half128, _mm_add_ps(ones128, t128));
             __m128 term2 = _mm_mul_ps(half128, _mm_mul_ps(x128, _mm_mul_ps(gprime128, one_minus_tsq128)));
 
-            _mm_store_ps(dst + i, _mm_add_ps(term1, term2));
+            _mm_storeu_ps(dst + i, _mm_add_ps(term1, term2));
         }
 #endif
         for (ptrdiff_t i = simd_end; i < n; ++i)
