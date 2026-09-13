@@ -28,3 +28,6 @@ wheelhouse/
 dist/
 *.egg-info/
 _skbuild/
+__pycache__/
+*.pyc
+logs/
