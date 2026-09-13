@@ -333,7 +333,7 @@ namespace Deep
             dst[i] = (float)(src[i] > 0.0f);
     }
 
-    constexpr MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
+    constexpr int MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
 
     __global__ void dGeluKernelInto(float *dst, const float *src, size_t n)
     {

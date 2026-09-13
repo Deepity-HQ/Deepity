@@ -179,7 +179,7 @@ static void BM_Std_Gelu(benchmark::State &state)
         for (auto &v : working)
         {
             float inner = MAGIC_GELU_1 * v + (MAGIC_GELU_2 * MAGIC_GELU_1) * v * v * v;
-            v *= 0.5f * (1.0f + std::tanhf(inner));
+            v *= 0.5f * (1.0f + std::tanh(inner));
         }
         benchmark::DoNotOptimize(working.data());
     }
