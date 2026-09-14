@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <random>
 #include <memory>
+#include <map>
 #include <cstdlib>
 #include <deepity/utils/Activations.h>
 #include <deepity/layers/Layer.h>
@@ -184,13 +185,15 @@ namespace Deep
         /// @param twister The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
+        std::map<std::string, TensorDescriptor> GetStateDict() const;
+
         /// @brief Rebuilds log_p from p -- required after a checkpoint load
         /// that only persists p (mirrors DiscriminativePCLayer's fix for the
         /// same p/log_p desync issue found in ModelIO::Load()).
         void ResyncLogPrecision() noexcept;
 
         /// @brief Fast-path forward projection that skips state initialization
-         void ComputeMuOnly() noexcept;
+        void ComputeMuOnly() noexcept;
 
         /// @brief Returns this layer's configured activation type.
         /// @return The activation type.
@@ -282,7 +285,7 @@ namespace Deep
         float *muRepacked = nullptr;
         /// @}
 
-        /// @brief Cache for the clamped input forward-projection 
+        /// @brief Cache for the clamped input forward-projection
         float *cachedMu = nullptr;
         /// @brief Flag to determine if the mu cache is currently valid
         bool muCacheValid = false;
