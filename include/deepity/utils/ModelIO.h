@@ -1,67 +1,109 @@
 #pragma once
 #include <string>
-#include <deepity/networks/DiscriminativePCNetwork.h>
-
-/**
- * @file ModelIO.h
- * @brief Save/load support for persisting a DiscriminativePCNetwork's
- * trained state to and from disk, as a structured directory rather than a
- * single opaque binary blob.
- *
- * @note Layer weights and activation configuration are stored separately:
- * numeric weights go into a flat binary buffer (weights.bin), while
- * per-layer metadata (sizes, activation types, hyperparameters) is
- * expected to live in a human-readable manifest (manifest.json),
- * with a generated README.md alongside for a human-readable summary.
- * ActivationToString()/StringToActivation() are the round-trip
- * conversion used when writing/reading that manifest.
- * @version 1.0
- * @date 2026-06-30
- * @author Jack Rose
- */
+#include <fstream>
+#include <cstdint>
+#include <nlohmann/json.hpp>
 
 namespace Deep
 {
-    /// @brief Static utility class for saving and loading
-    /// DiscriminativePCNetwork model state to/from a structured directory
-    /// on disk.
     class ModelIO
     {
     public:
-        /// @brief Saves the network into a structured directory
-        /// (manifest.json, weights.bin, README.md).
-        /// @param net The network whose state (weights, biases, and
-        /// per-layer configuration) should be saved.
-        /// @param dirPath Path to the directory to save into; created if
-        /// it doesn't already exist. Any existing contents at this path
-        /// may be overwritten.
-        /// @return true if every file was written successfully, false
-        /// otherwise.
-        static bool Save(const DiscriminativePCNetwork &net, const std::string &dirPath);
+        template <typename NetworkType>
+        static bool Save(const NetworkType &net, const std::string &filepath)
+        {
+            nlohmann::json header;
+            size_t current_offset = 0;
+            int layer_idx = 0;
 
-        /// @brief Loads a network state from a structured directory.
-        /// @param net The network to load state into. Its layer
-        /// configuration is expected to already match (or be rebuilt
-        /// from) what's recorded in the manifest; existing weights are
-        /// overwritten with the loaded values.
-        /// @param dirPath Path to a directory previously written by
-        /// Save().
-        /// @return true if the network was loaded successfully, false
-        /// otherwise (e.g. missing/malformed files).
-        static bool Load(DiscriminativePCNetwork &net, const std::string &dirPath);
+            for (const auto &layerPtr : net.GetLayers())
+            {
+                auto state_dict = layerPtr->GetStateDict();
 
-    private:
-        /// @brief Converts an ActivationType to its manifest string
-        /// representation.
-        /// @param type The activation type to convert.
-        /// @return The string form of @p type, as written into
-        /// manifest.json.
-        static std::string ActivationToString(ActivationType type);
+                for (const auto &[name, tensor] : state_dict)
+                {
+                    std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
 
-        /// @brief Converts a manifest string representation back into an
-        /// ActivationType. Inverse of ActivationToString().
-        /// @param str The string to convert, as read from manifest.json.
-        /// @return The corresponding ActivationType.
-        static ActivationType StringToActivation(const std::string &str);
+                    size_t num_elements = 1;
+                    for (size_t dim : tensor.shape)
+                    {
+                        num_elements *= dim;
+                    }
+                    size_t byte_size = num_elements * sizeof(float);
+
+                    header[key] = {
+                        {"dtype", "F32"},
+                        {"shape", tensor.shape},
+                        {"data_offsets", {current_offset, current_offset + byte_size}}};
+                    current_offset += byte_size;
+                }
+                layer_idx++;
+            }
+
+            header["__metadata__"] = {{"format", "deepity_safetensors"}};
+
+            std::string header_str = header.dump();
+            uint64_t header_size = header_str.size();
+
+            std::ofstream out(filepath, std::ios::binary);
+            if (!out.is_open())
+                return false;
+
+            out.write(reinterpret_cast<const char *>(&header_size), sizeof(uint64_t));
+            out.write(header_str.data(), header_size);
+
+            for (const auto &layerPtr : net.GetLayers())
+            {
+                for (const auto &[name, tensor] : layerPtr->GetStateDict())
+                {
+                    size_t num_elements = 1;
+                    for (size_t dim : tensor.shape)
+                    {
+                        num_elements *= dim;
+                    }
+                    out.write(reinterpret_cast<const char *>(tensor.data), num_elements * sizeof(float));
+                }
+            }
+            return true;
+        }
+
+        template <typename NetworkType>
+        static bool Load(NetworkType &net, const std::string &filepath)
+        {
+            std::ifstream in(filepath, std::ios::binary);
+            if (!in.is_open())
+                return false;
+
+            uint64_t header_size;
+            in.read(reinterpret_cast<char *>(&header_size), sizeof(uint64_t));
+
+            std::string header_str(header_size, '\0');
+            in.read(&header_str[0], header_size);
+
+            auto header = nlohmann::json::parse(header_str);
+            size_t base_offset = sizeof(uint64_t) + header_size;
+
+            int layer_idx = 0;
+            for (auto &layerPtr : net.GetLayers())
+            {
+                auto state_dict = layerPtr->GetStateDict();
+                for (auto &[name, tensor] : state_dict)
+                {
+                    std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
+
+                    if (header.contains(key))
+                    {
+                        size_t start_offset = header[key]["data_offsets"][0];
+                        size_t end_offset = header[key]["data_offsets"][1];
+                        size_t byte_size = end_offset - start_offset;
+
+                        in.seekg(base_offset + start_offset, std::ios::beg);
+                        in.read(reinterpret_cast<char *>(tensor.data), byte_size);
+                    }
+                }
+                layer_idx++;
+            }
+            return true;
+        }
     };
 }

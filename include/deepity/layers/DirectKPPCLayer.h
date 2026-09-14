@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <random>
+#include <map>
 
 /**
  * @file DirectKPPCLayer.h
@@ -112,6 +113,8 @@ namespace Deep
         void BindMemory(ArenaT &arena);
         size_t GetRequiredFloats() const noexcept;
         void RandomizeWeights(std::mt19937 &seedGenerator) noexcept;
+
+        std::map<std::string, TensorDescriptor> GetStateDict() const;
 
         void SetLayerAbove(DirectKPPCLayer *l) noexcept { layerAbove = l; }
         void SetLayerBelow(DirectKPPCLayer *l) noexcept { layerBelow = l; }

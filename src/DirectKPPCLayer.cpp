@@ -219,6 +219,14 @@ namespace Deep
         backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
     }
 
+    std::map<std::string, Deep::TensorDescriptor> Deep::DirectKPPCLayer::GetStateDict() const
+    {
+        return {
+            {"W", {W, std::vector<size_t>{nextSize, size}}},
+            {"b", {b, std::vector<size_t>{nextSize}}},
+            {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+    }
+
     float DirectKPPCLayer::CalculateState(bool needEnergy) noexcept
     {
         const size_t N = batchSize * size;

@@ -273,7 +273,6 @@ add_library(Deepity
     src/GaussSeidelPCNetwork.cpp
     src/SimpleConvPCNetwork.cpp
     src/DirectKPPCNetwork.cpp
-    src/ModelIO.cpp
     src/StreamAlignedBatcher.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp

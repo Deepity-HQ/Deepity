@@ -73,6 +73,13 @@ namespace Deep
         return total;
     }
 
+    std::map<std::string, TensorDescriptor> ConvPCLayer::GetStateDict() const
+    {
+        return {
+            {"W", {W, {(size_t)outChannels, (size_t)(inChannels * kernelH * kernelW)}}},
+            {"b", {b, {(size_t)outChannels}}},
+            {"p", {p, {(size_t)outChannels}}}};
+    }
     void ConvPCLayer::BindMemory(MemoryArena &arena)
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;

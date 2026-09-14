@@ -6,6 +6,9 @@
 #else
 #include <cblas.h>
 #endif
+#include <map>
+#include <vector>
+#include <string>
 
 /**
  * @file Layer.h
@@ -24,6 +27,11 @@
 
 namespace Deep
 {
+    struct TensorDescriptor
+    {
+        float *data;
+        std::vector<size_t> shape;
+    };
     /// @brief A deepity layer virtual class.
     class Layer
     {
@@ -55,6 +63,8 @@ namespace Deep
         virtual void UpdateWeights() noexcept = 0;
         /// @brief Flushes remaining batches.
         virtual void Flush() noexcept {}
+        /// @brief Returns a dictionary of this.
+        virtual std::map<std::string, TensorDescriptor> GetStateDict() const { return {}; }
 
     protected:
         /// @brief Size of input
