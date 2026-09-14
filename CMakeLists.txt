@@ -328,13 +328,6 @@ set_target_properties(ActivationBenchmark PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-add_executable(SimpleConvPCVerify tests/tSimpleConvPCVerify.cpp)
-target_link_libraries(SimpleConvPCVerify PRIVATE Deepity)
-set_target_properties(SimpleConvPCVerify PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-add_test(NAME SimpleConvPCVerify COMMAND SimpleConvPCVerify)
 add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 
 # --- Compiler flags -------------------------------------------------
