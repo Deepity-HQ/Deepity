@@ -50,6 +50,24 @@ namespace Deep
         float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept override;
         void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept override;
 
+        // Convolution (im2col-based, ConvPCLayer family) -- forwards
+        // directly to the existing, already-verified Deep::Im2Col/
+        // Deep::Col2Im free functions in Im2Col.h.
+        void Im2Col(const float *input,
+                    int channels, int height, int width,
+                    int kernelH, int kernelW,
+                    int strideH, int strideW,
+                    int padH, int padW,
+                    float *columns) noexcept override;
+        void Col2Im(const float *columns,
+                    int channels, int height, int width,
+                    int kernelH, int kernelW,
+                    int strideH, int strideW,
+                    int padH, int padW,
+                    float *outputImage) noexcept override;
+        void RepackForBatchedGemm(float *dst, const float *src,
+                                  size_t batchSize, size_t rows, size_t cols) noexcept override;
+
         void IncrementCounter(int *counter) noexcept override;
 
         void AdamStep(float *param, const float *grad, float *m, float *v,

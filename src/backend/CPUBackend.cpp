@@ -218,4 +218,52 @@ namespace Deep
             param[i] -= step_size * m[i] / (Sleef_sqrtf(v[i]) + eps);
         }
     }
+
+void CPUBackend::Im2Col(const float *input,
+                        int channels, int height, int width,
+                        int kernelH, int kernelW,
+                        int strideH, int strideW,
+                        int padH, int padW,
+                        float *columns) noexcept
+{
+    Deep::Im2Col(input, channels, height, width,
+                kernelH, kernelW, strideH, strideW, padH, padW,
+                columns);
+}
+
+void CPUBackend::Col2Im(const float *columns,
+                        int channels, int height, int width,
+                        int kernelH, int kernelW,
+                        int strideH, int strideW,
+                        int padH, int padW,
+                        float *outputImage) noexcept
+{
+    Deep::Col2Im(columns, channels, height, width,
+                kernelH, kernelW, strideH, strideW, padH, padW,
+                outputImage);
+}
+
+void CPUBackend::RepackForBatchedGemm(float *dst, const float *src,
+                                      size_t batchSize, size_t rows, size_t cols) noexcept
+{
+    // dst[row][batch][:] = src[batch][row][:] -- matches
+    // SimpleConvPCLayer::UpdateWeights()'s colsRepacked/lgRepacked loops
+    // exactly (same index arithmetic, same collapse(2) parallelization).
+    const int maxRows = static_cast<int>(rows);
+    const int maxBatch = static_cast<int>(batchSize);
+
+#pragma omp parallel for schedule(static) collapse(2)
+    for (int row = 0; row < maxRows; ++row)
+    {
+        for (int batch = 0; batch < maxBatch; ++batch)
+        {
+            size_t u_row = static_cast<size_t>(row);
+            size_t u_batch = static_cast<size_t>(batch);
+
+            const float *s = src + u_batch * rows * cols + u_row * cols;
+            float *d = dst + u_row * batchSize * cols + u_batch * cols;
+            std::memcpy(d, s, cols * sizeof(float));
+        }
+    }
+}
 }

@@ -1,79 +1,205 @@
-from ._backend import dy
 from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
+
+from ._backend import dy
+from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
 
 class DKPPCN(dy.DirectKPPCNetwork):
     """
-    A Predictive Coding Network using Direct Kolen-Pollack (DKP) feedback
-    alignment, per Casnici, Lefebvre, Dauwels & Frenkel, "Accelerated
-    Predictive Coding Networks via Direct Kolen-Pollack Feedback
-    Alignment" (2026).
+    Predictive Coding Network using Direct Kolen-Pollack (DKP)
+    feedback alignment.
 
-    Unlike every other PCN class in this library, each layer holds two
-    independently-learned weight matrices: W (the usual forward weights)
-    and Psi (a direct feedback pathway from every hidden layer straight
-    to the terminal layer's error, not relayed layer-by-layer). Before
-    the ordinary settling loop begins, a one-time direct feedback
-    alignment (DFA) update perturbs every layer's W using its Psi and the
-    terminal error -- this is what lets a SINGLE settling step be
-    sufficient, unlike the ~20 steps every other variant in this library
-    typically needs. inference_steps therefore defaults to 1, matching
-    the paper's own headline result; raising it trades away some of that
-    speed advantage for potentially higher accuracy.
+    DKP maintains independently learned forward weights (W) and
+    direct feedback weights (Psi). The feedback pathway connects
+    hidden layers directly to the terminal error rather than
+    relaying errors layer-by-layer.
 
-    W and Psi can use independent optimizers and learning rates --
-    set_optimizer()/set_learning_rate() affect W, set_psi_optimizer()/
-    set_feedback_rate() affect Psi.
-
-    UNPROVEN IN PRODUCTION -- W's gradient has been independently
-    verified via finite-difference check (see tests/tDirectKPVerify.cpp),
-    but Psi's own alignment behavior (whether it actually correlates with
-    W's transpose chain over training, per the paper's Appendix A.1) has
-    NOT yet been verified with a real, sustained training run. Treat any
-    accuracy conclusion from real training with appropriate skepticism
-    until that verification is done.
+    Unlike the other PCN implementations, DKP performs a direct
+    feedback alignment update before the ordinary settling loop.
+    This allows inference_steps=1 to be the default operating point.
     """
 
-    def __init__(self, batch_size: int, device: str = "cpu") -> None:
+    def __init__(
+        self,
+        *architecture: Layer,
+        batch_size: Optional[int] = None,
+        device: str = "cpu",
+    ) -> None:
+        if batch_size is None:
+            batch_size = 64
+
+        self.architecture = architecture
+        self.device = device
+
+        self._learning_rate: Optional[float] = None
+        self._inference_rate: Optional[float] = None
+        self._feedback_rate: Optional[float] = None
+        self._lambda: Optional[float] = None
+        self._optimizer: Optional[str] = None
+        self._psi_optimizer: Optional[str] = None
+
+        self._validate_architecture()
+
         super().__init__(batch_size, device)
 
-    def add_layer(
+    def _validate_architecture(self) -> None:
+        if not self.architecture:
+            raise ValueError("DKPPCN requires at least one layer.")
+
+        if not isinstance(self.architecture[0], Linear):
+            raise TypeError("Architecture must begin with a Linear layer.")
+
+        if not isinstance(self.architecture[-1], Linear):
+            raise TypeError("Architecture must end with a Linear layer.")
+
+        previous_linear = None
+
+        for layer in self.architecture:
+            if isinstance(layer, Linear):
+                if previous_linear is not None:
+                    if previous_linear.out_n != layer.in_n:
+                        raise ValueError(
+                            "Layer dimensions do not match: "
+                            f"{previous_linear.out_n} != {layer.in_n}."
+                        )
+
+                previous_linear = layer
+
+            elif isinstance(layer, Activation):
+                if previous_linear is None:
+                    raise ValueError(
+                        "An activation cannot appear before the first Linear layer."
+                    )
+
+            else:
+                raise TypeError(
+                    f"Unsupported architecture element: {type(layer).__name__}."
+                )
+
+    def _build_backend(self) -> None:
+        terminal_size = self._terminal_size()
+
+        for i, layer in enumerate(self.architecture):
+            if not isinstance(layer, Linear):
+                continue
+
+            if (
+                i + 1 < len(self.architecture)
+                and isinstance(self.architecture[i + 1], Activation)
+            ):
+                activation = self.architecture[i + 1].to_string()
+            else:
+                activation = "linear"
+
+            # 1. Define the derivative string
+            activation_deriv = "d" + activation
+
+            # 2. Pass them to the backend using the exact kwarg names it expects
+            super().add_layer(
+                layer.in_n,
+                layer.out_n,
+                terminal_size,
+                lr=self._learning_rate,
+                ir=self._inference_rate,
+                fl=self._feedback_rate,
+                lmbda=self._lambda,
+                activation=activation,             # Changed from act=
+                activation_deriv=activation_deriv, # Added derivative
+            )
+
+    def _terminal_size(self) -> int:
+        for layer in reversed(self.architecture):
+            if isinstance(layer, Linear):
+                return layer.out_n
+
+        raise RuntimeError("No terminal Linear layer found.")
+
+    def configure(
         self,
-        size: int,
-        next_size: int,
-        terminal_size: int,
-        lr: float = 1e-6,
-        ir: float = 0.1,
-        fl: float = 1e-4,
+        learning_rate: float = 1e-6,
+        inference_rate: float = 0.1,
+        feedback_rate: float = 1e-4,
         lmbda: float = 1e-2,
-        act: str = "relu",
-    ) -> None:
+        optimizer: str = "SGD",
+        psi_optimizer: str = "SGD",
+    ) -> "DKPPCN":
         """
-        @param terminal_size The size of the network's FINAL output layer
-            (e.g. 10 for MNIST) -- required on every add_layer() call, not
-            inferred, since the true terminal layer isn't known until the
-            whole network has been assembled.
-        @param fl Learning rate for this layer's Psi (feedback) update,
-            independent of lr (which only affects W).
+        Configure and initialize the DKP network.
+
+        Parameters
+        ----------
+        learning_rate:
+            Learning rate for the forward weights W.
+
+        inference_rate:
+            Inference/settling rate.
+
+        feedback_rate:
+            Learning rate for the direct feedback weights Psi.
+
+        lmbda:
+            Regularization parameter.
+
+        optimizer:
+            Optimizer used for W.
+
+        psi_optimizer:
+            Independent optimizer used for Psi.
         """
-        super().add_layer(
-            size, next_size, terminal_size,
-            lr=lr, ir=ir, fl=fl, lmbda=lmbda,
-            activation=act, activation_deriv="d" + act,
-        )
+        self._learning_rate = learning_rate
+        self._inference_rate = inference_rate
+        self._feedback_rate = feedback_rate
+        self._lambda = lmbda
+        self._optimizer = optimizer
+        self._psi_optimizer = psi_optimizer
+
+        self._build_backend()
+
+        self.set_optimizer(optimizer)
+        self.set_psi_optimizer(psi_optimizer)
+
+        self.compile()
+        self.randomize_weights()
+
+        return self
+
+    def _require_configured(self) -> None:
+        if self._learning_rate is None:
+            raise RuntimeError(
+                "DKPPCN has not been configured. "
+                "Call net.configure(...) before training or prediction."
+            )
 
     def set_optimizer(self, optimizer: str) -> None:
-        """Sets W's optimizer: ADAM, ADAMW, or SGD."""
+        """Set the optimizer used for the forward weights W."""
         super().set_optimizer(optimizer)
 
     def set_psi_optimizer(self, optimizer: str) -> None:
-        """Sets Psi's optimizer: ADAM, ADAMW, or SGD. Independent of W's
-        optimizer -- the paper treats these as separately-tuned in every
-        experiment it reports."""
+        """Set the optimizer used for the feedback weights Psi."""
         super().set_psi_optimizer(optimizer)
+
+    def set_learning_rate(self, learning_rate: float) -> None:
+        """Set the learning rate for the forward weights W."""
+        super().set_learning_rate(learning_rate)
+
+        self._learning_rate = learning_rate
+
+    def set_feedback_rate(self, feedback_rate: float) -> None:
+        """Set the learning rate for the feedback weights Psi."""
+        super().set_feedback_rate(feedback_rate)
+
+        self._feedback_rate = feedback_rate
+
+    def set_inference_rate(self, inference_rate: float) -> None:
+        """Set the inference/settling rate."""
+        for layer in self.layers:
+            layer.set_inference_rate(inference_rate)
+
+        self._inference_rate = inference_rate
 
     def compile(self) -> None:
         super().compile()
@@ -81,36 +207,33 @@ class DKPPCN(dy.DirectKPPCNetwork):
     def randomize_weights(self) -> None:
         super().randomize_weights()
 
-    def set_learning_rate(self, lr: float) -> None:
-        """Sets W's learning rate, on every layer."""
-        super().set_learning_rate(lr)
-
-    def set_feedback_rate(self, fl: float) -> None:
-        """Sets Psi's learning rate, on every layer. Independent of W's
-        learning rate."""
-        super().set_feedback_rate(fl)
-
     def train_step(
         self,
         X: npt.NDArray[np.float32],
         Y: npt.NDArray[np.float32],
         inference_steps: int = 1,
     ) -> float:
-        """Full DKP-PC train step: forward-projection init, terminal
-        error, direct feedback alignment update, settling, weight update.
-        All four phases run in C++; this is a single call, unlike
-        SimplePCN/GaussSeidelPCN, which expose a separate
-        train_step_with_projection() -- DKP-PC's phase 0 already includes
-        forward-projection as a required step of the algorithm itself,
-        not an optional add-on.
+        self._require_configured()
 
-        @param inference_steps Defaults to 1, matching the paper's own
-            headline result. See class docstring.
-        """
-        return super().train_step(X.flatten(), Y.flatten(), inference_steps)
+        return super().train_step(
+            X.flatten(),
+            Y.flatten(),
+            inference_steps,
+        )
 
-    def predict(self, X: npt.NDArray[np.float32], inference_steps: int) -> npt.NDArray[np.float32]:
-        return super().predict(X.flatten(), inference_steps)
+    def predict(
+        self,
+        X: npt.NDArray[np.float32],
+        inference_steps: int = 1,
+    ) -> npt.NDArray[np.float32]:
+        self._require_configured()
+
+        return np.asarray(
+            super().predict(
+                X.flatten(),
+                inference_steps,
+            )
+        )
 
     def fit(
         self,
@@ -118,20 +241,31 @@ class DKPPCN(dy.DirectKPPCNetwork):
         Y: npt.NDArray[np.float32],
         epochs: int,
         inference_steps: int = 1,
-        initial_lr: float = 0.01,
+        initial_lr: Optional[float] = None,
         decay_rate: float = 1.0,
         shuffle: bool = True,
     ) -> "DKPPCN":
         """
-        Runs a full multi-epoch training loop with a live rich progress
-        display. Delegates per-batch execution to train_step().
+        Train the network for multiple epochs.
 
-        @param inference_steps Defaults to 1, matching the paper's own
-            headline result -- see class docstring. Every other fit() in
-            this library calls this parameter "steps" with no default;
-            it's named and defaulted differently here deliberately, since
-            for DKP-PC specifically, 1 is not an arbitrary starting guess
-            but the paper's own validated operating point.
+        DKP defaults to one inference step because direct feedback
+        alignment is specifically intended to reduce the amount of
+        iterative settling required.
         """
-        _fit_with_progress(self, X, Y, epochs, inference_steps, initial_lr, decay_rate, shuffle)
+        self._require_configured()
+
+        if initial_lr is None:
+            initial_lr = self._learning_rate
+
+        _fit_with_progress(
+            self,
+            X,
+            Y,
+            epochs,
+            inference_steps,
+            initial_lr, # type: ignore
+            decay_rate,
+            shuffle,
+        )
+
         return self

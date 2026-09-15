@@ -1,87 +1,206 @@
 from ._backend import dy
+from .layer import Layer, Convolution, Activation
 from .utils import _fit_with_progress
 from typing import Optional
 import numpy as np
 import numpy.typing as npt
 
+
 class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
     """
-    A Convolutional Predictive Coding Network built from precision-free,
-    AdamW-capable SimpleConvPCLayers. Mirrors ConvolutionalPCN's
-    shape-inference convenience (in_channels/in_height/in_width can be
-    omitted after the first add_layer() call, inferred from the previous
-    layer's output shape) -- minus precision, which doesn't exist here.
+    Simple convolutional Predictive Coding Network.
+
+    The architecture is declared using Convolution and Activation objects,
+    while optimization and inference parameters are supplied through
+    configure().
     """
-    def __init__(self, batch_size: int) -> None:
-        super().__init__(batch_size)
-        self._last_shape: Optional[tuple[int, int, int]] = None
 
-    def add_layer(
+    def __init__(
         self,
-        out_channels: int,
-        kernel_h: int,
-        kernel_w: int,
-        in_channels: Optional[int] = None,
-        in_height: Optional[int] = None,
-        in_width: Optional[int] = None,
-        stride_h: int = 1,
-        stride_w: int = 1,
-        pad_h: int = 0,
-        pad_w: int = 0,
-        lr: float = 1e-6,
-        ir: float = 0.1,
-        lmbda: float = 1e-4,
-        act: str = "relu",
+        *architecture: Layer | Activation,
+        input_shape: tuple[int, int, int],
+        batch_size: Optional[int] = None,
     ) -> None:
-        shape_args = (in_channels, in_height, in_width)
-        n_given = sum(a is not None for a in shape_args)
+        bsz = dy.auto_batch_size() if batch_size is None else batch_size
+        super().__init__(bsz)
 
-        if n_given == 0:
-            if self._last_shape is None:
-                raise ValueError(
-                    "First add_layer() call must specify in_channels, in_height, and in_width explicitly."
+        self.architecture = architecture
+        self.input_shape = input_shape
+
+        self._learning_rate: Optional[float] = None
+        self._inference_rate: Optional[float] = None
+        self._lambda: Optional[float] = None
+        self._optimizer: Optional[str] = None
+        self._configured = False
+
+        self._validate_architecture()
+
+    def _validate_architecture(self) -> None:
+        if not self.architecture:
+            raise ValueError("Architecture cannot be empty.")
+
+        if not isinstance(self.architecture[0], Convolution):
+            raise ValueError("Architecture must begin with Convolution.")
+
+        previous_was_activation = False
+
+        for layer in self.architecture:
+            if isinstance(layer, Convolution):
+                previous_was_activation = False
+
+            elif isinstance(layer, Activation):
+                if previous_was_activation:
+                    raise ValueError(
+                        "Consecutive activation functions are not allowed."
+                    )
+                previous_was_activation = True
+
+            else:
+                raise TypeError(
+                    f"Unsupported architecture object: {type(layer).__name__}"
                 )
-            in_channels, in_height, in_width = self._last_shape
-        elif n_given != 3:
-            raise ValueError("in_channels/in_height/in_width must be given ALL together or OMITTED all together.")
 
-        super().add_layer(
-            in_channels, out_channels, in_height, in_width,
-            kernel_h, kernel_w, stride_h=stride_h, stride_w=stride_w, pad_h=pad_h, pad_w=pad_w,
-            lr=lr, ir=ir, lmbda=lmbda, activation=act, activation_deriv="d" + act,
-        )
+    def _build_backend(self) -> None:
+        in_channels, in_height, in_width = self.input_shape
 
-        if out_channels > 0:
+        for i, layer in enumerate(self.architecture):
+            if not isinstance(layer, Convolution):
+                continue
+
+            activation = "linear"
+
+            if (
+                i + 1 < len(self.architecture)
+                and isinstance(self.architecture[i + 1], Activation)
+            ):
+                activation = self.architecture[i + 1].to_string()
+
+            super().add_layer(
+                in_channels,
+                layer.out_channels,
+                in_height,
+                in_width,
+                layer.kernel_h,
+                layer.kernel_w,
+                stride_h=layer.stride_h,
+                stride_w=layer.stride_w,
+                pad_h=layer.pad_h,
+                pad_w=layer.pad_w,
+                lr=self._learning_rate,
+                ir=self._inference_rate,
+                lmbda=self._lambda,
+                activation=activation,
+                activation_deriv="d" + activation,
+            )
+
             added = self[-1]
-            self._last_shape = (added.out_channels, added.out_height, added.out_width)
-        else:
-            self._last_shape = None
 
-    def set_optimizer(self, optimizer: str) -> None:
-        """Sets the optimizer: ADAM, ADAMW, or SGD. Call BEFORE compile() --
-        see SimpleConvPCNetwork's C++ docs; buffer sizing depends on this
-        being set before Compile() allocates the shared arena."""
-        super().set_optimizer(optimizer)
+            if layer.out_channels > 0:
+                in_channels = added.out_channels
+                in_height = added.out_height
+                in_width = added.out_width
 
-    def compile(self) -> None:
-        super().compile()
+    def configure(
+        self,
+        learning_rate: float = 1e-6,
+        inference_rate: float = 0.1,
+        lmbda: float = 1e-2,
+        optimizer: str = "SGD",
+    ) -> None:
+        """
+        Configure network hyperparameters and initialize the backend.
+        """
 
-    def randomize_weights(self) -> None:
-        super().randomize_weights()
+        self._learning_rate = learning_rate
+        self._inference_rate = inference_rate
+        self._lambda = lmbda
+        self._optimizer = optimizer
+
+        self._build_backend()
+
+        # The backend requires the optimizer to be selected before compile.
+        self.set_optimizer(optimizer)
+        self.randomize_weights()
+        self.compile()
+
+        self._configured = True
+
+    def _require_configured(self) -> None:
+        if not self._configured:
+            raise RuntimeError(
+                "SimpleConvolutionalPCN must be configured before use. "
+                "Call configure() first."
+            )
 
     def set_learning_rate(self, lr: float) -> None:
+        self._require_configured()
+
         for layer in self.layers:
             layer.set_learning_rate(lr)
 
+        self._learning_rate = lr
+
     def set_inference_rate(self, ir: float) -> None:
+        self._require_configured()
+
         for layer in self.layers:
             layer.set_inference_rate(ir)
 
-    def train_step(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
+        self._inference_rate = ir
+
+    def set_lambda(self, lmbda: float) -> None:
+        self._require_configured()
+
+        for layer in self.layers:
+            layer.set_lambda(lmbda)
+
+        self._lambda = lmbda
+
+    def set_optimizer(self, optimizer: str) -> None:
+        self._require_configured()
+        super().set_optimizer(optimizer)
+        self._optimizer = optimizer
+
+    def train_step(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        steps: int,
+    ) -> float:
+        self._require_configured()
         return super().train_step(X.flatten(), Y.flatten(), steps)
 
-    def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
+    def predict(
+        self,
+        X: npt.NDArray[np.float32],
+        steps: int,
+    ) -> npt.NDArray[np.float32]:
+        self._require_configured()
         return super().predict(X.flatten(), steps)
+
+    def train_step_with_projection(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        steps: int,
+    ) -> float:
+        self._require_configured()
+        return super().train_step_with_projection(
+            X.flatten(),
+            Y.flatten(),
+            steps,
+        )
+
+    def predict_with_projection(
+        self,
+        X: npt.NDArray[np.float32],
+        steps: int,
+    ) -> npt.NDArray[np.float32]:
+        self._require_configured()
+        return super().predict_with_projection(
+            X.flatten(),
+            steps,
+        )
 
     def fit(
         self,
@@ -89,19 +208,26 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         Y: npt.NDArray[np.float32],
         epochs: int,
         steps: int,
-        initial_lr: float = 0.01,
+        initial_lr: Optional[float] = None,
         decay_rate: float = 1.0,
         shuffle: bool = True,
     ) -> "SimpleConvolutionalPCN":
-        """
-        Runs a full multi-epoch training loop with a live rich progress display.
-        Delegates per-batch execution to `train_step()`.
-        """
-        _fit_with_progress(self, X, Y, epochs, steps, initial_lr, decay_rate, shuffle)
+        self._require_configured()
+
+        if initial_lr is None:
+            if self._learning_rate is None:
+                raise RuntimeError("Learning rate has not been configured.")
+            initial_lr = self._learning_rate
+
+        _fit_with_progress(
+            self,
+            X,
+            Y,
+            epochs,
+            steps,
+            initial_lr,
+            decay_rate,
+            shuffle,
+        )
+
         return self
-
-    def train_step_with_projection(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
-        return super().train_step_with_projection(X.flatten(), Y.flatten(), steps)
-
-    def predict_with_projection(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
-        return super().predict_with_projection(X.flatten(), steps)

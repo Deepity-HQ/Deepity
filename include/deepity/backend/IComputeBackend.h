@@ -78,6 +78,52 @@ namespace Deep
         virtual float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
         virtual void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
 
+        // Convolution (im2col-based, ConvPCLayer family)
+
+        /// @brief Rearranges a single (channels, height, width) input
+        /// image into a (channels*kH*kW, outH*outW) column matrix --
+        /// the standard im2col transform. NOT batch-aware: call once
+        /// per batch item, with @p input and @p columns offset to that
+        /// item's slice, matching Deep::Im2Col's own documented
+        /// contract exactly (CPUBackend forwards to it directly).
+        /// Positions outside the input (due to padding) are written as
+        /// zero. @p columns is fully overwritten, not accumulated into.
+        virtual void Im2Col(const float *input,
+                            int channels, int height, int width,
+                            int kernelH, int kernelW,
+                            int strideH, int strideW,
+                            int padH, int padW,
+                            float *columns) noexcept = 0;
+
+        /// @brief The adjoint of Im2Col(): scatters a
+        /// (channels*kH*kW, outH*outW) column-gradient buffer back into
+        /// a (channels, height, width) image. NOT batch-aware, same
+        /// per-item-offset contract as Im2Col(). ACCUMULATES into
+        /// @p outputImage (does not zero it first) -- caller must zero
+        /// the destination if a fresh result is wanted, matching
+        /// Deep::Col2Im's own contract exactly.
+        virtual void Col2Im(const float *columns,
+                            int channels, int height, int width,
+                            int kernelH, int kernelW,
+                            int strideH, int strideW,
+                            int padH, int padW,
+                            float *outputImage) noexcept = 0;
+
+        /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
+        /// into [rows, batchSize, cols] (row-major, batch second) --
+        /// i.e. dst[row][batch][col] = src[batch][row][col] for all
+        /// row/batch/col, with the innermost `cols` dimension kept
+        /// contiguous on both sides. Used by ConvPCLayer-family layers
+        /// to reorganize per-batch im2col columns (and per-batch
+        /// upstream-error columns) into the single flat layout a plain
+        /// (non-batched) GEMM call needs, rather than one GEMM call per
+        /// batch item. Same "port first, optimize" position as
+        /// AddBiasBroadcast/SumRows: a future strided-batched-GEMM path
+        /// could remove the need for this entirely, but this matches
+        /// the existing, verified CPU repacking loops exactly for now.
+        virtual void RepackForBatchedGemm(float *dst, const float *src,
+                                          size_t batchSize, size_t rows, size_t cols) noexcept = 0;
+
         // Optimizer
 
         virtual void IncrementCounter(int *counter) noexcept = 0;

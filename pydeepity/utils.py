@@ -12,34 +12,53 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+
 def _fit_with_progress(
     net,
     X: npt.NDArray[np.float32],
     Y: npt.NDArray[np.float32],
     epochs: int,
     steps: int,
-    initial_lr: float = 0.01,
+    initial_lr: float,
     decay_rate: float = 1.0,
     shuffle: bool = True,
 ) -> None:
     """
-    Shared training-loop implementation used by all PCN classes. 
-    It delegates to the specific class's `train_step()` method.
+    Shared training-loop implementation used by PCN classes.
+
+    Delegates individual batches to the network's train_step() method.
     """
+
     console = Console()
+
     n = len(X)
     bsz = net.batch_size
+
+    if n == 0:
+        raise ValueError("Training data cannot be empty.")
+
+    if n % bsz != 0:
+        raise ValueError(
+            f"Number of samples ({n}) must be divisible by "
+            f"batch_size ({bsz})."
+        )
+
     n_batches = n // bsz
 
     console.print(
-        f"\n[bold cyan]Training[/bold cyan] [dim]|[/dim] {epochs} epochs [dim]|[/dim] "
-        f"{steps} inference steps [dim]|[/dim] {n_batches} batches/epoch (batch_size={bsz})\n"
+        f"\n[bold cyan]Training[/bold cyan] [dim]|[/dim] {epochs} epochs "
+        f"[dim]|[/dim] {steps} inference steps [dim]|[/dim] "
+        f"{n_batches} batches/epoch (batch_size={bsz})\n"
     )
 
     progress = Progress(
         SpinnerColumn(style="cyan"),
         TextColumn("[bold blue]{task.description}"),
-        BarColumn(bar_width=40, style="blue", complete_style="cyan"),
+        BarColumn(
+            bar_width=40,
+            style="blue",
+            complete_style="cyan",
+        ),
         MofNCompleteColumn(),
         TextColumn("[dim]•[/dim]"),
         TimeElapsedColumn(),
@@ -50,8 +69,17 @@ def _fit_with_progress(
     )
 
     with progress:
-        epoch_task = progress.add_task("[bold]Epochs", total=epochs, stats="")
-        batch_task = progress.add_task("  Batches", total=n_batches, stats="")
+        epoch_task = progress.add_task(
+            "[bold]Epochs",
+            total=epochs,
+            stats="",
+        )
+
+        batch_task = progress.add_task(
+            "  Batches",
+            total=n_batches,
+            stats="",
+        )
 
         for epoch in range(epochs):
             current_lr = initial_lr * (decay_rate ** epoch)
@@ -59,31 +87,54 @@ def _fit_with_progress(
 
             if shuffle:
                 indices = np.random.permutation(n)
-                X_shuf, Y_shuf = X[indices], Y[indices]
+                X_shuf = X[indices]
+                Y_shuf = Y[indices]
             else:
-                X_shuf, Y_shuf = X, Y
+                X_shuf = X
+                Y_shuf = Y
 
             epoch_energy = 0.0
-            progress.reset(batch_task, total=n_batches)
+
+            progress.reset(
+                batch_task,
+                total=n_batches,
+            )
 
             for b in range(n_batches):
-                X_batch = X_shuf[b * bsz : (b + 1) * bsz]
-                Y_batch = Y_shuf[b * bsz : (b + 1) * bsz]
+                start = b * bsz
+                end = start + bsz
 
-                energy = net.train_step(X_batch, Y_batch, steps)
+                X_batch = X_shuf[start:end]
+                Y_batch = Y_shuf[start:end]
+
+                energy = net.train_step(
+                    X_batch,
+                    Y_batch,
+                    steps,
+                )
+
                 epoch_energy += energy
                 avg_so_far = epoch_energy / (b + 1)
 
                 progress.update(
                     batch_task,
                     advance=1,
-                    stats=f"lr={current_lr:.5f}  energy={energy:8.2f}  avg={avg_so_far:8.2f}",
+                    stats=(
+                        f"lr={current_lr:.5f}  "
+                        f"energy={energy:8.2f}  "
+                        f"avg={avg_so_far:8.2f}"
+                    ),
                 )
 
             progress.update(
                 epoch_task,
                 advance=1,
-                stats=f"epoch {epoch + 1} avg energy = {epoch_energy / n_batches:.4f}",
+                stats=(
+                    f"epoch {epoch + 1} "
+                    f"avg energy = {epoch_energy / n_batches:.4f}"
+                ),
             )
 
-    console.print("\n[bold green]✓ Training complete.[/bold green]\n")
+    console.print(
+        "\n[bold green]✓ Training complete.[/bold green]\n"
+    )

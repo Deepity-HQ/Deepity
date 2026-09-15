@@ -1,78 +1,257 @@
-from ._backend import dy
-from .utils import _fit_with_progress
 from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
 
+from ._backend import dy
+from .layer import Activation, Convolution, Layer
+from .utils import _fit_with_progress
+
+
 class ConvolutionalPCN(dy.ConvPCNetwork):
     """
-    A Convolutional Predictive Coding Network (PCN) wrapper for the standard precision-weighted Deepity C++ backend.
+    Standard precision-weighted Convolutional Predictive Coding Network.
     """
-    def __init__(self, batch_size: int) -> None:
-        super().__init__(batch_size)
-        self._last_shape: Optional[tuple[int, int, int]] = None
 
-    def add_layer(
+    def __init__(
         self,
-        out_channels: int,
-        kernel_h: int,
-        kernel_w: int,
-        in_channels: Optional[int] = None,
-        in_height: Optional[int] = None,
-        in_width: Optional[int] = None,
-        stride_h: int = 1,
-        stride_w: int = 1,
-        pad_h: int = 0,
-        pad_w: int = 0,
-        lr: float = 1e-6,
-        ir: float = 0.1,
-        pr: float = 0.0,
-        lmbda: float = 1e-4,
-        act: str = "relu",
+        *architecture: Layer,
+        input_shape: tuple[int, int, int],
+        batch_size: int,
     ) -> None:
-        shape_args = (in_channels, in_height, in_width)
-        n_given = sum(a is not None for a in shape_args)
+        self.architecture = architecture
+        self.input_shape = input_shape
+        self.batch_size = batch_size
 
-        if n_given == 0:
-            if self._last_shape is None:
-                raise ValueError("First add_layer() call must specify in_channels, in_height, and in_width explicitly.")
-            in_channels, in_height, in_width = self._last_shape
-        elif n_given != 3:
-            raise ValueError("in_channels/in_height/in_width must be given ALL together or OMITTED all together.")
+        self._learning_rate: Optional[float] = None
+        self._inference_rate: Optional[float] = None
+        self._precision_rate: Optional[float] = None
+        self._lambda: Optional[float] = None
 
-        super().add_layer(
-            in_channels, out_channels, in_height, in_width,
-            kernel_h, kernel_w, stride_h=stride_h, stride_w=stride_w, pad_h=pad_h, pad_w=pad_w,
-            lr=lr, ir=ir, pr=pr, lmbda=lmbda, activation=act, activation_deriv="d" + act,
-        )
+        self._validate_architecture()
 
-        if out_channels > 0:
-            added = self[-1]
-            self._last_shape = (added.out_channels, added.out_height, added.out_width)
-        else:
-            self._last_shape = None
+        super().__init__(batch_size)
 
-    def set_learning_rate(self, lr: float) -> None:
+    def _validate_architecture(self) -> None:
+        if not self.architecture:
+            raise ValueError(
+                "ConvolutionalPCN requires at least one layer."
+            )
+
+        if not isinstance(self.architecture[0], Convolution):
+            raise TypeError(
+                "ConvolutionalPCN architecture must begin with "
+                "a Convolution layer."
+            )
+
+        for layer in self.architecture:
+            if not isinstance(layer, (Convolution, Activation)):
+                raise TypeError(
+                    f"Unsupported architecture element: "
+                    f"{type(layer).__name__}."
+                )
+
+    def _build_backend(self) -> None:
+        in_channels, in_height, in_width = self.input_shape
+
+        for i, layer in enumerate(self.architecture):
+            if not isinstance(layer, Convolution):
+                continue
+
+            activation = "linear"
+
+            if (
+                i + 1 < len(self.architecture)
+                and isinstance(self.architecture[i + 1], Activation)
+            ):
+                activation = self.architecture[i + 1].to_string()
+
+            self.add_layer(
+                out_channels=layer.out_channels,
+                kernel_h=layer.kernel_h,
+                kernel_w=layer.kernel_w,
+                in_channels=in_channels,
+                in_height=in_height,
+                in_width=in_width,
+                stride_h=layer.stride_h,
+                stride_w=layer.stride_w,
+                pad_h=layer.pad_h,
+                pad_w=layer.pad_w,
+                lr=self._learning_rate,
+                ir=self._inference_rate,
+                pr=self._precision_rate,
+                lmbda=self._lambda,
+                act=activation,
+            )
+
+            if layer.out_channels > 0:
+                backend_layer = self[-1]
+
+                in_channels = backend_layer.out_channels
+                in_height = backend_layer.out_height
+                in_width = backend_layer.out_width
+            else:
+                break
+
+    def configure(
+        self,
+        learning_rate: float = 1e-6,
+        inference_rate: float = 0.1,
+        precision_rate: float = 0.0,
+        lmbda: float = 1e-2,
+    ) -> "ConvolutionalPCN":
+        """
+        Configure and build the convolutional network.
+        """
+        self._learning_rate = learning_rate
+        self._inference_rate = inference_rate
+        self._precision_rate = precision_rate
+        self._lambda = lmbda
+
+        self._build_backend()
+
+        self.randomize_weights()
+        self.compile()
+
+        return self
+
+    def _require_configured(self) -> None:
+        if self._learning_rate is None:
+            raise RuntimeError(
+                "ConvolutionalPCN has not been configured. "
+                "Call net.configure(...) before training or prediction."
+            )
+
+    def set_learning_rate(self, learning_rate: float) -> None:
+        self._require_configured()
+
         for layer in self.layers:
-            layer.set_learning_rate(lr)
+            layer.set_learning_rate(learning_rate)
 
-    def clamp_input(self, X: npt.NDArray[np.float32]) -> None:
+        self._learning_rate = learning_rate
+
+    def set_inference_rate(self, inference_rate: float) -> None:
+        self._require_configured()
+
+        for layer in self.layers:
+            layer.set_inference_rate(inference_rate)
+
+        self._inference_rate = inference_rate
+
+    def set_precision_rate(self, precision_rate: float) -> None:
+        self._require_configured()
+
+        for layer in self.layers:
+            layer.set_precision_rate(precision_rate)
+
+        self._precision_rate = precision_rate
+
+    def set_lambda(self, lmbda: float) -> None:
+        self._require_configured()
+
+        for layer in self.layers:
+            layer.set_lambda(lmbda)
+
+        self._lambda = lmbda
+
+    def compile(self) -> None:
+        super().compile()
+
+    def randomize_weights(self) -> None:
+        super().randomize_weights()
+
+    def clamp_input(
+        self,
+        X: npt.NDArray[np.float32],
+    ) -> None:
         super().clamp_input(X.flatten())
-        
+
     def project_forward(self) -> None:
         super().project_forward()
 
-    def train_step(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
-        return super().train_step(X.flatten(), Y.flatten(), steps)
-
-    def train_step_with_projection(self, X: npt.NDArray[np.float32], Y: npt.NDArray[np.float32], steps: int) -> float:
-        return super().train_step_with_projection(X.flatten(), Y.flatten(), steps)
-
-    def predict(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
-        return super().predict(X.flatten(), steps)
-
-    def predict_with_projection(self, X: npt.NDArray[np.float32], steps: int) -> npt.NDArray[np.float32]:
-        return super().predict_with_projection(X.flatten(), steps)
-
     def update_precision(self) -> None:
         super().update_precision()
+
+    def train_step(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        steps: int,
+    ) -> float:
+        self._require_configured()
+
+        return super().train_step(
+            X.flatten(),
+            Y.flatten(),
+            steps,
+        )
+
+    def train_step_with_projection(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        steps: int,
+    ) -> float:
+        self._require_configured()
+
+        return super().train_step_with_projection(
+            X.flatten(),
+            Y.flatten(),
+            steps,
+        )
+
+    def predict(
+        self,
+        X: npt.NDArray[np.float32],
+        steps: int,
+    ) -> npt.NDArray[np.float32]:
+        self._require_configured()
+
+        return np.asarray(
+            super().predict(
+                X.flatten(),
+                steps,
+            )
+        )
+
+    def predict_with_projection(
+        self,
+        X: npt.NDArray[np.float32],
+        steps: int,
+    ) -> npt.NDArray[np.float32]:
+        self._require_configured()
+
+        return np.asarray(
+            super().predict_with_projection(
+                X.flatten(),
+                steps,
+            )
+        )
+
+    def fit(
+        self,
+        X: npt.NDArray[np.float32],
+        Y: npt.NDArray[np.float32],
+        epochs: int,
+        steps: int,
+        initial_lr: Optional[float] = None,
+        decay_rate: float = 1.0,
+        shuffle: bool = True,
+    ) -> "ConvolutionalPCN":
+        self._require_configured()
+
+        if initial_lr is None:
+            initial_lr = self._learning_rate
+
+        _fit_with_progress(
+            self,
+            X,
+            Y,
+            epochs,
+            steps,
+            initial_lr,
+            decay_rate,
+            shuffle,
+        )
+
+        return self
