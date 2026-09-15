@@ -136,5 +136,17 @@ namespace Deep
                                float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
 
         virtual DeviceType GetDeviceType() const noexcept = 0;
+
+        virtual void MultiplyInto(float *dst, const float *a, const float *b, size_t n) noexcept = 0;
+        virtual void Fill(float *buf, size_t n, float value) noexcept = 0;
+        /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for
+        /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast
+        /// across spatial positions -- the transpose relationship to
+        /// AddBiasBroadcast (which broadcasts a per-COLUMN bias across ROWS,
+        /// the dense-layer convention). NOT batch-aware: matches Im2Col/
+        /// Col2Im's contract exactly -- call once per batch item, with @p buf
+        /// offset to that item's slice.
+        virtual void AddBiasPerChannel(float *buf, const float *bias,
+                                       size_t channels, size_t spatialSize) noexcept = 0;
     };
 }

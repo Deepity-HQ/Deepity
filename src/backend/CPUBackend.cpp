@@ -3,6 +3,7 @@
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
+#include <deepity/utils/Im2Col.h>
 
 #ifdef DEEPITY_USE_MKL
 #include <mkl_cblas.h>
@@ -219,51 +220,84 @@ namespace Deep
         }
     }
 
-void CPUBackend::Im2Col(const float *input,
-                        int channels, int height, int width,
-                        int kernelH, int kernelW,
-                        int strideH, int strideW,
-                        int padH, int padW,
-                        float *columns) noexcept
-{
-    Deep::Im2Col(input, channels, height, width,
-                kernelH, kernelW, strideH, strideW, padH, padW,
-                columns);
-}
+    void CPUBackend::Im2Col(const float *input,
+                            int channels, int height, int width,
+                            int kernelH, int kernelW,
+                            int strideH, int strideW,
+                            int padH, int padW,
+                            float *columns) noexcept
+    {
+        Deep::Im2Col(input, channels, height, width,
+                     kernelH, kernelW, strideH, strideW, padH, padW,
+                     columns);
+    }
 
-void CPUBackend::Col2Im(const float *columns,
-                        int channels, int height, int width,
-                        int kernelH, int kernelW,
-                        int strideH, int strideW,
-                        int padH, int padW,
-                        float *outputImage) noexcept
-{
-    Deep::Col2Im(columns, channels, height, width,
-                kernelH, kernelW, strideH, strideW, padH, padW,
-                outputImage);
-}
+    void CPUBackend::Col2Im(const float *columns,
+                            int channels, int height, int width,
+                            int kernelH, int kernelW,
+                            int strideH, int strideW,
+                            int padH, int padW,
+                            float *outputImage) noexcept
+    {
+        Deep::Col2Im(columns, channels, height, width,
+                     kernelH, kernelW, strideH, strideW, padH, padW,
+                     outputImage);
+    }
 
-void CPUBackend::RepackForBatchedGemm(float *dst, const float *src,
-                                      size_t batchSize, size_t rows, size_t cols) noexcept
-{
-    // dst[row][batch][:] = src[batch][row][:] -- matches
-    // SimpleConvPCLayer::UpdateWeights()'s colsRepacked/lgRepacked loops
-    // exactly (same index arithmetic, same collapse(2) parallelization).
-    const int maxRows = static_cast<int>(rows);
-    const int maxBatch = static_cast<int>(batchSize);
+    void CPUBackend::RepackForBatchedGemm(float *dst, const float *src,
+                                          size_t batchSize, size_t rows, size_t cols) noexcept
+    {
+        // dst[row][batch][:] = src[batch][row][:] -- matches
+        // SimpleConvPCLayer::UpdateWeights()'s colsRepacked/lgRepacked loops
+        // exactly (same index arithmetic, same collapse(2) parallelization).
+        const int maxRows = static_cast<int>(rows);
+        const int maxBatch = static_cast<int>(batchSize);
 
 #pragma omp parallel for schedule(static) collapse(2)
-    for (int row = 0; row < maxRows; ++row)
-    {
-        for (int batch = 0; batch < maxBatch; ++batch)
+        for (int row = 0; row < maxRows; ++row)
         {
-            size_t u_row = static_cast<size_t>(row);
-            size_t u_batch = static_cast<size_t>(batch);
+            for (int batch = 0; batch < maxBatch; ++batch)
+            {
+                size_t u_row = static_cast<size_t>(row);
+                size_t u_batch = static_cast<size_t>(batch);
 
-            const float *s = src + u_batch * rows * cols + u_row * cols;
-            float *d = dst + u_row * batchSize * cols + u_batch * cols;
-            std::memcpy(d, s, cols * sizeof(float));
+                const float *s = src + u_batch * rows * cols + u_row * cols;
+                float *d = dst + u_row * batchSize * cols + u_batch * cols;
+                std::memcpy(d, s, cols * sizeof(float));
+            }
         }
     }
-}
+
+    void CPUBackend::MultiplyInto(float *dst, const float *a, const float *b, size_t n) noexcept
+    {
+        const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
+
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t i = 0; i < maxN; ++i)
+            dst[i] = a[i] * b[i];
+    }
+
+    void CPUBackend::Fill(float *buf, size_t n, float value) noexcept
+    {
+        const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
+
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+        for (ptrdiff_t i = 0; i < maxN; ++i)
+            buf[i] = value;
+    }
+
+    void CPUBackend::AddBiasPerChannel(float *buf, const float *bias,
+                                       size_t channels, size_t spatialSize) noexcept
+    {
+        const int maxC = static_cast<int>(channels);
+
+#pragma omp parallel for schedule(static) if (channels * spatialSize > 65536 && !omp_in_parallel())
+        for (int c = 0; c < maxC; ++c)
+        {
+            float biasVal = bias[c];
+            float *row = buf + (size_t)c * spatialSize;
+            for (size_t s = 0; s < spatialSize; ++s)
+                row[s] += biasVal;
+        }
+    }
 }

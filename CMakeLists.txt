@@ -328,6 +328,13 @@ set_target_properties(ActivationBenchmark PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
+add_executable(RepackForBatchedGemmVerify tests/tRepackForBatchedGemmVerify.cpp)
+target_link_libraries(RepackForBatchedGemmVerify PRIVATE Deepity)
+set_target_properties(RepackForBatchedGemmVerify PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
+add_test(NAME RepackForBatchedGemmVerify COMMAND RepackForBatchedGemmVerify)
 add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 
 # --- Compiler flags -------------------------------------------------

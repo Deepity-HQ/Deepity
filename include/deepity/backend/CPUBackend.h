@@ -78,5 +78,10 @@ namespace Deep
                        float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
 
         DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_CPU; };
+
+        void MultiplyInto(float *dst, const float *a, const float *b, size_t n) noexcept override;
+        void Fill(float *buf, size_t n, float value) noexcept override;
+        void AddBiasPerChannel(float *buf, const float *bias,
+                               size_t channels, size_t spatialSize) noexcept override;
     };
 }
