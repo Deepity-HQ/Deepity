@@ -63,11 +63,33 @@ namespace Deep
 
         DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_GPU; }
 
+        void MultiplyInto(float *dst, const float *a, const float *b, size_t n) noexcept override;
+        void Fill(float *buf, size_t n, float value) noexcept override;
+
+        void Im2Col(const float *input,
+                    int channels, int height, int width,
+                    int kernelH, int kernelW,
+                    int strideH, int strideW,
+                    int padH, int padW,
+                    float *columns) noexcept override;
+        void Col2Im(const float *columns,
+                    int channels, int height, int width,
+                    int kernelH, int kernelW,
+                    int strideH, int strideW,
+                    int padH, int padW,
+                    float *outputImage) noexcept override;
+        void RepackForBatchedGemm(float *dst, const float *src,
+                                  size_t batchSize, size_t rows, size_t cols) noexcept override;
+        void AddBiasPerChannel(float *buf, const float *bias,
+                               size_t channels, size_t spatialSize) noexcept override;
+
     private:
+#ifdef DEEPITY_USE_CUDA
         cublasHandle_t handle;
         cudaStream_t stream;
         cudaGraph_t graph = nullptr;
         cudaGraphExec_t graphExec = nullptr;
+#endif
         bool hasGraph = false;
         void *workspace = nullptr;
         float *onesVector = nullptr;

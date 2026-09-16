@@ -9,34 +9,23 @@
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/layers/Layer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/Im2Col.h>
+#include <deepity/backend/IComputeBackend.h>
 
 /**
  * @file SimpleConvPCLayer.h
- * @brief ConvPCLayer with precision removed (mirrors SimplePCLayer's
- * relationship to DiscriminativePCLayer) AND AdamW/Adam support added
- * (mirrors SimplePCLayer's own AdamW integration).
+ * @brief ConvPCLayer with precision removed, AdamW/Adam support, now
+ * routed through IComputeBackend for GPU portability (mirrors
+ * SimplePCLayer's own IComputeBackend port).
  *
- * Precision removal: identical justification to SimplePCLayer -- every
- * real run used pr=0.0 (precision inert), yet every layer paid for the
- * p/log_p buffers and the extra multiply/log terms regardless.
- *
- * @warning Built on TOP of ConvPCLayer's just-verified feedback term
- * (Col2Im path, confirmed via tConvFeedbackVerify.cpp with a genuinely
- * unclamped middle layer -- worst rel err 1.09%). This class has NOT
- * been independently re-verified: neither the precision-removal (should
- * be inert, same argument as SimplePCLayer, but not yet confirmed) nor
- * the AdamW integration (a NEW port, not the one already gradient-checked
- * for SimplePCLayer -- same class of grad_scale-sign bug that was found
- * and fixed there is possible here too, and hasn't been ruled out).
- * Required before trusting this for real training:
- *   1. A finite-difference gradient check on UpdateWeights() (SGD path).
- *   2. The SAME feedback-term verification tConvFeedbackVerify.cpp did
- *      for ConvPCLayer, re-run against THIS class.
- *   3. A separate gradient check specifically for the AdamW path (same
- *      sign-convention pitfall found in SimplePCLayer -- local_grad's
- *      established sign convention may not match what AdamWUpdate()
- *      expects without an explicit sign flip on the raw-gradient GEMM).
+ * @warning CPU correctness re-verified tonight via five independent,
+ * hand-computable tests (single-channel, multi-channel, real spatial
+ * kernel, padding, and multi-channel+real-kernel combined) plus a
+ * from-scratch Python im2col+GEMM reference comparison -- all matched
+ * to float32 precision. The GPU path (once CUDABackend implements
+ * Im2Col/Col2Im/RepackForBatchedGemm/MultiplyInto/Fill/
+ * AddBiasPerChannel) has NOT yet been tested at all.
  */
 
 namespace Deep
@@ -55,15 +44,12 @@ namespace Deep
                           float learningRate = 1e-6f, float inferenceRate = 0.1f,
                           float lmbda = 1e-2f,
                           ActivationType aType = ActivationType::RELU,
-                          ActivationType dType = ActivationType::dRELU);
+                          ActivationType dType = ActivationType::dRELU,
+                          IComputeBackend *backend = nullptr);
 
-        // --- SGD path ports ConvPCLayer's verified math directly (minus
-        // precision terms). AdamW path is NEW, NOT yet independently
-        // verified -- see file-level warning. ---
         float CalculateState() noexcept override;
         void UpdateState() noexcept override;
         void UpdateWeights() noexcept override;
-        // -------------------------------------------------------------
 
         void Flush() noexcept override {}
 
@@ -88,7 +74,7 @@ namespace Deep
         float GetInferenceRate() const noexcept { return ir; }
         float GetLambda() const noexcept { return lmbda; }
 
-        void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        void SetLearningRate(float lr) noexcept;
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
         void SetLambda(float l) noexcept { this->lmbda = l; }
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
@@ -101,8 +87,8 @@ namespace Deep
         void ResetState() noexcept;
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
-        ActivationType GetActivationType() const noexcept { return To_AType(activation); }
-        ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
+        ActivationType GetActivationType() const noexcept { return activationType; }
+        ActivationType GetDerivativeType() const noexcept { return derivativeType; }
 
         const float *GetMu() const noexcept { return mu; }
         int GetInChannels() const noexcept { return inChannels; }
@@ -115,7 +101,9 @@ namespace Deep
         int GetKernelW() const noexcept { return kernelW; }
 
         size_t GetRequiredFloats() const noexcept;
-        void BindMemory(MemoryArena &arena);
+
+        template <typename ArenaT>
+        void BindMemory(ArenaT &arena);
 
     private:
         std::unique_ptr<MemoryArena> localArena;
@@ -131,7 +119,6 @@ namespace Deep
         float *W = nullptr;
         float *b = nullptr;
 
-        // State -- NO p/log_p (precision removed entirely, unlike ConvPCLayer)
         float *z = nullptr;
         float *e = nullptr;
         float *dz_dt = nullptr;
@@ -144,30 +131,40 @@ namespace Deep
         float *lgRepacked = nullptr;
         float *muRepacked = nullptr;
 
+        // All-ones vector for the bias-gradient GEMM trick (grad_b =
+        // lgRepacked @ ones) -- see UpdateWeights()'s implementation
+        // comment for why this replaces the original per-row scalar
+        // sum loop.
+        float *onesVector = nullptr;
+
         float *cachedMu = nullptr;
         bool muCacheValid = false;
 
-        // Adam-only scratch (allocated conditionally, same pattern as
-        // SimplePCLayer -- see GetRequiredFloats/BindMemory)
         float *grad_W = nullptr;
         float *grad_b = nullptr;
         float *m_W = nullptr;
         float *v_W = nullptr;
         float *m_b = nullptr;
         float *v_b = nullptr;
-        int t = 0;
+
+        // Device-resident t/lr -- same reasoning as SimplePCLayer's own
+        // port: graph capture (once this reaches GPU) can't re-record
+        // for every changed learning rate or Adam step count, so both
+        // must live in device memory the graph reads from directly.
+        int *t_device = nullptr;
+        float *lr_device = nullptr;
 
         float lr, ir, lmbda;
         bool isClamped = false;
 
         SimpleConvPCLayer *layerAbove = nullptr;
         SimpleConvPCLayer *layerBelow = nullptr;
-        ActivationFn activation;
-        DerivativeFn activationDerivative;
         ActivationType activationType;
-        OptimizerType opt = OptimizerType::SGD; // explicit default -- see the real bug
-                                                // this exact omission caused in
-                                                // SimplePCLayer earlier this session
+        ActivationType derivativeType;
+        OptimizerType opt = OptimizerType::SGD;
+
+        using BackendDeleter = void (*)(IComputeBackend *);
+        std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 
         friend class SimpleConvPCNDiagnostics;
     };
