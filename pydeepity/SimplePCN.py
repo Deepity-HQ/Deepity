@@ -48,9 +48,6 @@ class SimplePCN(dy.SimplePCNetwork):
 
         self._validate_architecture()
 
-        # The backend must currently be initialized during construction.
-        # Keep this here until the C++/pybind11 lifecycle is changed to allow
-        # deferred initialization from configure().
         super().__init__(self.batch_size, self.device)
 
     def _validate_architecture(self) -> None:
@@ -197,7 +194,7 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def randomize_weights(self, dist: str = "") -> None:
         self._require_configured()
-        super().randomize_weights(dist)
+        super().randomize_weights()
 
     def train_step(
         self,
