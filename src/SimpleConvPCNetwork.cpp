@@ -1,8 +1,14 @@
 #include <deepity/networks/SimpleConvPCNetwork.h>
+#include <deepity/backend/Backend.h>
+
 
 namespace Deep
 {
-    SimpleConvPCNetwork::SimpleConvPCNetwork(int batchSize) noexcept : batchSize(batchSize) {}
+    SimpleConvPCNetwork::SimpleConvPCNetwork(int batchSize, DeviceType device) noexcept
+        : device(device), batchSize(batchSize)
+    {
+        backend = CreateBackend(device);
+    }
 
     void SimpleConvPCNetwork::AddLayer(int inChannels, int outChannels,
                                        int inHeight, int inWidth,
@@ -15,7 +21,7 @@ namespace Deep
         auto l = std::make_unique<SimpleConvPCLayer>(
             inChannels, outChannels, inHeight, inWidth,
             kernelH, kernelW, strideH, strideW, padH, padW,
-            batchSize, lr, ir, lmbda, aType, dType);
+            batchSize, lr, ir, lmbda, aType, dType, backend.get());
 
         if (!layers.empty())
         {
@@ -44,9 +50,21 @@ namespace Deep
         for (auto &l : layers)
             total += l->GetRequiredFloats();
 
-        arena = std::make_unique<MemoryArena>(total);
-        for (auto &l : layers)
-            l->BindMemory(*arena);
+        if (device == DeviceType::DEVICE_CPU)
+        {
+            cpuArena = std::make_unique<MemoryArena>(total);
+            for (auto &l : layers)
+                l->BindMemory(*cpuArena);
+        }
+#if defined(DEEPITY_USE_CUDA)
+        else
+        {
+            backend->PrepareForBatchSize(batchSize);
+            gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total);
+            for (auto &l : layers)
+                l->BindMemory(*gpuArena);
+        }
+#endif
     }
 
     void SimpleConvPCNetwork::RandomizeWeights(std::mt19937 &rng) noexcept
@@ -117,10 +135,16 @@ namespace Deep
         }
 
         SimpleConvPCLayer *terminal = GetTerminalLayer();
-        float *beliefs = terminal->GetBeliefs();
+        const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        // Was: std::vector<float>(beliefs, beliefs + count) -- the
+        // iterator-range constructor dereferences every element
+        // directly, wrong if beliefs is a device pointer. Allocate the
+        // host-side result first, then copy it out through the backend.
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 
     void SimpleConvPCNetwork::ProjectForward() noexcept
@@ -128,10 +152,23 @@ namespace Deep
         for (size_t i = 0; i + 1 < layers.size(); ++i)
         {
             layers[i]->ComputeMuOnly();
+
+            // Skip a layer that's already clamped -- overwriting its real
+            // target with a forward-projected guess is the exact bug
+            // SimplePCNetwork/DirectKPPCNetwork's own ProjectForward()
+            // had, fixed here before it's ever exercised.
+            if (layers[i + 1]->IsClamped())
+                continue;
+
             const float *mu = layers[i]->GetMu();
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
-            std::memcpy(nextZ, mu, n * sizeof(float));
+
+            // Was: std::memcpy(nextZ, mu, n * sizeof(float)) -- wrong if
+            // mu/nextZ are device pointers. backend->Copy() is
+            // device-to-device, matching every other network's own fix
+            // for the identical bug.
+            backend->Copy(nextZ, mu, n);
         }
     }
 
@@ -171,6 +208,8 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 }

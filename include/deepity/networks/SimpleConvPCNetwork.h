@@ -5,25 +5,24 @@
 #include <random>
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file SimpleConvPCNetwork.h
- * @brief Convolutional counterpart to SimplePCNetwork -- same public
- * interface shape as ConvPCNetwork (AddLayer/Compile/CalculateState/
- * UpdateState/UpdateWeights/TrainStep/Predict), wired to SimpleConvPCLayer
- * instead, with AdamW/Adam support via SetOptimizer().
+ * @brief Convolutional counterpart to SimplePCNetwork, now device-aware
+ * (matches DirectKPPCNetwork's own port earlier tonight: DeviceType
+ * constructor parameter, backend member, cpuArena/gpuArena split).
  *
- * Unlike using SimpleConvPCLayer standalone (today's verification tests
- * had to manually rebind memory after SetOptimizer(), since the
- * constructor already runs BindMemory() with whatever opt was at
- * construction time), THIS class fixes that gap properly: SetOptimizer()
- * is safe to call any time before Compile(), and Compile() is what
- * actually allocates memory (via a shared arena across all layers),
- * mirroring SimplePCNetwork's established, correct flow.
- *
- * AddLayer's spatial dimensions (inHeight/inWidth) are NOT auto-inferred
- * from the previous layer's output shape -- pass them explicitly for each
- * layer, matching ConvPCNetwork's existing convention.
+ * Two real bugs fixed during this port, same class found and fixed in
+ * SimplePCNetwork/DirectKPPCNetwork: ProjectForward() used std::memcpy
+ * directly (wrong once beliefs/mu are device pointers) and had no
+ * isClamped guard (would overwrite an already-clamped terminal layer's
+ * z with a stale forward-projected value); Predict()/
+ * PredictWithProjection() used the std::vector iterator-range
+ * constructor directly on `beliefs` (dereferences immediately, wrong
+ * for device memory).
  */
 
 namespace Deep
@@ -33,7 +32,7 @@ namespace Deep
     class SimpleConvPCNetwork
     {
     public:
-        explicit SimpleConvPCNetwork(int batchSize) noexcept;
+        explicit SimpleConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
 
         SimpleConvPCNetwork(const SimpleConvPCNetwork &) = delete;
         SimpleConvPCNetwork &operator=(const SimpleConvPCNetwork &) = delete;
@@ -84,8 +83,6 @@ namespace Deep
 
         /// @brief Full train step: clamp input+target, settle for
         /// inferenceSteps, update weights once, return the final energy.
-        /// Mirrors ConvPCNetwork::TrainStep()/DiscriminativePCNetwork's
-        /// TrainStep() exactly.
         float TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
 
         /// @brief Clamps input only, settles, and returns the terminal
@@ -98,7 +95,12 @@ namespace Deep
 
     private:
         std::vector<std::unique_ptr<SimpleConvPCLayer>> layers;
-        std::unique_ptr<MemoryArena> arena;
+        std::unique_ptr<IComputeBackend> backend;
+        DeviceType device;
+        std::unique_ptr<MemoryArena> cpuArena;
+#if defined(DEEPITY_USE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
         int batchSize;
         OptimizerType pendingOpt = OptimizerType::SGD;
         friend class PCNDiagnostics;

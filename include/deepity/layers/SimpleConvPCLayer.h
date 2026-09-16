@@ -78,6 +78,7 @@ namespace Deep
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
         void SetLambda(float l) noexcept { this->lmbda = l; }
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
+        bool IsClamped() const noexcept { return isClamped; }
 
         void SetLayerAbove(SimpleConvPCLayer *above) noexcept { layerAbove = above; }
         void SetLayerBelow(SimpleConvPCLayer *below) noexcept { layerBelow = below; }

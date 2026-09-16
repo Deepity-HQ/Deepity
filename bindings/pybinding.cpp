@@ -618,7 +618,13 @@ return CopyToNewArray(out_beliefs.data(), {out_beliefs.size()}); }, nb::arg("x")
         .def("project_forward", &Deep::ConvPCNetwork::ProjectForward);
 
     nb::class_<Deep::SimpleConvPCNetwork>(m, "SimpleConvPCNetwork", "Convolutional Predictive Coding Network built from SimpleConvPCLayers (precision-free, AdamW-capable).")
-        .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
+        .def("__init__", [](Deep::SimpleConvPCNetwork *self, int batch_size, const std::string &device)
+     {
+    Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+        ? Deep::DeviceType::DEVICE_GPU
+        : Deep::DeviceType::DEVICE_CPU;
+    new (self) Deep::SimpleConvPCNetwork(batch_size, dt); },
+     nb::arg("batch_size"), nb::arg("device") = "cpu", "Construct a network with a fixed batch size and device (\"cpu\" or \"gpu\").")
         .def("add_layer", [](Deep::SimpleConvPCNetwork &self, int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, float lr, float ir, float lmbda, const std::string &activation, const std::string &activation_deriv)
              { self.AddLayer(in_channels, out_channels, in_height, in_width, kernel_h, kernel_w, stride_h, stride_w, pad_h, pad_w, lr, ir, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }, nb::arg("in_channels"), nb::arg("out_channels"), nb::arg("in_height"), nb::arg("in_width"), nb::arg("kernel_h"), nb::arg("kernel_w"), nb::arg("stride_h") = 1, nb::arg("stride_w") = 1, nb::arg("pad_h") = 0, nb::arg("pad_w") = 0, nb::arg("lr") = 1e-6f, nb::arg("ir") = 0.1f, nb::arg("lmbda") = 1e-2f, nb::arg("activation") = "relu", nb::arg("activation_deriv") = "drelu")
         .def("set_optimizer", [](Deep::SimpleConvPCNetwork &self, const std::string &opt)

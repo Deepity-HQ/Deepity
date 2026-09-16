@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
+#include <deepity/utils/Im2Col.h>
 
 #ifdef DEEPITY_USE_CUDA
 #include <curand_kernel.h>
