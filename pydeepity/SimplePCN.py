@@ -34,7 +34,17 @@ class SimplePCN(dy.SimplePCNetwork):
     ) -> None:
         self.architecture = architecture
         self.device = device
-        self.batch_size = (
+        # NOTE: batch_size is NOT stored as a plain attribute here --
+        # dy.SimplePCNetwork (the C++ base class) exposes `batch_size` as
+        # a READ-ONLY property (def_prop_ro, no setter at all). Assigning
+        # `self.batch_size = ...` fails unconditionally with
+        # "property of 'SimplePCN' object has no setter", regardless of
+        # whether it happens before or after super().__init__() -- a
+        # read-only property simply has no setter to call, ever. Use a
+        # local variable instead; self.batch_size becomes valid and
+        # correct automatically once super().__init__() actually
+        # constructs the underlying C++ object.
+        resolved_batch_size = (
             dy.auto_batch_size()
             if batch_size is None
             else batch_size
@@ -48,7 +58,10 @@ class SimplePCN(dy.SimplePCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(self.batch_size, self.device)
+        # The backend must currently be initialized during construction.
+        # Keep this here until the C++/pybind11 lifecycle is changed to allow
+        # deferred initialization from configure().
+        super().__init__(resolved_batch_size, self.device)
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""
@@ -194,6 +207,11 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def randomize_weights(self, dist: str = "") -> None:
         self._require_configured()
+        # The underlying C++ binding takes no arguments -- it always uses
+        # the same, fixed randomization internally. `dist` is accepted
+        # here for forward-API-compatibility but currently has no effect;
+        # passing it through to super().randomize_weights() would fail at
+        # runtime (nanobind TypeError: expected 0 arguments, got 1).
         super().randomize_weights()
 
     def train_step(
@@ -211,7 +229,7 @@ class SimplePCN(dy.SimplePCNetwork):
         total_energy = 0.0
 
         for _ in range(steps):
-            total_energy += self.calculate_state()
+            total_energy += self.calculate_state(True)
             self.update_state()
 
         self.update_weights()
@@ -230,7 +248,7 @@ class SimplePCN(dy.SimplePCNetwork):
         self.clamp_input(X.flatten())
 
         for _ in range(steps):
-            self.calculate_state()
+            self.calculate_state(False)
             self.update_state()
 
         return np.array(self[-1].beliefs)
@@ -422,7 +440,7 @@ class SimplePCN(dy.SimplePCNetwork):
                     energy = 0.0
 
                     for _ in range(steps):
-                        energy += self.calculate_state()
+                        energy += self.calculate_state(True)
                         self.update_state()
 
                     self.update_weights()
