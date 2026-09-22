@@ -1,18 +1,3 @@
-"""
-Short, dedicated workload for PGO profile collection -- run by
-deepity_build/cli.py's --pgo pass, not meant to be invoked directly for
-training. Deliberately NOT the full mnist.py run: PGO only needs to see
-which code paths are hot (branch outcomes, call frequency), and the
-settling loop's structure repeats identically on batch 1 and batch 234,
-so a few dozen batches already captures the same information a full
-15-epoch run would. This cost is paid on every --pgo build, so keeping
-it short matters.
-
-Matches the real network configuration from mnist.py exactly (same
-architecture, same activations) so the instrumented binary actually
-exercises the same code paths real training does -- a mismatched
-architecture would profile the wrong thing.
-"""
 import numpy as np
 import os
 from pydeepity import SimplePCN

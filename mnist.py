@@ -2,7 +2,9 @@ import numpy as np
 import os
 import sys
 from pydeepity import DKPPCN
+from pydeepity.layer import Linear, Sigmoid
 from time import perf_counter
+
 
 def load_full_mnist():
     import gzip
@@ -39,6 +41,7 @@ def load_full_mnist():
     Y_train[np.arange(y_train_labels.shape[0]), y_train_labels] = 1.0 - eps
     return X_train, Y_train, X_test, y_test_labels
 
+
 def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 50
@@ -47,23 +50,29 @@ def main() -> None:
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
     BATCH_SIZE = 250
-    TERMINAL_SIZE = 10
     LR = 0.00373
     IR = 0.15
     FL = 1e-3
-    LMBDA = 1e-4  # The crucial Kolen-Pollack alignment decay
+    LMBDA = 1e-4
     DECAY_RATE = 0.94
 
-    print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = DKPPCN(batch_size=BATCH_SIZE, device="gpu")
-    net.add_layer(784, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="linear")
-#     net.add_layer(512, 512, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")
-    net.add_layer(512, TERMINAL_SIZE, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="sigmoid")
-    net.add_layer(TERMINAL_SIZE, 0, TERMINAL_SIZE, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, act="linear")
-    net.set_optimizer("ADAM")
-    net.set_psi_optimizer("ADAM")
-    net.compile()
-    net.randomize_weights()
+    print(f"\nBuilding network (784->512->10), seed={SEED}...")
+
+    net = DKPPCN(
+        Linear(784, 512),
+        Linear(512, 10),
+        Sigmoid(),
+        batch_size=BATCH_SIZE,
+        device="gpu",
+    )
+    net.configure(
+        learning_rate=LR,
+        inference_rate=IR,
+        feedback_rate=FL,
+        lmbda=LMBDA,
+        optimizer="ADAM",
+        psi_optimizer="ADAM",
+    )
 
     print(f"\n*** FULL DKP-PC RUN ***")
     print(f"Training DKPPCN: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, ")
@@ -72,12 +81,11 @@ def main() -> None:
     rng = np.random.default_rng(SEED)
     n_batches = len(X_train) // BATCH_SIZE
     start_time = perf_counter()
-    epoch_accs = []
 
     for epoch in range(EPOCHS):
         current_lr = LR * (DECAY_RATE ** epoch)
         net.set_learning_rate(current_lr)
-        
+
         current_fl = FL * (DECAY_RATE ** epoch)
         net.set_feedback_rate(current_fl)
 
@@ -107,7 +115,6 @@ def main() -> None:
             total += BATCH_SIZE
 
         epoch_acc = 100.0 * correct / total
-        epoch_accs.append(epoch_acc)
         avg_energy = epoch_energy / n_batches
         elapsed = perf_counter() - start_time
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | Avg energy: {avg_energy:.4f}")

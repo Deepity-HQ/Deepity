@@ -1,0 +1,7 @@
+=== Job started on a0268.ten.osc.edu at Tue Sep 22 11:56:00 AM EDT 2026 ===
+=== GPU visible to this job: ===
+name, memory.total [MiB]
+NVIDIA A100-PCIE-40GB, 40960 MiB
+Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...
+
+Building network (784->512->10), seed=7...

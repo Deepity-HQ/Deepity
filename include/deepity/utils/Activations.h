@@ -6,6 +6,7 @@
 #include <sleef.h>
 #include <omp.h>
 #include <algorithm>
+#include <deepity/utils/ActivationType.h>
 
 #if defined(_MSC_VER)
 #define RESTRICT __restrict
@@ -45,23 +46,6 @@ namespace Deep
     // (cblas_scopy + DerivativeFn) callers currently need when they can't
     // afford to mutate src in place -- src stays untouched throughout.
     using DerivativeFn2 = void (*)(float *RESTRICT, const float *RESTRICT, size_t);
-
-    enum class ActivationType : uint8_t
-    {
-        RELU,
-        dRELU,
-        GELU,
-        dGELU,
-        SIGMOID,
-        dSIGMOID,
-        eSIGMOID,
-        d_eSIGMOID,
-        TANH,
-        dTANH,
-        LINEAR,
-        dLINEAR,
-        NONE
-    };
 
     static inline void relu(float *, size_t) noexcept;
     static inline void gelu(float *, size_t) noexcept;

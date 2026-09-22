@@ -95,10 +95,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
             else:
                 activation = "linear"
 
-            # 1. Define the derivative string
             activation_deriv = "d" + activation
 
-            # 2. Pass them to the backend using the exact kwarg names it expects
             super().add_layer(
                 layer.in_n,
                 layer.out_n,
@@ -107,9 +105,21 @@ class DKPPCN(dy.DirectKPPCNetwork):
                 ir=self._inference_rate,
                 fl=self._feedback_rate,
                 lmbda=self._lambda,
-                activation=activation,             # Changed from act=
-                activation_deriv=activation_deriv, # Added derivative
+                activation=activation,
+                activation_deriv=activation_deriv,
             )
+
+        super().add_layer(
+            terminal_size,
+            0,
+            terminal_size,
+            lr=self._learning_rate,
+            ir=self._inference_rate,
+            fl=self._feedback_rate,
+            lmbda=self._lambda,
+            activation="linear",
+            activation_deriv="dlinear",
+        )
 
     def _terminal_size(self) -> int:
         for layer in reversed(self.architecture):

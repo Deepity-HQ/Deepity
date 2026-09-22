@@ -32,3 +32,4 @@ _skbuild/
 __pycache__/
 *.pyc
 logs/
+scripts/

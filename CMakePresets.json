@@ -51,7 +51,7 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "Python_EXECUTABLE": "${sourceDir}/.venv/bin/python3.12",
                 "DEEPITY_ENABLE_CUDA": "ON",
-                "CMAKE_CUDA_ARCHITECTURES": "86",
+                "CMAKE_CUDA_ARCHITECTURES": "80",
                 "CMAKE_CUDA_STANDARD": "17"
             }
         }
