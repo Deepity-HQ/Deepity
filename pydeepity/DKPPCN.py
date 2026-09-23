@@ -53,8 +53,10 @@ class DKPPCN(dy.DirectKPPCNetwork):
         if not isinstance(self.architecture[0], Linear):
             raise TypeError("Architecture must begin with a Linear layer.")
 
-        if not isinstance(self.architecture[-1], Linear):
-            raise TypeError("Architecture must end with a Linear layer.")
+        if not isinstance(self.architecture[-1], Linear) and not isinstance(self.architecture[-1], Activation):
+            raise TypeError(
+                "Network architecture must end with a Linear or Activation layer."
+            )
 
         previous_linear = None
 

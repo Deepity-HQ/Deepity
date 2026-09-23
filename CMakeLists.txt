@@ -328,13 +328,11 @@ set_target_properties(ActivationBenchmark PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-add_executable(CUDAIm2ColVerify tests/tCUDAIm2ColVerify.cpp)
-target_link_libraries(CUDAIm2ColVerify PRIVATE Deepity)
-set_target_properties(CUDAIm2ColVerify PROPERTIES
+add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
+target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
+set_target_properties(CUDALaunchErrorVerify PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
-
-add_test(NAME CUDAIm2ColVerify COMMAND CUDAIm2ColVerify)
 
 add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 

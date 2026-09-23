@@ -205,26 +205,26 @@ namespace Deep
         FillOnesKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(onesVector, batchSize);
         cudaStreamSynchronize(stream);
     }
+       
+void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K,
+                         float alpha, const float *A, int lda,
+                         const float *B, int ldb,
+                         float beta, float *C, int ldc) noexcept
+{
+    cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+    cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-    void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K,
-                             float alpha, const float *A, int lda,
-                             const float *B, int ldb,
-                             float beta, float *C, int ldc) noexcept
-    {
-        cublasOperation_t cuTransA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
-        cublasOperation_t cuTransB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
-        cublasStatus_t status = cublasSgemm(handle, cuTransB, cuTransA,
-                                            N, M, K, &alpha, B, ldb, A, lda, &beta, C, ldc);
-        if (status != CUBLAS_STATUS_SUCCESS)
-        {
-            cudaError_t cudaErr = cudaGetLastError();
-            std::cerr << "cublasSgemm status: " << status
-                      << ", underlying cudaError: " << cudaErr
-                      << " (" << cudaGetErrorString(cudaErr) << ")\n";
-        }
-    }
+    cublasSgemm(this->handle,
+                opB, opA,
+                N, M, K,
+                &alpha,
+                B, ldb,
+                A, lda,
+                &beta,
+                C, ldc);
+}
 
-    void CUDABackend::SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept
+       void CUDABackend::SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept
     {
         float alpha = 1.0f, beta = 0.0f;
         cublasStatus_t status = cublasSgemv(handle, CUBLAS_OP_N, width, batchSize,
@@ -334,7 +334,7 @@ namespace Deep
             dst[i] = (float)(src[i] > 0.0f);
     }
 
-    constexpr int MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
+    constexpr float MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
 
     __global__ void dGeluKernelInto(float *dst, const float *src, size_t n)
     {
@@ -542,67 +542,91 @@ namespace Deep
     }
 
     __global__ void IncrementCounterKernel(int *counter) { *counter += 1; }
-
-    __global__ void AdamStepKernel(float *param, const float *grad, float *m, float *v,
-                                   size_t n, const int *t_ptr, const float *lr_ptr,
-                                   float beta1, float beta2, float eps)
-    {
-        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
-        if (i < n)
-        {
-            float beta1_t = 1.0f - powf(beta1, (float)(*t_ptr));
-            float beta2_t = 1.0f - powf(beta2, (float)(*t_ptr));
-            float step_size = *lr_ptr * sqrtf(beta2_t) / beta1_t;
-
-            float g = grad[i];
-            m[i] = beta1 * m[i] + (1.0f - beta1) * g;
-            v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
-            param[i] -= step_size * m[i] / (sqrtf(v[i]) + eps);
-        }
-    }
-
-    __global__ void AdamWStepKernel(float *param, const float *grad, float *m, float *v,
-                                    size_t n, const int *t_ptr, const float *lr_ptr, float weightDecay,
-                                    float beta1, float beta2, float eps)
-    {
-        size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
-        if (i < n)
-        {
-            float beta1_t = 1.0f - powf(beta1, (float)(*t_ptr));
-            float beta2_t = 1.0f - powf(beta2, (float)(*t_ptr));
-            float step_size = *lr_ptr * sqrtf(beta2_t) / beta1_t;
-
-            float g = grad[i];
-            m[i] = beta1 * m[i] + (1.0f - beta1) * g;
-            v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
-            param[i] -= *lr_ptr * weightDecay * param[i];
-            param[i] -= step_size * m[i] / (sqrtf(v[i]) + eps);
-        }
-    }
-
     void CUDABackend::IncrementCounter(int *counter) noexcept
     {
         IncrementCounterKernel<<<1, 1, 0, stream>>>(counter);
     }
-
-    void CUDABackend::AdamStep(float *param, const float *grad, float *m, float *v,
+    
+    __global__ void AdamStepKernel(float *param, const float *grad, float *m, float *v,
                                size_t n, const int *t, const float *lr,
-                               float beta1, float beta2, float eps) noexcept
+                               float beta1, float beta2, float eps)
+{
+    size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n)
     {
-        constexpr int BLOCK_SIZE = 256;
-        const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        AdamStepKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(param, grad, m, v, n, t, lr, beta1, beta2, eps);
-    }
+        int current_t = *t;
+        if (current_t < 1) current_t = 1;
+        float current_lr = *lr;
 
-    void CUDABackend::AdamWStep(float *param, const float *grad, float *m, float *v,
+        float beta1_t = 1.0f - powf(beta1, static_cast<float>(current_t));
+        float beta2_t = 1.0f - powf(beta2, static_cast<float>(current_t));
+        float step_size = current_lr * sqrtf(beta2_t) / beta1_t;
+
+        float g = grad[i];
+        float m_val = beta1 * m[i] + (1.0f - beta1) * g;
+        float v_val = beta2 * v[i] + (1.0f - beta2) * (g * g);
+
+        m[i] = m_val;
+        v[i] = v_val;
+
+        param[i] -= step_size * m_val / (sqrtf(v_val) + eps);
+    }
+}
+
+__global__ void AdamWStepKernel(float *param, const float *grad, float *m, float *v,
                                 size_t n, const int *t, const float *lr, float weightDecay,
-                                float beta1, float beta2, float eps) noexcept
+                                float beta1, float beta2, float eps)
+{
+    size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < n)
     {
-        constexpr int BLOCK_SIZE = 256;
-        const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-        AdamWStepKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(param, grad, m, v, n, t, lr, weightDecay, beta1, beta2, eps);
-    }
+        int current_t = *t;
+        float current_lr = *lr;
 
+        float beta1_t = 1.0f - powf(beta1, static_cast<float>(current_t));
+        float beta2_t = 1.0f - powf(beta2, static_cast<float>(current_t));
+        float step_size = current_lr * sqrtf(beta2_t) / beta1_t;
+
+        float g = grad[i];
+        float p = param[i];
+
+        float m_val = beta1 * m[i] + (1.0f - beta1) * g;
+        float v_val = beta2 * v[i] + (1.0f - beta2) * (g * g);
+
+        m[i] = m_val;
+        v[i] = v_val;
+
+        p -= current_lr * weightDecay * p;
+        p -= step_size * m_val / (sqrtf(v_val) + eps);
+
+        param[i] = p;
+    }
+}
+
+void CUDABackend::AdamStep(float *param, const float *grad, float *m, float *v,
+                           size_t n, const int *t, const float *lr,
+                           float beta1, float beta2, float eps) noexcept
+{
+    constexpr int blockSize = 256;
+    int numBlocks = static_cast<int>((n + blockSize - 1) / blockSize);
+
+    AdamStepKernel<<<numBlocks, blockSize, 0, stream>>>(
+        param, grad, m, v, n, t, lr, beta1, beta2, eps
+    );
+}
+
+void CUDABackend::AdamWStep(float *param, const float *grad, float *m, float *v,
+                            size_t n, const int *t, const float *lr, float weightDecay,
+                            float beta1, float beta2, float eps) noexcept
+{
+    constexpr int blockSize = 256;
+    int numBlocks = static_cast<int>((n + blockSize - 1) / blockSize);
+
+    AdamWStepKernel<<<numBlocks, blockSize, 0, stream>>>(
+        param, grad, m, v, n, t, lr, weightDecay, beta1, beta2, eps
+    );
+}
+    
     __global__ void MultiplyIntoKernel(float *dst, const float *a, const float *b, size_t n)
     {
         size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
