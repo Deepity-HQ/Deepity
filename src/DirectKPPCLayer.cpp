@@ -266,8 +266,7 @@ namespace Deep
         }
 
         backend->ActivationInto(activationType, zF, z, N);
-        bool fused = (nextSize % 4 == 0) &&
-            backend->TryFusedForwardPass(ActivationType::LINEAR, zF, W, b, mu,
+        bool fused = backend->TryFusedForwardPass(ActivationType::LINEAR, zF, W, b, mu,
                 (int)batchSize, (int)size, (int)nextSize);
 
         if (!fused)

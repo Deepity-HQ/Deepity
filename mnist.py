@@ -49,7 +49,7 @@ def main() -> None:
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
-    BATCH_SIZE = 250
+    BATCH_SIZE = 1000
     LR = 0.00373
     IR = 0.15
     FL = 1e-3
