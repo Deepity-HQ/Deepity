@@ -70,8 +70,8 @@ def main() -> None:
         inference_rate=IR,
         feedback_rate=FL,
         lmbda=LMBDA,
-        optimizer="SGD",
-        psi_optimizer="SGD",
+        optimizer="ADAMW",
+        psi_optimizer="ADAMW",
     )
 
     print(f"\n*** FULL DKP-PC RUN ***")

@@ -91,7 +91,8 @@ namespace Deep
         cudaGraphExec_t graphExec = nullptr;
 #endif
         bool hasGraph = false;
-        void *workspace = nullptr;
         float *onesVector = nullptr;
+        size_t onesCapacity = 0; // <--- Add this line
+        float *workspace = nullptr;
     };
 }
