@@ -250,7 +250,7 @@ namespace Deep
 
         return totalEnergy;
     }
-
+    
     void DirectKPPCLayer::ComputeMuOnly() noexcept
     {
         if (nextSize == 0)
@@ -266,13 +266,19 @@ namespace Deep
         }
 
         backend->ActivationInto(activationType, zF, z, N);
+        bool fused = (nextSize % 4 == 0) &&
+            backend->TryFusedForwardPass(ActivationType::LINEAR, zF, W, b, mu,
+                (int)batchSize, (int)size, (int)nextSize);
 
-        backend->MatMul(
-            /*transA=*/false, /*transB=*/true,
-            (int)batchSize, (int)nextSize, (int)size,
-            1.0f, zF, (int)size, W, (int)size, 0.0f, mu, (int)nextSize);
+        if (!fused)
+        {
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/true,
+                (int)batchSize, (int)nextSize, (int)size,
+                1.0f, zF, (int)size, W, (int)size, 0.0f, mu, (int)nextSize);
 
-        backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
+            backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
+        }
 
         if (isClamped)
         {

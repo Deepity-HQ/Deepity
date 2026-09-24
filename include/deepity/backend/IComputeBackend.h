@@ -78,6 +78,23 @@ namespace Deep
         virtual float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
         virtual void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept = 0;
 
+        /// @brief Attempts a fused forward pass (GEMM + bias + activation in
+        /// one kernel, via CUTLASS on GPU) for RELU or LINEAR activation types
+        /// only -- see CUDABackend's implementation for why other activation
+        /// types aren't attempted yet. Returns true if the fused path was used
+        /// (mu is fully computed, including bias and activation); false if the
+        /// caller should fall back to the existing MatMul+AddBiasBroadcast+
+        /// Activation sequence (always false on CPUBackend -- CPU has no fused
+        /// path, this is a GPU-only optimization).
+        /// @param zF Activated input, shape [batchSize, size], row-major.
+        /// @param W Weight matrix, shape [nextSize, size], row-major.
+        /// @param bias Bias vector, shape [nextSize].
+        /// @param mu Output, shape [batchSize, nextSize], row-major. Only
+        /// written if this returns true.
+        virtual bool TryFusedForwardPass(ActivationType actType,
+                                        const float *zF, const float *W, const float *bias,
+                                        float *mu, int batchSize, int size, int nextSize) noexcept = 0;
+
         // Convolution (im2col-based, ConvPCLayer family)
 
         /// @brief Rearranges a single (channels, height, width) input

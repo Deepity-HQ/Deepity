@@ -40,6 +40,15 @@ namespace Deep
         void AxpyInto(float *y, const float *x, size_t n, float alpha) noexcept override;
         void AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept override;
 
+        bool TryFusedForwardPass(ActivationType actType,
+                         const float *zF, const float *W, const float *bias,
+                         float *mu, int batchSize, int size, int nextSize) noexcept override
+        {
+            return false; // no fused path on CPU -- caller always falls back
+                        // to the existing, separate MatMul+AddBiasBroadcast+
+                        // ActivationInto sequence
+        }
+
         void Activation(ActivationType type, float *buf, size_t n) noexcept override;
         void ActivationInto(ActivationType type, float *dst, const float *src, size_t n) noexcept override;
         void ActivationDerivative(ActivationType type, float *buf, size_t n, bool activated) noexcept override;

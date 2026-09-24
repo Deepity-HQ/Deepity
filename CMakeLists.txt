@@ -302,11 +302,27 @@ target_link_libraries(Deepity PUBLIC
 if(CUDAToolkit_FOUND)
     target_link_libraries(Deepity PUBLIC CUDA::cublas CUDA::cudart)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
+    target_compile_options(Deepity PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
-# --- Optiona: Use Google Benchmark -----------------------------------
+# --- Optional: Use CUTLASS for fused GEMM kernels ---------------------
+
+FetchContent_Declare(
+    cutlass
+    GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
+    GIT_TAG v4.8.0
+)
+set(CUTLASS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+set(CUTLASS_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CUTLASS_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
+set(CUTLASS_ENABLE_LIBRARY OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(cutlass)
+
+target_link_libraries(Deepity PRIVATE CUTLASS)
+
+# --- Optional: Use Google Benchmark -----------------------------------
 
 include(FetchContent)
 FetchContent_Declare(
