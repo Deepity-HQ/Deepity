@@ -141,12 +141,14 @@ if(WIN32 AND NOT DEEPITY_OMP_DLL)
     endif()
 endif()
 
+set(DEEPITY_CUDA_ENABLED OFF)
 if(DEEPITY_ENABLE_CUDA)
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
         enable_language(CUDA)
         set(CMAKE_CUDA_STANDARD 17)
         set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+        set(DEEPITY_CUDA_ENABLED ON)
         message(STATUS "CUDA support enabled.")
     else()
         message(STATUS "CUDA toolkit not found. Building CPU-only.")
@@ -258,7 +260,7 @@ set(CMAKE_REQUIRED_QUIET OFF)
 
 # --- Deepity library ------------------------------------------------
 
-add_library(Deepity
+set(DEEPITY_SOURCES
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/ConvPCLayer.cpp
@@ -275,9 +277,14 @@ add_library(Deepity
     src/StreamAlignedBatcher.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
-    src/backend/CUDABackend.cu
     src/backend/Tensor.cpp
 )
+
+if(DEEPITY_CUDA_ENABLED)
+    list(APPEND DEEPITY_SOURCES src/backend/CUDABackend.cu)
+endif()
+
+add_library(Deepity ${DEEPITY_SOURCES})
 
 if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_MKL)
@@ -299,7 +306,7 @@ target_link_libraries(Deepity PUBLIC
     sleef
 )
 
-if(CUDAToolkit_FOUND)
+if(DEEPITY_CUDA_ENABLED)
     target_link_libraries(Deepity PUBLIC CUDA::cublas CUDA::cudart)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
     target_compile_options(Deepity PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
@@ -309,18 +316,20 @@ target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
 # --- Optional: Use CUTLASS for fused GEMM kernels ---------------------
 
-FetchContent_Declare(
-    cutlass
-    GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-    GIT_TAG v4.8.0
-)
-set(CUTLASS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-set(CUTLASS_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(CUTLASS_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
-set(CUTLASS_ENABLE_LIBRARY OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(cutlass)
+if(DEEPITY_CUDA_ENABLED)
+    FetchContent_Declare(
+        cutlass
+        GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
+        GIT_TAG v4.8.0
+    )
+    set(CUTLASS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(CUTLASS_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(CUTLASS_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
+    set(CUTLASS_ENABLE_LIBRARY OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(cutlass)
 
-target_link_libraries(Deepity PRIVATE CUTLASS)
+    target_link_libraries(Deepity PRIVATE CUTLASS)
+endif()
 
 # --- Optional: Use Google Benchmark -----------------------------------
 
@@ -343,11 +352,13 @@ set_target_properties(ActivationBenchmark PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
-add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
-target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
-set_target_properties(CUDALaunchErrorVerify PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+if(DEEPITY_CUDA_ENABLED)
+    add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
+    target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
+    set_target_properties(CUDALaunchErrorVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+endif()
 
 add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 
