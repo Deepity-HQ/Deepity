@@ -241,7 +241,10 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._require_configured()
 
         if initial_lr is None:
-            initial_lr = self._learning_rate
+            if self._learning_rate is None:
+                raise RuntimeError("Learning rate has not been configured.")
+
+        initial_lr = self._learning_rate
 
         _fit_with_progress(
             self,

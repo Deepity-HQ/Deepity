@@ -261,6 +261,7 @@ set(CMAKE_REQUIRED_QUIET OFF)
 # --- Deepity library ------------------------------------------------
 
 set(DEEPITY_SOURCES
+    src/FullPCLayer.cpp
     src/DiscriminativePCLayer.cpp
     src/RBLayer.cpp
     src/ConvPCLayer.cpp
@@ -359,6 +360,12 @@ if(DEEPITY_CUDA_ENABLED)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
 endif()
+
+add_executable(FullPCLayerVerify tests/tFullPCLayerVerify.cpp)
+target_link_libraries(FullPCLayerVerify PRIVATE Deepity)
+set_target_properties(FullPCLayerVerify PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
 
 add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 

@@ -1,0 +1,48 @@
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 2
+TabWidth: 2
+UseTab: Never
+
+# Line length
+ColumnLimit: 100
+
+# Braces
+BreakBeforeBraces: Allman
+# Keep simple constructs compact.
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortBlocksOnASingleLine: Never
+# Do not force braces around single statements.
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Pointers / references
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# Function calls / declarations
+BinPackArguments: false
+BinPackParameters: true
+
+# Constructor initializers
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: BinPack
+
+# Control flow
+IndentCaseLabels: false
+BreakBeforeBinaryOperators: None
+
+# Includes
+SortIncludes: true
+IncludeBlocks: Preserve
+
+# Comments
+ReflowComments: true
+
+# Trailing commas
+InsertTrailingCommas: Wrapped
+
+# C++
+Standard: c++20
