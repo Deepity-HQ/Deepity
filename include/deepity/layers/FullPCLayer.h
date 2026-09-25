@@ -99,6 +99,13 @@ protected:
   float* zFDeriv = nullptr;
   float* feedbackScratch = nullptr;
 
+  float* v = nullptr;
+  bool useMomentum = false;
+  float momentumBeta = 0.9f;
+
+  bool useCrossEntropy = false;
+  float* rowEnergies = nullptr;
+
   /// @brief nextSize-length scratch for SumRows' output in
   /// UpdateWeights()'s SGD branch (accumulate, which SumRows
   /// alone can't express). Same reasoning as DirectKPPCLayer's
@@ -158,6 +165,21 @@ public:
     return useResidual;
   }
 
+  /// @brief Enables softmax cross-entropy energy for THIS layer's error
+  /// against layerBelow's mu (i.e. this only makes sense set on the
+  /// terminal layer, against the second-to-last layer's logits -- NOT
+  /// looped over every layer the way SetMuPCScale/SetResidual/
+  /// SetMomentum's network-level setters are). OFF by default (plain
+  /// Gaussian energy, matching DirectKPPCLayer exactly).
+  void SetCrossEntropy(bool enabled) noexcept
+  {
+    useCrossEntropy = enabled;
+  }
+  bool GetCrossEntropy() const noexcept
+  {
+    return useCrossEntropy;
+  }
+
   float CalculateState() noexcept override
   {
     return CalculateState(true);
@@ -183,7 +205,31 @@ public:
   /// change every settling step, so a clamped layer's cached mu (valid
   /// under the standard, two-phase assumption that W is fixed throughout
   /// settling) goes stale the moment UpdateWeights() runs mid-loop.
-  void InvalidateMuCache() noexcept { muCacheValid = false; }
+  void InvalidateMuCache() noexcept
+  {
+    muCacheValid = false;
+  }
+
+  /// @brief Enables momentum (inertial) settling: the update direction
+  /// is EMA-smoothed (decay `beta`) before being applied to z, instead
+  /// of applied directly each step. OFF by default. `v` is allocated
+  /// unconditionally in BindMemory() regardless of this flag's value at
+  /// that time (same reasoning as biasGradScratch -- cheap, and avoids
+  /// an ordering hazard if this is called after Compile()). Reset to
+  /// zero at the start of every TrainStep()/Predict() call, same as z.
+  void SetMomentum(bool enabled, float beta = 0.9f) noexcept
+  {
+    useMomentum = enabled;
+    momentumBeta = beta;
+  }
+  bool GetMomentum() const noexcept
+  {
+    return useMomentum;
+  }
+  float GetMomentumBeta() const noexcept
+  {
+    return momentumBeta;
+  }
 
   void SetOptimizer(OptimizerType o) noexcept
   {

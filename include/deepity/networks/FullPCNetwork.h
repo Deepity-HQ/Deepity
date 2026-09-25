@@ -136,6 +136,25 @@ public:
     useIPC = enabled;
   }
 
+  /// @brief Enables momentum (inertial) settling on every layer.
+  /// Loops over layers and calls each one's own SetMomentum() --
+  /// same pattern as SetLearningRate/SetFeedbackRate. OFF by default.
+  void SetUseMomentum(bool enabled, float beta = 0.9f) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetMomentum(enabled, beta);
+  }
+
+  /// @brief Enables softmax cross-entropy energy on the TERMINAL layer
+  /// only (unlike the other Set* toggles, this does NOT loop over every
+  /// layer -- cross-entropy only ever makes sense on the final output,
+  /// against a one-hot/class-probability target). OFF by default
+  /// (plain Gaussian energy everywhere, matching DirectKPPCNetwork).
+  void SetUseCrossEntropy(bool enabled) noexcept
+  {
+    GetTerminalLayer()->SetCrossEntropy(enabled);
+  }
+
 private:
   std::vector<std::unique_ptr<FullPCLayer>> layers;
 

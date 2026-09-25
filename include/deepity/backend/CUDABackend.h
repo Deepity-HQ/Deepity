@@ -7,96 +7,103 @@
 
 namespace Deep
 {
-    class CUDABackend : public IComputeBackend
-    {
-    public:
-        CUDABackend();
-        ~CUDABackend() override;
-        void BeginGraphCapture() noexcept override;
-        bool EndGraphCapture() noexcept override;
-        void ReplayGraph() noexcept override;
+class CUDABackend : public IComputeBackend
+{
+public:
+  CUDABackend();
+  ~CUDABackend() override;
+  void BeginGraphCapture() noexcept override;
+  bool EndGraphCapture() noexcept override;
+  void ReplayGraph() noexcept override;
 
-        float *Allocate(size_t numFloats) override;
-        void Free(float *ptr) noexcept override;
-        void Zero(float *ptr, size_t numFloats) noexcept override;
-        void Copy(float *dst, const float *src, size_t numFloats) noexcept override;
-        void CopyFromHost(float *deviceDst, const float *hostSrc, size_t numFloats) noexcept override;
-        void CopyToHost(float *hostDst, const float *deviceSrc, size_t numFloats) noexcept override;
-        void RandomizeNormal(float *buf, size_t n, float mean, float stddev, uint32_t seed) noexcept override;
-        void RandomizeUniform(float *buf, size_t n, float min, float max, uint32_t seed) noexcept override;
+  float* Allocate(size_t numFloats) override;
+  void Free(float* ptr) noexcept override;
+  void Zero(float* ptr, size_t numFloats) noexcept override;
+  void Copy(float* dst, const float* src, size_t numFloats) noexcept override;
+  void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept override;
+  void CopyToHost(float* hostDst, const float* deviceSrc, size_t numFloats) noexcept override;
+  void RandomizeNormal(float* buf, size_t n, float mean, float stddev,
+                       uint32_t seed) noexcept override;
+  void RandomizeUniform(float* buf, size_t n, float min, float max,
+                        uint32_t seed) noexcept override;
 
-        void SumRows(float *dst, const float *src, size_t batchSize, size_t width) noexcept override;
+  void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
 
-        /// @brief Must be called once, before Compile()'s first
-        /// BeginGraphCapture(), for any backend that needs to prepare
-        /// batch-size-dependent state (e.g. CUDABackend's cached all-ones
-        /// vector for SumRows' GEMV). No-op on CPUBackend.
-        void PrepareForBatchSize(size_t batchSize) noexcept override;
+  /// @brief Must be called once, before Compile()'s first
+  /// BeginGraphCapture(), for any backend that needs to prepare
+  /// batch-size-dependent state (e.g. CUDABackend's cached all-ones
+  /// vector for SumRows' GEMV). No-op on CPUBackend.
+  void PrepareForBatchSize(size_t batchSize) noexcept override;
 
-        void MatMul(bool transA, bool transB, int M, int N, int K,
-                    float alpha, const float *A, int lda,
-                    const float *B, int ldb,
-                    float beta, float *C, int ldc) noexcept override;
+  void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
+              const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
 
-        void Scale(float *buf, size_t n, float alpha) noexcept override;
-        void AxpyInto(float *y, const float *x, size_t n, float alpha) noexcept override;
-        void AddBiasBroadcast(float *buf, const float *bias, size_t batchSize, size_t width) noexcept override;
+  void Scale(float* buf, size_t n, float alpha) noexcept override;
+  void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
+  void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
+                        size_t width) noexcept override;
 
-        bool TryFusedForwardPass(ActivationType actType,
-                         const float *zF, const float *W, const float *bias,
-                         float *mu, int batchSize, int size, int nextSize) noexcept override;
+  void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, const float* deriv,
+                                const float* e, size_t n, float ir, float beta) noexcept override;
 
-        void Activation(ActivationType type, float *buf, size_t n) noexcept override;
-        void ActivationInto(ActivationType type, float *dst, const float *src, size_t n) noexcept override;
-        void ActivationDerivative(ActivationType type, float *buf, size_t n, bool activated) noexcept override;
-        void ActivationDerivativeInto(ActivationType type, float *dst, const float *src, size_t n) noexcept override;
+  bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
+                           const float* bias, float* mu, int batchSize, int size,
+                           int nextSize) noexcept override;
 
-        void FusedStateUpdate(float *z, const float *feedback, const float *deriv,
-                              const float *e, size_t n, float ir) noexcept override;
-        float ComputeErrorAndEnergy(float *e, const float *z, const float *mu, size_t n) noexcept override;
-        void ComputeError(float *e, const float *z, const float *mu, size_t n) noexcept override;
+  void Activation(ActivationType type, float* buf, size_t n) noexcept override;
+  void ActivationInto(ActivationType type, float* dst, const float* src,
+                      size_t n) noexcept override;
+  void ActivationDerivative(ActivationType type, float* buf, size_t n,
+                            bool activated) noexcept override;
+  void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
+                                size_t n) noexcept override;
 
-        void IncrementCounter(int *ptr) noexcept override;
+  void FusedStateUpdate(float* z, const float* feedback, const float* deriv, const float* e,
+                        size_t n, float ir) noexcept override;
+  float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,
+                              size_t n) noexcept override;
+  void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept override;
 
-        void AdamStep(float *param, const float *grad, float *m, float *v,
-                      size_t n, const int *t, const float *lr,
-                      float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
-        void AdamWStep(float *param, const float *grad, float *m, float *v,
-                       size_t n, const int *t, const float *lr, float weightDecay,
-                       float beta1 = 0.9f, float beta2 = 0.999f, float eps = 1e-8f) noexcept override;
+  float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,
+                                                 size_t batchSize, size_t nextSize,
+                                                 float* rowEnergies) noexcept override;
 
-        DeviceType GetDeviceType() const noexcept override { return DeviceType::DEVICE_GPU; }
+  void IncrementCounter(int* ptr) noexcept override;
 
-        void MultiplyInto(float *dst, const float *a, const float *b, size_t n) noexcept override;
-        void Fill(float *buf, size_t n, float value) noexcept override;
+  void AdamStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
+                const float* lr, float beta1 = 0.9f, float beta2 = 0.999f,
+                float eps = 1e-8f) noexcept override;
+  void AdamWStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
+                 const float* lr, float weightDecay, float beta1 = 0.9f, float beta2 = 0.999f,
+                 float eps = 1e-8f) noexcept override;
 
-        void Im2Col(const float *input,
-                    int channels, int height, int width,
-                    int kernelH, int kernelW,
-                    int strideH, int strideW,
-                    int padH, int padW,
-                    float *columns) noexcept override;
-        void Col2Im(const float *columns,
-                    int channels, int height, int width,
-                    int kernelH, int kernelW,
-                    int strideH, int strideW,
-                    int padH, int padW,
-                    float *outputImage) noexcept override;
-        void RepackForBatchedGemm(float *dst, const float *src,
-                                  size_t batchSize, size_t rows, size_t cols) noexcept override;
-        void AddBiasPerChannel(float *buf, const float *bias,
-                               size_t channels, size_t spatialSize) noexcept override;
+  DeviceType GetDeviceType() const noexcept override
+  {
+    return DeviceType::DEVICE_GPU;
+  }
 
-    private:
+  void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  void Fill(float* buf, size_t n, float value) noexcept override;
+
+  void Im2Col(const float* input, int channels, int height, int width, int kernelH, int kernelW,
+              int strideH, int strideW, int padH, int padW, float* columns) noexcept override;
+  void Col2Im(const float* columns, int channels, int height, int width, int kernelH, int kernelW,
+              int strideH, int strideW, int padH, int padW, float* outputImage) noexcept override;
+  void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
+                            size_t cols) noexcept override;
+  void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
+                         size_t spatialSize) noexcept override;
+
+private:
 #ifdef DEEPITY_USE_CUDA
-        cublasHandle_t handle;
-        cudaStream_t stream;
-        cudaGraph_t graph = nullptr;
-        cudaGraphExec_t graphExec = nullptr;
+  cublasHandle_t handle;
+  cudaStream_t stream;
+  cudaGraph_t graph = nullptr;
+  cudaGraphExec_t graphExec = nullptr;
 #endif
-        bool hasGraph = false;
-        float *onesVector = nullptr;
-        size_t onesCapacity = 0; // <--- Add this line
-        float *workspace = nullptr;
-    };
-}
+  bool hasGraph = false;
+  float* onesVector = nullptr;
+  size_t onesCapacity = 0; // <--- Add this line
+  float* workspace = nullptr;
+};
+} // namespace Deep

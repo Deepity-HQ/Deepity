@@ -362,9 +362,9 @@ if(DEEPITY_CUDA_ENABLED)
     )
 endif()
 
-add_executable(FullPCLayerVerify tests/tFullPCLayerVerify.cpp)
-target_link_libraries(FullPCLayerVerify PRIVATE Deepity)
-set_target_properties(FullPCLayerVerify PROPERTIES
+add_executable(CrossEntropyVerify tests/tCrossEntropyVerify.cpp)
+target_link_libraries(CrossEntropyVerify PRIVATE Deepity)
+set_target_properties(CrossEntropyVerify PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 

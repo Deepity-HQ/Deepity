@@ -1,11 +1,13 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
 #include <cstring>
 #include <memory>
 #include <omp.h>
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
@@ -1470,14 +1472,27 @@ void bind_networks(nb::module_& m)
            nb::arg("enabled"),
            "Weights are updated every settling step instead of at the end of all steps when "
            "enabled.")
+      .def("set_use_momentum",
+           &Deep::FullPCNetwork::SetUseMomentum,
+           nb::arg("enabled"),
+           nb::arg("beta") = 0.9f,
+           "Enable/disable momentum (inertial) settling on every layer. "
+           "OFF by default. beta is the EMA decay (higher = more smoothing).")
+      .def("set_use_cross_entropy",
+           &Deep::FullPCNetwork::SetUseCrossEntropy,
+           nb::arg("enabled"),
+           "Enable/disable softmax cross-entropy energy on the terminal layer "
+           "only (not every layer). OFF by default (plain Gaussian energy).")
       .def("compile", &Deep::FullPCNetwork::Compile)
-      .def("randomize_weights",
-           [](Deep::FullPCNetwork& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::FullPCNetwork& self, std::optional<uint32_t> seed)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng);
+          },
+          nb::arg("seed") = nb::none())
       .def("reset_state", &Deep::FullPCNetwork::ResetState)
       .def(
           "clamp_input",
