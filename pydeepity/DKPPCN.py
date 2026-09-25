@@ -25,7 +25,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
     def __init__(
         self,
-        *architecture: Layer,
+        *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
         device: str = "cpu",
     ) -> None:
