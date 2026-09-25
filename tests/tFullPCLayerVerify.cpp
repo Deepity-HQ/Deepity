@@ -21,15 +21,18 @@
 
 using namespace Deep;
 
-namespace {
-bool AllFinite(const float *buf, size_t n) {
+namespace
+{
+bool AllFinite(const float* buf, size_t n)
+{
   for (size_t i = 0; i < n; ++i)
     if (!std::isfinite(buf[i]))
       return false;
   return true;
 }
 
-float MaxAbsDiff(const float *a, const float *b, size_t n) {
+float MaxAbsDiff(const float* a, const float* b, size_t n)
+{
   float m = 0.0f;
   for (size_t i = 0; i < n; ++i)
     m = std::max(m, std::fabs(a[i] - b[i]));
@@ -37,25 +40,41 @@ float MaxAbsDiff(const float *a, const float *b, size_t n) {
 }
 } // namespace
 
-int main() {
+int main()
+{
   const size_t size = 8, nextSize = 8, terminalSize = 4, batchSize = 4;
   const float lr = 0.01f, ir = 0.1f, fl = 0.001f, lmbda = 0.0f;
 
   std::vector<float> input(batchSize * size), target(batchSize * terminalSize);
   std::mt19937 dataRng(123);
   std::uniform_real_distribution<float> dist(-1.0f, 1.0f);
-  for (auto &v : input)
+  for (auto& v : input)
     v = dist(dataRng);
-  for (auto &v : target)
+  for (auto& v : target)
     v = dist(dataRng);
 
   // ================= PART A: default-behavior match =================
   printf("=== Part A: FullPCLayer defaults vs DirectKPPCLayer ===\n");
 
-  DirectKPPCLayer dLayer0(size, nextSize, terminalSize, batchSize, lr, ir, fl,
-                          lmbda, ActivationType::TANH, ActivationType::dTANH);
-  DirectKPPCLayer dLayer1(nextSize, 0, terminalSize, batchSize, lr, ir, fl,
-                          lmbda, ActivationType::LINEAR,
+  DirectKPPCLayer dLayer0(size,
+                          nextSize,
+                          terminalSize,
+                          batchSize,
+                          lr,
+                          ir,
+                          fl,
+                          lmbda,
+                          ActivationType::TANH,
+                          ActivationType::dTANH);
+  DirectKPPCLayer dLayer1(nextSize,
+                          0,
+                          terminalSize,
+                          batchSize,
+                          lr,
+                          ir,
+                          fl,
+                          lmbda,
+                          ActivationType::LINEAR,
                           ActivationType::dLINEAR);
   dLayer0.SetLayerAbove(&dLayer1);
   dLayer1.SetLayerBelow(&dLayer0);
@@ -64,10 +83,26 @@ int main() {
   dLayer0.SetOptimizer(OptimizerType::SGD);
   dLayer0.SetPsiOptimizer(OptimizerType::SGD);
 
-  FullPCLayer fLayer0(size, nextSize, terminalSize, batchSize, lr, ir, fl,
-                      lmbda, ActivationType::TANH, ActivationType::dTANH);
-  FullPCLayer fLayer1(nextSize, 0, terminalSize, batchSize, lr, ir, fl, lmbda,
-                      ActivationType::LINEAR, ActivationType::dLINEAR);
+  FullPCLayer fLayer0(size,
+                      nextSize,
+                      terminalSize,
+                      batchSize,
+                      lr,
+                      ir,
+                      fl,
+                      lmbda,
+                      ActivationType::TANH,
+                      ActivationType::dTANH);
+  FullPCLayer fLayer1(nextSize,
+                      0,
+                      terminalSize,
+                      batchSize,
+                      lr,
+                      ir,
+                      fl,
+                      lmbda,
+                      ActivationType::LINEAR,
+                      ActivationType::dLINEAR);
   fLayer0.SetLayerAbove(&fLayer1);
   fLayer1.SetLayerBelow(&fLayer0);
   fLayer0.SetTerminalLayer(&fLayer1);
@@ -103,12 +138,9 @@ int main() {
   fLayer0.UpdateState();
   fLayer0.UpdateWeights();
 
-  float muDiff =
-      MaxAbsDiff(dLayer0.GetMu(), fLayer0.GetMu(), batchSize * nextSize);
-  float wDiff =
-      MaxAbsDiff(dLayer0.GetWeights(), fLayer0.GetWeights(), size * nextSize);
-  float zDiff =
-      MaxAbsDiff(dLayer0.GetBeliefs(), fLayer0.GetBeliefs(), batchSize * size);
+  float muDiff = MaxAbsDiff(dLayer0.GetMu(), fLayer0.GetMu(), batchSize * nextSize);
+  float wDiff = MaxAbsDiff(dLayer0.GetWeights(), fLayer0.GetWeights(), size * nextSize);
+  float zDiff = MaxAbsDiff(dLayer0.GetBeliefs(), fLayer0.GetBeliefs(), batchSize * size);
 
   printf("mu max abs diff: %g\n", muDiff);
   printf("W  max abs diff: %g\n", wDiff);
@@ -120,10 +152,26 @@ int main() {
   // ================= PART B: a/residual sanity check =================
   printf("=== Part B: a=0.5, useResidual=true, sanity only ===\n");
 
-  FullPCLayer gLayer0(size, nextSize, terminalSize, batchSize, lr, ir, fl,
-                      lmbda, ActivationType::TANH, ActivationType::dTANH);
-  FullPCLayer gLayer1(nextSize, 0, terminalSize, batchSize, lr, ir, fl, lmbda,
-                      ActivationType::LINEAR, ActivationType::dLINEAR);
+  FullPCLayer gLayer0(size,
+                      nextSize,
+                      terminalSize,
+                      batchSize,
+                      lr,
+                      ir,
+                      fl,
+                      lmbda,
+                      ActivationType::TANH,
+                      ActivationType::dTANH);
+  FullPCLayer gLayer1(nextSize,
+                      0,
+                      terminalSize,
+                      batchSize,
+                      lr,
+                      ir,
+                      fl,
+                      lmbda,
+                      ActivationType::LINEAR,
+                      ActivationType::dLINEAR);
   gLayer0.SetLayerAbove(&gLayer1);
   gLayer1.SetLayerBelow(&gLayer0);
   gLayer0.SetTerminalLayer(&gLayer1);
@@ -142,7 +190,9 @@ int main() {
   bool allFinite = true;
   float firstEnergy = -1.0f, lastEnergy = -1.0f;
 
-  for (int step = 0; step < 20; ++step) {
+  for (int step = 0; step < 20; ++step)
+  {
+    gLayer0.ClampState(input);
     gLayer0.CalculateState(false);
     float e = gLayer1.CalculateState(true);
     if (step == 0)
@@ -155,8 +205,8 @@ int main() {
 
     if (!AllFinite(gLayer0.GetMu(), batchSize * nextSize) ||
         !AllFinite(gLayer0.GetBeliefs(), batchSize * size) ||
-        !AllFinite(gLayer0.GetWeights(), size * nextSize) ||
-        !std::isfinite(e)) {
+        !AllFinite(gLayer0.GetWeights(), size * nextSize) || !std::isfinite(e))
+    {
       allFinite = false;
       printf("  step %d: NON-FINITE VALUE DETECTED\n", step);
       break;
@@ -165,8 +215,7 @@ int main() {
 
   printf("First energy: %g, Last energy: %g\n", firstEnergy, lastEnergy);
   printf("All finite throughout: %s\n", allFinite ? "YES" : "NO");
-  bool partBPass =
-      allFinite && (lastEnergy < firstEnergy * 2.0f); // loose: not exploding
+  bool partBPass = allFinite && (lastEnergy < firstEnergy * 2.0f); // loose: not exploding
   printf("Part B: %s\n\n", partBPass ? "PASS" : "FAIL");
 
   bool allPass = partAPass && partBPass;

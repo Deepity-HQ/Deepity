@@ -269,6 +269,7 @@ set(DEEPITY_SOURCES
     src/SimplePCLayer.cpp
     src/GaussSeidelPCLayer.cpp
     src/DirectKPPCLayer.cpp
+    src/FullPCNetwork.cpp
     src/DiscriminativePCNetwork.cpp
     src/ConvPCNetwork.cpp
     src/SimplePCNetwork.cpp
