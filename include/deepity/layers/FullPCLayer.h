@@ -178,6 +178,13 @@ public:
     return isClamped;
   }
 
+  /// @brief Forces the next ComputeMuOnly() call to recompute mu from
+  /// scratch, even if this layer is clamped. Needed under iPC: weights
+  /// change every settling step, so a clamped layer's cached mu (valid
+  /// under the standard, two-phase assumption that W is fixed throughout
+  /// settling) goes stale the moment UpdateWeights() runs mid-loop.
+  void InvalidateMuCache() noexcept { muCacheValid = false; }
+
   void SetOptimizer(OptimizerType o) noexcept
   {
     opt = o;

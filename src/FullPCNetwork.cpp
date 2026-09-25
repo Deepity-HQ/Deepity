@@ -98,6 +98,17 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
   Clamp(x);
   GetTerminalLayer()->ClampState(y);
 
+  auto settleStep = [this]()
+  {
+    Step(false);
+    if (useIPC)
+    {
+      UpdateWeights();
+      for (auto& l : layers)
+        l->InvalidateMuCache();
+    }
+  };
+
   if (device == DeviceType::DEVICE_GPU)
   {
     if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
@@ -107,8 +118,9 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
       CalculateTerminalError();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
-        Step(false);
-      UpdateWeights();
+        settleStep();
+      if (!useIPC)
+        UpdateWeights();
       bool captureOk = backend->EndGraphCapture();
 
       if (captureOk)
@@ -117,23 +129,20 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
         capturedInferenceSteps = inferenceSteps;
       }
       else
-      {
         std::cerr << "Graph capture failed -- falling back to non-graph execution for this call.\n";
-      }
     }
 
     if (graphCaptured)
-    {
       backend->ReplayGraph();
-    }
     else
     {
       ProjectForward();
       CalculateTerminalError();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
-        Step(false);
-      UpdateWeights();
+        settleStep();
+      if (!useIPC)
+        UpdateWeights();
     }
   }
   else
@@ -142,8 +151,9 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
     CalculateTerminalError();
     DirectFeedbackUpdate();
     for (int t = 0; t < inferenceSteps; t++)
-      Step(false);
-    UpdateWeights();
+      settleStep();
+    if (!useIPC)
+      UpdateWeights();
   }
 
   float finalEnergy = 0.0f;

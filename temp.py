@@ -1,67 +1,108 @@
-"""
-Minimal, direct test for the new, declarative SimplePCN wrapper API
-(layer.py's Linear/Activation classes + SimplePCN.py). Exercises the
-full real lifecycle: construction, configure(), randomize_weights()
-(the method just fixed -- was calling the bound C++ function with an
-argument it doesn't accept), a few training steps on synthetic data,
-and a prediction call.
-
-Not a formal correctness check (no known-right answer to compare
-against) -- this just confirms the wrapper actually runs end-to-end
-without crashing, and that shapes/types look sane.
-"""
 import numpy as np
-from pydeepity import SimplePCN
-from pydeepity.layer import Linear, ReLU
+import os
+import urllib.request
+import gzip
+from pydeepity import dy
+from time import perf_counter
 
-BATCH_SIZE = 4
-IN_DIM = 4
-HIDDEN_DIM = 8
-OUT_DIM = 2
 
-print("Building network via declarative API...")
-net = SimplePCN(
-    Linear(IN_DIM, HIDDEN_DIM),
-    ReLU(),
-    Linear(HIDDEN_DIM, OUT_DIM),
-    batch_size=BATCH_SIZE,
-    device="cpu",
-)
-print(f"  Architecture: {len(net.architecture)} components")
+def load_mnist():
+    print("Fetching MNIST...")
+    base_url = "https://storage.googleapis.com/cvdf-datasets/mnist/"
+    files = {
+        "x_train": "train-images-idx3-ubyte.gz",
+        "y_train": "train-labels-idx1-ubyte.gz",
+    }
+    os.makedirs("./data", exist_ok=True)
+    paths = {}
+    for key, fname in files.items():
+        fp = os.path.join("./data", fname)
+        paths[key] = fp
+        if not os.path.exists(fp):
+            urllib.request.urlretrieve(base_url + fname, fp)
 
-print("\nConfiguring (builds backend layers, sets optimizer, compiles)...")
-net.configure(learning_rate=0.01, inference_rate=0.1, lmbda=0.0001, optimizer="ADAM")
-print(f"  Backend layer count: {len(net)}")
+    with gzip.open(paths["x_train"], "rb") as f:
+        X = np.frombuffer(f.read(), np.uint8, offset=16).reshape(-1, 784).astype(np.float32) / 255.0
+    with gzip.open(paths["y_train"], "rb") as f:
+        y_labels = np.frombuffer(f.read(), np.uint8, offset=8)
 
-print("\nExplicitly calling randomize_weights() -- the method that was just fixed...")
-net.randomize_weights()
-print("  OK, no exception raised.")
+    eps = 0.001
+    Y = np.full((y_labels.shape[0], 10), eps, dtype=np.float32)
+    Y[np.arange(y_labels.shape[0]), y_labels] = 1.0 - eps
+    return X, Y, y_labels
 
-rng = np.random.default_rng(42)
-X = rng.standard_normal((BATCH_SIZE, IN_DIM)).astype(np.float32)
-Y = rng.standard_normal((BATCH_SIZE, OUT_DIM)).astype(np.float32)
 
-print("\nRunning a few training steps on synthetic data...")
-for step in range(5):
-    energy = net.train_step(X, Y, steps=10)
-    print(f"  step {step}: energy={energy:.4f}")
+def run(use_ipc: bool, X, Y, y_labels, batch_size=250, epochs=5, inference_steps=4):
+    net = dy.FullPCNetwork(batch_size=batch_size, device="gpu")
+    net.add_layer(784, 256, 10, lr=0.00373, ir=0.15, fl=1e-3, lmbda=1e-4, activation="tanh", activation_deriv="dtanh")
+    net.add_layer(256, 10, 10, lr=0.00373, ir=0.15, fl=1e-3, lmbda=1e-4, activation="linear", activation_deriv="dlinear")
+    net.add_layer(10, 0, 10, lr=0.00373, ir=0.15, fl=1e-3, lmbda=1e-4, activation="linear", activation_deriv="dlinear")
 
-print("\nRunning predict()...")
-pred = net.predict(X, steps=10)
-print(f"  predict() output shape: {pred.shape} (expected: ({BATCH_SIZE}, {OUT_DIM}) or flattened)")
-print(f"  predict() output dtype: {pred.dtype}")
-print(f"  sample values: {pred.flatten()[:4]}")
+    net.set_use_ipc(use_ipc)
+    net.set_optimizer("ADAMW")
+    net.set_psi_optimizer("ADAMW")
+    net.compile()
+    net.randomize_weights()
 
-print("\nChecking terminal layer's next_size, given _build_backend() adds every")
-print("Linear layer uniformly (including the last one, with its own out_n as")
-print("next_size) rather than a separate, explicit next_size=0 terminal layer:")
-terminal = net[-1]
-print(f"  terminal layer input_size={terminal.input_size}, output_size={terminal.output_size}")
-print("  (if output_size > 0 here, the 'terminal' layer still computes an unused")
-print("   outgoing mu prediction -- likely harmless given UpdateWeights() guards")
-print("   on layerAbove being null regardless, but worth confirming energy/predict")
-print("   values above still look sane, not NaN/exploding)")
+    n_batches = len(X) // batch_size
+    rng = np.random.default_rng(0)
+    start = perf_counter()
 
-print("\n" + "=" * 50)
-print("PASS: ran end-to-end without exceptions.")
-print("=" * 50)
+    energies = []
+    for epoch in range(epochs):
+        perm = rng.permutation(len(X))
+        X_shuf, Y_shuf = X[perm], Y[perm]
+
+        epoch_energy = 0.0
+        for b in range(n_batches):
+            xb = X_shuf[b * batch_size:(b + 1) * batch_size]
+            yb = Y_shuf[b * batch_size:(b + 1) * batch_size]
+            epoch_energy += net.train_step(xb, yb, inference_steps)
+
+        avg_energy = epoch_energy / n_batches
+        energies.append(avg_energy)
+        print(f"  [{'iPC' if use_ipc else 'standard'}] epoch {epoch+1}/{epochs}: avg energy={avg_energy:.4f}")
+
+        if not np.isfinite(avg_energy):
+            print(f"  [{'iPC' if use_ipc else 'standard'}] NON-FINITE ENERGY -- STOPPING")
+            return energies, -1.0
+
+    elapsed = perf_counter() - start
+
+    correct = 0
+    total = 0
+    for i in range(0, min(2000, len(X)), batch_size):
+        xb = X[i:i + batch_size]
+        if xb.shape[0] != batch_size:
+            continue
+        pred = net.predict(xb, inference_steps).reshape(batch_size, 10)
+        pred_classes = np.argmax(pred, axis=1)
+        correct += np.sum(pred_classes == y_labels[i:i + batch_size])
+        total += batch_size
+
+    acc = 100.0 * correct / total
+    print(f"  [{'iPC' if use_ipc else 'standard'}] train time: {elapsed:.1f}s, quick acc check: {acc:.2f}%")
+    return energies, acc
+
+
+if __name__ == "__main__":
+    X, Y, y_labels = load_mnist()
+
+    print("\n=== Standard (useIPC=False) ===")
+    energies_std, acc_std = run(False, X, Y, y_labels)
+
+    print("\n=== iPC (useIPC=True) ===")
+    energies_ipc, acc_ipc = run(True, X, Y, y_labels)
+
+    print("\n=== Comparison ===")
+    print(f"Standard final energy: {energies_std[-1]:.4f}, accuracy: {acc_std:.2f}%")
+    print(f"iPC      final energy: {energies_ipc[-1]:.4f}, accuracy: {acc_ipc:.2f}%")
+
+    identical = all(abs(a - b) < 1e-6 for a, b in zip(energies_std, energies_ipc))
+    if identical:
+        print("\nWARNING: energy trajectories are IDENTICAL -- useIPC may not be taking effect at all.")
+    elif acc_ipc < 0 or acc_std < 0:
+        print("\nFAIL: non-finite energy detected in at least one run.")
+    else:
+        print("\nOK: trajectories differ and both stayed finite -- iPC is doing SOMETHING distinct.")
+        print("(Not a claim it's doing the CORRECT thing -- just that it's not a silent no-op or a crash.)")

@@ -126,6 +126,16 @@ public:
   /// std::invalid_argument on mismatch).
   void Compile();
 
+  /// @brief Enables iPC: UpdateWeights() runs every settling
+  /// step instead of once after settling completes. OFF by default --
+  /// TrainStep() matches DirectKPPCNetwork's standard, two-phase
+  /// behavior exactly when this is false.
+  /// @cite Salvatori et al., "Incremental Predictive Coding", arXiv:2212.00720
+  void SetUseIPC(bool enabled) noexcept
+  {
+    useIPC = enabled;
+  }
+
 private:
   std::vector<std::unique_ptr<FullPCLayer>> layers;
 
@@ -138,6 +148,7 @@ private:
 #endif
 
   int batchSize;
+  bool useIPC = false;
 
   bool useMuPCScaling = false;
   bool useResidualConnections = false;
