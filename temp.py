@@ -45,32 +45,35 @@ def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 50
     INFERENCE_STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 2
+    LR_OVERRIDE = float(sys.argv[4]) if len(sys.argv) > 4 else None
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
     BATCH_SIZE = 250
-    LR = 0.00373
+    LR = LR_OVERRIDE if LR_OVERRIDE is not None else 0.00373
     IR = 0.15
     FL = 1e-3
     LMBDA = 1e-4
     DECAY_RATE = 0.94
 
     print(f"\nBuilding FullPCNetwork (784->512->10), seed={SEED}...")
-    print("Features: iPC=OFF, cross-entropy=ON, muPC/residual/momentum=OFF (verified-safe defaults)")
+    print(f"LR={LR}{' (overridden)' if LR_OVERRIDE is not None else ' (original MSE-tuned default)'}")
+    print("Features: ALL OFF -- should be bit-identical to DirectKPPCNetwork's own defaults")
 
-    net = dy.FullPCNetwork(batch_size=BATCH_SIZE, device="gpu")
+    net = dy.FullPCNetwork(batch_size=BATCH_SIZE, device="cpu")
     net.add_layer(784, 512, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
     net.add_layer(512, 10, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="sigmoid", activation_deriv="dsigmoid")
     net.add_layer(10, 0, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
 
     net.set_use_ipc(False)
-    net.set_use_cross_entropy(True)
+    net.set_use_cross_entropy(False)
+    net.set_use_mu_pc_scaling(False)
     net.set_optimizer("ADAMW")
     net.set_psi_optimizer("ADAMW")
     net.compile()
     net.randomize_weights(SEED)
 
-    print(f"\n*** FullPCNetwork: iPC + cross-entropy ***")
+    print(f"\n*** FullPCNetwork: plain DKP-PC (every toggle off) ***")
     print(f"Training: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, ")
     print(f"lr={LR}, ir={IR}, lmbda={LMBDA}, decay_rate={DECAY_RATE}...\n")
 
@@ -138,7 +141,7 @@ def main() -> None:
 
     test_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"FullPCNetwork (iPC + CE) test accuracy: {test_acc:.2f}%")
+    print(f"FullPCNetwork (plain DKP-PC, all toggles off) test accuracy: {test_acc:.2f}%")
     print(f"Train time: {train_time:.1f}s")
 
 

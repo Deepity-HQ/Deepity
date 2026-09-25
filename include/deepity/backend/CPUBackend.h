@@ -74,6 +74,9 @@ public:
                                                  size_t batchSize, size_t nextSize,
                                                  float* rowEnergies) noexcept override;
 
+  void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
+                                       size_t nextSize) noexcept override;
+
   // Convolution (im2col-based, ConvPCLayer family) -- forwards
   // directly to the existing, already-verified Deep::Im2Col/
   // Deep::Col2Im free functions in Im2Col.h.

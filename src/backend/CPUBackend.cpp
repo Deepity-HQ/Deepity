@@ -255,6 +255,34 @@ float CPUBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy(
   return energy;
 }
 
+void CPUBackend::ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
+                                                 size_t batchSize, size_t nextSize) noexcept
+{
+#pragma omp parallel for schedule(static) if (batchSize > 8 && !omp_in_parallel())
+  for (size_t b = 0; b < batchSize; ++b)
+  {
+    size_t base = b * nextSize;
+
+    float max_val = mu[base];
+    for (size_t j = 1; j < nextSize; ++j)
+      max_val = std::max(max_val, mu[base + j]);
+
+    float sum_exp = 0.0f;
+    for (size_t j = 0; j < nextSize; ++j)
+    {
+      float ex = std::exp(mu[base + j] - max_val);
+      e[base + j] = ex;
+      sum_exp += ex;
+    }
+
+    for (size_t j = 0; j < nextSize; ++j)
+      e[base + j] /= sum_exp; // e now holds probs
+
+    for (size_t j = 0; j < nextSize; ++j)
+      e[base + j] = z[base + j] - e[base + j]; // e now holds the final error
+  }
+}
+
 void CPUBackend::IncrementCounter(int* counter) noexcept
 {
   ++(*counter);

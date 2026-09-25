@@ -116,6 +116,9 @@ public:
                                                          size_t batchSize, size_t nextSize,
                                                          float* rowEnergies) noexcept = 0;
 
+  virtual void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
+                                               size_t batchSize, size_t nextSize) noexcept = 0;
+
   /// @brief Attempts a fused forward pass (GEMM + bias + activation in
   /// one kernel, via CUTLASS on GPU) for RELU or LINEAR activation types
   /// only -- see CUDABackend's implementation for why other activation

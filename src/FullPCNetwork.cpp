@@ -171,11 +171,18 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
   ProjectForward();
 
   for (int t = 0; t < inferenceSteps; t++)
-  {
     Step();
-  }
 
   FullPCLayer* terminal = GetTerminalLayer();
+
+  if (terminal->GetCrossEntropy())
+  {
+    FullPCLayer* below = layers[layers.size() - 2].get();
+    below->ComputeMuOnly();
+    size_t n = below->GetBatchSize() * below->GetOutputSize();
+    backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+  }
+
   const float* beliefs = terminal->GetBeliefs();
   size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 

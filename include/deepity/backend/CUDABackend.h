@@ -68,6 +68,9 @@ public:
                                                  size_t batchSize, size_t nextSize,
                                                  float* rowEnergies) noexcept override;
 
+  void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
+                                       size_t nextSize) noexcept override;
+
   void IncrementCounter(int* ptr) noexcept override;
 
   void AdamStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,

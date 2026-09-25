@@ -242,13 +242,20 @@ float FullPCLayer::CalculateState(bool needEnergy) noexcept
   float totalEnergy = 0.0f;
   if (useCrossEntropy)
   {
-    totalEnergy = backend->ComputeSoftmaxCrossEntropyErrorAndEnergy(
-        e, z, layerBelow->mu, batchSize, size, rowEnergies);
+    if (needEnergy)
+      totalEnergy = backend->ComputeSoftmaxCrossEntropyErrorAndEnergy(
+          e, z, layerBelow->mu, batchSize, size, rowEnergies);
+    else
+      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->mu, batchSize, size);
   }
   else if (needEnergy)
+  {
     totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, N);
+  }
   else
+  {
     backend->ComputeError(e, z, layerBelow->mu, N);
+  }
 
   if (nextSize > 0)
     ComputeMuOnly();
@@ -326,46 +333,46 @@ void FullPCLayer::UpdateState() noexcept
   if (isClamped)
     return;
 
+  if (useCrossEntropy)
+    return;
+
   if (layerAbove != nullptr && nextSize > 0)
   {
     const float* e_above = layerAbove->GetErrors();
 
     backend->ActivationDerivativeInto(ToDerivativeType(activationType), zFDeriv, z, N);
 
-    // feedbackScratch = a * (e_above @ W) -- alpha was
-    // hardcoded 1.0f, now scaled by a (d(mu)/dz through the
-    // weighted path picks up the same a factor mu itself
-    // does).
-    backend->MatMul(
-        /*transA=*/false,
-        /*transB=*/false,
-        (int)batchSize,
-        (int)size,
-        (int)nextSize,
-        a,
-        e_above,
-        (int)nextSize,
-        W,
-        (int)size,
-        0.0f,
-        feedbackScratch,
-        (int)size);
+    bool topDownMeaningless = layerAbove->GetCrossEntropy() && !layerAbove->IsClamped();
 
-    if (useMomentum)
-      backend->FusedStateUpdateMomentum(z, v, feedbackScratch, zFDeriv, e, N, ir, momentumBeta);
+    if (topDownMeaningless)
+    {
+      backend->AxpyInto(z, e, N, -ir);
+    }
     else
-      backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
+    {
+      backend->MatMul(
+          /*transA=*/false,
+          /*transB=*/false,
+          (int)batchSize,
+          (int)size,
+          (int)nextSize,
+          a,
+          e_above,
+          (int)nextSize,
+          W,
+          (int)size,
+          0.0f,
+          feedbackScratch,
+          (int)size);
 
-    // Residual (backward): z += ir * e_above. Derived from the
-    // energy directly: the residual adds a "-z" term inside
-    // e_above's own definition (this layer's z feeds the next
-    // layer's prediction directly, bypassing the nonlinearity);
-    // differentiating that term gives dE/dz = -e_above, and
-    // z_new = z - ir*dE/dz = z + ir*e_above. Bypasses the
-    // activation derivative entirely, matching the residual's
-    // own bypass of phi().
-    if (useResidual)
-      backend->AxpyInto(z, e_above, N, ir);
+      if (useMomentum)
+        backend->FusedStateUpdateMomentum(z, v, feedbackScratch, zFDeriv, e, N, ir, momentumBeta);
+      else
+        backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
+
+      if (useResidual)
+        backend->AxpyInto(z, e_above, N, ir);
+    }
   }
   else
   {

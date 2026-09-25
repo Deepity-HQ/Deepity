@@ -696,13 +696,16 @@ __global__ void SoftmaxCrossEntropyKernel(float* e, const float* z, const float*
   }
 
   float row_energy = 0.0f;
+  bool needRowEnergy = (rowEnergies != nullptr);
   for (size_t j = 0; j < nextSize; ++j)
   {
     float prob = e[base + j] / sum_exp;
     e[base + j] = prob;
-    row_energy -= z[base + j] * logf(prob + eps);
+    if (needRowEnergy)
+      row_energy -= z[base + j] * logf(prob + eps);
   }
-  rowEnergies[b] = row_energy;
+  if (needRowEnergy)
+    rowEnergies[b] = row_energy;
 
   for (size_t j = 0; j < nextSize; ++j)
     e[base + j] = z[base + j] - e[base + j];
@@ -727,6 +730,19 @@ float CUDABackend::ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const floa
   cudaStreamSynchronize(stream);
 
   return total_energy;
+}
+
+void CUDABackend::ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
+                                                  size_t batchSize, size_t nextSize) noexcept
+{
+  if (!e || !z || !mu || batchSize == 0 || nextSize == 0)
+    return;
+
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((batchSize + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  SoftmaxCrossEntropyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      e, z, mu, batchSize, nextSize, /*rowEnergies=*/nullptr);
+  CHECK_CUDA_LAUNCH();
 }
 
 __global__ void IncrementCounterKernel(int* counter)
