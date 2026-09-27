@@ -11,46 +11,54 @@ import CodeBlock from "./components/CodeBlock";
 const BenchmarkChart = lazy(() => import("./components/BenchmarkChart"));
 const PCNRepresentation = lazy(() => import("./components/PCNRepresentation"));
 
-const pythoncode = `from pydeepity import SimplePCN 
+const pythoncode = `from pydeepity import DKPPCN
+from pydeepity.layer import Linear, Sigmoid
+import numpy as np
 
-net = SimplePCN(batch_size=250)
-net.add_layer(784, 512, lr=0.001, ir=0.08, act="linear")
-net.add_layer(512, 512, lr=0.001, ir=0.08, act="sigmoid")
-net.add_layer(512, 10, lr=0.001, ir=0.08, act="sigmoid")
-net.add_layer(10, 0, lr=0.001, ir=0.08, act="linear")
+# Architecture is declared, not assembled layer-by-layer.
+net = DKPPCN(
+    Linear(784, 512), Sigmoid(),
+    Linear(512, 512), Sigmoid(),
+    Linear(512, 10),
+    batch_size=250,
+)
+net.configure(learning_rate=0.001, inference_rate=0.08, optimizer="ADAM", psi_optimizer="ADAM")
 
-net.set_optimizer("ADAM")
-net.compile()
-net.randomize_weights()
+X = np.array([-1, -1, -1, 1, 1, -1, 1, 1], dtype=np.float32)
+Y = np.array([-1, 1, 1, -1], dtype=np.float32)
 
-X: np.ndarray = np.array([-1, -1, -1, 1, 1, -1, 1, 1], dtype=np.float32)
-Y: np.ndarray = np.array([-1, 1, 1, -1], dtype=np.float32)
-
+# Direct feedback alignment means a single settling step is enough.
 for epoch in range(1500):
-  energy = net.train_step(X, Y, steps=150)
+  energy = net.train_step(X, Y, inference_steps=1)
 
-predictions = net.predict(X, steps=150)
+predictions = net.predict(X, inference_steps=1)
 `;
 
-const cppcode = `#include <deepity/networks/SimplePCNetwork.h>
+const cppcode = `#include <deepity/networks/DirectKPPCNetwork.h>
+#include <random>
 
-Deep::SimplePCNetwork net(4);
-net.AddLayer(784, 512, 0.01f, 0.1f, 0.0f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
-net.AddLayer(512, 512, 0.01f, 0.1f, 0.0f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
-net.AddLayer(512, 10, 0.01f, 0.1f, 0.0f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
-net.AddLayer(10, 0, 0.01f, 0.1f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
+// terminalSize (10) is required on every AddLayer call.
+Deep::DirectKPPCNetwork net(4);
+net.AddLayer(784, 512, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
+net.AddLayer(512, 512, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
+net.AddLayer(512, 10, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
+net.AddLayer(10, 0, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
 
 net.SetOptimizer(Deep::OptimizerType::ADAM);
+net.SetPsiOptimizer(Deep::OptimizerType::ADAM);
 net.Compile();
-net.RandomizeWeights();
+
+std::mt19937 rng(42);
+net.RandomizeWeights(rng);
 
 std::vector<float> X = {-1, -1, -1, 1, 1, -1, 1, 1};
 std::vector<float> Y = {-1, 1, 1, -1};
 
+// Direct feedback alignment means a single settling step is enough.
 for (int epoch = 0; epoch < 1500; ++epoch)
-    float energy = net.TrainStep(X, Y, 150);
+    float energy = net.TrainStep(X, Y, 1);
 
-std::vector<float> predictions = net.Predict(X, 150);`;
+std::vector<float> predictions = net.Predict(X, 1);`;
 
 const heroStyle = {
   backgroundImage: `url(${import.meta.env.BASE_URL}flowerpot.webp)`,
