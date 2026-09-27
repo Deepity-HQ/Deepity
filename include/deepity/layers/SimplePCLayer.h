@@ -322,10 +322,6 @@ namespace Deep
                                 // gradient (dW uses zF, not raw z),
                                 // matching ngc-learn's documented
                                 // convention: mu_l = W_l . phi(z_{l-1})
-        float *zFDeriv;         // SEPARATE scratch for f'(z), computed
-                                // from RAW z (activated=false flag) --
-                                // zF itself must stay clean/activated
-                                // for the weight-gradient step
         float *feedbackScratch; // own_state_size scratch for the raw
                                 // feedback GEMM's output -- the f'(z)
                                 // multiply applies ONLY to the feedback

@@ -92,7 +92,6 @@ protected:
   float *fl_device = nullptr;   ///< Device-resident mirror of `fl`.
 
   float *zF = nullptr;             ///< Activated belief, phi(z), used as the forward GEMM's input.
-  float *zFDeriv = nullptr;        ///< Activation derivative at z, for the feedback term.
   float *feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
   /// @brief nextSize-length scratch buffer for SumRows' output in

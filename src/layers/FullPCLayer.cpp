@@ -91,7 +91,6 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     proj = arena.AllocateFloats(out_state_size);
     Psi = arena.AllocateFloats(direct_size);
     zF = arena.AllocateFloats(own_state_size);
-    zFDeriv = arena.AllocateFloats(own_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
     v = arena.AllocateFloats(own_state_size);
     backend->Zero(v, own_state_size);
@@ -103,7 +102,6 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     backend->Zero(proj, out_state_size);
     backend->Zero(Psi, direct_size);
     backend->Zero(zF, own_state_size);
-    backend->Zero(zFDeriv, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
     backend->Zero(biasGradScratch, nextSize);
 
@@ -180,7 +178,7 @@ size_t FullPCLayer::GetRequiredFloats() const noexcept
     total += pad16(w_size);
     total += pad16(nextSize);
     total += pad16(out_state_size) * 3;
-    total += pad16(own_state_size) * 3;
+    total += pad16(own_state_size) * 2; // zF, feedbackScratch
     total += pad16(own_state_size);
     total += pad16(direct_size);
     total += pad16(nextSize);
@@ -340,8 +338,6 @@ void FullPCLayer::UpdateState() noexcept
   {
     const float* e_above = layerAbove->GetErrors();
 
-    backend->ActivationDerivativeInto(ToDerivativeType(activationType), zFDeriv, z, N);
-
     bool topDownMeaningless = layerAbove->GetCrossEntropy() && !layerAbove->IsClamped();
 
     if (topDownMeaningless)
@@ -365,10 +361,11 @@ void FullPCLayer::UpdateState() noexcept
           feedbackScratch,
           (int)size);
 
+      ActivationType dType = ToDerivativeType(activationType);
       if (useMomentum)
-        backend->FusedStateUpdateMomentum(z, v, feedbackScratch, zFDeriv, e, N, ir, momentumBeta);
+        backend->FusedStateUpdateMomentum(z, v, feedbackScratch, dType, e, N, ir, momentumBeta);
       else
-        backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
+        backend->FusedStateUpdate(z, feedbackScratch, dType, e, N, ir);
 
       if (useResidual)
         backend->AxpyInto(z, e_above, N, ir);

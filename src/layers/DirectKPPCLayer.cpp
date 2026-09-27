@@ -93,9 +93,7 @@ namespace Deep
             proj = arena.AllocateFloats(out_state_size);
             Psi = arena.AllocateFloats(direct_size);
             zF = arena.AllocateFloats(own_state_size);
-            zFDeriv = arena.AllocateFloats(own_state_size);
             feedbackScratch = arena.AllocateFloats(own_state_size);
-
             biasGradScratch = arena.AllocateFloats(nextSize);
 
             backend->Zero(b, nextSize);
@@ -104,7 +102,6 @@ namespace Deep
             backend->Zero(proj, out_state_size);
             backend->Zero(Psi, direct_size);
             backend->Zero(zF, own_state_size);
-            backend->Zero(zFDeriv, own_state_size);
             backend->Zero(feedbackScratch, own_state_size);
             backend->Zero(biasGradScratch, nextSize);
 
@@ -180,7 +177,7 @@ namespace Deep
             total += pad16(w_size);
             total += pad16(nextSize);
             total += pad16(out_state_size) * 3;
-            total += pad16(own_state_size) * 3;
+            total += pad16(own_state_size) * 2; // zF, feedbackScratch
             total += pad16(direct_size);
             total += pad16(nextSize);
 
@@ -297,15 +294,13 @@ namespace Deep
         {
             const float *e_above = layerAbove->GetErrors();
 
-            backend->ActivationDerivativeInto(ToDerivativeType(activationType), zFDeriv, z, N);
-
             backend->MatMul(
                 /*transA=*/false, /*transB=*/false,
                 (int)batchSize, (int)size, (int)nextSize,
                 1.0f, e_above, (int)nextSize, W, (int)size,
                 0.0f, feedbackScratch, (int)size);
 
-            backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
+            backend->FusedStateUpdate(z, feedbackScratch, ToDerivativeType(activationType), e, N, ir);
         }
         else
         {

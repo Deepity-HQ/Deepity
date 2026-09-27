@@ -86,11 +86,11 @@ public:
                                 size_t n) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
-  void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, const float* deriv,
+  void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, ActivationType dType,
                                 const float* e, size_t n, float ir, float beta) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdate
-  void FusedStateUpdate(float* z, const float* feedback, const float* deriv, const float* e,
+  void FusedStateUpdate(float* z, const float* feedback, ActivationType dType, const float* e,
                         size_t n, float ir) noexcept override;
   /// @copydoc Deep::IComputeBackend::ComputeErrorAndEnergy
   float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,

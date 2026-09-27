@@ -84,62 +84,35 @@ __global__ void dReluKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
-    dst[i] = (float)(src[i] > 0.0f);
+    dst[i] = ActivationDerivativeDevice(ActivationType::dRELU, src[i]);
 }
-
-constexpr float MAGIC_GELU_2_3 = 3.0f * MAGIC_GELU_2;
 
 __global__ void dGeluKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
-  {
-    float x = src[i];
-    float xsq = x * x;
-    float inner = MAGIC_GELU_1 * x * (1.0f + MAGIC_GELU_2 * xsq);
-    float t;
-#if __CUDA_ARCH__ >= 800
-    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(inner));
-#else
-    t = tanhf(inner);
-#endif
-    float gprime = MAGIC_GELU_1 * (1.0f + MAGIC_GELU_2_3 * xsq);
-    float term1 = 0.5f * (1.0f + t);
-    float term2 = 0.5f * x * gprime * (1.0f - t * t);
-    dst[i] = term1 + term2;
-  }
+    dst[i] = ActivationDerivativeDevice(ActivationType::dGELU, src[i]);
 }
 
 __global__ void dTanhKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
-  {
-    float t;
-    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(src[i]));
-    dst[i] = fmaf(-t, t, 1.0f);
-  }
+    dst[i] = ActivationDerivativeDevice(ActivationType::dTANH, src[i]);
 }
 
 __global__ void dSigmoidKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
-  {
-    float t;
-    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(0.5f * src[i]));
-    dst[i] = 0.25f * fmaf(-t, t, 1.0f);
-  }
+    dst[i] = ActivationDerivativeDevice(ActivationType::dSIGMOID, src[i]);
 }
 
 __global__ void d_eSigmoidKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
-  {
-    float a = 1.0f + fabsf(src[i]);
-    dst[i] = 0.5f / (a * a);
-  }
+    dst[i] = ActivationDerivativeDevice(ActivationType::d_eSIGMOID, src[i]);
 }
 
 __global__ void dLinearKernelInto(float* dst, const float* src, size_t n)

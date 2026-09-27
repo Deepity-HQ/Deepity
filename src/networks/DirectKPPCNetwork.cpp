@@ -2,6 +2,7 @@
 #include <pmmintrin.h>
 #include <xmmintrin.h>
 #include <iostream>
+#include <stdexcept>
 
 namespace Deep
 {
@@ -186,6 +187,20 @@ namespace Deep
 
     void DirectKPPCNetwork::Compile()
     {
+        // See FullPCNetwork::Compile()'s identical check -- terminalSize is
+        // supplied on every AddLayer() call rather than inferred, and a
+        // mismatch against the real terminal layer's size previously went
+        // uncaught, silently corrupting W via an out-of-bounds GEMM in
+        // DirectFeedbackUpdate().
+        if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
+        {
+            throw std::invalid_argument(
+                "DirectKPPCNetwork::Compile(): terminalSize (" +
+                std::to_string(layers.back()->GetTerminalSize()) +
+                ") passed to AddLayer() doesn't match the actual terminal layer's size (" +
+                std::to_string(layers.back()->GetInputSize()) + ").");
+        }
+
 #pragma omp parallel
         {
             _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);

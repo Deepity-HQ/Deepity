@@ -145,14 +145,20 @@ public:
   /// higher = more smoothing/inertia).
   ///   v = beta*v + (1-beta)*((feedback*deriv) - e)
   ///   z += ir*v
+  /// @param dType Which activation's derivative to apply to z in
+  /// place -- deriv is computed inline from z, element by element,
+  /// rather than read from a separate precomputed buffer.
   virtual void FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
-                                        const float* deriv, const float* e, size_t n, float ir,
+                                        ActivationType dType, const float* e, size_t n, float ir,
                                         float beta) noexcept = 0;
 
   /// @brief One settling step's state update, fused into a single call:
   ///   z += ir * ((feedback * deriv) - e)
   /// Non-momentum counterpart to FusedStateUpdateMomentum() above.
-  virtual void FusedStateUpdate(float* z, const float* feedback, const float* deriv, const float* e,
+  /// @param dType Which activation's derivative to apply to z in
+  /// place -- deriv is computed inline from z, element by element,
+  /// rather than read from a separate precomputed buffer.
+  virtual void FusedStateUpdate(float* z, const float* feedback, ActivationType dType, const float* e,
                                 size_t n, float ir) noexcept = 0;
   /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2) -- the
   /// Gaussian error/energy used by every layer except a cross-entropy

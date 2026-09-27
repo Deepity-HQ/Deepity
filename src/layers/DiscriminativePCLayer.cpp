@@ -229,8 +229,12 @@ namespace Deep
             const float *e_above = layerAbove->GetErrors();
             const float *p_above = layerAbove->GetPrecisions();
 
-            cblas_scopy((int)N, z, 1, zFDeriv, 1);
-            activationDerivative(zFDeriv, N, false);
+            // Derived from the actual function pointer in use, not the
+            // `activationType` member -- the raw function-pointer
+            // constructor leaves `activationType` hardcoded to RELU
+            // regardless of the (act, dAct) it was actually given, so it
+            // can't be trusted here.
+            ActivationType dType = To_AType(activationDerivative);
 
             #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
             for (int batch = 0; batch < batchSize; ++batch) {
@@ -251,7 +255,8 @@ namespace Deep
                 size_t offset = (size_t)batch * size;
                 for (size_t i = 0; i < size; ++i) {
                     size_t idx = offset + i;
-                    dz_dt[idx] = (feedbackScratch[idx] * zFDeriv[idx]) - (p[i] * e[idx]);
+                    float deriv = ActivationDerivativeScalar(dType, z[idx]);
+                    dz_dt[idx] = (feedbackScratch[idx] * deriv) - (p[i] * e[idx]);
                     z[idx] += ir * dz_dt[idx];
                 }
             }
@@ -505,7 +510,7 @@ namespace Deep
         size_t own_state_size = (size_t)batchSize * size;
 
         total += pad16(own_state_size) * 3; // z, e, dz_dt
-        total += pad16(own_state_size) * 3; // zF, zFDeriv, feedbackScratch 
+        total += pad16(own_state_size) * 2; // zF, feedbackScratch
         total += pad16(size) * 2;           // p, log_p
 
         if (nextSize > 0)
@@ -536,7 +541,6 @@ namespace Deep
         dz_dt = arena.AllocateFloats(own_state_size);
 
         zF = arena.AllocateFloats(own_state_size);
-        zFDeriv = arena.AllocateFloats(own_state_size);
         feedbackScratch = arena.AllocateFloats(own_state_size);
 
         p = arena.AllocateFloats(size);
@@ -547,7 +551,6 @@ namespace Deep
         std::memset(dz_dt, 0, own_state_size * sizeof(float));
 
         std::memset(zF, 0, own_state_size * sizeof(float));
-        std::memset(zFDeriv, 0, own_state_size * sizeof(float));
         std::memset(feedbackScratch, 0, own_state_size * sizeof(float));
 
         std::fill_n(p, size, 1.0f);

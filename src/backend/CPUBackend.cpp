@@ -169,25 +169,27 @@ void CPUBackend::ActivationDerivativeInto(ActivationType type, float* dst, const
 }
 
 void CPUBackend::FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
-                                          const float* deriv, const float* e, size_t n, float ir,
+                                          ActivationType dType, const float* e, size_t n, float ir,
                                           float beta) noexcept
 {
 #pragma omp parallel for schedule(static) if (n > 4 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
-    float update = (feedback[i] * deriv[i]) - e[i];
+    float deriv = ActivationDerivativeScalar(dType, z[i]);
+    float update = (feedback[i] * deriv) - e[i];
     v[i] = beta * v[i] + (1.0f - beta) * update;
     z[i] += ir * v[i];
   }
 }
 
-void CPUBackend::FusedStateUpdate(float* z, const float* feedback, const float* deriv,
+void CPUBackend::FusedStateUpdate(float* z, const float* feedback, ActivationType dType,
                                   const float* e, size_t n, float ir) noexcept
-{ // TODO: Unknown if this is how it should look?
+{
 #pragma omp parallel for schedule(static) if (n > 4 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
-    z[i] += ir * ((feedback[i] * deriv[i]) - e[i]);
+    float deriv = ActivationDerivativeScalar(dType, z[i]);
+    z[i] += ir * ((feedback[i] * deriv) - e[i]);
   }
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <deepity/utils/ActivationType.h>
 
 /**
  * @file CUDACommon.cuh
@@ -22,3 +23,70 @@
                 << cudaGetErrorString(err) << std::endl;                                           \
     }                                                                                              \
   } while (0)
+
+namespace Deep
+{
+/// @brief Per-thread activation derivative, computed from a single
+/// pre-activation value -- the CUDA-kernel counterpart of
+/// Deep::ActivationDerivativeScalar (see Activations.h) for host code.
+/// Shared (via this header, not cross-TU device linkage) by the
+/// standalone dXxxKernelInto kernels in CUDABackendActivations.cu and the
+/// fused settling-step kernels in CUDABackendFusedOps.cu, so both compute
+/// the exact same math from one place. Relies on MAGIC_GELU_1/MAGIC_GELU_2
+/// (Deep::utils::activations::Gelu.h) already being visible via
+/// CUDABackend.h -> IComputeBackend.h -> Activations.h, included before
+/// this header in every CUDABackend*.cu translation unit.
+/// @param dType A derivative-flavored ActivationType (e.g. dTANH, not
+/// TANH). Anything else (including NONE) falls back to 1.0.
+/// @param z The pre-activation value.
+__device__ __forceinline__ float ActivationDerivativeDevice(ActivationType dType, float z)
+{
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return (float)(z > 0.0f);
+  case ActivationType::dGELU:
+  {
+    float zsq = z * z;
+    float inner = MAGIC_GELU_1 * z * (1.0f + MAGIC_GELU_2 * zsq);
+    float t;
+#if __CUDA_ARCH__ >= 800
+    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(inner));
+#else
+    t = tanhf(inner);
+#endif
+    float gprime = MAGIC_GELU_1 * (1.0f + 3.0f * MAGIC_GELU_2 * zsq);
+    return 0.5f * (1.0f + t) + 0.5f * z * gprime * (1.0f - t * t);
+  }
+  case ActivationType::dSIGMOID:
+  {
+    float t;
+#if __CUDA_ARCH__ >= 800
+    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(0.5f * z));
+#else
+    t = tanhf(0.5f * z);
+#endif
+    return 0.25f * fmaf(-t, t, 1.0f);
+  }
+  case ActivationType::d_eSIGMOID:
+  {
+    float a = 1.0f + fabsf(z);
+    return 0.5f / (a * a);
+  }
+  case ActivationType::dTANH:
+  {
+    float t;
+#if __CUDA_ARCH__ >= 800
+    asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(z));
+#else
+    t = tanhf(z);
+#endif
+    return fmaf(-t, t, 1.0f);
+  }
+  case ActivationType::dLINEAR:
+  case ActivationType::NONE:
+  default:
+    return 1.0f;
+  }
+}
+} // namespace Deep

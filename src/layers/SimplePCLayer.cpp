@@ -164,15 +164,12 @@ void SimplePCLayer::UpdateState() noexcept {
   if (layerAbove != nullptr && nextSize > 0) {
     const float *e_above = layerAbove->GetErrors();
 
-    backend->ActivationDerivativeInto(ToDerivativeType(activationType), zFDeriv,
-                                      z, N);
-
     backend->MatMul(
         /*transA=*/false, /*transB=*/false, (int)batchSize, (int)size,
         (int)nextSize, 1.0f, e_above, (int)nextSize, W, (int)size, 0.0f,
         feedbackScratch, (int)size);
 
-    backend->FusedStateUpdate(z, feedbackScratch, zFDeriv, e, N, ir);
+    backend->FusedStateUpdate(z, feedbackScratch, ToDerivativeType(activationType), e, N, ir);
   } else // Output Layer
   {
     // z[i] += ir * (-e[i])  ==  z += (-ir) * e, i.e. AxpyInto
@@ -259,7 +256,7 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept {
     total += pad16(w_size);
     total += pad16(nextSize);
     total += pad16(out_state_size) * 2;
-    total += pad16(own_state_size) * 3;
+    total += pad16(own_state_size) * 2; // zF, feedbackScratch
 
     if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW) {
       total += pad16(w_size) * 3;
@@ -294,14 +291,12 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT &arena) {
     mu = arena.AllocateFloats(out_state_size);
     cachedMu = arena.AllocateFloats(out_state_size);
     zF = arena.AllocateFloats(own_state_size);
-    zFDeriv = arena.AllocateFloats(own_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
     backend->Zero(zF, own_state_size);
-    backend->Zero(zFDeriv, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
 
     if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW) {

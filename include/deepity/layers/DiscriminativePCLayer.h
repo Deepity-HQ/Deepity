@@ -250,9 +250,6 @@ namespace Deep
                 /// @brief This layer's own activated belief, used for the
                 /// activate-before-transform forward computation.
                 float *zF = nullptr;
-                /// @brief Scratch buffer for the derivative of zF, kept separate
-                /// from zF itself so zF survives intact for later use.
-                float *zFDeriv = nullptr;
                 /// @brief Scratch buffer for the feedback term's intermediate
                 /// GEMM output, prior to the elementwise derivative multiply.
                 float *feedbackScratch = nullptr;

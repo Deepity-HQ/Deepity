@@ -18,28 +18,28 @@
 
 namespace Deep
 {
-__global__ void FusedStateUpdateKernel(float* z, const float* feedback, const float* deriv,
+__global__ void FusedStateUpdateKernel(float* z, const float* feedback, ActivationType dType,
                                        const float* e, size_t n, float ir)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
   {
     float fb = feedback ? feedback[i] : 0.0f;
-    float dev = deriv ? deriv[i] : 1.0f;
+    float dev = ActivationDerivativeDevice(dType, z[i]);
     float err = e ? e[i] : 0.0f;
     z[i] += ir * ((fb * dev) - err);
   }
 }
 
 __global__ void FusedStateUpdateMomentumKernel(float* z, float* v, const float* feedback,
-                                               const float* deriv, const float* e, size_t n,
+                                               ActivationType dType, const float* e, size_t n,
                                                float ir, float beta)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
   {
     float fb = feedback ? feedback[i] : 0.0f;
-    float dev = deriv ? deriv[i] : 1.0f;
+    float dev = ActivationDerivativeDevice(dType, z[i]);
     float err = e ? e[i] : 0.0f;
     float update = (fb * dev) - err;
     float v_new = beta * v[i] + (1.0f - beta) * update;
@@ -55,19 +55,19 @@ __global__ void ComputeErrorKernel(float* e, const float* z, const float* mu, si
     e[i] = z[i] - mu[i];
 }
 
-void CUDABackend::FusedStateUpdate(float* z, const float* feedback, const float* deriv,
+void CUDABackend::FusedStateUpdate(float* z, const float* feedback, ActivationType dType,
                                    const float* e, size_t n, float ir) noexcept
 {
   if (!z || n == 0)
     return;
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  FusedStateUpdateKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(z, feedback, deriv, e, n, ir);
+  FusedStateUpdateKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(z, feedback, dType, e, n, ir);
   CHECK_CUDA_LAUNCH();
 }
 
 void CUDABackend::FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
-                                           const float* deriv, const float* e, size_t n, float ir,
+                                           ActivationType dType, const float* e, size_t n, float ir,
                                            float beta) noexcept
 {
   if (!z || !v || n == 0)
@@ -75,7 +75,7 @@ void CUDABackend::FusedStateUpdateMomentum(float* z, float* v, const float* feed
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
   FusedStateUpdateMomentumKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
-      z, v, feedback, deriv, e, n, ir, beta);
+      z, v, feedback, dType, e, n, ir, beta);
   CHECK_CUDA_LAUNCH();
 }
 

@@ -193,6 +193,24 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
 
 void FullPCNetwork::Compile()
 {
+  // terminalSize is supplied on every AddLayer() call rather than
+  // inferred, since the true terminal layer isn't known until the whole
+  // network is assembled -- validate it now against the actual last
+  // layer's size. A mismatch here previously went uncaught: the DFA
+  // feedback GEMM in DirectFeedbackUpdate() would read past the real
+  // (smaller) terminal error buffer using the wrong terminalSize as its
+  // GEMM dimension, corrupting W with garbage/inf on the very first
+  // TrainStep() -- confirmed by reproducing exactly this with a
+  // deliberately wrong terminalSize.
+  if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
+  {
+    throw std::invalid_argument(
+        "FullPCNetwork::Compile(): terminalSize (" +
+        std::to_string(layers.back()->GetTerminalSize()) +
+        ") passed to AddLayer() doesn't match the actual terminal layer's size (" +
+        std::to_string(layers.back()->GetInputSize()) + ").");
+  }
+
 #pragma omp parallel
   {
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
