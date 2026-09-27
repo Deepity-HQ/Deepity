@@ -7,12 +7,21 @@ tiny-imagenet-200/*
 tiny-imagenet-200/
 MNIST/*
 pyrightconfig.json
+
+# Claude Code -- local instructions and session/settings state, not shared.
 /CLAUDE.md
+.claude/
+
 out/build/windows-clang/
 repomix-output.xml
 experiments/outputs/
 experiments/data/
 experiments/checkpoints/
+
+# Doxygen output -- regenerate with `doxygen Doxyfile`, don't commit it.
+# docs/mainpage.md is hand-written Doxygen input and stays tracked.
+docs/html/
+docs/latex/
 
 *.lib
 *.dll
@@ -24,6 +33,7 @@ experiments/checkpoints/
 CMakeCache.txt
 CMakeFiles/
 .ninja_log
+compile_commands.json
 
 wheelhouse/
 dist/
