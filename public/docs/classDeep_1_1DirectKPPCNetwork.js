@@ -1,0 +1,28 @@
+var classDeep_1_1DirectKPPCNetwork =
+[
+    [ "DirectKPPCNetwork", "classDeep_1_1DirectKPPCNetwork.html#a296d53339c2a559b1225337f337ba69e", null ],
+    [ "~DirectKPPCNetwork", "classDeep_1_1DirectKPPCNetwork.html#acbb2c14b0f7242a610cbfb509b80b722", null ],
+    [ "DirectKPPCNetwork", "classDeep_1_1DirectKPPCNetwork.html#aec5a1fdf891b7b40c9a2ce941eb8c6fd", null ],
+    [ "AddLayer", "classDeep_1_1DirectKPPCNetwork.html#a99b32dcda2d2def5577cde00b992fef0", null ],
+    [ "CalculateTerminalError", "classDeep_1_1DirectKPPCNetwork.html#a611dc60ba2be01a2c96ba3443c872841", null ],
+    [ "Clamp", "classDeep_1_1DirectKPPCNetwork.html#a2f4451020e4f01e6342ba21622012e7a", null ],
+    [ "Compile", "classDeep_1_1DirectKPPCNetwork.html#aff57aa43cc48c78f3753c945cfbacb3f", null ],
+    [ "DirectFeedbackUpdate", "classDeep_1_1DirectKPPCNetwork.html#aa62a9d846788d848d24dc22ea0a746cb", null ],
+    [ "GetBatchSize", "classDeep_1_1DirectKPPCNetwork.html#a042babe38803e8e7696cf2048923405b", null ],
+    [ "GetDevice", "classDeep_1_1DirectKPPCNetwork.html#af6663e3f3348565da17b2173f2c81286", null ],
+    [ "GetLayers", "classDeep_1_1DirectKPPCNetwork.html#a6174d625554ed591747c9285fdedace5", null ],
+    [ "GetLayers", "classDeep_1_1DirectKPPCNetwork.html#a29482a9f70712d0c2886a91aafed8bfd", null ],
+    [ "GetTerminalLayer", "classDeep_1_1DirectKPPCNetwork.html#a4f4bbbc956f06e0e6925a21236025559", null ],
+    [ "operator=", "classDeep_1_1DirectKPPCNetwork.html#ac1591ee0f39f3dae4e2f36421d5d97d2", null ],
+    [ "Predict", "classDeep_1_1DirectKPPCNetwork.html#a93bd21e2ee2fed358957f5d0ea2f3a7c", null ],
+    [ "ProjectForward", "classDeep_1_1DirectKPPCNetwork.html#a44011935079a20e8bfcf661d88ece729", null ],
+    [ "RandomizeWeights", "classDeep_1_1DirectKPPCNetwork.html#a343e3f9d530bbf34be51ba4c9490436d", null ],
+    [ "ResetState", "classDeep_1_1DirectKPPCNetwork.html#acf12980894c2ce21bd8bae92bbea937a", null ],
+    [ "SetFeedbackRate", "classDeep_1_1DirectKPPCNetwork.html#a07cae62f8efbbc00ab851d456a5e5d13", null ],
+    [ "SetLearningRate", "classDeep_1_1DirectKPPCNetwork.html#a8880487d2e34f1dc02d60fb3e83a0af0", null ],
+    [ "SetOptimizer", "classDeep_1_1DirectKPPCNetwork.html#ab910c1f6b15b7731ad0ea81728308400", null ],
+    [ "SetPsiOptimizer", "classDeep_1_1DirectKPPCNetwork.html#a644b2c6ea4e70d216e1a68bf8e31163e", null ],
+    [ "Step", "classDeep_1_1DirectKPPCNetwork.html#a026e4d63b2979799a76b7bb386d62388", null ],
+    [ "TrainStep", "classDeep_1_1DirectKPPCNetwork.html#ab278f6ac88114dd6311604c8bed97513", null ],
+    [ "UpdateWeights", "classDeep_1_1DirectKPPCNetwork.html#a896ee591074c6213359f0d9d4ff8a17d", null ]
+];

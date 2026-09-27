@@ -1,9 +1,10 @@
 var classDeep_1_1SimpleConvPCLayer =
 [
-    [ "SimpleConvPCLayer", "classDeep_1_1SimpleConvPCLayer.html#a13ad69773250645ca49e4b38411637ed", null ],
-    [ "BindMemory", "classDeep_1_1SimpleConvPCLayer.html#a9cd6ee890490b9ead888611cde49759e", null ],
+    [ "SimpleConvPCLayer", "classDeep_1_1SimpleConvPCLayer.html#ac058aa5202a21f37ac83da8f8d7d2294", null ],
+    [ "BindMemory", "classDeep_1_1SimpleConvPCLayer.html#a1705c4fe1619e3ed9514d8e89393c405", null ],
     [ "CalculateState", "classDeep_1_1SimpleConvPCLayer.html#ad614730ef153f49e639691dbf59f8a37", null ],
     [ "ClampState", "classDeep_1_1SimpleConvPCLayer.html#a760bbc0e738fb068d8f5f6238a839d13", null ],
+    [ "ComputeMuOnly", "classDeep_1_1SimpleConvPCLayer.html#af4e2064b43570b67b4c268300a6adcba", null ],
     [ "Flush", "classDeep_1_1SimpleConvPCLayer.html#a16ad91a8aa0329558559a4676b912153", null ],
     [ "GetActivationType", "classDeep_1_1SimpleConvPCLayer.html#a47279bf1815be66a50f464679ca63fb8", null ],
     [ "GetBatchSize", "classDeep_1_1SimpleConvPCLayer.html#a31a4653e9ddca4c63778cba438d6819d", null ],
@@ -21,6 +22,7 @@ var classDeep_1_1SimpleConvPCLayer =
     [ "GetKernelW", "classDeep_1_1SimpleConvPCLayer.html#a65b38d61c3832ccf305f10e2e004c115", null ],
     [ "GetLambda", "classDeep_1_1SimpleConvPCLayer.html#a5b7cd911333a7b492c1b9dd9c8339ba4", null ],
     [ "GetLearningRate", "classDeep_1_1SimpleConvPCLayer.html#a9884f489fe01c59289bbf2256ed9000b", null ],
+    [ "GetMu", "classDeep_1_1SimpleConvPCLayer.html#ad8e8f965cd2cf8f3ac693810eaf25ac9", null ],
     [ "GetOutChannels", "classDeep_1_1SimpleConvPCLayer.html#aff1d0caf46c12a1fc518f02c40af546d", null ],
     [ "GetOutHeight", "classDeep_1_1SimpleConvPCLayer.html#a1dfaa82813e1e92ed1e3ed5be8087825", null ],
     [ "GetOutputSize", "classDeep_1_1SimpleConvPCLayer.html#a836a33190e5d6486ae5ffa7d5b9d4ee3", null ],
@@ -28,6 +30,7 @@ var classDeep_1_1SimpleConvPCLayer =
     [ "GetRequiredFloats", "classDeep_1_1SimpleConvPCLayer.html#a817d39bcd4d2864f189af565ba253342", null ],
     [ "GetWeights", "classDeep_1_1SimpleConvPCLayer.html#ad160db16660135ea3c83fe5fb1ba446c", null ],
     [ "GetWeights", "classDeep_1_1SimpleConvPCLayer.html#af3d0020a051e5290c155ccb2afcc5569", null ],
+    [ "IsClamped", "classDeep_1_1SimpleConvPCLayer.html#ae39f7c708b6cbea576dadb8c92376e5e", null ],
     [ "RandomizeWeights", "classDeep_1_1SimpleConvPCLayer.html#ae2ac2d67d8d84d257f0694b171a25511", null ],
     [ "ResetState", "classDeep_1_1SimpleConvPCLayer.html#ab625276a3806caf9c1074dce2261a164", null ],
     [ "SetInferenceRate", "classDeep_1_1SimpleConvPCLayer.html#a2734dbf260caa0f9ebdb0d31b2ba0be7", null ],

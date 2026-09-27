@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,6 +103,9 @@ $(function(){initNavTree('classDeep_1_1ConvPCLayer.html','','classDeep_1_1ConvPC
 </div><!--header-->
 <div class="contents">
 
+<p>Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enabling an unclamped middle layer.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="ConvPCLayer_8h_source.html">ConvPCLayer.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for Deep::ConvPCLayer:</div>
@@ -136,6 +139,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:afdd7786fc9c6a98c84aee691b39f9a13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's belief buffer.  <br /></td></tr>
 <tr class="memitem:a0221998b0f1299dfde2bfc7642877945" id="r_a0221998b0f1299dfde2bfc7642877945"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a0221998b0f1299dfde2bfc7642877945">GetErrors</a> () const noexcept override</td></tr>
 <tr class="memdesc:a0221998b0f1299dfde2bfc7642877945"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's prediction-error buffer.  <br /></td></tr>
+<tr class="memitem:a010e32b1e74e4737c3ca8916f00fd9cd" id="r_a010e32b1e74e4737c3ca8916f00fd9cd"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a010e32b1e74e4737c3ca8916f00fd9cd">GetMu</a> () const noexcept</td></tr>
+<tr class="memdesc:a010e32b1e74e4737c3ca8916f00fd9cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's top-down prediction buffer.  <br /></td></tr>
 <tr class="memitem:ab9f5ad7698b841dbb34e545e486d7dfd" id="r_ab9f5ad7698b841dbb34e545e486d7dfd"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#ab9f5ad7698b841dbb34e545e486d7dfd">GetInputSize</a> () const noexcept override</td></tr>
 <tr class="memdesc:ab9f5ad7698b841dbb34e545e486d7dfd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flattened element count per batch item (inChannels*H*W).  <br /></td></tr>
 <tr class="memitem:a6aa1034bb417fab22cf55e8899200c02" id="r_a6aa1034bb417fab22cf55e8899200c02"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a6aa1034bb417fab22cf55e8899200c02">GetOutputSize</a> () const noexcept override</td></tr>
@@ -176,8 +181,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:abaedf14b28524e3c0fb364003e435910"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets this layer's beliefs/errors back to their initial values, without touching learned weights.  <br /></td></tr>
 <tr class="memitem:ac5d599c4bf0c6dd617e33849bda71663" id="r_ac5d599c4bf0c6dd617e33849bda71663"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac5d599c4bf0c6dd617e33849bda71663">RandomizeWeights</a> (std::mt19937 &amp;twister) noexcept</td></tr>
 <tr class="memdesc:ac5d599c4bf0c6dd617e33849bda71663"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomizes this layer's weights (and biases) in place.  <br /></td></tr>
+<tr class="memitem:a9a05394db4004b70435d49b97903ba85" id="r_a9a05394db4004b70435d49b97903ba85"><td class="memItemLeft">std::map&lt; std::string, <a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a9a05394db4004b70435d49b97903ba85">GetStateDict</a> () const override</td></tr>
+<tr class="memdesc:a9a05394db4004b70435d49b97903ba85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a dictionary of this.  <br /></td></tr>
 <tr class="memitem:a265f3eb0937208facfdbc09600d9f521" id="r_a265f3eb0937208facfdbc09600d9f521"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a265f3eb0937208facfdbc09600d9f521">ResyncLogPrecision</a> () noexcept</td></tr>
-<tr class="memdesc:a265f3eb0937208facfdbc09600d9f521"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rebuilds log_p from p &ndash; required after a checkpoint load that only persists p (mirrors <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>'s fix for the same p/log_p desync issue found in <a class="el" href="classDeep_1_1ModelIO.html#aff573d97a8059f6a5f30f5ba784e26a2" title="Loads a network state from a structured directory.">ModelIO::Load()</a>).  <br /></td></tr>
+<tr class="memdesc:a265f3eb0937208facfdbc09600d9f521"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rebuilds log_p from p &ndash; required after a checkpoint load that only persists p (mirrors <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>'s fix for the same p/log_p desync issue found in <a class="el" href="classDeep_1_1ModelIO.html#abd61375b9ff2f82d2426bc00cf8ed763" title="Reads a file written by Save() back into net&#39;s already-compiled weight arena, matching each tensor by...">ModelIO::Load()</a>).  <br /></td></tr>
+<tr class="memitem:afdf44d3bbd15219ca5eeae7299b2e8ff" id="r_afdf44d3bbd15219ca5eeae7299b2e8ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afdf44d3bbd15219ca5eeae7299b2e8ff">ComputeMuOnly</a> () noexcept</td></tr>
+<tr class="memdesc:afdf44d3bbd15219ca5eeae7299b2e8ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fast-path forward projection that skips state initialization.  <br /></td></tr>
 <tr class="memitem:a61005e118bbeca8d557e1a64d49aa63e" id="r_a61005e118bbeca8d557e1a64d49aa63e"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a61005e118bbeca8d557e1a64d49aa63e">GetActivationType</a> () const noexcept</td></tr>
 <tr class="memdesc:a61005e118bbeca8d557e1a64d49aa63e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's configured activation type.  <br /></td></tr>
 <tr class="memitem:abaa2803a71aaa21af9eae1147b0be136" id="r_abaa2803a71aaa21af9eae1147b0be136"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#abaa2803a71aaa21af9eae1147b0be136">GetDerivativeType</a> () const noexcept</td></tr>
@@ -217,7 +226,9 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer" id="r_a5a538a25f3064996bbe651e6d48918d0"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a></td></tr>
 <tr class="memdesc:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of output.  <br /></td></tr>
 </table>
-<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enabling an unclamped middle layer. </p>
+</div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="afbe3da4f62bf7a5b0a7d793f91af1e51" name="afbe3da4f62bf7a5b0a7d793f91af1e51"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afbe3da4f62bf7a5b0a7d793f91af1e51">&#9670;&#160;</a></span>ConvPCLayer()</h2>
 
@@ -425,6 +436,33 @@ Additional Inherited Members</h2></td></tr>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="afdf44d3bbd15219ca5eeae7299b2e8ff" name="afdf44d3bbd15219ca5eeae7299b2e8ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdf44d3bbd15219ca5eeae7299b2e8ff">&#9670;&#160;</a></span>ComputeMuOnly()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::ConvPCLayer::ComputeMuOnly </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Fast-path forward projection that skips state initialization. </p>
 
 </div>
 </div>
@@ -907,6 +945,33 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<a id="a010e32b1e74e4737c3ca8916f00fd9cd" name="a010e32b1e74e4737c3ca8916f00fd9cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a010e32b1e74e4737c3ca8916f00fd9cd">&#9670;&#160;</a></span>GetMu()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">const float * Deep::ConvPCLayer::GetMu </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns this layer's top-down prediction buffer. </p>
+
+</div>
+</div>
 <a id="a862dc9f214d407c35c0f88eb359c5c2b" name="a862dc9f214d407c35c0f88eb359c5c2b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a862dc9f214d407c35c0f88eb359c5c2b">&#9670;&#160;</a></span>GetOutChannels()</h2>
 
@@ -1101,6 +1166,35 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
+<a id="a9a05394db4004b70435d49b97903ba85" name="a9a05394db4004b70435d49b97903ba85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a05394db4004b70435d49b97903ba85">&#9670;&#160;</a></span>GetStateDict()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::map&lt; std::string, <a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a> &gt; Deep::ConvPCLayer::GetStateDict </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a dictionary of this. </p>
+
+<p>Reimplemented from <a class="el" href="classDeep_1_1Layer.html#a5ad7ffebc2a789ad47d2afa371f6225e">Deep::Layer</a>.</p>
+
+</div>
+</div>
 <a id="ac9decaddb27a56c381c276bc3efbc145" name="ac9decaddb27a56c381c276bc3efbc145"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac9decaddb27a56c381c276bc3efbc145">&#9670;&#160;</a></span>GetWeights() <span class="overload">[1/2]</span></h2>
 
@@ -1240,7 +1334,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Rebuilds log_p from p &ndash; required after a checkpoint load that only persists p (mirrors <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>'s fix for the same p/log_p desync issue found in <a class="el" href="classDeep_1_1ModelIO.html#aff573d97a8059f6a5f30f5ba784e26a2" title="Loads a network state from a structured directory.">ModelIO::Load()</a>). </p>
+<p>Rebuilds log_p from p &ndash; required after a checkpoint load that only persists p (mirrors <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>'s fix for the same p/log_p desync issue found in <a class="el" href="classDeep_1_1ModelIO.html#abd61375b9ff2f82d2426bc00cf8ed763" title="Reads a file written by Save() back into net&#39;s already-compiled weight arena, matching each tensor by...">ModelIO::Load()</a>). </p>
 
 </div>
 </div>
@@ -1581,7 +1675,7 @@ Additional Inherited Members</h2></td></tr>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>include/deepity/layers/<a class="el" href="ConvPCLayer_8h_source.html">ConvPCLayer.h</a></li>
-<li>src/<a class="el" href="ConvPCLayer_8cpp.html">ConvPCLayer.cpp</a></li>
+<li>src/layers/<a class="el" href="ConvPCLayer_8cpp.html">ConvPCLayer.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

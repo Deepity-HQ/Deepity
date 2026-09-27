@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: include/deepity/AdamOptimizer.h File Reference</title>
+<title>Deepity: include/deepity/utils/AdamOptimizer.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -116,11 +116,12 @@ $(function(){initNavTree('AdamOptimizer_8h.html','',''); });
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:aae3356b63849abbe8789dd41648ee90a" id="r_aae3356b63849abbe8789dd41648ee90a"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>&#160;&#160;&#160;__restrict__</td></tr>
+<tr class="memdesc:aae3356b63849abbe8789dd41648ee90a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Portability macro for the C++ <span class="tt">restrict</span> pointer qualifier (MSVC spells it differently from everyone else).  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -134,9 +135,9 @@ Enumerations</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a6ca9308132b5c8017685367d79b5c753" id="r_a6ca9308132b5c8017685367d79b5c753"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a>&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a6ca9308132b5c8017685367d79b5c753">Deep::toOpType</a> (const char *s)</td></tr>
 <tr class="memdesc:a6ca9308132b5c8017685367d79b5c753"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses an <a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02" title="Selects which weight-update rule a layer applies during UpdateWeights().">OptimizerType</a> from its name.  <br /></td></tr>
-<tr class="memitem:a5aa6de3c8e5ed8673d718748c4999608" id="r_a5aa6de3c8e5ed8673d718748c4999608"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a5aa6de3c8e5ed8673d718748c4999608">Deep::AdamWUpdate</a> (float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float lambda, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
+<tr class="memitem:a5aa6de3c8e5ed8673d718748c4999608" id="r_a5aa6de3c8e5ed8673d718748c4999608"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a5aa6de3c8e5ed8673d718748c4999608">Deep::AdamWUpdate</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float lambda, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
 <tr class="memdesc:a5aa6de3c8e5ed8673d718748c4999608"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorized AdamW update over <span class="tt">n</span> elements. <span class="tt">w</span>, <span class="tt">grad</span>, <span class="tt">m</span>, <span class="tt">v</span> are all arrays of length <span class="tt">n</span> &ndash; ONE m/v pair PER WEIGHT, not one shared scalar. <span class="tt">t</span> is the layer's own timestep counter (increment ONCE per UpdateWeights() call, not per element &ndash; shared across the whole array, which is why beta1^t/beta2^t are computed once here, not per element).  <br /></td></tr>
-<tr class="memitem:af0031c5b95344a0fb959914fee35449c" id="r_af0031c5b95344a0fb959914fee35449c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#af0031c5b95344a0fb959914fee35449c">Deep::AdamUpdate</a> (float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
+<tr class="memitem:af0031c5b95344a0fb959914fee35449c" id="r_af0031c5b95344a0fb959914fee35449c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#af0031c5b95344a0fb959914fee35449c">Deep::AdamUpdate</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
 <tr class="memdesc:af0031c5b95344a0fb959914fee35449c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorized PLAIN Adam update over <span class="tt">n</span> elements &ndash; NO weight decay term at all, unlike AdamWUpdate above. This is deliberate, not a missing feature: "Adam with L2 regularization" (folding decay into the gradient before the moment estimates see it) is the well-known WORSE approach AdamW was specifically invented to fix &ndash; large-gradient weights get decayed less than they should, since the adaptive step size shrinks the decay term along with everything else. If you want regularization alongside plain Adam, apply this codebase's existing decay convention separately (e.g. cblas_sscal(n, 1.0f-lmbda, w, 1) before calling this) &ndash; fully composable, and avoids re-introducing the exact problem AdamW exists to solve.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
@@ -160,6 +161,8 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Portability macro for the C++ <span class="tt">restrict</span> pointer qualifier (MSVC spells it differently from everyone else). </p>
+
 </div>
 </div>
 </div><!-- contents -->
@@ -175,7 +178,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="AdamOptimizer_8h.html">AdamOptimizer.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="dir_f1cdc27c756738241bd9f578c8408128.html">utils</a></li><li class="navelem"><a href="AdamOptimizer_8h.html">AdamOptimizer.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

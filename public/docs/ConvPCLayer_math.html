@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -112,8 +112,9 @@ DiscriminativePCLayer (dense)</h2>
   \mu &amp;= f(z \cdot W^T + b) &amp;&amp; \text{GEMM} \\
   e &amp;= z_{this} - \mu_{incoming}(\text{from below}) \\
   \frac{dz}{dt} &amp;+= -p \cdot e &amp;&amp; \text{(own term)} \\
-  &amp;+ (e_{above} \cdot p_{above}) \cdot W &amp;&amp; \text{(feedback, GEMM, no transpose)} \\
-  dW &amp;+= lr \cdot (e_{above} \cdot p_{above})^T \cdot z &amp;&amp; \text{GEMM}
+  &amp;+ (e_{above} \cdot p_{above}) \cdot W &amp;&amp; \text{(feedback, GEMM, no
+transpose)} \\ dW &amp;+= lr \cdot (e_{above} \cdot p_{above})^T \cdot z &amp;&amp;
+\text{GEMM}
 \end{align}
 \]
 </p>
@@ -124,11 +125,14 @@ ConvPCLayer (conv)</h2>
   cols &amp;= \text{Im2Col}(z) &amp;&amp; (inC \cdot kH \cdot kW, outH \cdot outW) \\
   &amp;\text{stored in colBuffer, REUSED LATER by UpdateWeights()} \\
   \mu &amp;= f(W_{flat} \cdot cols + b) &amp;&amp; \text{GEMM, same as dense} \\
-  e &amp;= z_{this} - \mu_{incoming}(\text{from below}) &amp;&amp; \text{UNCHANGED, elementwise} \\
-  feedback\_cols &amp;= W_{flat}^T \cdot (e_{above} \cdot p_{above}) &amp;&amp; \text{GEMM, written to feedbackScratch (NOT colBuffer)} \\
+  e &amp;= z_{this} - \mu_{incoming}(\text{from below}) &amp;&amp; \text{UNCHANGED,
+elementwise} \\
+  feedback\_cols &amp;= W_{flat}^T \cdot (e_{above} \cdot p_{above}) &amp;&amp;
+\text{GEMM, written to feedbackScratch (NOT colBuffer)} \\
   \frac{dz}{dt} &amp;+= -p \cdot e &amp;&amp; \text{(own term, UNCHANGED)} \\
   &amp;+ \text{Col2Im}(feedback\_cols) &amp;&amp; \text{(scatter back to $(inC,H,W)$)} \\
-  dW_{flat} &amp;+= lr \cdot (e_{above} \cdot p_{above}) \cdot cols^T &amp;&amp; \text{GEMM, using colBuffer saved by CalculateState()} \\
+  dW_{flat} &amp;+= lr \cdot (e_{above} \cdot p_{above}) \cdot cols^T &amp;&amp;
+\text{GEMM, using colBuffer saved by CalculateState()} \\
 \end{align}
 \]
 </p>

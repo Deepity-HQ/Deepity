@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -117,13 +117,16 @@ $(function(){initNavTree('classDeep_1_1ConvPCNetwork.html','',''); });
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a622e6a7baea151de32b1b507a16372b1">operator=</a>(const ConvPCNetwork &amp;)=delete</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b">PCNDiagnostics</a> class</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"><span class="mlabel">friend</span></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#ade6d0963dd15392166b03510a2b8849d">Predict</a>(const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a4898c29be195b1fd2a5c0968e8f4cd8e">PredictWithProjection</a>(const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#aefb27c7dd220b81e2c1a2f61b15a3d28">ProjectForward</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a3a8eb06c3e271d4096e71d6c3af20f92">RandomizeWeights</a>(std::mt19937 &amp;rng) noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
   <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#aedc52b9889272cf4d04ad3d51541c122">ResetState</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
   <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a96f7fdb1fd4e28f9796f7961473aab0e">TrainStep</a>(const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
-  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a69c0f3cec4ecb379c3deb08fe22354e2">UpdatePrecision</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#ae46edfcccce5b90eceede8054c4940b6">UpdateState</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
-  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#acccd1a223005083eb9d60f8555fa93b2">UpdateWeights</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
-  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a8473a0415d06c743d77a0eb79417cecf">~ConvPCNetwork</a>()=default</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a31ffd277b80e5adf89b9bdc0e4a592af">TrainStepWithProjection</a>(const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a69c0f3cec4ecb379c3deb08fe22354e2">UpdatePrecision</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#ae46edfcccce5b90eceede8054c4940b6">UpdateState</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="even"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#acccd1a223005083eb9d60f8555fa93b2">UpdateWeights</a>() noexcept</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
+  <tr class="odd"><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html#a8473a0415d06c743d77a0eb79417cecf">~ConvPCNetwork</a>()=default</td><td class="entry"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td><td class="entry"></td></tr>
 </table></div><!-- contents -->
 </div><!-- doc-content -->
 </div><!-- container -->

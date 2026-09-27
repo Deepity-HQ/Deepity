@@ -1,18 +1,7 @@
 var dir_68267d1309a1af8e8297ef4c3efbcdba =
 [
-    [ "ConvPCLayer.cpp", "ConvPCLayer_8cpp.html", null ],
-    [ "ConvPCNetwork.cpp", "ConvPCNetwork_8cpp.html", null ],
-    [ "DiscriminativePCLayer.cpp", "DiscriminativePCLayer_8cpp.html", "DiscriminativePCLayer_8cpp" ],
-    [ "DiscriminativePCNetwork.cpp", "DiscriminativePCNetwork_8cpp.html", null ],
-    [ "DKP_PCLayer.cpp", "DKP__PCLayer_8cpp.html", null ],
-    [ "GaussSeidelPCLayer.cpp", "GaussSeidelPCLayer_8cpp.html", null ],
-    [ "GaussSeidelPCNetwork.cpp", "GaussSeidelPCNetwork_8cpp.html", null ],
-    [ "ModelIO.cpp", "ModelIO_8cpp.html", null ],
-    [ "PCNDiagnostics.cpp", "PCNDiagnostics_8cpp.html", "PCNDiagnostics_8cpp" ],
-    [ "RBLayer.cpp", "RBLayer_8cpp.html", null ],
-    [ "SimpleConvPCLayer.cpp", "SimpleConvPCLayer_8cpp.html", null ],
-    [ "SimpleConvPCNetwork.cpp", "SimpleConvPCNetwork_8cpp.html", null ],
-    [ "SimplePCLayer.cpp", "SimplePCLayer_8cpp.html", null ],
-    [ "SimplePCNetwork.cpp", "SimplePCNetwork_8cpp.html", null ],
-    [ "StreamAlignedBatcher.cpp", "StreamAlignedBatcher_8cpp.html", null ]
+    [ "backend", "dir_3f615ade772d23cefe5e20dcb18424a2.html", "dir_3f615ade772d23cefe5e20dcb18424a2" ],
+    [ "layers", "dir_46a221571c56bf3fcf15f3c317ca6a89.html", "dir_46a221571c56bf3fcf15f3c317ca6a89" ],
+    [ "networks", "dir_b6d0e2cb8efd242ccb7fc649323ceed9.html", "dir_b6d0e2cb8efd242ccb7fc649323ceed9" ],
+    [ "utils", "dir_313caf1132e152dd9b58bea13a4052ca.html", "dir_313caf1132e152dd9b58bea13a4052ca" ]
 ];

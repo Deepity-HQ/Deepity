@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,39 +103,36 @@ $(function(){initNavTree('SimpleConvPCLayer_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>ConvPCLayer with precision removed (mirrors SimplePCLayer's relationship to DiscriminativePCLayer) AND AdamW/Adam support added (mirrors SimplePCLayer's own AdamW integration).  
+<p>ConvPCLayer with precision removed, AdamW/Adam support, now routed through IComputeBackend for GPU portability (mirrors SimplePCLayer's own IComputeBackend port).  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;stdexcept&gt;</code><br />
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
-<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/Activations.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/AdamOptimizer.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/utils/Activations.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/utils/AdamOptimizer.h</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="Layer_8h_source.html">deepity/layers/Layer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="Im2Col_8h_source.html">deepity/Im2Col.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="DeviceMemoryArena_8h_source.html">deepity/utils/DeviceMemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Im2Col_8h_source.html">deepity/utils/Im2Col.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="IComputeBackend_8h_source.html">deepity/backend/IComputeBackend.h</a>&gt;</code><br />
 </div>
 <p><a href="SimpleConvPCLayer_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3ASimpleConvPCLayer" id="r_Deep_3A_3ASimpleConvPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCLayer.html">Deep::SimpleConvPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional PC layer, precision-free, AdamW-capable, routed through <a class="el" href="classDeep_1_1IComputeBackend.html" title="Device-agnostic compute backend interface: every numerical primitive a layer/network needs,...">IComputeBackend</a> for GPU portability &ndash; see the file-level warning above for the GPU path's verification status.  <a href="classDeep_1_1SimpleConvPCLayer.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>ConvPCLayer with precision removed (mirrors SimplePCLayer's relationship to DiscriminativePCLayer) AND AdamW/Adam support added (mirrors SimplePCLayer's own AdamW integration). </p>
-<p>Precision removal: identical justification to SimplePCLayer &ndash; every real run used pr=0.0 (precision inert), yet every layer paid for the p/log_p buffers and the extra multiply/log terms regardless.</p>
-<dl class="section warning"><dt>Warning</dt><dd>Built on TOP of ConvPCLayer's just-verified feedback term (Col2Im path, confirmed via tConvFeedbackVerify.cpp with a genuinely unclamped middle layer &ndash; worst rel err 1.09%). This class has NOT been independently re-verified: neither the precision-removal (should be inert, same argument as SimplePCLayer, but not yet confirmed) nor the AdamW integration (a NEW port, not the one already gradient-checked for SimplePCLayer &ndash; same class of grad_scale-sign bug that was found and fixed there is possible here too, and hasn't been ruled out). Required before trusting this for real training:<ol type="1">
-<li>A finite-difference gradient check on UpdateWeights() (SGD path).</li>
-<li>The SAME feedback-term verification tConvFeedbackVerify.cpp did for ConvPCLayer, re-run against THIS class.</li>
-<li>A separate gradient check specifically for the AdamW path (same sign-convention pitfall found in SimplePCLayer &ndash; local_grad's established sign convention may not match what AdamWUpdate() expects without an explicit sign flip on the raw-gradient GEMM). </li>
-</ol>
-</dd></dl>
+<div class="textblock"><p>ConvPCLayer with precision removed, AdamW/Adam support, now routed through IComputeBackend for GPU portability (mirrors SimplePCLayer's own IComputeBackend port). </p>
+<dl class="section warning"><dt>Warning</dt><dd>CPU correctness re-verified tonight via five independent, hand-computable tests (single-channel, multi-channel, real spatial kernel, padding, and multi-channel+real-kernel combined) plus a from-scratch Python im2col+GEMM reference comparison &ndash; all matched to float32 precision. The GPU path (once CUDABackend implements Im2Col/Col2Im/RepackForBatchedGemm/MultiplyInto/Fill/ AddBiasPerChannel) has NOT yet been tested at all. </dd></dl>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

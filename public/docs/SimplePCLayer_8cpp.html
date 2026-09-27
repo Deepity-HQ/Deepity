@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: src/SimplePCLayer.cpp File Reference</title>
+<title>Deepity: src/layers/SimplePCLayer.cpp File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -102,23 +102,58 @@ $(function(){initNavTree('SimplePCLayer_8cpp.html','',''); });
   <div class="headertitle"><div class="title">SimplePCLayer.cpp File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;<a class="el" href="SimplePCLayer_8h_source.html">deepity/layers/SimplePCLayer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="Optimize_8h_source.html">deepity/Optimize.h</a>&gt;</code><br />
-<code>#include &lt;cstdlib&gt;</code><br />
-<code>#include &lt;iostream&gt;</code><br />
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
 <code>#include &lt;chrono&gt;</code><br />
-<code>#include &lt;cblas.h&gt;</code><br />
-<code>#include &lt;omp.h&gt;</code><br />
-<code>#include &lt;immintrin.h&gt;</code><br />
-<code>#include &lt;algorithm&gt;</code><br />
-<code>#include &lt;sleef.h&gt;</code><br />
+<code>#include &lt;cstdlib&gt;</code><br />
 <code>#include &lt;cstring&gt;</code><br />
+<code>#include &lt;<a class="el" href="CPUBackend_8h_source.html">deepity/backend/CPUBackend.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="SimplePCLayer_8h_source.html">deepity/layers/SimplePCLayer.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Optimize_8h_source.html">deepity/utils/Optimize.h</a>&gt;</code><br />
+<code>#include &lt;omp.h&gt;</code><br />
+<code>#include &lt;type_traits&gt;</code><br />
 </div><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-define-members" class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:a3b7f926ba2f14c750ede1640b699f7f3" id="r_a3b7f926ba2f14c750ede1640b699f7f3"><td class="memItemLeft">#define&#160;</td><td class="memItemRight"><a class="el" href="#a3b7f926ba2f14c750ede1640b699f7f3">SCANF_DISTRIBUTION</a>(str,  name,  a,  b)</td></tr>
 </table>
+<a name="doc-define-members" id="doc-define-members"></a><h2 id="header-doc-define-members" class="groupheader">Macro Definition Documentation</h2>
+<a id="a3b7f926ba2f14c750ede1640b699f7f3" name="a3b7f926ba2f14c750ede1640b699f7f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b7f926ba2f14c750ede1640b699f7f3">&#9670;&#160;</a></span>SCANF_DISTRIBUTION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SCANF_DISTRIBUTION</td>
+          <td>(</td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>str</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>a</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"></td>          <td class="paramname"><span class="paramname"><em>b</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">sscanf((str), <span class="stringliteral">&quot;%15[^(](%f,%f)&quot;</span>, (name), &amp;(a), &amp;(b))</div>
+</div><!-- fragment -->
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
@@ -132,7 +167,7 @@ Namespaces</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a href="SimplePCLayer_8cpp.html">SimplePCLayer.cpp</a></li>
+    <li class="navelem"><a href="dir_68267d1309a1af8e8297ef4c3efbcdba.html">src</a></li><li class="navelem"><a href="dir_46a221571c56bf3fcf15f3c317ca6a89.html">layers</a></li><li class="navelem"><a href="SimplePCLayer_8cpp.html">SimplePCLayer.cpp</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

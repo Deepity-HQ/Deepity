@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -110,21 +110,22 @@ $(function(){initNavTree('GaussSeidelPCLayer_8h.html','',''); });
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
-<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/Activations.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/AdamOptimizer.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/utils/Activations.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/utils/AdamOptimizer.h</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="Layer_8h_source.html">deepity/layers/Layer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
 </div>
 <p><a href="GaussSeidelPCLayer_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3AGaussSeidelPCLayer" id="r_Deep_3A_3AGaussSeidelPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCLayer.html">Deep::GaussSeidelPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">PC layer with Gauss-Seidel (sequential-sweep) settling dynamics, in place of the usual simultaneous update. Not yet gradient-checked &ndash; see the file-level warning above.  <a href="classDeep_1_1GaussSeidelPCLayer.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A PC layer whose settling dynamics follow a Gauss-Seidel (sequential-sweep) update, matching ngc-learn's actual execution order &ndash; NOT the Jacobi (fully-synchronous) update SimplePCLayer uses. </p>

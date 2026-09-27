@@ -1,5 +1,5 @@
 var searchData=
 [
-  ['gaussseidelpclayer_0',['GaussSeidelPCLayer',['../classDeep_1_1GaussSeidelPCLayer.html',1,'Deep']]],
-  ['gaussseidelpcnetwork_1',['GaussSeidelPCNetwork',['../classDeep_1_1GaussSeidelPCNetwork.html',1,'Deep']]]
+  ['fullpclayer_0',['FullPCLayer',['../classDeep_1_1FullPCLayer.html',1,'Deep']]],
+  ['fullpcnetwork_1',['FullPCNetwork',['../classDeep_1_1FullPCNetwork.html',1,'Deep']]]
 ];

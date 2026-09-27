@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,7 +103,7 @@ $(function(){initNavTree('namespaceDeep.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>.  
+<p>This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies.  
 <a href="#details">More...</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
@@ -112,56 +112,97 @@ Namespaces</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:PCNDiagnostics" id="r_PCNDiagnostics"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1PCNDiagnostics.html">PCNDiagnostics</a></td></tr>
+<tr class="memitem:CPUBackend" id="r_CPUBackend"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1CPUBackend.html">CPUBackend</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">CPU implementation of <a class="el" href="classDeep_1_1IComputeBackend.html" title="Device-agnostic compute backend interface: every numerical primitive a layer/network needs,...">IComputeBackend</a>: SIMD (via <a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">Activations.h</a>) for elementwise ops, BLAS for GEMM. Graph capture/replay are no-ops (there's no async device queue to record).  <a href="classDeep_1_1CPUBackend.html#details">More...</a><br /></td></tr>
+<tr class="memitem:CUDABackend" id="r_CUDABackend"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1CUDABackend.html">CUDABackend</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">CUDA implementation of <a class="el" href="classDeep_1_1IComputeBackend.html" title="Device-agnostic compute backend interface: every numerical primitive a layer/network needs,...">IComputeBackend</a>: device kernels for elementwise ops, cuBLAS for GEMM, CUTLASS for the fused forward path, CUDA graphs for capture/replay. See src/backend/cuda/ for the implementation, split by concern to mirror this interface's own section grouping.  <a href="classDeep_1_1CUDABackend.html#details">More...</a><br /></td></tr>
+<tr class="memitem:IComputeBackend" id="r_IComputeBackend"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Device-agnostic compute backend interface: every numerical primitive a layer/network needs, implemented once each by <a class="el" href="classDeep_1_1CPUBackend.html" title="CPU implementation of IComputeBackend: SIMD (via Activations.h) for elementwise ops,...">CPUBackend</a> (SIMD/BLAS) and <a class="el" href="classDeep_1_1CUDABackend.html" title="CUDA implementation of IComputeBackend: device kernels for elementwise ops, cuBLAS for GEMM,...">CUDABackend</a> (kernels/cuBLAS/CUTLASS), so layer code never branches on device directly.  <a href="classDeep_1_1IComputeBackend.html#details">More...</a><br /></td></tr>
+<tr class="memitem:Tensor" id="r_Tensor"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Tensor.html">Tensor</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A device-aware, RAII-managed, move-only buffer &ndash; see the file-level note above for the full ownership/device contract.  <a href="classDeep_1_1Tensor.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ConvPCLayer" id="r_ConvPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enabling an unclamped middle layer.  <a href="classDeep_1_1ConvPCLayer.html#details">More...</a><br /></td></tr>
+<tr class="memitem:DirectKPPCLayer" id="r_DirectKPPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DirectKPPCLayer.html">DirectKPPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predictive Coding layer using Direct Kolen-Pollack feedback alignment (DFA): a per-layer feedback matrix Psi, trained to gradually correlate with W's transpose chain, replaces symmetric weight transport for the feedback term. See <a class="el" href="DirectKPPCNetwork_8h.html" title="Orchestrates DirectKPPCLayer&#39;s Direct Kolen-Pollack predictive coding (DKP-PC) phases in the correct ...">DirectKPPCNetwork.h</a>'s class docs and the paper's Appendix A.1.  <a href="classDeep_1_1DirectKPPCLayer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:DiscriminativePCLayer" id="r_DiscriminativePCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></td></tr>
-<tr class="memitem:DKP_5FPCLayer" id="r_DKP_5FPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DKP__PCLayer.html">DKP_PCLayer</a></td></tr>
+<tr class="memitem:FullPCLayer" id="r_FullPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1FullPCLayer.html">FullPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">PC layer combining muPC scaling, optional residual connections, and DKP direct feedback &ndash; every extra OFF by default, so plain defaults reproduce <a class="el" href="classDeep_1_1DirectKPPCLayer.html" title="Predictive Coding layer using Direct Kolen-Pollack feedback alignment (DFA): a per-layer feedback mat...">DirectKPPCLayer</a> exactly. See the file-level note above for the full design rationale.  <a href="classDeep_1_1FullPCLayer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:GaussSeidelPCLayer" id="r_GaussSeidelPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCLayer.html">GaussSeidelPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">PC layer with Gauss-Seidel (sequential-sweep) settling dynamics, in place of the usual simultaneous update. Not yet gradient-checked &ndash; see the file-level warning above.  <a href="classDeep_1_1GaussSeidelPCLayer.html#details">More...</a><br /></td></tr>
+<tr class="memitem:TensorDescriptor" id="r_TensorDescriptor"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A named, shaped view into a layer's weight/bias data, for <a class="el" href="classDeep_1_1ModelIO.html" title="Static save/load helpers for any network type exposing GetLayers() – templated so it works across eve...">ModelIO</a>'s save/load (see <a class="el" href="classDeep_1_1Layer.html#a5ad7ffebc2a789ad47d2afa371f6225e" title="Returns a dictionary of this.">Layer::GetStateDict()</a>).  <a href="structDeep_1_1TensorDescriptor.html#details">More...</a><br /></td></tr>
 <tr class="memitem:Layer" id="r_Layer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html">Layer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A deepity layer virtual class.  <a href="classDeep_1_1Layer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:RBLayer" id="r_RBLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1RBLayer.html">RBLayer</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restricted Boltzmann-style Predictive Coding (PC) <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a>.  <a href="classDeep_1_1RBLayer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:SimpleConvPCLayer" id="r_SimpleConvPCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional PC layer, precision-free, AdamW-capable, routed through <a class="el" href="classDeep_1_1IComputeBackend.html" title="Device-agnostic compute backend interface: every numerical primitive a layer/network needs,...">IComputeBackend</a> for GPU portability &ndash; see the file-level warning above for the GPU path's verification status.  <a href="classDeep_1_1SimpleConvPCLayer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:SimplePCLayer" id="r_SimplePCLayer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predictive Coding layer without precision weighting &ndash; the simpler, unweighted-energy counterpart to <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>.  <a href="classDeep_1_1SimplePCLayer.html#details">More...</a><br /></td></tr>
+<tr class="memitem:ConvPCNetwork" id="r_ConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ConvPCNetwork.html">ConvPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1ConvPCLayer.html" title="Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enablin...">ConvPCLayer</a>.  <a href="classDeep_1_1ConvPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:DirectKPPCNetwork" id="r_DirectKPPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DirectKPPCNetwork.html">DirectKPPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predictive Coding network built from <a class="el" href="classDeep_1_1DirectKPPCLayer.html" title="Predictive Coding layer using Direct Kolen-Pollack feedback alignment (DFA): a per-layer feedback mat...">DirectKPPCLayer</a>, using Direct Kolen-Pollack feedback alignment (DFA) instead of symmetric weight transport. See the file-level warning above on its current verification status.  <a href="classDeep_1_1DirectKPPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:DiscriminativePCNetwork" id="r_DiscriminativePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html">DiscriminativePCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></span>.  <a href="classDeep_1_1DiscriminativePCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:FullPCNetwork" id="r_FullPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1FullPCNetwork.html">FullPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predictive Coding network combining muPC scaling, optional residual connections, and DKP direct feedback &ndash; see the file-level note above for how its defaults reproduce <a class="el" href="classDeep_1_1DirectKPPCNetwork.html" title="Predictive Coding network built from DirectKPPCLayer, using Direct Kolen-Pollack feedback alignment (...">DirectKPPCNetwork</a> exactly.  <a href="classDeep_1_1FullPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:GaussSeidelPCNetwork" id="r_GaussSeidelPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCNetwork.html">GaussSeidelPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predictive Coding network built from <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html" title="PC layer with Gauss-Seidel (sequential-sweep) settling dynamics, in place of the usual simultaneous u...">GaussSeidelPCLayer</a>, sweeping layers sequentially rather than updating them simultaneously. See the file-level warning above on its current verification status.  <a href="classDeep_1_1GaussSeidelPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:SimpleConvPCNetwork" id="r_SimpleConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCNetwork.html">SimpleConvPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> &ndash; precision-free, AdamW-capable, device-aware.  <a href="classDeep_1_1SimpleConvPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:SimplePCNetwork" id="r_SimplePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimplePCNetwork.html">SimplePCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a></span>.  <a href="classDeep_1_1SimplePCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memitem:DeviceMemoryArena" id="r_DeviceMemoryArena"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DeviceMemoryArena.html">DeviceMemoryArena</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 64-byte-aligned bump-pointer allocator over a single contiguous block of device memory, obtained via a supplied <a class="el" href="classDeep_1_1IComputeBackend.html" title="Device-agnostic compute backend interface: every numerical primitive a layer/network needs,...">IComputeBackend</a> (expected to be a <a class="el" href="classDeep_1_1CUDABackend.html" title="CUDA implementation of IComputeBackend: device kernels for elementwise ops, cuBLAS for GEMM,...">CUDABackend</a> in practice, though this class itself doesn't hard-require that specific type).  <a href="classDeep_1_1DeviceMemoryArena.html#details">More...</a><br /></td></tr>
 <tr class="memitem:MemoryArena" id="r_MemoryArena"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1MemoryArena.html">MemoryArena</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory. Every chunk handed out via <a class="el" href="classDeep_1_1MemoryArena.html#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> is itself 64-byte aligned, satisfying this codebase's strict alignment requirement for AVX2/AVX-512 loads.  <a href="classDeep_1_1MemoryArena.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ModelIO" id="r_ModelIO"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ModelIO.html">ModelIO</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static utility class for saving and loading <a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="An abstracted class for an array of DiscriminativePCLayer.">DiscriminativePCNetwork</a> model state to/from a structured directory on disk.  <a href="classDeep_1_1ModelIO.html#details">More...</a><br /></td></tr>
-<tr class="memitem:ConvPCNetwork" id="r_ConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ConvPCNetwork.html">ConvPCNetwork</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A convolutional Predictive Coding (PC) network: an ordered stack of <a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a> instances sharing a single contiguous <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a>, trained via iterative energy-relaxation rather than backpropagation.  <a href="classDeep_1_1ConvPCNetwork.html#details">More...</a><br /></td></tr>
-<tr class="memitem:DiscriminativePCNetwork" id="r_DiscriminativePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html">DiscriminativePCNetwork</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a></span>.  <a href="classDeep_1_1DiscriminativePCNetwork.html#details">More...</a><br /></td></tr>
-<tr class="memitem:GaussSeidelPCNetwork" id="r_GaussSeidelPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1GaussSeidelPCNetwork.html">GaussSeidelPCNetwork</a></td></tr>
-<tr class="memitem:SimpleConvPCNetwork" id="r_SimpleConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCNetwork.html">SimpleConvPCNetwork</a></td></tr>
-<tr class="memitem:SimplePCNetwork" id="r_SimplePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimplePCNetwork.html">SimplePCNetwork</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a></span>.  <a href="classDeep_1_1SimplePCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static save/load helpers for any network type exposing GetLayers() &ndash; templated so it works across every PC network variant without each one reimplementing serialization.  <a href="classDeep_1_1ModelIO.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ProfileAccumulator" id="r_ProfileAccumulator"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structDeep_1_1ProfileAccumulator.html">ProfileAccumulator</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One layer's accumulated time-per-phase, in seconds &ndash; see the file-level note for the reconciliation invariants (<a class="el" href="structDeep_1_1ProfileAccumulator.html#a83b598b4911307d14bcbf96b03353ad7" title="Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal,...">PhaseSum()</a> vs. the top-level totals vs. external wall-clock).  <a href="structDeep_1_1ProfileAccumulator.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ProfileEntry" id="r_ProfileEntry"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structDeep_1_1ProfileEntry.html">ProfileEntry</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">One registered layer's profiling data: its print label paired with its accumulator.  <a href="structDeep_1_1ProfileEntry.html#details">More...</a><br /></td></tr>
 <tr class="memitem:ScopedTimer" id="r_ScopedTimer"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ScopedTimer.html">ScopedTimer</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">No-op stand-in for the PCN_PROFILE build of <a class="el" href="classDeep_1_1ScopedTimer.html" title="No-op stand-in for the PCN_PROFILE build of ScopedTimer above, so PCN_TIME() call sites compile ident...">ScopedTimer</a> above, so <a class="el" href="Profile_8h.html#a0c74b93e21c61e2f23b7e718e91beee1" title="No-op unless PCN_PROFILE is defined – see the PCN_PROFILE branch above.">PCN_TIME()</a> call sites compile identically either way.  <a href="classDeep_1_1ScopedTimer.html#details">More...</a><br /></td></tr>
 <tr class="memitem:StreamAlignedBatcher" id="r_StreamAlignedBatcher"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1StreamAlignedBatcher.html">StreamAlignedBatcher</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Builds batches with a fixed, grouped number of examples per class &ndash; see the file-level note for why this exists and what it deliberately doesn't own.  <a href="classDeep_1_1StreamAlignedBatcher.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-typedef-members" class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:afa1dea57980a3726b01372a204121e16" id="r_afa1dea57980a3726b01372a204121e16"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#afa1dea57980a3726b01372a204121e16">ActivationFn</a> = void (*)(float *, size_t)</td></tr>
+<tr class="memdesc:afa1dea57980a3726b01372a204121e16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to an in-place activation function: f(buf, n).  <br /></td></tr>
 <tr class="memitem:aac769fa213f2bba46034c471e75d58fa" id="r_aac769fa213f2bba46034c471e75d58fa"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#aac769fa213f2bba46034c471e75d58fa">DerivativeFn</a> = void (*)(float *, size_t, bool)</td></tr>
+<tr class="memdesc:aac769fa213f2bba46034c471e75d58fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to an in-place activation derivative: f(buf, n, activated).  <br /></td></tr>
+<tr class="memitem:a17eee70edeb7c146cef5347b6446c1b8" id="r_a17eee70edeb7c146cef5347b6446c1b8"><td class="memItemLeft">using&#160;</td><td class="memItemRight"><a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8">DerivativeFn2</a> = void (*)(float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t)</td></tr>
+<tr class="memdesc:a17eee70edeb7c146cef5347b6446c1b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to a two-buffer activation derivative: reads src, writes the derivative into dst, leaving src untouched.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-enum-members" class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
+<tr class="memitem:a79fb20681fc8065313ded67ba70f02f3" id="r_a79fb20681fc8065313ded67ba70f02f3"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#a79fb20681fc8065313ded67ba70f02f3">DeviceType</a> { <a class="el" href="#a79fb20681fc8065313ded67ba70f02f3a2b51e711df2cded71f92128f2f8f34dd">DEVICE_CPU</a>
+, <a class="el" href="#a79fb20681fc8065313ded67ba70f02f3a550156b6fa4de0f5ff623e2c3e19d1b2">DEVICE_GPU</a>
+ }</td></tr>
+<tr class="memdesc:a79fb20681fc8065313ded67ba70f02f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which physical device a Tensor/IComputeBackend pair runs on.  <a href="#a79fb20681fc8065313ded67ba70f02f3">More...</a><br /></td></tr>
 <tr class="memitem:a4b7606ca838be34029bd134f319e0f61" id="r_a4b7606ca838be34029bd134f319e0f61"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> : uint8_t { <br />
 &#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">RELU</a>
 , <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">dRELU</a>
-, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b">SIGMOID</a>
-, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01">dSIGMOID</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a6c83d4d579e33c2e1b09f2e9825fcbc6">GELU</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a23d71be91d3de741267d599f8c0571db">dGELU</a>
 , <br />
-&#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4">eSIGMOID</a>
-, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1">TANH</a>
+&#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b">SIGMOID</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01">dSIGMOID</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4">eSIGMOID</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61aa4fdb72efa2b1fa7213c719db86c3525">d_eSIGMOID</a>
+, <br />
+&#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1">TANH</a>
 , <a class="el" href="#a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd">dTANH</a>
 , <a class="el" href="#a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046">LINEAR</a>
+, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7">dLINEAR</a>
 , <br />
-&#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7">dLINEAR</a>
-, <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">NONE</a>
+&#160;&#160;<a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">NONE</a>
 <br />
  }</td></tr>
+<tr class="memdesc:a4b7606ca838be34029bd134f319e0f61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that need to name an activation without depending on the SIMD implementations themselves (see the file-level note above on why this is split out of <a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">Activations.h</a>).  <a href="#a4b7606ca838be34029bd134f319e0f61">More...</a><br /></td></tr>
 <tr class="memitem:a76c7b5d078cce2bed29f6f592560bf02" id="r_a76c7b5d078cce2bed29f6f592560bf02"><td class="memItemLeft">enum class &#160;</td><td class="memItemRight"><a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> { <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2">SGD</a>
 , <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02a333d749a7effaa4922bb5f4fb130a2ff">ADAM</a>
 , <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02a8e45bbead9b32966f3c391907d5b534d">ADAMW</a>
@@ -170,14 +211,101 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:afca3df42a9f8d541c51cf729a4c8b89b" id="r_afca3df42a9f8d541c51cf729a4c8b89b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afca3df42a9f8d541c51cf729a4c8b89b">logf_v</a> (float *x, size_t n)</td></tr>
-<tr class="memitem:ac83ec1ef9cfd17806563be3f5a2d5b50" id="r_ac83ec1ef9cfd17806563be3f5a2d5b50"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac83ec1ef9cfd17806563be3f5a2d5b50">e_sigmoid</a> (float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memitem:adbf28d6c5ab6068262a813d7ba3725ff" id="r_adbf28d6c5ab6068262a813d7ba3725ff"><td class="memItemLeft">std::unique_ptr&lt; <a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#adbf28d6c5ab6068262a813d7ba3725ff">CreateBackend</a> (<a class="el" href="#a79fb20681fc8065313ded67ba70f02f3">DeviceType</a> device)</td></tr>
+<tr class="memdesc:adbf28d6c5ab6068262a813d7ba3725ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Factory function to create the appropriate backend.  <br /></td></tr>
+<tr class="memitem:af156ca864c061432e51113530b15cee0" id="r_af156ca864c061432e51113530b15cee0"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#af156ca864c061432e51113530b15cee0">ProtectFPU</a> ()</td></tr>
+<tr class="memdesc:af156ca864c061432e51113530b15cee0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flushes denormal floats to zero on both input and output of SSE FP ops, avoiding the severe slowdown x86 FPUs hit computing with denormals &ndash; settling can drive values arbitrarily close to zero over many steps.  <br /></td></tr>
+<tr class="memitem:a90665b7ac59bbba24c1cd9a1465cd012" id="r_a90665b7ac59bbba24c1cd9a1465cd012"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a90665b7ac59bbba24c1cd9a1465cd012">relu</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:a90665b7ac59bbba24c1cd9a1465cd012"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>.  <br /></td></tr>
+<tr class="memitem:a7b9f97f54834eb672ab4e316482e9ef0" id="r_a7b9f97f54834eb672ab4e316482e9ef0"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a7b9f97f54834eb672ab4e316482e9ef0">gelu</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:a7b9f97f54834eb672ab4e316482e9ef0"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>.  <br /></td></tr>
+<tr class="memitem:a08229cd386d27be7b0d7e0049918757d" id="r_a08229cd386d27be7b0d7e0049918757d"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a08229cd386d27be7b0d7e0049918757d">sigmoid</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:a08229cd386d27be7b0d7e0049918757d"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:ae241b32ffca18658a60de5d50b71cd34" id="r_ae241b32ffca18658a60de5d50b71cd34"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#ae241b32ffca18658a60de5d50b71cd34">e_sigmoid</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:ae241b32ffca18658a60de5d50b71cd34"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:a5d44dd1342d38935f20b42b9d1241cbc" id="r_a5d44dd1342d38935f20b42b9d1241cbc"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a5d44dd1342d38935f20b42b9d1241cbc">tanh</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:a5d44dd1342d38935f20b42b9d1241cbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>.  <br /></td></tr>
+<tr class="memitem:a209ee87902c45f6344279deeb665d1f7" id="r_a209ee87902c45f6344279deeb665d1f7"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a209ee87902c45f6344279deeb665d1f7">linear</a> (float *, size_t) noexcept</td></tr>
+<tr class="memdesc:a209ee87902c45f6344279deeb665d1f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>.  <br /></td></tr>
+<tr class="memitem:ad18e23c57ff5761ee8a6b06a79fa53a3" id="r_ad18e23c57ff5761ee8a6b06a79fa53a3"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#ad18e23c57ff5761ee8a6b06a79fa53a3">dRelu</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:ad18e23c57ff5761ee8a6b06a79fa53a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>.  <br /></td></tr>
+<tr class="memitem:a4397b77de30029dae6543d95b4855586" id="r_a4397b77de30029dae6543d95b4855586"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a4397b77de30029dae6543d95b4855586">dGelu</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:a4397b77de30029dae6543d95b4855586"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>.  <br /></td></tr>
+<tr class="memitem:abffd21c29898fd8bebaef3f54ce042d2" id="r_abffd21c29898fd8bebaef3f54ce042d2"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#abffd21c29898fd8bebaef3f54ce042d2">dSigmoid</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:abffd21c29898fd8bebaef3f54ce042d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:a1346dbad67249d0f80c85ec85926786f" id="r_a1346dbad67249d0f80c85ec85926786f"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a1346dbad67249d0f80c85ec85926786f">d_eSigmoid</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:a1346dbad67249d0f80c85ec85926786f"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:ae3d1de4375e211558caa485a1c2e53fd" id="r_ae3d1de4375e211558caa485a1c2e53fd"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#ae3d1de4375e211558caa485a1c2e53fd">dTanh</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:ae3d1de4375e211558caa485a1c2e53fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>.  <br /></td></tr>
+<tr class="memitem:a3320c05d39f0a9bd24360f6360ef4209" id="r_a3320c05d39f0a9bd24360f6360ef4209"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a3320c05d39f0a9bd24360f6360ef4209">dLinear</a> (float *, size_t, bool) noexcept</td></tr>
+<tr class="memdesc:a3320c05d39f0a9bd24360f6360ef4209"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>.  <br /></td></tr>
+<tr class="memitem:ab1e2916a15427a340ec37aa086c8812d" id="r_ab1e2916a15427a340ec37aa086c8812d"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#ab1e2916a15427a340ec37aa086c8812d">dReluInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:ab1e2916a15427a340ec37aa086c8812d"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>.  <br /></td></tr>
+<tr class="memitem:afb5d672e974473f5c0b5e2fae6650135" id="r_afb5d672e974473f5c0b5e2fae6650135"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#afb5d672e974473f5c0b5e2fae6650135">dGeluInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:afb5d672e974473f5c0b5e2fae6650135"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>.  <br /></td></tr>
+<tr class="memitem:a940ec3bbc8151a54d1c22b9d53c673c1" id="r_a940ec3bbc8151a54d1c22b9d53c673c1"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a940ec3bbc8151a54d1c22b9d53c673c1">dSigmoidInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:a940ec3bbc8151a54d1c22b9d53c673c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:a08e27b3225a4ea94490a6a8eb704ba88" id="r_a08e27b3225a4ea94490a6a8eb704ba88"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a08e27b3225a4ea94490a6a8eb704ba88">d_eSigmoidInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:a08e27b3225a4ea94490a6a8eb704ba88"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>.  <br /></td></tr>
+<tr class="memitem:ae1e27a6b77f9b52f5a17d11e171486ca" id="r_ae1e27a6b77f9b52f5a17d11e171486ca"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#ae1e27a6b77f9b52f5a17d11e171486ca">dTanhInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:ae1e27a6b77f9b52f5a17d11e171486ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>.  <br /></td></tr>
+<tr class="memitem:a5246b2b8dfd0c788d97925d6713f1fd6" id="r_a5246b2b8dfd0c788d97925d6713f1fd6"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a5246b2b8dfd0c788d97925d6713f1fd6">dLinearInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t) noexcept</td></tr>
+<tr class="memdesc:a5246b2b8dfd0c788d97925d6713f1fd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>.  <br /></td></tr>
+<tr class="memitem:aedac64dabaf07e68cf6155239eb81352" id="r_aedac64dabaf07e68cf6155239eb81352"><td class="memItemLeft">static <a class="el" href="#afa1dea57980a3726b01372a204121e16">ActivationFn</a>&#160;</td><td class="memItemRight"><a class="el" href="#aedac64dabaf07e68cf6155239eb81352">To_Fn</a> (<a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> type)</td></tr>
+<tr class="memdesc:aedac64dabaf07e68cf6155239eb81352"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps an <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> to its concrete function pointer.  <br /></td></tr>
+<tr class="memitem:ab2bedbeb2976fa18039cca9f1eb743a4" id="r_ab2bedbeb2976fa18039cca9f1eb743a4"><td class="memItemLeft">static <a class="el" href="#aac769fa213f2bba46034c471e75d58fa">DerivativeFn</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab2bedbeb2976fa18039cca9f1eb743a4">To_dFn</a> (<a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType)</td></tr>
+<tr class="memdesc:ab2bedbeb2976fa18039cca9f1eb743a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maps an <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> (a derivative variant, e.g. dRELU) to its concrete function pointer.  <br /></td></tr>
+<tr class="memitem:afc6e377482ef7adfd4335c278d5dad9d" id="r_afc6e377482ef7adfd4335c278d5dad9d"><td class="memItemLeft">static <a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8">DerivativeFn2</a>&#160;</td><td class="memItemRight"><a class="el" href="#afc6e377482ef7adfd4335c278d5dad9d">To_dFn2</a> (<a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType)</td></tr>
+<tr class="memdesc:afc6e377482ef7adfd4335c278d5dad9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispatches to the two-buffer (dst, src, n) derivative variant for the given activation type &ndash; see <a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8" title="Pointer to a two-buffer activation derivative: reads src, writes the derivative into dst,...">DerivativeFn2</a>.  <br /></td></tr>
+<tr class="memitem:a1440f62878b8f9304329ac8d86ce17cc" id="r_a1440f62878b8f9304329ac8d86ce17cc"><td class="memItemLeft">static <a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1440f62878b8f9304329ac8d86ce17cc">To_AType</a> (<a class="el" href="#afa1dea57980a3726b01372a204121e16">ActivationFn</a> fn)</td></tr>
+<tr class="memdesc:a1440f62878b8f9304329ac8d86ce17cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reverse lookup of <a class="el" href="#aedac64dabaf07e68cf6155239eb81352" title="Maps an ActivationType to its concrete function pointer.">To_Fn()</a>: maps a function pointer back to its <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a>, by identity comparison against every known activation function.  <br /></td></tr>
+<tr class="memitem:a50402d3103540c0e4dab8dd13feeba81" id="r_a50402d3103540c0e4dab8dd13feeba81"><td class="memItemLeft">static <a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a50402d3103540c0e4dab8dd13feeba81">To_AType</a> (<a class="el" href="#aac769fa213f2bba46034c471e75d58fa">DerivativeFn</a> dfn)</td></tr>
+<tr class="memdesc:a50402d3103540c0e4dab8dd13feeba81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Same as the <a class="el" href="#afa1dea57980a3726b01372a204121e16" title="Pointer to an in-place activation function: f(buf, n).">ActivationFn</a> overload above, for derivative function pointers.  <br /></td></tr>
+<tr class="memitem:a294b00c70b7c50c4c798f80d1a23b84a" id="r_a294b00c70b7c50c4c798f80d1a23b84a"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a294b00c70b7c50c4c798f80d1a23b84a">gelu</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a294b00c70b7c50c4c798f80d1a23b84a"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place GELU activation (tanh approximation, ~5e-4 max absolute error vs. true GELU &ndash; see tests/tGelu.cpp).  <br /></td></tr>
+<tr class="memitem:af3a3c147b88064b436637d5da55cc844" id="r_af3a3c147b88064b436637d5da55cc844"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#af3a3c147b88064b436637d5da55cc844">dGelu</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n, const bool activated) noexcept</td></tr>
+<tr class="memdesc:af3a3c147b88064b436637d5da55cc844"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place GELU derivative.  <br /></td></tr>
+<tr class="memitem:a3c0e25a569ba09a25306bfc1d4b3730f" id="r_a3c0e25a569ba09a25306bfc1d4b3730f"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a3c0e25a569ba09a25306bfc1d4b3730f">dGeluInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a3c0e25a569ba09a25306bfc1d4b3730f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer, single-pass GELU derivative: reads src (the pre-activation value), writes the derivative directly into dst.  <br /></td></tr>
+<tr class="memitem:a86c19e834a7186bbcfe5c1225f116c41" id="r_a86c19e834a7186bbcfe5c1225f116c41"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a86c19e834a7186bbcfe5c1225f116c41">linear</a> (float *x, size_t n) noexcept</td></tr>
+<tr class="memdesc:a86c19e834a7186bbcfe5c1225f116c41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Identity activation: f(x) = x. A no-op, kept as a real function so it can be used interchangeably with the other activations through <a class="el" href="#afa1dea57980a3726b01372a204121e16" title="Pointer to an in-place activation function: f(buf, n).">ActivationFn</a>.  <br /></td></tr>
+<tr class="memitem:a242af071651468c508ee31baacc19a2d" id="r_a242af071651468c508ee31baacc19a2d"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a242af071651468c508ee31baacc19a2d">dLinear</a> (float *x, size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memdesc:a242af071651468c508ee31baacc19a2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Derivative of <a class="el" href="#a209ee87902c45f6344279deeb665d1f7" title="See Linear.h.">linear()</a>: a constant 1 everywhere.  <br /></td></tr>
+<tr class="memitem:a61642cee9ad8b79d16de92d308c80151" id="r_a61642cee9ad8b79d16de92d308c80151"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a61642cee9ad8b79d16de92d308c80151">dLinearInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, size_t n) noexcept</td></tr>
+<tr class="memdesc:a61642cee9ad8b79d16de92d308c80151"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer variant of dLinear &ndash; src is unused (the derivative of a linear function is a constant), kept for signature consistency with To_dFn2's dispatch table.  <br /></td></tr>
+<tr class="memitem:a9da40a880885f014c9bf30397439faa7" id="r_a9da40a880885f014c9bf30397439faa7"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a9da40a880885f014c9bf30397439faa7">relu</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a9da40a880885f014c9bf30397439faa7"><td class="mdescLeft">&#160;</td><td class="mdescRight">RELU(x) = <a class="el" href="Relu_8h.html#afa99ec4acc4ecb2dc3c2d05da15d0e3f" title="Guarded so this doesn&#39;t clash with a system MAX macro (notably Windows headers) if one is already def...">MAX(0, x)</a> for all x.  <br /></td></tr>
+<tr class="memitem:aa940a61ee7d42212fde5a8ba93cb3264" id="r_aa940a61ee7d42212fde5a8ba93cb3264"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#aa940a61ee7d42212fde5a8ba93cb3264">dRelu</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memdesc:aa940a61ee7d42212fde5a8ba93cb3264"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place ReLU derivative: 1 where x &gt; 0, else 0.  <br /></td></tr>
+<tr class="memitem:aeaedd7380404af1e8a6424f2bcd7f0fa" id="r_aeaedd7380404af1e8a6424f2bcd7f0fa"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#aeaedd7380404af1e8a6424f2bcd7f0fa">dReluInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, const size_t n) noexcept</td></tr>
+<tr class="memdesc:aeaedd7380404af1e8a6424f2bcd7f0fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer variant of dRelu: reads src, writes the derivative directly into dst.  <br /></td></tr>
+<tr class="memitem:a15e56885ad88542d764bbd71f266f104" id="r_a15e56885ad88542d764bbd71f266f104"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a15e56885ad88542d764bbd71f266f104">sigmoid</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a15e56885ad88542d764bbd71f266f104"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Logistic</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = 1 / (1 + e^(-x))</span>.  <br /></td></tr>
+<tr class="memitem:ac83ec1ef9cfd17806563be3f5a2d5b50" id="r_ac83ec1ef9cfd17806563be3f5a2d5b50"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac83ec1ef9cfd17806563be3f5a2d5b50">e_sigmoid</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
 <tr class="memdesc:ac83ec1ef9cfd17806563be3f5a2d5b50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Implements the <em>Elliot</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = (1/2)((x / (1 + |x|)) + 1)</span>.  <br /></td></tr>
+<tr class="memitem:af40024be77e7ab6040515695a008f367" id="r_af40024be77e7ab6040515695a008f367"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#af40024be77e7ab6040515695a008f367">dSigmoid</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n, bool activated=false) noexcept</td></tr>
+<tr class="memdesc:af40024be77e7ab6040515695a008f367"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place logistic sigmoid derivative: sigmoid(x)*(1-sigmoid(x)).  <br /></td></tr>
+<tr class="memitem:aabc8c41cc216d6a993635ca02f61dde1" id="r_aabc8c41cc216d6a993635ca02f61dde1"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#aabc8c41cc216d6a993635ca02f61dde1">dSigmoidInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, const size_t n) noexcept</td></tr>
+<tr class="memdesc:aabc8c41cc216d6a993635ca02f61dde1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer, single-pass sigmoid derivative: reads src, writes sigmoid(src)*(1-sigmoid(src)) directly into dst. Computes the sigmoid into a register and derives from that same register immediately &ndash; one read of src, one write to dst, no intermediate array pass.  <br /></td></tr>
+<tr class="memitem:a40c6dd3f12ed125bb30705dc4c298f8a" id="r_a40c6dd3f12ed125bb30705dc4c298f8a"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a40c6dd3f12ed125bb30705dc4c298f8a">d_eSigmoid</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n, const bool activated=false) noexcept</td></tr>
+<tr class="memdesc:a40c6dd3f12ed125bb30705dc4c298f8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place Elliot sigmoid derivative.  <br /></td></tr>
+<tr class="memitem:a6afbec0773fe22b51ff4cb31391cdc96" id="r_a6afbec0773fe22b51ff4cb31391cdc96"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a6afbec0773fe22b51ff4cb31391cdc96">d_eSigmoidInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a6afbec0773fe22b51ff4cb31391cdc96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer, single-pass Elliot sigmoid derivative: reads src, writes the derivative directly into dst.  <br /></td></tr>
+<tr class="memitem:a6595d4a1a4bf8215b37eaa5fc3a5fbd2" id="r_a6595d4a1a4bf8215b37eaa5fc3a5fbd2"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a6595d4a1a4bf8215b37eaa5fc3a5fbd2">tanh</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a6595d4a1a4bf8215b37eaa5fc3a5fbd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place hyperbolic tangent activation.  <br /></td></tr>
+<tr class="memitem:a3d97fd977b29a71345ed910e76f41c12" id="r_a3d97fd977b29a71345ed910e76f41c12"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a3d97fd977b29a71345ed910e76f41c12">dTanh</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> x, const size_t n, const bool activated=false) noexcept</td></tr>
+<tr class="memdesc:a3d97fd977b29a71345ed910e76f41c12"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place tanh derivative: 1 - tanh(x)^2.  <br /></td></tr>
+<tr class="memitem:a062dce9151a7e94ae7e0c3c659fdb6ea" id="r_a062dce9151a7e94ae7e0c3c659fdb6ea"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a062dce9151a7e94ae7e0c3c659fdb6ea">dTanhInto</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> dst, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> src, const size_t n) noexcept</td></tr>
+<tr class="memdesc:a062dce9151a7e94ae7e0c3c659fdb6ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Two-buffer, single-pass tanh derivative: reads src, writes 1-tanh(src)^2 directly into dst. Unlike dTanh(x, n, false), which needs two full passes internally (activate in place, then derive in place) plus a separate copy beforehand if src can't be mutated, this computes tanh(src[i]) into a register and derives from that same register immediately, with only one read of src and one write to dst &ndash; no intermediate array pass at all.  <br /></td></tr>
+<tr class="memitem:a91c1d5b30b985b633e308b7d03f96c47" id="r_a91c1d5b30b985b633e308b7d03f96c47"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a91c1d5b30b985b633e308b7d03f96c47">expf_v</a> (float *x, size_t n)</td></tr>
+<tr class="memdesc:a91c1d5b30b985b633e308b7d03f96c47"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place vectorized exp: x[i] = exp(x[i]) for all i.  <br /></td></tr>
+<tr class="memitem:afca3df42a9f8d541c51cf729a4c8b89b" id="r_afca3df42a9f8d541c51cf729a4c8b89b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afca3df42a9f8d541c51cf729a4c8b89b">logf_v</a> (float *x, size_t n)</td></tr>
+<tr class="memdesc:afca3df42a9f8d541c51cf729a4c8b89b"><td class="mdescLeft">&#160;</td><td class="mdescRight">In-place vectorized log: x[i] = log(x[i]) for all i.  <br /></td></tr>
 <tr class="memitem:a6ca9308132b5c8017685367d79b5c753" id="r_a6ca9308132b5c8017685367d79b5c753"><td class="memItemLeft"><a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a6ca9308132b5c8017685367d79b5c753">toOpType</a> (const char *s)</td></tr>
 <tr class="memdesc:a6ca9308132b5c8017685367d79b5c753"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parses an <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02" title="Selects which weight-update rule a layer applies during UpdateWeights().">OptimizerType</a> from its name.  <br /></td></tr>
-<tr class="memitem:a5aa6de3c8e5ed8673d718748c4999608" id="r_a5aa6de3c8e5ed8673d718748c4999608"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5aa6de3c8e5ed8673d718748c4999608">AdamWUpdate</a> (float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float lambda, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
+<tr class="memitem:a5aa6de3c8e5ed8673d718748c4999608" id="r_a5aa6de3c8e5ed8673d718748c4999608"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5aa6de3c8e5ed8673d718748c4999608">AdamWUpdate</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float lambda, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
 <tr class="memdesc:a5aa6de3c8e5ed8673d718748c4999608"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorized AdamW update over <span class="tt">n</span> elements. <span class="tt">w</span>, <span class="tt">grad</span>, <span class="tt">m</span>, <span class="tt">v</span> are all arrays of length <span class="tt">n</span> &ndash; ONE m/v pair PER WEIGHT, not one shared scalar. <span class="tt">t</span> is the layer's own timestep counter (increment ONCE per UpdateWeights() call, not per element &ndash; shared across the whole array, which is why beta1^t/beta2^t are computed once here, not per element).  <br /></td></tr>
-<tr class="memitem:af0031c5b95344a0fb959914fee35449c" id="r_af0031c5b95344a0fb959914fee35449c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af0031c5b95344a0fb959914fee35449c">AdamUpdate</a> (float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
+<tr class="memitem:af0031c5b95344a0fb959914fee35449c" id="r_af0031c5b95344a0fb959914fee35449c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af0031c5b95344a0fb959914fee35449c">AdamUpdate</a> (float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> w, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> grad, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> m, float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a> v, size_t n, int t, float lr, float beta1=0.9f, float beta2=0.999f, float eps=1e-8f) noexcept</td></tr>
 <tr class="memdesc:af0031c5b95344a0fb959914fee35449c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vectorized PLAIN Adam update over <span class="tt">n</span> elements &ndash; NO weight decay term at all, unlike AdamWUpdate above. This is deliberate, not a missing feature: "Adam with L2 regularization" (folding decay into the gradient before the moment estimates see it) is the well-known WORSE approach AdamW was specifically invented to fix &ndash; large-gradient weights get decayed less than they should, since the adaptive step size shrinks the decay term along with everything else. If you want regularization alongside plain Adam, apply this codebase's existing decay convention separately (e.g. cblas_sscal(n, 1.0f-lmbda, w, 1) before calling this) &ndash; fully composable, and avoids re-introducing the exact problem AdamW exists to solve.  <br /></td></tr>
 <tr class="memitem:abc365756de75008896ed7b64b27b1b4a" id="r_abc365756de75008896ed7b64b27b1b4a"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#abc365756de75008896ed7b64b27b1b4a">ConvOutDim</a> (int inDim, int kernel, int stride, int pad) noexcept</td></tr>
 <tr class="memdesc:abc365756de75008896ed7b64b27b1b4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes a single convolution output dimension (height or width) from its corresponding input dimension and conv parameters.  <br /></td></tr>
@@ -186,15 +314,32 @@ Functions</h2></td></tr>
 <tr class="memitem:a4159753931479670feba6d8e6b227e74" id="r_a4159753931479670feba6d8e6b227e74"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4159753931479670feba6d8e6b227e74">Col2Im</a> (const float *columns, int channels, int height, int width, int kH, int kW, int strideH, int strideW, int padH, int padW, float *outputImage) noexcept</td></tr>
 <tr class="memdesc:a4159753931479670feba6d8e6b227e74"><td class="mdescLeft">&#160;</td><td class="mdescRight">The adjoint of <a class="el" href="#a0dbe430b93930a2b8d3c04be012d0017" title="Rearranges a single (channels, height, width) input image into a (channels*kH*kW, outH*outW) column m...">Im2Col()</a>: scatters a (channels*kH*kW, outH*outW) column-gradient buffer back into a (channels, height, width) image.  <br /></td></tr>
 <tr class="memitem:a1f6c92c5abb579ef6bf96a0047d54342" id="r_a1f6c92c5abb579ef6bf96a0047d54342"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a1f6c92c5abb579ef6bf96a0047d54342">GetL2CacheBytes</a> ()</td></tr>
+<tr class="memdesc:a1f6c92c5abb579ef6bf96a0047d54342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queries the size of this CPU's L2 cache (per-core, level 2), falling back to 512 KiB on platforms where it can't be queried.  <br /></td></tr>
 <tr class="memitem:a94bef4184e1ca26cb5f79296395b4004" id="r_a94bef4184e1ca26cb5f79296395b4004"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a94bef4184e1ca26cb5f79296395b4004">AutoBatchSize</a> (size_t inSize, size_t outSize)</td></tr>
+<tr class="memdesc:a94bef4184e1ca26cb5f79296395b4004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Picks a batch size (a power of 2 clamped to [64, 512]) sized so a layer's weights plus one batch's activations fit within the L2 cache, for a size -&gt; outSize transition.  <br /></td></tr>
+<tr class="memitem:a1ae0bb8f78abcb2faebeb02087e5698f" id="r_a1ae0bb8f78abcb2faebeb02087e5698f"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="#a1ae0bb8f78abcb2faebeb02087e5698f">DynamicThread</a> (int batchSize) noexcept</td></tr>
+<tr class="memdesc:a1ae0bb8f78abcb2faebeb02087e5698f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets OpenMP's (and the BLAS library's) thread count for the given batch size, memoized so it's a no-op if the target hasn't changed since the last call. Small batches get 1 thread (avoids parallelization overhead dominating tiny work); larger batches scale up to a measured, capped optimum &ndash; see the inline note on why 16 threads, not the full core count, is the ceiling.  <br /></td></tr>
+<tr class="memitem:adfac117425be802e402dd999ebfe67d7" id="r_adfac117425be802e402dd999ebfe67d7"><td class="memItemLeft">static float&#160;</td><td class="memItemRight"><a class="el" href="#adfac117425be802e402dd999ebfe67d7">hsum256_ps</a> (__m256 x)</td></tr>
+<tr class="memdesc:adfac117425be802e402dd999ebfe67d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Horizontal sum of all 8 lanes of an AVX2 register.  <br /></td></tr>
+<tr class="memitem:a9126267c400828ae41042768156dabf4" id="r_a9126267c400828ae41042768156dabf4"><td class="memItemLeft">static float&#160;</td><td class="memItemRight"><a class="el" href="#a9126267c400828ae41042768156dabf4">hsum128_ps</a> (__m128 x)</td></tr>
+<tr class="memdesc:a9126267c400828ae41042768156dabf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Horizontal sum of all 4 lanes of an SSE register.  <br /></td></tr>
 <tr class="memitem:acd40701ddacb775649741df40bc3b929" id="r_acd40701ddacb775649741df40bc3b929"><td class="memItemLeft">std::vector&lt; std::pair&lt; const void *, <a class="el" href="structDeep_1_1ProfileEntry.html">ProfileEntry</a> &gt; &gt; &amp;&#160;</td><td class="memItemRight"><a class="el" href="#acd40701ddacb775649741df40bc3b929">ProfileRegistry</a> ()</td></tr>
+<tr class="memdesc:acd40701ddacb775649741df40bc3b929"><td class="mdescLeft">&#160;</td><td class="mdescRight">The process-wide table of every layer that's had <a class="el" href="#afc0c7bc2619873cb922f19a2eaf5ffd2" title="Looks up (or creates, on first call) layer&#39;s accumulator in the process-wide registry,...">LayerProfile()</a> called on it at least once, in first-call order.  <br /></td></tr>
 <tr class="memitem:afc0c7bc2619873cb922f19a2eaf5ffd2" id="r_afc0c7bc2619873cb922f19a2eaf5ffd2"><td class="memTemplParams" colspan="2">template&lt;typename LayerT&gt; </td></tr>
 <tr class="memitem:afc0c7bc2619873cb922f19a2eaf5ffd2 template"><td class="memItemLeft"><a class="el" href="structDeep_1_1ProfileAccumulator.html">ProfileAccumulator</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#afc0c7bc2619873cb922f19a2eaf5ffd2">LayerProfile</a> (LayerT *layer)</td></tr>
+<tr class="memdesc:afc0c7bc2619873cb922f19a2eaf5ffd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Looks up (or creates, on first call) <span class="tt">layer</span>'s accumulator in the process-wide registry, keyed by its address.  <br /></td></tr>
 <tr class="memitem:a7b797d1b36359f0bf39a7d0b55190eee" id="r_a7b797d1b36359f0bf39a7d0b55190eee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7b797d1b36359f0bf39a7d0b55190eee">PrintAllProfiles</a> (double wallClockSeconds)</td></tr>
+<tr class="memdesc:a7b797d1b36359f0bf39a7d0b55190eee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prints every registered layer's profile, then a grand-total reconciliation against an independently measured wall-clock time.  <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-var-members" class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a83f7942c44c679e389dc3b510dddf248" id="r_a83f7942c44c679e389dc3b510dddf248"><td class="memItemLeft">constexpr float&#160;</td><td class="memItemRight"><a class="el" href="#a83f7942c44c679e389dc3b510dddf248">MAGIC_GELU_1</a> = 0.7978845608028654f</td></tr>
+<tr class="memdesc:a83f7942c44c679e389dc3b510dddf248"><td class="mdescLeft">&#160;</td><td class="mdescRight">sqrt(2/pi), the leading constant in the tanh approximation of GELU. Also used directly by <a class="el" href="classDeep_1_1CUDABackend.html" title="CUDA implementation of IComputeBackend: device kernels for elementwise ops, cuBLAS for GEMM,...">CUDABackend</a>'s device kernels.  <br /></td></tr>
+<tr class="memitem:aa5e31ecd0ba51225fc60fd418b139505" id="r_aa5e31ecd0ba51225fc60fd418b139505"><td class="memItemLeft">constexpr float&#160;</td><td class="memItemRight"><a class="el" href="#aa5e31ecd0ba51225fc60fd418b139505">MAGIC_GELU_2</a> = 0.044715f</td></tr>
+<tr class="memdesc:aa5e31ecd0ba51225fc60fd418b139505"><td class="mdescLeft">&#160;</td><td class="mdescRight">The tanh approximation's cubic-term coefficient (0.044715), paired with MAGIC_GELU_1.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. </p>
-<dl class="section important"><dt>Important</dt><dd>This file is currently WIP! It is not suitable for use (yet). </dd></dl>
+<div class="textblock"><p>This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. </p>
 </div><a name="doc-typedef-members" id="doc-typedef-members"></a><h2 id="header-doc-typedef-members" class="groupheader">Typedef Documentation</h2>
 <a id="afa1dea57980a3726b01372a204121e16" name="afa1dea57980a3726b01372a204121e16"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afa1dea57980a3726b01372a204121e16">&#9670;&#160;</a></span>ActivationFn</h2>
@@ -207,6 +352,8 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Pointer to an in-place activation function: f(buf, n). </p>
 
 </div>
 </div>
@@ -221,6 +368,24 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Pointer to an in-place activation derivative: f(buf, n, activated). </p>
+
+</div>
+</div>
+<a id="a17eee70edeb7c146cef5347b6446c1b8" name="a17eee70edeb7c146cef5347b6446c1b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a17eee70edeb7c146cef5347b6446c1b8">&#9670;&#160;</a></span>DerivativeFn2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8">Deep::DerivativeFn2</a> = void (*)(float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a>, size_t)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Pointer to a two-buffer activation derivative: reads src, writes the derivative into dst, leaving src untouched. </p>
 
 </div>
 </div>
@@ -244,17 +409,50 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that need to name an activation without depending on the SIMD implementations themselves (see the file-level note above on why this is split out of <a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">Activations.h</a>). </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c" name="a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c"></a>RELU&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75" name="a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75"></a>dRELU&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a6c83d4d579e33c2e1b09f2e9825fcbc6" name="a4b7606ca838be34029bd134f319e0f61a6c83d4d579e33c2e1b09f2e9825fcbc6"></a>GELU&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a23d71be91d3de741267d599f8c0571db" name="a4b7606ca838be34029bd134f319e0f61a23d71be91d3de741267d599f8c0571db"></a>dGELU&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b" name="a4b7606ca838be34029bd134f319e0f61ab299f45b5de2a8f7c45192590290742b"></a>SIGMOID&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01" name="a4b7606ca838be34029bd134f319e0f61a34f8274f7c8efdb5235b41a0c5cbeb01"></a>dSIGMOID&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4" name="a4b7606ca838be34029bd134f319e0f61a1a58488ee083999ec90cf951cf7582c4"></a>eSIGMOID&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61aa4fdb72efa2b1fa7213c719db86c3525" name="a4b7606ca838be34029bd134f319e0f61aa4fdb72efa2b1fa7213c719db86c3525"></a>d_eSIGMOID&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1" name="a4b7606ca838be34029bd134f319e0f61a143c8c6f51b9bb893ce71e38702e3cc1"></a>TANH&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd" name="a4b7606ca838be34029bd134f319e0f61a4ff0e0b07e89ec2f162b1f5112c0e7dd"></a>dTANH&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046" name="a4b7606ca838be34029bd134f319e0f61aaac544aacc3615aada24897a215f5046"></a>LINEAR&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7" name="a4b7606ca838be34029bd134f319e0f61ae0660e894ba0c234604376fffc1620a7"></a>dLINEAR&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693" name="a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693"></a>NONE&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+</div>
+</div>
+<a id="a79fb20681fc8065313ded67ba70f02f3" name="a79fb20681fc8065313ded67ba70f02f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a79fb20681fc8065313ded67ba70f02f3">&#9670;&#160;</a></span>DeviceType</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="#a79fb20681fc8065313ded67ba70f02f3">Deep::DeviceType</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel strong">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Which physical device a Tensor/IComputeBackend pair runs on. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a79fb20681fc8065313ded67ba70f02f3a2b51e711df2cded71f92128f2f8f34dd" name="a79fb20681fc8065313ded67ba70f02f3a2b51e711df2cded71f92128f2f8f34dd"></a>DEVICE_CPU&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a79fb20681fc8065313ded67ba70f02f3a550156b6fa4de0f5ff623e2c3e19d1b2" name="a79fb20681fc8065313ded67ba70f02f3a550156b6fa4de0f5ff623e2c3e19d1b2"></a>DEVICE_GPU&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 </div>
@@ -304,22 +502,22 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void Deep::AdamUpdate </td>
           <td>(</td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>w</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>w</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>grad</em></span>, </td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>grad</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>v</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>v</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -391,22 +589,22 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void Deep::AdamWUpdate </td>
           <td>(</td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>w</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>w</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>grad</em></span>, </td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>grad</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>m</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>v</em></span>, </td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>v</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -499,6 +697,15 @@ Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Picks a batch size (a power of 2 clamped to [64, 512]) sized so a layer's weights plus one batch's activations fit within the L2 cache, for a size -&gt; outSize transition. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">inSize</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> input width. </td></tr>
+    <tr><td class="paramname">outSize</td><td><a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Layer</a> output width. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="a4159753931479670feba6d8e6b227e74" name="a4159753931479670feba6d8e6b227e74"></a>
@@ -574,7 +781,7 @@ Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The adjoint of <a class="el" href="#a0dbe430b93930a2b8d3c04be012d0017" title="Rearranges a single (channels, height, width) input image into a (channels*kH*kW, outH*outW) column m...">Im2Col()</a>: scatters a (channels*kH*kW, outH*outW) column-gradient buffer back into a (channels, height, width) image. </p>
-<p>Verified (see file-level note) to be the TRUE mathematical adjoint of <a class="el" href="#a0dbe430b93930a2b8d3c04be012d0017" title="Rearranges a single (channels, height, width) input image into a (channels*kH*kW, outH*outW) column m...">Im2Col()</a>, not just an inverse-shaped operation &ndash; this is what makes it safe to use for <a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a>'s feedback term.</p>
+<p>Verified (see file-level note) to be the TRUE mathematical adjoint of <a class="el" href="#a0dbe430b93930a2b8d3c04be012d0017" title="Rearranges a single (channels, height, width) input image into a (channels*kH*kW, outH*outW) column m...">Im2Col()</a>, not just an inverse-shaped operation &ndash; this is what makes it safe to use for <a class="el" href="classDeep_1_1ConvPCLayer.html" title="Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enablin...">ConvPCLayer</a>'s feedback term.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">columns</td><td>Input buffer of shape (channels*kH*kW, outH*outW), typically a gradient produced by a GEMM against the same weight matrix used in the forward <a class="el" href="#a0dbe430b93930a2b8d3c04be012d0017" title="Rearranges a single (channels, height, width) input image into a (channels*kH*kW, outH*outW) column m...">Im2Col()</a> pass. </td></tr>
@@ -648,8 +855,964 @@ Accumulates into <code class="param">outputImage</code> rather than overwriting 
 
 </div>
 </div>
-<a id="ac83ec1ef9cfd17806563be3f5a2d5b50" name="ac83ec1ef9cfd17806563be3f5a2d5b50"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac83ec1ef9cfd17806563be3f5a2d5b50">&#9670;&#160;</a></span>e_sigmoid()</h2>
+<a id="adbf28d6c5ab6068262a813d7ba3725ff" name="adbf28d6c5ab6068262a813d7ba3725ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbf28d6c5ab6068262a813d7ba3725ff">&#9670;&#160;</a></span>CreateBackend()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::unique_ptr&lt; <a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> &gt; Deep::CreateBackend </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#a79fb20681fc8065313ded67ba70f02f3">DeviceType</a></td>          <td class="paramname"><span class="paramname"><em>device</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Factory function to create the appropriate backend. </p>
+
+</div>
+</div>
+<a id="a1346dbad67249d0f80c85ec85926786f" name="a1346dbad67249d0f80c85ec85926786f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1346dbad67249d0f80c85ec85926786f">&#9670;&#160;</a></span>d_eSigmoid() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::d_eSigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="a40c6dd3f12ed125bb30705dc4c298f8a" name="a40c6dd3f12ed125bb30705dc4c298f8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40c6dd3f12ed125bb30705dc4c298f8a">&#9670;&#160;</a></span>d_eSigmoid() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::d_eSigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place Elliot sigmoid derivative. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to derive in place. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+    <tr><td class="paramname">activated</td><td>If true, x already holds e_sigmoid(x); if false, x holds the pre-activation value and e_sigmoid(x) is computed first. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a6afbec0773fe22b51ff4cb31391cdc96" name="a6afbec0773fe22b51ff4cb31391cdc96"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6afbec0773fe22b51ff4cb31391cdc96">&#9670;&#160;</a></span>d_eSigmoidInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::d_eSigmoidInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer, single-pass Elliot sigmoid derivative: reads src, writes the derivative directly into dst. </p>
+
+</div>
+</div>
+<a id="a08e27b3225a4ea94490a6a8eb704ba88" name="a08e27b3225a4ea94490a6a8eb704ba88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08e27b3225a4ea94490a6a8eb704ba88">&#9670;&#160;</a></span>d_eSigmoidInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::d_eSigmoidInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="a4397b77de30029dae6543d95b4855586" name="a4397b77de30029dae6543d95b4855586"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4397b77de30029dae6543d95b4855586">&#9670;&#160;</a></span>dGelu() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dGelu </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>. </p>
+
+</div>
+</div>
+<a id="af3a3c147b88064b436637d5da55cc844" name="af3a3c147b88064b436637d5da55cc844"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3a3c147b88064b436637d5da55cc844">&#9670;&#160;</a></span>dGelu() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dGelu </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place GELU derivative. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to derive in place. Unlike dRelu/dTanh/dSigmoid, this always treats x as the PRE-activation value &ndash; the formula is recomputed from scratch regardless of <span class="tt">activated</span>, so calling this after <a class="el" href="#a7b9f97f54834eb672ab4e316482e9ef0" title="See Gelu.h.">gelu()</a> has already run in place on the same buffer gives a wrong result. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+    <tr><td class="paramname">activated</td><td>Unused; present only for signature consistency with <a class="el" href="#aac769fa213f2bba46034c471e75d58fa" title="Pointer to an in-place activation derivative: f(buf, n, activated).">DerivativeFn</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3c0e25a569ba09a25306bfc1d4b3730f" name="a3c0e25a569ba09a25306bfc1d4b3730f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3c0e25a569ba09a25306bfc1d4b3730f">&#9670;&#160;</a></span>dGeluInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dGeluInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer, single-pass GELU derivative: reads src (the pre-activation value), writes the derivative directly into dst. </p>
+
+</div>
+</div>
+<a id="afb5d672e974473f5c0b5e2fae6650135" name="afb5d672e974473f5c0b5e2fae6650135"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb5d672e974473f5c0b5e2fae6650135">&#9670;&#160;</a></span>dGeluInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dGeluInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>. </p>
+
+</div>
+</div>
+<a id="a3320c05d39f0a9bd24360f6360ef4209" name="a3320c05d39f0a9bd24360f6360ef4209"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3320c05d39f0a9bd24360f6360ef4209">&#9670;&#160;</a></span>dLinear() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dLinear </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>. </p>
+
+</div>
+</div>
+<a id="a242af071651468c508ee31baacc19a2d" name="a242af071651468c508ee31baacc19a2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a242af071651468c508ee31baacc19a2d">&#9670;&#160;</a></span>dLinear() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dLinear </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Derivative of <a class="el" href="#a209ee87902c45f6344279deeb665d1f7" title="See Linear.h.">linear()</a>: a constant 1 everywhere. </p>
+
+</div>
+</div>
+<a id="a61642cee9ad8b79d16de92d308c80151" name="a61642cee9ad8b79d16de92d308c80151"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61642cee9ad8b79d16de92d308c80151">&#9670;&#160;</a></span>dLinearInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dLinearInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer variant of dLinear &ndash; src is unused (the derivative of a linear function is a constant), kept for signature consistency with To_dFn2's dispatch table. </p>
+
+</div>
+</div>
+<a id="a5246b2b8dfd0c788d97925d6713f1fd6" name="a5246b2b8dfd0c788d97925d6713f1fd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5246b2b8dfd0c788d97925d6713f1fd6">&#9670;&#160;</a></span>dLinearInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dLinearInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>. </p>
+
+</div>
+</div>
+<a id="ad18e23c57ff5761ee8a6b06a79fa53a3" name="ad18e23c57ff5761ee8a6b06a79fa53a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad18e23c57ff5761ee8a6b06a79fa53a3">&#9670;&#160;</a></span>dRelu() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dRelu </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>. </p>
+
+</div>
+</div>
+<a id="aa940a61ee7d42212fde5a8ba93cb3264" name="aa940a61ee7d42212fde5a8ba93cb3264"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa940a61ee7d42212fde5a8ba93cb3264">&#9670;&#160;</a></span>dRelu() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dRelu </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place ReLU derivative: 1 where x &gt; 0, else 0. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to derive in place. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+    <tr><td class="paramname">activated</td><td>Unused &ndash; ReLU's derivative only depends on sign, so whether x already holds the activated value makes no difference. Present only for signature consistency with <a class="el" href="#aac769fa213f2bba46034c471e75d58fa" title="Pointer to an in-place activation derivative: f(buf, n, activated).">DerivativeFn</a>. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aeaedd7380404af1e8a6424f2bcd7f0fa" name="aeaedd7380404af1e8a6424f2bcd7f0fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeaedd7380404af1e8a6424f2bcd7f0fa">&#9670;&#160;</a></span>dReluInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dReluInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer variant of dRelu: reads src, writes the derivative directly into dst. </p>
+
+</div>
+</div>
+<a id="ab1e2916a15427a340ec37aa086c8812d" name="ab1e2916a15427a340ec37aa086c8812d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1e2916a15427a340ec37aa086c8812d">&#9670;&#160;</a></span>dReluInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dReluInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>. </p>
+
+</div>
+</div>
+<a id="abffd21c29898fd8bebaef3f54ce042d2" name="abffd21c29898fd8bebaef3f54ce042d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abffd21c29898fd8bebaef3f54ce042d2">&#9670;&#160;</a></span>dSigmoid() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dSigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="af40024be77e7ab6040515695a008f367" name="af40024be77e7ab6040515695a008f367"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af40024be77e7ab6040515695a008f367">&#9670;&#160;</a></span>dSigmoid() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dSigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place logistic sigmoid derivative: sigmoid(x)*(1-sigmoid(x)). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to derive in place. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+    <tr><td class="paramname">activated</td><td>If true, x already holds sigmoid(x); if false, x holds the pre-activation value and sigmoid(x) is computed first. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aabc8c41cc216d6a993635ca02f61dde1" name="aabc8c41cc216d6a993635ca02f61dde1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabc8c41cc216d6a993635ca02f61dde1">&#9670;&#160;</a></span>dSigmoidInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dSigmoidInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer, single-pass sigmoid derivative: reads src, writes sigmoid(src)*(1-sigmoid(src)) directly into dst. Computes the sigmoid into a register and derives from that same register immediately &ndash; one read of src, one write to dst, no intermediate array pass. </p>
+
+</div>
+</div>
+<a id="a940ec3bbc8151a54d1c22b9d53c673c1" name="a940ec3bbc8151a54d1c22b9d53c673c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a940ec3bbc8151a54d1c22b9d53c673c1">&#9670;&#160;</a></span>dSigmoidInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dSigmoidInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="ae3d1de4375e211558caa485a1c2e53fd" name="ae3d1de4375e211558caa485a1c2e53fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3d1de4375e211558caa485a1c2e53fd">&#9670;&#160;</a></span>dTanh() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dTanh </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>. </p>
+
+</div>
+</div>
+<a id="a3d97fd977b29a71345ed910e76f41c12" name="a3d97fd977b29a71345ed910e76f41c12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d97fd977b29a71345ed910e76f41c12">&#9670;&#160;</a></span>dTanh() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dTanh </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const bool</td>          <td class="paramname"><span class="paramname"><em>activated</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place tanh derivative: 1 - tanh(x)^2. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to derive in place. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+    <tr><td class="paramname">activated</td><td>If true, x already holds tanh(x) (skips re-computing it); if false, x holds the pre-activation value and tanh(x) is computed first. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a062dce9151a7e94ae7e0c3c659fdb6ea" name="a062dce9151a7e94ae7e0c3c659fdb6ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a062dce9151a7e94ae7e0c3c659fdb6ea">&#9670;&#160;</a></span>dTanhInto() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dTanhInto </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>dst</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>src</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Two-buffer, single-pass tanh derivative: reads src, writes 1-tanh(src)^2 directly into dst. Unlike dTanh(x, n, false), which needs two full passes internally (activate in place, then derive in place) plus a separate copy beforehand if src can't be mutated, this computes tanh(src[i]) into a register and derives from that same register immediately, with only one read of src and one write to dst &ndash; no intermediate array pass at all. </p>
+
+</div>
+</div>
+<a id="ae1e27a6b77f9b52f5a17d11e171486ca" name="ae1e27a6b77f9b52f5a17d11e171486ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1e27a6b77f9b52f5a17d11e171486ca">&#9670;&#160;</a></span>dTanhInto() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::dTanhInto </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const float *</td>          <td class="paramname"><span class="paramname"><em>RESTRICT</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>. </p>
+
+</div>
+</div>
+<a id="a1ae0bb8f78abcb2faebeb02087e5698f" name="a1ae0bb8f78abcb2faebeb02087e5698f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ae0bb8f78abcb2faebeb02087e5698f">&#9670;&#160;</a></span>DynamicThread()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::DynamicThread </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Sets OpenMP's (and the BLAS library's) thread count for the given batch size, memoized so it's a no-op if the target hasn't changed since the last call. Small batches get 1 thread (avoids parallelization overhead dominating tiny work); larger batches scale up to a measured, capped optimum &ndash; see the inline note on why 16 threads, not the full core count, is the ceiling. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">batchSize</td><td>The batch size about to be processed. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae241b32ffca18658a60de5d50b71cd34" name="ae241b32ffca18658a60de5d50b71cd34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae241b32ffca18658a60de5d50b71cd34">&#9670;&#160;</a></span>e_sigmoid() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -660,7 +1823,38 @@ Accumulates into <code class="param">outputImage</code> rather than overwriting 
         <tr>
           <td class="memname">void Deep::e_sigmoid </td>
           <td>(</td>
-          <td class="paramtype">float *<a class="el" href="Activations_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="ac83ec1ef9cfd17806563be3f5a2d5b50" name="ac83ec1ef9cfd17806563be3f5a2d5b50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac83ec1ef9cfd17806563be3f5a2d5b50">&#9670;&#160;</a></span>e_sigmoid() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::e_sigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -686,6 +1880,99 @@ Accumulates into <code class="param">outputImage</code> rather than overwriting 
 
 </div>
 </div>
+<a id="a91c1d5b30b985b633e308b7d03f96c47" name="a91c1d5b30b985b633e308b7d03f96c47"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91c1d5b30b985b633e308b7d03f96c47">&#9670;&#160;</a></span>expf_v()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::expf_v </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place vectorized exp: x[i] = exp(x[i]) for all i. </p>
+
+</div>
+</div>
+<a id="a7b9f97f54834eb672ab4e316482e9ef0" name="a7b9f97f54834eb672ab4e316482e9ef0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b9f97f54834eb672ab4e316482e9ef0">&#9670;&#160;</a></span>gelu() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::gelu </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Gelu_8h.html" title="GELU (tanh approximation) and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE pa...">Gelu.h</a>. </p>
+
+</div>
+</div>
+<a id="a294b00c70b7c50c4c798f80d1a23b84a" name="a294b00c70b7c50c4c798f80d1a23b84a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a294b00c70b7c50c4c798f80d1a23b84a">&#9670;&#160;</a></span>gelu() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::gelu </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place GELU activation (tanh approximation, ~5e-4 max absolute error vs. true GELU &ndash; see tests/tGelu.cpp). </p>
+
+</div>
+</div>
 <a id="a1f6c92c5abb579ef6bf96a0047d54342" name="a1f6c92c5abb579ef6bf96a0047d54342"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1f6c92c5abb579ef6bf96a0047d54342">&#9670;&#160;</a></span>GetL2CacheBytes()</h2>
 
@@ -708,6 +1995,62 @@ Accumulates into <code class="param">outputImage</code> rather than overwriting 
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Queries the size of this CPU's L2 cache (per-core, level 2), falling back to 512 KiB on platforms where it can't be queried. </p>
+
+</div>
+</div>
+<a id="a9126267c400828ae41042768156dabf4" name="a9126267c400828ae41042768156dabf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9126267c400828ae41042768156dabf4">&#9670;&#160;</a></span>hsum128_ps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::hsum128_ps </td>
+          <td>(</td>
+          <td class="paramtype">__m128</td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Horizontal sum of all 4 lanes of an SSE register. </p>
+
+</div>
+</div>
+<a id="adfac117425be802e402dd999ebfe67d7" name="adfac117425be802e402dd999ebfe67d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfac117425be802e402dd999ebfe67d7">&#9670;&#160;</a></span>hsum256_ps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::hsum256_ps </td>
+          <td>(</td>
+          <td class="paramtype">__m256</td>          <td class="paramname"><span class="paramname"><em>x</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Horizontal sum of all 8 lanes of an AVX2 register. </p>
 
 </div>
 </div>
@@ -830,6 +2173,76 @@ template&lt;typename LayerT&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>Looks up (or creates, on first call) <span class="tt">layer</span>'s accumulator in the process-wide registry, keyed by its address. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">LayerT</td><td>Any layer type exposing GetInputSize()/GetOutputSize(). </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a209ee87902c45f6344279deeb665d1f7" name="a209ee87902c45f6344279deeb665d1f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a209ee87902c45f6344279deeb665d1f7">&#9670;&#160;</a></span>linear() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::linear </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Linear_8h.html" title="The identity activation and its (constant) derivative.">Linear.h</a>. </p>
+
+</div>
+</div>
+<a id="a86c19e834a7186bbcfe5c1225f116c41" name="a86c19e834a7186bbcfe5c1225f116c41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a86c19e834a7186bbcfe5c1225f116c41">&#9670;&#160;</a></span>linear() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::linear </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Identity activation: f(x) = x. A no-op, kept as a real function so it can be used interchangeably with the other activations through <a class="el" href="#afa1dea57980a3726b01372a204121e16" title="Pointer to an in-place activation function: f(buf, n).">ActivationFn</a>. </p>
+
 </div>
 </div>
 <a id="afca3df42a9f8d541c51cf729a4c8b89b" name="afca3df42a9f8d541c51cf729a4c8b89b"></a>
@@ -859,6 +2272,8 @@ template&lt;typename LayerT&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>In-place vectorized log: x[i] = log(x[i]) for all i. </p>
+
 </div>
 </div>
 <a id="a7b797d1b36359f0bf39a7d0b55190eee" name="a7b797d1b36359f0bf39a7d0b55190eee"></a>
@@ -884,6 +2299,14 @@ template&lt;typename LayerT&gt; </div>
 </table>
 </div><div class="memdoc">
 
+<p>Prints every registered layer's profile, then a grand-total reconciliation against an independently measured wall-clock time. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">wallClockSeconds</td><td>Wall-clock duration of the whole run, measured separately (e.g. std::chrono around the training loop) &ndash; NOT derived from these accumulators. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a id="acd40701ddacb775649741df40bc3b929" name="acd40701ddacb775649741df40bc3b929"></a>
@@ -908,6 +2331,381 @@ template&lt;typename LayerT&gt; </div>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>The process-wide table of every layer that's had <a class="el" href="#afc0c7bc2619873cb922f19a2eaf5ffd2" title="Looks up (or creates, on first call) layer&#39;s accumulator in the process-wide registry,...">LayerProfile()</a> called on it at least once, in first-call order. </p>
+
+</div>
+</div>
+<a id="af156ca864c061432e51113530b15cee0" name="af156ca864c061432e51113530b15cee0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af156ca864c061432e51113530b15cee0">&#9670;&#160;</a></span>ProtectFPU()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::ProtectFPU </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Flushes denormal floats to zero on both input and output of SSE FP ops, avoiding the severe slowdown x86 FPUs hit computing with denormals &ndash; settling can drive values arbitrarily close to zero over many steps. </p>
+
+</div>
+</div>
+<a id="a90665b7ac59bbba24c1cd9a1465cd012" name="a90665b7ac59bbba24c1cd9a1465cd012"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90665b7ac59bbba24c1cd9a1465cd012">&#9670;&#160;</a></span>relu() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::relu </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Relu_8h.html" title="ReLU and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Relu.h</a>. </p>
+
+</div>
+</div>
+<a id="a9da40a880885f014c9bf30397439faa7" name="a9da40a880885f014c9bf30397439faa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9da40a880885f014c9bf30397439faa7">&#9670;&#160;</a></span>relu() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::relu </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>RELU(x) = <a class="el" href="Relu_8h.html#afa99ec4acc4ecb2dc3c2d05da15d0e3f" title="Guarded so this doesn&#39;t clash with a system MAX macro (notably Windows headers) if one is already def...">MAX(0, x)</a> for all x. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>array </td></tr>
+    <tr><td class="paramname">n</td><td>x length </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a08229cd386d27be7b0d7e0049918757d" name="a08229cd386d27be7b0d7e0049918757d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08229cd386d27be7b0d7e0049918757d">&#9670;&#160;</a></span>sigmoid() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::sigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Sigmoid_8h.html" title="Logistic sigmoid and Elliot (&quot;fast&quot;) sigmoid, and their derivatives (plain and two-buffer variants),...">Sigmoid.h</a>. </p>
+
+</div>
+</div>
+<a id="a15e56885ad88542d764bbd71f266f104" name="a15e56885ad88542d764bbd71f266f104"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15e56885ad88542d764bbd71f266f104">&#9670;&#160;</a></span>sigmoid() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::sigmoid </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implements the <em>Logistic</em> <em>Sigmoid</em> approximation, i.e. <span class="tt">S(x) = 1 / (1 + e^(-x))</span>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>array, <em>does</em> not need to be aligned </td></tr>
+    <tr><td class="paramname">n</td><td>x length </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5d44dd1342d38935f20b42b9d1241cbc" name="a5d44dd1342d38935f20b42b9d1241cbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d44dd1342d38935f20b42b9d1241cbc">&#9670;&#160;</a></span>tanh() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::tanh </td>
+          <td>(</td>
+          <td class="paramtype">float *</td>          <td class="paramname"><span class="paramname"><em></em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em></em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>See <a class="el" href="Tanh_8h.html" title="tanh and its derivative (plain and two-buffer variants), with AVX512/AVX2/SSE paths and a scalar tail...">Tanh.h</a>. </p>
+
+</div>
+</div>
+<a id="a6595d4a1a4bf8215b37eaa5fc3a5fbd2" name="a6595d4a1a4bf8215b37eaa5fc3a5fbd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6595d4a1a4bf8215b37eaa5fc3a5fbd2">&#9670;&#160;</a></span>tanh() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::tanh </td>
+          <td>(</td>
+          <td class="paramtype">float *<a class="el" href="ActivationMacros_8h.html#aae3356b63849abbe8789dd41648ee90a">RESTRICT</a></td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const size_t</td>          <td class="paramname"><span class="paramname"><em>n</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>In-place hyperbolic tangent activation. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">x</td><td>Array to activate in place. </td></tr>
+    <tr><td class="paramname">n</td><td>Length of x. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1440f62878b8f9304329ac8d86ce17cc" name="a1440f62878b8f9304329ac8d86ce17cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1440f62878b8f9304329ac8d86ce17cc">&#9670;&#160;</a></span>To_AType() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> Deep::To_AType </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#afa1dea57980a3726b01372a204121e16">ActivationFn</a></td>          <td class="paramname"><span class="paramname"><em>fn</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reverse lookup of <a class="el" href="#aedac64dabaf07e68cf6155239eb81352" title="Maps an ActivationType to its concrete function pointer.">To_Fn()</a>: maps a function pointer back to its <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a>, by identity comparison against every known activation function. </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">ActivationType::NONE</a> if fn doesn't match any known activation. </dd></dl>
+
+</div>
+</div>
+<a id="a50402d3103540c0e4dab8dd13feeba81" name="a50402d3103540c0e4dab8dd13feeba81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50402d3103540c0e4dab8dd13feeba81">&#9670;&#160;</a></span>To_AType() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> Deep::To_AType </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#aac769fa213f2bba46034c471e75d58fa">DerivativeFn</a></td>          <td class="paramname"><span class="paramname"><em>dfn</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Same as the <a class="el" href="#afa1dea57980a3726b01372a204121e16" title="Pointer to an in-place activation function: f(buf, n).">ActivationFn</a> overload above, for derivative function pointers. </p>
+<dl class="section return"><dt>Returns</dt><dd><a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">ActivationType::NONE</a> if dfn doesn't match any known derivative. </dd></dl>
+
+</div>
+</div>
+<a id="ab2bedbeb2976fa18039cca9f1eb743a4" name="ab2bedbeb2976fa18039cca9f1eb743a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2bedbeb2976fa18039cca9f1eb743a4">&#9670;&#160;</a></span>To_dFn()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#aac769fa213f2bba46034c471e75d58fa">DerivativeFn</a> Deep::To_dFn </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a></td>          <td class="paramname"><span class="paramname"><em>dType</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Maps an <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> (a derivative variant, e.g. dRELU) to its concrete function pointer. </p>
+<dl class="section return"><dt>Returns</dt><dd>nullptr for <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">ActivationType::NONE</a> or an unrecognized value. </dd></dl>
+
+</div>
+</div>
+<a id="afc6e377482ef7adfd4335c278d5dad9d" name="afc6e377482ef7adfd4335c278d5dad9d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afc6e377482ef7adfd4335c278d5dad9d">&#9670;&#160;</a></span>To_dFn2()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8">DerivativeFn2</a> Deep::To_dFn2 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a></td>          <td class="paramname"><span class="paramname"><em>dType</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Dispatches to the two-buffer (dst, src, n) derivative variant for the given activation type &ndash; see <a class="el" href="#a17eee70edeb7c146cef5347b6446c1b8" title="Pointer to a two-buffer activation derivative: reads src, writes the derivative into dst,...">DerivativeFn2</a>. </p>
+
+</div>
+</div>
+<a id="aedac64dabaf07e68cf6155239eb81352" name="aedac64dabaf07e68cf6155239eb81352"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedac64dabaf07e68cf6155239eb81352">&#9670;&#160;</a></span>To_Fn()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="#afa1dea57980a3726b01372a204121e16">ActivationFn</a> Deep::To_Fn </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="#a4b7606ca838be34029bd134f319e0f61">ActivationType</a></td>          <td class="paramname"><span class="paramname"><em>type</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Maps an <a class="el" href="#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> to its concrete function pointer. </p>
+<dl class="section return"><dt>Returns</dt><dd>nullptr for <a class="el" href="#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693">ActivationType::NONE</a> or an unrecognized value. </dd></dl>
 
 </div>
 </div>
@@ -942,6 +2740,55 @@ template&lt;typename LayerT&gt; </div>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The matching <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02" title="Selects which weight-update rule a layer applies during UpdateWeights().">OptimizerType</a>, or <a class="el" href="#a76c7b5d078cce2bed29f6f592560bf02a50ecf75f1077e1d250a781764b89cbc2" title="Plain stochastic gradient descent (this codebase&#39;s existing cblas-based update).">OptimizerType::SGD</a> if <code class="param">s</code> doesn't match any recognized name. </dd></dl>
+
+</div>
+</div>
+<a name="doc-var-members" id="doc-var-members"></a><h2 id="header-doc-var-members" class="groupheader">Variable Documentation</h2>
+<a id="a83f7942c44c679e389dc3b510dddf248" name="a83f7942c44c679e389dc3b510dddf248"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83f7942c44c679e389dc3b510dddf248">&#9670;&#160;</a></span>MAGIC_GELU_1</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::MAGIC_GELU_1 = 0.7978845608028654f</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>sqrt(2/pi), the leading constant in the tanh approximation of GELU. Also used directly by <a class="el" href="classDeep_1_1CUDABackend.html" title="CUDA implementation of IComputeBackend: device kernels for elementwise ops, cuBLAS for GEMM,...">CUDABackend</a>'s device kernels. </p>
+
+</div>
+</div>
+<a id="aa5e31ecd0ba51225fc60fd418b139505" name="aa5e31ecd0ba51225fc60fd418b139505"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5e31ecd0ba51225fc60fd418b139505">&#9670;&#160;</a></span>MAGIC_GELU_2</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::MAGIC_GELU_2 = 0.044715f</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The tanh approximation's cubic-term coefficient (0.044715), paired with MAGIC_GELU_1. </p>
 
 </div>
 </div>

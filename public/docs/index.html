@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -106,19 +106,19 @@ $(function(){initNavTree('index.html','',''); });
 <p>This page is the entry point into the <b>API reference</b>. For build instructions, benchmarks, and contribution guidelines, see the <a href="https://github.com/ra4ster/deepity#readme">GitHub README</a>.</p>
 <h1 class="doxsection"><a class="anchor" id="overview"></a>
 Overview</h1>
-<p>Deepity implements Predictive Coding Networks (PCNs) as an alternative to standard backpropagation-based training. The library is written in C++20, uses custom AVX2/AVX-512 SIMD kernels for activation functions, and packs layer buffers into a single contiguous memory arena for cache locality. A <span class="tt">pybind11</span>-based Python extension (<span class="tt">pydeepity</span>) exposes the same native engine to Python with negligible overhead.</p>
+<p>Deepity implements Predictive Coding Networks (PCNs) as an alternative to standard backpropagation-based training. The library is written in C++20, uses custom AVX2/AVX-512 SIMD kernels for activation functions, and packs layer buffers into a single contiguous memory arena for cache locality. A <span class="tt">nanobind</span>-based Python extension (<span class="tt">pydeepity</span>) exposes the same native engine to Python with negligible overhead.</p>
 <h1 class="doxsection"><a class="anchor" id="quickstart"></a>
 Quick Start</h1>
 <h2 class="doxsection"><a class="anchor" id="quickstart_cpp"></a>
 C++</h2>
 <p>The <a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="Deep::DiscriminativePCNetwork">DiscriminativePCNetwork</a> class manages layer hierarchies, bidirectionality, and dynamic thread scaling based on batch size automatically:</p>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="DiscriminativePCNetwork_8h.html">DiscriminativePCNetwork.h</a>&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Activations_8h.html">Activations.h</a>&quot;</span></div>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="DiscriminativePCNetwork_8h.html">deepity/networks/DiscriminativePCNetwork.h</a>&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;<a class="code" href="Activations_8h.html">deepity/utils/Activations.h</a>&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;vector&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;random&gt;</span></div>
 <div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="PCNDiagnostics_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a>() {</div>
+<div class="line"><span class="keywordtype">int</span> main() {</div>
 <div class="line"><span class="comment">// Initialize a network with a batch size of 4 (e.g., for XOR)</span></div>
 <div class="line"><a class="code hl_class" href="classDeep_1_1DiscriminativePCNetwork.html">Deep::DiscriminativePCNetwork</a> net(4);</div>
 <div class="line"> </div>
@@ -142,8 +142,7 @@ C++</h2>
 <div class="line"> </div>
 <div class="line">}</div>
 <div class="ttc" id="aActivations_8h_html"><div class="ttname"><a href="Activations_8h.html">Activations.h</a></div><div class="ttdoc">Defines the activation functions of a predictive coding model.</div></div>
-<div class="ttc" id="aDiscriminativePCNetwork_8h_html"><div class="ttname"><a href="DiscriminativePCNetwork_8h.html">DiscriminativePCNetwork.h</a></div></div>
-<div class="ttc" id="aPCNDiagnostics_8cpp_html_ae66f6b31b5ad750f1fe042a706a4e3d4"><div class="ttname"><a href="PCNDiagnostics_8cpp.html#ae66f6b31b5ad750f1fe042a706a4e3d4">main</a></div><div class="ttdeci">int main()</div><div class="ttdef"><b>Definition</b> PCNDiagnostics.cpp:655</div></div>
+<div class="ttc" id="aDiscriminativePCNetwork_8h_html"><div class="ttname"><a href="DiscriminativePCNetwork_8h.html">DiscriminativePCNetwork.h</a></div><div class="ttdoc">Defines the network-level implementation of a PC model.</div></div>
 <div class="ttc" id="aclassDeep_1_1DiscriminativePCNetwork_html"><div class="ttname"><a href="classDeep_1_1DiscriminativePCNetwork.html">Deep::DiscriminativePCNetwork</a></div><div class="ttdoc">An abstracted class for an array of DiscriminativePCLayer.</div><div class="ttdef"><b>Definition</b> DiscriminativePCNetwork.h:37</div></div>
 </div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="quickstart_py"></a>
 Python</h2>
@@ -154,9 +153,12 @@ Core Architecture</h1>
 Networks</h2>
 <p>Top-level network abstractions, each managing a layer stack and the predictive-coding relaxation loop:</p>
 <ul>
-<li><a class="el" href="classDeep_1_1SimplePCNetwork.html" title="Deep::SimplePCNetwork">Deep::SimplePCNetwork</a></li>
-<li><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="Deep::DiscriminativePCNetwork">Deep::DiscriminativePCNetwork</a></li>
-<li><a class="el" href="classDeep_1_1ConvPCNetwork.html" title="Deep::ConvPCNetwork">Deep::ConvPCNetwork</a></li>
+<li><a class="el" href="classDeep_1_1SimplePCNetwork.html" title="Deep::SimplePCNetwork">Deep::SimplePCNetwork</a> — no precision weighting</li>
+<li><a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="Deep::DiscriminativePCNetwork">Deep::DiscriminativePCNetwork</a> — the original, precision-weighted PCN</li>
+<li><a class="el" href="classDeep_1_1ConvPCNetwork.html" title="Deep::ConvPCNetwork">Deep::ConvPCNetwork</a> / <a class="el" href="classDeep_1_1SimpleConvPCNetwork.html" title="Deep::SimpleConvPCNetwork">Deep::SimpleConvPCNetwork</a> — convolutional, im2col-based</li>
+<li><a class="el" href="classDeep_1_1GaussSeidelPCNetwork.html" title="Deep::GaussSeidelPCNetwork">Deep::GaussSeidelPCNetwork</a> — sequential (Gauss-Seidel) layer sweeps instead of simultaneous updates</li>
+<li><a class="el" href="classDeep_1_1DirectKPPCNetwork.html" title="Deep::DirectKPPCNetwork">Deep::DirectKPPCNetwork</a> — Direct Kolen-Pollack feedback alignment (DFA) in place of symmetric weight transport</li>
+<li><a class="el" href="classDeep_1_1FullPCNetwork.html" title="Deep::FullPCNetwork">Deep::FullPCNetwork</a> — DirectKPPCNetwork's DFA structure plus opt-in muPC scaling and residual connections, every extra OFF by default so it reproduces DirectKPPCNetwork exactly</li>
 </ul>
 <h2 class="doxsection"><a class="anchor" id="architecture_layers"></a>
 Layers</h2>
@@ -164,20 +166,22 @@ Layers</h2>
 <ul>
 <li><a class="el" href="classDeep_1_1Layer.html" title="Deep::Layer">Deep::Layer</a> (base class)</li>
 <li><a class="el" href="classDeep_1_1SimplePCLayer.html" title="Deep::SimplePCLayer">Deep::SimplePCLayer</a></li>
-<li><a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Deep::SimpleConvPCLayer">Deep::SimpleConvPCLayer</a></li>
-<li><a class="el" href="classDeep_1_1ConvPCLayer.html" title="Deep::ConvPCLayer">Deep::ConvPCLayer</a></li>
-<li><a class="el" href="classDeep_1_1RBLayer.html" title="Deep::RBLayer">Deep::RBLayer</a></li>
+<li><a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Deep::SimpleConvPCLayer">Deep::SimpleConvPCLayer</a> / <a class="el" href="classDeep_1_1ConvPCLayer.html" title="Deep::ConvPCLayer">Deep::ConvPCLayer</a></li>
 <li><a class="el" href="classDeep_1_1DiscriminativePCLayer.html" title="Deep::DiscriminativePCLayer">Deep::DiscriminativePCLayer</a></li>
+<li><a class="el" href="classDeep_1_1GaussSeidelPCLayer.html" title="Deep::GaussSeidelPCLayer">Deep::GaussSeidelPCLayer</a></li>
+<li><a class="el" href="classDeep_1_1DirectKPPCLayer.html" title="Deep::DirectKPPCLayer">Deep::DirectKPPCLayer</a></li>
+<li><a class="el" href="classDeep_1_1FullPCLayer.html" title="Deep::FullPCLayer">Deep::FullPCLayer</a></li>
+<li><a class="el" href="classDeep_1_1RBLayer.html" title="Deep::RBLayer">Deep::RBLayer</a></li>
 </ul>
 <h2 class="doxsection"><a class="anchor" id="architecture_support"></a>
 Supporting Components</h2>
 <ul>
-<li><a class="el" href="classDeep_1_1MemoryArena.html" title="Deep::MemoryArena">Deep::MemoryArena</a> / Deep::DeviceMemoryArena — contiguous buffer allocation for layer state</li>
-<li>Deep::AdamOptimizer — weight-update optimizer</li>
+<li><a class="el" href="classDeep_1_1MemoryArena.html" title="Deep::MemoryArena">Deep::MemoryArena</a> / <a class="el" href="classDeep_1_1DeviceMemoryArena.html" title="Deep::DeviceMemoryArena">Deep::DeviceMemoryArena</a> — contiguous buffer allocation for layer state</li>
+<li><a class="el" href="namespaceDeep.html#af0031c5b95344a0fb959914fee35449c" title="Deep::AdamUpdate">Deep::AdamUpdate</a> / <a class="el" href="namespaceDeep.html#a5aa6de3c8e5ed8673d718748c4999608" title="Deep::AdamWUpdate">Deep::AdamWUpdate</a> — weight-update optimizer</li>
 <li><a class="el" href="classDeep_1_1StreamAlignedBatcher.html" title="Deep::StreamAlignedBatcher">Deep::StreamAlignedBatcher</a> — batch alignment for SIMD kernels</li>
 <li><a class="el" href="namespaceDeep.html#a0dbe430b93930a2b8d3c04be012d0017" title="Deep::Im2Col">Deep::Im2Col</a> — convolution lowering</li>
 <li><a class="el" href="classDeep_1_1ModelIO.html" title="Deep::ModelIO">Deep::ModelIO</a> — model save/load</li>
-<li>Deep::Profile / Deep::Timer — internal profiling utilities</li>
+<li><a class="el" href="structDeep_1_1ProfileAccumulator.html" title="Deep::ProfileAccumulator">Deep::ProfileAccumulator</a> / <a class="el" href="classTimer.html" title="Timer">Timer</a> — internal profiling utilities</li>
 <li>Activation functions (Elliot Sigmoid approximation, vectorized ReLU) — see <span class="tt"><a class="el" href="Activations_8h.html" title="Defines the activation functions of a predictive coding model.">Activations.h</a></span></li>
 </ul>
 <h1 class="doxsection"><a class="anchor" id="performance"></a>
@@ -195,7 +199,7 @@ Roadmap</h1>
 <li class="checked">PCNetwork abstraction (Layer hierarchy &amp; bidirectional inference)</li>
 </ul>
 <ul class="check">
-<li class="checked">Python bindings (pybind11 + NumPy support)</li>
+<li class="checked">Python bindings (nanobind + NumPy support)</li>
 </ul>
 <ul class="check">
 <li class="checked">API reference documentation (Doxygen)</li>
@@ -205,10 +209,10 @@ Roadmap</h1>
 </ul>
 <ul class="check">
 <li class="checked">Memory Arena Contiguity</li>
-<li class="unchecked">File IO Support (🚧)</li>
 </ul>
 <ul class="check">
-<li class="unchecked">CUDA accelerated engine (GPU GEMM operations for massive scales)</li>
+<li class="checked">File IO Support (<a class="el" href="classDeep_1_1ModelIO.html" title="Deep::ModelIO">Deep::ModelIO</a>)</li>
+<li class="unchecked">CUDA accelerated engine (GPU GEMM operations for massive scales) — in active development on the <span class="tt">dev/CUDA</span> branch</li>
 </ul>
 <ul class="check">
 <li class="unchecked">Java port</li>

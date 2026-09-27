@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -113,12 +113,14 @@ Inheritance diagram for Deep::Layer:</div>
  <div class="center">
   <img src="classDeep_1_1Layer.png" usemap="#Deep_3A_3ALayer_map" alt=""/>
   <map id="Deep_3A_3ALayer_map" name="Deep_3A_3ALayer_map">
-<area href="classDeep_1_1ConvPCLayer.html" alt="Deep::ConvPCLayer" shape="rect" coords="0,56,177,80"/>
-<area href="classDeep_1_1DiscriminativePCLayer.html" alt="Deep::DiscriminativePCLayer" shape="rect" coords="187,56,364,80"/>
-<area href="classDeep_1_1GaussSeidelPCLayer.html" alt="Deep::GaussSeidelPCLayer" shape="rect" coords="374,56,551,80"/>
-<area href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer." alt="Deep::RBLayer" shape="rect" coords="561,56,738,80"/>
-<area href="classDeep_1_1SimpleConvPCLayer.html" alt="Deep::SimpleConvPCLayer" shape="rect" coords="748,56,925,80"/>
-<area href="classDeep_1_1SimplePCLayer.html" alt="Deep::SimplePCLayer" shape="rect" coords="935,56,1112,80"/>
+<area href="classDeep_1_1ConvPCLayer.html" title="Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enablin..." alt="Deep::ConvPCLayer" shape="rect" coords="187,56,364,80"/>
+<area href="classDeep_1_1DirectKPPCLayer.html" title="Predictive Coding layer using Direct Kolen-Pollack feedback alignment (DFA): a per-layer feedback mat..." alt="Deep::DirectKPPCLayer" shape="rect" coords="187,112,364,136"/>
+<area href="classDeep_1_1DiscriminativePCLayer.html" alt="Deep::DiscriminativePCLayer" shape="rect" coords="187,168,364,192"/>
+<area href="classDeep_1_1FullPCLayer.html" title="PC layer combining muPC scaling, optional residual connections, and DKP direct feedback – every extra..." alt="Deep::FullPCLayer" shape="rect" coords="187,224,364,248"/>
+<area href="classDeep_1_1GaussSeidelPCLayer.html" title="PC layer with Gauss-Seidel (sequential-sweep) settling dynamics, in place of the usual simultaneous u..." alt="Deep::GaussSeidelPCLayer" shape="rect" coords="187,280,364,304"/>
+<area href="classDeep_1_1RBLayer.html" title="Restricted Boltzmann-style Predictive Coding (PC) Layer." alt="Deep::RBLayer" shape="rect" coords="187,336,364,360"/>
+<area href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi..." alt="Deep::SimpleConvPCLayer" shape="rect" coords="187,392,364,416"/>
+<area href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D..." alt="Deep::SimplePCLayer" shape="rect" coords="187,448,364,472"/>
   </map>
 </div></div>
 <table class="memberdecls">
@@ -143,6 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a60d66aa85fc0f7ad5ea82f24340a9b96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Updates the weights after state updates.  <br /></td></tr>
 <tr class="memitem:aa25f07b8ffa01f5de94cd96edbcd103d" id="r_aa25f07b8ffa01f5de94cd96edbcd103d"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aa25f07b8ffa01f5de94cd96edbcd103d">Flush</a> () noexcept</td></tr>
 <tr class="memdesc:aa25f07b8ffa01f5de94cd96edbcd103d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flushes remaining batches.  <br /></td></tr>
+<tr class="memitem:a5ad7ffebc2a789ad47d2afa371f6225e" id="r_a5ad7ffebc2a789ad47d2afa371f6225e"><td class="memItemLeft">virtual std::map&lt; std::string, <a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a5ad7ffebc2a789ad47d2afa371f6225e">GetStateDict</a> () const</td></tr>
+<tr class="memdesc:a5ad7ffebc2a789ad47d2afa371f6225e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a dictionary of this.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -206,7 +210,7 @@ Protected Attributes</h2></td></tr>
 <p>Calculates the internal state of the layer. </p>
 <dl class="section return"><dt>Returns</dt><dd>energy used </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#ab80ca88f8561690269d84bed7d71a574">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4d50660fe8014f93db31e3478f98ee07">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a4ac63225106c6fb4b541bd938579a0ab">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#ad614730ef153f49e639691dbf59f8a37">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a717e90d966a9de3e88d79e05a734aa27">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#ab80ca88f8561690269d84bed7d71a574">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#ac5c3eb725e7f612412ce3951742a6aab">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4d50660fe8014f93db31e3478f98ee07">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a5d8a642f3b0573b5c827e4d98ae269a1">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a4ac63225106c6fb4b541bd938579a0ab">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#af3f0482e4caeda2e3bce0c0723649705">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#ad614730ef153f49e639691dbf59f8a37">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a717e90d966a9de3e88d79e05a734aa27">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -265,7 +269,7 @@ Protected Attributes</h2></td></tr>
 <p>Should return batch size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a7c9b9138e65be1203bdcce1c72c72fc7">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#affd51aeca6e09f395de07b0d167d28c4">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#af67a5d52e441a538faf277a837499565">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a31a4653e9ddca4c63778cba438d6819d">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#ad11de9700d2b1161f31bc38976cca37d">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a7c9b9138e65be1203bdcce1c72c72fc7">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#a05bd475df2cdb16b07a648dc332eccc2">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#affd51aeca6e09f395de07b0d167d28c4">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a3d1a1fb02901003d8add9721771b04b7">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#af67a5d52e441a538faf277a837499565">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#aa506bb782dcfba7a578c697302723fb6">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a31a4653e9ddca4c63778cba438d6819d">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#ad11de9700d2b1161f31bc38976cca37d">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -295,7 +299,7 @@ Protected Attributes</h2></td></tr>
 <p>Should return belief state <span class="tt">z</span>. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#afdd7786fc9c6a98c84aee691b39f9a13">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#ac5cf3c7da1032b64442ea4317876ad15">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a1907690abd81efb0f17bcc924553a063">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#aa4f96611e3cc4c82d86a779d8dede457">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a78c8d51a29309aa9e17e36f745a3c759">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#afdd7786fc9c6a98c84aee691b39f9a13">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#ab01d3c5813737539735f3516a6cdfcb1">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#ac5cf3c7da1032b64442ea4317876ad15">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a6187f4eeb2adf8a234c2d497bf864a45">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a1907690abd81efb0f17bcc924553a063">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a0a37d411bef0cba234593ce5956a5227">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#aa4f96611e3cc4c82d86a779d8dede457">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a78c8d51a29309aa9e17e36f745a3c759">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -325,7 +329,7 @@ Protected Attributes</h2></td></tr>
 <p>Should return errors <span class="tt">e</span>. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a0221998b0f1299dfde2bfc7642877945">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a274953fef6f8bbed0c30e50891b5acaf">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a81d2213e2bfb3c41889cec7e2c5d4811">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a54f427e28c0ea482ccb9ed87d45d0694">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#aff8fbe6df1887a55eda3413a23a7e4bf">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a0221998b0f1299dfde2bfc7642877945">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#ab5335c3be5916d6b301fdd304b86770c">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a274953fef6f8bbed0c30e50891b5acaf">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#acaee62b354ca11daf6ed0aee747773f7">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a81d2213e2bfb3c41889cec7e2c5d4811">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a142cba3bec26565888d16900bbc95ffb">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a54f427e28c0ea482ccb9ed87d45d0694">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#aff8fbe6df1887a55eda3413a23a7e4bf">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -355,7 +359,7 @@ Protected Attributes</h2></td></tr>
 <p>Should return input size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#ab9f5ad7698b841dbb34e545e486d7dfd">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a814d862eae4b8bce835f119b75d9900e">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#ac8a4a8107f59e8d198d5c7ab9a0532e7">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a39eb79c6889bd6b3a9d58aa7342bb966">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a5769f40787ec4f3ee8405f2acd7a19fe">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#ab9f5ad7698b841dbb34e545e486d7dfd">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#ad97c21fbda1ee34e91aad3b9b9f20fa2">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a814d862eae4b8bce835f119b75d9900e">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a42e18e40d7b0045c0bbc4dcc4f5eeeed">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#ac8a4a8107f59e8d198d5c7ab9a0532e7">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#ad50379af7001257495455d96b7a5e7e9">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a39eb79c6889bd6b3a9d58aa7342bb966">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a5769f40787ec4f3ee8405f2acd7a19fe">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -385,7 +389,36 @@ Protected Attributes</h2></td></tr>
 <p>Should return output size. </p>
 <dl class="section return"><dt>Returns</dt><dd>? = 0 </dd></dl>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a6aa1034bb417fab22cf55e8899200c02">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4f0e865011258493e4e2fa1dc4621b89">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a015177afd4635f03c15763b7b6dae6b8">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a836a33190e5d6486ae5ffa7d5b9d4ee3">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a45f98604688f1ba990d5dde51e3e173f">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a6aa1034bb417fab22cf55e8899200c02">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#a642d6e7a6068cc5ca6757ec431799ae3">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a4f0e865011258493e4e2fa1dc4621b89">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#abf1bafca3c342c7326585defdf25fa43">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a015177afd4635f03c15763b7b6dae6b8">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a563d7ef929d3ef37359c0c2c6f87cc02">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a836a33190e5d6486ae5ffa7d5b9d4ee3">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a45f98604688f1ba990d5dde51e3e173f">Deep::SimplePCLayer</a>.</p>
+
+</div>
+</div>
+<a id="a5ad7ffebc2a789ad47d2afa371f6225e" name="a5ad7ffebc2a789ad47d2afa371f6225e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ad7ffebc2a789ad47d2afa371f6225e">&#9670;&#160;</a></span>GetStateDict()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual std::map&lt; std::string, <a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a> &gt; Deep::Layer::GetStateDict </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns a dictionary of this. </p>
+
+<p>Reimplemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a9a05394db4004b70435d49b97903ba85">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#a3cbf85dca2c2d487b5f1a7bfa598dffb">Deep::DirectKPPCLayer</a>, and <a class="el" href="classDeep_1_1FullPCLayer.html#a73104290dd73f3af61c84a523c32bbc0">Deep::FullPCLayer</a>.</p>
 
 </div>
 </div>
@@ -414,7 +447,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Updates the states after calculation. </p>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#afee30e07ebd335ccb46344fe74ec4f09">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a40f4dbeedd94bdc369d45091bbbdf559">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#ad8a166dd2069cd5244bea6e3fa940727">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a99892a3d06884eb6fd3f982866b88b37">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a2c75fb7c9b4fa075de9d0ab966ee2c83">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#afee30e07ebd335ccb46344fe74ec4f09">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#acb56d711853703d14ecf5d60686a1137">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a40f4dbeedd94bdc369d45091bbbdf559">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a363e00dd2667401aa1d908f4665bb32d">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#ad8a166dd2069cd5244bea6e3fa940727">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a386066e86ed987fd00d1c0b5f0510755">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#a99892a3d06884eb6fd3f982866b88b37">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a2c75fb7c9b4fa075de9d0ab966ee2c83">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>
@@ -443,7 +476,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Updates the weights after state updates. </p>
 
-<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a0a245df963dc3df55c99eb86b70c85de">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a39631620cf0d84cc97977b619fac2e9f">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a7524a3727b15c82b33e831732e963914">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#ac3e90a53d2e29e3e7512ffd194f0e88c">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a757530f0f89a4debc267b82d70ff40a7">Deep::SimplePCLayer</a>.</p>
+<p>Implemented in <a class="el" href="classDeep_1_1ConvPCLayer.html#a0a245df963dc3df55c99eb86b70c85de">Deep::ConvPCLayer</a>, <a class="el" href="classDeep_1_1DirectKPPCLayer.html#a52d86fbf3aeb1c87a5c413a792914f08">Deep::DirectKPPCLayer</a>, <a class="el" href="classDeep_1_1DiscriminativePCLayer.html#a39631620cf0d84cc97977b619fac2e9f">Deep::DiscriminativePCLayer</a>, <a class="el" href="classDeep_1_1FullPCLayer.html#a5f074552d6b3e18d276ab175491d229c">Deep::FullPCLayer</a>, <a class="el" href="classDeep_1_1GaussSeidelPCLayer.html#a7524a3727b15c82b33e831732e963914">Deep::GaussSeidelPCLayer</a>, <a class="el" href="classDeep_1_1RBLayer.html#a1a1d6e8cd0114fc0cad24027e437d8bd">Deep::RBLayer</a>, <a class="el" href="classDeep_1_1SimpleConvPCLayer.html#ac3e90a53d2e29e3e7512ffd194f0e88c">Deep::SimpleConvPCLayer</a>, and <a class="el" href="classDeep_1_1SimplePCLayer.html#a757530f0f89a4debc267b82d70ff40a7">Deep::SimplePCLayer</a>.</p>
 
 </div>
 </div>

@@ -1,4 +1,4 @@
 var ModelIO_8h =
 [
-    [ "Deep::ModelIO", "classDeep_1_1ModelIO.html", null ]
+    [ "Deep::ModelIO", "classDeep_1_1ModelIO.html", "classDeep_1_1ModelIO" ]
 ];

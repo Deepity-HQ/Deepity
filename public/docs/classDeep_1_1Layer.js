@@ -8,6 +8,7 @@ var classDeep_1_1Layer =
     [ "GetErrors", "classDeep_1_1Layer.html#aa9d71ffc42b5ca6a0cdc4a28faf7f636", null ],
     [ "GetInputSize", "classDeep_1_1Layer.html#aff8587bfbe62ef786e011a676c4ef375", null ],
     [ "GetOutputSize", "classDeep_1_1Layer.html#ac15039414878c57137e60dbb5c96b745", null ],
+    [ "GetStateDict", "classDeep_1_1Layer.html#a5ad7ffebc2a789ad47d2afa371f6225e", null ],
     [ "UpdateState", "classDeep_1_1Layer.html#ac87e63b18ef8aa27bd975031477e33f7", null ],
     [ "UpdateWeights", "classDeep_1_1Layer.html#a60d66aa85fc0f7ad5ea82f24340a9b96", null ],
     [ "nextSize", "classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0", null ],

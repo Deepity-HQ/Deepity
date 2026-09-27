@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: include/deepity/MemoryArena.h File Reference</title>
+<title>Deepity: include/deepity/utils/MemoryArena.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,12 +103,13 @@ $(function(){initNavTree('MemoryArena_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>A 64-byte-aligned bump-pointer allocator over a single heap-allocated block, used to pack every layer's beliefs/errors/ weights/scratch buffers into one contiguous region for cache locality (see the "Contiguous Arena Allocator" design note in the project README). Host-side counterpart to <a class="el" href="DeviceMemoryArena_8h.html">DeviceMemoryArena.h</a>'s CUDA version.  
+<p>A 64-byte-aligned bump-pointer allocator over a single heap-allocated block, used to pack every layer's beliefs/errors/ weights/scratch buffers into one contiguous region for cache locality (see the "Contiguous Arena Allocator" design note in the project README). Host-side counterpart to <a class="el" href="DeviceMemoryArena_8h.html" title="A 64-byte-aligned bump-pointer allocator over a single device buffer, mirroring this codebase&#39;s host-...">DeviceMemoryArena.h</a>'s CUDA version.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;cstddef&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
 <code>#include &lt;new&gt;</code><br />
 <code>#include &lt;stdexcept&gt;</code><br />
+<code>#include &lt;sys/mman.h&gt;</code><br />
 </div>
 <p><a href="MemoryArena_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -120,7 +121,7 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 <tr class="memitem:Deep_3A_3Adetail" id="r_Deep_3A_3Adetail"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep_1_1detail.html">Deep::detail</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
@@ -129,9 +130,13 @@ Functions</h2></td></tr>
 <tr class="memdesc:af3da503898a70b79185386c34fc3812c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a block of memory aligned to <code class="param">alignment</code> bytes, using whichever aligned-allocation API is actually reliable on the current platform (see the comment above for why this can't just be std::aligned_alloc everywhere).  <br /></td></tr>
 <tr class="memitem:aa81d102ebb96772f976ed83e00ae12ca" id="r_aa81d102ebb96772f976ed83e00ae12ca"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep_1_1detail.html#aa81d102ebb96772f976ed83e00ae12ca">Deep::detail::AlignedFreePortable</a> (void *ptr)</td></tr>
 <tr class="memdesc:aa81d102ebb96772f976ed83e00ae12ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a block previously returned by <a class="el" href="namespaceDeep_1_1detail.html#af3da503898a70b79185386c34fc3812c" title="Allocates a block of memory aligned to alignment bytes, using whichever aligned-allocation API is act...">AlignedAllocPortable()</a>.  <br /></td></tr>
+<tr class="memitem:a55740bbe02647542c1903efc83b81834" id="r_a55740bbe02647542c1903efc83b81834"><td class="memItemLeft">void *&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep_1_1detail.html#a55740bbe02647542c1903efc83b81834">Deep::detail::HugePageAllocPortable</a> (size_t size, bool &amp;succeeded)</td></tr>
+<tr class="memdesc:a55740bbe02647542c1903efc83b81834"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to allocate <code class="param">size</code> bytes backed by huge pages. This is genuinely opt-in and best-effort: on Linux, requests Transparent Huge Pages via madvise(MADV_HUGEPAGE) on a normal anonymous mmap &ndash; this is a HINT to the kernel, not a guarantee, and requires zero system-level configuration (unlike explicit hugetlbfs, which needs pages pre-reserved via /proc/sys/vm/nr_hugepages). On Windows, requests MEM_LARGE_PAGES via VirtualAlloc, which requires the process to hold SeLockMemoryPrivilege &ndash; NOT granted by default, so this will typically fail unless explicitly configured by an administrator.  <br /></td></tr>
+<tr class="memitem:a5edbd615eb36b6ac5e0946d1b999d67d" id="r_a5edbd615eb36b6ac5e0946d1b999d67d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep_1_1detail.html#a5edbd615eb36b6ac5e0946d1b999d67d">Deep::detail::HugePageFreePortable</a> (void *ptr, size_t size)</td></tr>
+<tr class="memdesc:a5edbd615eb36b6ac5e0946d1b999d67d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees a block previously returned by <a class="el" href="namespaceDeep_1_1detail.html#a55740bbe02647542c1903efc83b81834" title="Attempts to allocate size bytes backed by huge pages. This is genuinely opt-in and best-effort: on Li...">HugePageAllocPortable()</a> with succeeded=true.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>A 64-byte-aligned bump-pointer allocator over a single heap-allocated block, used to pack every layer's beliefs/errors/ weights/scratch buffers into one contiguous region for cache locality (see the "Contiguous Arena Allocator" design note in the project README). Host-side counterpart to <a class="el" href="DeviceMemoryArena_8h.html">DeviceMemoryArena.h</a>'s CUDA version. </p>
+<div class="textblock"><p>A 64-byte-aligned bump-pointer allocator over a single heap-allocated block, used to pack every layer's beliefs/errors/ weights/scratch buffers into one contiguous region for cache locality (see the "Contiguous Arena Allocator" design note in the project README). Host-side counterpart to <a class="el" href="DeviceMemoryArena_8h.html" title="A 64-byte-aligned bump-pointer allocator over a single device buffer, mirroring this codebase&#39;s host-...">DeviceMemoryArena.h</a>'s CUDA version. </p>
 <dl class="section note"><dt>Note</dt><dd>Individual chunks handed out by AllocateFloats() cannot be freed independently &ndash; the entire arena is released at once in the destructor, matching the bump-pointer/no-reclaim design used throughout this codebase's memory arenas. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
@@ -149,7 +154,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="MemoryArena_8h.html">MemoryArena.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="dir_f1cdc27c756738241bd9f578c8408128.html">utils</a></li><li class="navelem"><a href="MemoryArena_8h.html">MemoryArena.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,43 +103,62 @@ $(function(){initNavTree('classDeep_1_1SimpleConvPCNetwork.html','','classDeep_1
 </div><!--header-->
 <div class="contents">
 
+<p>Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> &ndash; precision-free, AdamW-capable, device-aware.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="SimpleConvPCNetwork_8h_source.html">SimpleConvPCNetwork.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a231b40d8d17e7512b991cf9ce24de1b7" id="r_a231b40d8d17e7512b991cf9ce24de1b7"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a231b40d8d17e7512b991cf9ce24de1b7">SimpleConvPCNetwork</a> (int batchSize) noexcept</td></tr>
+<tr class="memitem:ac30d71361f28332436d1d5480a98b552" id="r_ac30d71361f28332436d1d5480a98b552"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ac30d71361f28332436d1d5480a98b552">SimpleConvPCNetwork</a> (int batchSize, <a class="el" href="namespaceDeep.html#a79fb20681fc8065313ded67ba70f02f3">DeviceType</a> device=<a class="el" href="namespaceDeep.html#a79fb20681fc8065313ded67ba70f02f3a2b51e711df2cded71f92128f2f8f34dd">DeviceType::DEVICE_CPU</a>) noexcept</td></tr>
+<tr class="memdesc:ac30d71361f28332436d1d5480a98b552"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs an empty network; add layers via <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>, then <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> before use.  <br /></td></tr>
 <tr class="memitem:a72da8439982ddb3c828f01037f6653f1" id="r_a72da8439982ddb3c828f01037f6653f1"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a72da8439982ddb3c828f01037f6653f1">SimpleConvPCNetwork</a> (const SimpleConvPCNetwork &amp;)=delete</td></tr>
-<tr class="memitem:a5472be87b19bdc5e9ca735e36b7f4d5d" id="r_a5472be87b19bdc5e9ca735e36b7f4d5d"><td class="memItemLeft"><a class="el" href="#a231b40d8d17e7512b991cf9ce24de1b7">SimpleConvPCNetwork</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a5472be87b19bdc5e9ca735e36b7f4d5d">operator=</a> (const <a class="el" href="#a231b40d8d17e7512b991cf9ce24de1b7">SimpleConvPCNetwork</a> &amp;)=delete</td></tr>
+<tr class="memitem:a5472be87b19bdc5e9ca735e36b7f4d5d" id="r_a5472be87b19bdc5e9ca735e36b7f4d5d"><td class="memItemLeft"><a class="el" href="#ac30d71361f28332436d1d5480a98b552">SimpleConvPCNetwork</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a5472be87b19bdc5e9ca735e36b7f4d5d">operator=</a> (const <a class="el" href="#ac30d71361f28332436d1d5480a98b552">SimpleConvPCNetwork</a> &amp;)=delete</td></tr>
 <tr class="memitem:a0d57b4f616137bfe453f971933f96e3d" id="r_a0d57b4f616137bfe453f971933f96e3d"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0d57b4f616137bfe453f971933f96e3d">~SimpleConvPCNetwork</a> ()=default</td></tr>
 <tr class="memitem:aac0dcdd3d68eeeff5d7bad3c88cc93bd" id="r_aac0dcdd3d68eeeff5d7bad3c88cc93bd"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd">AddLayer</a> (int inChannels, int outChannels, int inHeight, int inWidth, int kernelH, int kernelW, int strideH=1, int strideW=1, int padH=0, int padW=0, float lr=1e-6f, float ir=0.1f, float lmbda=1e-2f, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">ActivationType::RELU</a>, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a>)</td></tr>
-<tr class="memdesc:aac0dcdd3d68eeeff5d7bad3c88cc93bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction), matching <a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a>'s nextSize=0 convention.  <br /></td></tr>
+<tr class="memdesc:aac0dcdd3d68eeeff5d7bad3c88cc93bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction), matching <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a>'s nextSize=0 convention.  <br /></td></tr>
 <tr class="memitem:abd1eea453c06dcd8d8f51e7b298ef181" id="r_abd1eea453c06dcd8d8f51e7b298ef181"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abd1eea453c06dcd8d8f51e7b298ef181">SetOptimizer</a> (<a class="el" href="namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02">OptimizerType</a> opt) noexcept</td></tr>
-<tr class="memdesc:abd1eea453c06dcd8d8f51e7b298ef181"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the optimizer for EVERY layer added so far. Safe to call any time before <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> &ndash; unlike using <a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a> standalone, memory allocation is deferred to <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a>, not the constructor, so this doesn't require a manual rebind.  <br /></td></tr>
+<tr class="memdesc:abd1eea453c06dcd8d8f51e7b298ef181"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the optimizer for EVERY layer added so far. Safe to call any time before <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> &ndash; unlike using <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> standalone, memory allocation is deferred to <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a>, not the constructor, so this doesn't require a manual rebind.  <br /></td></tr>
 <tr class="memitem:a8fbca3dec3b2102b5440010905b1cfb8" id="r_a8fbca3dec3b2102b5440010905b1cfb8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8">Compile</a> ()</td></tr>
-<tr class="memdesc:a8fbca3dec3b2102b5440010905b1cfb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sums every layer's required float count into a single contiguous arena and binds each layer into it. Call after all <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>/SetOptimizer() calls, before <a class="el" href="#aa0151af66d00196ace8f1bd13329ab7a">RandomizeWeights()</a>.  <br /></td></tr>
+<tr class="memdesc:a8fbca3dec3b2102b5440010905b1cfb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sums every layer's required float count into a single contiguous arena and binds each layer into it. Call after all <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>/SetOptimizer() calls, before <a class="el" href="#aa0151af66d00196ace8f1bd13329ab7a" title="Initializes every layer&#39;s weights randomly.">RandomizeWeights()</a>.  <br /></td></tr>
 <tr class="memitem:aa0151af66d00196ace8f1bd13329ab7a" id="r_aa0151af66d00196ace8f1bd13329ab7a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa0151af66d00196ace8f1bd13329ab7a">RandomizeWeights</a> (std::mt19937 &amp;rng) noexcept</td></tr>
+<tr class="memdesc:aa0151af66d00196ace8f1bd13329ab7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes every layer's weights randomly.  <br /></td></tr>
 <tr class="memitem:a7bc6c0439de57dfd665b2ae6a2a1d793" id="r_a7bc6c0439de57dfd665b2ae6a2a1d793"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7bc6c0439de57dfd665b2ae6a2a1d793">ResetState</a> () noexcept</td></tr>
+<tr class="memdesc:a7bc6c0439de57dfd665b2ae6a2a1d793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets the beliefs (z) on every layer.  <br /></td></tr>
 <tr class="memitem:a086049ae9cfbb80104fb6e64e1e7014e" id="r_a086049ae9cfbb80104fb6e64e1e7014e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a086049ae9cfbb80104fb6e64e1e7014e">Clamp</a> (const std::vector&lt; float &gt; &amp;input) noexcept</td></tr>
 <tr class="memdesc:a086049ae9cfbb80104fb6e64e1e7014e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clamps the flattened, batched input to the first (input) layer.  <br /></td></tr>
 <tr class="memitem:ac90d067204d92a815fb3e1104b6f2833" id="r_ac90d067204d92a815fb3e1104b6f2833"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#ac90d067204d92a815fb3e1104b6f2833">CalculateState</a> () noexcept</td></tr>
+<tr class="memdesc:ac90d067204d92a815fb3e1104b6f2833"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes and returns the network's total energy at the current state, without changing it.  <br /></td></tr>
 <tr class="memitem:aa80fdd047f62146ce20c3b7e6817e3c7" id="r_aa80fdd047f62146ce20c3b7e6817e3c7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa80fdd047f62146ce20c3b7e6817e3c7">UpdateState</a> () noexcept</td></tr>
+<tr class="memdesc:aa80fdd047f62146ce20c3b7e6817e3c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Runs one settling step on every layer.  <br /></td></tr>
 <tr class="memitem:a948d0ac6578e5aaacb825538a7ba1870" id="r_a948d0ac6578e5aaacb825538a7ba1870"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a948d0ac6578e5aaacb825538a7ba1870">UpdateWeights</a> () noexcept</td></tr>
 <tr class="memdesc:a948d0ac6578e5aaacb825538a7ba1870"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls <a class="el" href="#a948d0ac6578e5aaacb825538a7ba1870" title="Calls UpdateWeights() on every layer except the terminal one (each layer&#39;s own UpdateWeights() is als...">UpdateWeights()</a> on every layer except the terminal one (each layer's own <a class="el" href="#a948d0ac6578e5aaacb825538a7ba1870" title="Calls UpdateWeights() on every layer except the terminal one (each layer&#39;s own UpdateWeights() is als...">UpdateWeights()</a> is also self-guarded against outChannels==0, so this is belt-and-suspenders).  <br /></td></tr>
 <tr class="memitem:ad8051973a1f7dd181fdcf76138e4d881" id="r_ad8051973a1f7dd181fdcf76138e4d881"><td class="memItemLeft"><a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a> *&#160;</td><td class="memItemRight"><a class="el" href="#ad8051973a1f7dd181fdcf76138e4d881">GetTerminalLayer</a> () noexcept</td></tr>
+<tr class="memdesc:ad8051973a1f7dd181fdcf76138e4d881"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the last layer (outChannels==0, the terminal one).  <br /></td></tr>
 <tr class="memitem:ab0e18d07aa688ebfe695d5a7afef0348" id="r_ab0e18d07aa688ebfe695d5a7afef0348"><td class="memItemLeft">const auto &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ab0e18d07aa688ebfe695d5a7afef0348">GetLayers</a> () const noexcept</td></tr>
+<tr class="memdesc:ab0e18d07aa688ebfe695d5a7afef0348"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns every layer in the network, in the order they were added.  <br /></td></tr>
 <tr class="memitem:ad89686fb288a6cce49c423266a9fd8cb" id="r_ad89686fb288a6cce49c423266a9fd8cb"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ad89686fb288a6cce49c423266a9fd8cb">GetBatchSize</a> () const noexcept</td></tr>
+<tr class="memdesc:ad89686fb288a6cce49c423266a9fd8cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the batch size given at construction.  <br /></td></tr>
 <tr class="memitem:a543b5c09cf8e21be73c3bf76dbb4932c" id="r_a543b5c09cf8e21be73c3bf76dbb4932c"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a543b5c09cf8e21be73c3bf76dbb4932c">TrainStep</a> (const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td></tr>
-<tr class="memdesc:a543b5c09cf8e21be73c3bf76dbb4932c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full train step: clamp input+target, settle for inferenceSteps, update weights once, return the final energy. Mirrors <a class="el" href="classDeep_1_1ConvPCNetwork.html#a96f7fdb1fd4e28f9796f7961473aab0e" title="Full train step: clamp input+target, settle for inferenceSteps, update weights once,...">ConvPCNetwork::TrainStep()</a>/DiscriminativePCNetwork's <a class="el" href="#a543b5c09cf8e21be73c3bf76dbb4932c" title="Full train step: clamp input+target, settle for inferenceSteps, update weights once,...">TrainStep()</a> exactly.  <br /></td></tr>
+<tr class="memdesc:a543b5c09cf8e21be73c3bf76dbb4932c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full train step: clamp input+target, settle for inferenceSteps, update weights once, return the final energy.  <br /></td></tr>
 <tr class="memitem:af6224bb9405844684b2183f6c92e55d6" id="r_af6224bb9405844684b2183f6c92e55d6"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af6224bb9405844684b2183f6c92e55d6">Predict</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
 <tr class="memdesc:af6224bb9405844684b2183f6c92e55d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clamps input only, settles, and returns the terminal layer's settled beliefs (flattened, batched).  <br /></td></tr>
+<tr class="memitem:a2be21cdca70c9647f4f11f1a649e9101" id="r_a2be21cdca70c9647f4f11f1a649e9101"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2be21cdca70c9647f4f11f1a649e9101">ProjectForward</a> () noexcept</td></tr>
+<tr class="memdesc:a2be21cdca70c9647f4f11f1a649e9101"><td class="mdescLeft">&#160;</td><td class="mdescRight">Seeds hidden layers from a genuine forward pass through current weights, instead of zero-init. Call after <a class="el" href="#a086049ae9cfbb80104fb6e64e1e7014e" title="Clamps the flattened, batched input to the first (input) layer.">Clamp()</a>, before the settling loop.  <br /></td></tr>
+<tr class="memitem:a3637017d01bfb9fffdc88680bfa6a483" id="r_a3637017d01bfb9fffdc88680bfa6a483"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a3637017d01bfb9fffdc88680bfa6a483">TrainStepWithProjection</a> (const std::vector&lt; float &gt; &amp;x, const std::vector&lt; float &gt; &amp;y, int inferenceSteps)</td></tr>
+<tr class="memdesc:a3637017d01bfb9fffdc88680bfa6a483"><td class="mdescLeft">&#160;</td><td class="mdescRight">Full train step with forward-projection init: clamp input, project forward, clamp target, settle, update weights, return the final energy.  <br /></td></tr>
+<tr class="memitem:a4cfb00ef59ac4588a25ae47ebc663416" id="r_a4cfb00ef59ac4588a25ae47ebc663416"><td class="memItemLeft">std::vector&lt; float &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a4cfb00ef59ac4588a25ae47ebc663416">PredictWithProjection</a> (const std::vector&lt; float &gt; &amp;x, int inferenceSteps)</td></tr>
+<tr class="memdesc:a4cfb00ef59ac4588a25ae47ebc663416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inference-only counterpart to <a class="el" href="#a3637017d01bfb9fffdc88680bfa6a483" title="Full train step with forward-projection init: clamp input, project forward, clamp target,...">TrainStepWithProjection()</a>: clamp input, project forward, settle, read out the terminal layer's beliefs. No target clamp, no weight update.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-friends" class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
 <tr class="memitem:a383316d08df576c124c5514c5f8b3d2b" id="r_a383316d08df576c124c5514c5f8b3d2b"><td class="memItemLeft">class&#160;</td><td class="memItemRight"><a class="el" href="#a383316d08df576c124c5514c5f8b3d2b">PCNDiagnostics</a></td></tr>
 </table>
-<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a231b40d8d17e7512b991cf9ce24de1b7" name="a231b40d8d17e7512b991cf9ce24de1b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a231b40d8d17e7512b991cf9ce24de1b7">&#9670;&#160;</a></span>SimpleConvPCNetwork() <span class="overload">[1/2]</span></h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> &ndash; precision-free, AdamW-capable, device-aware. </p>
+</div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ac30d71361f28332436d1d5480a98b552" name="ac30d71361f28332436d1d5480a98b552"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac30d71361f28332436d1d5480a98b552">&#9670;&#160;</a></span>SimpleConvPCNetwork() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -150,8 +169,12 @@ Friends</h2></td></tr>
         <tr>
           <td class="memname">Deep::SimpleConvPCNetwork::SimpleConvPCNetwork </td>
           <td>(</td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span></td><td>)</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="namespaceDeep.html#a79fb20681fc8065313ded67ba70f02f3">DeviceType</a></td>          <td class="paramname"><span class="paramname"><em>device</em></span><span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="namespaceDeep.html#a79fb20681fc8065313ded67ba70f02f3a2b51e711df2cded71f92128f2f8f34dd">DeviceType::DEVICE_CPU</a></span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -160,6 +183,15 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Constructs an empty network; add layers via <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>, then <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> before use. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">batchSize</td><td>Fixed batch size for every layer. </td></tr>
+    <tr><td class="paramname">device</td><td>Which device this network's layers run on. </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -298,7 +330,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction), matching <a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a>'s nextSize=0 convention. </p>
+<p>Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction), matching <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a>'s nextSize=0 convention. </p>
 
 </div>
 </div>
@@ -324,6 +356,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Computes and returns the network's total energy at the current state, without changing it. </p>
 
 </div>
 </div>
@@ -369,7 +403,7 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Sums every layer's required float count into a single contiguous arena and binds each layer into it. Call after all <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>/SetOptimizer() calls, before <a class="el" href="#aa0151af66d00196ace8f1bd13329ab7a">RandomizeWeights()</a>. </p>
+<p>Sums every layer's required float count into a single contiguous arena and binds each layer into it. Call after all <a class="el" href="#aac0dcdd3d68eeeff5d7bad3c88cc93bd" title="Adds a convolutional layer. Pass outChannels=0 to mark a terminal layer (no outgoing prediction),...">AddLayer()</a>/SetOptimizer() calls, before <a class="el" href="#aa0151af66d00196ace8f1bd13329ab7a" title="Initializes every layer&#39;s weights randomly.">RandomizeWeights()</a>. </p>
 
 </div>
 </div>
@@ -396,6 +430,8 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the batch size given at construction. </p>
+
 </div>
 </div>
 <a id="ab0e18d07aa688ebfe695d5a7afef0348" name="ab0e18d07aa688ebfe695d5a7afef0348"></a>
@@ -420,6 +456,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns every layer in the network, in the order they were added. </p>
 
 </div>
 </div>
@@ -446,6 +484,8 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Returns the last layer (outChannels==0, the terminal one). </p>
+
 </div>
 </div>
 <a id="a5472be87b19bdc5e9ca735e36b7f4d5d" name="a5472be87b19bdc5e9ca735e36b7f4d5d"></a>
@@ -458,9 +498,9 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="#a231b40d8d17e7512b991cf9ce24de1b7">SimpleConvPCNetwork</a> &amp; Deep::SimpleConvPCNetwork::operator= </td>
+          <td class="memname"><a class="el" href="#ac30d71361f28332436d1d5480a98b552">SimpleConvPCNetwork</a> &amp; Deep::SimpleConvPCNetwork::operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="#a231b40d8d17e7512b991cf9ce24de1b7">SimpleConvPCNetwork</a> &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">const <a class="el" href="#ac30d71361f28332436d1d5480a98b552">SimpleConvPCNetwork</a> &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -496,6 +536,56 @@ Friends</h2></td></tr>
 
 </div>
 </div>
+<a id="a4cfb00ef59ac4588a25ae47ebc663416" name="a4cfb00ef59ac4588a25ae47ebc663416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cfb00ef59ac4588a25ae47ebc663416">&#9670;&#160;</a></span>PredictWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::vector&lt; float &gt; Deep::SimpleConvPCNetwork::PredictWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Inference-only counterpart to <a class="el" href="#a3637017d01bfb9fffdc88680bfa6a483" title="Full train step with forward-projection init: clamp input, project forward, clamp target,...">TrainStepWithProjection()</a>: clamp input, project forward, settle, read out the terminal layer's beliefs. No target clamp, no weight update. </p>
+
+</div>
+</div>
+<a id="a2be21cdca70c9647f4f11f1a649e9101" name="a2be21cdca70c9647f4f11f1a649e9101"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2be21cdca70c9647f4f11f1a649e9101">&#9670;&#160;</a></span>ProjectForward()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Deep::SimpleConvPCNetwork::ProjectForward </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Seeds hidden layers from a genuine forward pass through current weights, instead of zero-init. Call after <a class="el" href="#a086049ae9cfbb80104fb6e64e1e7014e" title="Clamps the flattened, batched input to the first (input) layer.">Clamp()</a>, before the settling loop. </p>
+
+</div>
+</div>
 <a id="aa0151af66d00196ace8f1bd13329ab7a" name="aa0151af66d00196ace8f1bd13329ab7a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa0151af66d00196ace8f1bd13329ab7a">&#9670;&#160;</a></span>RandomizeWeights()</h2>
 
@@ -518,6 +608,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Initializes every layer's weights randomly. </p>
 
 </div>
 </div>
@@ -544,6 +636,8 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Resets the beliefs (z) on every layer. </p>
+
 </div>
 </div>
 <a id="abd1eea453c06dcd8d8f51e7b298ef181" name="abd1eea453c06dcd8d8f51e7b298ef181"></a>
@@ -569,7 +663,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Sets the optimizer for EVERY layer added so far. Safe to call any time before <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> &ndash; unlike using <a class="el" href="classDeep_1_1SimpleConvPCLayer.html">SimpleConvPCLayer</a> standalone, memory allocation is deferred to <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a>, not the constructor, so this doesn't require a manual rebind. </p>
+<p>Sets the optimizer for EVERY layer added so far. Safe to call any time before <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a> &ndash; unlike using <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> standalone, memory allocation is deferred to <a class="el" href="#a8fbca3dec3b2102b5440010905b1cfb8" title="Sums every layer&#39;s required float count into a single contiguous arena and binds each layer into it....">Compile()</a>, not the constructor, so this doesn't require a manual rebind. </p>
 
 </div>
 </div>
@@ -597,7 +691,35 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Full train step: clamp input+target, settle for inferenceSteps, update weights once, return the final energy. Mirrors <a class="el" href="classDeep_1_1ConvPCNetwork.html#a96f7fdb1fd4e28f9796f7961473aab0e" title="Full train step: clamp input+target, settle for inferenceSteps, update weights once,...">ConvPCNetwork::TrainStep()</a>/DiscriminativePCNetwork's <a class="el" href="#a543b5c09cf8e21be73c3bf76dbb4932c" title="Full train step: clamp input+target, settle for inferenceSteps, update weights once,...">TrainStep()</a> exactly. </p>
+<p>Full train step: clamp input+target, settle for inferenceSteps, update weights once, return the final energy. </p>
+
+</div>
+</div>
+<a id="a3637017d01bfb9fffdc88680bfa6a483" name="a3637017d01bfb9fffdc88680bfa6a483"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3637017d01bfb9fffdc88680bfa6a483">&#9670;&#160;</a></span>TrainStepWithProjection()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::SimpleConvPCNetwork::TrainStepWithProjection </td>
+          <td>(</td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>x</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::vector&lt; float &gt; &amp;</td>          <td class="paramname"><span class="paramname"><em>y</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>inferenceSteps</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Full train step with forward-projection init: clamp input, project forward, clamp target, settle, update weights, return the final energy. </p>
 
 </div>
 </div>
@@ -623,6 +745,8 @@ Friends</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Runs one settling step on every layer. </p>
 
 </div>
 </div>
@@ -678,7 +802,7 @@ Friends</h2></td></tr>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>include/deepity/networks/<a class="el" href="SimpleConvPCNetwork_8h_source.html">SimpleConvPCNetwork.h</a></li>
-<li>src/<a class="el" href="SimpleConvPCNetwork_8cpp.html">SimpleConvPCNetwork.cpp</a></li>
+<li>src/networks/<a class="el" href="SimpleConvPCNetwork_8cpp.html">SimpleConvPCNetwork.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

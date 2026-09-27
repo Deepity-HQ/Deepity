@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,6 +103,9 @@ $(function(){initNavTree('classDeep_1_1SimplePCLayer.html','','classDeep_1_1Simp
 </div><!--header-->
 <div class="contents">
 
+<p>Predictive Coding layer without precision weighting &ndash; the simpler, unweighted-energy counterpart to <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="SimplePCLayer_8h_source.html">SimplePCLayer.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for Deep::SimplePCLayer:</div>
@@ -116,12 +119,14 @@ Inheritance diagram for Deep::SimplePCLayer:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ad41325b19ae3d590d6a660c3dce0b31f" id="r_ad41325b19ae3d590d6a660c3dce0b31f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6f, float inferenceRate=0.1f, float lmbda=1e-2f, void(*act)(float *, size_t)=relu, void(*dAct)(float *, size_t, bool)=dRelu)</td></tr>
-<tr class="memdesc:ad41325b19ae3d590d6a660c3dce0b31f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a>.  <br /></td></tr>
-<tr class="memitem:ad25610566363e33be901dec8c1ae43dc" id="r_ad25610566363e33be901dec8c1ae43dc"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#ad25610566363e33be901dec8c1ae43dc">SimplePCLayer</a> (int <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, int <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, int batchSize=1, float learningRate=1e-6f, float inferenceRate=0.1f, float lmbda=1e-2f, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">ActivationType::RELU</a>, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a>)</td></tr>
-<tr class="memdesc:ad25610566363e33be901dec8c1ae43dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers.  <br /></td></tr>
+<tr class="memitem:aade2d3524c949eb21fd097aba9468700" id="r_aade2d3524c949eb21fd097aba9468700"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> (size_t <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, size_t <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, size_t batchSize=1, float learningRate=1e-6f, float inferenceRate=0.1f, float lmbda=1e-2f, void(*act)(float *, size_t)=<a class="el" href="namespaceDeep.html#a90665b7ac59bbba24c1cd9a1465cd012">relu</a>, void(*dAct)(float *, size_t, bool)=<a class="el" href="namespaceDeep.html#ad18e23c57ff5761ee8a6b06a79fa53a3">dRelu</a>, <a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> *backend=nullptr)</td></tr>
+<tr class="memdesc:aade2d3524c949eb21fd097aba9468700"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a>.  <br /></td></tr>
+<tr class="memitem:a0a5ea65d6d2f406787ae1d03709c0622" id="r_a0a5ea65d6d2f406787ae1d03709c0622"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a0a5ea65d6d2f406787ae1d03709c0622">SimplePCLayer</a> (size_t <a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d">size</a>, size_t <a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a>, size_t batchSize=1, float learningRate=1e-6f, float inferenceRate=0.1f, float lmbda=1e-2f, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> aType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ad346bb4679d29be241279f15d7795c1c">ActivationType::RELU</a>, <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> dType=<a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a>, <a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> *backend=nullptr)</td></tr>
+<tr class="memdesc:a0a5ea65d6d2f406787ae1d03709c0622"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> instead of raw function pointers.  <br /></td></tr>
+<tr class="memitem:aa8f997d4b0923f02a4ce3317448ef1cd" id="r_aa8f997d4b0923f02a4ce3317448ef1cd"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#aa8f997d4b0923f02a4ce3317448ef1cd">CalculateState</a> (bool needEnergy=true) noexcept</td></tr>
+<tr class="memdesc:aa8f997d4b0923f02a4ce3317448ef1cd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state, and this layer's outgoing prediction (mu).  <br /></td></tr>
 <tr class="memitem:a717e90d966a9de3e88d79e05a734aa27" id="r_a717e90d966a9de3e88d79e05a734aa27"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a717e90d966a9de3e88d79e05a734aa27">CalculateState</a> () noexcept override</td></tr>
-<tr class="memdesc:a717e90d966a9de3e88d79e05a734aa27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the total network energy state, and this layer's outgoing prediction (mu).  <br /></td></tr>
+<tr class="memdesc:a717e90d966a9de3e88d79e05a734aa27"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculates the internal state of the layer.  <br /></td></tr>
 <tr class="memitem:a2c75fb7c9b4fa075de9d0ab966ee2c83" id="r_a2c75fb7c9b4fa075de9d0ab966ee2c83"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2c75fb7c9b4fa075de9d0ab966ee2c83">UpdateState</a> () noexcept override</td></tr>
 <tr class="memdesc:a2c75fb7c9b4fa075de9d0ab966ee2c83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the state derivatives for inference.  <br /></td></tr>
 <tr class="memitem:a757530f0f89a4debc267b82d70ff40a7" id="r_a757530f0f89a4debc267b82d70ff40a7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a757530f0f89a4debc267b82d70ff40a7">UpdateWeights</a> () noexcept override</td></tr>
@@ -132,6 +137,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a0a9b015b8a020bf3f730aadd800b7f5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clamps this layer's beliefs to externally-provided data, preventing them from being updated by <a class="el" href="#a2c75fb7c9b4fa075de9d0ab966ee2c83" title="Computes the state derivatives for inference.">UpdateState()</a>.  <br /></td></tr>
 <tr class="memitem:a0a34de6fd0a87f8c6d6228100de4bed6" id="r_a0a34de6fd0a87f8c6d6228100de4bed6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a0a34de6fd0a87f8c6d6228100de4bed6">UnclampState</a> () noexcept</td></tr>
 <tr class="memdesc:a0a34de6fd0a87f8c6d6228100de4bed6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Releases a previous <a class="el" href="#a0a9b015b8a020bf3f730aadd800b7f5e" title="Clamps this layer&#39;s beliefs to externally-provided data, preventing them from being updated by Update...">ClampState()</a> call, allowing this layer's beliefs to update normally again.  <br /></td></tr>
+<tr class="memitem:abe3062c134f34efce9be3fc3a91f4f94" id="r_abe3062c134f34efce9be3fc3a91f4f94"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#abe3062c134f34efce9be3fc3a91f4f94">IsClamped</a> () const noexcept</td></tr>
+<tr class="memdesc:abe3062c134f34efce9be3fc3a91f4f94"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether <a class="el" href="#a0a9b015b8a020bf3f730aadd800b7f5e" title="Clamps this layer&#39;s beliefs to externally-provided data, preventing them from being updated by Update...">ClampState()</a> is currently active on this layer.  <br /></td></tr>
 <tr class="memitem:a78c8d51a29309aa9e17e36f745a3c759" id="r_a78c8d51a29309aa9e17e36f745a3c759"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#a78c8d51a29309aa9e17e36f745a3c759">GetBeliefs</a> () noexcept override</td></tr>
 <tr class="memdesc:a78c8d51a29309aa9e17e36f745a3c759"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's belief buffer.  <br /></td></tr>
 <tr class="memitem:a2e282de8650d363f1e6c62fdf43124b0" id="r_a2e282de8650d363f1e6c62fdf43124b0"><td class="memItemLeft">const float *&#160;</td><td class="memItemRight"><a class="el" href="#a2e282de8650d363f1e6c62fdf43124b0">GetMu</a> () const noexcept</td></tr>
@@ -169,30 +176,34 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abcc9462a7aa38ec8cab0e6e707bb1176" id="r_abcc9462a7aa38ec8cab0e6e707bb1176"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abcc9462a7aa38ec8cab0e6e707bb1176">SetMuCacheThreshold</a> (float threshold) noexcept</td></tr>
 <tr class="memdesc:abcc9462a7aa38ec8cab0e6e707bb1176"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_at_last_recompute||.  <br /></td></tr>
 <tr class="memitem:a2a5566aff827e29aa79d85e2a864687b" id="r_a2a5566aff827e29aa79d85e2a864687b"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a2a5566aff827e29aa79d85e2a864687b">GetMuCacheThreshold</a> () const noexcept</td></tr>
+<tr class="memdesc:a2a5566aff827e29aa79d85e2a864687b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current mu-cache staleness threshold &ndash; see <a class="el" href="#abcc9462a7aa38ec8cab0e6e707bb1176" title="Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_...">SetMuCacheThreshold()</a> above.  <br /></td></tr>
 <tr class="memitem:aa3edc3797d6f8bbfa822f7c5fed216b4" id="r_aa3edc3797d6f8bbfa822f7c5fed216b4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa3edc3797d6f8bbfa822f7c5fed216b4">ComputeMuOnly</a> () noexcept</td></tr>
-<tr class="memdesc:aa3edc3797d6f8bbfa822f7c5fed216b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the total network energy state, and this layer&#39;s outgoing prediction (mu).">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b).  <br /></td></tr>
-<tr class="memitem:a902139c1ba87a3bab91a15cb1e639ea3" id="r_a902139c1ba87a3bab91a15cb1e639ea3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a902139c1ba87a3bab91a15cb1e639ea3">SetLayerAbove</a> (<a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *above) noexcept</td></tr>
+<tr class="memdesc:aa3edc3797d6f8bbfa822f7c5fed216b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the internal state of the layer.">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b).  <br /></td></tr>
+<tr class="memitem:a902139c1ba87a3bab91a15cb1e639ea3" id="r_a902139c1ba87a3bab91a15cb1e639ea3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a902139c1ba87a3bab91a15cb1e639ea3">SetLayerAbove</a> (<a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> *above) noexcept</td></tr>
 <tr class="memdesc:a902139c1ba87a3bab91a15cb1e639ea3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the layer immediately above this one in the network.  <br /></td></tr>
-<tr class="memitem:adca11e0dd4abf38757686f42db9f778d" id="r_adca11e0dd4abf38757686f42db9f778d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adca11e0dd4abf38757686f42db9f778d">SetLayerBelow</a> (<a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *below) noexcept</td></tr>
+<tr class="memitem:adca11e0dd4abf38757686f42db9f778d" id="r_adca11e0dd4abf38757686f42db9f778d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adca11e0dd4abf38757686f42db9f778d">SetLayerBelow</a> (<a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> *below) noexcept</td></tr>
 <tr class="memdesc:adca11e0dd4abf38757686f42db9f778d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the layer immediately below this one in the network.  <br /></td></tr>
 <tr class="memitem:a151f1853dcc7b2d6e06e557df95bb2df" id="r_a151f1853dcc7b2d6e06e557df95bb2df"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a151f1853dcc7b2d6e06e557df95bb2df">ResetState</a> () noexcept</td></tr>
 <tr class="memdesc:a151f1853dcc7b2d6e06e557df95bb2df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets this layer's beliefs/errors back to their initial values, without touching learned weights.  <br /></td></tr>
-<tr class="memitem:a3eb34ce1cc9fd4f7172a72ba2a680c89" id="r_a3eb34ce1cc9fd4f7172a72ba2a680c89"><td class="memItemLeft">const <a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a3eb34ce1cc9fd4f7172a72ba2a680c89">GetLayerAbove</a> () const noexcept</td></tr>
+<tr class="memitem:a3eb34ce1cc9fd4f7172a72ba2a680c89" id="r_a3eb34ce1cc9fd4f7172a72ba2a680c89"><td class="memItemLeft">const <a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a3eb34ce1cc9fd4f7172a72ba2a680c89">GetLayerAbove</a> () const noexcept</td></tr>
 <tr class="memdesc:a3eb34ce1cc9fd4f7172a72ba2a680c89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the layer immediately above this one.  <br /></td></tr>
-<tr class="memitem:ac28cb7e2371122f5e98b88872fbe763c" id="r_ac28cb7e2371122f5e98b88872fbe763c"><td class="memItemLeft">const <a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ac28cb7e2371122f5e98b88872fbe763c">GetLayerBelow</a> () const noexcept</td></tr>
+<tr class="memitem:ac28cb7e2371122f5e98b88872fbe763c" id="r_ac28cb7e2371122f5e98b88872fbe763c"><td class="memItemLeft">const <a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#ac28cb7e2371122f5e98b88872fbe763c">GetLayerBelow</a> () const noexcept</td></tr>
 <tr class="memdesc:ac28cb7e2371122f5e98b88872fbe763c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the layer immediately below this one.  <br /></td></tr>
-<tr class="memitem:a6887459397ed3fbe2f30cddec0cd4710" id="r_a6887459397ed3fbe2f30cddec0cd4710"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6887459397ed3fbe2f30cddec0cd4710">RandomizeWeights</a> (std::mt19937 &amp;twister) noexcept</td></tr>
-<tr class="memdesc:a6887459397ed3fbe2f30cddec0cd4710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomizes this layer's weights (and biases) in place.  <br /></td></tr>
+<tr class="memitem:a380d735842e868b3b9a0ca7bca21c942" id="r_a380d735842e868b3b9a0ca7bca21c942"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a380d735842e868b3b9a0ca7bca21c942">RandomizeWeights</a> (std::mt19937 &amp;twister, const char *distribution=&quot;normal&quot;) noexcept</td></tr>
+<tr class="memdesc:a380d735842e868b3b9a0ca7bca21c942"><td class="mdescLeft">&#160;</td><td class="mdescRight">Randomizes this layer's weights (and biases) in place.  <br /></td></tr>
 <tr class="memitem:a28150879a30ce0110832801de09161ef" id="r_a28150879a30ce0110832801de09161ef"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a28150879a30ce0110832801de09161ef">GetActivationType</a> () const noexcept</td></tr>
 <tr class="memdesc:a28150879a30ce0110832801de09161ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's configured activation type.  <br /></td></tr>
 <tr class="memitem:a1116f02c1f30f9cce98914e332b021ec" id="r_a1116f02c1f30f9cce98914e332b021ec"><td class="memItemLeft"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a>&#160;</td><td class="memItemRight"><a class="el" href="#a1116f02c1f30f9cce98914e332b021ec">GetDerivativeType</a> () const noexcept</td></tr>
 <tr class="memdesc:a1116f02c1f30f9cce98914e332b021ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns this layer's configured activation-derivative type.  <br /></td></tr>
 <tr class="memitem:a1e81a34a4307f1a2f12206609cc6e474" id="r_a1e81a34a4307f1a2f12206609cc6e474"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#a1e81a34a4307f1a2f12206609cc6e474">GetRequiredFloats</a> () const noexcept</td></tr>
 <tr class="memdesc:a1e81a34a4307f1a2f12206609cc6e474"><td class="mdescLeft">&#160;</td><td class="mdescRight">Computes the total number of floats this layer requires from a <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> (weights, biases, beliefs, errors, scratch buffers, and, if Adam is selected, its moment buffers).  <br /></td></tr>
-<tr class="memitem:af5cabf54e8f1acf5204484175419f24f" id="r_af5cabf54e8f1acf5204484175419f24f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af5cabf54e8f1acf5204484175419f24f">BindMemory</a> (<a class="el" href="classDeep_1_1MemoryArena.html">MemoryArena</a> &amp;arena)</td></tr>
-<tr class="memdesc:af5cabf54e8f1acf5204484175419f24f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds this layer's weight/state/scratch buffers into the supplied arena. Must be called before any other operation.  <br /></td></tr>
+<tr class="memitem:a92b67d51aa9a805ea704bad46058086a" id="r_a92b67d51aa9a805ea704bad46058086a"><td class="memTemplParams" colspan="2">template&lt;typename ArenaT&gt; </td></tr>
+<tr class="memitem:a92b67d51aa9a805ea704bad46058086a template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a92b67d51aa9a805ea704bad46058086a">BindMemory</a> (ArenaT &amp;arena)</td></tr>
+<tr class="memdesc:a92b67d51aa9a805ea704bad46058086a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binds this layer's weight/state/scratch buffers into the supplied arena. Must be called before any other operation. Templated so either <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> (CPU) or <a class="el" href="classDeep_1_1DeviceMemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of device memory,...">DeviceMemoryArena</a> (GPU) can be bound, resolved entirely at compile time &ndash; see the .cpp's explicit instantiations for the two concrete types actually used.  <br /></td></tr>
 <tr class="inherit_header pub_methods_classDeep_1_1Layer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classDeep_1_1Layer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classDeep_1_1Layer.html">Deep::Layer</a></td></tr>
 <tr class="memitem:a7345cceda85f2a8c845fc00db21c6d4d inherit pub_methods_classDeep_1_1Layer" id="r_a7345cceda85f2a8c845fc00db21c6d4d"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a7345cceda85f2a8c845fc00db21c6d4d">~Layer</a> ()=default</td></tr>
+<tr class="memitem:a5ad7ffebc2a789ad47d2afa371f6225e inherit pub_methods_classDeep_1_1Layer" id="r_a5ad7ffebc2a789ad47d2afa371f6225e"><td class="memItemLeft">virtual std::map&lt; std::string, <a class="el" href="structDeep_1_1TensorDescriptor.html">TensorDescriptor</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a5ad7ffebc2a789ad47d2afa371f6225e">GetStateDict</a> () const</td></tr>
+<tr class="memdesc:a5ad7ffebc2a789ad47d2afa371f6225e inherit pub_methods_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a dictionary of this.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-friends" class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -206,9 +217,11 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer" id="r_a5a538a25f3064996bbe651e6d48918d0"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0">nextSize</a></td></tr>
 <tr class="memdesc:a5a538a25f3064996bbe651e6d48918d0 inherit pro_attribs_classDeep_1_1Layer"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of output.  <br /></td></tr>
 </table>
-<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ad41325b19ae3d590d6a660c3dce0b31f" name="ad41325b19ae3d590d6a660c3dce0b31f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad41325b19ae3d590d6a660c3dce0b31f">&#9670;&#160;</a></span>SimplePCLayer() <span class="overload">[1/2]</span></h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Predictive Coding layer without precision weighting &ndash; the simpler, unweighted-energy counterpart to <a class="el" href="classDeep_1_1DiscriminativePCLayer.html">DiscriminativePCLayer</a>. </p>
+</div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aade2d3524c949eb21fd097aba9468700" name="aade2d3524c949eb21fd097aba9468700"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aade2d3524c949eb21fd097aba9468700">&#9670;&#160;</a></span>SimplePCLayer() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -216,17 +229,17 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">Deep::SimplePCLayer::SimplePCLayer </td>
           <td>(</td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>size</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>size</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>nextSize</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>nextSize</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1</span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1</span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -246,17 +259,22 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval">relu</span>, </td>
+          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>act&#160;</em></span>)(float *, size_t)<span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="namespaceDeep.html#a90665b7ac59bbba24c1cd9a1465cd012">relu</a></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>dAct&#160;</em></span>)(float *, size_t, bool)<span class="paramdefsep"> = </span><span class="paramdefval">dRelu</span>&#160;)</td>
+          <td class="paramtype">void(*</td>          <td class="paramname"><span class="paramname"><em>dAct&#160;</em></span>)(float *, size_t, bool)<span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="namespaceDeep.html#ad18e23c57ff5761ee8a6b06a79fa53a3">dRelu</a></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> *</td>          <td class="paramname"><span class="paramname"><em>backend</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a>. </p>
+<p>Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a>. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname"><a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d" title="Size of input.">size</a></td><td>Size of this layer's own belief (z) </td></tr>
@@ -267,14 +285,15 @@ Additional Inherited Members</h2></td></tr>
     <tr><td class="paramname">lmbda</td><td>Weight decay (L2 regularization) coefficient </td></tr>
     <tr><td class="paramname">act</td><td>Activation function </td></tr>
     <tr><td class="paramname">dAct</td><td>Derivative of activation function </td></tr>
+    <tr><td class="paramname">backend</td><td>Compute backend to route all math through. Defaults to nullptr, in which case this layer constructs and owns its own <a class="el" href="classDeep_1_1CPUBackend.html" title="CPU implementation of IComputeBackend: SIMD (via Activations.h) for elementwise ops,...">CPUBackend</a> internally &ndash; existing callers don't need to change anything. Pass a real backend (owned elsewhere, e.g. by the network) to run this layer on GPU. </td></tr>
   </table>
   </dd>
 </dl>
 
 </div>
 </div>
-<a id="ad25610566363e33be901dec8c1ae43dc" name="ad25610566363e33be901dec8c1ae43dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad25610566363e33be901dec8c1ae43dc">&#9670;&#160;</a></span>SimplePCLayer() <span class="overload">[2/2]</span></h2>
+<a id="a0a5ea65d6d2f406787ae1d03709c0622" name="a0a5ea65d6d2f406787ae1d03709c0622"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a5ea65d6d2f406787ae1d03709c0622">&#9670;&#160;</a></span>SimplePCLayer() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -282,17 +301,17 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">Deep::SimplePCLayer::SimplePCLayer </td>
           <td>(</td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>size</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>size</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>nextSize</em></span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>nextSize</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1</span>, </td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>batchSize</em></span><span class="paramdefsep"> = </span><span class="paramdefval">1</span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -317,12 +336,17 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a></td>          <td class="paramname"><span class="paramname"><em>dType</em></span><span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a></span>&#160;)</td>
+          <td class="paramtype"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a></td>          <td class="paramname"><span class="paramname"><em>dType</em></span><span class="paramdefsep"> = </span><span class="paramdefval"><a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ae3d97c20b976be09990b745185b14d75">ActivationType::dRELU</a></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classDeep_1_1IComputeBackend.html">IComputeBackend</a> *</td>          <td class="paramname"><span class="paramname"><em>backend</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>&#160;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61">ActivationType</a> instead of raw function pointers. </p>
+<p>Constructor for a <a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a>, using a named <a class="el" href="namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61" title="Identifies an activation function or its derivative, for dispatch tables and layer/backend APIs that ...">ActivationType</a> instead of raw function pointers. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname"><a class="el" href="classDeep_1_1Layer.html#a7480249662a3bd8ad458dcdcde68a37d" title="Size of input.">size</a></td><td>Size of this layer's own belief (z) </td></tr>
@@ -333,6 +357,7 @@ Additional Inherited Members</h2></td></tr>
     <tr><td class="paramname">lmbda</td><td>Weight decay (L2 regularization) coefficient </td></tr>
     <tr><td class="paramname">aType</td><td>Activation type </td></tr>
     <tr><td class="paramname">dType</td><td>Activation derivative type </td></tr>
+    <tr><td class="paramname">backend</td><td>Compute backend to route all math through. See the other constructor's doc for the default-nullptr behavior. </td></tr>
   </table>
   </dd>
 </dl>
@@ -340,25 +365,27 @@ Additional Inherited Members</h2></td></tr>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="af5cabf54e8f1acf5204484175419f24f" name="af5cabf54e8f1acf5204484175419f24f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5cabf54e8f1acf5204484175419f24f">&#9670;&#160;</a></span>BindMemory()</h2>
+<a id="a92b67d51aa9a805ea704bad46058086a" name="a92b67d51aa9a805ea704bad46058086a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92b67d51aa9a805ea704bad46058086a">&#9670;&#160;</a></span>BindMemory()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<div class="memtemplate">
+template&lt;typename ArenaT&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void Deep::SimplePCLayer::BindMemory </td>
+          <td class="memname">template void Deep::SimplePCLayer::BindMemory&lt; <a class="el" href="classDeep_1_1DeviceMemoryArena.html">DeviceMemoryArena</a> &gt; </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classDeep_1_1MemoryArena.html">MemoryArena</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>arena</em></span></td><td>)</td>
+          <td class="paramtype">ArenaT &amp;</td>          <td class="paramname"><span class="paramname"><em>arena</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Binds this layer's weight/state/scratch buffers into the supplied arena. Must be called before any other operation. </p>
+<p>Binds this layer's weight/state/scratch buffers into the supplied arena. Must be called before any other operation. Templated so either <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> (CPU) or <a class="el" href="classDeep_1_1DeviceMemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of device memory,...">DeviceMemoryArena</a> (GPU) can be bound, resolved entirely at compile time &ndash; see the .cpp's explicit instantiations for the two concrete types actually used. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">arena</td><td>The <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> to bind into. </td></tr>
+    <tr><td class="paramname">arena</td><td>The arena to bind into. </td></tr>
   </table>
   </dd>
 </dl>
@@ -366,7 +393,7 @@ Additional Inherited Members</h2></td></tr>
 </div>
 </div>
 <a id="a717e90d966a9de3e88d79e05a734aa27" name="a717e90d966a9de3e88d79e05a734aa27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a717e90d966a9de3e88d79e05a734aa27">&#9670;&#160;</a></span>CalculateState()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a717e90d966a9de3e88d79e05a734aa27">&#9670;&#160;</a></span>CalculateState() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -383,7 +410,37 @@ Additional Inherited Members</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Calculates the internal state of the layer. </p>
+<dl class="section return"><dt>Returns</dt><dd>energy used </dd></dl>
+
+<p>Implements <a class="el" href="classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe">Deep::Layer</a>.</p>
+
+</div>
+</div>
+<a id="aa8f997d4b0923f02a4ce3317448ef1cd" name="aa8f997d4b0923f02a4ce3317448ef1cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8f997d4b0923f02a4ce3317448ef1cd">&#9670;&#160;</a></span>CalculateState() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float Deep::SimplePCLayer::CalculateState </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>needEnergy</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -393,9 +450,13 @@ Additional Inherited Members</h2></td></tr>
 \[E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
 \]
 </p>
-<p> mu is now computed as mu = W @ phi(z) + b &ndash; activation applied to z BEFORE the linear transform, matching ngc-learn's documented convention exactly (was previously mu = phi(W@z+b), activation AFTER the transform). (No precision weighting &ndash; see file-level note.) </p><dl class="section return"><dt>Returns</dt><dd>This layer's energy contribution at the current state. </dd></dl>
-
-<p>Implements <a class="el" href="classDeep_1_1Layer.html#ae75c90b9ab50dc203cf9457694c1ebfe">Deep::Layer</a>.</p>
+<p> mu is now computed as mu = W @ phi(z) + b &ndash; activation applied to z BEFORE the linear transform, matching ngc-learn's documented convention exactly (was previously mu = phi(W@z+b), activation AFTER the transform). (No precision weighting &ndash; see file-level note.) </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">needEnergy</td><td>Asks for energy </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>This layer's energy contribution at the current state, if asked for. </dd></dl>
 
 </div>
 </div>
@@ -455,7 +516,7 @@ Additional Inherited Members</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the total network energy state, and this layer&#39;s outgoing prediction (mu).">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b). </p>
+<p>Computes only mu (forward prediction), skipping error/energy entirely. Extracted from <a class="el" href="#a717e90d966a9de3e88d79e05a734aa27" title="Calculates the internal state of the layer.">CalculateState()</a> for callers (like ProjectForward()) that don't need the discarded error/energy values. Computes zF=phi(z) internally and uses it for the GEMM, matching the activate-before-transform convention (mu=W@phi(z)+b). </p>
 
 </div>
 </div>
@@ -778,7 +839,7 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> &amp; Deep::SimplePCLayer::GetLayerAbove </td>
+          <td class="memname">const <a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> &amp; Deep::SimplePCLayer::GetLayerAbove </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -806,7 +867,7 @@ Additional Inherited Members</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> &amp; Deep::SimplePCLayer::GetLayerBelow </td>
+          <td class="memname">const <a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> &amp; Deep::SimplePCLayer::GetLayerBelow </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -901,6 +962,8 @@ Additional Inherited Members</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Returns the current mu-cache staleness threshold &ndash; see <a class="el" href="#abcc9462a7aa38ec8cab0e6e707bb1176" title="Sets the mu-cache staleness threshold: mu is recomputed only when ||z - z_at_last_recompute|| / (||z_...">SetMuCacheThreshold()</a> above. </p>
 
 </div>
 </div>
@@ -1015,8 +1078,35 @@ Additional Inherited Members</h2></td></tr>
 
 </div>
 </div>
-<a id="a6887459397ed3fbe2f30cddec0cd4710" name="a6887459397ed3fbe2f30cddec0cd4710"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6887459397ed3fbe2f30cddec0cd4710">&#9670;&#160;</a></span>RandomizeWeights()</h2>
+<a id="abe3062c134f34efce9be3fc3a91f4f94" name="abe3062c134f34efce9be3fc3a91f4f94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe3062c134f34efce9be3fc3a91f4f94">&#9670;&#160;</a></span>IsClamped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Deep::SimplePCLayer::IsClamped </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Whether <a class="el" href="#a0a9b015b8a020bf3f730aadd800b7f5e" title="Clamps this layer&#39;s beliefs to externally-provided data, preventing them from being updated by Update...">ClampState()</a> is currently active on this layer. </p>
+
+</div>
+</div>
+<a id="a380d735842e868b3b9a0ca7bca21c942" name="a380d735842e868b3b9a0ca7bca21c942"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a380d735842e868b3b9a0ca7bca21c942">&#9670;&#160;</a></span>RandomizeWeights()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1027,8 +1117,12 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">void Deep::SimplePCLayer::RandomizeWeights </td>
           <td>(</td>
-          <td class="paramtype">std::mt19937 &amp;</td>          <td class="paramname"><span class="paramname"><em>twister</em></span></td><td>)</td>
+          <td class="paramtype">std::mt19937 &amp;</td>          <td class="paramname"><span class="paramname"><em>twister</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>distribution</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;normal&quot;</span>&#160;)</td>
         </tr>
       </table>
   </td>
@@ -1042,6 +1136,7 @@ Additional Inherited Members</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">twister</td><td>The classic Mersenne Twister </td></tr>
+    <tr><td class="paramname">distribution</td><td>The distribution of the randomization: (normal, uniform) </td></tr>
   </table>
   </dd>
 </dl>
@@ -1153,7 +1248,7 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">void Deep::SimplePCLayer::SetLayerAbove </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>above</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>above</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1186,7 +1281,7 @@ Additional Inherited Members</h2></td></tr>
         <tr>
           <td class="memname">void Deep::SimplePCLayer::SetLayerBelow </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="#ad41325b19ae3d590d6a660c3dce0b31f">SimplePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>below</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="#aade2d3524c949eb21fd097aba9468700">SimplePCLayer</a> *</td>          <td class="paramname"><span class="paramname"><em>below</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -1225,7 +1320,7 @@ Additional Inherited Members</h2></td></tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel noexcept">noexcept</span></span>  </td>
+<span class="mlabels"><span class="mlabel noexcept">noexcept</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -1418,7 +1513,7 @@ Additional Inherited Members</h2></td></tr>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>include/deepity/layers/<a class="el" href="SimplePCLayer_8h_source.html">SimplePCLayer.h</a></li>
-<li>src/<a class="el" href="SimplePCLayer_8cpp.html">SimplePCLayer.cpp</a></li>
+<li>src/layers/<a class="el" href="SimplePCLayer_8cpp.html">SimplePCLayer.cpp</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

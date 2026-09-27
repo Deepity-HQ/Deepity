@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: include/deepity/ModelIO.h File Reference</title>
+<title>Deepity: include/deepity/utils/ModelIO.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,29 +103,27 @@ $(function(){initNavTree('ModelIO_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>Save/load support for persisting a DiscriminativePCNetwork's trained state to and from disk, as a structured directory rather than a single opaque binary blob.  
+<p>Saves/loads a network's compiled weight arena to/from disk, as a JSON header (per-layer shapes/offsets) plus a raw binary float blob.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;string&gt;</code><br />
-<code>#include &lt;<a class="el" href="DiscriminativePCNetwork_8h_source.html">deepity/networks/DiscriminativePCNetwork.h</a>&gt;</code><br />
+<code>#include &lt;fstream&gt;</code><br />
+<code>#include &lt;cstdint&gt;</code><br />
+<code>#include &lt;nlohmann/json.hpp&gt;</code><br />
 </div>
 <p><a href="ModelIO_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3AModelIO" id="r_Deep_3A_3AModelIO"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ModelIO.html">Deep::ModelIO</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static utility class for saving and loading <a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="An abstracted class for an array of DiscriminativePCLayer.">DiscriminativePCNetwork</a> model state to/from a structured directory on disk.  <a href="classDeep_1_1ModelIO.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static save/load helpers for any network type exposing GetLayers() &ndash; templated so it works across every PC network variant without each one reimplementing serialization.  <a href="classDeep_1_1ModelIO.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Save/load support for persisting a DiscriminativePCNetwork's trained state to and from disk, as a structured directory rather than a single opaque binary blob. </p>
-<dl class="section note"><dt>Note</dt><dd>Layer weights and activation configuration are stored separately: numeric weights go into a flat binary buffer (weights.bin), while per-layer metadata (sizes, activation types, hyperparameters) is expected to live in a human-readable manifest (manifest.json), with a generated README.md alongside for a human-readable summary. ActivationToString()/StringToActivation() are the round-trip conversion used when writing/reading that manifest. </dd></dl>
-<dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
-<dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>
+<div class="textblock"><p>Saves/loads a network's compiled weight arena to/from disk, as a JSON header (per-layer shapes/offsets) plus a raw binary float blob. </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">
@@ -139,7 +137,7 @@ Namespaces</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="ModelIO_8h.html">ModelIO.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="dir_f1cdc27c756738241bd9f578c8408128.html">utils</a></li><li class="navelem"><a href="ModelIO_8h.html">ModelIO.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

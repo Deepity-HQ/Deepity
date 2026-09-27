@@ -1,9 +1,10 @@
 var classDeep_1_1SimplePCLayer =
 [
-    [ "SimplePCLayer", "classDeep_1_1SimplePCLayer.html#ad41325b19ae3d590d6a660c3dce0b31f", null ],
-    [ "SimplePCLayer", "classDeep_1_1SimplePCLayer.html#ad25610566363e33be901dec8c1ae43dc", null ],
-    [ "BindMemory", "classDeep_1_1SimplePCLayer.html#af5cabf54e8f1acf5204484175419f24f", null ],
+    [ "SimplePCLayer", "classDeep_1_1SimplePCLayer.html#aade2d3524c949eb21fd097aba9468700", null ],
+    [ "SimplePCLayer", "classDeep_1_1SimplePCLayer.html#a0a5ea65d6d2f406787ae1d03709c0622", null ],
+    [ "BindMemory", "classDeep_1_1SimplePCLayer.html#a92b67d51aa9a805ea704bad46058086a", null ],
     [ "CalculateState", "classDeep_1_1SimplePCLayer.html#a717e90d966a9de3e88d79e05a734aa27", null ],
+    [ "CalculateState", "classDeep_1_1SimplePCLayer.html#aa8f997d4b0923f02a4ce3317448ef1cd", null ],
     [ "ClampState", "classDeep_1_1SimplePCLayer.html#a0a9b015b8a020bf3f730aadd800b7f5e", null ],
     [ "ComputeMuOnly", "classDeep_1_1SimplePCLayer.html#aa3edc3797d6f8bbfa822f7c5fed216b4", null ],
     [ "Flush", "classDeep_1_1SimplePCLayer.html#af3923745e4d2aa6ed2e0b8d62d06ba1b", null ],
@@ -26,7 +27,8 @@ var classDeep_1_1SimplePCLayer =
     [ "GetRequiredFloats", "classDeep_1_1SimplePCLayer.html#a1e81a34a4307f1a2f12206609cc6e474", null ],
     [ "GetWeights", "classDeep_1_1SimplePCLayer.html#a124a14a78bb79ecdf3cf8204812be6ee", null ],
     [ "GetWeights", "classDeep_1_1SimplePCLayer.html#a8f10efceef1478b66ebb9b8e3a9bda61", null ],
-    [ "RandomizeWeights", "classDeep_1_1SimplePCLayer.html#a6887459397ed3fbe2f30cddec0cd4710", null ],
+    [ "IsClamped", "classDeep_1_1SimplePCLayer.html#abe3062c134f34efce9be3fc3a91f4f94", null ],
+    [ "RandomizeWeights", "classDeep_1_1SimplePCLayer.html#a380d735842e868b3b9a0ca7bca21c942", null ],
     [ "ResetState", "classDeep_1_1SimplePCLayer.html#a151f1853dcc7b2d6e06e557df95bb2df", null ],
     [ "SetInferenceRate", "classDeep_1_1SimplePCLayer.html#a53edc494610ef5d38d4b200af1ff4ee7", null ],
     [ "SetLambda", "classDeep_1_1SimplePCLayer.html#aead7b1e4c88ce5a15216e275ace21f30", null ],

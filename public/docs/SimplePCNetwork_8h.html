@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -109,28 +109,38 @@ $(function(){initNavTree('SimplePCNetwork_8h.html','',''); });
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;<a class="el" href="SimplePCLayer_8h_source.html">deepity/layers/SimplePCLayer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="DeviceMemoryArena_8h_source.html">deepity/utils/DeviceMemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Backend_8h_source.html">deepity/backend/Backend.h</a>&gt;</code><br />
 </div>
 <p><a href="SimplePCNetwork_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3ASimplePCNetwork" id="r_Deep_3A_3ASimplePCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimplePCNetwork.html">Deep::SimplePCNetwork</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html">SimplePCLayer</a></span>.  <a href="classDeep_1_1SimplePCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">An abstracted class for an array of <span class="tt"><a class="el" href="classDeep_1_1SimplePCLayer.html" title="Predictive Coding layer without precision weighting – the simpler, unweighted-energy counterpart to D...">SimplePCLayer</a></span>.  <a href="classDeep_1_1SimplePCNetwork.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Network wrapper for SimplePCLayer, mirroring DiscriminativePCNetwork exactly (minus the UpdatePrecision() call, which no longer exists). </p>
 <p>This header includes implementations of PC layer-to-layer interaction.</p>
-<p>Usage: #include &lt;deepity/SimplePCNetwork.h&gt;</p>
-<p>Example: <a class="el" href="classDeep_1_1SimplePCNetwork.html" title="An abstracted class for an array of SimplePCLayer.">Deep::SimplePCNetwork</a> network(1); network.addLayer({...}); network.Clamp(input); network.CalculateState();</p>
-<dl class="section note"><dt>Note</dt><dd>All layers are stored in a vector. </dd></dl>
-<dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="SimplePCNetwork_8h.html">deepity/networks/SimplePCNetwork.h</a>&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_class" href="classDeep_1_1SimplePCNetwork.html">Deep::SimplePCNetwork</a> network(1);</div>
+<div class="line">network.addLayer({...});</div>
+<div class="line">network.Clamp(input);</div>
+<div class="line">network.CalculateState();</div>
+<div class="ttc" id="aSimplePCNetwork_8h_html"><div class="ttname"><a href="SimplePCNetwork_8h.html">SimplePCNetwork.h</a></div><div class="ttdoc">Network wrapper for SimplePCLayer, mirroring DiscriminativePCNetwork exactly (minus the UpdatePrecisi...</div></div>
+<div class="ttc" id="aclassDeep_1_1SimplePCNetwork_html"><div class="ttname"><a href="classDeep_1_1SimplePCNetwork.html">Deep::SimplePCNetwork</a></div><div class="ttdoc">An abstracted class for an array of SimplePCLayer.</div><div class="ttdef"><b>Definition</b> SimplePCNetwork.h:43</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>All layers are stored in a vector.</dd>
+<dd>
+As of this revision, the network owns a single IComputeBackend (CPU by default, GPU if requested at construction) and passes it down into every layer it creates. <span class="tt">device</span> defaults to DEVICE_CPU, so every existing caller (nanobind bindings, hand-written C++) keeps compiling and behaving exactly as before &ndash; passing DEVICE_GPU explicitly is only needed for new, GPU-aware call sites. </dd></dl>
+<dl class="section version"><dt>Version</dt><dd>1.1 </dd></dl>
+<dl class="section date"><dt>Date</dt><dd>2026-09-05 </dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>
 </div></div><!-- contents -->
 </div><!-- doc-content -->

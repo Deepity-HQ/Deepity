@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -110,10 +110,10 @@ $(function(){initNavTree('DiscriminativePCLayer_8h.html','',''); });
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;cstdlib&gt;</code><br />
-<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/Activations.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="Activations_8h_source.html">deepity/utils/Activations.h</a>&gt;</code><br />
 <code>#include &lt;<a class="el" href="Layer_8h_source.html">deepity/layers/Layer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/AdamOptimizer.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="AdamOptimizer_8h_source.html">deepity/utils/AdamOptimizer.h</a>&gt;</code><br />
 </div>
 <p><a href="DiscriminativePCLayer_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
@@ -124,22 +124,19 @@ Classes</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines the single-layer implementation of a PC model. </p>
-<p>Defines the network-level implementation of a PC model.</p>
 <p>This header includes implementations of state calculation, state updates, and learning.</p>
-<p>Usage: #include &lt;<a class="el" href="DiscriminativePCLayer_8h.html" title="Defines the single-layer implementation of a PC model.">deepity/layers/DiscriminativePCLayer.h</a>&gt;</p>
-<p>Example: <a class="el" href="classDeep_1_1Layer.html" title="A deepity layer virtual class.">Deep::Layer</a> layer(2, 3, 1, 1e-6); layer.ClampState({ 0.1f, 0.75f }); layer.CalculateState();</p>
-<dl class="section note"><dt>Note</dt><dd>All members are stored as pointers except for the input itself. </dd></dl>
-<dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
-<dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
-<dl class="section author"><dt>Author</dt><dd>Jack Rose</dd></dl>
-<p>This header includes implementations of PC layer-to-layer interaction.</p>
-<p>Usage: #include &lt;<a class="el" href="DiscriminativePCNetwork_8h.html">deepity/networks/DiscriminativePCNetwork.h</a>&gt;</p>
-<p>Example: <a class="el" href="classDeep_1_1DiscriminativePCNetwork.html" title="An abstracted class for an array of DiscriminativePCLayer.">Deep::DiscriminativePCNetwork</a> network(1); network.addLayer({...}); network.Clamp(input); network.CalculateState();</p>
-<dl class="section note"><dt>Note</dt><dd>All layers are stored in a vector. </dd></dl>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="DiscriminativePCLayer_8h.html">deepity/layers/DiscriminativePCLayer.h</a>&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_class" href="classDeep_1_1DiscriminativePCLayer.html">Deep::DiscriminativePCLayer</a> layer(2, 3, 1, 1e-6);</div>
+<div class="line">layer.ClampState({ 0.1f, 0.75f });</div>
+<div class="line">layer.CalculateState();</div>
+<div class="ttc" id="aDiscriminativePCLayer_8h_html"><div class="ttname"><a href="DiscriminativePCLayer_8h.html">DiscriminativePCLayer.h</a></div><div class="ttdoc">Defines the single-layer implementation of a PC model.</div></div>
+<div class="ttc" id="aclassDeep_1_1DiscriminativePCLayer_html"><div class="ttname"><a href="classDeep_1_1DiscriminativePCLayer.html">Deep::DiscriminativePCLayer</a></div><div class="ttdef"><b>Definition</b> DiscriminativePCLayer.h:50</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>All members are stored as pointers except for the input itself. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2026-06-30 </dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>

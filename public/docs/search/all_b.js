@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['openblas_5fset_5fnum_5fthreads_0',['openblas_set_num_threads',['../Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff',1,'Optimize.h']]],
-  ['operator_3d_1',['operator=',['../classDeep_1_1MemoryArena.html#adcb6d3fab7ac84d0c427b70381afabca',1,'Deep::MemoryArena::operator=()'],['../classDeep_1_1ConvPCNetwork.html#a622e6a7baea151de32b1b507a16372b1',1,'Deep::ConvPCNetwork::operator=()'],['../classDeep_1_1DiscriminativePCNetwork.html#a7e8373c911697c531b75b1a3cbb413bd',1,'Deep::DiscriminativePCNetwork::operator=()'],['../classDeep_1_1GaussSeidelPCNetwork.html#aba28860eab6b2339e7e31aaef5e8a718',1,'Deep::GaussSeidelPCNetwork::operator=()'],['../classDeep_1_1SimpleConvPCNetwork.html#a5472be87b19bdc5e9ca735e36b7f4d5d',1,'Deep::SimpleConvPCNetwork::operator=()'],['../classDeep_1_1SimplePCNetwork.html#a045dbcb6ded7afa0bf3d54bb90851b2f',1,'Deep::SimplePCNetwork::operator=()']]],
-  ['optimize_2eh_2',['Optimize.h',['../Optimize_8h.html',1,'']]],
-  ['optimizertype_3',['OptimizerType',['../namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02',1,'Deep']]],
-  ['overview_4',['Overview',['../index.html#overview',1,'']]]
+  ['networks_0',['Networks',['../index.html#architecture_networks',1,'']]],
+  ['nextsize_1',['nextSize',['../classDeep_1_1DirectKPPCLayer.html#aa6de86d19c3c2f09fb31f7b091cc6962',1,'Deep::DirectKPPCLayer::nextSize'],['../classDeep_1_1FullPCLayer.html#a1187789627ae91c22857f24dbd58033c',1,'Deep::FullPCLayer::nextSize'],['../classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0',1,'Deep::Layer::nextSize']]],
+  ['none_2',['NONE',['../namespaceDeep.html#a4b7606ca838be34029bd134f319e0f61ab50339a10e1de285ac99d4c3990b8693',1,'Deep']]],
+  ['notes_3',['Design Notes',['../ConvPCLayer_math.html#design_notes',1,'']]],
+  ['numbatchesperepoch_4',['NumBatchesPerEpoch',['../classDeep_1_1StreamAlignedBatcher.html#aa14e92ec71dec9635bbdbef9faebb06b',1,'Deep::StreamAlignedBatcher']]]
 ];

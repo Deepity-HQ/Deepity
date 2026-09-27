@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['restrict_0',['RESTRICT',['../Activations_8h.html#aae3356b63849abbe8789dd41648ee90a',1,'RESTRICT:&#160;Activations.h'],['../AdamOptimizer_8h.html#aae3356b63849abbe8789dd41648ee90a',1,'RESTRICT:&#160;AdamOptimizer.h']]]
+  ['scanf_5fdistribution_0',['SCANF_DISTRIBUTION',['../SimplePCLayer_8cpp.html#a3b7f926ba2f14c750ede1640b699f7f3',1,'SimplePCLayer.cpp']]]
 ];

@@ -1,5 +1,7 @@
 var searchData=
 [
-  ['im2col_0',['Im2Col',['../namespaceDeep.html#a0dbe430b93930a2b8d3c04be012d0017',1,'Deep']]],
-  ['im2col_2eh_1',['Im2Col.h',['../Im2Col_8h.html',1,'']]]
+  ['hsum128_5fps_0',['hsum128_ps',['../namespaceDeep.html#a9126267c400828ae41042768156dabf4',1,'Deep']]],
+  ['hsum256_5fps_1',['hsum256_ps',['../namespaceDeep.html#adfac117425be802e402dd999ebfe67d7',1,'Deep']]],
+  ['hugepageallocportable_2',['HugePageAllocPortable',['../namespaceDeep_1_1detail.html#a55740bbe02647542c1903efc83b81834',1,'Deep::detail']]],
+  ['hugepagefreeportable_3',['HugePageFreePortable',['../namespaceDeep_1_1detail.html#a5edbd615eb36b6ac5e0946d1b999d67d',1,'Deep::detail']]]
 ];

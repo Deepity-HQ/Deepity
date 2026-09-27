@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -107,9 +107,12 @@ $(function(){initNavTree('dir_792aeb10f41f6ed28420db9157f30d00.html','',''); });
 Files</h2></td></tr>
 <tr class="memitem:ConvPCLayer_2Eh" id="r_ConvPCLayer_2Eh"><td class="memItemLeft"><a href="ConvPCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="ConvPCLayer_8h.html">ConvPCLayer.h</a></td></tr>
 <tr class="memdesc:ConvPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional counterpart to DiscriminativePCLayer. <br /></td></tr>
+<tr class="memitem:DirectKPPCLayer_2Eh" id="r_DirectKPPCLayer_2Eh"><td class="memItemLeft"><a href="DirectKPPCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="DirectKPPCLayer_8h.html">DirectKPPCLayer.h</a></td></tr>
+<tr class="memdesc:DirectKPPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">Direct Kolen-Pollack predictive coding layer, routed through IComputeBackend. <br /></td></tr>
 <tr class="memitem:DiscriminativePCLayer_2Eh" id="r_DiscriminativePCLayer_2Eh"><td class="memItemLeft"><a href="DiscriminativePCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="DiscriminativePCLayer_8h.html">DiscriminativePCLayer.h</a></td></tr>
 <tr class="memdesc:DiscriminativePCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines the single-layer implementation of a PC model. <br /></td></tr>
-<tr class="memitem:DKP_5FPCLayer_2Eh" id="r_DKP_5FPCLayer_2Eh"><td class="memItemLeft"><a href="DKP__PCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="DKP__PCLayer_8h.html">DKP_PCLayer.h</a></td></tr>
+<tr class="memitem:FullPCLayer_2Eh" id="r_FullPCLayer_2Eh"><td class="memItemLeft"><a href="FullPCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="FullPCLayer_8h.html">FullPCLayer.h</a></td></tr>
+<tr class="memdesc:FullPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">New, standalone PC layer (not derived from DirectKPPCLayer) meant to eventually carry every technique from the paper-combination work &ndash; muPC scaling, optional residual connections, DKP direct feedback, AdamW, muP-style per-layer LR scaling, optional iPC, cross-entropy terminal loss &ndash; each one OFF by default, opt-in per layer/network, so a plain DKP-PC-equivalent network is just this class with every extra left at its default. <br /></td></tr>
 <tr class="memitem:GaussSeidelPCLayer_2Eh" id="r_GaussSeidelPCLayer_2Eh"><td class="memItemLeft"><a href="GaussSeidelPCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="GaussSeidelPCLayer_8h.html">GaussSeidelPCLayer.h</a></td></tr>
 <tr class="memdesc:GaussSeidelPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">A PC layer whose settling dynamics follow a Gauss-Seidel (sequential-sweep) update, matching ngc-learn's actual execution order &ndash; NOT the Jacobi (fully-synchronous) update SimplePCLayer uses. <br /></td></tr>
 <tr class="memitem:Layer_2Eh" id="r_Layer_2Eh"><td class="memItemLeft"><a href="Layer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="Layer_8h.html">Layer.h</a></td></tr>
@@ -117,7 +120,7 @@ Files</h2></td></tr>
 <tr class="memitem:RBLayer_2Eh" id="r_RBLayer_2Eh"><td class="memItemLeft"><a href="RBLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="RBLayer_8h.html">RBLayer.h</a></td></tr>
 <tr class="memdesc:RBLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">Restricted Boltzmann-style Predictive Coding (PC) Layer. <br /></td></tr>
 <tr class="memitem:SimpleConvPCLayer_2Eh" id="r_SimpleConvPCLayer_2Eh"><td class="memItemLeft"><a href="SimpleConvPCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="SimpleConvPCLayer_8h.html">SimpleConvPCLayer.h</a></td></tr>
-<tr class="memdesc:SimpleConvPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">ConvPCLayer with precision removed (mirrors SimplePCLayer's relationship to DiscriminativePCLayer) AND AdamW/Adam support added (mirrors SimplePCLayer's own AdamW integration). <br /></td></tr>
+<tr class="memdesc:SimpleConvPCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">ConvPCLayer with precision removed, AdamW/Adam support, now routed through IComputeBackend for GPU portability (mirrors SimplePCLayer's own IComputeBackend port). <br /></td></tr>
 <tr class="memitem:SimplePCLayer_2Eh" id="r_SimplePCLayer_2Eh"><td class="memItemLeft"><a href="SimplePCLayer_8h_source.html"><span class="icondoc"><div class="doc-icon"></div></span></a>&#160;</td><td class="memItemRight"><a class="el" href="SimplePCLayer_8h.html">SimplePCLayer.h</a></td></tr>
 <tr class="memdesc:SimplePCLayer_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">DiscriminativePCLayer with precision entirely removed. <br /></td></tr>
 </table>

@@ -1,21 +1,10 @@
 var searchData=
 [
-  ['p0_0',['P0',['../Activations_8h.html#a1583b00a62bc1138f99bbfcd8ef81a6a',1,'Activations.h']]],
-  ['p1_1',['P1',['../Activations_8h.html#a6c2a9f7efd46f0160f3037869924d6ce',1,'Activations.h']]],
-  ['p2_2',['P2',['../Activations_8h.html#ae00a52dba55d31948c377fa85d385b87',1,'Activations.h']]],
-  ['pcn_5ftime_3',['PCN_TIME',['../Profile_8h.html#a0c74b93e21c61e2f23b7e718e91beee1',1,'Profile.h']]],
-  ['pcndiagnostics_4',['PCNDiagnostics',['../classDeep_1_1PCNDiagnostics.html',1,'Deep::PCNDiagnostics'],['../classDeep_1_1ConvPCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCLayer::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCLayer.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCLayer::PCNDiagnostics()'],['../classDeep_1_1ConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::ConvPCNetwork::PCNDiagnostics()'],['../classDeep_1_1DiscriminativePCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::DiscriminativePCNetwork::PCNDiagnostics()'],['../classDeep_1_1SimpleConvPCNetwork.html#a383316d08df576c124c5514c5f8b3d2b',1,'Deep::SimpleConvPCNetwork::PCNDiagnostics()']]],
-  ['pcndiagnostics_2ecpp_5',['PCNDiagnostics.cpp',['../PCNDiagnostics_8cpp.html',1,'']]],
-  ['performance_6',['Performance',['../index.html#performance',1,'']]],
-  ['phasesum_7',['PhaseSum',['../structDeep_1_1ProfileAccumulator.html#a83b598b4911307d14bcbf96b03353ad7',1,'Deep::ProfileAccumulator']]],
-  ['predict_8',['Predict',['../classDeep_1_1ConvPCNetwork.html#ade6d0963dd15392166b03510a2b8849d',1,'Deep::ConvPCNetwork::Predict()'],['../classDeep_1_1DiscriminativePCNetwork.html#a4b9bfb6b75743cb26253f4c0ed2451e8',1,'Deep::DiscriminativePCNetwork::Predict()'],['../classDeep_1_1GaussSeidelPCNetwork.html#a73f1e9385fd01832aa1f23a587069b02',1,'Deep::GaussSeidelPCNetwork::Predict()'],['../classDeep_1_1SimpleConvPCNetwork.html#af6224bb9405844684b2183f6c92e55d6',1,'Deep::SimpleConvPCNetwork::Predict()'],['../classDeep_1_1SimplePCNetwork.html#a9d0bb526df254fd0cb83cb8f0557128e',1,'Deep::SimplePCNetwork::Predict()']]],
-  ['predictwithprojection_9',['PredictWithProjection',['../classDeep_1_1DiscriminativePCNetwork.html#a1ad7b16c8e583fb681dfd77d4c9aa06b',1,'Deep::DiscriminativePCNetwork::PredictWithProjection()'],['../classDeep_1_1SimplePCNetwork.html#a438d2bac4b410623d373913e9029923f',1,'Deep::SimplePCNetwork::PredictWithProjection()']]],
-  ['print_10',['Print',['../structDeep_1_1ProfileAccumulator.html#a1e6b121ad5ca20b39c6407728306cf7d',1,'Deep::ProfileAccumulator']]],
-  ['printallprofiles_11',['PrintAllProfiles',['../namespaceDeep.html#a7b797d1b36359f0bf39a7d0b55190eee',1,'Deep']]],
-  ['profile_2eh_12',['Profile.h',['../Profile_8h.html',1,'']]],
-  ['profileaccumulator_13',['ProfileAccumulator',['../structDeep_1_1ProfileAccumulator.html',1,'Deep']]],
-  ['profileentry_14',['ProfileEntry',['../structDeep_1_1ProfileEntry.html',1,'Deep']]],
-  ['profileregistry_15',['ProfileRegistry',['../namespaceDeep.html#acd40701ddacb775649741df40bc3b929',1,'Deep']]],
-  ['projectforward_16',['ProjectForward',['../classDeep_1_1DiscriminativePCNetwork.html#aa290dddfa4068d77c53ef27f79ef792d',1,'Deep::DiscriminativePCNetwork::ProjectForward()'],['../classDeep_1_1GaussSeidelPCNetwork.html#a654381cb93d350ae632d940b2e08d821',1,'Deep::GaussSeidelPCNetwork::ProjectForward()'],['../classDeep_1_1SimplePCNetwork.html#ae3d61db38519b08544a5efa1fc9b4744',1,'Deep::SimplePCNetwork::ProjectForward()']]],
-  ['python_17',['Python',['../index.html#quickstart_py',1,'']]]
+  ['openblas_5fset_5fnum_5fthreads_0',['openblas_set_num_threads',['../Optimize_8h.html#aa406a94b91fca1119d42385c388ff1ff',1,'Optimize.h']]],
+  ['operator_3d_1',['operator=',['../classDeep_1_1Tensor.html#a1dfb5f58f246d34d202352013b79273a',1,'Deep::Tensor::operator=(const Tensor &amp;)=delete'],['../classDeep_1_1Tensor.html#acefa18708cace51a4568e6ecd7b5abd0',1,'Deep::Tensor::operator=(Tensor &amp;&amp;other) noexcept'],['../classDeep_1_1ConvPCNetwork.html#a622e6a7baea151de32b1b507a16372b1',1,'Deep::ConvPCNetwork::operator=()'],['../classDeep_1_1DirectKPPCNetwork.html#ac1591ee0f39f3dae4e2f36421d5d97d2',1,'Deep::DirectKPPCNetwork::operator=()'],['../classDeep_1_1DiscriminativePCNetwork.html#a7e8373c911697c531b75b1a3cbb413bd',1,'Deep::DiscriminativePCNetwork::operator=()'],['../classDeep_1_1FullPCNetwork.html#afca8898bdf5e4236942848bdd8df3f29',1,'Deep::FullPCNetwork::operator=()'],['../classDeep_1_1GaussSeidelPCNetwork.html#aba28860eab6b2339e7e31aaef5e8a718',1,'Deep::GaussSeidelPCNetwork::operator=()'],['../classDeep_1_1SimpleConvPCNetwork.html#a5472be87b19bdc5e9ca735e36b7f4d5d',1,'Deep::SimpleConvPCNetwork::operator=()'],['../classDeep_1_1SimplePCNetwork.html#a045dbcb6ded7afa0bf3d54bb90851b2f',1,'Deep::SimplePCNetwork::operator=()'],['../classDeep_1_1DeviceMemoryArena.html#ae79650d205b4daee45903c4156ec8a3f',1,'Deep::DeviceMemoryArena::operator=()'],['../classDeep_1_1MemoryArena.html#adcb6d3fab7ac84d0c427b70381afabca',1,'Deep::MemoryArena::operator=()']]],
+  ['opt_2',['opt',['../classDeep_1_1DirectKPPCLayer.html#aebe1e3ae0780dbf28cfb98baaa89bb9d',1,'Deep::DirectKPPCLayer::opt'],['../classDeep_1_1FullPCLayer.html#ad007a0a2888b975f3aac032d58987117',1,'Deep::FullPCLayer::opt']]],
+  ['optimize_2eh_3',['Optimize.h',['../Optimize_8h.html',1,'']]],
+  ['optimizertype_4',['OptimizerType',['../namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02',1,'Deep']]],
+  ['optpsi_5',['optPsi',['../classDeep_1_1DirectKPPCLayer.html#ae15165b0371d1d0a9728e3decb24ad58',1,'Deep::DirectKPPCLayer::optPsi'],['../classDeep_1_1FullPCLayer.html#a73ab6254801c185d70066c4b117c81b6',1,'Deep::FullPCLayer::optPsi']]],
+  ['overview_6',['Overview',['../index.html#overview',1,'']]]
 ];

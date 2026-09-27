@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['layerprofile_0',['LayerProfile',['../namespaceDeep.html#afc0c7bc2619873cb922f19a2eaf5ffd2',1,'Deep']]],
-  ['load_1',['Load',['../classDeep_1_1ModelIO.html#aff573d97a8059f6a5f30f5ba784e26a2',1,'Deep::ModelIO::Load()'],['../classDeep_1_1DiscriminativePCNetwork.html#a897d0a5bea0b22c1634ae5338cb11b72',1,'Deep::DiscriminativePCNetwork::Load()']]],
-  ['loadmnistpng_2',['LoadMNISTPNG',['../classDeep_1_1PCNDiagnostics.html#a3d1a44c506b20d170293448dd111ad07',1,'Deep::PCNDiagnostics']]],
-  ['logf_5fv_3',['logf_v',['../namespaceDeep.html#afca3df42a9f8d541c51cf729a4c8b89b',1,'Deep']]]
+  ['im2col_0',['Im2Col',['../classDeep_1_1CPUBackend.html#afbe451b78ed89377413f81f699c04aec',1,'Deep::CPUBackend::Im2Col()'],['../classDeep_1_1CUDABackend.html#a6ec08061b5aad8a3ce62763fbb113dfb',1,'Deep::CUDABackend::Im2Col()'],['../classDeep_1_1IComputeBackend.html#ad1f4d1cac52845c01b0bc83ce365b052',1,'Deep::IComputeBackend::Im2Col()'],['../namespaceDeep.html#a0dbe430b93930a2b8d3c04be012d0017',1,'Deep::Im2Col()']]],
+  ['incrementcounter_1',['IncrementCounter',['../classDeep_1_1CPUBackend.html#ad519d539a84417828e375b093622b855',1,'Deep::CPUBackend::IncrementCounter()'],['../classDeep_1_1CUDABackend.html#a778c1552c789bc65751adf8313b90e28',1,'Deep::CUDABackend::IncrementCounter()'],['../classDeep_1_1IComputeBackend.html#a85894c7edca6d810eda342fff4314759',1,'Deep::IComputeBackend::IncrementCounter()']]],
+  ['invalidatemucache_2',['InvalidateMuCache',['../classDeep_1_1FullPCLayer.html#ae68ac0381c77bc37af7c9e682bcc8aa3',1,'Deep::FullPCLayer']]],
+  ['isclamped_3',['IsClamped',['../classDeep_1_1DirectKPPCLayer.html#a7b475b1935ff85c1151d96551d8a037d',1,'Deep::DirectKPPCLayer::IsClamped()'],['../classDeep_1_1FullPCLayer.html#affb4315839724428e16cce1083eb696e',1,'Deep::FullPCLayer::IsClamped()'],['../classDeep_1_1SimpleConvPCLayer.html#ae39f7c708b6cbea576dadb8c92376e5e',1,'Deep::SimpleConvPCLayer::IsClamped()'],['../classDeep_1_1SimplePCLayer.html#abe3062c134f34efce9be3fc3a91f4f94',1,'Deep::SimplePCLayer::IsClamped()']]]
 ];

@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,29 +103,32 @@ $(function(){initNavTree('SimpleConvPCNetwork_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>Convolutional counterpart to SimplePCNetwork &ndash; same public interface shape as ConvPCNetwork (AddLayer/Compile/CalculateState/ UpdateState/UpdateWeights/TrainStep/Predict), wired to SimpleConvPCLayer instead, with AdamW/Adam support via SetOptimizer().  
+<p>Convolutional counterpart to SimplePCNetwork, now device-aware (matches DirectKPPCNetwork's own port earlier tonight: DeviceType constructor parameter, backend member, cpuArena/gpuArena split).  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;<a class="el" href="SimpleConvPCLayer_8h_source.html">deepity/layers/SimpleConvPCLayer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="DeviceMemoryArena_8h_source.html">deepity/utils/DeviceMemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="IComputeBackend_8h_source.html">deepity/backend/IComputeBackend.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="DeviceType_8h_source.html">deepity/backend/DeviceType.h</a>&gt;</code><br />
 </div>
 <p><a href="SimpleConvPCNetwork_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3ASimpleConvPCNetwork" id="r_Deep_3A_3ASimpleConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1SimpleConvPCNetwork.html">Deep::SimpleConvPCNetwork</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1SimpleConvPCLayer.html" title="Convolutional PC layer, precision-free, AdamW-capable, routed through IComputeBackend for GPU portabi...">SimpleConvPCLayer</a> &ndash; precision-free, AdamW-capable, device-aware.  <a href="classDeep_1_1SimpleConvPCNetwork.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Convolutional counterpart to SimplePCNetwork &ndash; same public interface shape as ConvPCNetwork (AddLayer/Compile/CalculateState/ UpdateState/UpdateWeights/TrainStep/Predict), wired to SimpleConvPCLayer instead, with AdamW/Adam support via SetOptimizer(). </p>
-<p>Unlike using SimpleConvPCLayer standalone (today's verification tests had to manually rebind memory after SetOptimizer(), since the constructor already runs BindMemory() with whatever opt was at construction time), THIS class fixes that gap properly: SetOptimizer() is safe to call any time before Compile(), and Compile() is what actually allocates memory (via a shared arena across all layers), mirroring SimplePCNetwork's established, correct flow.</p>
-<p>AddLayer's spatial dimensions (inHeight/inWidth) are NOT auto-inferred from the previous layer's output shape &ndash; pass them explicitly for each layer, matching ConvPCNetwork's existing convention. </p>
+<div class="textblock"><p>Convolutional counterpart to SimplePCNetwork, now device-aware (matches DirectKPPCNetwork's own port earlier tonight: DeviceType constructor parameter, backend member, cpuArena/gpuArena split). </p>
+<p>Two real bugs fixed during this port, same class found and fixed in SimplePCNetwork/DirectKPPCNetwork: ProjectForward() used std::memcpy directly (wrong once beliefs/mu are device pointers) and had no isClamped guard (would overwrite an already-clamped terminal layer's z with a stale forward-projected value); Predict()/ PredictWithProjection() used the std::vector iterator-range constructor directly on <span class="tt">beliefs</span> (dereferences immediately, wrong for device memory). </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

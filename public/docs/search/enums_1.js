@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['optimizertype_0',['OptimizerType',['../namespaceDeep.html#a76c7b5d078cce2bed29f6f592560bf02',1,'Deep']]]
+  ['devicetype_0',['DeviceType',['../namespaceDeep.html#a79fb20681fc8065313ded67ba70f02f3',1,'Deep']]]
 ];

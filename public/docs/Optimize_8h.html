@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Deepity: include/deepity/Optimize.h File Reference</title>
+<title>Deepity: include/deepity/utils/Optimize.h File Reference</title>
 <link rel="icon" href="chicken_100.png" type="image/x-icon" />
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -105,8 +105,11 @@ $(function(){initNavTree('Optimize_8h.html','',''); });
 
 <p>Defines useful optimization functions of a PC model.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;cstddef&gt;</code><br />
+<div class="textblock"><code>#include &lt;algorithm&gt;</code><br />
+<code>#include &lt;cstddef&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
+<code>#include &lt;vector&gt;</code><br />
+<code>#include &lt;immintrin.h&gt;</code><br />
 <code>#include &lt;omp.h&gt;</code><br />
 </div>
 <p><a href="Optimize_8h_source.html">Go to the source code of this file.</a></p>
@@ -114,20 +117,31 @@ $(function(){initNavTree('Optimize_8h.html','',''); });
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-func-members" class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:aa406a94b91fca1119d42385c388ff1ff" id="r_aa406a94b91fca1119d42385c388ff1ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa406a94b91fca1119d42385c388ff1ff">openblas_set_num_threads</a> (int num_threads)</td></tr>
+<tr class="memdesc:aa406a94b91fca1119d42385c388ff1ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">OpenBLAS's own thread-count setter, declared directly since OpenBLAS ships no public header for it in this build.  <br /></td></tr>
 <tr class="memitem:a1f6c92c5abb579ef6bf96a0047d54342" id="r_a1f6c92c5abb579ef6bf96a0047d54342"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a1f6c92c5abb579ef6bf96a0047d54342">Deep::GetL2CacheBytes</a> ()</td></tr>
+<tr class="memdesc:a1f6c92c5abb579ef6bf96a0047d54342"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queries the size of this CPU's L2 cache (per-core, level 2), falling back to 512 KiB on platforms where it can't be queried.  <br /></td></tr>
 <tr class="memitem:a94bef4184e1ca26cb5f79296395b4004" id="r_a94bef4184e1ca26cb5f79296395b4004"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a94bef4184e1ca26cb5f79296395b4004">Deep::AutoBatchSize</a> (size_t inSize, size_t outSize)</td></tr>
+<tr class="memdesc:a94bef4184e1ca26cb5f79296395b4004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Picks a batch size (a power of 2 clamped to [64, 512]) sized so a layer's weights plus one batch's activations fit within the L2 cache, for a size -&gt; outSize transition.  <br /></td></tr>
+<tr class="memitem:a1ae0bb8f78abcb2faebeb02087e5698f" id="r_a1ae0bb8f78abcb2faebeb02087e5698f"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a1ae0bb8f78abcb2faebeb02087e5698f">Deep::DynamicThread</a> (int batchSize) noexcept</td></tr>
+<tr class="memdesc:a1ae0bb8f78abcb2faebeb02087e5698f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets OpenMP's (and the BLAS library's) thread count for the given batch size, memoized so it's a no-op if the target hasn't changed since the last call. Small batches get 1 thread (avoids parallelization overhead dominating tiny work); larger batches scale up to a measured, capped optimum &ndash; see the inline note on why 16 threads, not the full core count, is the ceiling.  <br /></td></tr>
+<tr class="memitem:adfac117425be802e402dd999ebfe67d7" id="r_adfac117425be802e402dd999ebfe67d7"><td class="memItemLeft">static float&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#adfac117425be802e402dd999ebfe67d7">Deep::hsum256_ps</a> (__m256 x)</td></tr>
+<tr class="memdesc:adfac117425be802e402dd999ebfe67d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Horizontal sum of all 8 lanes of an AVX2 register.  <br /></td></tr>
+<tr class="memitem:a9126267c400828ae41042768156dabf4" id="r_a9126267c400828ae41042768156dabf4"><td class="memItemLeft">static float&#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html#a9126267c400828ae41042768156dabf4">Deep::hsum128_ps</a> (__m128 x)</td></tr>
+<tr class="memdesc:a9126267c400828ae41042768156dabf4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Horizontal sum of all 4 lanes of an SSE register.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Defines useful optimization functions of a PC model. </p>
 <p>This header currently only includes implementation of an L2 Cache size lookup.</p>
-<p>Usage: #include &lt;<a class="el" href="Optimize_8h.html" title="Defines useful optimization functions of a PC model.">deepity/Optimize.h</a>&gt;</p>
-<p>Example: size_t sizeofL2 = GetL2CacheBytes();</p>
-<dl class="section note"><dt>Note</dt><dd>Separate versions exist for Windows VS. Linux. </dd></dl>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &lt;<a class="code" href="Optimize_8h.html">deepity/utils/Optimize.h</a>&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">size_t</span> sizeofL2 = GetL2CacheBytes();</div>
+<div class="ttc" id="aOptimize_8h_html"><div class="ttname"><a href="Optimize_8h.html">Optimize.h</a></div><div class="ttdoc">Defines useful optimization functions of a PC model.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Separate versions exist for Windows VS. Linux. </dd></dl>
 <dl class="section version"><dt>Version</dt><dd>1.0 </dd></dl>
 <dl class="section date"><dt>Date</dt><dd>2026-06-21 </dd></dl>
 <dl class="section author"><dt>Author</dt><dd>Jack Rose </dd></dl>
@@ -147,6 +161,8 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>OpenBLAS's own thread-count setter, declared directly since OpenBLAS ships no public header for it in this build. </p>
+
 </div>
 </div>
 </div><!-- contents -->
@@ -162,7 +178,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
+    <li class="navelem"><a href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a href="dir_62f2878d0b88fc3ab38fea7964df0f93.html">deepity</a></li><li class="navelem"><a href="dir_f1cdc27c756738241bd9f578c8408128.html">utils</a></li><li class="navelem"><a href="Optimize_8h.html">Optimize.h</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>

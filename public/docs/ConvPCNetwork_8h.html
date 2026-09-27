@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,29 +103,28 @@ $(function(){initNavTree('ConvPCNetwork_8h.html','',''); });
 </div><!--header-->
 <div class="contents">
 
-<p>Convolutional counterpart to DiscriminativePCNetwork &ndash; same public interface shape (AddLayer/Compile/CalculateState/UpdateState/ UpdateWeights/TrainStep/Predict), wired to ConvPCLayer instead.  
+<p>Network-level wrapper for ConvPCLayer, mirroring DiscriminativePCNetwork's structure for the convolutional case.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;vector&gt;</code><br />
 <code>#include &lt;memory&gt;</code><br />
 <code>#include &lt;random&gt;</code><br />
 <code>#include &lt;<a class="el" href="ConvPCLayer_8h_source.html">deepity/layers/ConvPCLayer.h</a>&gt;</code><br />
-<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/MemoryArena.h</a>&gt;</code><br />
+<code>#include &lt;<a class="el" href="MemoryArena_8h_source.html">deepity/utils/MemoryArena.h</a>&gt;</code><br />
 </div>
 <p><a href="ConvPCNetwork_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:Deep_3A_3AConvPCNetwork" id="r_Deep_3A_3AConvPCNetwork"><td class="memItemLeft">class &#160;</td><td class="memItemRight"><a class="el" href="classDeep_1_1ConvPCNetwork.html">Deep::ConvPCNetwork</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A convolutional Predictive Coding (PC) network: an ordered stack of <a class="el" href="classDeep_1_1ConvPCLayer.html">ConvPCLayer</a> instances sharing a single contiguous <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a>, trained via iterative energy-relaxation rather than backpropagation.  <a href="classDeep_1_1ConvPCNetwork.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convolutional Predictive Coding Network built from <a class="el" href="classDeep_1_1ConvPCLayer.html" title="Convolutional Predictive Coding layer (im2col-based). See the file-level warning above before enablin...">ConvPCLayer</a>.  <a href="classDeep_1_1ConvPCNetwork.html#details">More...</a><br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-namespaces" class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
 <tr class="memitem:Deep" id="r_Deep"><td class="memItemLeft">namespace &#160;</td><td class="memItemRight"><a class="el" href="namespaceDeep.html">Deep</a></td></tr>
-<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This is a Predictive Coding Network implemented with Direct Kolen-Pollock Feedback Alignment: <b>[https://arxiv.org/html/2602.15571v2]</b>. <br /></td></tr>
+<tr class="memdesc:namespaceDeep"><td class="mdescLeft">&#160;</td><td class="mdescRight">This file exists to provide both <a class="el" href="Tensor_8h.html" title="A device-aware, RAII-managed buffer. Device is fixed at construction – there is no support for moving...">Tensor.h</a> and <a class="el" href="IComputeBackend_8h.html">IComputeBackend.h</a> with device types without introducing circular dependencies. <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Convolutional counterpart to DiscriminativePCNetwork &ndash; same public interface shape (AddLayer/Compile/CalculateState/UpdateState/ UpdateWeights/TrainStep/Predict), wired to ConvPCLayer instead. </p>
-<p>AddLayer's spatial dimensions (inHeight/inWidth) are NOT auto-inferred from the previous layer's output shape &ndash; pass them explicitly for each layer. This mirrors how every ConvPCLayer test this session specified shapes directly rather than relying on inference, and avoids a class of silent-shape-mismatch bug if a stride/padding choice doesn't produce the dimension you expected. </p>
+<div class="textblock"><p>Network-level wrapper for ConvPCLayer, mirroring DiscriminativePCNetwork's structure for the convolutional case. </p>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <div id="page-nav" class="page-nav-panel">

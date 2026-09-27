@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -110,13 +110,13 @@ $(function(){initNavTree('classDeep_1_1MemoryArena.html','','classDeep_1_1Memory
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4633eb18edd4c1956ea46a418f0e346e" id="r_a4633eb18edd4c1956ea46a418f0e346e"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> (size_t total_floats)</td></tr>
-<tr class="memdesc:a4633eb18edd4c1956ea46a418f0e346e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a single 64-byte-aligned buffer large enough to hold <span class="tt">total_floats</span> floats, rounded up to the nearest 64-byte boundary.  <br /></td></tr>
+<tr class="memitem:a521a6d216b2fea173e91ad75e583b422" id="r_a521a6d216b2fea173e91ad75e583b422"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a521a6d216b2fea173e91ad75e583b422">MemoryArena</a> (size_t total_floats, bool use_huge_pages=false)</td></tr>
+<tr class="memdesc:a521a6d216b2fea173e91ad75e583b422"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a single 64-byte-aligned buffer large enough to hold <span class="tt">total_floats</span> floats, rounded up to the nearest 64-byte boundary.  <br /></td></tr>
 <tr class="memitem:a49fb270b07d4ae887bb0f084bf09d024" id="r_a49fb270b07d4ae887bb0f084bf09d024"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a49fb270b07d4ae887bb0f084bf09d024">~MemoryArena</a> ()</td></tr>
-<tr class="memdesc:a49fb270b07d4ae887bb0f084bf09d024"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the underlying aligned allocation, if any.  <br /></td></tr>
+<tr class="memdesc:a49fb270b07d4ae887bb0f084bf09d024"><td class="mdescLeft">&#160;</td><td class="mdescRight">Frees the underlying allocation, via whichever deallocator matches the allocator actually used (see used_huge_pages).  <br /></td></tr>
 <tr class="memitem:a35deffffadd8b70bee90c55d0eb0eacd" id="r_a35deffffadd8b70bee90c55d0eb0eacd"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a35deffffadd8b70bee90c55d0eb0eacd">MemoryArena</a> (const MemoryArena &amp;)=delete</td></tr>
 <tr class="memdesc:a35deffffadd8b70bee90c55d0eb0eacd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copying would risk a double-free.  <br /></td></tr>
-<tr class="memitem:adcb6d3fab7ac84d0c427b70381afabca" id="r_adcb6d3fab7ac84d0c427b70381afabca"><td class="memItemLeft"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#adcb6d3fab7ac84d0c427b70381afabca">operator=</a> (const <a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;)=delete</td></tr>
+<tr class="memitem:adcb6d3fab7ac84d0c427b70381afabca" id="r_adcb6d3fab7ac84d0c427b70381afabca"><td class="memItemLeft"><a class="el" href="#a521a6d216b2fea173e91ad75e583b422">MemoryArena</a> &amp;&#160;</td><td class="memItemRight"><a class="el" href="#adcb6d3fab7ac84d0c427b70381afabca">operator=</a> (const <a class="el" href="#a521a6d216b2fea173e91ad75e583b422">MemoryArena</a> &amp;)=delete</td></tr>
 <tr class="memdesc:adcb6d3fab7ac84d0c427b70381afabca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deleted: <a class="el" href="classDeep_1_1MemoryArena.html" title="A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory....">MemoryArena</a> owns a single aligned allocation, so copy-assignment would risk a double-free.  <br /></td></tr>
 <tr class="memitem:af78e70321c76b968facf3b65ec30c338" id="r_af78e70321c76b968facf3b65ec30c338"><td class="memItemLeft">float *&#160;</td><td class="memItemRight"><a class="el" href="#af78e70321c76b968facf3b65ec30c338">AllocateFloats</a> (size_t num_floats)</td></tr>
 <tr class="memdesc:af78e70321c76b968facf3b65ec30c338"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocates a 64-byte aligned chunk of floats from the arena.  <br /></td></tr>
@@ -124,12 +124,14 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a18292466507e177d192cde18d5d4eb69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns how many bytes have been allocated from the arena so far.  <br /></td></tr>
 <tr class="memitem:af5d7949e8c5767b3a83c6488b03b2704" id="r_af5d7949e8c5767b3a83c6488b03b2704"><td class="memItemLeft">size_t&#160;</td><td class="memItemRight"><a class="el" href="#af5d7949e8c5767b3a83c6488b03b2704">GetCapacityBytes</a> () const</td></tr>
 <tr class="memdesc:af5d7949e8c5767b3a83c6488b03b2704"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the arena's total capacity.  <br /></td></tr>
+<tr class="memitem:aaa1cf61c300593c963c32b280f47f2e4" id="r_aaa1cf61c300593c963c32b280f47f2e4"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#aaa1cf61c300593c963c32b280f47f2e4">UsedHugePages</a> () const</td></tr>
+<tr class="memdesc:aaa1cf61c300593c963c32b280f47f2e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns whether this arena's memory is actually huge-page-backed. Since huge pages are requested on a best-effort basis, this can be false even if use_huge_pages was passed to the constructor, if the request wasn't honored (system lacks configuration/privilege, or the allocation call failed) and the arena silently fell back to the standard aligned allocator instead.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>A 64-byte-aligned bump-pointer allocator over a single contiguous block of host memory. Every chunk handed out via <a class="el" href="#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> is itself 64-byte aligned, satisfying this codebase's strict alignment requirement for AVX2/AVX-512 loads. </p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4633eb18edd4c1956ea46a418f0e346e" name="a4633eb18edd4c1956ea46a418f0e346e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4633eb18edd4c1956ea46a418f0e346e">&#9670;&#160;</a></span>MemoryArena() <span class="overload">[1/2]</span></h2>
+<a id="a521a6d216b2fea173e91ad75e583b422" name="a521a6d216b2fea173e91ad75e583b422"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a521a6d216b2fea173e91ad75e583b422">&#9670;&#160;</a></span>MemoryArena() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -140,13 +142,17 @@ Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">Deep::MemoryArena::MemoryArena </td>
           <td>(</td>
-          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>total_floats</em></span></td><td>)</td>
+          <td class="paramtype">size_t</td>          <td class="paramname"><span class="paramname"><em>total_floats</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>use_huge_pages</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
         </tr>
       </table>
   </td>
   <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel explicit">explicit</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -155,12 +161,13 @@ Public Member Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">total_floats</td><td>Total number of floats this arena can hand out across all future <a class="el" href="#af78e70321c76b968facf3b65ec30c338" title="Allocates a 64-byte aligned chunk of floats from the arena.">AllocateFloats()</a> calls combined. </td></tr>
+    <tr><td class="paramname">use_huge_pages</td><td>Opt-in, best-effort request for huge-page-backed memory (see HugePageAllocPortable() for the platform-specific caveats). Defaults to false, preserving existing behavior exactly for anyone not explicitly opting in. Falls back safely to the standard aligned allocator if the request isn't honored &ndash; this never causes a hard failure on its own. </td></tr>
   </table>
   </dd>
 </dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">std::bad_alloc</td><td>if the underlying aligned allocation fails. </td></tr>
+    <tr><td class="paramname">std::bad_alloc</td><td>if the underlying allocation fails (including the fallback path, if huge pages were requested but unavailable). </td></tr>
   </table>
   </dd>
 </dl>
@@ -190,7 +197,7 @@ Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Frees the underlying aligned allocation, if any. </p>
+<p>Frees the underlying allocation, via whichever deallocator matches the allocator actually used (see used_huge_pages). </p>
 
 </div>
 </div>
@@ -329,9 +336,9 @@ Public Member Functions</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp; Deep::MemoryArena::operator= </td>
+          <td class="memname"><a class="el" href="#a521a6d216b2fea173e91ad75e583b422">MemoryArena</a> &amp; Deep::MemoryArena::operator= </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="#a4633eb18edd4c1956ea46a418f0e346e">MemoryArena</a> &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">const <a class="el" href="#a521a6d216b2fea173e91ad75e583b422">MemoryArena</a> &amp;</td>          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -346,8 +353,35 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aaa1cf61c300593c963c32b280f47f2e4" name="aaa1cf61c300593c963c32b280f47f2e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa1cf61c300593c963c32b280f47f2e4">&#9670;&#160;</a></span>UsedHugePages()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Deep::MemoryArena::UsedHugePages </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns whether this arena's memory is actually huge-page-backed. Since huge pages are requested on a best-effort basis, this can be false even if use_huge_pages was passed to the constructor, if the request wasn't honored (system lacks configuration/privilege, or the allocation call failed) and the arena silently fell back to the standard aligned allocator instead. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>include/deepity/<a class="el" href="MemoryArena_8h_source.html">MemoryArena.h</a></li>
+<li>include/deepity/utils/<a class="el" href="MemoryArena_8h_source.html">MemoryArena.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

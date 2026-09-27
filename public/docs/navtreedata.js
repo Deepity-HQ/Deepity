@@ -49,6 +49,7 @@ var NAVTREE =
       [ "Namespace Members", "namespacemembers.html", [
         [ "All", "namespacemembers.html", null ],
         [ "Functions", "namespacemembers_func.html", null ],
+        [ "Variables", "namespacemembers_vars.html", null ],
         [ "Typedefs", "namespacemembers_type.html", null ],
         [ "Enumerations", "namespacemembers_enum.html", null ]
       ] ]
@@ -61,6 +62,7 @@ var NAVTREE =
         [ "All", "functions.html", "functions_dup" ],
         [ "Functions", "functions_func.html", "functions_func" ],
         [ "Variables", "functions_vars.html", null ],
+        [ "Typedefs", "functions_type.html", null ],
         [ "Related Symbols", "functions_rela.html", null ]
       ] ]
     ] ],
@@ -69,8 +71,6 @@ var NAVTREE =
       [ "File Members", "globals.html", [
         [ "All", "globals.html", null ],
         [ "Functions", "globals_func.html", null ],
-        [ "Typedefs", "globals_type.html", null ],
-        [ "Enumerator", "globals_eval.html", null ],
         [ "Macros", "globals_defs.html", null ]
       ] ]
     ] ]
@@ -79,11 +79,14 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"Activations_8h.html",
-"classDeep_1_1DiscriminativePCLayer.html#a4f33d0cb0a2816d050a35e224fee3408",
-"classDeep_1_1Layer.html#a5a538a25f3064996bbe651e6d48918d0",
-"classDeep_1_1SimplePCLayer.html#a0a9b015b8a020bf3f730aadd800b7f5e",
-"stb__image_8h.html"
+"ActivationDispatch_8h.html",
+"classDeep_1_1CUDABackend.html#ab369766b746e0791fc4527a3f1035956",
+"classDeep_1_1DirectKPPCLayer.html#a564531d314fb6a6f8338ad363c17b086",
+"classDeep_1_1DiscriminativePCNetwork.html#a050d1f0bea20b911fd2804baf6ab44f9",
+"classDeep_1_1FullPCLayer.html#afdabba0ed0406ad5f809cb8e73db2e4f",
+"classDeep_1_1IComputeBackend.html#ac34678bbe2f6cd4695ddc87cd233a977",
+"classDeep_1_1SimpleConvPCNetwork.html#ad89686fb288a6cce49c423266a9fd8cb",
+"functions_vars.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronization';

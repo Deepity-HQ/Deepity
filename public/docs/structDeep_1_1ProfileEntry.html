@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,14 +103,21 @@ $(function(){initNavTree('structDeep_1_1ProfileEntry.html','','structDeep_1_1Pro
 </div><!--header-->
 <div class="contents">
 
+<p>One registered layer's profiling data: its print label paired with its accumulator.  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="Profile_8h_source.html">Profile.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a644ea9fd78acb65d419f561da0cf6194" id="r_a644ea9fd78acb65d419f561da0cf6194"><td class="memItemLeft">std::string&#160;</td><td class="memItemRight"><a class="el" href="#a644ea9fd78acb65d419f561da0cf6194">label</a></td></tr>
+<tr class="memdesc:a644ea9fd78acb65d419f561da0cf6194"><td class="mdescLeft">&#160;</td><td class="mdescRight">Printed heading, e.g. "layer(784-&gt;512) @ 0x...".  <br /></td></tr>
 <tr class="memitem:afcc5ee105d12d3d995a0bfd9a47885ea" id="r_afcc5ee105d12d3d995a0bfd9a47885ea"><td class="memItemLeft"><a class="el" href="structDeep_1_1ProfileAccumulator.html">ProfileAccumulator</a>&#160;</td><td class="memItemRight"><a class="el" href="#afcc5ee105d12d3d995a0bfd9a47885ea">acc</a></td></tr>
+<tr class="memdesc:afcc5ee105d12d3d995a0bfd9a47885ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">That layer's accumulated phase timings.  <br /></td></tr>
 </table>
-<a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>One registered layer's profiling data: its print label paired with its accumulator. </p>
+</div><a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
 <a id="afcc5ee105d12d3d995a0bfd9a47885ea" name="afcc5ee105d12d3d995a0bfd9a47885ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afcc5ee105d12d3d995a0bfd9a47885ea">&#9670;&#160;</a></span>acc</h2>
 
@@ -122,6 +129,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>That layer's accumulated phase timings. </p>
 
 </div>
 </div>
@@ -137,10 +146,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Printed heading, e.g. "layer(784-&gt;512) @ 0x...". </p>
+
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/deepity/<a class="el" href="Profile_8h_source.html">Profile.h</a></li>
+<li>include/deepity/utils/<a class="el" href="Profile_8h_source.html">Profile.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

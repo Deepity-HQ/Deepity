@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr id="projectrow">
-  <td id="projectlogo"><img alt="Logo" src="Deepity.png"/></td>
+  <td id="projectlogo"><img alt="Logo" src="deepity-mark.png"/></td>
   <td id="projectalign">
    <div id="projectname">Deepity
    </div>
@@ -103,33 +103,56 @@ $(function(){initNavTree('structDeep_1_1ProfileAccumulator.html','','structDeep_
 </div><!--header-->
 <div class="contents">
 
+<p>One layer's accumulated time-per-phase, in seconds &ndash; see the file-level note for the reconciliation invariants (<a class="el" href="#a83b598b4911307d14bcbf96b03353ad7" title="Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal,...">PhaseSum()</a> vs. the top-level totals vs. external wall-clock).  
+ <a href="#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="Profile_8h_source.html">Profile.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a83b598b4911307d14bcbf96b03353ad7" id="r_a83b598b4911307d14bcbf96b03353ad7"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a83b598b4911307d14bcbf96b03353ad7">PhaseSum</a> () const noexcept</td></tr>
+<tr class="memdesc:a83b598b4911307d14bcbf96b03353ad7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal, which measure the same work and would double-count if included &ndash; see the inline note).  <br /></td></tr>
 <tr class="memitem:a1e6b121ad5ca20b39c6407728306cf7d" id="r_a1e6b121ad5ca20b39c6407728306cf7d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1e6b121ad5ca20b39c6407728306cf7d">Print</a> (const std::string &amp;label) const</td></tr>
+<tr class="memdesc:a1e6b121ad5ca20b39c6407728306cf7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Prints this accumulator's per-phase breakdown (with percentages of <a class="el" href="#a83b598b4911307d14bcbf96b03353ad7" title="Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal,...">PhaseSum()</a>) plus the top-level/sub-phase reconciliation check, to stdout.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a3295fd2b7f50a9aa8b4784512933f00f" id="r_a3295fd2b7f50a9aa8b4784512933f00f"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a3295fd2b7f50a9aa8b4784512933f00f">errorConstruction</a> = 0.0</td></tr>
+<tr class="memdesc:a3295fd2b7f50a9aa8b4784512933f00f"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState: building the error term.  <br /></td></tr>
 <tr class="memitem:a1bf019e24bdc84438550f712ccb07abf" id="r_a1bf019e24bdc84438550f712ccb07abf"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a1bf019e24bdc84438550f712ccb07abf">energyCalculation</a> = 0.0</td></tr>
+<tr class="memdesc:a1bf019e24bdc84438550f712ccb07abf"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState: the energy reduction itself.  <br /></td></tr>
 <tr class="memitem:a089262779c7f8dbdd3607d713a244824" id="r_a089262779c7f8dbdd3607d713a244824"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a089262779c7f8dbdd3607d713a244824">forwardGemm</a> = 0.0</td></tr>
+<tr class="memdesc:a089262779c7f8dbdd3607d713a244824"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState: the forward prediction GEMM.  <br /></td></tr>
 <tr class="memitem:a47f6308a938d25fb6dd63dd14ee834f0" id="r_a47f6308a938d25fb6dd63dd14ee834f0"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a47f6308a938d25fb6dd63dd14ee834f0">biasAdd</a> = 0.0</td></tr>
+<tr class="memdesc:a47f6308a938d25fb6dd63dd14ee834f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState: bias-add after the forward GEMM.  <br /></td></tr>
 <tr class="memitem:a46727678329c84e5a4ed20fa4c316acb" id="r_a46727678329c84e5a4ed20fa4c316acb"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a46727678329c84e5a4ed20fa4c316acb">activationForward</a> = 0.0</td></tr>
+<tr class="memdesc:a46727678329c84e5a4ed20fa4c316acb"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState: forward activation function.  <br /></td></tr>
 <tr class="memitem:affdc8101d76dc8da900cba4587787236" id="r_affdc8101d76dc8da900cba4587787236"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#affdc8101d76dc8da900cba4587787236">activationDerivative</a> = 0.0</td></tr>
+<tr class="memdesc:affdc8101d76dc8da900cba4587787236"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState: activation derivative.  <br /></td></tr>
 <tr class="memitem:ad83b403e26383045860741d71d3869a8" id="r_ad83b403e26383045860741d71d3869a8"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#ad83b403e26383045860741d71d3869a8">localErrorTerm</a> = 0.0</td></tr>
+<tr class="memdesc:ad83b403e26383045860741d71d3869a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState: dz_dt = -p*e (was ownGradientTerm &ndash; not a backprop gradient).  <br /></td></tr>
 <tr class="memitem:a14ac8d0da97bda21921373da1a6ad180" id="r_a14ac8d0da97bda21921373da1a6ad180"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a14ac8d0da97bda21921373da1a6ad180">bottomUpConstruction</a> = 0.0</td></tr>
+<tr class="memdesc:a14ac8d0da97bda21921373da1a6ad180"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState: assembling the bottom-up term.  <br /></td></tr>
 <tr class="memitem:a6ac6f0647452a0636546773dcd8edcdb" id="r_a6ac6f0647452a0636546773dcd8edcdb"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a6ac6f0647452a0636546773dcd8edcdb">feedbackGemm</a> = 0.0</td></tr>
+<tr class="memdesc:a6ac6f0647452a0636546773dcd8edcdb"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState: the feedback GEMM.  <br /></td></tr>
 <tr class="memitem:ae224589e5aabadde5434992fd56b1eb4" id="r_ae224589e5aabadde5434992fd56b1eb4"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#ae224589e5aabadde5434992fd56b1eb4">saxpyUpdate</a> = 0.0</td></tr>
+<tr class="memdesc:ae224589e5aabadde5434992fd56b1eb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState: the final z += ir*dz SAXPY.  <br /></td></tr>
 <tr class="memitem:a81c159ba5609494e0fb978c4ea219e5a" id="r_a81c159ba5609494e0fb978c4ea219e5a"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a81c159ba5609494e0fb978c4ea219e5a">updateWeightsTotal</a> = 0.0</td></tr>
+<tr class="memdesc:a81c159ba5609494e0fb978c4ea219e5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateWeights(), whole-call total.  <br /></td></tr>
 <tr class="memitem:a7b50542473446257d555045a60804d20" id="r_a7b50542473446257d555045a60804d20"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#a7b50542473446257d555045a60804d20">updatePrecisionTotal</a> = 0.0</td></tr>
+<tr class="memdesc:a7b50542473446257d555045a60804d20"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdatePrecision(), whole-call total.  <br /></td></tr>
 <tr class="memitem:ae577cc552ae007a52dcfc8abb7210359" id="r_ae577cc552ae007a52dcfc8abb7210359"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#ae577cc552ae007a52dcfc8abb7210359">calculateStateTotal</a> = 0.0</td></tr>
+<tr class="memdesc:ae577cc552ae007a52dcfc8abb7210359"><td class="mdescLeft">&#160;</td><td class="mdescRight">CalculateState(), whole-call total.  <br /></td></tr>
 <tr class="memitem:add71e38777e74672f447b9e892cd0b9e" id="r_add71e38777e74672f447b9e892cd0b9e"><td class="memItemLeft">double&#160;</td><td class="memItemRight"><a class="el" href="#add71e38777e74672f447b9e892cd0b9e">updateStateTotal</a> = 0.0</td></tr>
+<tr class="memdesc:add71e38777e74672f447b9e892cd0b9e"><td class="mdescLeft">&#160;</td><td class="mdescRight">UpdateState(), whole-call total.  <br /></td></tr>
 <tr class="memitem:af864cc123d6783536f061bc4dce4391c" id="r_af864cc123d6783536f061bc4dce4391c"><td class="memItemLeft">long long&#160;</td><td class="memItemRight"><a class="el" href="#af864cc123d6783536f061bc4dce4391c">calculateStateCalls</a> = 0</td></tr>
+<tr class="memdesc:af864cc123d6783536f061bc4dce4391c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of CalculateState() calls recorded.  <br /></td></tr>
 <tr class="memitem:a4aa78b716bf166ee0dd010ff9ed77e2d" id="r_a4aa78b716bf166ee0dd010ff9ed77e2d"><td class="memItemLeft">long long&#160;</td><td class="memItemRight"><a class="el" href="#a4aa78b716bf166ee0dd010ff9ed77e2d">updateStateCalls</a> = 0</td></tr>
+<tr class="memdesc:a4aa78b716bf166ee0dd010ff9ed77e2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Number of UpdateState() calls recorded.  <br /></td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>One layer's accumulated time-per-phase, in seconds &ndash; see the file-level note for the reconciliation invariants (<a class="el" href="#a83b598b4911307d14bcbf96b03353ad7" title="Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal,...">PhaseSum()</a> vs. the top-level totals vs. external wall-clock). </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
 <a id="a83b598b4911307d14bcbf96b03353ad7" name="a83b598b4911307d14bcbf96b03353ad7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a83b598b4911307d14bcbf96b03353ad7">&#9670;&#160;</a></span>PhaseSum()</h2>
 
@@ -152,6 +175,8 @@ Public Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal, which measure the same work and would double-count if included &ndash; see the inline note). </p>
 
 </div>
 </div>
@@ -178,6 +203,14 @@ Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+<p>Prints this accumulator's per-phase breakdown (with percentages of <a class="el" href="#a83b598b4911307d14bcbf96b03353ad7" title="Sum of every sub-phase timer (excludes the top-level calculateStateTotal/updateStateTotal,...">PhaseSum()</a>) plus the top-level/sub-phase reconciliation check, to stdout. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">label</td><td>Heading printed above this accumulator's rows, e.g. a layer's shape and identity (see <a class="el" href="namespaceDeep.html#afc0c7bc2619873cb922f19a2eaf5ffd2" title="Looks up (or creates, on first call) layer&#39;s accumulator in the process-wide registry,...">LayerProfile()</a>). </td></tr>
+  </table>
+  </dd>
+</dl>
+
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
@@ -193,6 +226,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdateState: activation derivative. </p>
+
 </div>
 </div>
 <a id="a46727678329c84e5a4ed20fa4c316acb" name="a46727678329c84e5a4ed20fa4c316acb"></a>
@@ -206,6 +241,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>CalculateState: forward activation function. </p>
 
 </div>
 </div>
@@ -221,6 +258,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>CalculateState: bias-add after the forward GEMM. </p>
+
 </div>
 </div>
 <a id="a14ac8d0da97bda21921373da1a6ad180" name="a14ac8d0da97bda21921373da1a6ad180"></a>
@@ -234,6 +273,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>UpdateState: assembling the bottom-up term. </p>
 
 </div>
 </div>
@@ -249,6 +290,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>Number of CalculateState() calls recorded. </p>
+
 </div>
 </div>
 <a id="ae577cc552ae007a52dcfc8abb7210359" name="ae577cc552ae007a52dcfc8abb7210359"></a>
@@ -262,6 +305,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>CalculateState(), whole-call total. </p>
 
 </div>
 </div>
@@ -277,6 +322,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>CalculateState: the energy reduction itself. </p>
+
 </div>
 </div>
 <a id="a3295fd2b7f50a9aa8b4784512933f00f" name="a3295fd2b7f50a9aa8b4784512933f00f"></a>
@@ -290,6 +337,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>CalculateState: building the error term. </p>
 
 </div>
 </div>
@@ -305,6 +354,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdateState: the feedback GEMM. </p>
+
 </div>
 </div>
 <a id="a089262779c7f8dbdd3607d713a244824" name="a089262779c7f8dbdd3607d713a244824"></a>
@@ -318,6 +369,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>CalculateState: the forward prediction GEMM. </p>
 
 </div>
 </div>
@@ -333,6 +386,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdateState: dz_dt = -p*e (was ownGradientTerm &ndash; not a backprop gradient). </p>
+
 </div>
 </div>
 <a id="ae224589e5aabadde5434992fd56b1eb4" name="ae224589e5aabadde5434992fd56b1eb4"></a>
@@ -346,6 +401,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>UpdateState: the final z += ir*dz SAXPY. </p>
 
 </div>
 </div>
@@ -361,6 +418,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdatePrecision(), whole-call total. </p>
+
 </div>
 </div>
 <a id="a4aa78b716bf166ee0dd010ff9ed77e2d" name="a4aa78b716bf166ee0dd010ff9ed77e2d"></a>
@@ -374,6 +433,8 @@ Public Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+<p>Number of UpdateState() calls recorded. </p>
 
 </div>
 </div>
@@ -389,6 +450,8 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdateState(), whole-call total. </p>
+
 </div>
 </div>
 <a id="a81c159ba5609494e0fb978c4ea219e5a" name="a81c159ba5609494e0fb978c4ea219e5a"></a>
@@ -403,10 +466,12 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+<p>UpdateWeights(), whole-call total. </p>
+
 </div>
 </div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
-<li>include/deepity/<a class="el" href="Profile_8h_source.html">Profile.h</a></li>
+<li>include/deepity/utils/<a class="el" href="Profile_8h_source.html">Profile.h</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

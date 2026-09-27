@@ -1,4 +1,4 @@
 var DeviceMemoryArena_8h =
 [
-    [ "DeviceMemoryArena", "classDeviceMemoryArena.html", "classDeviceMemoryArena" ]
+    [ "Deep::DeviceMemoryArena", "classDeep_1_1DeviceMemoryArena.html", "classDeep_1_1DeviceMemoryArena" ]
 ];
