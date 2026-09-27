@@ -60,7 +60,7 @@ def main() -> None:
     print(f"LR={LR}{' (overridden)' if LR_OVERRIDE is not None else ' (original MSE-tuned default)'}")
     print("Features: ALL OFF -- should be bit-identical to DirectKPPCNetwork's own defaults")
 
-    net = dy.FullPCNetwork(batch_size=BATCH_SIZE, device="cpu")
+    net = dy.FullPCNetwork(batch_size=BATCH_SIZE, device="gpu")
     net.add_layer(784, 512, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
     net.add_layer(512, 10, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="sigmoid", activation_deriv="dsigmoid")
     net.add_layer(10, 0, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
