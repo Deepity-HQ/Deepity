@@ -145,6 +145,17 @@ set(DEEPITY_CUDA_ENABLED OFF)
 if(DEEPITY_ENABLE_CUDA)
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
+        # Must be set BEFORE enable_language(CUDA), or nvcc silently falls
+        # back to its own old default compute capability -- producing a
+        # binary with no kernel image for whatever GPU it's actually run
+        # on ("no kernel image is available for execution on the device"
+        # at runtime, not a build-time error). Covers V100/T4 (70/75),
+        # A100/RTX 30xx (80/86), and H100 (90); override with
+        # -DCMAKE_CUDA_ARCHITECTURES=<arch> for a narrower, faster build
+        # targeting one known GPU.
+        if(NOT CMAKE_CUDA_ARCHITECTURES)
+            set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;90")
+        endif()
         enable_language(CUDA)
         set(CMAKE_CUDA_STANDARD 17)
         set(CMAKE_CUDA_STANDARD_REQUIRED ON)
