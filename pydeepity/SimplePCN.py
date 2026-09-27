@@ -109,7 +109,10 @@ class SimplePCN(dy.SimplePCNetwork):
         Translate the declarative architecture into backend PC layers.
 
         Each Linear layer becomes a backend layer. If an Activation follows
-        it, that activation is attached to the backend layer.
+        it, that activation is attached to the backend layer. A final
+        terminal (sink) layer is appended so that the network's last layer
+        holds the OUTPUT dimension's beliefs, not the last Linear's input
+        dimension -- see DKPPCN._build_backend() for the same pattern.
         """
 
         for i, component in enumerate(self.architecture):
@@ -133,6 +136,20 @@ class SimplePCN(dy.SimplePCNetwork):
                 activation=activation,
                 activation_deriv="d" + activation,
             )
+
+        # _validate_architecture() guarantees the architecture ends with a
+        # Linear layer, so its out_n is the network's true output size.
+        terminal_size = self.architecture[-1].out_n
+
+        super().add_layer(
+            terminal_size,
+            0,
+            lr=self._learning_rate,
+            ir=self._inference_rate,
+            lmbda=self._lambda,
+            activation="linear",
+            activation_deriv="dlinear",
+        )
 
     def configure(
         self,
