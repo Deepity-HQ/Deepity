@@ -261,29 +261,37 @@ set(CMAKE_REQUIRED_QUIET OFF)
 # --- Deepity library ------------------------------------------------
 
 set(DEEPITY_SOURCES
-    src/FullPCLayer.cpp
-    src/DiscriminativePCLayer.cpp
-    src/RBLayer.cpp
-    src/ConvPCLayer.cpp
-    src/SimpleConvPCLayer.cpp
-    src/SimplePCLayer.cpp
-    src/GaussSeidelPCLayer.cpp
-    src/DirectKPPCLayer.cpp
-    src/FullPCNetwork.cpp
-    src/DiscriminativePCNetwork.cpp
-    src/ConvPCNetwork.cpp
-    src/SimplePCNetwork.cpp
-    src/GaussSeidelPCNetwork.cpp
-    src/SimpleConvPCNetwork.cpp
-    src/DirectKPPCNetwork.cpp
-    src/StreamAlignedBatcher.cpp
+    src/layers/FullPCLayer.cpp
+    src/layers/DiscriminativePCLayer.cpp
+    src/layers/RBLayer.cpp
+    src/layers/ConvPCLayer.cpp
+    src/layers/SimpleConvPCLayer.cpp
+    src/layers/SimplePCLayer.cpp
+    src/layers/GaussSeidelPCLayer.cpp
+    src/layers/DirectKPPCLayer.cpp
+    src/networks/FullPCNetwork.cpp
+    src/networks/DiscriminativePCNetwork.cpp
+    src/networks/ConvPCNetwork.cpp
+    src/networks/SimplePCNetwork.cpp
+    src/networks/GaussSeidelPCNetwork.cpp
+    src/networks/SimpleConvPCNetwork.cpp
+    src/networks/DirectKPPCNetwork.cpp
+    src/utils/StreamAlignedBatcher.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/Tensor.cpp
 )
 
 if(DEEPITY_CUDA_ENABLED)
-    list(APPEND DEEPITY_SOURCES src/backend/CUDABackend.cu)
+    list(APPEND DEEPITY_SOURCES
+        src/backend/cuda/CUDABackendCore.cu
+        src/backend/cuda/CUDABackendGemm.cu
+        src/backend/cuda/CUDABackendElementwise.cu
+        src/backend/cuda/CUDABackendActivations.cu
+        src/backend/cuda/CUDABackendFusedOps.cu
+        src/backend/cuda/CUDABackendOptimizer.cu
+        src/backend/cuda/CUDABackendConv.cu
+    )
 endif()
 
 add_library(Deepity ${DEEPITY_SOURCES})
@@ -348,27 +356,140 @@ FetchContent_MakeAvailable(benchmark)
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
 
-add_executable(ActivationBenchmark tests/tActivations.cpp)
-target_link_libraries(ActivationBenchmark PRIVATE Deepity benchmark::benchmark)
-set_target_properties(ActivationBenchmark PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+# Without this, every add_test() below is silently inert -- ctest reports
+# "No tests were found" regardless of how many are registered, since no
+# CTestTestfile.cmake is ever generated.
+enable_testing()
 
-if(DEEPITY_CUDA_ENABLED)
-    add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
-    target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
-    set_target_properties(CUDALaunchErrorVerify PROPERTIES
+if(DEEPITY_BUILD_TESTS)
+    # --- Benchmarks (Google Benchmark, BENCHMARK_MAIN() -- perf only, not
+    # registered with ctest since they have no pass/fail) -----------------
+
+    add_executable(ActivationBenchmark tests/tActivations.cpp)
+    target_link_libraries(ActivationBenchmark PRIVATE Deepity benchmark::benchmark)
+    set_target_properties(ActivationBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
+
+    add_executable(OMPThresholdBenchmark tests/tBenchmark.cpp)
+    target_link_libraries(OMPThresholdBenchmark PRIVATE Deepity benchmark::benchmark)
+    set_target_properties(OMPThresholdBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    add_executable(GflopsBenchmark tests/tGflopsBenchmark.cpp)
+    target_link_libraries(GflopsBenchmark PRIVATE Deepity benchmark::benchmark)
+    set_target_properties(GflopsBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    add_executable(ReadmeBenchmark tests/tReadme.cpp)
+    target_link_libraries(ReadmeBenchmark PRIVATE Deepity benchmark::benchmark)
+    set_target_properties(ReadmeBenchmark PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    # --- Correctness verification tests (CPU) -----------------------------
+
+    add_executable(CrossEntropyVerify tests/tCrossEntropyVerify.cpp)
+    target_link_libraries(CrossEntropyVerify PRIVATE Deepity)
+    set_target_properties(CrossEntropyVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME CrossEntropyVerify COMMAND CrossEntropyVerify)
+
+    add_executable(AddBiasBroadcastVerify tests/tAddBiasBroadcastVerify.cpp)
+    target_link_libraries(AddBiasBroadcastVerify PRIVATE Deepity)
+    set_target_properties(AddBiasBroadcastVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME AddBiasBroadcastVerify COMMAND AddBiasBroadcastVerify)
+
+    add_executable(DirectKPVerify tests/tDirectKPVerify.cpp)
+    target_link_libraries(DirectKPVerify PRIVATE Deepity)
+    set_target_properties(DirectKPVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME DirectKPVerify COMMAND DirectKPVerify)
+
+    add_executable(FullPCLayerVerify tests/tFullPCLayerVerify.cpp)
+    target_link_libraries(FullPCLayerVerify PRIVATE Deepity)
+    set_target_properties(FullPCLayerVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME FullPCLayerVerify COMMAND FullPCLayerVerify)
+
+    add_executable(RepackForBatchedGemmVerify tests/tRepackForBatchedGemmVerify.cpp)
+    target_link_libraries(RepackForBatchedGemmVerify PRIVATE Deepity)
+    set_target_properties(RepackForBatchedGemmVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME RepackForBatchedGemmVerify COMMAND RepackForBatchedGemmVerify)
+
+    add_executable(GeluVerify tests/tGelu.cpp)
+    target_link_libraries(GeluVerify PRIVATE Deepity)
+    set_target_properties(GeluVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME GeluVerify COMMAND GeluVerify)
+
+    add_executable(ConvDiagnose tests/tConvDiagnose.cpp)
+    target_link_libraries(ConvDiagnose PRIVATE Deepity)
+    set_target_properties(ConvDiagnose PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ConvDiagnose COMMAND ConvDiagnose)
+
+    # --- Correctness verification tests (CUDA-only: call
+    # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----
+
+    if(DEEPITY_CUDA_ENABLED)
+        add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
+        target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
+        set_target_properties(CUDALaunchErrorVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+
+        add_executable(CUDAIntRoundtripVerify tests/tCUDAIntRoundtripVerify.cpp)
+        target_link_libraries(CUDAIntRoundtripVerify PRIVATE Deepity)
+        set_target_properties(CUDAIntRoundtripVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+
+        add_executable(CUDAIncrementCounterVerify tests/tCUDAIncrementCounterVerify.cpp)
+        target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity)
+        set_target_properties(CUDAIncrementCounterVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+
+        add_executable(CUDAIncrementCounterSyncVerify tests/tCUDAIncrementCounterSyncVerify.cpp)
+        target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity)
+        set_target_properties(CUDAIncrementCounterSyncVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+
+        add_executable(MatMulLargeAsymmetricVerify tests/tMatMulLargeAsymmetricVerify.cpp)
+        target_link_libraries(MatMulLargeAsymmetricVerify PRIVATE Deepity)
+        set_target_properties(MatMulLargeAsymmetricVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+    endif()
+
+    # --- Manual profiling tools (no pass/fail; not registered with ctest) -
+
+    add_executable(DiscriminativeNetworkProfile tests/tDiscriminativeNetworkProfile.cpp)
+    target_link_libraries(DiscriminativeNetworkProfile PRIVATE Deepity)
+    set_target_properties(DiscriminativeNetworkProfile PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+
+    add_executable(SimpleNetworkProfile tests/tSimpleNetworkProfile.cpp)
+    target_link_libraries(SimpleNetworkProfile PRIVATE Deepity)
+    set_target_properties(SimpleNetworkProfile PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
 endif()
-
-add_executable(CrossEntropyVerify tests/tCrossEntropyVerify.cpp)
-target_link_libraries(CrossEntropyVerify PRIVATE Deepity)
-set_target_properties(CrossEntropyVerify PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
-
-add_test(NAME ActivationBenchmark COMMAND ActivationBenchmark)
 
 # --- Compiler flags -------------------------------------------------
 
@@ -395,7 +516,12 @@ set_target_properties(Deepity PROPERTIES
 # --- pydeepity ------------------------------------------------------
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    nanobind_add_module(pydeepity bindings/pybinding.cpp)
+    nanobind_add_module(pydeepity
+        bindings/pybinding.cpp
+        bindings/LayerBindings.cpp
+        bindings/NetworkBindings.cpp
+        bindings/UtilityBindings.cpp
+    )
 
     target_link_libraries(pydeepity PRIVATE Deepity)
 

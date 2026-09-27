@@ -10,6 +10,10 @@
 namespace Deep
 {
 
+    /// @brief Flushes denormal floats to zero on both input and output of
+    /// SSE FP ops, avoiding the severe slowdown x86 FPUs hit computing
+    /// with denormals -- settling can drive values arbitrarily close to
+    /// zero over many steps.
     static inline void ProtectFPU() {
         _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
         _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);

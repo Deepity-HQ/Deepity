@@ -1,3 +1,8 @@
+// DEPRECATED: this is the pre-nanobind pybind11 binding module, kept only
+// for reference. It is not built by CMakeLists.txt and not maintained --
+// bindings/pybinding.cpp (nanobind) is the live binding module. Do not add
+// new bindings here; port them to pybinding.cpp's split (LayerBindings.cpp /
+// NetworkBindings.cpp / UtilityBindings.cpp) instead.
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>

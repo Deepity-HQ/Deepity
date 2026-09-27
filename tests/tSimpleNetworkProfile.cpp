@@ -33,7 +33,7 @@ int main()
 
     // Match the real +-0.3 uniform init directly in C++ this time
     std::uniform_real_distribution<float> initDist(-0.3f, 0.3f);
-    for (auto *layer : net.GetLayers())
+    for (auto &layer : net.GetLayers())
     {
         if (layer->GetOutputSize() == 0) continue; // terminal has no weights
         size_t wsz = layer->GetInputSize() * layer->GetOutputSize();
@@ -89,7 +89,7 @@ int main()
             for (size_t i = 0; i < layers.size(); ++i)
             {
                 t0 = std::chrono::steady_clock::now();
-                layers[i]->CalculateState();
+                layers[i]->CalculateState(true);
                 t1 = std::chrono::steady_clock::now();
                 t_calc[i] += std::chrono::duration<double>(t1 - t0).count();
             }

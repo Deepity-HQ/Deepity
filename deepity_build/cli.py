@@ -338,7 +338,9 @@ def _run_pgo_workload(config: BuildConfig) -> None:
 
     print("\n--- PGO: running representative workload to collect profile data ---")
     result = subprocess.run(
-        [sys.executable, "pgo_workload.py"],
+        [sys.executable, str(Path(__file__).resolve().parent / "pgo_workload.py")],
+        # cwd stays the repo root -- pgo_workload.py resolves its own "./data"
+        # cache relative to it, same as mnist.py and the other example scripts.
         cwd=Path(__file__).resolve().parent.parent,
     )
     if result.returncode != 0:

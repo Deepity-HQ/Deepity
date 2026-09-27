@@ -1,5 +1,5 @@
 /**
- * @file tCUDAIncrementCounterVerify.cpp
+ * @file tCUDAIntRoundtripVerify.cpp
  * @brief Minimal isolation: does a SINGLE IncrementCounter() call on
  * GPU actually take effect at all? tCUDAAdamWStepVerify.cpp showed
  * t staying at 0 after 10 calls -- this checks whether even one call
