@@ -4,11 +4,25 @@
 #include <cstdint>
 #include <nlohmann/json.hpp>
 
+/**
+ * @file ModelIO.h
+ * @brief Saves/loads a network's compiled weight arena to/from disk, as a
+ * JSON header (per-layer shapes/offsets) plus a raw binary float blob.
+ */
+
 namespace Deep
 {
+    /// @brief Static save/load helpers for any network type exposing
+    /// GetLayers() -- templated so it works across every PC network
+    /// variant without each one reimplementing serialization.
     class ModelIO
     {
     public:
+        /// @brief Writes `net`'s weights to a single file at `filepath`:
+        /// a JSON header (per-layer tensor shapes/offsets) followed by
+        /// the raw float data, back to back.
+        /// @return false if `filepath` couldn't be opened for writing;
+        /// true on success.
         template <typename NetworkType>
         static bool Save(const NetworkType &net, const std::string &filepath)
         {
@@ -67,6 +81,11 @@ namespace Deep
             return true;
         }
 
+        /// @brief Reads a file written by Save() back into `net`'s
+        /// already-compiled weight arena, matching each tensor by the
+        /// same "layer_N.name" key Save() wrote it under.
+        /// @return false if `filepath` couldn't be opened for reading;
+        /// true on success.
         template <typename NetworkType>
         static bool Load(NetworkType &net, const std::string &filepath)
         {

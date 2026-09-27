@@ -7,19 +7,19 @@
 #include <deepity/utils/MemoryArena.h>
 
 /**
- * @file DiscriminativePCLayer.h
+ * @file DiscriminativePCNetwork.h
  * @brief Defines the network-level implementation of a PC model.
  *
  * This header includes implementations of PC layer-to-layer interaction.
  *
- * Usage:
- *  #include <deepity/networks/DiscriminativePCNetwork.h>
+ * @code{.cpp}
+ * #include <deepity/networks/DiscriminativePCNetwork.h>
  *
- * Example:
- *  Deep::DiscriminativePCNetwork network(1);
- *  network.addLayer({...});
- *  network.Clamp(input);
- *  network.CalculateState();
+ * Deep::DiscriminativePCNetwork network(1);
+ * network.addLayer({...});
+ * network.Clamp(input);
+ * network.CalculateState();
+ * @endcode
  *
  * @note All layers are stored in a vector.
  * @version 1.0

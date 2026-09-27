@@ -16,6 +16,8 @@
 #include <mkl_service.h>
 #else
 extern "C" {
+    /// @brief OpenBLAS's own thread-count setter, declared directly since
+    /// OpenBLAS ships no public header for it in this build.
     void openblas_set_num_threads(int num_threads);
 }
 #endif
@@ -26,11 +28,11 @@ extern "C" {
  *
  * This header currently only includes implementation of an L2 Cache size lookup.
  *
- * Usage:
- *  #include <deepity/utils/Optimize.h>
+ * @code{.cpp}
+ * #include <deepity/utils/Optimize.h>
  *
- * Example:
- *  size_t sizeofL2 = GetL2CacheBytes();
+ * size_t sizeofL2 = GetL2CacheBytes();
+ * @endcode
  *
  * @note Separate versions exist for Windows VS. Linux.
  * @version 1.0
@@ -39,6 +41,8 @@ extern "C" {
  */
 namespace Deep
 {
+    /// @brief Queries the size of this CPU's L2 cache (per-core, level 2),
+    /// falling back to 512 KiB on platforms where it can't be queried.
     inline size_t GetL2CacheBytes()
     {
 #ifdef __linux__
@@ -71,6 +75,11 @@ namespace Deep
 #endif
     }
 
+    /// @brief Picks a batch size (a power of 2 clamped to [64, 512]) sized
+    /// so a layer's weights plus one batch's activations fit within the
+    /// L2 cache, for a size -> outSize transition.
+    /// @param inSize Layer input width.
+    /// @param outSize Layer output width.
     inline size_t AutoBatchSize(size_t inSize, size_t outSize)
     {
         size_t l2 = GetL2CacheBytes();
@@ -95,6 +104,13 @@ namespace Deep
         return pow2;
     }
 
+    /// @brief Sets OpenMP's (and the BLAS library's) thread count for the
+    /// given batch size, memoized so it's a no-op if the target hasn't
+    /// changed since the last call. Small batches get 1 thread (avoids
+    /// parallelization overhead dominating tiny work); larger batches
+    /// scale up to a measured, capped optimum -- see the inline note on
+    /// why 16 threads, not the full core count, is the ceiling.
+    /// @param batchSize The batch size about to be processed.
     static inline void DynamicThread(int batchSize) noexcept
     {
         static int currentThreads = -1;
@@ -129,6 +145,7 @@ namespace Deep
         }
     }
 
+    /// @brief Horizontal sum of all 8 lanes of an AVX2 register.
     static inline float hsum256_ps(__m256 x)
     {
         __m128 lo = _mm256_castps256_ps128(x);
@@ -143,6 +160,7 @@ namespace Deep
         return _mm_cvtss_f32(sums);
     }
 
+    /// @brief Horizontal sum of all 4 lanes of an SSE register.
     static inline float hsum128_ps(__m128 x)
     {
         __m128 shuf = _mm_movehdup_ps(x);

@@ -87,7 +87,8 @@ Include in the PR description:
 
 - CMake >= 3.16, Ninja
 - A C++20 compiler: Clang (recommended, see below), GCC, or MSVC
-- OpenBLAS + pybind11 (via vcpkg on Windows, system packages on Linux/macOS)
+- OpenBLAS (via vcpkg on Windows, system packages on Linux/macOS)
+- `nanobind` (installed via pip -- see `pyproject.toml`)
 - Python 3.8+ with development headers
 
 ### Configuring locally
@@ -166,11 +167,11 @@ how the environment is set up; branch on `CMAKE_CXX_COMPILER_ID`, not on
 ### 5. `target_compile_definitions` / `target_compile_options` require the target to already exist
 
 CMake processes a `CMakeLists.txt` strictly top-to-bottom. Calling
-`target_compile_definitions(deepity ...)` before the `pybind11_add_module
-(deepity ...)` call that creates that target produces a confusing "target is
+`target_compile_definitions(pydeepity ...)` before the `nanobind_add_module
+(pydeepity ...)` call that creates that target produces a confusing "target is
 not built by this project" error. Place any per-target configuration
 immediately after the `add_library` / `add_executable` /
-`pybind11_add_module` call that defines that target — not grouped together
+`nanobind_add_module` call that defines that target — not grouped together
 with unrelated targets' configuration elsewhere in the file, even if that
 seems tidier.
 

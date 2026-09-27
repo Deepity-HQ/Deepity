@@ -15,7 +15,7 @@ Deepity implements Predictive Coding Networks (PCNs) as an alternative to
 standard backpropagation-based training. The library is written in C++20,
 uses custom AVX2/AVX-512 SIMD kernels for activation functions, and packs
 layer buffers into a single contiguous memory arena for cache locality. A
-`pybind11`-based Python extension (`pydeepity`) exposes the same native
+`nanobind`-based Python extension (`pydeepity`) exposes the same native
 engine to Python with negligible overhead.
 
 @section quickstart Quick Start
@@ -27,8 +27,8 @@ manages layer hierarchies, bidirectionality, and dynamic thread scaling
 based on batch size automatically:
 
 @code{.cpp}
-#include "DiscriminativePCNetwork.h"
-#include "Activations.h"
+#include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/utils/Activations.h>
 #include <vector>
 #include <random>
 #include <iostream>
@@ -72,9 +72,17 @@ extension module. Runnable examples live in `examples/`, including
 Top-level network abstractions, each managing a layer stack and the
 predictive-coding relaxation loop:
 
-- @ref Deep::SimplePCNetwork
-- @ref Deep::DiscriminativePCNetwork
-- @ref Deep::ConvPCNetwork
+- @ref Deep::SimplePCNetwork — no precision weighting
+- @ref Deep::DiscriminativePCNetwork — the original, precision-weighted PCN
+- @ref Deep::ConvPCNetwork / @ref Deep::SimpleConvPCNetwork — convolutional,
+  im2col-based
+- @ref Deep::GaussSeidelPCNetwork — sequential (Gauss-Seidel) layer sweeps
+  instead of simultaneous updates
+- @ref Deep::DirectKPPCNetwork — Direct Kolen-Pollack feedback alignment
+  (DFA) in place of symmetric weight transport
+- @ref Deep::FullPCNetwork — DirectKPPCNetwork's DFA structure plus
+  opt-in muPC scaling and residual connections, every extra OFF by
+  default so it reproduces DirectKPPCNetwork exactly
 
 @subsection architecture_layers Layers
 
@@ -82,20 +90,22 @@ All layers derive from a common @ref Deep::Layer "Layer" base:
 
 - @ref Deep::Layer (base class)
 - @ref Deep::SimplePCLayer
-- @ref Deep::SimpleConvPCLayer
-- @ref Deep::ConvPCLayer
-- @ref Deep::RBLayer
+- @ref Deep::SimpleConvPCLayer / @ref Deep::ConvPCLayer
 - @ref Deep::DiscriminativePCLayer
+- @ref Deep::GaussSeidelPCLayer
+- @ref Deep::DirectKPPCLayer
+- @ref Deep::FullPCLayer
+- @ref Deep::RBLayer
 
 @subsection architecture_support Supporting Components
 
 - @ref Deep::MemoryArena / @ref Deep::DeviceMemoryArena — contiguous buffer
   allocation for layer state
-- @ref Deep::AdamOptimizer — weight-update optimizer
+- @ref Deep::AdamUpdate / @ref Deep::AdamWUpdate — weight-update optimizer
 - @ref Deep::StreamAlignedBatcher — batch alignment for SIMD kernels
 - @ref Deep::Im2Col — convolution lowering
 - @ref Deep::ModelIO — model save/load
-- @ref Deep::Profile / @ref Deep::Timer — internal profiling utilities
+- @ref Deep::ProfileAccumulator / @ref Timer — internal profiling utilities
 - Activation functions (Elliot Sigmoid approximation, vectorized ReLU) —
   see `Activations.h`
 
@@ -113,12 +123,13 @@ comparisons are in the
 - [x] SIMD micro-kernels (AVX2/AVX-512 Padé approximations)
 - [x] Contiguous flat-memory buffers
 - [x] PCNetwork abstraction (Layer hierarchy & bidirectional inference)
-- [x] Python bindings (pybind11 + NumPy support)
+- [x] Python bindings (nanobind + NumPy support)
 - [x] API reference documentation (Doxygen)
 - [x] Multithreading and Precision Metrics
 - [x] Memory Arena Contiguity
-- [ ] File IO Support (🚧)
-- [ ] CUDA accelerated engine (GPU GEMM operations for massive scales)
+- [x] File IO Support (@ref Deep::ModelIO)
+- [ ] CUDA accelerated engine (GPU GEMM operations for massive scales) —
+  in active development on the `dev/CUDA` branch
 - [ ] Java port
 
 @section elsewhere Elsewhere

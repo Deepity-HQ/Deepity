@@ -41,6 +41,8 @@
 namespace Deep {
 class PCNDiagnostics;
 
+/// @brief Convolutional Predictive Coding layer (im2col-based). See the
+/// file-level warning above before enabling an unclamped middle layer.
 class ConvPCLayer : public Layer {
 public:
   /// @brief Constructor for a convolutional PC layer.

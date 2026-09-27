@@ -23,6 +23,8 @@
 
 namespace Deep
 {
+    /// @brief A device-aware, RAII-managed, move-only buffer -- see the
+    /// file-level note above for the full ownership/device contract.
     class Tensor
     {
     public:
@@ -33,6 +35,7 @@ namespace Deep
         /// @param device Which device this Tensor lives on -- must match
         /// what `backend` itself actually allocates on (a CPUBackend
         /// paired with DEVICE_GPU, or vice versa, is a caller error).
+        /// @param numFloats Number of floats to allocate.
         Tensor(IComputeBackend *backend, DeviceType device, size_t numFloats)
             : backend(backend), device(device), size(numFloats)
         {
@@ -74,6 +77,8 @@ namespace Deep
         Tensor(const Tensor &) = delete;
         Tensor &operator=(const Tensor &) = delete;
 
+        /// @brief Move constructor: takes over `other`'s allocation,
+        /// leaving it empty (Free()-safe, zero size).
         Tensor(Tensor &&other) noexcept
             : backend(other.backend), device(other.device), data(other.data), size(other.size)
         {
@@ -81,6 +86,8 @@ namespace Deep
             other.size = 0;
         }
 
+        /// @brief Move assignment: frees this Tensor's current allocation
+        /// (if any), then takes over `other`'s, leaving it empty.
         Tensor &operator=(Tensor &&other) noexcept
         {
             if (this != &other)
@@ -105,10 +112,14 @@ namespace Deep
         /// methods for a DEVICE_CPU Tensor) -- never dereference a
         /// DEVICE_GPU Tensor's Data() from host code directly.
         float *Data() noexcept { return data; }
+        /// @brief const overload of Data() above.
         const float *Data() const noexcept { return data; }
 
+        /// @brief Number of floats this Tensor holds.
         size_t Size() const noexcept { return size; }
+        /// @brief Which device this Tensor lives on.
         DeviceType Device() const noexcept { return device; }
+        /// @brief The backend this Tensor was allocated through.
         IComputeBackend *Backend() const noexcept { return backend; }
 
         /// @brief Copies this Tensor's data out to a host buffer, e.g.

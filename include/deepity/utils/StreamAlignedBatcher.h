@@ -25,6 +25,9 @@
 
 namespace Deep
 {
+    /// @brief Builds batches with a fixed, grouped number of examples per
+    /// class -- see the file-level note for why this exists and what it
+    /// deliberately doesn't own.
     class StreamAlignedBatcher
     {
     public:
@@ -36,6 +39,8 @@ namespace Deep
         /// @param yStride Floats per Y row.
         /// @param numClasses Number of distinct classes (labels expected in [0, numClasses)).
         /// @param perClass Examples per class per batch (batch size = numClasses * perClass).
+        /// @param seed RNG seed for per-class shuffling; defaults to a
+        /// fixed value for reproducible batch order run-to-run.
         StreamAlignedBatcher(const float *X, const float *Y, const int *labels,
                               size_t numSamples, size_t xStride, size_t yStride,
                               int numClasses, int perClass, unsigned seed = 42);
@@ -56,10 +61,15 @@ namespace Deep
         /// @param labels_out Must be sized (numClasses*perClass).
         void GetBatch(float *X_out, float *Y_out, int *labels_out) noexcept;
 
+        /// @brief Rows per batch: numClasses * perClass.
         int GetBatchSize() const noexcept { return numClasses * perClass; }
+        /// @brief Examples per class in each batch, as given at construction.
         int GetPerClass() const noexcept { return perClass; }
+        /// @brief Number of distinct classes, as given at construction.
         int GetNumClasses() const noexcept { return numClasses; }
+        /// @brief Floats per X row, as given at construction.
         size_t GetXStride() const noexcept { return xStride; }
+        /// @brief Floats per Y row, as given at construction.
         size_t GetYStride() const noexcept { return yStride; }
 
     private:

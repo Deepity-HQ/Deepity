@@ -16,13 +16,13 @@
  *
  * This header includes implementations of state calculation, state updates, and learning.
  *
- * Usage:
- *  #include <deepity/layers/DiscriminativePCLayer.h>
+ * @code{.cpp}
+ * #include <deepity/layers/DiscriminativePCLayer.h>
  *
- * Example:
- *  Deep::Layer layer(2, 3, 1, 1e-6);
- *  layer.ClampState({ 0.1f, 0.75f });
- *  layer.CalculateState();
+ * Deep::DiscriminativePCLayer layer(2, 3, 1, 1e-6);
+ * layer.ClampState({ 0.1f, 0.75f });
+ * layer.CalculateState();
+ * @endcode
  *
  * @note All members are stored as pointers except for the input itself.
  * @version 1.0

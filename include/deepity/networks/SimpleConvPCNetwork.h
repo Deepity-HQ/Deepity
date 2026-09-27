@@ -29,9 +29,15 @@ namespace Deep
 {
     class PCNDiagnostics;
 
+    /// @brief Convolutional Predictive Coding Network built from
+    /// SimpleConvPCLayer -- precision-free, AdamW-capable, device-aware.
     class SimpleConvPCNetwork
     {
     public:
+        /// @brief Constructs an empty network; add layers via AddLayer(),
+        /// then Compile() before use.
+        /// @param batchSize Fixed batch size for every layer.
+        /// @param device Which device this network's layers run on.
         explicit SimpleConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
 
         SimpleConvPCNetwork(const SimpleConvPCNetwork &) = delete;
@@ -62,14 +68,19 @@ namespace Deep
         /// AddLayer()/SetOptimizer() calls, before RandomizeWeights().
         void Compile();
 
+        /// @brief Initializes every layer's weights randomly.
         void RandomizeWeights(std::mt19937 &rng) noexcept;
+        /// @brief Resets the beliefs (z) on every layer.
         void ResetState() noexcept;
 
         /// @brief Clamps the flattened, batched input to the first
         /// (input) layer.
         void Clamp(const std::vector<float> &input) noexcept;
 
+        /// @brief Computes and returns the network's total energy at the
+        /// current state, without changing it.
         float CalculateState() noexcept;
+        /// @brief Runs one settling step on every layer.
         void UpdateState() noexcept;
 
         /// @brief Calls UpdateWeights() on every layer except the terminal
@@ -77,8 +88,11 @@ namespace Deep
         /// against outChannels==0, so this is belt-and-suspenders).
         void UpdateWeights() noexcept;
 
+        /// @brief Returns the last layer (outChannels==0, the terminal one).
         SimpleConvPCLayer *GetTerminalLayer() noexcept { return layers.back().get(); }
+        /// @brief Returns every layer in the network, in the order they were added.
         const auto &GetLayers() const noexcept { return layers; }
+        /// @brief Returns the batch size given at construction.
         int GetBatchSize() const noexcept { return batchSize; }
 
         /// @brief Full train step: clamp input+target, settle for
@@ -89,8 +103,17 @@ namespace Deep
         /// layer's settled beliefs (flattened, batched).
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
+        /// @brief Seeds hidden layers from a genuine forward pass through
+        /// current weights, instead of zero-init. Call after Clamp(),
+        /// before the settling loop.
         void ProjectForward() noexcept;
+        /// @brief Full train step with forward-projection init: clamp
+        /// input, project forward, clamp target, settle, update weights,
+        /// return the final energy.
         float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
+        /// @brief Inference-only counterpart to TrainStepWithProjection():
+        /// clamp input, project forward, settle, read out the terminal
+        /// layer's beliefs. No target clamp, no weight update.
         std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
 
     private:

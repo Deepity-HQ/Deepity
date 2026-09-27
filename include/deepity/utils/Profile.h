@@ -28,32 +28,38 @@
 
 namespace Deep
 {
+    /// @brief One layer's accumulated time-per-phase, in seconds --
+    /// see the file-level note for the reconciliation invariants
+    /// (PhaseSum() vs. the top-level totals vs. external wall-clock).
     struct ProfileAccumulator
     {
-        double errorConstruction = 0.0;
-        double energyCalculation = 0.0;
-        double forwardGemm = 0.0;
-        double biasAdd = 0.0;
-        double activationForward = 0.0;
+        double errorConstruction = 0.0;  ///< CalculateState: building the error term.
+        double energyCalculation = 0.0;  ///< CalculateState: the energy reduction itself.
+        double forwardGemm = 0.0;        ///< CalculateState: the forward prediction GEMM.
+        double biasAdd = 0.0;            ///< CalculateState: bias-add after the forward GEMM.
+        double activationForward = 0.0;  ///< CalculateState: forward activation function.
 
-        double activationDerivative = 0.0;
-        double localErrorTerm = 0.0; // was ownGradientTerm -- dz_dt = -p*e, not a backprop gradient
-        double bottomUpConstruction = 0.0;
-        double feedbackGemm = 0.0;
-        double saxpyUpdate = 0.0;
+        double activationDerivative = 0.0; ///< UpdateState: activation derivative.
+        double localErrorTerm = 0.0; ///< UpdateState: dz_dt = -p*e (was ownGradientTerm -- not a backprop gradient).
+        double bottomUpConstruction = 0.0; ///< UpdateState: assembling the bottom-up term.
+        double feedbackGemm = 0.0;         ///< UpdateState: the feedback GEMM.
+        double saxpyUpdate = 0.0;          ///< UpdateState: the final z += ir*dz SAXPY.
 
-        double updateWeightsTotal = 0.0;
-        double updatePrecisionTotal = 0.0;
+        double updateWeightsTotal = 0.0;    ///< UpdateWeights(), whole-call total.
+        double updatePrecisionTotal = 0.0;  ///< UpdatePrecision(), whole-call total.
 
         // Top-level timers -- wrap the ENTIRE function body, separate from
         // (and in addition to) the sub-phase timers above, so you can see
         // "UpdateState 78%" before drilling into its five sub-phases.
-        double calculateStateTotal = 0.0;
-        double updateStateTotal = 0.0;
+        double calculateStateTotal = 0.0; ///< CalculateState(), whole-call total.
+        double updateStateTotal = 0.0;    ///< UpdateState(), whole-call total.
 
-        long long calculateStateCalls = 0;
-        long long updateStateCalls = 0;
+        long long calculateStateCalls = 0; ///< Number of CalculateState() calls recorded.
+        long long updateStateCalls = 0;    ///< Number of UpdateState() calls recorded.
 
+        /// @brief Sum of every sub-phase timer (excludes the top-level
+        /// calculateStateTotal/updateStateTotal, which measure the same
+        /// work and would double-count if included -- see the inline note).
         double PhaseSum() const noexcept
         {
             // Sub-phases only -- does NOT include calculateStateTotal/
@@ -68,6 +74,11 @@ namespace Deep
                  + updateWeightsTotal + updatePrecisionTotal;
         }
 
+        /// @brief Prints this accumulator's per-phase breakdown (with
+        /// percentages of PhaseSum()) plus the top-level/sub-phase
+        /// reconciliation check, to stdout.
+        /// @param label Heading printed above this accumulator's rows,
+        /// e.g. a layer's shape and identity (see LayerProfile()).
         void Print(const std::string &label) const
         {
             double phaseSum = PhaseSum();
@@ -103,14 +114,18 @@ namespace Deep
         }
     };
 
+    /// @brief One registered layer's profiling data: its print label
+    /// paired with its accumulator.
     struct ProfileEntry
     {
-        std::string label;
-        ProfileAccumulator acc;
+        std::string label;    ///< Printed heading, e.g. "layer(784->512) @ 0x...".
+        ProfileAccumulator acc; ///< That layer's accumulated phase timings.
     };
 
     // Registry: linear vector, not a hash map -- small layer counts, and
     // preserves insertion order (== network layer order) for printing.
+    /// @brief The process-wide table of every layer that's had
+    /// LayerProfile() called on it at least once, in first-call order.
     inline std::vector<std::pair<const void *, ProfileEntry>> &ProfileRegistry()
     {
         static std::vector<std::pair<const void *, ProfileEntry>> registry;
@@ -122,6 +137,9 @@ namespace Deep
     // works for any layer type with those methods (DiscriminativePCLayer,
     // ConvPCLayer, ...) via duck-typed template, no coupling to a specific
     // class or forward declaration needed.
+    /// @brief Looks up (or creates, on first call) `layer`'s accumulator
+    /// in the process-wide registry, keyed by its address.
+    /// @tparam LayerT Any layer type exposing GetInputSize()/GetOutputSize().
     template <typename LayerT>
     inline ProfileAccumulator &LayerProfile(LayerT *layer)
     {
@@ -141,6 +159,11 @@ namespace Deep
     // wall-clock duration (std::chrono around the whole run in the harness,
     // NOT derived from these accumulators) -- this is the reconciliation
     // check from review point 2.
+    /// @brief Prints every registered layer's profile, then a grand-total
+    /// reconciliation against an independently measured wall-clock time.
+    /// @param wallClockSeconds Wall-clock duration of the whole run,
+    /// measured separately (e.g. std::chrono around the training loop) --
+    /// NOT derived from these accumulators.
     inline void PrintAllProfiles(double wallClockSeconds)
     {
         double grandTotal = 0.0;
@@ -159,9 +182,15 @@ namespace Deep
     }
 
 #ifdef PCN_PROFILE
+    /// @brief RAII stopwatch: adds the elapsed time since construction
+    /// into `accumulator` when it goes out of scope. Used via PCN_TIME()
+    /// to time one phase of CalculateState()/UpdateState() with a single
+    /// line at the top of the block being measured.
     class ScopedTimer
     {
     public:
+        /// @param accumulator Reference to the ProfileAccumulator field
+        /// this timer's elapsed duration is added into on destruction.
         explicit ScopedTimer(double &accumulator) noexcept
             : accumulator(accumulator), start(std::chrono::steady_clock::now()) {}
         ~ScopedTimer() noexcept
@@ -175,13 +204,20 @@ namespace Deep
         double &accumulator;
         std::chrono::steady_clock::time_point start;
     };
-#define PCN_TIME(accumulator) ::Deep::ScopedTimer _pcn_timer_##__LINE__(accumulator)
+    /// @brief Times the rest of the enclosing block, adding its duration
+    /// into `accumulator`. A no-op unless PCN_PROFILE is defined.
+    #define PCN_TIME(accumulator) ::Deep::ScopedTimer _pcn_timer_##__LINE__(accumulator)
 #else
+    /// @brief No-op stand-in for the PCN_PROFILE build of ScopedTimer
+    /// above, so PCN_TIME() call sites compile identically either way.
     class ScopedTimer
     {
     public:
+        /// @brief No-op; the accumulator reference is discarded.
         explicit ScopedTimer(double &) noexcept {}
     };
-#define PCN_TIME(accumulator) do {} while (0)
+    /// @brief No-op unless PCN_PROFILE is defined -- see the PCN_PROFILE
+    /// branch above.
+    #define PCN_TIME(accumulator) do {} while (0)
 #endif
 } // namespace Deep

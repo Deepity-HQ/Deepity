@@ -14,14 +14,14 @@
  *
  * This header includes implementations of PC layer-to-layer interaction.
  *
- * Usage:
- *  #include <deepity/SimplePCNetwork.h>
+ * @code{.cpp}
+ * #include <deepity/networks/SimplePCNetwork.h>
  *
- * Example:
- *  Deep::SimplePCNetwork network(1);
- *  network.addLayer({...});
- *  network.Clamp(input);
- *  network.CalculateState();
+ * Deep::SimplePCNetwork network(1);
+ * network.addLayer({...});
+ * network.Clamp(input);
+ * network.CalculateState();
+ * @endcode
  *
  * @note All layers are stored in a vector.
  *
@@ -66,6 +66,17 @@ namespace Deep
         void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                       void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool));
 
+        /// @brief Same as the function-pointer overload above, taking an
+        /// ActivationType pair instead -- the enum-based dispatch used by
+        /// callers (e.g. the Python bindings) that name an activation by
+        /// type rather than linking against its concrete function.
+        /// @param size input size
+        /// @param nextSize output size
+        /// @param lr learning rate for beliefs
+        /// @param ir learning rate for weights
+        /// @param lmbda weight decay (L2 regularization) coefficient
+        /// @param aType activation type
+        /// @param dType activation derivative type
         void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                       ActivationType aType, ActivationType dType);
 
@@ -144,7 +155,7 @@ namespace Deep
         /// starting point instead of zero-init.
         ///
         /// Reuses each layer's EXISTING CalculateState() (already-verified
-        /// forward computation, mu = f(W@z+b)) as a side effect -- no new
+        /// forward computation, mu = f(W\@z+b)) as a side effect -- no new
         /// math, just a new sequence of existing calls. Assumes the input
         /// layer (layers[0]) is ALREADY clamped before this is called.
         ///
@@ -171,6 +182,12 @@ namespace Deep
         float TrainStepWithProjection(const std::vector<float> &x, const std::vector<float> &y,
                                       int inferenceSteps, bool computeEnergy = true);
 
+        /// @brief Inference-only counterpart to TrainStepWithProjection():
+        /// reset, clamp input, project forward, settle, read out the
+        /// terminal layer's beliefs. No target clamp, no weight update.
+        /// @param x Flattened input batch.
+        /// @param inferenceSteps Number of settling steps.
+        /// @return The terminal layer's beliefs after settling.
         std::vector<float> PredictWithProjection(const std::vector<float> &x, int inferenceSteps);
         /// @brief Sets mu-cache threshold on every layer -- see
         /// SimplePCLayer::SetMuCacheThreshold() for semantics. Safe to call any

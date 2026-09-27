@@ -119,6 +119,7 @@ namespace Deep
         /// @brief Attaches the layer to a pre-allocated, 64-byte aligned memory block.
         void Attach(float *ptr) noexcept;
 
+        /// @brief Returns the synaptic weight matrix U.
         [[nodiscard]] float *GetWeights() const noexcept { return U; }
 
         [[nodiscard]] size_t GetBatchSize() const noexcept override;
@@ -126,6 +127,9 @@ namespace Deep
         [[nodiscard]] size_t GetOutputSize() const noexcept override;
 
         [[nodiscard]] float *GetBeliefs() noexcept override;
+        /// @brief Same underlying buffer as GetErrors() -- the bottom-up
+        /// prediction error, named separately here for call sites that
+        /// think in terms of RBLayer's own inference-error terminology.
         [[nodiscard]] const float *GetInferenceError() const noexcept;
 
 #ifdef _DEBUG

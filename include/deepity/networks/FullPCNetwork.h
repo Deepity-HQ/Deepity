@@ -26,15 +26,37 @@
 
 namespace Deep
 {
+/// @brief Predictive Coding network combining muPC scaling, optional
+/// residual connections, and DKP direct feedback -- see the file-level
+/// note above for how its defaults reproduce DirectKPPCNetwork exactly.
 class FullPCNetwork
 {
 public:
+  /// @brief Constructs an empty network; add layers via AddLayer(),
+  /// then Compile() before use.
+  /// @param batchSize Fixed batch size for every layer.
+  /// @param device Which device this network's layers run on.
   explicit FullPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
   ~FullPCNetwork() = default;
 
   FullPCNetwork(const FullPCNetwork&) = delete;
   FullPCNetwork& operator=(const FullPCNetwork&) = delete;
 
+  /// @brief Adds a layer to the network.
+  /// @param size input size
+  /// @param nextSize output size (0 marks a terminal layer)
+  /// @param terminalSize the size of the network's final output layer
+  /// (e.g. 10 for MNIST) -- required on every AddLayer call, not
+  /// inferred, since the true terminal layer isn't known until the
+  /// whole network has been assembled. Compile() sanity-checks this
+  /// against the actual last layer's size.
+  /// @param lr learning rate for W
+  /// @param ir inference rate (Euler integration step size)
+  /// @param fl feedback rate (see FullPCLayer's own docs)
+  /// @param lmbda weight decay (L2 regularization) coefficient, shared
+  /// between W and Psi
+  /// @param aType activation type
+  /// @param dType activation derivative type
   void AddLayer(size_t size, size_t nextSize, size_t terminalSize, float lr, float ir, float fl,
                 float lmbda, ActivationType aType, ActivationType dType);
 
@@ -60,60 +82,96 @@ public:
     useResidualConnections = enabled;
   }
 
+  /// @brief Randomizes the weights (W and Psi) of each layer.
+  /// @param rng The classic Mersenne Twister
   void RandomizeWeights(std::mt19937& rng);
+  /// @brief Resets each layer's state without touching learned weights.
   void ResetState() noexcept;
+  /// @brief Clamps the input to the first layer.
+  /// @param input Reference to the input vector.
   void Clamp(const std::vector<float>& input);
 
+  /// @brief Seeds hidden layers from a genuine forward pass through
+  /// current weights, instead of zero-init. Call after Clamp(), before
+  /// the settling loop.
   void ProjectForward() noexcept;
+  /// @brief Computes the terminal layer's error/energy against its
+  /// clamped target. Call AFTER clamping the target onto the terminal
+  /// layer, and BEFORE DirectFeedbackUpdate().
+  /// @return The terminal layer's energy contribution.
   float CalculateTerminalError() noexcept;
+  /// @brief Runs the DFA phase on every non-terminal layer: perturbs
+  /// each layer's W using the layer above's Psi and the terminal
+  /// layer's error.
   void DirectFeedbackUpdate() noexcept;
+  /// @brief Runs one settling step on every layer.
+  /// @param computeEnergy asks for energy to be returned
+  /// @return Total energy, summed from every layer's CalculateState().
   float Step(bool computeEnergy = true) noexcept;
+  /// @brief Applies weight updates to every layer.
   void UpdateWeights() noexcept;
 
+  /// @brief Sets the weight optimizer (W) on every layer.
   void SetOptimizer(OptimizerType o) noexcept
   {
     for (auto& layer : layers)
       layer->SetOptimizer(o);
   }
+  /// @brief Sets the feedback-weight optimizer (Psi) on every layer.
   void SetPsiOptimizer(OptimizerType o) noexcept
   {
     for (auto& layer : layers)
       layer->SetPsiOptimizer(o);
   }
+  /// @brief Sets the learning rate (W) on every layer.
   void SetLearningRate(float lr) noexcept
   {
     for (auto& layer : layers)
       layer->SetLearningRate(lr);
   }
+  /// @brief Sets the feedback rate (Psi) on every layer.
   void SetFeedbackRate(float fl) noexcept
   {
     for (auto& layer : layers)
       layer->SetFeedbackRate(fl);
   }
 
+  /// @brief Returns the last layer (nextSize==0, the terminal one).
   FullPCLayer* GetTerminalLayer() noexcept
   {
     return layers.back().get();
   }
+  /// @brief Returns every layer in the network, in the order they were added.
   std::vector<std::unique_ptr<FullPCLayer>>& GetLayers() noexcept
   {
     return layers;
   }
+  /// @brief const overload of GetLayers() above.
   const std::vector<std::unique_ptr<FullPCLayer>>& GetLayers() const noexcept
   {
     return layers;
   }
+  /// @brief Returns the batch size given at construction.
   int GetBatchSize() const noexcept
   {
     return batchSize;
   }
+  /// @brief Returns which device this network's layers run on.
   DeviceType GetDevice() const noexcept
   {
     return device;
   }
 
+  /// @brief Full train step: reset, clamp input+target, run all four
+  /// DKP-PC phases in order, unclamp.
+  /// @param x Flattened input batch, clamped to the input layer.
+  /// @param y Flattened target batch, clamped to the terminal layer.
+  /// @param inferenceSteps Number of settling steps for phase 2.
+  /// @return The final settling step's total energy, before weight updates.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y, int inferenceSteps = 1);
 
+  /// @brief Forward prediction: clamp input, settle with no DFA
+  /// perturbation and no target clamped, read the terminal's beliefs.
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
 
   /// @brief Loads all layers into one contiguous block of memory,
@@ -130,7 +188,7 @@ public:
   /// step instead of once after settling completes. OFF by default --
   /// TrainStep() matches DirectKPPCNetwork's standard, two-phase
   /// behavior exactly when this is false.
-  /// @cite Salvatori et al., "Incremental Predictive Coding", arXiv:2212.00720
+  /// @see Salvatori et al., "Incremental Predictive Coding", https://arxiv.org/abs/2212.00720
   void SetUseIPC(bool enabled) noexcept
   {
     useIPC = enabled;

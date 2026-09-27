@@ -50,7 +50,7 @@
  * @note Optionally caches a CLAMPED layer's outgoing prediction (mu)
  * across settling steps via SetMuCaching() -- a clamped layer's z is
  * fixed for the whole settling loop, and W/b don't change until
- * UpdateWeights() runs afterward, so mu=f(W@z+b) is PROVABLY IDENTICAL
+ * UpdateWeights() runs afterward, so mu=f(W\@z+b) is PROVABLY IDENTICAL
  * every step while clamped. This is an EXACT optimization, not an
  * approximation -- default OFF so both behaviors coexist for direct
  * correctness/timing comparison before trusting it.
@@ -73,6 +73,8 @@ namespace Deep
 {
     class SimplePCNDiagnostics;
 
+    /// @brief Predictive Coding layer without precision weighting -- the
+    /// simpler, unweighted-energy counterpart to DiscriminativePCLayer.
     class SimplePCLayer : public Layer
     {
     public:
@@ -126,7 +128,7 @@ namespace Deep
         /// mu is now computed as mu = W @ phi(z) + b -- activation
         /// applied to z BEFORE the linear transform, matching
         /// ngc-learn's documented convention exactly (was previously
-        /// mu = phi(W@z+b), activation AFTER the transform).
+        /// mu = phi(W\@z+b), activation AFTER the transform).
         /// (No precision weighting -- see file-level note.)
         /// @param needEnergy Asks for energy
         /// @return This layer's energy contribution at the current state, if asked for.
@@ -159,6 +161,7 @@ namespace Deep
         /// layer's beliefs to update normally again.
         void UnclampState() noexcept;
 
+        /// @brief Whether ClampState() is currently active on this layer.
         bool IsClamped() const noexcept { return isClamped; }
 
         /// @brief Returns this layer's belief buffer.
@@ -226,13 +229,15 @@ namespace Deep
         /// needs its own accuracy-impact validation, not just a trajectory
         /// diff.
         void SetMuCacheThreshold(float threshold) noexcept { muCacheThreshold = threshold; }
+        /// @brief Returns the current mu-cache staleness threshold -- see
+        /// SetMuCacheThreshold() above.
         float GetMuCacheThreshold() const noexcept { return muCacheThreshold; }
 
         /// @brief Computes only mu (forward prediction), skipping error/energy
         /// entirely. Extracted from CalculateState() for callers (like
         /// ProjectForward()) that don't need the discarded error/energy values.
         /// Computes zF=phi(z) internally and uses it for the GEMM, matching
-        /// the activate-before-transform convention (mu=W@phi(z)+b).
+        /// the activate-before-transform convention (mu=W\@phi(z)+b).
         void ComputeMuOnly() noexcept;
 
         /// @brief Sets the layer immediately above this one in the network.

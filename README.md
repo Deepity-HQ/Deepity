@@ -205,13 +205,13 @@ doxygen Doxyfile
 - [x] SIMD micro-kernels (AVX2/AVX-512)
 - [x] Contiguous flat-memory buffers
 - [x] PCNetwork abstraction, layer hierarchy, bidirectional inference
-- [x] Python bindings (pybind11 and NumPy support)
+- [x] Python bindings (nanobind and NumPy support)
 - [x] Mu-caching
 - [x] Optional Intel MKL backend
 - [x] Optional huge-pages memory backend
 - [x] GaussSeidelPCN sequential-sweep settling
 - [x] [Direct Kolen-Pollack Predictive Coding](https://arxiv.org/pdf/2602.15571)
-- [ ] File IO support (save/load trained models)
+- [x] File IO support (save/load trained models, via `ModelIO`)
 - [ ] CUDA backend (in progress, `IComputeBackend` abstraction and cuBLAS-backed matmul first)
 
 ## Contributing
@@ -221,18 +221,25 @@ Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and 
 ## Project structure
 
 ```plaintext
-include/deepity/           Public headers: Layer hierarchy, Activations, MemoryArena
-include/deepity/layers/    SimplePCLayer, GaussSeidelPCLayer, DirectKPPCLayer, ConvPCLayer, and others
-include/deepity/networks/  SimplePCNetwork, GaussSeidelPCNetwork, DirectKPPCNetwork, and others
-src/                        C++ source implementations
-bindings/                   Python bindings (pybind11)
-pydeepity/                  Compiled Python extension module (generated)
-examples/                   Runnable Python examples
-tests/                      C++ gradient-check and verification suites
-resources/                  Images and benchmark assets
-CMakeLists.txt               Build configuration (OpenBLAS/MKL, CUDA, arch profiles)
-build.py                    Cross-platform CMake build and test runner
-mnist.py                    Train a Simple PCN to learn MNIST
+include/deepity/           Public headers, mirrored by src/ below
+include/deepity/layers/    SimplePCLayer, GaussSeidelPCLayer, DirectKPPCLayer, FullPCLayer, ConvPCLayer, and others
+include/deepity/networks/  SimplePCNetwork, GaussSeidelPCNetwork, DirectKPPCNetwork, FullPCNetwork, and others
+include/deepity/backend/   IComputeBackend interface, CPUBackend / CUDABackend implementations
+include/deepity/utils/     Activations, MemoryArena, AdamOptimizer, Im2Col, ModelIO, and others
+src/layers/                 Layer implementations, one file per class
+src/networks/                Network implementations, one file per class
+src/backend/                 CPUBackend; src/backend/cuda/ holds the CUDABackend split by concern
+src/utils/                    StreamAlignedBatcher and other utility implementations
+bindings/                    nanobind bindings, split by concern (layers/networks/utilities)
+pydeepity/                   Compiled Python extension module (generated) and the pydeepity Python package
+deepity_build/                Python build/test-runner tooling behind build.py
+examples/                    Runnable Python examples
+experiments/                 One-off investigations and comparisons (not maintained examples)
+tests/                       C++ correctness/gradient-check tests and Google Benchmark suites
+resources/                   Images, benchmark assets, and the Doxygen custom stylesheet
+CMakeLists.txt                Build configuration (OpenBLAS/MKL, CUDA, arch profiles)
+build.py                     Cross-platform CMake build and test runner
+mnist.py                     Train a Simple PCN to learn MNIST
 ```
 
 ## License

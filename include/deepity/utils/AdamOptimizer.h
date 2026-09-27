@@ -4,6 +4,8 @@
 #include <immintrin.h>
 #include <sleef.h>
 #include <cstring>
+/// @brief Portability macro for the C++ `restrict` pointer qualifier
+/// (MSVC spells it differently from everyone else).
 #if defined(_MSC_VER)
 #define RESTRICT __restrict
 #else

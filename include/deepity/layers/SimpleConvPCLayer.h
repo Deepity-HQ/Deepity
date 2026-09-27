@@ -32,9 +32,25 @@ namespace Deep
 {
     class SimpleConvPCNDiagnostics;
 
+    /// @brief Convolutional PC layer, precision-free, AdamW-capable,
+    /// routed through IComputeBackend for GPU portability -- see the
+    /// file-level warning above for the GPU path's verification status.
     class SimpleConvPCLayer : public Layer
     {
     public:
+        /// @param inChannels,outChannels Input/output channel counts.
+        /// @param inHeight,inWidth Input spatial dimensions.
+        /// @param kernelH,kernelW Convolution kernel size.
+        /// @param strideH,strideW Convolution stride.
+        /// @param padH,padW Zero-padding on each spatial dimension.
+        /// @param batchSize Batch size.
+        /// @param learningRate Learning rate for W/b.
+        /// @param inferenceRate Inference rate (Euler integration step size).
+        /// @param lmbda Weight decay (L2 regularization) coefficient.
+        /// @param aType Activation type.
+        /// @param dType Activation derivative type.
+        /// @param backend Compute backend to run on; defaults to a new
+        /// CPUBackend if nullptr.
         SimpleConvPCLayer(int inChannels, int outChannels,
                           int inHeight, int inWidth,
                           int kernelH, int kernelW,
@@ -53,7 +69,10 @@ namespace Deep
 
         void Flush() noexcept override {}
 
+        /// @brief Clamps this layer's beliefs to `inputData`, fixing them
+        /// against UpdateState() until UnclampState() is called.
         void ClampState(const std::vector<float> &inputData) noexcept;
+        /// @brief Releases a previous ClampState() call.
         void UnclampState() noexcept;
 
         float *GetBeliefs() noexcept override { return z; }
@@ -65,44 +84,76 @@ namespace Deep
         }
         size_t GetBatchSize() const noexcept override { return batchSize; }
 
+        /// @brief Returns the weight tensor, shape [outChannels, inChannels*kernelH*kernelW].
         const float *GetWeights() const noexcept { return W; }
+        /// @brief Mutable overload of GetWeights() above.
         float *GetWeights() noexcept { return W; }
+        /// @brief Returns the bias vector, length outChannels.
         const float *GetBiases() const noexcept { return b; }
+        /// @brief Mutable overload of GetBiases() above.
         float *GetBiases() noexcept { return b; }
 
+        /// @brief Returns the current learning rate.
         float GetLearningRate() const noexcept { return lr; }
+        /// @brief Returns the current inference rate.
         float GetInferenceRate() const noexcept { return ir; }
+        /// @brief Returns the current weight decay coefficient.
         float GetLambda() const noexcept { return lmbda; }
 
+        /// @brief Sets the learning rate, propagating it to the optimizer state.
         void SetLearningRate(float lr) noexcept;
+        /// @brief Sets the inference rate.
         void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+        /// @brief Sets the weight decay coefficient.
         void SetLambda(float l) noexcept { this->lmbda = l; }
+        /// @brief Sets the weight optimizer. Call BEFORE Compile().
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
+        /// @brief Whether ClampState() is currently active on this layer.
         bool IsClamped() const noexcept { return isClamped; }
 
+        /// @brief Sets the layer immediately above this one in the network.
         void SetLayerAbove(SimpleConvPCLayer *above) noexcept { layerAbove = above; }
+        /// @brief Sets the layer immediately below this one in the network.
         void SetLayerBelow(SimpleConvPCLayer *below) noexcept { layerBelow = below; }
 
+        /// @brief Computes only mu (forward prediction), skipping error/energy.
         void ComputeMuOnly() noexcept;
 
+        /// @brief Resets this layer's beliefs (z) without touching learned weights.
         void ResetState() noexcept;
+        /// @brief Randomizes W/b.
         void RandomizeWeights(std::mt19937 &twister) noexcept;
 
+        /// @brief Returns this layer's activation type.
         ActivationType GetActivationType() const noexcept { return activationType; }
+        /// @brief Returns this layer's activation derivative type.
         ActivationType GetDerivativeType() const noexcept { return derivativeType; }
 
+        /// @brief Returns this layer's forward prediction buffer.
         const float *GetMu() const noexcept { return mu; }
+        /// @brief Returns the input channel count.
         int GetInChannels() const noexcept { return inChannels; }
+        /// @brief Returns the output channel count (0 for a terminal layer).
         int GetOutChannels() const noexcept { return outChannels; }
+        /// @brief Returns the input height.
         int GetInHeight() const noexcept { return inHeight; }
+        /// @brief Returns the input width.
         int GetInWidth() const noexcept { return inWidth; }
+        /// @brief Returns the output height.
         int GetOutHeight() const noexcept { return outHeight; }
+        /// @brief Returns the output width.
         int GetOutWidth() const noexcept { return outWidth; }
+        /// @brief Returns the kernel height.
         int GetKernelH() const noexcept { return kernelH; }
+        /// @brief Returns the kernel width.
         int GetKernelW() const noexcept { return kernelW; }
 
+        /// @brief Total floats this layer needs from its MemoryArena.
         size_t GetRequiredFloats() const noexcept;
 
+        /// @brief Binds this layer's buffers into a pre-allocated arena
+        /// (MemoryArena for CPU, DeviceMemoryArena for GPU).
+        /// @tparam ArenaT Either MemoryArena or DeviceMemoryArena.
         template <typename ArenaT>
         void BindMemory(ArenaT &arena);
 

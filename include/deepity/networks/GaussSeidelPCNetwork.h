@@ -32,6 +32,10 @@
 
 namespace Deep
 {
+    /// @brief Predictive Coding network built from GaussSeidelPCLayer,
+    /// sweeping layers sequentially rather than updating them
+    /// simultaneously. See the file-level warning above on its current
+    /// verification status.
     class GaussSeidelPCNetwork
     {
     public:

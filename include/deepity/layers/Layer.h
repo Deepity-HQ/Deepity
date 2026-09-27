@@ -19,18 +19,21 @@
  * @author Jack Rose
  */
 
-// Adam:
-#define ALPHA 0.001
-#define BETA1 0.9
-#define BETA2 0.999
-#define EPS 1e-8
+// Adam: default hyperparameters. Currently unused -- AdamOptimizer.h
+// defines its own equivalents and is what's actually wired up.
+#define ALPHA 0.001 ///< Unused; see AdamOptimizer.h instead.
+#define BETA1 0.9   ///< Unused; see AdamOptimizer.h instead.
+#define BETA2 0.999 ///< Unused; see AdamOptimizer.h instead.
+#define EPS 1e-8    ///< Unused; see AdamOptimizer.h instead.
 
 namespace Deep
 {
+    /// @brief A named, shaped view into a layer's weight/bias data, for
+    /// ModelIO's save/load (see Layer::GetStateDict()).
     struct TensorDescriptor
     {
-        float *data;
-        std::vector<size_t> shape;
+        float *data;         ///< Pointer to the tensor's first element.
+        std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
     };
     /// @brief A deepity layer virtual class.
     class Layer

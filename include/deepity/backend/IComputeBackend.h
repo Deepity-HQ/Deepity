@@ -6,6 +6,10 @@
 namespace Deep
 {
 
+/// @brief Device-agnostic compute backend interface: every numerical
+/// primitive a layer/network needs, implemented once each by CPUBackend
+/// (SIMD/BLAS) and CUDABackend (kernels/cuBLAS/CUTLASS), so layer code
+/// never branches on device directly.
 class IComputeBackend
 {
 public:
@@ -13,6 +17,9 @@ public:
 
   // Graphs
 
+  /// @brief Starts recording subsequent backend calls into a replayable
+  /// graph, instead of executing them immediately (CUDA graph capture;
+  /// a no-op record on CPUBackend). Pair with EndGraphCapture().
   virtual void BeginGraphCapture() noexcept = 0;
   /// @brief Ends capture and instantiates the captured graph.
   /// @return true if capture and instantiation both succeeded and
@@ -22,18 +29,44 @@ public:
   /// permanently doing nothing on every subsequent call, since the
   /// caller had no way to know capture never actually happened.
   virtual bool EndGraphCapture() noexcept = 0;
+  /// @brief Launches a graph previously captured and instantiated by
+  /// BeginGraphCapture()/EndGraphCapture(). No-op if EndGraphCapture()
+  /// never returned true.
   virtual void ReplayGraph() noexcept = 0;
 
   // Memory
 
+  /// @brief Allocates `numFloats` floats on this backend's device.
+  /// @return nullptr on allocation failure.
   virtual float* Allocate(size_t numFloats) = 0;
+  /// @brief Frees a buffer previously returned by Allocate(). No-op on nullptr.
   virtual void Free(float* ptr) noexcept = 0;
+  /// @brief Zero-fills `numFloats` floats starting at `ptr`.
   virtual void Zero(float* ptr, size_t numFloats) noexcept = 0;
+  /// @brief Copies `numFloats` floats from `src` to `dst`, both on this
+  /// backend's own device.
   virtual void Copy(float* dst, const float* src, size_t numFloats) noexcept = 0;
+  /// @brief Copies `numFloats` floats from a host buffer into a device
+  /// buffer (a plain memcpy on CPUBackend).
   virtual void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept = 0;
+  /// @brief Copies `numFloats` floats from a device buffer into a host
+  /// buffer (a plain memcpy on CPUBackend).
   virtual void CopyToHost(float* hostDst, const float* deviceSrc, size_t numFloats) noexcept = 0;
+  /// @brief Fills `n` floats with samples from a normal distribution.
+  /// @param buf Buffer to fill.
+  /// @param n Number of floats to fill.
+  /// @param mean Distribution mean.
+  /// @param stddev Distribution standard deviation.
+  /// @param seed RNG seed.
   virtual void RandomizeNormal(float* buf, size_t n, float mean, float stddev,
                                uint32_t seed) noexcept = 0;
+  /// @brief Fills `n` floats with samples from a uniform distribution
+  /// over [min, max).
+  /// @param buf Buffer to fill.
+  /// @param n Number of floats to fill.
+  /// @param min Distribution lower bound (inclusive).
+  /// @param max Distribution upper bound (exclusive).
+  /// @param seed RNG seed.
   virtual void RandomizeUniform(float* buf, size_t n, float min, float max,
                                 uint32_t seed) noexcept = 0;
 
@@ -45,6 +78,19 @@ public:
 
   // GEMM
 
+  /// @brief C = alpha * op(A) * op(B) + beta * C, the standard BLAS
+  /// SGEMM convention (op(X) = X^T if the matching transX is true).
+  /// @param transA Whether to transpose A.
+  /// @param transB Whether to transpose B.
+  /// @param M Rows of op(A) and C.
+  /// @param N Columns of op(B) and C.
+  /// @param K Columns of op(A), rows of op(B).
+  /// @param alpha Scalar multiplied into op(A)*op(B).
+  /// @param A Left operand.
+  /// @param lda,ldb,ldc Leading dimensions of A, B, C respectively.
+  /// @param B Right operand.
+  /// @param beta Scalar multiplied into the existing C before accumulating.
+  /// @param C Output; also read if beta != 0.
   virtual void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                       int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept = 0;
 
@@ -59,18 +105,33 @@ public:
 
   // Elementwise scalar ops
 
+  /// @brief buf[i] *= alpha for all i in [0, n).
   virtual void Scale(float* buf, size_t n, float alpha) noexcept = 0;
+  /// @brief y[i] += alpha * x[i] for all i in [0, n) -- the standard AXPY.
   virtual void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept = 0;
+  /// @brief buf[row*width + col] += bias[col] for every row in
+  /// [0,batchSize) and col in [0,width) -- broadcasts a per-column bias
+  /// across every row (the dense-layer convention).
   virtual void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                                 size_t width) noexcept = 0;
 
   // Activation
 
+  /// @brief Applies `type` to `buf` in place.
   virtual void Activation(ActivationType type, float* buf, size_t n) noexcept = 0;
+  /// @brief Two-buffer variant of Activation(): reads src, writes into dst.
   virtual void ActivationInto(ActivationType type, float* dst, const float* src,
                               size_t n) noexcept = 0;
+  /// @brief Applies `type`'s derivative to `buf` in place.
+  /// @param type Which activation's derivative to apply.
+  /// @param buf Array to derive in place.
+  /// @param n Length of buf.
+  /// @param activated If true, buf already holds the activated value;
+  /// if false, buf holds the pre-activation value.
   virtual void ActivationDerivative(ActivationType type, float* buf, size_t n,
                                     bool activated) noexcept = 0;
+  /// @brief Two-buffer variant of ActivationDerivative(): reads src
+  /// (the pre-activation value), writes the derivative into dst.
   virtual void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                         size_t n) noexcept = 0;
 
@@ -88,10 +149,18 @@ public:
                                         const float* deriv, const float* e, size_t n, float ir,
                                         float beta) noexcept = 0;
 
+  /// @brief One settling step's state update, fused into a single call:
+  ///   z += ir * ((feedback * deriv) - e)
+  /// Non-momentum counterpart to FusedStateUpdateMomentum() above.
   virtual void FusedStateUpdate(float* z, const float* feedback, const float* deriv, const float* e,
                                 size_t n, float ir) noexcept = 0;
+  /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2) -- the
+  /// Gaussian error/energy used by every layer except a cross-entropy
+  /// terminal.
   virtual float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,
                                       size_t n) noexcept = 0;
+  /// @brief Same as ComputeErrorAndEnergy(), without computing (or
+  /// returning) the energy -- for callers that only need e.
   virtual void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept = 0;
 
   /// @brief Softmax cross-entropy variant of ComputeErrorAndEnergy, for
@@ -104,7 +173,7 @@ public:
   ///                           since d(CE)/d(logits) = probs - y)
   ///   energy = -sum(z * log(probs + eps))  (eps=1e-8, avoids log(0))
   /// mu holds the RAW LOGITS (unchanged from the Gaussian case, still
-  /// a*W@phi(z)+b) -- softmax is applied here, not baked into mu itself.
+  /// a*W\@phi(z)+b) -- softmax is applied here, not baked into mu itself.
   /// `rowEnergies` is caller-provided scratch, >= batchSize floats --
   /// NOT allocated internally (this runs inside CalculateState(), which
   /// runs inside TrainStep()'s CUDA-graph-captured region; dynamic
@@ -116,6 +185,9 @@ public:
                                                          size_t batchSize, size_t nextSize,
                                                          float* rowEnergies) noexcept = 0;
 
+  /// @brief Same as ComputeSoftmaxCrossEntropyErrorAndEnergy(), without
+  /// computing (or requiring `rowEnergies` for) the energy -- for
+  /// callers that only need e.
   virtual void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
                                                size_t batchSize, size_t nextSize) noexcept = 0;
 
@@ -127,11 +199,16 @@ public:
   /// caller should fall back to the existing MatMul+AddBiasBroadcast+
   /// Activation sequence (always false on CPUBackend -- CPU has no fused
   /// path, this is a GPU-only optimization).
+  /// @param actType Activation to fuse in; only RELU and LINEAR take the
+  /// fused path, everything else returns false immediately.
   /// @param zF Activated input, shape [batchSize, size], row-major.
   /// @param W Weight matrix, shape [nextSize, size], row-major.
   /// @param bias Bias vector, shape [nextSize].
   /// @param mu Output, shape [batchSize, nextSize], row-major. Only
   /// written if this returns true.
+  /// @param batchSize Number of rows in zF/mu.
+  /// @param size Input width (columns of zF, columns of W).
+  /// @param nextSize Output width (rows of W, columns of mu, length of bias).
   virtual bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
                                    const float* bias, float* mu, int batchSize, int size,
                                    int nextSize) noexcept = 0;
@@ -178,18 +255,37 @@ public:
 
   // Optimizer
 
+  /// @brief Atomically increments *counter by 1. Device-resident so it
+  /// can be read/updated by the same kernel/graph across settling steps
+  /// (e.g. Adam's step count `t`) without a host round-trip.
   virtual void IncrementCounter(int* counter) noexcept = 0;
 
+  /// @brief Adam update for `n` parameters in place.
+  /// @param param Parameters to update.
+  /// @param grad Gradient w.r.t. param.
+  /// @param m Adam's first-moment (momentum) buffer, persistent across calls.
+  /// @param v Adam's second-moment (variance) buffer, persistent across calls.
+  /// @param n Number of parameters.
+  /// @param t Device-resident step count (read, not written, here --
+  /// see IncrementCounter()).
+  /// @param lr Device-resident learning rate.
+  /// @param beta1,beta2 Momentum/variance EMA decay rates.
+  /// @param eps Denominator stabilizer.
   virtual void AdamStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
                         const float* lr, float beta1 = 0.9f, float beta2 = 0.999f,
                         float eps = 1e-8f) noexcept = 0;
+  /// @brief Same as AdamStep(), plus decoupled weight decay (AdamW):
+  /// param -= lr * weightDecay * param, applied before the Adam step itself.
   virtual void AdamWStep(float* param, const float* grad, float* m, float* v, size_t n,
                          const int* t, const float* lr, float weightDecay, float beta1 = 0.9f,
                          float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
 
+  /// @brief Which device this backend instance runs on.
   virtual DeviceType GetDeviceType() const noexcept = 0;
 
+  /// @brief dst[i] = a[i] * b[i] for all i in [0, n) -- elementwise product.
   virtual void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept = 0;
+  /// @brief buf[i] = value for all i in [0, n).
   virtual void Fill(float* buf, size_t n, float value) noexcept = 0;
   /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for
   /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast

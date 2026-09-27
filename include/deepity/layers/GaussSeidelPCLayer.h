@@ -78,6 +78,9 @@ namespace Deep
 {
     class GaussSeidelPCNDiagnostics;
 
+    /// @brief PC layer with Gauss-Seidel (sequential-sweep) settling
+    /// dynamics, in place of the usual simultaneous update. Not yet
+    /// gradient-checked -- see the file-level warning above.
     class GaussSeidelPCLayer : public Layer
     {
     public:

@@ -4,6 +4,9 @@
 
 namespace Deep
 {
+/// @brief CPU implementation of IComputeBackend: SIMD (via Activations.h)
+/// for elementwise ops, BLAS for GEMM. Graph capture/replay are no-ops
+/// (there's no async device queue to record).
 class CPUBackend : public IComputeBackend
 {
 public:
@@ -11,21 +14,32 @@ public:
   ~CPUBackend() override = default;
 
   // @remark these are no-ops for backend purposes
+  /// @copydoc Deep::IComputeBackend::BeginGraphCapture
   void BeginGraphCapture() noexcept override {}
+  /// @copydoc Deep::IComputeBackend::EndGraphCapture
   bool EndGraphCapture() noexcept override
   {
     return true;
   } // nothing to fail on CPU
+  /// @copydoc Deep::IComputeBackend::ReplayGraph
   void ReplayGraph() noexcept override {}
 
+  /// @copydoc Deep::IComputeBackend::Allocate
   float* Allocate(size_t numFloats) override;
+  /// @copydoc Deep::IComputeBackend::Free
   void Free(float* ptr) noexcept override;
+  /// @copydoc Deep::IComputeBackend::Zero
   void Zero(float* ptr, size_t numFloats) noexcept override;
+  /// @copydoc Deep::IComputeBackend::Copy
   void Copy(float* dst, const float* src, size_t numFloats) noexcept override;
+  /// @copydoc Deep::IComputeBackend::CopyFromHost
   void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept override;
+  /// @copydoc Deep::IComputeBackend::CopyToHost
   void CopyToHost(float* hostDst, const float* deviceSrc, size_t numFloats) noexcept override;
+  /// @copydoc Deep::IComputeBackend::RandomizeNormal
   void RandomizeNormal(float* buf, size_t n, float mean, float stddev,
                        uint32_t seed) noexcept override;
+  /// @copydoc Deep::IComputeBackend::RandomizeUniform
   void RandomizeUniform(float* buf, size_t n, float min, float max,
                         uint32_t seed) noexcept override;
 
@@ -35,15 +49,21 @@ public:
   /// vector for SumRows' GEMV). No-op on CPUBackend.
   void PrepareForBatchSize(size_t batchSize) noexcept override {}
 
+  /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::Scale
   void Scale(float* buf, size_t n, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AxpyInto
   void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::TryFusedForwardPass
   bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
                            const float* bias, float* mu, int batchSize, int size,
                            int nextSize) noexcept override
@@ -53,56 +73,76 @@ public:
                   // ActivationInto sequence
   }
 
+  /// @copydoc Deep::IComputeBackend::Activation
   void Activation(ActivationType type, float* buf, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ActivationInto
   void ActivationInto(ActivationType type, float* dst, const float* src,
                       size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ActivationDerivative
   void ActivationDerivative(ActivationType type, float* buf, size_t n,
                             bool activated) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ActivationDerivativeInto
   void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                 size_t n) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
   void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, const float* deriv,
                                 const float* e, size_t n, float ir, float beta) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::FusedStateUpdate
   void FusedStateUpdate(float* z, const float* feedback, const float* deriv, const float* e,
                         size_t n, float ir) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ComputeErrorAndEnergy
   float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,
                               size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ComputeError
   void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy
   float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,
                                                  size_t batchSize, size_t nextSize,
                                                  float* rowEnergies) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::ComputeSoftmaxCrossEntropyError
   void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
                                        size_t nextSize) noexcept override;
 
   // Convolution (im2col-based, ConvPCLayer family) -- forwards
   // directly to the existing, already-verified Deep::Im2Col/
   // Deep::Col2Im free functions in Im2Col.h.
+  /// @copydoc Deep::IComputeBackend::Im2Col
   void Im2Col(const float* input, int channels, int height, int width, int kernelH, int kernelW,
               int strideH, int strideW, int padH, int padW, float* columns) noexcept override;
+  /// @copydoc Deep::IComputeBackend::Col2Im
   void Col2Im(const float* columns, int channels, int height, int width, int kernelH, int kernelW,
               int strideH, int strideW, int padH, int padW, float* outputImage) noexcept override;
+  /// @copydoc Deep::IComputeBackend::RepackForBatchedGemm
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::IncrementCounter
   void IncrementCounter(int* counter) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::AdamStep
   void AdamStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
                 const float* lr, float beta1 = 0.9f, float beta2 = 0.999f,
                 float eps = 1e-8f) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AdamWStep
   void AdamWStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
                  const float* lr, float weightDecay, float beta1 = 0.9f, float beta2 = 0.999f,
                  float eps = 1e-8f) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::GetDeviceType
   DeviceType GetDeviceType() const noexcept override
   {
     return DeviceType::DEVICE_CPU;
   };
 
+  /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;
 };

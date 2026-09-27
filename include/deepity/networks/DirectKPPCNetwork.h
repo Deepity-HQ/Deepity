@@ -70,6 +70,10 @@
 
 namespace Deep
 {
+    /// @brief Predictive Coding network built from DirectKPPCLayer, using
+    /// Direct Kolen-Pollack feedback alignment (DFA) instead of symmetric
+    /// weight transport. See the file-level warning above on its current
+    /// verification status.
     class DirectKPPCNetwork
     {
     public:
@@ -97,7 +101,6 @@ namespace Deep
         /// not inferred, since the true terminal layer isn't known until
         /// the whole network has been assembled. Compile() sanity-checks
         /// this against the actual last layer's size.
-        /// @param batchSize batch size
         /// @param lr learning rate for W
         /// @param ir inference rate (Euler integration step size)
         /// @param fl feedback rate (see Layer implementatio)
@@ -186,6 +189,8 @@ namespace Deep
 
         /// @brief Full train step: reset, clamp input+target, run all
         /// four DKP-PC phases in order, unclamp.
+        /// @param x Flattened input batch, clamped to the input layer.
+        /// @param y Flattened target batch, clamped to the terminal layer.
         /// @param inferenceSteps Number of settling steps for phase 2.
         /// Defaults to 1, matching the paper's own headline result --
         /// unlike this codebase's other PC variants, DKP-PC's entire
