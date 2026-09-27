@@ -47,7 +47,11 @@ __global__ void tanhKernelInto(float* dst, const float* src, size_t n)
   if (i < n)
   {
     float y;
+#if __CUDA_ARCH__ >= 800
     asm("tanh.approx.f32 %0, %1;" : "=f"(y) : "f"(src[i]));
+#else
+    y = tanhf(src[i]);
+#endif
     dst[i] = y;
   }
 }
@@ -58,7 +62,11 @@ __global__ void sigmoidKernelInto(float* dst, const float* src, size_t n)
   if (i < n)
   {
     float t;
+#if __CUDA_ARCH__ >= 800
     asm("tanh.approx.f32 %0, %1;" : "=f"(t) : "f"(0.5f * src[i]));
+#else
+    t = tanhf(0.5f * src[i]);
+#endif
     dst[i] = fmaf(0.5f, t, 0.5f);
   }
 }
