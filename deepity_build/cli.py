@@ -228,6 +228,22 @@ def build_config_from_args(args: argparse.Namespace, extra_args: list[str]) -> B
     )
 
 
+def _needs_reconfigure(config: BuildConfig) -> bool:
+    """True if CMake must actually be re-run: no cache yet, or the cache
+    predates the root CMakeLists.txt. Without the mtime half of this
+    check, editing CMakeLists.txt (new source files, new flags, a new
+    default like CMAKE_CUDA_ARCHITECTURES) has NO effect on an existing
+    build directory -- the stale CMakeCache.txt is reused forever, and
+    the change silently never takes effect until someone thinks to wipe
+    the build directory by hand.
+    """
+    if not config.cache_file.is_file():
+        return True
+
+    cmakelists = Path("CMakeLists.txt")
+    return cmakelists.is_file() and cmakelists.stat().st_mtime > config.cache_file.stat().st_mtime
+
+
 def _run_configure_build_test(
     config: BuildConfig,
     ninja: str | None,
@@ -256,7 +272,7 @@ def _run_configure_build_test(
         # ────────────────────────────────────────────────────────────
         configure_time: float | None = None
 
-        if pgo_phase is not None or not config.cache_file.is_file():
+        if pgo_phase is not None or _needs_reconfigure(config):
             # PGO phases always reconfigure -- GENERATE and USE need
             # genuinely different compiler flags, so a cached
             # configuration from a previous phase can't be reused.
