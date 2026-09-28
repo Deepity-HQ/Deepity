@@ -30,11 +30,22 @@ def _rmtree_onexc(func, path, exc_info):
 
 def _merge_pgo_profiles(config):
     profile_dir = config.pgo_data_dir
+
+    # GCC's -fprofile-generate writes .gcda straight into profile_dir,
+    # pre-accumulated per translation unit -- -fprofile-use reads them
+    # back from there directly, with no separate merge/convert step
+    # (unlike Clang's raw-profile format below). If GCC produced these,
+    # there's nothing left to do here.
+    gcda_files = list(profile_dir.rglob("*.gcda"))
+    if gcda_files:
+        print(f"--- PGO: {len(gcda_files)} GCC .gcda profile(s) ready in {profile_dir} ---")
+        return
+
     profraw_files = list(profile_dir.glob("*.profraw"))
 
     if not profraw_files:
         raise RuntimeError(
-            f"PGO workload produced no .profraw files in {profile_dir}"
+            f"PGO workload produced no .gcda or .profraw files in {profile_dir}"
         )
 
     llvm_profdata = shutil.which("llvm-profdata")
@@ -353,11 +364,23 @@ def _run_pgo_workload(config: BuildConfig) -> None:
     import subprocess
 
     print("\n--- PGO: running representative workload to collect profile data ---")
+    repo_root = Path(__file__).resolve().parent.parent
+
+    # Python sets sys.path[0] to the launched SCRIPT's own directory
+    # (deepity_build/), not the process's cwd, so `cwd=repo_root` below
+    # doesn't help pgo_workload.py find the `pydeepity` package that CMake
+    # drops at the repo root -- PYTHONPATH has to say so explicitly.
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        filter(None, [str(repo_root), env.get("PYTHONPATH")])
+    )
+
     result = subprocess.run(
         [sys.executable, str(Path(__file__).resolve().parent / "pgo_workload.py")],
         # cwd stays the repo root -- pgo_workload.py resolves its own "./data"
         # cache relative to it, same as mnist.py and the other example scripts.
-        cwd=Path(__file__).resolve().parent.parent,
+        cwd=repo_root,
+        env=env,
     )
     if result.returncode != 0:
         print("PGO workload run failed -- aborting before the optimized rebuild.")

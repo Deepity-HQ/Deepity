@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from pydeepity import SimplePCN
+from pydeepity.layer import Linear, Sigmoid
 
 N_BATCHES = 20  # enough to exercise every activation type, both
                  # mu-cache branches (hit and miss), and the full
@@ -48,17 +49,19 @@ def load_pgo_subset():
 def main():
     X, Y, BATCH_SIZE = load_pgo_subset()
 
-    # Matches mnist.py's real, current architecture exactly -- same
-    # activations, so the same code paths (dSigmoidInto, dLinearInto,
-    # etc.) actually get exercised during profiling.
-    net = SimplePCN(batch_size=BATCH_SIZE)
-    net.add_layer(784, 512, lr=0.00373, ir=0.08, act="linear")
-    net.add_layer(512, 512, lr=0.00373, ir=0.08, act="sigmoid")
-    net.add_layer(512, 10, lr=0.00373, ir=0.08, act="sigmoid")
-    net.add_layer(10, 0, lr=0.00373, ir=0.08, act="linear")
-    net.set_optimizer("ADAM")
-    net.compile()
-    net.randomize_weights()
+    # SimplePCN's declarative architecture always gives the LAST Linear
+    # (before the auto-appended terminal sink) a linear activation --
+    # nothing can follow it in the tuple, since the architecture must end
+    # on a Linear. So the sigmoid coverage goes on the two hidden layers
+    # instead; still exercises the same code paths (dSigmoidInto,
+    # dLinearInto, etc.) this workload cares about.
+    net = SimplePCN(
+        Linear(784, 512), Sigmoid(),
+        Linear(512, 512), Sigmoid(),
+        Linear(512, 10),
+        batch_size=BATCH_SIZE,
+    )
+    net.configure(learning_rate=0.00373, inference_rate=0.08, optimizer="ADAM")
     net.set_mu_cache_threshold(0.0)
 
     rng_init = np.random.default_rng(7)

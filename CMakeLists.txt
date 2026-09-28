@@ -50,9 +50,23 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # a single unified code path here isn't practical; MSVC falls back to a
 # plain, un-instrumented build with a warning instead of silently doing
 # something unexpected.
+#
+# Applied ONLY to Deepity/pydeepity (via target_compile_options/
+# target_link_options below, once those targets exist), NOT globally:
+# the pgo_workload.py profiling run only ever exercises our own code, so
+# third-party FetchContent deps (Google Benchmark, nanobind-static,
+# sleef, ...) would compile with instrumentation but never actually
+# execute during the workload, then fail the USE pass outright wherever
+# a dependency's own CMakeLists.txt treats -Wmissing-profile as an error
+# (Google Benchmark does). Restricting PGO to the two targets that are
+# actually profiled avoids that entirely, and is also just the correct
+# scope: nothing else here is what PGO is meant to optimize.
 set(DEEPITY_PGO_MODE "OFF" CACHE STRING "PGO mode: OFF, GENERATE, or USE")
 set_property(CACHE DEEPITY_PGO_MODE PROPERTY STRINGS OFF GENERATE USE)
 set(DEEPITY_PGO_DATA_DIR "${CMAKE_BINARY_DIR}/pgo-data" CACHE PATH "Directory for PGO profile data (shared by both GENERATE and USE passes)")
+
+set(DEEPITY_PGO_COMPILE_FLAGS "")
+set(DEEPITY_PGO_LINK_FLAGS "")
 
 if(NOT DEEPITY_PGO_MODE STREQUAL "OFF")
     if(MSVC)
@@ -61,17 +75,17 @@ if(NOT DEEPITY_PGO_MODE STREQUAL "OFF")
             "workflow differs significantly and isn't implemented here. "
             "Building without PGO instrumentation.")
     elseif(DEEPITY_PGO_MODE STREQUAL "GENERATE")
-        add_compile_options(-fprofile-generate=${DEEPITY_PGO_DATA_DIR})
-        add_link_options(-fprofile-generate=${DEEPITY_PGO_DATA_DIR})
+        list(APPEND DEEPITY_PGO_COMPILE_FLAGS -fprofile-generate=${DEEPITY_PGO_DATA_DIR})
+        list(APPEND DEEPITY_PGO_LINK_FLAGS -fprofile-generate=${DEEPITY_PGO_DATA_DIR})
         message(STATUS "PGO: instrumented (GENERATE) build -- profile data will be written to ${DEEPITY_PGO_DATA_DIR}")
     elseif(DEEPITY_PGO_MODE STREQUAL "USE")
-        add_compile_options(-fprofile-use=${DEEPITY_PGO_DATA_DIR})
-        add_link_options(-fprofile-use=${DEEPITY_PGO_DATA_DIR})
+        list(APPEND DEEPITY_PGO_COMPILE_FLAGS -fprofile-use=${DEEPITY_PGO_DATA_DIR})
+        list(APPEND DEEPITY_PGO_LINK_FLAGS -fprofile-use=${DEEPITY_PGO_DATA_DIR})
         if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
             # GCC-specific: tolerates minor profile/source mismatches
             # gracefully instead of hard-failing. Clang doesn't need or
             # recognize this flag.
-            add_compile_options(-fprofile-correction)
+            list(APPEND DEEPITY_PGO_COMPILE_FLAGS -fprofile-correction)
         endif()
         message(STATUS "PGO: optimized (USE) build -- reading profile data from ${DEEPITY_PGO_DATA_DIR}")
     endif()
@@ -305,6 +319,23 @@ if(DEEPITY_CUDA_ENABLED)
 endif()
 
 add_library(Deepity ${DEEPITY_SOURCES})
+
+if(DEEPITY_PGO_COMPILE_FLAGS)
+    # COMPILE_LANGUAGE:CXX guard: Deepity's sources are C++/CUDA when
+    # DEEPITY_CUDA_ENABLED, and nvcc doesn't understand these GCC/Clang
+    # flags at all. Compile options stay PRIVATE (nothing recompiles
+    # Deepity's sources by linking it), but the link options are PUBLIC:
+    # -fprofile-generate embeds calls to libgcov's runtime in every
+    # object file it touches, so any test/benchmark executable that
+    # links this archive needs the SAME flag on ITS OWN final link line
+    # too, or the driver never knows to add -lgcov and you get
+    # "undefined reference to `__gcov_init'" and friends. PUBLIC makes
+    # target_link_libraries(... Deepity) propagate that automatically.
+    target_compile_options(Deepity PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${DEEPITY_PGO_COMPILE_FLAGS}>
+    )
+    target_link_options(Deepity PUBLIC ${DEEPITY_PGO_LINK_FLAGS})
+endif()
 
 if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_MKL)
@@ -555,6 +586,12 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     )
 
     target_link_libraries(pydeepity PRIVATE Deepity)
+
+    if(DEEPITY_PGO_COMPILE_FLAGS)
+        # Bindings are pure C++, no COMPILE_LANGUAGE guard needed here.
+        target_compile_options(pydeepity PRIVATE ${DEEPITY_PGO_COMPILE_FLAGS})
+        target_link_options(pydeepity PRIVATE ${DEEPITY_PGO_LINK_FLAGS})
+    endif()
 
     set_target_properties(pydeepity PROPERTIES
         INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
