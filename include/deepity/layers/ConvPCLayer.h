@@ -1,48 +1,40 @@
 #pragma once
 
-#include <cstdlib>
+#include <deepity/backend/IComputeBackend.h>
 #include <deepity/layers/Layer.h>
 #include <deepity/utils/Activations.h>
+#include <deepity/utils/AdamOptimizer.h>
+#include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/Im2Col.h>
 #include <deepity/utils/MemoryArena.h>
 #include <map>
 #include <memory>
 #include <random>
-#include <stdexcept>
 #include <vector>
 
 /**
  * @file ConvPCLayer.h
- * @brief Convolutional counterpart to DiscriminativePCLayer.
+ * @brief Convolutional counterpart to DiscriminativePCLayer, precision-
+ * weighted, routed through IComputeBackend for GPU portability.
  *
- * @warning CalculateState/UpdateState/UpdateWeights math is implemented in
- * ConvPCLayer.cpp but has ONLY been verified for its weight-gradient path
- * (UpdateWeights(), via finite-difference check with both layers clamped).
- * The Col2Im-based feedback term in UpdateState() has NOT yet been
- * exercised by any test -- both layers in the existing gradient check were
- * clamped, so that code path never actually ran. Do not trust the full
- * training loop (unclamped hidden layers) until:
- *   1. A gradient check with a genuinely UNCLAMPED middle layer passes,
- *      exercising the feedback term for real.
- *   2. A clean ASan/UBSan run on a tiny synthetic ConvPCNetwork.
- *   3. A synthetic floor test (same pattern as tDiagnose.cpp) passes.
- * Only then wire this into MNIST.
+ * @note CalculateState/UpdateState/UpdateWeights math, including the
+ * Col2Im-based feedback term, is finite-difference verified on CPU
+ * (tConvPCLayerStateVerify.cpp, tConvDiagnose.cpp). The GPU path is
+ * structurally reviewed only, not compiled or run.
  *
  * Layout convention: NCHW, row-major, contiguous per channel per batch item.
  *
  * @note Single-instance layer; scratch/column buffers are bound into a
- * MemoryArena rather than stored in a container, unlike
- * DiscriminativePCNetwork's vector-of-layers.
- * @version 1.0
- * @date 2026-06-30
+ * MemoryArena rather than stored in a container.
+ * @version 2.0
+ * @date 2026-09-27
  * @author Jack Rose
  */
 
 namespace Deep {
-class PCNDiagnostics;
 
-/// @brief Convolutional Predictive Coding layer (im2col-based). See the
-/// file-level warning above before enabling an unclamped middle layer.
+/// @brief Convolutional Predictive Coding layer (im2col-based),
+/// precision-weighted, routed through IComputeBackend for GPU portability.
 class ConvPCLayer : public Layer {
 public:
   /// @brief Constructor for a convolutional PC layer.
@@ -65,25 +57,23 @@ public:
   /// @param lmbda Weight decay (L2 regularization) coefficient
   /// @param aType Activation type
   /// @param dType Activation derivative type
+  /// @param backend Compute backend to run on; defaults to a new
+  /// CPUBackend if nullptr.
   ConvPCLayer(int inChannels, int outChannels, int inHeight, int inWidth,
               int kernelH, int kernelW, int strideH = 1, int strideW = 1,
               int padH = 0, int padW = 0, int batchSize = 1,
               float learningRate = 1e-6f, float inferenceRate = 0.1f,
               float precisionRate = 0.01f, float lmbda = 1e-2f,
               ActivationType aType = ActivationType::RELU,
-              ActivationType dType = ActivationType::dRELU);
+              ActivationType dType = ActivationType::dRELU,
+              IComputeBackend *backend = nullptr);
 
   /// @brief Calculate energy/prediction errors for this layer.
-  /// @warning Weight-gradient path verified; feedback term NOT YET verified—see
-  /// file-level warning.
   /// @return This layer's energy contribution at the current state.
   float CalculateState() noexcept override;
   /// @brief Update latent beliefs (z/r) via inference gradient.
-  /// @warning Feedback term not yet verified—see file-level warning.
   void UpdateState() noexcept override;
   /// @brief Hebbian/gradient weight update.
-  /// @warning Weight-gradient path verified; feedback term NOT YET verified—see
-  /// file-level warning.
   void UpdateWeights() noexcept override;
   /// @brief Updates this layer's precision estimate from current
   /// prediction errors, using the configured precision rate (pr).
@@ -139,7 +129,10 @@ public:
   /// @return Pointer to (outChannels,) biases.
   float *GetBiases() noexcept { return b; }
   /// @brief Returns this layer's precision buffer.
-  /// @return Pointer to (outChannels,) precisions.
+  /// @return Pointer to (inChannels*inHeight*inWidth,) precisions, one
+  /// per own-position, NOT per outChannel, despite this layer's
+  /// outgoing prediction being channel-shaped; precision weights THIS
+  /// layer's own error against layerBelow, which is input-shaped.
   const float *GetPrecisions() const noexcept { return p; }
 
   /// @brief Returns the learning rate used for weight updates.
@@ -156,17 +149,21 @@ public:
   float GetLambda() const noexcept { return lmbda; }
 
   /// @brief Sets the learning rate used for weight updates.
-  /// @param lr The new learning rate.
-  void SetLearningRate(float lr) noexcept { this->lr = lr; }
+  /// @param learningRate The new learning rate.
+  void SetLearningRate(float learningRate) noexcept;
   /// @brief Sets the learning rate used for internal-state updates.
-  /// @param ir The new inference rate.
-  void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+  /// @param inferenceRate The new inference rate.
+  void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
   /// @brief Sets the learning rate used for precision updates.
-  /// @param pr The new precision rate.
-  void SetPrecisionRate(float pr) noexcept { this->pr = pr; }
+  /// @param precisionRate The new precision rate.
+  void SetPrecisionRate(float precisionRate) noexcept { pr = precisionRate; }
   /// @brief Sets the weight-decay (L2 regularization) coefficient.
   /// @param l The new lambda value.
-  void SetLambda(float l) noexcept { this->lmbda = l; }
+  void SetLambda(float l) noexcept { lmbda = l; }
+  /// @brief Sets the weight optimizer. Call BEFORE Compile().
+  void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
+  /// @brief Whether ClampState() is currently active on this layer.
+  bool IsClamped() const noexcept { return isClamped; }
 
   /// @brief Sets the layer immediately above this one in the network.
   /// @param above Pointer to the layer above; may be nullptr for a
@@ -187,7 +184,7 @@ public:
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 
-  /// @brief Rebuilds log_p from p -- required after a checkpoint load
+  /// @brief Rebuilds log_p from p, required after a checkpoint load
   /// that only persists p (mirrors DiscriminativePCLayer's fix for the
   /// same p/log_p desync issue found in ModelIO::Load()).
   void ResyncLogPrecision() noexcept;
@@ -196,15 +193,9 @@ public:
   void ComputeMuOnly() noexcept;
 
   /// @brief Returns this layer's configured activation type.
-  /// @return The activation type.
-  ActivationType GetActivationType() const noexcept {
-    return To_AType(activation);
-  }
+  ActivationType GetActivationType() const noexcept { return activationType; }
   /// @brief Returns this layer's configured activation-derivative type.
-  /// @return The activation-derivative type.
-  ActivationType GetDerivativeType() const noexcept {
-    return To_AType(activationDerivative);
-  }
+  ActivationType GetDerivativeType() const noexcept { return derivativeType; }
 
   /// @brief Returns the number of input channels.
   int GetInChannels() const noexcept { return inChannels; }
@@ -230,8 +221,10 @@ public:
   size_t GetRequiredFloats() const noexcept;
   /// @brief Binds this layer's weight/state/scratch buffers into the
   /// supplied arena. Must be called before any other operation.
-  /// @param arena The MemoryArena to bind into.
-  void BindMemory(MemoryArena &arena);
+  /// @tparam ArenaT Either MemoryArena or DeviceMemoryArena.
+  /// @param arena The arena to bind into.
+  template <typename ArenaT>
+  void BindMemory(ArenaT &arena);
 
 private:
   std::unique_ptr<MemoryArena> localArena;
@@ -252,14 +245,14 @@ private:
   float *W = nullptr; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
   float *b = nullptr; ///< Biases: (outChannels)
 
-  float *z = nullptr; ///< Beliefs/activations: (outChannels, outHeight,
-                      ///< outWidth) per batch item
-  float *e = nullptr; ///< Prediction errors: (outChannels, outHeight, outWidth)
-                      ///< per batch item
-  float *dz_dt = nullptr; ///< State derivatives: (outChannels, outHeight,
-                          ///< outWidth) per batch item
-  float *p = nullptr;     ///< Precisions: (outChannels,)
-  float *log_p = nullptr; ///< Log-precisions: (outChannels,)
+  float *z = nullptr; ///< Beliefs/activations: (inChannels, inHeight,
+                      ///< inWidth) per batch item
+  float *e = nullptr; ///< Prediction errors: same shape as z.
+  float *dz_dt = nullptr; ///< State derivatives: same shape as z.
+  float *p = nullptr;     ///< Precisions: (inChannels*inHeight*inWidth,),
+                          ///< see GetPrecisions()'s doc for why this is
+                          ///< input-shaped, not outChannels-shaped.
+  float *log_p = nullptr; ///< Log-precisions: same shape as p.
   /// @}
 
   /// @brief Predictions from above (incoming error feedback)
@@ -284,16 +277,16 @@ private:
   float *bottom_up_cols = nullptr;
 
   /// Repacked column buffer: row-major layout (row, batch, col) for
-  /// single-batched GEMM. Holds colBuffer's data transposed from batch-major to
-  /// enable efficient GEMM operations. Separate buffer to avoid buffer-reuse
-  /// fragility across UpdateState() and UpdateWeights().
+  /// single-batched GEMM.
   float *colsRepacked = nullptr;
   /// Repacked bottom-up gradient: row-major layout for efficient GEMM
   /// operations.
   float *lgRepacked = nullptr;
-  /// Forward-pass GEMM output: (outChannels, batchSize*colCols), scattered back
-  /// to mu.
-  float *muRepacked = nullptr;
+
+  /// All-ones vector for the bias-gradient GEMM trick (grad_b =
+  /// lgRepacked @ ones), matching SimpleConvPCLayer::UpdateWeights()'s
+  /// own use of the same trick.
+  float *onesVector = nullptr;
   /// @}
 
   /// @brief Cache for the clamped input forward-projection
@@ -301,16 +294,29 @@ private:
   /// @brief Flag to determine if the mu cache is currently valid
   bool muCacheValid = false;
 
+  float *grad_W = nullptr;
+  float *grad_b = nullptr;
+  float *m_W = nullptr;
+  float *v_W = nullptr;
+  float *m_b = nullptr;
+  float *v_b = nullptr;
+
+  /// @brief Device-resident Adam step count and learning rate, same
+  /// reasoning as SimpleConvPCLayer/SimplePCLayer's own ports.
+  int *t_device = nullptr;
+  float *lr_device = nullptr;
+
   float lr, ir, pr, lmbda;
   bool isClamped = false;
 
-  ConvPCLayer *layerAbove;
-  ConvPCLayer *layerBelow;
-  ActivationFn activation;
-  DerivativeFn activationDerivative;
+  ConvPCLayer *layerAbove = nullptr;
+  ConvPCLayer *layerBelow = nullptr;
   ActivationType activationType;
+  ActivationType derivativeType;
+  OptimizerType opt = OptimizerType::SGD;
 
-  friend class PCNDiagnostics;
+  using BackendDeleter = void (*)(IComputeBackend *);
+  std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 };
 
 } // namespace Deep

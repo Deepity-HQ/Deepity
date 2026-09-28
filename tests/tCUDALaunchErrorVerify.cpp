@@ -1,7 +1,7 @@
 /**
  * @file tCUDALaunchErrorVerify.cpp
  * @brief Checks cudaGetLastError() immediately after IncrementCounter's
- * kernel launch, before any synchronization -- cudaDeviceSynchronize()
+ * kernel launch, before any synchronization, cudaDeviceSynchronize()
  * reported "no error" in tCUDAIncrementCounterVerify.cpp, but that only
  * confirms EXECUTION had no fault; a silent LAUNCH-time failure (e.g.
  * an invalid stream handle from CUDABackend's constructor, which calls
@@ -29,7 +29,7 @@ int main()
 
     gpuBackend->IncrementCounter(dT);
 
-    // Check IMMEDIATELY, before any sync -- catches a launch-time error
+    // Check IMMEDIATELY, before any sync, catches a launch-time error
     // (invalid stream, invalid configuration, etc.) directly.
     cudaError_t launchErr = cudaGetLastError();
     printf("cudaGetLastError() immediately after launch: %s (%d)\n",

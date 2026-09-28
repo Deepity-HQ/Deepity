@@ -1,5 +1,5 @@
 // DEPRECATED: this is the pre-nanobind pybind11 binding module, kept only
-// for reference. It is not built by CMakeLists.txt and not maintained --
+// for reference. It is not built by CMakeLists.txt and not maintained,
 // bindings/pybinding.cpp (nanobind) is the live binding module. Do not add
 // new bindings here; port them to pybinding.cpp's split (LayerBindings.cpp /
 // NetworkBindings.cpp / UtilityBindings.cpp) instead.
@@ -22,7 +22,6 @@
 #include <deepity/layers/Layer.h>
 #include <deepity/layers/ConvPCLayer.h>
 #include <deepity/layers/DiscriminativePCLayer.h>
-#include <deepity/layers/RBLayer.h>
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/layers/SimplePCLayer.h>
 
@@ -182,7 +181,7 @@ void bind_layers(py::module_ &m)
 
     auto discLayerCls = py::class_<Deep::DiscriminativePCLayer, Deep::Layer>(m, "DiscriminativePCLayer", "Predictive Coding layer.")
                             .def(py::init([](int size, int next_size, int batch_size, float learning_rate, float inference_rate, float precision_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
-                                          { return std::make_unique<Deep::DiscriminativePCLayer>(size, next_size, batch_size, learning_rate, inference_rate, precision_rate, lmbda, resolveAct(activation), resolveDAct(activation_deriv)); }),
+                                          { return std::make_unique<Deep::DiscriminativePCLayer>(size, next_size, batch_size, learning_rate, inference_rate, precision_rate, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }),
                                  py::arg("size"), py::arg("next_size"), py::arg("batch_size") = 1, py::arg("learning_rate") = 1e-6f, py::arg("inference_rate") = 0.01f, py::arg("precision_rate") = 0.01f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu");
     BindCommonPCLayer<Deep::DiscriminativePCLayer>(discLayerCls, "DiscriminativePCLayer");
     discLayerCls.def("update_precision", &Deep::DiscriminativePCLayer::UpdatePrecision).def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, py::arg("pr"));
@@ -205,7 +204,7 @@ void bind_layers(py::module_ &m)
 
     auto gsLayerCls = py::class_<Deep::GaussSeidelPCLayer, Deep::Layer>(m, "GaussSeidelPCLayer", "PC layer with Gauss-Seidel (sequential-sweep) settling dynamics.")
                           .def(py::init([](int size, int next_size, int batch_size, float learning_rate, float inference_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)
-                                        { return std::make_unique<Deep::GaussSeidelPCLayer>(size, next_size, batch_size, learning_rate, inference_rate, lmbda, resolveAct(activation), resolveDAct(activation_deriv)); }),
+                                        { return std::make_unique<Deep::GaussSeidelPCLayer>(size, next_size, batch_size, learning_rate, inference_rate, lmbda, resolveActEnum(activation), resolveActEnum(activation_deriv)); }),
                                py::arg("size"), py::arg("next_size"), py::arg("batch_size") = 1, py::arg("learning_rate") = 1e-6f, py::arg("inference_rate") = 0.01f, py::arg("lmbda") = 1e-2f, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu");
 gsLayerCls.def("update_state", &Deep::GaussSeidelPCLayer::UpdateState)
           .def("compute_prediction", &Deep::GaussSeidelPCLayer::ComputePrediction)
@@ -213,38 +212,6 @@ gsLayerCls.def("update_state", &Deep::GaussSeidelPCLayer::UpdateState)
           .def_property_readonly("mu", [](Deep::GaussSeidelPCLayer &self)
                                  { return py::array_t<float>((py::ssize_t)(self.GetBatchSize() * self.GetOutputSize()), self.GetMu(), py::cast(&self)); });
     BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
-
-    py::class_<Deep::RBLayer, Deep::Layer>(m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
-        .def(py::init([](size_t in_size, size_t out_size, float var, float var_td, float k1, float k2, float lambda, float alpha, size_t batch_size, int step_size, const std::string &activation, const std::string &activation_deriv)
-                      { return std::make_unique<Deep::RBLayer>(in_size, out_size, var, var_td, k1, k2, lambda, alpha, batch_size, step_size, resolveAct(activation), resolveDAct(activation_deriv)); }),
-             py::arg("in_size"), py::arg("out_size"), py::arg("var") = 1.0f, py::arg("var_td") = 10.0f, py::arg("k1") = 1e-3f, py::arg("k2") = 1e-5f, py::arg("lambda") = 1e-6f, py::arg("alpha") = 1.0f, py::arg("batch_size") = 64, py::arg("step_size") = 30, py::arg("activation") = "relu", py::arg("activation_deriv") = "drelu")
-        .def("run_prediction", [](Deep::RBLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> input, size_t current_batch_size)
-             { self.RunPrediction(input.data(), current_batch_size); }, py::arg("input"), py::arg("current_batch_size"))
-        .def("run_inference_step", [](Deep::RBLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> bottom_up, py::array_t<float, py::array::c_style | py::array::forcecast> top_down, size_t current_batch_size)
-             { self.RunInferenceStep(bottom_up.data(), top_down.data(), current_batch_size); }, py::arg("bottom_up"), py::arg("top_down"), py::arg("current_batch_size"))
-        .def("calc_error", [](Deep::RBLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> bottom_up, py::array_t<float, py::array::c_style | py::array::forcecast> top_down, size_t current_batch_size)
-             { self.CalcError(bottom_up.data(), top_down.data(), current_batch_size); }, py::arg("bottom_up"), py::arg("top_down"), py::arg("current_batch_size"))
-        .def("update_beliefs", [](Deep::RBLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> bottom_up, py::array_t<float, py::array::c_style | py::array::forcecast> top_down, size_t current_batch_size)
-             { self.UpdateBeliefs(bottom_up.data(), top_down.data(), current_batch_size); }, py::arg("bottom_up"), py::arg("top_down"), py::arg("current_batch_size"))
-        .def("calculate_state", &Deep::RBLayer::CalculateState)
-        .def("update_state", &Deep::RBLayer::UpdateState)
-        .def("update_weights", py::overload_cast<>(&Deep::RBLayer::UpdateWeights))
-        .def("update_weights_batch", py::overload_cast<size_t>(&Deep::RBLayer::UpdateWeights), py::arg("current_batch_size"))
-        .def("flush", &Deep::RBLayer::Flush)
-        .def("attach", [](Deep::RBLayer &self, py::array_t<float, py::array::c_style | py::array::forcecast> arena)
-             { self.Attach(arena.mutable_data()); }, py::arg("arena"))
-        .def_property_readonly("beliefs", [](Deep::RBLayer &self)
-                               { return py::array_t<float>({(py::ssize_t)self.GetBatchSize(), (py::ssize_t)self.GetOutputSize()}, self.GetBeliefs(), py::cast(&self)); })
-        .def_property_readonly("errors", [](Deep::RBLayer &self)
-                               { return py::array_t<float>({(py::ssize_t)self.GetBatchSize(), (py::ssize_t)self.GetInputSize()}, self.GetErrors(), py::cast(&self)); })
-        .def_property_readonly("weights", [](Deep::RBLayer &self)
-                               { return py::array_t<float>({(py::ssize_t)self.GetOutputSize(), (py::ssize_t)self.GetInputSize()}, self.GetWeights(), py::cast(&self)); })
-        .def_property_readonly("batch_size", &Deep::RBLayer::GetBatchSize)
-        .def_property_readonly("input_size", &Deep::RBLayer::GetInputSize)
-        .def_property_readonly("output_size", &Deep::RBLayer::GetOutputSize)
-        .def("total_size", &Deep::RBLayer::GetTotalSize)
-        .def("__repr__", [](const Deep::RBLayer &self)
-             { return "<RBLayer in=" + std::to_string(self.GetInputSize()) + ", out=" + std::to_string(self.GetOutputSize()) + ", batch=" + std::to_string(self.GetBatchSize()) + ">"; });
 
     py::class_<Deep::ConvPCLayer, Deep::Layer>(m, "ConvPCLayer", "Convolutional Predictive Coding layer.")
         .def(py::init([](int in_channels, int out_channels, int in_height, int in_width, int kernel_h, int kernel_w, int stride_h, int stride_w, int pad_h, int pad_w, int batch_size, float learning_rate, float inference_rate, float precision_rate, float lmbda, const std::string &activation, const std::string &activation_deriv)

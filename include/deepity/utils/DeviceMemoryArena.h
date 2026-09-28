@@ -10,7 +10,7 @@
  * @brief A 64-byte-aligned bump-pointer allocator over a single device
  * buffer, mirroring this codebase's host-side MemoryArena, but backed by
  * IComputeBackend::Allocate()/Free() rather than raw cudaMalloc/cudaFree
- * directly -- the same allocation path Tensor already uses and
+ * directly, the same allocation path Tensor already uses and
  * CUDAFunctionsVerify already exercises, rather than a second, separate,
  * unverified call site.
  *
@@ -22,11 +22,11 @@
  * since nothing ever needs to swap MemoryArena's allocator
  * polymorphically at runtime. The GPU side has no such feature to lose,
  * and the virtual call only happens once per arena (construction and
- * destruction), not per AllocateFloats() call -- a clean win with no
+ * destruction), not per AllocateFloats() call, a clean win with no
  * real cost.
  *
  * @warning Individual chunks handed out by AllocateFloats() cannot be
- * freed independently -- the entire arena is released at once in the
+ * freed independently, the entire arena is released at once in the
  * destructor, matching MemoryArena's bump-pointer/no-reclaim design.
  * @version 1.1
  * @date 2026-09-05
@@ -42,7 +42,7 @@ namespace Deep
     {
     private:
         /// @brief Backend used for the underlying allocation and its
-        /// eventual release. Non-owning -- must outlive this arena.
+        /// eventual release. Non-owning, must outlive this arena.
         IComputeBackend *backend;
         /// @brief Base address of the underlying backend-allocated buffer.
         float *base_ptr;
@@ -61,7 +61,7 @@ namespace Deep
         /// @param backend The backend to allocate from (and later free
         /// through). Must outlive this DeviceMemoryArena. Passing a
         /// CPUBackend here would allocate host memory under a class
-        /// named "device" -- that's a caller contract, not something
+        /// named "device", that's a caller contract, not something
         /// this class checks at runtime, mirroring Tensor's own
         /// backend/device pairing contract.
         /// @param total_floats Total number of floats this arena can
@@ -90,9 +90,7 @@ namespace Deep
             }
         }
 
-        // Delete copy/move constructors to prevent double-free corruption
-        // -- the original version of this class had no such guard, a real
-        // gap relative to MemoryArena's own established protection.
+        // Delete copy/move constructors to prevent double-free corruption.
 
         /// @brief Deleted: DeviceMemoryArena owns a single device
         /// allocation, so copying would risk a double-free.
@@ -105,13 +103,11 @@ namespace Deep
         /// arena.
         /// @param num_floats Number of floats to allocate from the
         /// arena. The actual reservation is rounded up to the nearest
-        /// 64-byte boundary, matching MemoryArena's own guarantee (the
-        /// original version of this class had no such rounding at all).
+        /// 64-byte boundary, matching MemoryArena's own guarantee.
         /// @return Pointer to the start of the allocated chunk, valid
         /// for the lifetime of this DeviceMemoryArena. 64-byte aligned.
         /// @throws std::runtime_error if the requested allocation would
-        /// exceed the arena's total capacity -- the original version of
-        /// this class had no bounds checking at all.
+        /// exceed the arena's total capacity.
         /// @warning Individual chunks are never freed independently; the
         /// entire arena is released at once in the destructor.
         float *AllocateFloats(size_t num_floats)

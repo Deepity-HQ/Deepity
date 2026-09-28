@@ -15,17 +15,12 @@
 
 /**
  * @file SimpleConvPCLayer.h
- * @brief ConvPCLayer with precision removed, AdamW/Adam support, now
- * routed through IComputeBackend for GPU portability (mirrors
- * SimplePCLayer's own IComputeBackend port).
+ * @brief ConvPCLayer with precision removed, AdamW/Adam support, routed
+ * through IComputeBackend for GPU portability.
  *
- * @warning CPU correctness re-verified tonight via five independent,
- * hand-computable tests (single-channel, multi-channel, real spatial
- * kernel, padding, and multi-channel+real-kernel combined) plus a
- * from-scratch Python im2col+GEMM reference comparison -- all matched
- * to float32 precision. The GPU path (once CUDABackend implements
- * Im2Col/Col2Im/RepackForBatchedGemm/MultiplyInto/Fill/
- * AddBiasPerChannel) has NOT yet been tested at all.
+ * @warning CPU correctness is verified against a from-scratch Python
+ * im2col+GEMM reference (float32 precision). The GPU path has not been
+ * tested.
  */
 
 namespace Deep
@@ -33,8 +28,7 @@ namespace Deep
     class SimpleConvPCNDiagnostics;
 
     /// @brief Convolutional PC layer, precision-free, AdamW-capable,
-    /// routed through IComputeBackend for GPU portability -- see the
-    /// file-level warning above for the GPU path's verification status.
+    /// routed through IComputeBackend for GPU portability.
     class SimpleConvPCLayer : public Layer
     {
     public:
@@ -184,7 +178,7 @@ namespace Deep
         float *muRepacked = nullptr;
 
         // All-ones vector for the bias-gradient GEMM trick (grad_b =
-        // lgRepacked @ ones) -- see UpdateWeights()'s implementation
+        // lgRepacked @ ones), see UpdateWeights()'s implementation
         // comment for why this replaces the original per-row scalar
         // sum loop.
         float *onesVector = nullptr;
@@ -199,7 +193,7 @@ namespace Deep
         float *m_b = nullptr;
         float *v_b = nullptr;
 
-        // Device-resident t/lr -- same reasoning as SimplePCLayer's own
+        // Device-resident t/lr, same reasoning as SimplePCLayer's own
         // port: graph capture (once this reaches GPU) can't re-record
         // for every changed learning rate or Adam step count, so both
         // must live in device memory the graph reads from directly.

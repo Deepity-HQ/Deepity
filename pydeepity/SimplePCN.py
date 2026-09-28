@@ -34,12 +34,12 @@ class SimplePCN(dy.SimplePCNetwork):
     ) -> None:
         self.architecture = architecture
         self.device = device
-        # NOTE: batch_size is NOT stored as a plain attribute here --
+        # NOTE: batch_size is NOT stored as a plain attribute here,
         # dy.SimplePCNetwork (the C++ base class) exposes `batch_size` as
         # a READ-ONLY property (def_prop_ro, no setter at all). Assigning
         # `self.batch_size = ...` fails unconditionally with
         # "property of 'SimplePCN' object has no setter", regardless of
-        # whether it happens before or after super().__init__() -- a
+        # whether it happens before or after super().__init__(), a
         # read-only property simply has no setter to call, ever. Use a
         # local variable instead; self.batch_size becomes valid and
         # correct automatically once super().__init__() actually
@@ -112,7 +112,7 @@ class SimplePCN(dy.SimplePCNetwork):
         it, that activation is attached to the backend layer. A final
         terminal (sink) layer is appended so that the network's last layer
         holds the OUTPUT dimension's beliefs, not the last Linear's input
-        dimension -- see DKPPCN._build_backend() for the same pattern.
+        dimension. See DKPPCN._build_backend() for the same pattern.
         """
 
         for i, component in enumerate(self.architecture):
@@ -224,7 +224,7 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def randomize_weights(self, dist: str = "") -> None:
         self._require_configured()
-        # The underlying C++ binding takes no arguments -- it always uses
+        # The underlying C++ binding takes no arguments, it always uses
         # the same, fixed randomization internally. `dist` is accepted
         # here for forward-API-compatibility but currently has no effect;
         # passing it through to super().randomize_weights() would fail at

@@ -21,7 +21,7 @@ namespace Deep
         std::fill(x, x + n, 1.0f);
     }
 
-    /// @brief Two-buffer variant of dLinear -- src is unused (the
+    /// @brief Two-buffer variant of dLinear, src is unused (the
     /// derivative of a linear function is a constant), kept for
     /// signature consistency with To_dFn2's dispatch table.
     static inline void dLinearInto(float *RESTRICT dst, [[maybe_unused]] const float *RESTRICT src, size_t n) noexcept

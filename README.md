@@ -67,7 +67,7 @@ Working examples live in [`examples/`](examples/), including full MNIST training
 Every predictive coding network has to "settle" toward an answer over several iterative steps before it can learn from a batch, usually 20 to 30 of them. Deepity's newest variant, `DKPPCN`, implements Direct Kolen-Pollack feedback alignment (a 2026 addition to the predictive coding literature) to cut that down to a single step, without giving up accuracy:
 
 <div align="center">
-<img src="resources/dkppcn_results.png" alt="DKPPCN accuracy over 50 epochs, compared against ngc-learn and PyTorch backprop" width="650" />
+<img src="resources/dkppcn_results.png" alt="DKPPCN accuracy over 50 epochs, compared against a JAX-based predictive coding reference and PyTorch backprop" width="650" />
 </div>
 
 And the runtime difference this makes, compared against a standard backprop baseline, the JAX-based reference implementation for predictive coding, another PyTorch-based PC library, and this project's own previous results:

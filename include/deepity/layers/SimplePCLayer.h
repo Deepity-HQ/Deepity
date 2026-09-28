@@ -14,56 +14,23 @@
 
 /**
  * @file SimplePCLayer.h
- * @brief DiscriminativePCLayer with precision entirely removed.
+ * @brief DiscriminativePCLayer with precision weighting removed: energy
+ * reduces to plain E = 0.5*sum(e^2), and UpdateState()'s own term reduces
+ * to dz_dt = -e. Mirrors DiscriminativePCLayer's public interface
+ * (construction pattern, ActivationType constructor, accessors) as a
+ * drop-in for callers that don't need precision.
  *
- * Precision weighting (p, log_p, UpdatePrecision()) was found this session
- * to be an unused cost, not a benefit: every real training run used pr=0.0
- * (precision inert -- p stays permanently at 1, log_p at 0), yet
- * UpdatePrecision() was still called unconditionally every train_step(),
- * and every layer paid for the p buffer, the log_p buffer, and the
- * precision-weighted energy formula's extra multiply/log term on every
- * single CalculateState()/UpdateState() call, for zero behavioral benefit.
+ * Routed through an IComputeBackend, so it runs on either CPUBackend or
+ * CUDABackend. `backend` defaults to nullptr, in which case the layer
+ * constructs and owns its own CPUBackend.
  *
- * This class removes all of that: energy reduces to plain
- * E = 0.5*sum(e^2) (no precision weighting, no -0.5*log(p) term), and
- * UpdateState()'s own term reduces to dz_dt = -e (no p multiplier, since
- * p=1 always made that multiplication a no-op anyway).
- *
- * Mirrors DiscriminativePCLayer's public interface as closely as possible
- * (same AddLayer-style construction pattern, same ActivationType-based
- * constructor, same GetBeliefs/GetErrors/GetWeights/GetBiases accessors)
- * so it's a near-drop-in swap for anyone not using precision -- which, per
- * the above, was everyone.
- *
- * @warning Not yet gradient-checked independently -- this is a direct
- * strip-down of DiscriminativePCLayer's already-verified math (same
- * CalculateState/UpdateState/UpdateWeights formulas, precision terms
- * removed), not new math, but the removal itself hasn't been re-verified
- * via finite-difference check. Do that before trusting this for real
- * training -- same discipline as every other change this session.
- *
- * @note Optionally uses Adam (see AdamOptimizer.h) instead of plain SGD
- * for weight updates, selected via SetOptimizer(); Adam's moment buffers
- * are only allocated when selected, keeping the SGD-only path free of
- * their memory/compute cost.
+ * @note Optionally uses Adam instead of plain SGD, selected via
+ * SetOptimizer().
  *
  * @note Optionally caches a CLAMPED layer's outgoing prediction (mu)
- * across settling steps via SetMuCaching() -- a clamped layer's z is
- * fixed for the whole settling loop, and W/b don't change until
- * UpdateWeights() runs afterward, so mu=f(W\@z+b) is PROVABLY IDENTICAL
- * every step while clamped. This is an EXACT optimization, not an
- * approximation -- default OFF so both behaviors coexist for direct
- * correctness/timing comparison before trusting it.
- *
- * @note As of this revision, all math is routed through an
- * IComputeBackend rather than calling cblas_/Deep::* functions
- * directly, so this layer can run on either CPUBackend or CUDABackend.
- * `backend` defaults to nullptr, in which case the layer constructs and
- * owns its own CPUBackend internally -- every existing call site
- * (SimplePCNetwork::AddLayer, nanobind bindings, hand-written C++)
- * keeps working completely unchanged, silently getting today's exact
- * CPU-only behavior. Passing a real backend explicitly is only needed
- * for new, GPU-aware call sites.
+ * across settling steps via SetMuCaching(). While clamped, z is fixed
+ * and W/b don't change until UpdateWeights() runs, so mu=f(W\@z+b) is
+ * exactly identical every step. Default off.
  * @version 1.1
  * @date 2026-09-05
  * @author Jack Rose
@@ -73,7 +40,7 @@ namespace Deep
 {
     class SimplePCNDiagnostics;
 
-    /// @brief Predictive Coding layer without precision weighting -- the
+    /// @brief Predictive Coding layer without precision weighting: the
     /// simpler, unweighted-energy counterpart to DiscriminativePCLayer.
     class SimplePCLayer : public Layer
     {
@@ -90,7 +57,7 @@ namespace Deep
         /// @param dAct Derivative of activation function
         /// @param backend Compute backend to route all math through.
         ///        Defaults to nullptr, in which case this layer
-        ///        constructs and owns its own CPUBackend internally --
+        ///        constructs and owns its own CPUBackend internally,
         ///        existing callers don't need to change anything. Pass a
         ///        real backend (owned elsewhere, e.g. by the network) to
         ///        run this layer on GPU.
@@ -125,11 +92,8 @@ namespace Deep
         /// \f[
         /// E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
         /// \f]
-        /// mu is now computed as mu = W @ phi(z) + b -- activation
-        /// applied to z BEFORE the linear transform, matching
-        /// ngc-learn's documented convention exactly (was previously
-        /// mu = phi(W\@z+b), activation AFTER the transform).
-        /// (No precision weighting -- see file-level note.)
+        /// mu = W @ phi(z) + b: activation applied to z before the
+        /// linear transform.
         /// @param needEnergy Asks for energy
         /// @return This layer's energy contribution at the current state, if asked for.
         float CalculateState(bool needEnergy = true) noexcept;
@@ -141,10 +105,9 @@ namespace Deep
         /// \f[
         /// \frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma'(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
         /// \f]
-        /// The derivative multiply now applies AFTER the W transform,
-        /// using f'(z) (this layer's OWN state derivative), not f'(mu)
-        /// applied before -- matching the activate-before-transform
-        /// convention.
+        /// The derivative multiply applies after the W transform, using
+        /// f'(z) (this layer's own state derivative), not f'(mu) applied
+        /// before.
         void UpdateState() noexcept override;
 
         /// @brief Computes weight updates via gradient descent, with L2 weight decay.
@@ -212,32 +175,25 @@ namespace Deep
         /// @param l The new lambda value.
         void SetLambda(float l) noexcept { this->lmbda = l; }
 
-        /// @brief Selects the optimizer used for weight updates (SGD or
-        /// Adam). Adam's moment buffers are lazily allocated on first use.
+        /// @brief Selects the optimizer used for weight updates (SGD or Adam).
         /// @param o The optimizer type to use.
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
 
         /// @brief Sets the mu-cache staleness threshold: mu is recomputed
         /// only when ||z - z_at_last_recompute|| / (||z_at_last_recompute||
-        /// + eps) exceeds this value. threshold=-1 disables caching
-        /// entirely (default). threshold=0 reproduces the original,
-        /// EXACT clamped-only behavior (a clamped layer's z never changes,
-        /// so its ratio is always exactly 0, always below any
-        /// threshold>=0). threshold>0 extends caching to UNCLAMPED layers
-        /// too, as a genuine approximation -- correctness there means
-        /// "close enough for real training," not "bit-identical," and
-        /// needs its own accuracy-impact validation, not just a trajectory
-        /// diff.
+        /// + eps) exceeds this value. -1 disables caching (default). 0 is
+        /// exact for clamped layers only (z never changes while clamped).
+        /// >0 extends caching to unclamped layers too, as an approximation.
         void SetMuCacheThreshold(float threshold) noexcept { muCacheThreshold = threshold; }
-        /// @brief Returns the current mu-cache staleness threshold -- see
+        /// @brief Returns the current mu-cache staleness threshold; see
         /// SetMuCacheThreshold() above.
         float GetMuCacheThreshold() const noexcept { return muCacheThreshold; }
 
         /// @brief Computes only mu (forward prediction), skipping error/energy
         /// entirely. Extracted from CalculateState() for callers (like
         /// ProjectForward()) that don't need the discarded error/energy values.
-        /// Computes zF=phi(z) internally and uses it for the GEMM, matching
-        /// the activate-before-transform convention (mu=W\@phi(z)+b).
+        /// Computes zF=phi(z) internally and uses it for the GEMM
+        /// (mu=W\@phi(z)+b).
         void ComputeMuOnly() noexcept;
 
         /// @brief Sets the layer immediately above this one in the network.
@@ -276,15 +232,13 @@ namespace Deep
 
         /// @brief Computes the total number of floats this layer requires
         /// from a MemoryArena (weights, biases, beliefs, errors, scratch
-        /// buffers, and, if Adam is selected, its moment buffers).
+        /// buffers, and Adam's moment buffers).
         /// @return The required float count.
         size_t GetRequiredFloats() const noexcept;
         /// @brief Binds this layer's weight/state/scratch buffers into the
         /// supplied arena. Must be called before any other operation.
         /// Templated so either MemoryArena (CPU) or DeviceMemoryArena
-        /// (GPU) can be bound, resolved entirely at compile time -- see
-        /// the .cpp's explicit instantiations for the two concrete types
-        /// actually used.
+        /// (GPU) can be bound, resolved entirely at compile time.
         /// @param arena The arena to bind into.
         template <typename ArenaT>
         void BindMemory(ArenaT &arena);
@@ -311,23 +265,21 @@ namespace Deep
         int batchSize;
 
         float *mu;
-        float *cachedMu;        // separate from mu -- mu gets mutated in-place by
-                                // UpdateState() every step (converted to its
-                                // derivative), so caching must copy a preserved
-                                // value back INTO mu each skipped step, not just
-                                // skip writing to mu entirely
-        float *zF;              // this layer's OWN activated belief,
-                                // phi(z) -- needed both for the forward
-                                // GEMM (mu=zF@W+b) AND the weight
-                                // gradient (dW uses zF, not raw z),
-                                // matching ngc-learn's documented
-                                // convention: mu_l = W_l . phi(z_{l-1})
+        float *cachedMu;        // Separate from mu: mu gets mutated in-place
+                                // by UpdateState() every step (converted to
+                                // its derivative), so caching must copy a
+                                // preserved value back into mu each skipped
+                                // step, not just skip writing to mu entirely.
+        float *zF;              // This layer's own activated belief, phi(z),
+                                // needed both for the forward GEMM
+                                // (mu=zF@W+b) and the weight gradient (dW
+                                // uses zF, not raw z): mu_l = W_l . phi(z_{l-1}).
         float *feedbackScratch; // own_state_size scratch for the raw
-                                // feedback GEMM's output -- the f'(z)
-                                // multiply applies ONLY to the feedback
-                                // term, not the -e term already in
-                                // dz_dt, so it can't accumulate directly
-                                // into dz_dt via the GEMM itself
+                                // feedback GEMM's output. The f'(z) multiply
+                                // applies only to the feedback term, not the
+                                // -e term already in dz_dt, so it can't
+                                // accumulate directly into dz_dt via the
+                                // GEMM itself.
         float lr;
         float ir;
         float lmbda;
@@ -360,7 +312,6 @@ namespace Deep
         float *v_W = nullptr;
         float *m_b = nullptr;
         float *v_b = nullptr;
-        int t = 0;
 
         friend class SimplePCNDiagnostics;
     };

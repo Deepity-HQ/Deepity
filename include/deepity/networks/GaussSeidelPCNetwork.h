@@ -4,14 +4,19 @@
 #include <random>
 #include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/Activations.h>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file GaussSeidelPCNetwork.h
  * @brief Orchestrates GaussSeidelPCLayer's three-phase settling step in
- * the correct order -- the layer class alone cannot produce genuine
- * Gauss-Seidel dynamics; the SWEEP ORDER across layers is what makes it
+ * the correct order. The layer class alone cannot produce genuine
+ * Gauss-Seidel dynamics; the sweep order across layers is what makes it
  * Gauss-Seidel rather than Jacobi, and that only exists at this level.
+ * Device-aware (DeviceType constructor parameter, backend member,
+ * cpuArena/gpuArena split in Compile()).
  *
  * Per settling step, in order:
  *   1. UpdateState() on EVERY layer       (uses PREVIOUS timestep's mu/e)
@@ -19,29 +24,24 @@
  *   3. ComputeError() on EVERY layer      (uses THIS timestep's fresh
  *                                          z and layerBelow's fresh mu)
  *
- * Order among layers WITHIN a single sweep does not matter (verified via
- * the dependency analysis in GaussSeidelPCLayer.h's class docs -- each
- * layer's step-1/2/3 only depends on ITS OWN state plus a neighbor's
- * value from a sweep that has ALREADY fully completed). Only the ORDER
- * OF THE THREE SWEEPS THEMSELVES is load-bearing.
- *
- * @warning Not yet gradient-checked at the network level. The individual
- * layer's math should be independently verified before trusting any
- * accuracy conclusion drawn from real training with this class.
+ * Order among layers within a single sweep does not matter: each
+ * layer's step-1/2/3 only depends on its own state plus a neighbor's
+ * value from a sweep that has already fully completed. Only the order
+ * of the three sweeps themselves is load-bearing.
  */
 
 namespace Deep
 {
     /// @brief Predictive Coding network built from GaussSeidelPCLayer,
     /// sweeping layers sequentially rather than updating them
-    /// simultaneously. See the file-level warning above on its current
-    /// verification status.
+    /// simultaneously, now device-aware.
     class GaussSeidelPCNetwork
     {
     public:
         /// @brief Constructs an empty network with a predetermined batch size.
         /// @param batchSize Batch size
-        explicit GaussSeidelPCNetwork(int batchSize) noexcept;
+        /// @param device Which device this network's layers run on.
+        explicit GaussSeidelPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
         /// @brief Default destructor.
         ~GaussSeidelPCNetwork() = default;
 
@@ -51,7 +51,11 @@ namespace Deep
         /// @brief Copy assignment is disabled; see the copy constructor.
         GaussSeidelPCNetwork &operator=(const GaussSeidelPCNetwork &) = delete;
 
-        /// @brief Adds a layer to the network.
+        /// @brief Adds a layer to the network, using raw activation
+        /// function pointers, converted to their equivalent
+        /// ActivationType via To_AType() and forwarded to the
+        /// ActivationType overload below (GaussSeidelPCLayer itself only
+        /// accepts ActivationType).
         /// @param size input size
         /// @param nextSize output size
         /// @param lr learning rate for weight updates
@@ -73,6 +77,14 @@ namespace Deep
         void AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
                       ActivationType aType, ActivationType dType);
 
+        /// @brief Sets the optimizer for EVERY layer added so far. Safe
+        /// to call any time before Compile().
+        void SetOptimizer(OptimizerType opt) noexcept
+        {
+            for (auto &layer : layers)
+                layer->SetOptimizer(opt);
+        }
+
         /// @brief Randomizes the weights of each layer.
         /// @param rng The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &rng);
@@ -85,29 +97,19 @@ namespace Deep
         /// @brief Runs ONE full Gauss-Seidel settling step (all three
         /// sweeps, in order) across every layer.
         /// @return Total energy, summed from every layer's
-        /// ComputeError() -- meaningful only after all three sweeps have
+        /// ComputeError(). Meaningful only after all three sweeps have
         /// run for this step.
         float Step() noexcept;
 
         /// @brief Updates every non-terminal layer's weights. Called
-        /// ONCE after the full settling loop completes, matching
-        /// ngc-learn's evolve_process.
+        /// once after the full settling loop completes.
         void UpdateWeights() noexcept;
 
         /// @brief Seeds every hidden layer's z from a genuine forward
         /// pass through current weights (ComputePrediction() only, no
-        /// error/energy side effects) -- an orthogonal optimization to
-        /// the Gauss-Seidel restructuring itself. Assumes layers[0] is
-        /// already clamped.
+        /// error/energy side effects). Assumes layers[0] is already
+        /// clamped.
         void ProjectForward() noexcept;
-
-        /// @brief Sets the optimizer used for weight updates, on every layer.
-        /// @param o The optimizer type to apply.
-        void SetOptimizer(OptimizerType o) noexcept
-        {
-            for (auto &layer : layers)
-                layer->SetOptimizer(o);
-        }
 
         /// @brief Sets the learning rate used for weight updates, on
         /// every layer.
@@ -144,14 +146,20 @@ namespace Deep
         /// clamped), read the terminal's beliefs.
         std::vector<float> Predict(const std::vector<float> &x, int inferenceSteps);
 
-        /// @brief Loads all layers into one contiguous block of memory.
+        /// @brief Sums every layer's required float count into a single
+        /// contiguous arena and binds each layer into it.
         void Compile();
 
     private:
         /// @brief Every layer in the network, in the order they were added.
         std::vector<std::unique_ptr<GaussSeidelPCLayer>> layers;
+        std::unique_ptr<IComputeBackend> backend;
+        DeviceType device;
         /// @brief The contiguous memory block backing every layer's buffers.
-        std::unique_ptr<MemoryArena> arena;
+        std::unique_ptr<MemoryArena> cpuArena;
+#if defined(DEEPITY_USE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
         /// @brief The batch size shared by every layer in the network.
         int batchSize;
     };

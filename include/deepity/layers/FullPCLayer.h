@@ -13,33 +13,22 @@
 
 /**
  * @file FullPCLayer.h
- * @brief New, standalone PC layer (not derived from DirectKPPCLayer)
- * meant to eventually carry every technique from the paper-combination
- * work -- muPC scaling, optional residual connections, DKP direct
- * feedback, AdamW, muP-style per-layer LR scaling, optional iPC,
- * cross-entropy terminal loss -- each one OFF by default, opt-in per
- * layer/network, so a plain DKP-PC-equivalent network is just this
- * class with every extra left at its default.
+ * @brief PC layer combining DKP direct feedback (DirectKPPCLayer's
+ * structure) with muPC scaling (`a`) and optional residual connections
+ * (`useResidual`), each off by default so plain defaults reproduce
+ * DirectKPPCLayer exactly.
  *
- * THIS PASS: only muPC scaling (`a`) and residual connections
- * (`useResidual`) are added, on top of DirectKPPCLayer's proven
- * structure (DKP feedback, Adam/AdamW, graph-capture-compatible
- * device-pointer t/lr). Everything else stays for a later pass.
- *
- * `a` and `useResidual` are set by the owning network at Compile()
- * time (via SetMuPCScale/SetResidual), not computed here -- this
- * layer, at construction time, doesn't know the full network's shape
- * (width N, depth L, input dim) that muPC's own aL formula needs.
- * Defaults (a=1.0, useResidual=false) reproduce plain, unscaled PC
- * exactly, matching the "every extra opt-in, off by default" design.
+ * `a` and `useResidual` are set by the owning network at Compile() time
+ * (via SetMuPCScale/SetResidual), not computed here, this layer, at
+ * construction time, doesn't know the full network's shape (width N,
+ * depth L, input dim) that muPC's own aL formula needs.
  */
 
 namespace Deep
 {
 /// @brief PC layer combining muPC scaling, optional residual
-/// connections, and DKP direct feedback -- every extra OFF by default,
-/// so plain defaults reproduce DirectKPPCLayer exactly. See the
-/// file-level note above for the full design rationale.
+/// connections, and DKP direct feedback, every extra off by default,
+/// so plain defaults reproduce DirectKPPCLayer exactly.
 class FullPCLayer : public Layer
 {
 protected:
@@ -55,8 +44,8 @@ protected:
 
   // muPC scaling: mu = a * (W @ phi(z)) + b [+ z if useResidual].
   // a=1.0, useResidual=false reproduces plain PC exactly.
-  float a = 1.0f;           ///< muPC forward-scaling factor -- see SetMuPCScale().
-  bool useResidual = false; ///< Whether the residual/skip connection is enabled -- see SetResidual().
+  float a = 1.0f;           ///< muPC forward-scaling factor, see SetMuPCScale().
+  bool useResidual = false; ///< Whether the residual/skip connection is enabled, see SetResidual().
 
   bool isClamped = false;   ///< Whether ClampState() is currently active.
   bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
@@ -71,7 +60,7 @@ protected:
   OptimizerType optPsi = OptimizerType::SGD; ///< Optimizer for Psi.
 
   /// @brief Custom deleter type for `backend`, needed since IComputeBackend
-  /// is an abstract base -- see the member below.
+  /// is an abstract base, see the member below.
   using BackendDeleter = void (*)(IComputeBackend*);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend; ///< This layer's compute backend.
 
@@ -104,11 +93,11 @@ protected:
   float* zF = nullptr;             ///< Activated belief, phi(z), used as the forward GEMM's input.
   float* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
-  float* v = nullptr;          ///< Momentum buffer for the settling update -- see SetMomentum().
-  bool useMomentum = false;    ///< Whether momentum settling is enabled -- see SetMomentum().
-  float momentumBeta = 0.9f;   ///< Momentum EMA decay rate -- see SetMomentum().
+  float* v = nullptr;          ///< Momentum buffer for the settling update, see SetMomentum().
+  bool useMomentum = false;    ///< Whether momentum settling is enabled, see SetMomentum().
+  float momentumBeta = 0.9f;   ///< Momentum EMA decay rate, see SetMomentum().
 
-  bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled -- see SetCrossEntropy().
+  bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled, see SetCrossEntropy().
   float* rowEnergies = nullptr; ///< Per-row energy scratch for the cross-entropy path, length batchSize.
 
   /// @brief nextSize-length scratch for SumRows' output in
@@ -123,7 +112,7 @@ public:
   /// @param size input size
   /// @param nextSize output size (0 marks a terminal layer)
   /// @param terminalSize the size of the network's final output layer
-  /// (e.g. 10 for MNIST) -- required directly, not inferred, since the
+  /// (e.g. 10 for MNIST), required directly, not inferred, since the
   /// true terminal layer isn't known until the whole network has been
   /// assembled.
   /// @param batchSize batch size
@@ -176,7 +165,7 @@ public:
   {
     this->a = a;
   }
-  /// @brief Returns the current muPC forward-scaling factor -- see
+  /// @brief Returns the current muPC forward-scaling factor, see
   /// SetMuPCScale().
   float GetMuPCScale() const noexcept
   {
@@ -191,7 +180,7 @@ public:
   {
     useResidual = enabled;
   }
-  /// @brief Returns whether the residual connection is enabled -- see
+  /// @brief Returns whether the residual connection is enabled, see
   /// SetResidual().
   bool GetResidual() const noexcept
   {
@@ -200,7 +189,7 @@ public:
 
   /// @brief Enables softmax cross-entropy energy for THIS layer's error
   /// against layerBelow's mu (i.e. this only makes sense set on the
-  /// terminal layer, against the second-to-last layer's logits -- NOT
+  /// terminal layer, against the second-to-last layer's logits, NOT
   /// looped over every layer the way SetMuPCScale/SetResidual/
   /// SetMomentum's network-level setters are). OFF by default (plain
   /// Gaussian energy, matching DirectKPPCLayer exactly).
@@ -208,7 +197,7 @@ public:
   {
     useCrossEntropy = enabled;
   }
-  /// @brief Returns whether softmax cross-entropy energy is enabled --
+  /// @brief Returns whether softmax cross-entropy energy is enabled,
   /// see SetCrossEntropy().
   bool GetCrossEntropy() const noexcept
   {
@@ -221,7 +210,7 @@ public:
   {
     return CalculateState(true);
   }
-  /// @brief NOT a virtual override -- see SimplePCLayer's identical
+  /// @brief NOT a virtual override, see SimplePCLayer's identical
   /// pattern. Lets the settling loop skip the energy reduction (and its
   /// capture-time sync) when the caller doesn't need the value.
   float CalculateState(bool needEnergy) noexcept;
@@ -231,7 +220,7 @@ public:
   void UpdateState() noexcept override;
   void UpdateWeights() noexcept override;
   /// @brief Perturbs W using the layer above's Psi and the terminal
-  /// layer's error -- the DFA phase, run once per batch before settling
+  /// layer's error, the DFA phase, run once per batch before settling
   /// begins.
   void DirectFeedbackUpdate() noexcept;
 
@@ -263,7 +252,7 @@ public:
   /// is EMA-smoothed (decay `beta`) before being applied to z, instead
   /// of applied directly each step. OFF by default. `v` is allocated
   /// unconditionally in BindMemory() regardless of this flag's value at
-  /// that time (same reasoning as biasGradScratch -- cheap, and avoids
+  /// that time (same reasoning as biasGradScratch, cheap, and avoids
   /// an ordering hazard if this is called after Compile()). Reset to
   /// zero at the start of every TrainStep()/Predict() call, same as z.
   void SetMomentum(bool enabled, float beta = 0.9f) noexcept
@@ -271,12 +260,12 @@ public:
     useMomentum = enabled;
     momentumBeta = beta;
   }
-  /// @brief Returns whether momentum settling is enabled -- see SetMomentum().
+  /// @brief Returns whether momentum settling is enabled, see SetMomentum().
   bool GetMomentum() const noexcept
   {
     return useMomentum;
   }
-  /// @brief Returns the momentum EMA decay rate -- see SetMomentum().
+  /// @brief Returns the momentum EMA decay rate, see SetMomentum().
   float GetMomentumBeta() const noexcept
   {
     return momentumBeta;

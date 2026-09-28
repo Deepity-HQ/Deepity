@@ -93,7 +93,7 @@ int main()
     v = dist(dataRng);
 
   // One-hot-ish target (a real classification-style target, not
-  // arbitrary noise -- matches how this feature will actually be used)
+  // arbitrary noise, matches how this feature will actually be used)
   std::vector<float> target(batchSize * terminalSize, 0.001f);
   for (size_t b = 0; b < batchSize; ++b)
     target[b * terminalSize + (b % terminalSize)] = 0.999f;
@@ -101,7 +101,7 @@ int main()
   layer0.ClampState(input);
   layer1.ClampState(target);
 
-  // Let the layer compute mu naturally -- no manual control over its
+  // Let the layer compute mu naturally, no manual control over its
   // value, so the reference computation below is checked against a
   // real, network-produced mu, not a hand-picked convenient one.
   layer0.CalculateState(false);

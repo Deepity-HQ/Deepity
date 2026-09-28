@@ -78,12 +78,10 @@ namespace Deep
             total += pad16(outStateSize);                    // muRepacked
             total += pad16(M);                               // onesVector
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                total += pad16(Wsize) * 3;               // grad_W, m_W, v_W
-                total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
-                total += pad16(1) * 2;                   // t_device, lr_device
-            }
+            // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+            total += pad16(Wsize) * 3;               // grad_W, m_W, v_W
+            total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
+            total += pad16(1) * 2;                   // t_device, lr_device
         }
 
         return total;
@@ -135,28 +133,26 @@ namespace Deep
             backend->Zero(muRepacked, outStateSize);
             backend->Fill(onesVector, M, 1.0f);
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                grad_W = arena.AllocateFloats(Wsize);
-                m_W = arena.AllocateFloats(Wsize);
-                v_W = arena.AllocateFloats(Wsize);
-                grad_b = arena.AllocateFloats(outChannels);
-                m_b = arena.AllocateFloats(outChannels);
-                v_b = arena.AllocateFloats(outChannels);
+            // Always allocated, see GetRequiredFloats().
+            grad_W = arena.AllocateFloats(Wsize);
+            m_W = arena.AllocateFloats(Wsize);
+            v_W = arena.AllocateFloats(Wsize);
+            grad_b = arena.AllocateFloats(outChannels);
+            m_b = arena.AllocateFloats(outChannels);
+            v_b = arena.AllocateFloats(outChannels);
 
-                backend->Zero(m_W, Wsize);
-                backend->Zero(v_W, Wsize);
-                backend->Zero(m_b, outChannels);
-                backend->Zero(v_b, outChannels);
-                backend->Zero(grad_W, Wsize);
-                backend->Zero(grad_b, outChannels);
+            backend->Zero(m_W, Wsize);
+            backend->Zero(v_W, Wsize);
+            backend->Zero(m_b, outChannels);
+            backend->Zero(v_b, outChannels);
+            backend->Zero(grad_W, Wsize);
+            backend->Zero(grad_b, outChannels);
 
-                t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
-                lr_device = arena.AllocateFloats(1);
-                int zero = 0;
-                backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
-                backend->CopyFromHost(lr_device, &lr, 1);
-            }
+            t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            lr_device = arena.AllocateFloats(1);
+            int zero = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+            backend->CopyFromHost(lr_device, &lr, 1);
         }
         else
         {
@@ -272,7 +268,16 @@ namespace Deep
         size_t colCols = (outChannels > 0) ? (size_t)outHeight * outWidth : 0;
         size_t colRows = (outChannels > 0) ? (size_t)inChannels * kernelH * kernelW : 0;
 
-        if (outChannels > 0)
+        // mu must end up holding the derivative whenever outChannels > 0,
+        // regardless of isClamped or layerAbove, UpdateWeights() reads it
+        // unconditionally later with no isClamped guard of its own. Fuse
+        // the derivative with the immediately-following multiply only in
+        // the case that actually reaches that multiply (connected,
+        // unclamped); fall back to the plain derivative-only call
+        // otherwise so the invariant still holds.
+        bool canFuse = (layerAbove != nullptr && outChannels > 0 && !isClamped);
+
+        if (outChannels > 0 && !canFuse)
         {
             size_t outTotal = (size_t)batchSize * outChannels * colCols;
             backend->ActivationDerivative(derivativeType, mu, outTotal, true);
@@ -289,7 +294,12 @@ namespace Deep
             size_t outSize = (size_t)outChannels * colCols;
             size_t outTotal = (size_t)batchSize * outSize;
 
-            backend->MultiplyInto(bottom_up_cols, e_above, mu, outTotal);
+            // Was two calls (ActivationDerivative(..., mu, ..., true) then
+            // MultiplyInto(bottom_up_cols, e_above, mu, ...)), fused into
+            // one kernel launch here, since canFuse is true whenever this
+            // branch is reached (isClamped already returned above).
+            backend->FusedActivationDerivativeMultiply(bottom_up_cols, e_above, mu, derivativeType,
+                                                        outTotal);
 
             for (int batch = 0; batch < batchSize; ++batch)
             {
@@ -349,9 +359,9 @@ namespace Deep
                 1.0f, W, (int)colRows);
 
             // Bias gradient: db[oc] = lr_batch * sum over lgRepacked's
-            // oc-th row (M contiguous values -- both batch AND spatial
+            // oc-th row (M contiguous values, both batch AND spatial
             // combined). NOT the same reduction shape as SumRows (which
-            // reduces across batch only) -- expressed instead as a GEMM
+            // reduces across batch only), expressed instead as a GEMM
             // against an all-ones vector: db = lgRepacked[outChannels,M]
             // @ ones[M,1]. beta=1.0f accumulates onto b directly,
             // matching the original loop's `b[oc] += ...`.
@@ -375,7 +385,7 @@ namespace Deep
                 grad_scale, lgRepacked, (int)M, colsRepacked, (int)M,
                 0.0f, grad_W, (int)colRows);
 
-            // grad_b = grad_scale * (lgRepacked @ ones) -- beta=0.0f
+            // grad_b = grad_scale * (lgRepacked @ ones), beta=0.0f
             // overwrites, matching the original's memset(grad_b,0,...)
             // followed by accumulation (equivalent since nothing else
             // writes grad_b between the memset and this sum).

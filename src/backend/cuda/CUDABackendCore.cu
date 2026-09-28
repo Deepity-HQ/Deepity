@@ -3,7 +3,7 @@
  * @brief CUDABackend lifecycle: construction/destruction, CUDA-graph
  * capture/replay, and raw device memory management (alloc/free/copy/RNG).
  * Mirrors the "Graphs" and "Memory" sections of IComputeBackend.h. Split out
- * of the former monolithic CUDABackend.cu -- see CUDABackendGemm.cu,
+ * of the former monolithic CUDABackend.cu, see CUDABackendGemm.cu,
  * CUDABackendElementwise.cu, CUDABackendActivations.cu,
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.

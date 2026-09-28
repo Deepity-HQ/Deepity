@@ -57,7 +57,7 @@ namespace Deep
 
         // Computed once, by name, instead of repeating `bufSize /
         // sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION)` inline at both the
-        // allocation site and the loop condition -- and std::vector instead
+        // allocation site and the loop condition, and std::vector instead
         // of make_unique<T[]>(count), since that's the far more common,
         // heavily-exercised pattern for a runtime-sized buffer like this.
         const size_t count = static_cast<size_t>(bufSize) / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
@@ -108,7 +108,7 @@ namespace Deep
     /// given batch size, memoized so it's a no-op if the target hasn't
     /// changed since the last call. Small batches get 1 thread (avoids
     /// parallelization overhead dominating tiny work); larger batches
-    /// scale up to a measured, capped optimum -- see the inline note on
+    /// scale up to a measured, capped optimum, see the inline note on
     /// why 16 threads, not the full core count, is the ceiling.
     /// @param batchSize The batch size about to be processed.
     static inline void DynamicThread(int batchSize) noexcept
@@ -121,14 +121,14 @@ namespace Deep
         // Confirmed via extended sweep (batch=1024/2048/4096, threads up to
         // 48): the optimum drifts mildly upward with batch size (8 -> ~12 ->
         // ~16) but the difference is small and noisy at this scale (~7%
-        // between 8/12/16 at batch=4096) -- NOT worth a hard per-batch-size
+        // between 8/12/16 at batch=4096), NOT worth a hard per-batch-size
         // table. What IS solid and unambiguous: 48 threads is always the
-        // worst choice tested, by 1.8-2.9x, at every batch size -- likely
+        // worst choice tested, by 1.8-2.9x, at every batch size, likely
         // cross-CCD/Infinity Fabric synchronization cost on this many-core
         // part. A smooth, capped scaling curve fits the real trend better
         // than another single hardcoded number.
         int scaled = 8 + (batchSize / 1024) * 4;             // 8 @ <1024, ~12 @ 2048, ~16 @ 4096, etc.
-        const int MAX_USEFUL_THREADS = std::min(scaled, 16); // cap -- 48 was confirmed worse
+        const int MAX_USEFUL_THREADS = std::min(scaled, 16); // cap, 48 was confirmed worse
                                                              // every time, no reason to extrapolate past 16
 
         int targetThreads = (batchSize < THRESHOLD) ? 1 : std::min(maxProcs, MAX_USEFUL_THREADS);

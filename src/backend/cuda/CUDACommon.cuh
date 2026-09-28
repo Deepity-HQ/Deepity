@@ -6,12 +6,12 @@
 /**
  * @file CUDACommon.cuh
  * @brief Shared helper(s) for the CUDABackend*.cu translation units. Only
- * ever included from a .cu file compiled under DEEPITY_USE_CUDA -- never
+ * ever included from a .cu file compiled under DEEPITY_USE_CUDA, never
  * from host-only (.cpp) code.
  */
 
 /// @brief Logs the most recent CUDA error (if any) to stderr, tagged with
-/// the call site. Used right after every raw `<<<...>>>` kernel launch --
+/// the call site. Used right after every raw `<<<...>>>` kernel launch,
 /// cuBLAS/CUTLASS calls check their own returned status instead.
 #define CHECK_CUDA_LAUNCH()                                                                        \
   do                                                                                               \
@@ -27,7 +27,7 @@
 namespace Deep
 {
 /// @brief Per-thread activation derivative, computed from a single
-/// pre-activation value -- the CUDA-kernel counterpart of
+/// pre-activation value, the CUDA-kernel counterpart of
 /// Deep::ActivationDerivativeScalar (see Activations.h) for host code.
 /// Shared (via this header, not cross-TU device linkage) by the
 /// standalone dXxxKernelInto kernels in CUDABackendActivations.cu and the
@@ -83,6 +83,39 @@ __device__ __forceinline__ float ActivationDerivativeDevice(ActivationType dType
 #endif
     return fmaf(-t, t, 1.0f);
   }
+  case ActivationType::dLINEAR:
+  case ActivationType::NONE:
+  default:
+    return 1.0f;
+  }
+}
+
+/// @brief Per-thread activation derivative computed FROM AN
+/// ALREADY-ACTIVATED value, the device counterpart of
+/// Deep::ActivationDerivativeFromActivatedScalar (see Activations.h).
+/// @warning GELU has no closed form from its activated value alone;
+/// see ActivationDerivativeFromActivatedScalar's warning, the dGELU
+/// case here reuses ActivationDerivativeDevice's raw-z formula on
+/// whatever was passed in, matching existing activated=true call sites'
+/// pre-existing (wrong, for GELU) behavior rather than changing it.
+/// @param dType A derivative-flavored ActivationType. Anything else
+/// (including NONE) falls back to 1.0.
+/// @param activated The already-activated value (or, for dGELU only,
+/// see the warning above).
+__device__ __forceinline__ float ActivationDerivativeFromActivatedDevice(ActivationType dType, float activated)
+{
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return (float)(activated > 0.0f);
+  case ActivationType::dGELU:
+    return ActivationDerivativeDevice(dType, activated);
+  case ActivationType::dSIGMOID:
+    return activated * (1.0f - activated);
+  case ActivationType::d_eSIGMOID:
+    return 2.0f * activated * (1.0f - activated);
+  case ActivationType::dTANH:
+    return fmaf(-activated, activated, 1.0f);
   case ActivationType::dLINEAR:
   case ActivationType::NONE:
   default:

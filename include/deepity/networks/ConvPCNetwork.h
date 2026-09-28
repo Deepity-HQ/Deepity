@@ -4,25 +4,29 @@
 #include <random>
 #include <deepity/layers/ConvPCLayer.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file ConvPCNetwork.h
- * @brief Network-level wrapper for ConvPCLayer, mirroring
- * DiscriminativePCNetwork's structure for the convolutional case.
+ * @brief Network-level wrapper for ConvPCLayer, device-aware (DeviceType
+ * constructor parameter, backend member, cpuArena/gpuArena split in
+ * Compile()).
  */
 
 namespace Deep
 {
-    class PCNDiagnostics;
-
-    /// @brief Convolutional Predictive Coding Network built from ConvPCLayer.
+    /// @brief Convolutional Predictive Coding Network built from
+    /// ConvPCLayer, precision-weighted, device-aware.
     class ConvPCNetwork
     {
     public:
         /// @brief Constructs an empty network; add layers via AddLayer(),
         /// then Compile() before use.
         /// @param batchSize Fixed batch size for every layer.
-        explicit ConvPCNetwork(int batchSize) noexcept;
+        /// @param device Which device this network's layers run on.
+        explicit ConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
         ~ConvPCNetwork() = default;
 
         ConvPCNetwork(const ConvPCNetwork &) = delete;
@@ -40,9 +44,14 @@ namespace Deep
                       ActivationType aType = ActivationType::RELU,
                       ActivationType dType = ActivationType::dRELU);
 
+        /// @brief Sets the optimizer for EVERY layer added so far. Safe to
+        /// call any time before Compile(), memory allocation is
+        /// deferred to Compile(), not the constructor.
+        void SetOptimizer(OptimizerType opt) noexcept;
+
         /// @brief Sums every layer's required float count into a single
         /// contiguous arena and binds each layer into it. Call after all
-        /// AddLayer() calls, before RandomizeWeights().
+        /// AddLayer()/SetOptimizer() calls, before RandomizeWeights().
         void Compile();
         /// @brief Initializes every layer's weights randomly.
         void RandomizeWeights(std::mt19937 &rng) noexcept;
@@ -90,9 +99,13 @@ namespace Deep
 
     private:
         std::vector<std::unique_ptr<ConvPCLayer>> layers;
-        std::unique_ptr<MemoryArena> arena;
+        std::unique_ptr<IComputeBackend> backend;
+        DeviceType device;
+        std::unique_ptr<MemoryArena> cpuArena;
+#if defined(DEEPITY_USE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
         int batchSize;
-
-        friend class PCNDiagnostics;
+        OptimizerType pendingOpt = OptimizerType::SGD;
     };
 } // namespace Deep

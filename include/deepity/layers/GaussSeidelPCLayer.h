@@ -1,77 +1,63 @@
 #pragma once
 
-#include <vector>
-#include <stdexcept>
-#include <random>
-#include <memory>
-#include <cstdlib>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/layers/Layer.h>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/AdamOptimizer.h>
-#include <deepity/layers/Layer.h>
+#include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/MemoryArena.h>
+#include <map>
+#include <memory>
+#include <random>
+#include <vector>
 
 /**
  * @file GaussSeidelPCLayer.h
  * @brief A PC layer whose settling dynamics follow a Gauss-Seidel
- * (sequential-sweep) update, matching ngc-learn's actual execution
- * order -- NOT the Jacobi (fully-synchronous) update SimplePCLayer uses.
- *
- * @note THIS IS AN UNPROVEN EXPERIMENT, not a confirmed improvement.
- * Classical numerical-methods results suggest Gauss-Seidel typically
- * needs fewer iterations than Jacobi for diagonally-dominant/symmetric
- * systems, and our CPU/OpenMP implementation was never exploiting
- * cross-layer parallelism anyway (unlike a GPU/JAX backend, where
- * Gauss-Seidel's sequential dependency chain is a real cost) -- so the
- * downside risk looks smaller here than it would for a GPU
- * implementation. But this has NOT been empirically confirmed for this
- * specific nonlinear, learned-weight system. Gradient-check independently
- * before trusting it, same discipline as every other new formula this
- * session.
+ * (sequential-sweep) update, not the Jacobi (fully-synchronous) update
+ * SimplePCLayer uses. Routed through IComputeBackend for GPU
+ * portability; feedback goes through the independent matrix E rather
+ * than W (see below).
  *
  * KEY STRUCTURAL DIFFERENCE from SimplePCLayer: there is no single
- * CalculateState() that does everything. Traced directly from
- * ngc-learn's real advance_process chain (E2,E3 -> z0,z1,z2,z3 -> W1,W2,
- * W3 -> e1,e2,e3), a full Gauss-Seidel timestep is THREE separate sweeps
- * across ALL layers, in this exact order:
+ * CalculateState() that does everything. A full Gauss-Seidel timestep is
+ * three separate sweeps across all layers, in this exact order:
  *
- *   1. UpdateState() on every layer       -- z updates using mu/e_above
- *      HELD OVER from the end of the PREVIOUS timestep (not yet fresh
- *      for this timestep).
- *   2. ComputePrediction() on every layer -- mu recomputes fresh, using
- *      the JUST-updated z from step 1. Order among layers doesn't matter
- *      here (each layer's mu only depends on its OWN z).
- *   3. ComputeError() on every layer      -- e recomputes fresh, using
- *      the JUST-updated z (step 1) as the target and layerBelow's FRESH
- *      mu (step 2) as the prediction. Order among layers doesn't matter
+ *   1. UpdateState() on every layer: z updates using mu/e_above held
+ *      over from the end of the previous timestep, not yet fresh for
+ *      this one.
+ *   2. ComputePrediction() on every layer: mu recomputes fresh, using
+ *      the just-updated z from step 1. Order among layers doesn't
+ *      matter here, since each layer's mu only depends on its own z.
+ *   3. ComputeError() on every layer: e recomputes fresh, using the
+ *      just-updated z (step 1) as the target and layerBelow's fresh mu
+ *      (step 2) as the prediction. Order among layers doesn't matter
  *      here either.
  *
  * This differs from SimplePCLayer's single-call CalculateState(), which
  * computes error and prediction together, and whose settling loop is
- * simply (CalculateState(); UpdateState();) x N -- fully synchronous
- * (Jacobi): every layer only ever reads values from the END of the
- * PREVIOUS full step, never a value updated earlier in the SAME step.
+ * simply (CalculateState(); UpdateState();) x N: fully synchronous
+ * (Jacobi), where every layer only ever reads values from the end of the
+ * previous full step, never a value updated earlier in the same step.
  *
  * A GaussSeidelPCNetwork class is required to actually orchestrate the
- * three sweeps above in the correct order across all layers -- calling
+ * three sweeps above in the correct order across all layers. Calling
  * these methods directly, out of order, or on a single layer in
- * isolation, will not reproduce the intended dynamics.
+ * isolation will not reproduce the intended dynamics.
  *
  * IMPORTANT BUFFER-LIFETIME NOTE (the same class of bug mu-caching hit
- * earlier): mu must NOT be mutated in place into its own derivative the
- * way SimplePCLayer's UpdateState() does -- it needs to stay in its
- * clean, activated form, since the layer ABOVE's ComputeError() reads it
- * later in this SAME timestep. UpdateState() and UpdateWeights() each
- * compute mu's derivative into a separate scratch buffer (muDeriv)
- * instead, leaving mu itself untouched.
+ * elsewhere): mu must not be mutated in place into its own derivative
+ * the way SimplePCLayer's UpdateState() does. It needs to stay in its
+ * clean, activated form, since the layer above's ComputeError() reads it
+ * later in this same timestep. Neither UpdateState() nor UpdateWeights()
+ * ever writes to mu; they only read/derive z, via the shared `dz_dt`
+ * scratch buffer, reused as a plain activation-derivative or
+ * activated-z scratch across phases, never simultaneously.
  *
- * Deliberately does NOT include mu-caching or activateBeforeTransform in
- * this first version -- isolating the Gauss-Seidel restructuring itself
- * for independent verification before layering anything else on top.
+ * Does not implement mu-caching or activateBeforeTransform.
  *
- * @warning Not yet gradient-checked. Do that before trusting this for
- * real training.
- * @version 1.0
- * @date 2026-08-26
+ * @version 2.0
+ * @date 2026-09-27
  */
 
 namespace Deep
@@ -79,8 +65,7 @@ namespace Deep
     class GaussSeidelPCNDiagnostics;
 
     /// @brief PC layer with Gauss-Seidel (sequential-sweep) settling
-    /// dynamics, in place of the usual simultaneous update. Not yet
-    /// gradient-checked -- see the file-level warning above.
+    /// dynamics, in place of the usual simultaneous update.
     class GaussSeidelPCLayer : public Layer
     {
     public:
@@ -92,34 +77,21 @@ namespace Deep
         /// @param learningRate Learning rate for weight updates
         /// @param inferenceRate Inference rate (Euler integration step size)
         /// @param lmbda Weight decay (L2 regularization) coefficient
-        /// @param act Activation function
-        /// @param dAct Derivative of activation function
-        GaussSeidelPCLayer(int size, int nextSize, int batchSize = 1,
-                           float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
-                           void (*act)(float *, size_t) = relu,
-                           void (*dAct)(float *, size_t, bool) = dRelu);
-
-        /// @brief Constructor using a named ActivationType instead of raw
-        /// function pointers.
-        /// @param size Size of this layer's own belief (z)
-        /// @param nextSize Size of the layer above's belief (this layer's
-        ///        outgoing prediction target); 0 marks a terminal layer
-        /// @param batchSize Batch size
-        /// @param learningRate Learning rate for weight updates
-        /// @param inferenceRate Inference rate (Euler integration step size)
-        /// @param lmbda Weight decay (L2 regularization) coefficient
         /// @param aType Activation type
         /// @param dType Activation derivative type
+        /// @param backend Compute backend to route all math through.
+        ///        Defaults to nullptr, in which case this layer
+        ///        constructs and owns its own CPUBackend internally.
         GaussSeidelPCLayer(int size, int nextSize, int batchSize = 1,
                            float learningRate = 1e-6f, float inferenceRate = 0.1f, float lmbda = 1e-2f,
-                           ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU);
+                           ActivationType aType = ActivationType::RELU, ActivationType dType = ActivationType::dRELU,
+                           IComputeBackend *backend = nullptr);
 
         /// @brief Step 1 of a Gauss-Seidel timestep: updates z using
         /// mu/e_above HELD OVER from the end of the previous timestep.
-        /// Does NOT mutate mu -- computes its derivative into a separate
-        /// scratch buffer.
-        /// @return Always 0.0f -- energy is only meaningful from
-        /// ComputeError(), kept for Layer interface conformance.
+        /// Does NOT mutate mu.
+        /// @return Always 0.0f. Energy is only meaningful from
+        /// ComputeError(); kept for Layer interface conformance.
         float CalculateState() noexcept override
         {
             UpdateState();
@@ -145,7 +117,7 @@ namespace Deep
 
         /// @brief Computes weight updates via gradient descent, with L2
         /// weight decay. Called once after the full settling loop
-        /// completes, matching ngc-learn's evolve_process.
+        /// completes.
         void UpdateWeights() noexcept override;
 
         /// @brief No-op; exists for Layer interface conformance.
@@ -156,6 +128,8 @@ namespace Deep
         void ClampState(const std::vector<float> &inputData) noexcept;
         /// @brief Releases a previous ClampState() call.
         void UnclampState() noexcept;
+        /// @brief Whether ClampState() is currently active on this layer.
+        bool IsClamped() const noexcept { return isClamped; }
 
         /// @brief Returns this layer's belief buffer.
         /// @return Pointer to this layer's beliefs.
@@ -189,6 +163,10 @@ namespace Deep
         /// @brief Returns a mutable version of the stored biases.
         /// @return float *b
         float *GetBiases() noexcept { return b; }
+        /// @brief Returns the feedback-alignment matrix used by
+        /// UpdateState() in place of W.
+        /// @return const float *E
+        const float *GetFeedbackWeights() const noexcept { return E; }
 
         /// @brief Returns the learning rate used for weight updates.
         /// @return float lr
@@ -201,14 +179,14 @@ namespace Deep
         float GetLambda() const noexcept { return lmbda; }
 
         /// @brief Sets the learning rate used for weight updates.
-        /// @param lr The new learning rate.
-        void SetLearningRate(float lr) noexcept { this->lr = lr; }
+        /// @param learningRate The new learning rate.
+        void SetLearningRate(float learningRate) noexcept;
         /// @brief Sets the inference rate (Euler integration step size).
-        /// @param ir The new inference rate.
-        void SetInferenceRate(float ir) noexcept { this->ir = ir; }
+        /// @param inferenceRate The new inference rate.
+        void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
         /// @brief Sets the weight-decay (L2 regularization) coefficient.
         /// @param l The new lambda value.
-        void SetLambda(float l) noexcept { this->lmbda = l; }
+        void SetLambda(float l) noexcept { lmbda = l; }
         /// @brief Selects the optimizer used for weight updates.
         /// @param o The optimizer type to use.
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
@@ -244,10 +222,10 @@ namespace Deep
 
         /// @brief Returns this layer's configured activation type.
         /// @return ActivationType
-        ActivationType GetActivationType() const noexcept { return To_AType(activation); }
+        ActivationType GetActivationType() const noexcept { return activationType; }
         /// @brief Returns this layer's configured activation-derivative type.
         /// @return ActivationType
-        ActivationType GetDerivativeType() const noexcept { return To_AType(activationDerivative); }
+        ActivationType GetDerivativeType() const noexcept { return derivativeType; }
 
         /// @brief Computes the total number of floats this layer requires
         /// from a MemoryArena.
@@ -255,45 +233,43 @@ namespace Deep
         size_t GetRequiredFloats() const noexcept;
         /// @brief Binds this layer's weight/state/scratch buffers into the
         /// supplied arena. Must be called before any other operation.
-        /// @param arena The MemoryArena to bind into.
-        void BindMemory(MemoryArena &arena);
+        /// @tparam ArenaT Either MemoryArena or DeviceMemoryArena.
+        /// @param arena The arena to bind into.
+        template <typename ArenaT>
+        void BindMemory(ArenaT &arena);
+
+        std::map<std::string, TensorDescriptor> GetStateDict() const override;
 
     private:
-        /// @brief Local fallback memory for standalone layer instantiation.
         std::unique_ptr<MemoryArena> localArena;
-        /// @brief Weights.
-        float *W;
-        /// @brief Biases.
-        float *b;
-        /// @brief Errors.
-        float *e;
-        /// @brief Internal state.
-        float *z;
 
-        /// @brief Used for `cblas_sgemm` optimization.
+        using BackendDeleter = void (*)(IComputeBackend *);
+        std::unique_ptr<IComputeBackend, BackendDeleter> backend;
+
+        /// @brief Weights.
+        float *W = nullptr;
+        /// @brief Biases.
+        float *b = nullptr;
+        /// @brief Errors.
+        float *e = nullptr;
+        /// @brief Internal state.
+        float *z = nullptr;
+
         int batchSize;
 
-        float *mu;      // this layer's OWN outgoing prediction -- stays
-                        // CLEAN/activated at all times; never mutated
-                        // into a derivative in place
-        float *muDeriv; // scratch buffer for mu's derivative, computed
-                        // fresh whenever needed (UpdateState(),
-                        // UpdateWeights()) -- copy mu here, derive in
-                        // place, leaving the real mu untouched
-        /// @brief Buffer holding the current state derivative (dz/dt).
-        float *dz_dt;
-        /// @brief Scratch buffer for the activation derivative of z,
-        /// used in the feedback term of UpdateState().
-        float *z_deriv;
-        /// @brief Scratch buffer for the bottom-up feedback term.
-        float *bottom_up;
-        float *E; // feedback-alignment matrix -- SEPARATE from W, same
-                  // shape, randomly initialized once, NEVER updated.
-                  // Matches ngc-learn's REAL wiring: e2.dmu >> E2.inputs;
-                  // E2.outputs >> z1.j, where E2 is an independently
-                  // initialized StaticSynapse -- NOT W transposed. This
-                  // is feedback alignment (Lillicrap et al.), not
-                  // backprop-style transposed-weight feedback.
+        /// @brief This layer's own outgoing prediction. Stays clean and
+        /// activated at all times, never mutated into a derivative.
+        float *mu = nullptr;
+        /// @brief Shared scratch buffer, own_state_size-length, reused
+        /// across phases (never simultaneously): the feedback GEMM's
+        /// output in UpdateState(), and the activated-z (phi(z)) input
+        /// to the forward GEMM in ComputePrediction()/UpdateWeights().
+        float *dz_dt = nullptr;
+        /// @brief Feedback-alignment matrix. Separate from W, same
+        /// shape, randomly initialized once, never updated again. This
+        /// is feedback alignment (Lillicrap et al.), not backprop-style
+        /// transposed-weight feedback, so it is not W transposed.
+        float *E = nullptr;
 
         /// @brief Learning rate for weights.
         float lr;
@@ -305,18 +281,21 @@ namespace Deep
         bool isClamped = false;
 
         /// @brief Pointer to the layer above (or `nullptr` if terminal).
-        GaussSeidelPCLayer *layerAbove;
+        GaussSeidelPCLayer *layerAbove = nullptr;
         /// @brief Pointer to the layer below (or `nullptr` if the input layer).
-        GaussSeidelPCLayer *layerBelow;
-        /// @brief Activation function, with parameters `(float *array, size_t arraysize)`.
-        ActivationFn activation;
-        /// @brief The derivative of the `activation` internal, with parameters `(float *array, size_t arraysize, bool activated)`.
-        DerivativeFn activationDerivative;
+        GaussSeidelPCLayer *layerBelow = nullptr;
         /// @brief The named activation type this layer was constructed with.
         ActivationType activationType;
+        /// @brief The named activation-derivative type this layer was
+        /// constructed with.
+        ActivationType derivativeType;
         /// @brief The optimizer currently selected for weight updates.
         OptimizerType opt = OptimizerType::SGD;
 
+        /// @brief Device-resident Adam step count and learning rate,
+        /// same reasoning as every other ported layer.
+        int *t_device = nullptr;
+        float *lr_device = nullptr;
         /// @brief Scratch buffer for the weight gradient (Adam/AdamW only).
         float *grad_W = nullptr;
         /// @brief Scratch buffer for the bias gradient (Adam/AdamW only).
@@ -329,8 +308,9 @@ namespace Deep
         float *m_b = nullptr;
         /// @brief Adam/AdamW second-moment estimate for the biases.
         float *v_b = nullptr;
-        /// @brief Adam/AdamW time step counter.
-        int t = 0;
+        /// @brief Row-summed bias gradient scratch (SGD path only,
+        /// matches FullPCLayer::biasGradScratch).
+        float *biasGradScratch = nullptr;
 
         friend class GaussSeidelPCNDiagnostics;
     };

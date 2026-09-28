@@ -10,9 +10,9 @@ you hit a build error that looks like it should be obvious, check here first.
 
 - For anything beyond a small fix (typo, obvious bug, doc correction), open an
   issue first describing what you want to change and why. This avoids
-  duplicate work and lets us flag design concerns — especially around
+  duplicate work and lets us flag design concerns, especially around
   performance-sensitive code (SIMD kernels, `MemoryArena`, layer update
-  ordering) — before you've sunk time into an implementation.
+  ordering), before you've sunk time into an implementation.
 - Check [`README.md`](README.md) first. If what you want to build is already
   listed there, say so in your issue; it may already be in progress or have
   design constraints attached that aren't obvious from the code alone.
@@ -30,7 +30,7 @@ you hit a build error that looks like it should be obvious, check here first.
 - Write commit subjects in the imperative mood ("Fix alignment on MinGW", not
   "Fixed" or "Fixes"), under ~72 characters, with further detail in the body
   if the change isn't self-explanatory.
-- Prefer several small, focused commits over one large one where practical —
+- Prefer several small, focused commits over one large one where practical,
   it makes `git bisect` and review meaningfully easier, especially for
   numerically-sensitive changes where isolating _which_ change affected
   training dynamics matters.
@@ -40,16 +40,16 @@ you hit a build error that looks like it should be obvious, check here first.
 - **Build both configurations you touched.** At minimum, run
   `python build.py Release` (and `Debug` if you changed anything
   correctness-sensitive, since Debug enables additional checks). This also
-  runs the `DeepityTests` suite automatically — see
+  runs the `DeepityTests` suite automatically, see
   [`logs/build.log`](logs/build.log) for full output if anything fails.
 - **Run `pyright`** if you touched `bindings/`, `pydeepity/`, or anything
-  under `examples/`/`experiments/` — see [`pyrightconfig.json`](pyrightconfig.json)
+  under `examples/`/`experiments/`, see [`pyrightconfig.json`](pyrightconfig.json)
   for the project's type-checking configuration. A change that fails
   type-checking will fail CI in the same way.
 - **Match existing formatting.** There's no enforced formatter yet, so please
   mirror the style of the surrounding code (brace placement, naming, header
   organization) rather than introducing a new convention in one file.
-- **Update [`CHANGELOG.md`](CHANGELOG.md)** for any user-facing change —
+- **Update [`CHANGELOG.md`](CHANGELOG.md)** for any user-facing change,
   new features, behavior changes, bug fixes, or removals. Add an entry under
   the `[Unreleased]` section in the appropriate category (Added / Changed /
   Deprecated / Removed / Fixed / Security). Purely internal changes (refactors
@@ -65,8 +65,8 @@ Include in the PR description:
 - For anything performance-sensitive: before/after numbers. This codebase
   tracks throughput closely (see the README's benchmark tables), so a
   regression that isn't caught by a functional test can still be a real
-  problem — a quick before/after from `tests/tBenchmark.cpp` or
-  `tests/tProfile.cpp` output is enough, it doesn't need to be a formal
+  problem. A quick before/after from `tests/tBenchmark.cpp` or
+  `tests/tProfile.cpp` output is enough; it doesn't need to be a formal
   writeup.
 - Anything you're unsure about or deliberately left out of scope. Flagging
   this yourself saves a review round-trip.
@@ -76,11 +76,11 @@ Include in the PR description:
 - CI must pass before merge (build + test suite, and type-checking where
   applicable).
 - Please respond to review comments rather than force-pushing over them
-  silently — it makes it hard to follow what changed in response to what
+  silently, it makes it hard to follow what changed in response to what
   feedback. Squashing at merge time is fine and is generally handled by the
   person merging.
 - If a review comment references one of the portability rules or numerical
-  gotchas below, that's usually not a style nitpick — it's very likely a past
+  gotchas below, that's usually not a style nitpick, it's very likely a past
   real bug being flagged again.
 
 ## Build prerequisites
@@ -94,7 +94,7 @@ Include in the PR description:
 ### Configuring locally
 
 Use `CMakePresets.json` where possible instead of hand-typing flags in
-whatever shell you happen to be in — shell-specific line-continuation syntax
+whatever shell you happen to be in, shell-specific line-continuation syntax
 (`\` in Bash, `` ` `` in PowerShell, `^` in cmd.exe) is a common source of
 confusing, silent failures that have nothing to do with the actual build.
 
@@ -115,14 +115,14 @@ with `dir "C:\Program Files\LLVM\lib\libomp*"`.
 
 ## Portability rules
 
-These aren't style preferences — each one corresponds to a real build failure
+These aren't style preferences, each one corresponds to a real build failure
 that took real time to diagnose. Follow them going forward rather than
 re-deriving the same fixes.
 
 ### 1. Never use `ssize_t`
 
 It's POSIX-only and doesn't exist under MSVC or Clang-targeting-MSVC. Use
-`std::ptrdiff_t` (from `<cstddef>`) instead — same width, same signedness,
+`std::ptrdiff_t` (from `<cstddef>`) instead, same width, same signedness,
 works identically everywhere.
 
 ### 2. Never use `std::aligned_alloc` / `std::free` directly for aligned memory
@@ -131,7 +131,7 @@ works identically everywhere.
 with plain `free()`. Windows' native aligned allocator (`_aligned_malloc`)
 requires the opposite pairing (`_aligned_free`), so many MinGW toolchains
 simply omit `std::aligned_alloc` from `<cstdlib>` rather than violate the
-standard's contract. Always go through a portable wrapper — see
+standard's contract. Always go through a portable wrapper, see
 `MemoryArena.h`'s `detail::AlignedAllocPortable` /
 `detail::AlignedFreePortable` for the pattern. Watch the argument order:
 `std::aligned_alloc(alignment, size)` vs `_aligned_malloc(size, alignment)`
@@ -143,10 +143,10 @@ Windows headers define a large number of macros with short, plausible-looking
 names via plain `#define` (which do blind textual substitution, unlike C++
 namespacing). Known collisions we've hit:
 
-- `min`, `max` — defined in `minwindef.h` (pulled in transitively via many
+- `min`, `max`, defined in `minwindef.h` (pulled in transitively via many
   headers). Fix globally with `add_compile_definitions(NOMINMAX)` near the
   top of `CMakeLists.txt`, before any targets are defined.
-- `small` — defined as `char` in `rpcndr.h`. **`NOMINMAX` does not cover
+- `small`, defined as `char` in `rpcndr.h`. **`NOMINMAX` does not cover
   this one.** There is no compile-define fix; just don't name a variable
   `small`. Same caution applies to `near`, `far`, `interface`, and other
   short/legacy Win32 SDK macro names.
@@ -160,7 +160,7 @@ similarly-scoped variables get declared close together.
 `-fvectorize` / `-fslp-vectorize` are Clang-only spellings; GCC has no flags
 by these names and errors outright. GCC's equivalent is
 `-ftree-vectorize` / `-ftree-slp-vectorize`. Never assume "the compiler on
-this OS" — Linux and Windows can both run either Clang or GCC depending on
+this OS", Linux and Windows can both run either Clang or GCC depending on
 how the environment is set up; branch on `CMAKE_CXX_COMPILER_ID`, not on
 `WIN32`/`UNIX`.
 
@@ -171,13 +171,13 @@ CMake processes a `CMakeLists.txt` strictly top-to-bottom. Calling
 (pydeepity ...)` call that creates that target produces a confusing "target is
 not built by this project" error. Place any per-target configuration
 immediately after the `add_library` / `add_executable` /
-`nanobind_add_module` call that defines that target — not grouped together
+`nanobind_add_module` call that defines that target, not grouped together
 with unrelated targets' configuration elsewhere in the file, even if that
 seems tidier.
 
 If you want a define to apply automatically to every target in a directory,
 regardless of order, use `add_compile_definitions()` at directory scope
-instead of `target_compile_definitions()` on a specific target — it applies
+instead of `target_compile_definitions()` on a specific target, it applies
 to everything defined afterward in the same scope, sidestepping the ordering
 issue entirely.
 
@@ -186,7 +186,7 @@ issue entirely.
 If `SLEEF_BUILD_SHARED_LIBS` is `OFF`, every translation unit that includes
 `sleef.h` needs `SLEEF_STATIC_LIBS` defined, or the header declares its
 functions as `dllimport` (expecting a DLL) even though you built a static
-archive — producing linker errors like:
+archive, producing linker errors like:
 
 ```
 undefined symbol: __declspec(dllimport) Sleef_tanhf4_u10sse2
@@ -201,7 +201,7 @@ it propagates to every downstream consumer:
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 ```
 
-This must be set **before** the affected files are compiled — if you add it
+This must be set **before** the affected files are compiled, if you add it
 after already building, you need a clean rebuild (`rm -rf build` /
 `rmdir /s /q build`), since already-compiled `.obj` files have the wrong
 `dllimport` decision baked in and won't be invalidated by re-running
@@ -226,7 +226,7 @@ deploy_runtime_deps(DeepityTests)
 ```
 
 If you add a new executable or Python module target, remember to call this
-for it too — nothing enforces it automatically, and a missing call produces
+for it too, nothing enforces it automatically, and a missing call produces
 a build that looks completely successful but a binary that won't start.
 
 **Separately**, any dependency installed _outside_ vcpkg (e.g. a manually
@@ -239,7 +239,7 @@ explicitly.
 
 It compiles for whatever CPU the _build machine_ has, which can differ
 between your local machine, CI runners, and end users. This has been
-directly load-bearing for correctness in this codebase — AVX2 vs AVX512
+directly load-bearing for correctness in this codebase, AVX2 vs AVX512
 dispatch has changed which code path actually executes for precision-related
 logic. For CI or distributed builds, prefer an explicit target
 (`-march=x86-64-v2`, `-mavx2`, etc.) over `-march=native`, so behavior is
@@ -254,7 +254,7 @@ Separate from build portability, but equally worth knowing before touching
   its own internal thread pool (usually pthreads-based), invisible to your
   own `#pragma omp` regions. If you need fully deterministic, reproducible
   runs (e.g. for debugging), set `OPENBLAS_NUM_THREADS=1` as well as
-  `OMP_NUM_THREADS=1` — multithreaded BLAS reductions are not
+  `OMP_NUM_THREADS=1`, multithreaded BLAS reductions are not
   bit-reproducible run-to-run due to non-associative floating-point
   summation order, and this codebase's dynamics have shown real sensitivity
   to sub-ULP differences compounding over many iterations.
@@ -262,7 +262,7 @@ Separate from build portability, but equally worth knowing before touching
 - **`net.Compile()` must be called after all `AddLayer()` calls and before
   `RandomizeWeights()`.** Each layer otherwise runs on its own small,
   independently-sized `localArena`, and `MemoryArena::AllocateFloats()`
-  rounds every individual allocation up to a 64-byte boundary — meaning many
+  rounds every individual allocation up to a 64-byte boundary, meaning many
   small buffers can collectively need more real memory than the unpadded sum
   of `GetRequiredFloats()` implies, if that sum isn't itself computed with
   the same rounding. Always call `Compile()` once, after the full layer list
@@ -275,5 +275,5 @@ Separate from build portability, but equally worth knowing before touching
   cross-layer logic, be explicit about which layer's `UpdateState()`/
   `CalculateState()` is guaranteed to have already run in the same sweep
   (the network's per-layer loops are front-to-back, meaning `layerBelow`'s
-  update always happens before the current layer's in the same call) —
+  update always happens before the current layer's in the same call),
   don't assume the opposite direction without checking.

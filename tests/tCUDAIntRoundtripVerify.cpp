@@ -2,7 +2,7 @@
  * @file tCUDAIntRoundtripVerify.cpp
  * @brief Minimal isolation: does a SINGLE IncrementCounter() call on
  * GPU actually take effect at all? tCUDAAdamWStepVerify.cpp showed
- * t staying at 0 after 10 calls -- this checks whether even one call
+ * t staying at 0 after 10 calls, this checks whether even one call
  * works, separate from any loop or AdamWStep interaction, to narrow
  * down whether the bug is in IncrementCounter itself or something
  * about repeated calls / the later readback.

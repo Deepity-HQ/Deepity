@@ -24,7 +24,7 @@ public:
   /// @brief Ends capture and instantiates the captured graph.
   /// @return true if capture and instantiation both succeeded and
   /// ReplayGraph() is now safe to call; false otherwise. Callers
-  /// MUST check this -- silently assuming success here was the
+  /// MUST check this, silently assuming success here was the
   /// cause of a real bug: a failed capture left ReplayGraph()
   /// permanently doing nothing on every subsequent call, since the
   /// caller had no way to know capture never actually happened.
@@ -96,7 +96,7 @@ public:
 
   /// @brief dst[j] = sum over b in [0,batchSize) of src[b*width + j], for
   /// all j in [0,width). Replaces a batchSize-iteration loop of
-  /// individual AxpyInto calls -- the reduction-direction counterpart to
+  /// individual AxpyInto calls, the reduction-direction counterpart to
   /// AddBiasBroadcast, still unfixed until now. On GPU this is one
   /// cublasSgemv call against a cached all-ones vector, reinterpreting
   /// src's row-major [batchSize,width] layout as column-major
@@ -107,10 +107,10 @@ public:
 
   /// @brief buf[i] *= alpha for all i in [0, n).
   virtual void Scale(float* buf, size_t n, float alpha) noexcept = 0;
-  /// @brief y[i] += alpha * x[i] for all i in [0, n) -- the standard AXPY.
+  /// @brief y[i] += alpha * x[i] for all i in [0, n), the standard AXPY.
   virtual void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept = 0;
   /// @brief buf[row*width + col] += bias[col] for every row in
-  /// [0,batchSize) and col in [0,width) -- broadcasts a per-column bias
+  /// [0,batchSize) and col in [0,width), broadcasts a per-column bias
   /// across every row (the dense-layer convention).
   virtual void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                                 size_t width) noexcept = 0;
@@ -141,12 +141,12 @@ public:
   /// direction (feedback*deriv - e) is EMA-smoothed into `v` (same
   /// shape as z, persistent across settling steps within one
   /// TrainStep(), reset to zero at the start of each call) before being
-  /// applied to z. beta is the EMA decay (0.9 is a common default --
+  /// applied to z. beta is the EMA decay (0.9 is a common default,
   /// higher = more smoothing/inertia).
   ///   v = beta*v + (1-beta)*((feedback*deriv) - e)
   ///   z += ir*v
   /// @param dType Which activation's derivative to apply to z in
-  /// place -- deriv is computed inline from z, element by element,
+  /// place, deriv is computed inline from z, element by element,
   /// rather than read from a separate precomputed buffer.
   virtual void FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
                                         ActivationType dType, const float* e, size_t n, float ir,
@@ -156,17 +156,17 @@ public:
   ///   z += ir * ((feedback * deriv) - e)
   /// Non-momentum counterpart to FusedStateUpdateMomentum() above.
   /// @param dType Which activation's derivative to apply to z in
-  /// place -- deriv is computed inline from z, element by element,
+  /// place, deriv is computed inline from z, element by element,
   /// rather than read from a separate precomputed buffer.
   virtual void FusedStateUpdate(float* z, const float* feedback, ActivationType dType, const float* e,
                                 size_t n, float ir) noexcept = 0;
-  /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2) -- the
+  /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2), the
   /// Gaussian error/energy used by every layer except a cross-entropy
   /// terminal.
   virtual float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,
                                       size_t n) noexcept = 0;
   /// @brief Same as ComputeErrorAndEnergy(), without computing (or
-  /// returning) the energy -- for callers that only need e.
+  /// returning) the energy, for callers that only need e.
   virtual void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept = 0;
 
   /// @brief Softmax cross-entropy variant of ComputeErrorAndEnergy, for
@@ -179,31 +179,31 @@ public:
   ///                           since d(CE)/d(logits) = probs - y)
   ///   energy = -sum(z * log(probs + eps))  (eps=1e-8, avoids log(0))
   /// mu holds the RAW LOGITS (unchanged from the Gaussian case, still
-  /// a*W\@phi(z)+b) -- softmax is applied here, not baked into mu itself.
-  /// `rowEnergies` is caller-provided scratch, >= batchSize floats --
+  /// a*W\@phi(z)+b), softmax is applied here, not baked into mu itself.
+  /// `rowEnergies` is caller-provided scratch, >= batchSize floats,
   /// NOT allocated internally (this runs inside CalculateState(), which
   /// runs inside TrainStep()'s CUDA-graph-captured region; dynamic
   /// allocation there is unsafe under capture, same reasoning as the
   /// CUTLASS workspace). CPUBackend's own override ignores this
-  /// parameter entirely -- kept in the shared interface so callers pass
+  /// parameter entirely, kept in the shared interface so callers pass
   /// the same arguments to either backend.
   virtual float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,
                                                          size_t batchSize, size_t nextSize,
                                                          float* rowEnergies) noexcept = 0;
 
   /// @brief Same as ComputeSoftmaxCrossEntropyErrorAndEnergy(), without
-  /// computing (or requiring `rowEnergies` for) the energy -- for
+  /// computing (or requiring `rowEnergies` for) the energy, for
   /// callers that only need e.
   virtual void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
                                                size_t batchSize, size_t nextSize) noexcept = 0;
 
   /// @brief Attempts a fused forward pass (GEMM + bias + activation in
   /// one kernel, via CUTLASS on GPU) for RELU or LINEAR activation types
-  /// only -- see CUDABackend's implementation for why other activation
+  /// only, see CUDABackend's implementation for why other activation
   /// types aren't attempted yet. Returns true if the fused path was used
   /// (mu is fully computed, including bias and activation); false if the
   /// caller should fall back to the existing MatMul+AddBiasBroadcast+
-  /// Activation sequence (always false on CPUBackend -- CPU has no fused
+  /// Activation sequence (always false on CPUBackend, CPU has no fused
   /// path, this is a GPU-only optimization).
   /// @param actType Activation to fuse in; only RELU and LINEAR take the
   /// fused path, everything else returns false immediately.
@@ -222,7 +222,7 @@ public:
   // Convolution (im2col-based, ConvPCLayer family)
 
   /// @brief Rearranges a single (channels, height, width) input
-  /// image into a (channels*kH*kW, outH*outW) column matrix --
+  /// image into a (channels*kH*kW, outH*outW) column matrix,
   /// the standard im2col transform. NOT batch-aware: call once
   /// per batch item, with @p input and @p columns offset to that
   /// item's slice, matching Deep::Im2Col's own documented
@@ -237,7 +237,7 @@ public:
   /// (channels*kH*kW, outH*outW) column-gradient buffer back into
   /// a (channels, height, width) image. NOT batch-aware, same
   /// per-item-offset contract as Im2Col(). ACCUMULATES into
-  /// @p outputImage (does not zero it first) -- caller must zero
+  /// @p outputImage (does not zero it first), caller must zero
   /// the destination if a fresh result is wanted, matching
   /// Deep::Col2Im's own contract exactly.
   virtual void Col2Im(const float* columns, int channels, int height, int width, int kernelH,
@@ -245,7 +245,7 @@ public:
                       float* outputImage) noexcept = 0;
 
   /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
-  /// into [rows, batchSize, cols] (row-major, batch second) --
+  /// into [rows, batchSize, cols] (row-major, batch second),
   /// i.e. dst[row][batch][col] = src[batch][row][col] for all
   /// row/batch/col, with the innermost `cols` dimension kept
   /// contiguous on both sides. Used by ConvPCLayer-family layers
@@ -272,7 +272,7 @@ public:
   /// @param m Adam's first-moment (momentum) buffer, persistent across calls.
   /// @param v Adam's second-moment (variance) buffer, persistent across calls.
   /// @param n Number of parameters.
-  /// @param t Device-resident step count (read, not written, here --
+  /// @param t Device-resident step count (read, not written, here,
   /// see IncrementCounter()).
   /// @param lr Device-resident learning rate.
   /// @param beta1,beta2 Momentum/variance EMA decay rates.
@@ -289,18 +289,79 @@ public:
   /// @brief Which device this backend instance runs on.
   virtual DeviceType GetDeviceType() const noexcept = 0;
 
-  /// @brief dst[i] = a[i] * b[i] for all i in [0, n) -- elementwise product.
+  /// @brief dst[i] = a[i] * b[i] for all i in [0, n), elementwise product.
   virtual void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept = 0;
+  /// @brief Fuses an in-place "derivative from activated value" step with
+  /// the elementwise multiply that immediately follows it in every known
+  /// caller: dst[i] = a[i] * f'(activatedInOut[i]), then
+  /// activatedInOut[i] is overwritten with that same derivative,
+  /// exactly matching (and replacing) the two separate calls
+  /// ActivationDerivative(dType, activatedInOut, n, /*activated=*/true)
+  /// followed by MultiplyInto(dst, a, activatedInOut, n). The overwrite
+  /// is not a discardable side effect: at least one caller
+  /// (SimpleConvPCLayer::UpdateWeights()) reads activatedInOut again
+  /// afterward expecting it to hold the derivative from the last
+  /// UpdateState() call, not the original activated value.
+  /// @warning Same GELU caveat as ActivationDerivativeFromActivatedScalar
+  /// (see Activations.h): GELU's derivative can't be recovered from its
+  /// own output, so dGELU here reproduces the same wrong-for-GELU answer
+  /// ActivationDerivative(..., activated=true) already silently gives
+  /// today, rather than pretending to fix a deeper design issue.
+  /// @param dType A derivative-flavored ActivationType.
+  virtual void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+                                                 ActivationType dType, size_t n) noexcept = 0;
   /// @brief buf[i] = value for all i in [0, n).
   virtual void Fill(float* buf, size_t n, float value) noexcept = 0;
   /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for
   /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast
-  /// across spatial positions -- the transpose relationship to
+  /// across spatial positions, the transpose relationship to
   /// AddBiasBroadcast (which broadcasts a per-COLUMN bias across ROWS,
   /// the dense-layer convention). NOT batch-aware: matches Im2Col/
-  /// Col2Im's contract exactly -- call once per batch item, with @p buf
+  /// Col2Im's contract exactly, call once per batch item, with @p buf
   /// offset to that item's slice.
   virtual void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                                  size_t spatialSize) noexcept = 0;
+
+  // Precision-weighted PC ops (DiscriminativePCLayer/ConvPCLayer family,
+  // a per-position "confidence" p broadcast across the batch dimension,
+  // matching Gaussian PC theory's inverse-variance interpretation of p)
+
+  /// @brief Precision-weighted counterpart to ComputeErrorAndEnergy():
+  /// e[b*width+i] = z[b*width+i] - mu[b*width+i] for every b in
+  /// [0,batchSize), i in [0,width); returns
+  /// sum_{b,i}(0.5*p'[i]*e^2 - 0.5*log(p'[i])), where p'[i] =
+  /// max(p[i], 1e-8) (the same floor DiscriminativePCLayer/ConvPCLayer's
+  /// existing CPU code already applies, guarding against log(0)). `p` has
+  /// length `width`, one precision per own-position, broadcast across
+  /// every batch item, NOT length batchSize*width like e/z/mu.
+  virtual float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
+                                                       const float* p, size_t batchSize,
+                                                       size_t width) noexcept = 0;
+
+  /// @brief y[b*width+i] += alpha * x[b*width+i] * factor[i], for every b
+  /// in [0,batchSize), i in [0,width), AxpyInto with an added
+  /// per-position factor broadcast across the batch dimension. Covers
+  /// dz_dt[idx] -= p[i]*e[idx] (alpha=-1, factor=p) without a temporary
+  /// buffer for the elementwise product.
+  virtual void AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
+                                 size_t width, float alpha) noexcept = 0;
+
+  /// @brief dst[b*width+i] = a[b*width+i] * factor[i] * b[b*width+i], for
+  /// every batch item, a three-operand elementwise product with one
+  /// operand (factor) broadcast across the batch dimension. Covers
+  /// bottom_up_cols[idx] = e_above[idx] * p_above[i] * mu[idx], the same
+  /// shape needed in both UpdateState() and UpdateWeights() for every
+  /// precision-weighted layer.
+  virtual void MultiplyBroadcastInto(float* dst, const float* a, const float* factor, const float* b,
+                                     size_t batchSize, size_t width) noexcept = 0;
+
+  /// @brief Precision update from accumulated squared error, fused:
+  /// for each i in [0,width), grad = mean_{b in [0,batchSize)} of
+  /// 0.5*(p[i]*e[b*width+i]^2 - 1); log_p[i] -= pr*grad, clamped to
+  /// [-5,5]; p[i] = exp(log_p[i]). Matches
+  /// DiscriminativePCLayer::UpdatePrecision()/ConvPCLayer::UpdatePrecision()'s
+  /// existing CPU formula exactly, including the clamp bounds.
+  virtual void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
+                                        size_t width, float pr) noexcept = 0;
 };
 } // namespace Deep

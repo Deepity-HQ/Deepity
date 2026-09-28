@@ -10,62 +10,39 @@
 /**
  * @file DirectKPPCNetwork.h
  * @brief Orchestrates DirectKPPCLayer's Direct Kolen-Pollack predictive
- * coding (DKP-PC) phases in the correct order -- the layer class alone
- * cannot produce a correct train step; the ORDER of the phases across
- * layers is what makes this DKP-PC rather than plain PC, and that only
- * exists at this level.
+ * coding (DKP-PC) phases in the correct order, the ORDER of the phases
+ * across layers is what makes this DKP-PC rather than plain PC.
  *
  * Per Casnici, Lefebvre, Dauwels & Frenkel, "Accelerated Predictive
  * Coding Networks via Direct Kolen-Pollack Feedback Alignment" (2026),
- * Algorithm 1, a full DKP-PC train step is FOUR phases, in this exact
- * order:
+ * Algorithm 1, a full DKP-PC train step is four phases, in order:
  *
- *   0. Forward initialization -- clamp input, forward-project every
+ *   0. Forward initialization, clamp input, forward-project every
  *      hidden layer's z from current weights, clamp the target, then
- *      CalculateState() on the terminal layer ALONE to produce a real,
- *      non-zero epsilon_L. Every other layer's error is still zero at
- *      this point (equilibrium after forward init).
+ *      CalculateState() on the terminal layer alone to produce a real,
+ *      non-zero epsilon_L. Every other layer's error stays zero here.
  *
- *   1. Direct feedback alignment update -- DirectFeedbackUpdate() on
- *      EVERY non-terminal layer, using epsilon_L (via terminalLayer)
- *      and the layer above's Psi. This is a genuine, immediate
- *      perturbation of each layer's W, run BEFORE settling begins, and
- *      it does not depend on any ordering among layers -- each layer's
- *      update only reads Psi (which does not change during this phase)
- *      and epsilon_L, both already available. Unlike GaussSeidelPCLayer,
- *      there is no sweep-ordering constraint here. CONFIRMED by tracing
- *      every read/write in DirectFeedbackUpdate(): every layer writes
- *      only to its own proj/W, reads only from a shared, read-only
- *      terminalLayer error buffer and its own layerAbove's Psi -- zero
- *      cross-layer RAW/WAW hazard. This is the specific phase intended
- *      as the first real parallelism target (multiple CUDA streams, one
- *      per layer), once this class is confirmed correct on GPU.
+ *   1. Direct feedback alignment update, DirectFeedbackUpdate() on
+ *      every non-terminal layer, perturbing W using epsilon_L (via
+ *      terminalLayer) and the layer above's Psi, before settling begins.
+ *      Order among layers doesn't matter: each layer only reads Psi and
+ *      epsilon_L, both already available.
  *
- *   2. Inference phase -- ordinary PC settling (CalculateState() +
- *      UpdateState() across every layer), for inferenceSteps steps.
- *      Because phase 1 already perturbed every layer's W, every layer
- *      now has a genuinely non-zero error from the very first settling
- *      step -- the paper's central result is that inferenceSteps=1 is
- *      sufficient to match or exceed standard PC's full multi-step
- *      settle. Larger values trade some of that speed advantage for
- *      potentially higher accuracy; this is a real, exposed parameter,
- *      not something to hardcode to this codebase's usual (~20) default.
+ *   2. Inference phase, ordinary PC settling (CalculateState() +
+ *      UpdateState() across every layer) for inferenceSteps steps. Phase
+ *      1 already perturbed every layer's W, so inferenceSteps=1 is
+ *      sufficient per the paper; larger values trade that speed
+ *      advantage for potentially higher accuracy.
  *
- *   3. Learning phase -- UpdateWeights() on every non-terminal layer,
- *      which (per DirectKPPCLayer) now updates both W (from the
- *      settled state) and Psi (from the settled state and epsilon_L).
+ *   3. Learning phase, UpdateWeights() on every non-terminal layer,
+ *      updating both W (from the settled state) and Psi (from the
+ *      settled state and epsilon_L).
  *
- * @note As of this revision, routed through IComputeBackend -- same
- * refactor as SimplePCNetwork's own GPU port. `device` defaults to
- * DEVICE_CPU, preserving existing behavior for anyone not explicitly
- * requesting DEVICE_GPU.
+ * Routed through IComputeBackend; `device` defaults to DEVICE_CPU.
  *
  * @warning Not yet gradient-checked at the network level, and not yet
- * tested on GPU at all. The individual layer's math should be
- * independently verified before trusting any accuracy conclusion drawn
- * from real training with this class. This is Stage 1 of a three-stage
- * plan (CPU-correct port -> GPU-correct, sequential -> exploit phase 1's
- * confirmed cross-layer parallelism) -- this revision is Stage 1 only.
+ * tested on GPU. Verify the individual layer's math independently before
+ * trusting accuracy conclusions from training with this class.
  */
 
 namespace Deep
@@ -97,7 +74,7 @@ namespace Deep
         /// @param size input size
         /// @param nextSize output size (0 marks a terminal layer)
         /// @param terminalSize the size of the network's final output
-        /// layer (e.g. 10 for MNIST) -- required on every AddLayer call,
+        /// layer (e.g. 10 for MNIST), required on every AddLayer call,
         /// not inferred, since the true terminal layer isn't known until
         /// the whole network has been assembled. Compile() sanity-checks
         /// this against the actual last layer's size.
@@ -135,7 +112,7 @@ namespace Deep
 
         /// @brief Phase 1: runs DirectFeedbackUpdate() on every
         /// non-terminal layer. Order among layers does not matter (see
-        /// class-level docs) -- unlike GaussSeidelPCNetwork, no sweep
+        /// class-level docs), unlike GaussSeidelPCNetwork, no sweep
         /// ordering is required here. Still sequential in this
         /// revision; see class-level warning.
         void DirectFeedbackUpdate() noexcept;
@@ -192,7 +169,7 @@ namespace Deep
         /// @param x Flattened input batch, clamped to the input layer.
         /// @param y Flattened target batch, clamped to the terminal layer.
         /// @param inferenceSteps Number of settling steps for phase 2.
-        /// Defaults to 1, matching the paper's own headline result --
+        /// Defaults to 1, matching the paper's own headline result,
         /// unlike this codebase's other PC variants, DKP-PC's entire
         /// point is that a single step is enough BECAUSE of the DFA
         /// phase, so defaulting to a larger value here would silently

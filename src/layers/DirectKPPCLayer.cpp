@@ -8,25 +8,6 @@ namespace Deep
 {
     namespace
     {
-        ActivationType ToDerivativeType(ActivationType fwd)
-        {
-            switch (fwd)
-            {
-            case ActivationType::RELU:
-                return ActivationType::dRELU;
-            case ActivationType::SIGMOID:
-                return ActivationType::dSIGMOID;
-            case ActivationType::eSIGMOID:
-                return ActivationType::d_eSIGMOID;
-            case ActivationType::TANH:
-                return ActivationType::dTANH;
-            case ActivationType::LINEAR:
-                return ActivationType::dLINEAR;
-            default:
-                return ActivationType::NONE;
-            }
-        }
-
         void DeleteBackend(IComputeBackend *p) { delete p; }
         void NoOpDeleter(IComputeBackend *) {}
     }
@@ -105,46 +86,41 @@ namespace Deep
             backend->Zero(feedbackScratch, own_state_size);
             backend->Zero(biasGradScratch, nextSize);
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                grad_W = arena.AllocateFloats(w_size);
-                m_W = arena.AllocateFloats(w_size);
-                v_W = arena.AllocateFloats(w_size);
+            // Always allocated, see GetRequiredFloats().
+            grad_W = arena.AllocateFloats(w_size);
+            m_W = arena.AllocateFloats(w_size);
+            v_W = arena.AllocateFloats(w_size);
 
-                grad_b = arena.AllocateFloats(nextSize);
-                m_b = arena.AllocateFloats(nextSize);
-                v_b = arena.AllocateFloats(nextSize);
+            grad_b = arena.AllocateFloats(nextSize);
+            m_b = arena.AllocateFloats(nextSize);
+            v_b = arena.AllocateFloats(nextSize);
 
-                backend->Zero(m_W, w_size);
-                backend->Zero(v_W, w_size);
-                backend->Zero(m_b, nextSize);
-                backend->Zero(v_b, nextSize);
-                backend->Zero(grad_W, w_size);
-                backend->Zero(grad_b, nextSize);
+            backend->Zero(m_W, w_size);
+            backend->Zero(v_W, w_size);
+            backend->Zero(m_b, nextSize);
+            backend->Zero(v_b, nextSize);
+            backend->Zero(grad_W, w_size);
+            backend->Zero(grad_b, nextSize);
 
-                t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
-                lr_device = arena.AllocateFloats(1);
-                int zero = 0;
-                backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
-                backend->CopyFromHost(lr_device, &lr, 1);
-            }
+            t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            lr_device = arena.AllocateFloats(1);
+            int zero = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+            backend->CopyFromHost(lr_device, &lr, 1);
 
-            if (optPsi == OptimizerType::ADAM || optPsi == OptimizerType::ADAMW)
-            {
-                grad_Psi = arena.AllocateFloats(direct_size);
-                m_Psi = arena.AllocateFloats(direct_size);
-                v_Psi = arena.AllocateFloats(direct_size);
+            grad_Psi = arena.AllocateFloats(direct_size);
+            m_Psi = arena.AllocateFloats(direct_size);
+            v_Psi = arena.AllocateFloats(direct_size);
 
-                backend->Zero(m_Psi, direct_size);
-                backend->Zero(v_Psi, direct_size);
-                backend->Zero(grad_Psi, direct_size);
+            backend->Zero(m_Psi, direct_size);
+            backend->Zero(v_Psi, direct_size);
+            backend->Zero(grad_Psi, direct_size);
 
-                tPsi_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
-                fl_device = arena.AllocateFloats(1);
-                int zeroPsi = 0;
-                backend->CopyFromHost(reinterpret_cast<float *>(tPsi_device), reinterpret_cast<float *>(&zeroPsi), 1);
-                backend->CopyFromHost(fl_device, &fl, 1);
-            }
+            tPsi_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            fl_device = arena.AllocateFloats(1);
+            int zeroPsi = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(tPsi_device), reinterpret_cast<float *>(&zeroPsi), 1);
+            backend->CopyFromHost(fl_device, &fl, 1);
         }
 
         if constexpr (std::is_same_v<ArenaT, MemoryArena>)
@@ -181,18 +157,13 @@ namespace Deep
             total += pad16(direct_size);
             total += pad16(nextSize);
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                total += pad16(w_size) * 3;
-                total += pad16(nextSize) * 3;
-                total += pad16(1) * 2;
-            }
+            // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+            total += pad16(w_size) * 3;
+            total += pad16(nextSize) * 3;
+            total += pad16(1) * 2;
 
-            if (optPsi == OptimizerType::ADAM || optPsi == OptimizerType::ADAMW)
-            {
-                total += pad16(direct_size) * 3;
-                total += pad16(1) * 2;
-            }
+            total += pad16(direct_size) * 3;
+            total += pad16(1) * 2;
         }
 
         return total;

@@ -14,15 +14,9 @@
 /**
  * @file DirectKPPCLayer.h
  * @brief Direct Kolen-Pollack predictive coding layer, routed through
- * IComputeBackend.
- *
- * @note As of this revision, ComputeMuOnly()'s bias-add and
- * UpdateWeights()'s bias-gradient accumulation both go through
- * AddBiasBroadcast()/SumRows() instead of a per-batch-row AxpyInto loop
- * -- same fix SimplePCLayer already had, ported here. biasGradScratch is
- * a new, small (nextSize-length) buffer allocated unconditionally
- * (regardless of optimizer) specifically for the SGD branch's
- * accumulate-not-overwrite bias update, which SumRows alone can't do.
+ * IComputeBackend. Bias updates go through AddBiasBroadcast()/SumRows();
+ * biasGradScratch is a small (nextSize-length) accumulator SumRows alone
+ * can't provide, used by the SGD branch's bias update.
  */
 
 namespace Deep {
@@ -57,11 +51,9 @@ protected:
 
   OptimizerType opt = OptimizerType::SGD;    ///< Optimizer for W/b.
   OptimizerType optPsi = OptimizerType::SGD; ///< Optimizer for Psi.
-  int t = 0;     ///< Adam/AdamW step count for W/b.
-  int tPsi = 0;  ///< Adam/AdamW step count for Psi.
 
   /// @brief Custom deleter type for `backend`, needed since IComputeBackend
-  /// is an abstract base -- see the member below.
+  /// is an abstract base, see the member below.
   using BackendDeleter = void (*)(IComputeBackend *);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend; ///< This layer's compute backend.
 
@@ -95,11 +87,11 @@ protected:
   float *feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
   /// @brief nextSize-length scratch buffer for SumRows' output in
-  /// UpdateWeights()'s SGD branch -- SGD needs `b += lr_batch *
+  /// UpdateWeights()'s SGD branch, SGD needs `b += lr_batch *
   /// sum(local_grad)`, an accumulate, which SumRows alone can't
   /// express (it only overwrites). Allocated unconditionally
   /// (regardless of which optimizer is selected) since it's cheap
-  /// -- at most `nextSize` floats -- and simpler than branching
+  ///, at most `nextSize` floats, and simpler than branching
   /// allocation on optimizer choice for this one small buffer.
   float *biasGradScratch = nullptr;
 
@@ -109,7 +101,7 @@ public:
   /// @param size input size
   /// @param nextSize output size (0 marks a terminal layer)
   /// @param terminalSize the size of the network's final output layer
-  /// (e.g. 10 for MNIST) -- required directly, not inferred, since the
+  /// (e.g. 10 for MNIST), required directly, not inferred, since the
   /// true terminal layer isn't known until the whole network has been
   /// assembled.
   /// @param batchSize batch size
@@ -150,7 +142,7 @@ public:
   /// @brief Matches Layer's virtual interface exactly (always
   /// computes real energy).
   float CalculateState() noexcept override { return CalculateState(true); }
-  /// @brief NOT a virtual override -- see SimplePCLayer's
+  /// @brief NOT a virtual override, see SimplePCLayer's
   /// identical pattern. Lets the settling loop skip the
   /// cublasSdot-based energy reduction (and its capture-time
   /// sync) when the caller doesn't need the value.
@@ -161,7 +153,7 @@ public:
   void UpdateState() noexcept override;
   void UpdateWeights() noexcept override;
   /// @brief Perturbs W using the layer above's Psi and the terminal
-  /// layer's error -- the DFA phase, run once per batch before settling
+  /// layer's error, the DFA phase, run once per batch before settling
   /// begins.
   void DirectFeedbackUpdate() noexcept;
 
@@ -173,7 +165,7 @@ public:
   /// @brief Resets this layer's beliefs (z) without touching learned weights.
   void ResetState() noexcept;
 
-  /// @brief Whether this layer is currently clamped -- needed so
+  /// @brief Whether this layer is currently clamped, needed so
   /// DirectKPPCNetwork::ProjectForward() can skip overwriting an
   /// already-clamped layer's z with a forward-projected guess.
   /// Same real bug SimplePCNetwork::ProjectForward() had; fixed

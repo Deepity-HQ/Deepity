@@ -22,7 +22,7 @@ namespace Deep
     constexpr float MAGIC_GELU_2 = 0.044715f;
 
     /// @brief In-place GELU activation (tanh approximation, ~5e-4 max
-    /// absolute error vs. true GELU -- see tests/tGelu.cpp).
+    /// absolute error vs. true GELU, see tests/tGelu.cpp).
     static inline void gelu(float *RESTRICT x, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");
@@ -100,7 +100,7 @@ namespace Deep
 
     /// @brief In-place GELU derivative.
     /// @param x Array to derive in place. Unlike dRelu/dTanh/dSigmoid,
-    /// this always treats x as the PRE-activation value -- the formula
+    /// this always treats x as the PRE-activation value, the formula
     /// is recomputed from scratch regardless of `activated`, so calling
     /// this after gelu() has already run in place on the same buffer
     /// gives a wrong result.

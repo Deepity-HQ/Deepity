@@ -274,7 +274,6 @@ set(CMAKE_REQUIRED_QUIET OFF)
 set(DEEPITY_SOURCES
     src/layers/FullPCLayer.cpp
     src/layers/DiscriminativePCLayer.cpp
-    src/layers/RBLayer.cpp
     src/layers/ConvPCLayer.cpp
     src/layers/SimpleConvPCLayer.cpp
     src/layers/SimplePCLayer.cpp
@@ -423,6 +422,27 @@ if(DEEPITY_BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
     add_test(NAME DirectKPVerify COMMAND DirectKPVerify)
+
+    add_executable(GaussSeidelPCLayerVerify tests/tGaussSeidelPCLayerVerify.cpp)
+    target_link_libraries(GaussSeidelPCLayerVerify PRIVATE Deepity)
+    set_target_properties(GaussSeidelPCLayerVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME GaussSeidelPCLayerVerify COMMAND GaussSeidelPCLayerVerify)
+
+    add_executable(ConvPCLayerStateVerify tests/tConvPCLayerStateVerify.cpp)
+    target_link_libraries(ConvPCLayerStateVerify PRIVATE Deepity)
+    set_target_properties(ConvPCLayerStateVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ConvPCLayerStateVerify COMMAND ConvPCLayerStateVerify)
+
+    add_executable(ConvPCLayerAdamPrecisionVerify tests/tConvPCLayerAdamPrecisionVerify.cpp)
+    target_link_libraries(ConvPCLayerAdamPrecisionVerify PRIVATE Deepity)
+    set_target_properties(ConvPCLayerAdamPrecisionVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ConvPCLayerAdamPrecisionVerify COMMAND ConvPCLayerAdamPrecisionVerify)
 
     add_executable(FullPCLayerVerify tests/tFullPCLayerVerify.cpp)
     target_link_libraries(FullPCLayerVerify PRIVATE Deepity)

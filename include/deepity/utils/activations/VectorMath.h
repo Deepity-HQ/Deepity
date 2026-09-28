@@ -7,7 +7,7 @@
 /**
  * @file VectorMath.h
  * @brief SIMD-vectorized exp/log helpers (AVX512/AVX2/SSE with a scalar
- * tail). Currently unused by the rest of the codebase -- kept for planned
+ * tail). Currently unused by the rest of the codebase, kept for planned
  * future use (e.g. a vectorized softmax path) rather than deleted.
  */
 

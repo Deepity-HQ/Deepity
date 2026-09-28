@@ -167,7 +167,7 @@ namespace Deep
                 }
                 else
                 {
-                    std::cerr << "Graph capture failed -- falling back to non-graph execution for this call.\n";
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
                 }
             }
 

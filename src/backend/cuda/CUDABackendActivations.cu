@@ -3,7 +3,7 @@
  * @brief CUDABackend's activation kernels (forward + derivative, for every
  * ActivationType) and the Activation()/ActivationDerivative() dispatchers
  * that select among them. Mirrors the "Activation" section of
- * IComputeBackend.h. Split out of the former monolithic CUDABackend.cu --
+ * IComputeBackend.h. Split out of the former monolithic CUDABackend.cu,
  * see CUDABackendCore.cu, CUDABackendGemm.cu, CUDABackendElementwise.cu,
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.

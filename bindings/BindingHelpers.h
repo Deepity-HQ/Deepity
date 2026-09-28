@@ -18,7 +18,7 @@
 
 namespace nb = nanobind;
 
-/// @brief "Any-shape, contiguous, CPU, float32" array -- the nanobind
+/// @brief "Any-shape, contiguous, CPU, float32" array, the nanobind
 /// equivalent of pybind11's `py::array_t<float, py::array::c_style |
 /// py::array::forcecast>`.
 using FloatArray = nb::ndarray<float, nb::c_contig, nb::device::cpu>;
@@ -30,7 +30,7 @@ namespace
 {
 
     /// @brief Allocates a new numpy array and copies `n` elements from `src`
-    /// into it -- used where the source buffer doesn't outlive the call
+    /// into it, used where the source buffer doesn't outlive the call
     /// (e.g. a local std::vector), so a zero-copy view isn't safe.
     template <typename T>
     nb::ndarray<nb::numpy, T> CopyToNewArray(const T *src, std::initializer_list<size_t> shape)

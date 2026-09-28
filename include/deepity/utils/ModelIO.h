@@ -13,7 +13,7 @@
 namespace Deep
 {
     /// @brief Static save/load helpers for any network type exposing
-    /// GetLayers() -- templated so it works across every PC network
+    /// GetLayers(), templated so it works across every PC network
     /// variant without each one reimplementing serialization.
     class ModelIO
     {

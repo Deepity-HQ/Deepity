@@ -33,11 +33,8 @@ namespace Deep
 
     void SimpleConvPCNetwork::SetOptimizer(OptimizerType opt) noexcept
     {
-        // Deferred: just records the choice. Actually applied to every
-        // layer inside Compile(), BEFORE each layer's GetRequiredFloats()
-        // is summed -- GetRequiredFloats() itself depends on opt (Adam
-        // buffers only counted if opt is ADAM/ADAMW), so this must happen
-        // before the arena is sized, not after.
+        // Applied to every layer inside Compile() instead of immediately,
+        // so it works even when called before any AddLayer().
         pendingOpt = opt;
     }
 
@@ -138,10 +135,6 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        // Was: std::vector<float>(beliefs, beliefs + count) -- the
-        // iterator-range constructor dereferences every element
-        // directly, wrong if beliefs is a device pointer. Allocate the
-        // host-side result first, then copy it out through the backend.
         std::vector<float> result(count);
         backend->CopyToHost(result.data(), beliefs, count);
         return result;
@@ -153,10 +146,8 @@ namespace Deep
         {
             layers[i]->ComputeMuOnly();
 
-            // Skip a layer that's already clamped -- overwriting its real
-            // target with a forward-projected guess is the exact bug
-            // SimplePCNetwork/DirectKPPCNetwork's own ProjectForward()
-            // had, fixed here before it's ever exercised.
+            // Don't overwrite an already-clamped layer's target with a
+            // forward-projected guess.
             if (layers[i + 1]->IsClamped())
                 continue;
 
@@ -164,10 +155,6 @@ namespace Deep
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-            // Was: std::memcpy(nextZ, mu, n * sizeof(float)) -- wrong if
-            // mu/nextZ are device pointers. backend->Copy() is
-            // device-to-device, matching every other network's own fix
-            // for the identical bug.
             backend->Copy(nextZ, mu, n);
         }
     }

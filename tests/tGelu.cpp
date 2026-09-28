@@ -1,6 +1,6 @@
 /**
  * @file tGeluCorrectness.cpp
- * @brief Checks that Deep::gelu() produces numerically correct output --
+ * @brief Checks that Deep::gelu() produces numerically correct output,
  * NOT a speed benchmark (tActivations.cpp/tReadme.cpp only measure
  * timing, never check the actual computed values against anything).
  *
@@ -8,7 +8,7 @@
  * definition), computed independently via Python/scipy, not derived
  * from this codebase's own formula. The tanh approximation has a known,
  * real ~5e-4 max absolute error vs true GELU (already verified earlier
- * against PyTorch's own source) -- so the tolerance below is set
+ * against PyTorch's own source), so the tolerance below is set
  * slightly looser than that to allow for the approximation's own
  * expected error, while still catching a genuinely wrong implementation
  * (a sign error, wrong constant, off-by-one in the SIMD tail, etc. would
@@ -24,7 +24,7 @@ using namespace Deep;
 
 int main()
 {
-    // (input, true_gelu) pairs -- computed independently via
+    // (input, true_gelu) pairs, computed independently via
     // scipy.stats.norm.cdf, not from this codebase's own tanh-approx formula.
     struct Case
     {
@@ -60,7 +60,7 @@ int main()
 
     // Same values, but padded into a large-enough buffer to force the
     // actual SIMD path (AVX-512/AVX2/SSE, whichever this build has) to
-    // run too -- a bug isolated to just the vectorized loop (e.g. the
+    // run too, a bug isolated to just the vectorized loop (e.g. the
     // FMA structure) wouldn't show up in the n=1 scalar-only test above.
     printf("\n=== SIMD path (buffer large enough to exercise vectorized loop) ===\n");
     const size_t simdSize = 64; // large enough for any SIMD width (16/8/4) with a real tail too

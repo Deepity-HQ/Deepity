@@ -72,7 +72,7 @@ namespace Deep
     /// @brief In-place ReLU derivative: 1 where x > 0, else 0.
     /// @param x Array to derive in place.
     /// @param n Length of x.
-    /// @param activated Unused -- ReLU's derivative only depends on sign,
+    /// @param activated Unused, ReLU's derivative only depends on sign,
     /// so whether x already holds the activated value makes no difference.
     /// Present only for signature consistency with DerivativeFn.
     static inline void dRelu(float *RESTRICT x, const size_t n, [[maybe_unused]] bool activated = false) noexcept

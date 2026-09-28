@@ -6,18 +6,18 @@
 
 /**
  * @file StreamAlignedBatcher.h
- * @brief C++ port of the Python StreamAlignedBatcher -- builds batches with
+ * @brief C++ port of the Python StreamAlignedBatcher, builds batches with
  * a fixed number of examples per class, grouped together, required for
  * I_avg's per-class averaging (Eq. 7 of "Faster Predictive Coding Networks
  * via Better Initialization").
  *
  * Kept deliberately SEPARATE from DiscriminativePCNetwork/SimplePCNetwork/
- * ConvPCNetwork -- this is a standalone data-pipeline utility, not part of
+ * ConvPCNetwork, this is a standalone data-pipeline utility, not part of
  * the core numerical library. Any consumer (C++, or via future bindings)
  * uses it independently, feeding its output into whichever network class
  * they're using via the existing ClampInput/ClampState-style API.
  *
- * Does NOT own or copy the dataset -- holds pointers + stride info only.
+ * Does NOT own or copy the dataset, holds pointers + stride info only.
  * Caller must keep X/Y/labels alive for the batcher's lifetime. GetBatch()
  * gathers selected rows into caller-provided output buffers, so the same
  * buffers can be reused across calls without repeated allocation.
@@ -26,7 +26,7 @@
 namespace Deep
 {
     /// @brief Builds batches with a fixed, grouped number of examples per
-    /// class -- see the file-level note for why this exists and what it
+    /// class, see the file-level note for why this exists and what it
     /// deliberately doesn't own.
     class StreamAlignedBatcher
     {
@@ -47,14 +47,14 @@ namespace Deep
 
         /// @brief Number of complete batches obtainable per epoch, limited
         /// by the rarest class's sample count (matches the Python version's
-        /// behavior -- some samples from more common classes go unused
+        /// behavior, some samples from more common classes go unused
         /// each epoch, rather than padding/repeating to force even usage).
         size_t NumBatchesPerEpoch() const noexcept;
 
         /// @brief Fills the next batch into caller-provided, pre-allocated
         /// output buffers. Rows are GROUPED by class: rows
         /// [0, perClass) are class 0, [perClass, 2*perClass) are class 1,
-        /// etc. -- same convention as the Python version, so per-class
+        /// etc., same convention as the Python version, so per-class
         /// slicing for cache-averaging is a trivial contiguous range.
         /// @param X_out Must be sized (numClasses*perClass) * xStride.
         /// @param Y_out Must be sized (numClasses*perClass) * yStride.

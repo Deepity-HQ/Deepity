@@ -23,15 +23,14 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         2. Recompute predictions using the fresh z states.
         3. Recompute errors using the fresh predictions.
 
-    Traced directly from ngc-learn's execution graph:
-
-        E2,E3 -> z0,z1,z2,z3 -> W1,W2,W3 -> e1,e2,e3
-
-    UNPROVEN EXPERIMENT -- the underlying mathematics has only been
-    smoke-tested (finite energy with a generally decreasing trend).
-    It has not yet been verified with an independent finite-difference
-    gradient check. Accuracy conclusions should therefore be treated
-    cautiously until that verification is complete.
+    Feedback goes through E, an independently-initialized, never-updated
+    feedback-alignment matrix (Lillicrap et al.), not W transposed, so
+    this is feedback alignment, not backprop-style symmetric weight
+    transport. The weight update itself (dE/dW) is a true gradient,
+    independently verified via finite-difference check
+    (tGaussSeidelPCLayerVerify.cpp). E's role in the state-settling
+    feedback term is deliberately not a gradient and isn't checked
+    against one, matching DirectKPPCN's own Psi.
 
     Precision-free and AdamW-capable, matching SimplePCN's conventions.
     """

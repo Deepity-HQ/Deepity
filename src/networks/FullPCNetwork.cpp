@@ -129,7 +129,7 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
         capturedInferenceSteps = inferenceSteps;
       }
       else
-        std::cerr << "Graph capture failed -- falling back to non-graph execution for this call.\n";
+        std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
     }
 
     if (graphCaptured)
@@ -195,12 +195,12 @@ void FullPCNetwork::Compile()
 {
   // terminalSize is supplied on every AddLayer() call rather than
   // inferred, since the true terminal layer isn't known until the whole
-  // network is assembled -- validate it now against the actual last
+  // network is assembled, validate it now against the actual last
   // layer's size. A mismatch here previously went uncaught: the DFA
   // feedback GEMM in DirectFeedbackUpdate() would read past the real
   // (smaller) terminal error buffer using the wrong terminalSize as its
   // GEMM dimension, corrupting W with garbage/inf on the very first
-  // TrainStep() -- confirmed by reproducing exactly this with a
+  // TrainStep(), confirmed by reproducing exactly this with a
   // deliberately wrong terminalSize.
   if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
   {
@@ -244,7 +244,7 @@ void FullPCNetwork::Compile()
 
   // muPC scaling / residual connections: OFF by default (a=1.0,
   // useResidual=false on every layer already, from FullPCLayer's
-  // own constructor defaults) -- only touch anything if the
+  // own constructor defaults), only touch anything if the
   // corresponding network-level toggle was actually set.
   if (!useMuPCScaling && !useResidualConnections)
     return;
@@ -252,7 +252,7 @@ void FullPCNetwork::Compile()
   // L = number of real, weight-bearing layers (excludes the
   // terminal-only layer, layers.back(), whose nextSize == 0).
   // H = number of hidden z's (L-1). Mirrors the muPC prototype's
-  // own L/H definitions exactly -- verified by hand against its
+  // own L/H definitions exactly, verified by hand against its
   // [784,256,256,10] example before writing this.
   const int L = (int)layers.size() - 1;
   const int H = L - 1;
@@ -298,7 +298,7 @@ void FullPCNetwork::Compile()
       if (layer->GetInputSize() != layer->GetOutputSize())
       {
         throw std::invalid_argument("FullPCNetwork::Compile(): residual connections require "
-                                    "matching width -- layer index " +
+                                    "matching width, layer index " +
                                     std::to_string(l - 1) + " has input size " +
                                     std::to_string(layer->GetInputSize()) + " but output size " +
                                     std::to_string(layer->GetOutputSize()) + ".");

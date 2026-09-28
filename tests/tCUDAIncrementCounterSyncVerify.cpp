@@ -3,8 +3,8 @@
  * @brief Same as tCUDAIncrementCounterVerify.cpp, but with an explicit
  * cudaDeviceSynchronize() inserted right after IncrementCounter(),
  * before the readback. IncrementCounterKernel is launched as
- * <<<1,1,0,stream>>> -- exactly one block, one thread -- structurally
- * different from every other kernel tested tonight (all used a real
+ * <<<1,1,0,stream>>>, exactly one block, one thread, structurally
+ * different from every other kernel this suite tests (all use a real
  * blocks/BLOCK_SIZE calculation with many threads). Testing whether
  * this specific, minimal launch configuration has a genuine
  * stream-timing issue the synchronous CopyToHost isn't actually
@@ -35,8 +35,8 @@ int main()
     printf("After ONE IncrementCounter call + explicit sync (expect 1): %d\n", readback);
 
     bool pass = (readback == 1);
-    printf("\n%s\n", pass ? "PASS (explicit sync fixed it -- real stream-timing bug found)"
-                          : "FAIL (still wrong even with explicit sync -- bug is elsewhere)");
+    printf("\n%s\n", pass ? "PASS (explicit sync fixed it, real stream-timing bug found)"
+                          : "FAIL (still wrong even with explicit sync, bug is elsewhere)");
 
     gpuBackend->Free(reinterpret_cast<float *>(dT));
     return pass ? 0 : 1;

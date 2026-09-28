@@ -1,7 +1,7 @@
 /**
  * @file NetworkBindings.cpp
  * @brief nanobind bindings for every concrete PC network type. Split out of
- * the former monolithic pybinding.cpp -- see LayerBindings.cpp /
+ * the former monolithic pybinding.cpp, see LayerBindings.cpp /
  * UtilityBindings.cpp for the rest.
  */
 #include "BindingHelpers.h"
@@ -571,7 +571,7 @@ void bind_networks(nb::module_& m)
       m,
       "FullPCNetwork",
       "Predictive Coding Network combining muPC scaling, optional "
-      "residual connections, and DKP direct feedback -- every extra OFF "
+      "residual connections, and DKP direct feedback, every extra OFF "
       "by default, matching FullPCLayer's own defaults.")
       .def(
           "__init__",
@@ -626,7 +626,7 @@ void bind_networks(nb::module_& m)
            &Deep::FullPCNetwork::SetUseResidualConnections,
            nb::arg("enabled"),
            "Enable/disable residual/skip connections on middle hidden "
-           "layers. OFF by default. Must be called before compile() -- "
+           "layers. OFF by default. Must be called before compile(), "
            "compile() raises ValueError if enabled middle layers don't "
            "have matching width.")
       .def("set_use_ipc",

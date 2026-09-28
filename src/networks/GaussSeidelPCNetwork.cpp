@@ -1,27 +1,25 @@
 #include <deepity/networks/GaussSeidelPCNetwork.h>
-#include <cstring>
+#include <deepity/backend/Backend.h>
 
 namespace Deep
 {
-    GaussSeidelPCNetwork::GaussSeidelPCNetwork(int batchSize) noexcept : batchSize(batchSize) {}
-
-    void GaussSeidelPCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                                         void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
+    GaussSeidelPCNetwork::GaussSeidelPCNetwork(int batchSize, DeviceType device) noexcept
+        : device(device), batchSize(batchSize)
     {
-        std::unique_ptr<GaussSeidelPCLayer> l = std::make_unique<GaussSeidelPCLayer>(size, nextSize, batchSize, lr, ir, lmbda, act, dAct);
-
-        if (!layers.empty())
-        {
-            layers.back()->SetLayerAbove(l.get());
-            l->SetLayerBelow(layers.back().get());
-        }
-        layers.push_back(std::move(l));
+        backend = CreateBackend(device);
     }
 
     void GaussSeidelPCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
-                                         ActivationType aType, ActivationType dType)
+                                        void (*act)(float *, size_t), void (*dAct)(float *, size_t, bool))
     {
-        std::unique_ptr<GaussSeidelPCLayer> l = std::make_unique<GaussSeidelPCLayer>(size, nextSize, batchSize, lr, ir, lmbda, aType, dType);
+        AddLayer(size, nextSize, lr, ir, lmbda, To_AType(act), To_AType(dAct));
+    }
+
+    void GaussSeidelPCNetwork::AddLayer(int size, int nextSize, float lr, float ir, float lmbda,
+                                        ActivationType aType, ActivationType dType)
+    {
+        auto l = std::make_unique<GaussSeidelPCLayer>(
+            size, nextSize, batchSize, lr, ir, lmbda, aType, dType, backend.get());
 
         if (!layers.empty())
         {
@@ -66,10 +64,7 @@ namespace Deep
         // starting from this point.
         float totalEnergy = 0.0f;
         for (auto &l : layers)
-        {
-            float e = l->ComputeError();
-            totalEnergy += e;
-        }
+            totalEnergy += l->ComputeError();
 
         return totalEnergy;
     }
@@ -86,11 +81,16 @@ namespace Deep
         {
             layers[i]->ComputePrediction();
 
+            // Don't overwrite an already-clamped layer's target with a
+            // forward-projected guess.
+            if (layers[i + 1]->IsClamped())
+                continue;
+
             const float *mu = layers[i]->GetMu();
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = (size_t)layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
 
-            std::memcpy(nextZ, mu, n * sizeof(float));
+            backend->Copy(nextZ, mu, n);
         }
     }
 
@@ -117,14 +117,9 @@ namespace Deep
         ProjectForward();
         GetTerminalLayer()->ClampState(y);
 
-        // ONLY the terminal layer's error is computed immediately (e3 =
-        // z3 - mu3, using the clamped target against the projected
-        // prediction) -- confirmed directly from ngc-learn's own official
-        // documentation: "error values... at initialization, are e1=0,
-        // e2=0, and e3=z3-mu3". Hidden layers correctly STAY at zero,
-        // matching ResetState()'s default -- an earlier version of this
-        // fix incorrectly computed ALL layers' errors immediately, which
-        // contradicts the official spec.
+        // Only the terminal layer's error is computed immediately (e3 =
+        // z3 - mu3, target vs. projected prediction); hidden layers stay
+        // at zero.
         GetTerminalLayer()->ComputeError();
 
         float finalEnergy = 0.0f;
@@ -137,18 +132,15 @@ namespace Deep
         return finalEnergy;
     }
 
-std::vector<float> GaussSeidelPCNetwork::Predict(const std::vector<float> &x, int inferenceSteps)
+    std::vector<float> GaussSeidelPCNetwork::Predict(const std::vector<float> &x, int inferenceSteps)
     {
         ResetState();
         Clamp(x);
 
-        // FIXED: Seed the hidden states with the forward pass!
-        // Without this, inference starts from z=0 and fails to reach the target.
+        // Seed the hidden states with the forward pass. Without this,
+        // inference starts from z=0 and fails to reach the target.
         ProjectForward();
 
-        // Note: ngc-learn evaluates accuracy on the projection BEFORE settling.
-        // If you want to match their 95.09% exactly, you can even pass steps=0 
-        // at test time in Python. But settling from the projection works great too.
         for (int t = 0; t < inferenceSteps; ++t)
             Step();
 
@@ -156,17 +148,31 @@ std::vector<float> GaussSeidelPCNetwork::Predict(const std::vector<float> &x, in
         const float *beliefs = terminal->GetBeliefs();
         size_t count = (size_t)terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 
     void GaussSeidelPCNetwork::Compile()
     {
-        size_t total_floats_needed = 0;
+        size_t total = 0;
         for (auto &layer : layers)
-            total_floats_needed += layer->GetRequiredFloats();
+            total += layer->GetRequiredFloats();
 
-        arena = std::make_unique<MemoryArena>(total_floats_needed);
-        for (auto &layer : layers)
-            layer->BindMemory(*arena);
+        if (device == DeviceType::DEVICE_CPU)
+        {
+            cpuArena = std::make_unique<MemoryArena>(total);
+            for (auto &layer : layers)
+                layer->BindMemory(*cpuArena);
+        }
+#if defined(DEEPITY_USE_CUDA)
+        else
+        {
+            backend->PrepareForBatchSize(batchSize);
+            gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total);
+            for (auto &layer : layers)
+                layer->BindMemory(*gpuArena);
+        }
+#endif
     }
 }

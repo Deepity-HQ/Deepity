@@ -1,7 +1,7 @@
 /**
  * @file LayerBindings.cpp
  * @brief nanobind bindings for Deep::Layer and every concrete PC layer type.
- * Split out of the former monolithic pybinding.cpp -- see
+ * Split out of the former monolithic pybinding.cpp, see
  * NetworkBindings.cpp / UtilityBindings.cpp for the rest.
  */
 #include "BindingHelpers.h"
@@ -23,7 +23,6 @@
 #include <deepity/layers/FullPCLayer.h>
 #include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/layers/Layer.h>
-#include <deepity/layers/RBLayer.h>
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/layers/SimplePCLayer.h>
 
@@ -169,8 +168,8 @@ void bind_layers(nb::module_& m)
                                                        inference_rate,
                                                        precision_rate,
                                                        lmbda,
-                                                       resolveAct(activation),
-                                                       resolveDAct(activation_deriv));
+                                                       resolveActEnum(activation),
+                                                       resolveActEnum(activation_deriv));
               },
               nb::arg("size"),
               nb::arg("next_size"),
@@ -257,8 +256,8 @@ void bind_layers(nb::module_& m)
                                                                   learning_rate,
                                                                   inference_rate,
                                                                   lmbda,
-                                                                  resolveAct(activation),
-                                                                  resolveDAct(activation_deriv));
+                                                                  resolveActEnum(activation),
+                                                                  resolveActEnum(activation_deriv));
                             },
                             nb::arg("size"),
                             nb::arg("next_size"),
@@ -279,129 +278,6 @@ void bind_layers(nb::module_& m)
                                         self);
                    });
   BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
-
-  nb::class_<Deep::RBLayer, Deep::Layer>(
-      m, "RBLayer", "Restricted Boltzmann-style Predictive Coding layer.")
-      .def(
-          "__init__",
-          [](Deep::RBLayer* self,
-             size_t in_size,
-             size_t out_size,
-             float var,
-             float var_td,
-             float k1,
-             float k2,
-             float lambda,
-             float alpha,
-             size_t batch_size,
-             int step_size,
-             const std::string& activation,
-             const std::string& activation_deriv)
-          {
-            new (self) Deep::RBLayer(in_size,
-                                     out_size,
-                                     var,
-                                     var_td,
-                                     k1,
-                                     k2,
-                                     lambda,
-                                     alpha,
-                                     batch_size,
-                                     step_size,
-                                     resolveAct(activation),
-                                     resolveDAct(activation_deriv));
-          },
-          nb::arg("in_size"),
-          nb::arg("out_size"),
-          nb::arg("var") = 1.0f,
-          nb::arg("var_td") = 10.0f,
-          nb::arg("k1") = 1e-3f,
-          nb::arg("k2") = 1e-5f,
-          nb::arg("lambda") = 1e-6f,
-          nb::arg("alpha") = 1.0f,
-          nb::arg("batch_size") = 64,
-          nb::arg("step_size") = 30,
-          nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
-      .def(
-          "run_prediction",
-          [](Deep::RBLayer& self, FloatArray input, size_t current_batch_size)
-          { self.RunPrediction(input.data(), current_batch_size); },
-          nb::arg("input"),
-          nb::arg("current_batch_size"))
-      .def(
-          "run_inference_step",
-          [](Deep::RBLayer& self,
-             FloatArray bottom_up,
-             FloatArray top_down,
-             size_t current_batch_size)
-          { self.RunInferenceStep(bottom_up.data(), top_down.data(), current_batch_size); },
-          nb::arg("bottom_up"),
-          nb::arg("top_down"),
-          nb::arg("current_batch_size"))
-      .def(
-          "calc_error",
-          [](Deep::RBLayer& self,
-             FloatArray bottom_up,
-             FloatArray top_down,
-             size_t current_batch_size)
-          { self.CalcError(bottom_up.data(), top_down.data(), current_batch_size); },
-          nb::arg("bottom_up"),
-          nb::arg("top_down"),
-          nb::arg("current_batch_size"))
-      .def(
-          "update_beliefs",
-          [](Deep::RBLayer& self,
-             FloatArray bottom_up,
-             FloatArray top_down,
-             size_t current_batch_size)
-          { self.UpdateBeliefs(bottom_up.data(), top_down.data(), current_batch_size); },
-          nb::arg("bottom_up"),
-          nb::arg("top_down"),
-          nb::arg("current_batch_size"))
-      .def("calculate_state", &Deep::RBLayer::CalculateState)
-      .def("update_state", &Deep::RBLayer::UpdateState)
-      .def("update_weights", static_cast<void (Deep::RBLayer::*)()>(&Deep::RBLayer::UpdateWeights))
-      .def("update_weights_batch",
-           static_cast<void (Deep::RBLayer::*)(size_t)>(&Deep::RBLayer::UpdateWeights),
-           nb::arg("current_batch_size"))
-      .def("flush", &Deep::RBLayer::Flush)
-      .def(
-          "attach",
-          [](Deep::RBLayer& self, FloatArray arena) { self.Attach(arena.data()); },
-          nb::arg("arena"))
-      .def_prop_ro("beliefs",
-                   [](Deep::RBLayer& self)
-                   {
-                     return ViewOwnedBy(self.GetBeliefs(),
-                                        {(size_t)self.GetBatchSize(), (size_t)self.GetOutputSize()},
-                                        self);
-                   })
-      .def_prop_ro("errors",
-                   [](Deep::RBLayer& self)
-                   {
-                     return ViewOwnedBy(self.GetErrors(),
-                                        {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()},
-                                        self);
-                   })
-      .def_prop_ro("weights",
-                   [](Deep::RBLayer& self)
-                   {
-                     return ViewOwnedBy(self.GetWeights(),
-                                        {(size_t)self.GetOutputSize(), (size_t)self.GetInputSize()},
-                                        self);
-                   })
-      .def_prop_ro("batch_size", &Deep::RBLayer::GetBatchSize)
-      .def_prop_ro("input_size", &Deep::RBLayer::GetInputSize)
-      .def_prop_ro("output_size", &Deep::RBLayer::GetOutputSize)
-      .def("total_size", &Deep::RBLayer::GetTotalSize)
-      .def("__repr__",
-           [](const Deep::RBLayer& self)
-           {
-             return "<RBLayer in=" + std::to_string(self.GetInputSize()) +
-                    ", out=" + std::to_string(self.GetOutputSize()) +
-                    ", batch=" + std::to_string(self.GetBatchSize()) + ">";
-           });
 
   auto dkpLayerCls = nb::class_<Deep::DirectKPPCLayer, Deep::Layer>(
                          m, "DirectKPPCLayer", "Direct Kolen-Pollack Predictive Coding layer.")
@@ -444,7 +320,7 @@ void bind_layers(nb::module_& m)
   dkpLayerCls
       .def("direct_feedback_update",
            &Deep::DirectKPPCLayer::DirectFeedbackUpdate,
-           "Perturbs W using the layer above's Psi and the terminal layer's error -- "
+           "Perturbs W using the layer above's Psi and the terminal layer's error, "
            "the DFA phase, run once per batch before settling begins.")
       .def("set_terminal_layer", &Deep::DirectKPPCLayer::SetTerminalLayer, nb::arg("layer"))
       .def(
@@ -489,7 +365,7 @@ void bind_layers(nb::module_& m)
                           m,
                           "FullPCLayer",
                           "PC layer combining muPC scaling, optional residual connections, "
-                          "and DKP direct feedback -- every extra OFF by default, so plain "
+                          "and DKP direct feedback, every extra OFF by default, so plain "
                           "defaults reproduce DirectKPPCLayer exactly.")
                           .def(
                               "__init__",
@@ -530,7 +406,7 @@ void bind_layers(nb::module_& m)
   fullLayerCls
       .def("direct_feedback_update",
            &Deep::FullPCLayer::DirectFeedbackUpdate,
-           "Perturbs W using the layer above's Psi and the terminal layer's error -- "
+           "Perturbs W using the layer above's Psi and the terminal layer's error, "
            "the DFA phase, run once per batch before settling begins.")
       .def("set_terminal_layer", &Deep::FullPCLayer::SetTerminalLayer, nb::arg("layer"))
       .def(
@@ -563,13 +439,13 @@ void bind_layers(nb::module_& m)
            nb::arg("a"),
            "Set this layer's muPC forward-scaling factor directly. Usually "
            "set by FullPCNetwork::Compile() instead, once the full "
-           "architecture is known -- call this directly only for manual, "
+           "architecture is known, call this directly only for manual, "
            "per-layer control outside that mechanism.")
       .def("set_residual",
            &Deep::FullPCLayer::SetResidual,
            nb::arg("enabled"),
            "Enable/disable this layer's residual connection directly. "
-           "Same caveat as set_mu_pc_scale -- usually set by "
+           "Same caveat as set_mu_pc_scale, usually set by "
            "FullPCNetwork::Compile() instead.")
       .def_prop_ro("mu_pc_scale", &Deep::FullPCLayer::GetMuPCScale)
       .def_prop_ro("residual", &Deep::FullPCLayer::GetResidual)

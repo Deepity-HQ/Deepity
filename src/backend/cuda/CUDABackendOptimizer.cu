@@ -3,7 +3,7 @@
  * @brief CUDABackend's optimizer-step kernels: an atomic counter increment
  * (for device-resident step counting under graph replay) and the Adam/AdamW
  * parameter updates. Mirrors the "Optimizer" section of IComputeBackend.h.
- * Split out of the former monolithic CUDABackend.cu -- see
+ * Split out of the former monolithic CUDABackend.cu, see
  * CUDABackendCore.cu, CUDABackendGemm.cu, CUDABackendElementwise.cu,
  * CUDABackendActivations.cu, CUDABackendFusedOps.cu, CUDABackendConv.cu for
  * the rest.
@@ -92,7 +92,7 @@ void CUDABackend::AdamStep(float* param, const float* grad, float* m, float* v, 
   if (!param || !grad || !m || !v || !t || !lr || n == 0)
     return;
 
-  // NO host copy -- t/lr stay as device pointers, dereferenced
+  // NO host copy, t/lr stay as device pointers, dereferenced
   // inside the kernel itself, so graph capture/replay re-reads the
   // real, current value every time instead of baking in a
   // one-time snapshot from whenever capture happened to run.

@@ -52,12 +52,9 @@ namespace Deep
             layers[i]->ComputeMuOnly();
 
             // Skip a layer that's already clamped (the terminal layer,
-            // once ClampState(y) has run) -- overwriting its real target
-            // with a forward-projected guess is exactly the bug
-            // SimplePCNetwork::ProjectForward() had, fixed here before
-            // it gets exercised for the first time by moving this call
-            // inside graph capture, which requires ClampState(y) to run
-            // BEFORE this, not after, for the capture ordering to work.
+            // once ClampState(y) has run), don't overwrite its real
+            // target with a forward-projected guess. Requires
+            // ClampState(y) to run before this call.
             if (layers[i + 1]->IsClamped())
                 continue;
 
@@ -102,7 +99,7 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        // Moved BEFORE ProjectForward() -- required for ProjectForward's
+        // Moved BEFORE ProjectForward(), required for ProjectForward's
         // new IsClamped() guard to actually protect the terminal layer,
         // and required so ProjectForward() can safely move inside the
         // captured region below.
@@ -113,7 +110,7 @@ namespace Deep
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
                 backend->BeginGraphCapture();
-                ProjectForward(); // now inside capture -- see note above
+                ProjectForward(); // now inside capture, see note above
                 CalculateTerminalError();
                 DirectFeedbackUpdate();
                 for (int t = 0; t < inferenceSteps; t++)
@@ -128,7 +125,7 @@ namespace Deep
                 }
                 else
                 {
-                    std::cerr << "Graph capture failed -- falling back to non-graph execution for this call.\n";
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
                 }
             }
 
@@ -187,7 +184,7 @@ namespace Deep
 
     void DirectKPPCNetwork::Compile()
     {
-        // See FullPCNetwork::Compile()'s identical check -- terminalSize is
+        // See FullPCNetwork::Compile()'s identical check, terminalSize is
         // supplied on every AddLayer() call rather than inferred, and a
         // mismatch against the real terminal layer's size previously went
         // uncaught, silently corrupting W via an out-of-bounds GEMM in

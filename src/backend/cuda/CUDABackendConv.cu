@@ -3,7 +3,7 @@
  * @brief CUDABackend's im2col-based convolution support: the batched-GEMM
  * repack, and the Im2Col/Col2Im transform pair. Mirrors the "Convolution
  * (im2col-based, ConvPCLayer family)" section of IComputeBackend.h. Split
- * out of the former monolithic CUDABackend.cu -- see CUDABackendCore.cu,
+ * out of the former monolithic CUDABackend.cu, see CUDABackendCore.cu,
  * CUDABackendGemm.cu, CUDABackendElementwise.cu, CUDABackendActivations.cu,
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu for the rest.
  */

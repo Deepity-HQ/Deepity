@@ -2,15 +2,15 @@
  * @file tMatMulLargeAsymmetricVerify.cpp
  * @brief Reproduces, in isolation, the exact GEMM shape that crashed
  * DirectFeedbackUpdate() on Tiny ImageNet: transA=true, transB=true,
- * M=1024 (nextSize), N=12288 (size), K=250 (batchSize) -- K much
+ * M=1024 (nextSize), N=12288 (size), K=250 (batchSize), K much
  * smaller than M/N, a shape tMatMulVerify.cpp's tiny (M=N=K=2-3) cases
  * never exercised, and one likely to select a different cuBLAS internal
  * kernel (the crash was inside ampere_sgemm_128x64_tt specifically).
  *
  * Differential test: CPU's GEMM path is already trusted (verified
- * correct in tMatMulVerify.cpp and used throughout tonight's CPU runs),
- * so any GPU disagreement at this specific scale isolates a real,
- * scale-dependent bug rather than a general transpose-logic error.
+ * correct in tMatMulVerify.cpp), so any GPU disagreement at this
+ * specific scale isolates a real, scale-dependent bug rather than a
+ * general transpose-logic error.
  */
 #include <deepity/backend/Backend.h>
 #include <cstdio>
@@ -32,13 +32,13 @@ int main()
     std::mt19937 rng(42);
     std::normal_distribution<float> dist(0.0f, 1.0f);
 
-    // proj stored [K, M] (batchSize, nextSize) -- transA=true means
+    // proj stored [K, M] (batchSize, nextSize), transA=true means
     // op(A) = A^T = [M, K].
     std::vector<float> hProj(K * M);
     for (auto &v : hProj)
         v = dist(rng);
 
-    // zF stored [K, N] (batchSize, size) -- transB=true means
+    // zF stored [K, N] (batchSize, size), transB=true means
     // op(B) = B^T = [N, K]... wait, matching the real call: zF is
     // passed as B with transB=true, stored [K, N] per the same
     // batchSize-major convention as every other buffer in this codebase.
@@ -101,7 +101,7 @@ int main()
     }
 
     printf("PASSED (though note: if this test PASSES but the real training run still\n");
-    printf("crashes, the bug is NOT in MatMul itself -- look at buffer sizing/lifetime\n");
+    printf("crashes, the bug is NOT in MatMul itself, look at buffer sizing/lifetime\n");
     printf("in DirectKPPCLayer's actual DirectFeedbackUpdate() call site instead.\n");
     return 0;
 }

@@ -5,32 +5,37 @@
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/utils/Optimize.h>
 #include <deepity/utils/MemoryArena.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/backend/DeviceType.h>
 
 /**
  * @file DiscriminativePCNetwork.h
- * @brief Defines the network-level implementation of a PC model.
- *
- * This header includes implementations of PC layer-to-layer interaction.
+ * @brief Network-level wrapper for DiscriminativePCLayer, the original
+ * precision-weighted PC model. Device-aware (DeviceType constructor
+ * parameter, backend member, cpuArena/gpuArena split), with auto-batch-
+ * size detection (see autoSize below).
  *
  * @code{.cpp}
  * #include <deepity/networks/DiscriminativePCNetwork.h>
  *
  * Deep::DiscriminativePCNetwork network(1);
- * network.addLayer({...});
+ * network.AddLayer(...);
  * network.Clamp(input);
  * network.CalculateState();
  * @endcode
  *
- * @note All layers are stored in a vector.
- * @version 1.0
- * @date 2026-06-30
+ * @version 2.0
+ * @date 2026-09-27
  * @author Jack Rose
  */
 
 namespace Deep
 {
     class PCNDiagnostics;
-    /// @brief An abstracted class for an array of `DiscriminativePCLayer`
+
+    /// @brief An abstracted class for an array of `DiscriminativePCLayer`,
+    /// device-aware.
     ///
     /// @see https://arxiv.org/pdf/2506.06332
     class DiscriminativePCNetwork
@@ -40,25 +45,32 @@ namespace Deep
         bool autoSize = true;
 
     public:
-        /// @brief Default constructor
-        ///
-        /// Initializes the network with auto-batch size detection.
-        DiscriminativePCNetwork() : batchSize(0), autoSize(true) {}
-        /// @brief Batched constructor
+        /// @brief Default constructor; initializes the network with
+        /// auto-batch-size detection (see AddLayer()'s fn-pointer
+        /// overload's implementation for how the first layer's size
+        /// triggers this).
+        /// @param device Which device this network's layers run on.
+        explicit DiscriminativePCNetwork(DeviceType device = DeviceType::DEVICE_CPU);
+        /// @brief Batched constructor; initializes the network with a
+        /// predetermined batch size.
         /// @param batchSize Batch size
-        ///
-        /// Initializes the network with a predetermined batch size.
-        DiscriminativePCNetwork(int batchSize) : batchSize(batchSize), autoSize(false) {}
+        /// @param device Which device this network's layers run on.
+        explicit DiscriminativePCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
 
-        /// @brief Default constructor; deletes each layer.
         ~DiscriminativePCNetwork() = default;
 
+        DiscriminativePCNetwork(const DiscriminativePCNetwork &) = delete;
+        DiscriminativePCNetwork &operator=(const DiscriminativePCNetwork &) = delete;
         /// @brief Move constructor.
         DiscriminativePCNetwork(DiscriminativePCNetwork &&other) noexcept = default;
         /// @brief Move assignment operator.
         DiscriminativePCNetwork &operator=(DiscriminativePCNetwork &&other) noexcept = default;
 
-        /// @brief Adds a layer to the network.
+        /// @brief Adds a layer to the network, using raw activation
+        /// function pointers, converted to their equivalent
+        /// ActivationType via To_AType() and forwarded to the
+        /// ActivationType overload below (DiscriminativePCLayer itself
+        /// only accepts ActivationType).
         /// @param size input size
         /// @param nextSize output size
         /// @param lr learning rate for beliefs
@@ -83,22 +95,31 @@ namespace Deep
         void AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                       Deep::ActivationType aType, Deep::ActivationType dType);
 
-        /// @brief Randomizes the weights of each layer
+        /// @brief Sets the optimizer for EVERY layer added so far. Safe to
+        /// call any time before Compile(), memory allocation is
+        /// deferred to Compile(), not AddLayer().
+        void SetOptimizer(OptimizerType opt) noexcept
+        {
+            for (auto &layer : layers)
+                layer->SetOptimizer(opt);
+        }
+
+        /// @brief Randomizes the weights of each layer.
         /// @param rng The classic Mersenne Twister
         void RandomizeWeights(std::mt19937 &rng);
 
-        /// @brief Clamps the input to the first layer, necessary for prediction
+        /// @brief Clamps the input to the first layer, necessary for prediction.
         /// @param input reference to input vector
         void Clamp(const std::vector<float> &input);
 
-        /// @brief Calculates the state of each layer
+        /// @brief Calculates the state of each layer.
         /// @return Returns total energy
         float CalculateState();
 
-        /// @brief Updates each layer's state
+        /// @brief Updates each layer's state.
         void UpdateState();
 
-        /// @brief Updates each layer's weights
+        /// @brief Updates each layer's weights.
         void UpdateWeights();
 
         /// @brief Updates each layer's precision weighting.
@@ -130,7 +151,7 @@ namespace Deep
         /// @return A const reference to the internal layer list.
         const auto &GetLayers() const noexcept { return layers; }
 
-        /// @brief Returns the batch size for the network's layers
+        /// @brief Returns the batch size for the network's layers.
         /// @return size_t batchSize
         int GetBatchSize() const noexcept { return batchSize; }
 
@@ -158,7 +179,7 @@ namespace Deep
         void SetInferenceRate(float ir)
         {
             for (auto &layer : layers)
-                layer->SetLearningRate(ir);
+                layer->SetInferenceRate(ir);
         }
         /// @brief Sets the learning rate used for precision updates, on
         /// every layer.
@@ -177,22 +198,14 @@ namespace Deep
                 layer->SetLambda(l);
         }
 
-        /// @brief Sets the optimizer used for weight updates, on every layer.
-        /// @param opt The optimizer type to apply.
-        void SetOptimizer(OptimizerType opt) noexcept
-        {
-            for (auto &layer : layers)
-                layer->SetOptimizer(opt);
-        }
-
-        /// @brief Runs a complete training step (clamp, settle, update, unclamp)
+        /// @brief Runs a complete training step (clamp, settle, update, unclamp).
         /// @param x The batched input data
         /// @param y The batched target data
         /// @param inferenceSteps The number of relaxation iterations
         /// @return The final energy state of the network before weight updates
         float TrainStep(const std::vector<float> &x, const std::vector<float> &y, int inferenceSteps);
 
-        /// @brief Runs a forward prediction pass (clamp, settle, read)
+        /// @brief Runs a forward prediction pass (clamp, settle, read).
         /// @param x The batched input data
         /// @param inferenceSteps The number of relaxation iterations
         /// @return A vector containing the batched predictions
@@ -207,11 +220,18 @@ namespace Deep
         /// @return True on success, false otherwise.
         bool Load(const std::string &filename) noexcept;
 
-        /// @brief Loads all layers into one contiguous block of memory.
+        /// @brief Sums every layer's required float count into a single
+        /// contiguous arena and binds each layer into it. Call after all
+        /// AddLayer()/SetOptimizer() calls, before RandomizeWeights().
         void Compile();
 
     private:
-        std::unique_ptr<MemoryArena> arena;
+        std::unique_ptr<IComputeBackend> backend;
+        DeviceType device;
+        std::unique_ptr<MemoryArena> cpuArena;
+#if defined(DEEPITY_USE_CUDA)
+        std::unique_ptr<DeviceMemoryArena> gpuArena;
+#endif
         friend class PCNDiagnostics;
     };
 }

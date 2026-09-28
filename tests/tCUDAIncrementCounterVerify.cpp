@@ -2,10 +2,8 @@
  * @file tCUDAIncrementCounterVerify.cpp
  * @brief Combined test: does IncrementCounter() work on real GPU
  * hardware? Basic int* copy roundtrip already confirmed working
- * (tCUDAIntRoundtripVerify.cpp, PASS on a0344/A100). Every earlier
- * attempt at this exact test tonight ran on the OSC login node (no
- * GPU, Allocate() silently failing) -- this is the first genuine test
- * on real hardware.
+ * (tCUDAIntRoundtripVerify.cpp). Must be run on a machine with an
+ * actual GPU; on a host with no GPU, Allocate() fails silently.
  */
 #include <deepity/backend/Backend.h>
 #include <cuda_runtime.h>
@@ -17,8 +15,7 @@ int main()
 {
     auto gpuBackend = CreateBackend(DeviceType::DEVICE_GPU);
 
-    // --- Part 1: plain call, synchronous CopyToHost readback (same
-    // pattern every other working kernel tonight used successfully) ---
+    // Part 1: plain call, synchronous CopyToHost readback.
     int *dT = reinterpret_cast<int *>(gpuBackend->Allocate(1));
     int zero = 0;
     gpuBackend->CopyFromHost(reinterpret_cast<float *>(dT), reinterpret_cast<float *>(&zero), 1);
@@ -33,7 +30,7 @@ int main()
     gpuBackend->CopyToHost(reinterpret_cast<float *>(&readback2), reinterpret_cast<float *>(dT), 1);
     printf("After ONE IncrementCounter call, plain CopyToHost (expect 1): %d\n", readback2);
 
-    // --- Part 2: same, but with explicit cudaDeviceSynchronize() ---
+    // Part 2: same, but with explicit cudaDeviceSynchronize().
     gpuBackend->IncrementCounter(dT);
     cudaError_t syncErr = cudaDeviceSynchronize();
     printf("cudaDeviceSynchronize() after 2nd IncrementCounter: %s\n", cudaGetErrorString(syncErr));

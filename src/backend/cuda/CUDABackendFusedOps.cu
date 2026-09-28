@@ -3,8 +3,8 @@
  * @brief CUDABackend's fused PC-specific ops: the settling-step state
  * update (plain and momentum variants), Gaussian error/energy, and softmax
  * cross-entropy error/energy. Mirrors the "Fused PC-specific ops" section of
- * IComputeBackend.h (minus TryFusedForwardPass -- see CUDABackendGemm.cu).
- * Split out of the former monolithic CUDABackend.cu -- see
+ * IComputeBackend.h (minus TryFusedForwardPass, see CUDABackendGemm.cu).
+ * Split out of the former monolithic CUDABackend.cu, see
  * CUDABackendCore.cu, CUDABackendGemm.cu, CUDABackendElementwise.cu,
  * CUDABackendActivations.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.
@@ -176,6 +176,116 @@ void CUDABackend::ComputeSoftmaxCrossEntropyError(float* e, const float* z, cons
   const int blocks = static_cast<int>((batchSize + BLOCK_SIZE - 1) / BLOCK_SIZE);
   SoftmaxCrossEntropyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
       e, z, mu, batchSize, nextSize, /*rowEnergies=*/nullptr);
+  CHECK_CUDA_LAUNCH();
+}
+
+__global__ void FusedActivationDerivativeMultiplyKernel(float* dst, const float* a,
+                                                         float* activatedInOut, ActivationType dType,
+                                                         size_t n)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+  {
+    float deriv = ActivationDerivativeFromActivatedDevice(dType, activatedInOut[i]);
+    dst[i] = a[i] * deriv;
+    activatedInOut[i] = deriv;
+  }
+}
+
+void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+                                                     ActivationType dType, size_t n) noexcept
+{
+  if (!dst || !a || !activatedInOut || n == 0)
+    return;
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  FusedActivationDerivativeMultiplyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, a, activatedInOut,
+                                                                             dType, n);
+  CHECK_CUDA_LAUNCH();
+}
+
+// One thread per element; each thread's energy contribution is folded into
+// a single device accumulator via atomicAdd. Simple and obviously correct
+// rather than a tree reduction, "port first, optimize" (see
+// RepackForBatchedGemm's own doc comment for the same reasoning applied
+// elsewhere in this file), and this isn't inside any graph-captured
+// region: the ConvPCLayer/DiscriminativePCLayer family that needs this
+// doesn't use CUDA graph capture at all (unlike SimplePCNetwork/
+// FullPCNetwork/DirectKPPCNetwork), so a plain synchronous allocation
+// here is safe.
+__global__ void PrecisionWeightedErrorEnergyKernel(float* e, const float* z, const float* mu,
+                                                    const float* p, size_t n, size_t width,
+                                                    float* energyAccum)
+{
+  size_t idx = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n)
+  {
+    size_t i = idx % width;
+    float err = z[idx] - mu[idx];
+    e[idx] = err;
+    float precision = fmaxf(p[i], 1e-8f);
+    float contribution = 0.5f * precision * err * err - 0.5f * logf(precision);
+    atomicAdd(energyAccum, contribution);
+  }
+}
+
+float CUDABackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
+                                                          const float* p, size_t batchSize,
+                                                          size_t width) noexcept
+{
+  size_t n = batchSize * width;
+  if (!e || !z || !mu || !p || n == 0)
+    return 0.0f;
+
+  float* energyAccum = Allocate(1);
+  if (!energyAccum)
+    return 0.0f;
+  cudaMemsetAsync(energyAccum, 0, sizeof(float), stream);
+
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  PrecisionWeightedErrorEnergyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, p, n, width,
+                                                                        energyAccum);
+  CHECK_CUDA_LAUNCH();
+
+  float total = 0.0f;
+  cudaMemcpyAsync(&total, energyAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
+  cudaStreamSynchronize(stream);
+  Free(energyAccum);
+
+  return total;
+}
+
+__global__ void UpdatePrecisionFromErrorKernel(float* p, float* log_p, const float* e,
+                                               size_t batchSize, size_t width, float pr)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < width)
+  {
+    float grad = 0.0f;
+    for (size_t b = 0; b < batchSize; ++b)
+    {
+      float err = e[b * width + i];
+      grad += 0.5f * (p[i] * err * err - 1.0f);
+    }
+    grad /= (float)batchSize;
+
+    float newLogP = log_p[i] - pr * grad;
+    newLogP = fmaxf(-5.0f, fminf(newLogP, 5.0f));
+    log_p[i] = newLogP;
+    p[i] = expf(newLogP);
+  }
+}
+
+void CUDABackend::UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
+                                           size_t width, float pr) noexcept
+{
+  if (!p || !log_p || !e || batchSize == 0 || width == 0)
+    return;
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((width + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  UpdatePrecisionFromErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(p, log_p, e, batchSize, width,
+                                                                    pr);
   CHECK_CUDA_LAUNCH();
 }
 } // namespace Deep

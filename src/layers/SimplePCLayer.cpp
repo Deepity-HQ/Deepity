@@ -19,23 +19,6 @@
 
 namespace Deep {
 namespace {
-ActivationType ToDerivativeType(ActivationType fwd) {
-  switch (fwd) {
-  case ActivationType::RELU:
-    return ActivationType::dRELU;
-  case ActivationType::SIGMOID:
-    return ActivationType::dSIGMOID;
-  case ActivationType::eSIGMOID:
-    return ActivationType::d_eSIGMOID;
-  case ActivationType::TANH:
-    return ActivationType::dTANH;
-  case ActivationType::LINEAR:
-    return ActivationType::dLINEAR;
-  default:
-    return ActivationType::NONE;
-  }
-}
-
 void DeleteBackend(IComputeBackend *p) { delete p; }
 void NoOpDeleter(IComputeBackend *) {}
 } // namespace
@@ -86,7 +69,7 @@ void SimplePCLayer::RandomizeWeights(std::mt19937 &seedGenerator,
   float a = 0.0f, b = 1.0f;
 
   if (SCANF_DISTRIBUTION(distribution, name, a, b) != 3) {
-    // Malformed string -- fall back to this class's original,
+    // Malformed string, fall back to this class's original,
     // validated default (He/Xavier-style normal init) rather than
     // silently doing nothing.
     name[0] = '\0';
@@ -201,7 +184,7 @@ void SimplePCLayer::UpdateWeights() noexcept {
   }
   case OptimizerType::ADAM:
   case OptimizerType::ADAMW: {
-    backend->IncrementCounter(t_device); // was: t++
+    backend->IncrementCounter(t_device);
 
     size_t num_weights = (size_t)nextSize * size;
     float grad_scale = -1.0f;
@@ -258,11 +241,10 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept {
     total += pad16(out_state_size) * 2;
     total += pad16(own_state_size) * 2; // zF, feedbackScratch
 
-    if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW) {
-      total += pad16(w_size) * 3;
-      total += pad16(nextSize) * 3;
-      total += pad16(1) * 2; // t_device, lr_device
-    }
+    // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+    total += pad16(w_size) * 3;
+    total += pad16(nextSize) * 3;
+    total += pad16(1) * 2; // t_device, lr_device
   }
 
   return total;
@@ -270,7 +252,8 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept {
 
 void SimplePCLayer::SetLearningRate(float lr) noexcept {
   this->lr = lr;
-  backend->CopyFromHost(lr_device, &this->lr, 1);
+  if (lr_device)
+    backend->CopyFromHost(lr_device, &this->lr, 1);
 }
 
 template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT &arena) {
@@ -299,31 +282,30 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT &arena) {
     backend->Zero(zF, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
 
-    if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW) {
-      grad_W = arena.AllocateFloats(w_size);
-      m_W = arena.AllocateFloats(w_size);
-      v_W = arena.AllocateFloats(w_size);
+    // Always allocated, see GetRequiredFloats().
+    grad_W = arena.AllocateFloats(w_size);
+    m_W = arena.AllocateFloats(w_size);
+    v_W = arena.AllocateFloats(w_size);
 
-      grad_b = arena.AllocateFloats(nextSize);
-      m_b = arena.AllocateFloats(nextSize);
-      v_b = arena.AllocateFloats(nextSize);
+    grad_b = arena.AllocateFloats(nextSize);
+    m_b = arena.AllocateFloats(nextSize);
+    v_b = arena.AllocateFloats(nextSize);
 
-      backend->Zero(m_W, w_size);
-      backend->Zero(v_W, w_size);
-      backend->Zero(m_b, nextSize);
-      backend->Zero(v_b, nextSize);
+    backend->Zero(m_W, w_size);
+    backend->Zero(v_W, w_size);
+    backend->Zero(m_b, nextSize);
+    backend->Zero(v_b, nextSize);
 
-      backend->Zero(grad_W, w_size);
-      backend->Zero(grad_b, nextSize);
+    backend->Zero(grad_W, w_size);
+    backend->Zero(grad_b, nextSize);
 
-      t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
-      lr_device = arena.AllocateFloats(1);
+    t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+    lr_device = arena.AllocateFloats(1);
 
-      int zero = 0;
-      backend->CopyFromHost(reinterpret_cast<float *>(t_device),
-                            reinterpret_cast<float *>(&zero), 1);
-      backend->CopyFromHost(lr_device, &lr, 1);
-    }
+    int zero = 0;
+    backend->CopyFromHost(reinterpret_cast<float *>(t_device),
+                          reinterpret_cast<float *>(&zero), 1);
+    backend->CopyFromHost(lr_device, &lr, 1);
   }
   if constexpr (std::is_same_v<ArenaT, MemoryArena>) {
     if (localArena && localArena.get() != &arena)

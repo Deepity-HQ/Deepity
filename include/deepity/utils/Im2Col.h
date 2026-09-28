@@ -10,19 +10,16 @@
  * matrix multiplication, so ConvPCLayer can reuse cblas_sgemm rather than
  * needing hand-written conv kernels.
  *
- * VERIFIED: passed tConvVerify.cpp -- naive-reference comparison across
- * three shape configurations (max error ~1e-6, float32 GEMM accumulation
- * tolerance) AND an exact adjoint check (<Wx,y> == <x,W^Ty>, |diff|=0),
- * confirming Col2Im is the TRUE adjoint of Im2Col, not just a
- * plausible-looking inverse-shaped operation. This matters because
- * ConvPCLayer's UpdateState() feedback term relies on that adjoint
- * property the same way DiscriminativePCLayer's feedback term relies
- * on W^T being the genuine transpose.
+ * Col2Im is the true mathematical adjoint of Im2Col (<Wx,y> == <x,W^Ty>),
+ * not just an inverse-shaped operation. This matters because ConvPCLayer's
+ * UpdateState() feedback term relies on that adjoint property the same
+ * way DiscriminativePCLayer's feedback term relies on W^T being the
+ * genuine transpose.
  *
  * Layout convention: NCHW. A single batch item's input is
  * (channels, height, width), row-major, contiguous per channel.
  *
- * im2col output shape: (channels*kH*kW, outH*outW) -- each column is one
+ * im2col output shape: (channels*kH*kW, outH*outW), each column is one
  * flattened receptive-field patch, ready to be GEMM'd against a
  * (outChannels, channels*kH*kW) weight matrix to produce
  * (outChannels, outH*outW) in one matrix multiply.
@@ -30,9 +27,9 @@
  * col2im is the adjoint operation: scatters a
  * (channels*kH*kW, outH*outW) gradient buffer back into a
  * (channels, height, width) image, ACCUMULATING
- * (does not zero the destination first -- caller must memset if needed).
+ * (does not zero the destination first, caller must memset if needed).
  *
- * Neither function knows anything about batching -- call once per batch
+ * Neither function knows anything about batching, call once per batch
  * item, with pointers offset to that item's slice.
  *
  * @note Each SIMD width (AVX-512/AVX2+AVX/SSE) is handled as a separate
@@ -61,7 +58,7 @@ namespace Deep
 
     /// @brief Rearranges a single (channels, height, width) input image
     /// into a (channels*kH*kW, outH*outW) column matrix, where each
-    /// column holds one flattened receptive-field patch -- the standard
+    /// column holds one flattened receptive-field patch, the standard
     /// im2col transform that lets convolution be computed as a single
     /// GEMM against a (outChannels, channels*kH*kW) weight matrix.
     ///
@@ -83,7 +80,7 @@ namespace Deep
     /// (channels*kH*kW, outH*outW), fully overwritten (not accumulated
     /// into). Must be preallocated by the caller with size computed from
     /// ConvOutDim().
-    /// @warning Not batch-aware -- call once per batch item, with @p input
+    /// @warning Not batch-aware, call once per batch item, with @p input
     /// and @p columns offset to that item's slice.
     inline void Im2Col(const float *input,
                        int channels, int height, int width,
@@ -182,8 +179,8 @@ namespace Deep
     /// (channels*kH*kW, outH*outW) column-gradient buffer back into a
     /// (channels, height, width) image.
     ///
-    /// Verified (see file-level note) to be the TRUE mathematical adjoint
-    /// of Im2Col(), not just an inverse-shaped operation -- this is what
+    /// The true mathematical adjoint of Im2Col(), not just an
+    /// inverse-shaped operation (see the file-level note), which is what
     /// makes it safe to use for ConvPCLayer's feedback term.
     ///
     /// @param columns Input buffer of shape
@@ -202,10 +199,10 @@ namespace Deep
     /// @param padH Vertical zero-padding.
     /// @param padW Horizontal zero-padding.
     /// @param outputImage Output buffer of shape (channels, height,
-    /// width). ACCUMULATED into (values are added, not overwritten) --
+    /// width). ACCUMULATED into (values are added, not overwritten),
     /// the caller must zero this buffer first if a fresh result is
     /// wanted.
-    /// @warning Not batch-aware -- call once per batch item, with
+    /// @warning Not batch-aware, call once per batch item, with
     /// @p columns and @p outputImage offset to that item's slice.
     /// @warning Accumulates into @p outputImage rather than overwriting
     /// it; failing to memset the destination first will add this call's

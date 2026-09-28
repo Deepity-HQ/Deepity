@@ -68,7 +68,7 @@ public:
                            const float* bias, float* mu, int batchSize, int size,
                            int nextSize) noexcept override
   {
-    return false; // no fused path on CPU -- caller always falls back
+    return false; // no fused path on CPU, caller always falls back
                   // to the existing, separate MatMul+AddBiasBroadcast+
                   // ActivationInto sequence
   }
@@ -107,7 +107,7 @@ public:
   void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
                                        size_t nextSize) noexcept override;
 
-  // Convolution (im2col-based, ConvPCLayer family) -- forwards
+  // Convolution (im2col-based, ConvPCLayer family), forwards
   // directly to the existing, already-verified Deep::Im2Col/
   // Deep::Col2Im free functions in Im2Col.h.
   /// @copydoc Deep::IComputeBackend::Im2Col
@@ -140,10 +140,27 @@ public:
 
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
+  void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+                                         ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;
+
+  /// @copydoc Deep::IComputeBackend::ComputePrecisionWeightedErrorAndEnergy
+  float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
+                                               const float* p, size_t batchSize,
+                                               size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AxpyBroadcastInto
+  void AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
+                         size_t width, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MultiplyBroadcastInto
+  void MultiplyBroadcastInto(float* dst, const float* a, const float* factor, const float* b,
+                             size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::UpdatePrecisionFromError
+  void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
+                                size_t width, float pr) noexcept override;
 };
 } // namespace Deep

@@ -2,7 +2,7 @@
  * @file UtilityBindings.cpp
  * @brief nanobind bindings for free-standing utilities (StreamAlignedBatcher,
  * activation functions, OpenMP/cache introspection). Split out of the former
- * monolithic pybinding.cpp -- see LayerBindings.cpp / NetworkBindings.cpp for
+ * monolithic pybinding.cpp, see LayerBindings.cpp / NetworkBindings.cpp for
  * the rest.
  */
 #include "BindingHelpers.h"

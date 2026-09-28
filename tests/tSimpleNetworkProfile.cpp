@@ -1,10 +1,9 @@
 // Granular profiling of the EXACT configuration currently under test:
 // 784->512->512->10, ADAMW, mu_cache_threshold=0, forward-projection
-// init, batch=256, steps=20. Isolates where the remaining ~12ms/batch
-// gap vs ngc-learn (82ms measured vs their 70.31ms) actually lives --
-// project_forward specifically, settling loop (per-layer), weight
-// updates, or fixed per-region overhead (thread spin-up, virtual
-// dispatch) that doesn't show up as "real compute" anywhere.
+// init, batch=256, steps=20. Isolates where time goes: project_forward,
+// settling loop (per-layer), weight updates, or fixed per-region
+// overhead (thread spin-up, virtual dispatch) that doesn't show up as
+// "real compute" anywhere.
 #include <deepity/networks/SimplePCNetwork.h>
 #include <random>
 #include <vector>
@@ -121,8 +120,7 @@ int main()
     for (int i = 0; i < 4; ++i) { calcSum += t_calc[i]; updateSum += t_update[i]; }
 
     std::cout << "=== Granular breakdown, " << N_BATCHES << " batches ===\n\n";
-    std::cout << "Total: " << totalTime << "s  (" << msPerBatch << " ms/batch)\n";
-    std::cout << "ngc-learn reference: 70.31 ms/batch\n\n";
+    std::cout << "Total: " << totalTime << "s  (" << msPerBatch << " ms/batch)\n\n";
 
     auto pct = [&](double t) { return 100.0 * t / totalTime; };
 

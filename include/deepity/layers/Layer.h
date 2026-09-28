@@ -19,13 +19,6 @@
  * @author Jack Rose
  */
 
-// Adam: default hyperparameters. Currently unused -- AdamOptimizer.h
-// defines its own equivalents and is what's actually wired up.
-#define ALPHA 0.001 ///< Unused; see AdamOptimizer.h instead.
-#define BETA1 0.9   ///< Unused; see AdamOptimizer.h instead.
-#define BETA2 0.999 ///< Unused; see AdamOptimizer.h instead.
-#define EPS 1e-8    ///< Unused; see AdamOptimizer.h instead.
-
 namespace Deep
 {
     /// @brief A named, shaped view into a layer's weight/bias data, for
@@ -41,20 +34,15 @@ namespace Deep
     public:
         virtual ~Layer() = default;
 
-        /// @brief Should return belief state `z`
-        /// @return ? = 0
+        /// @brief Returns this layer's belief state `z`.
         virtual float *GetBeliefs() noexcept = 0;
-        /// @brief Should return errors `e`
-        /// @return ? = 0
+        /// @brief Returns this layer's errors `e`.
         virtual const float *GetErrors() const noexcept = 0;
-        /// @brief Should return input size
-        /// @return ? = 0
+        /// @brief Returns this layer's input size.
         virtual size_t GetInputSize() const noexcept = 0;
-        /// @brief Should return output size
-        /// @return ? = 0
+        /// @brief Returns this layer's output size.
         virtual size_t GetOutputSize() const noexcept = 0;
-        /// @brief Should return batch size
-        /// @return ? = 0
+        /// @brief Returns this layer's batch size.
         virtual size_t GetBatchSize() const noexcept = 0;
 
         /// @brief Calculates the internal state of the layer.
@@ -66,7 +54,9 @@ namespace Deep
         virtual void UpdateWeights() noexcept = 0;
         /// @brief Flushes remaining batches.
         virtual void Flush() noexcept {}
-        /// @brief Returns a dictionary of this.
+        /// @brief Returns this layer's named, shaped weight/bias tensors,
+        /// for ModelIO's save/load. Empty by default; override to expose
+        /// a layer's actual parameters.
         virtual std::map<std::string, TensorDescriptor> GetStateDict() const { return {}; }
 
     protected:

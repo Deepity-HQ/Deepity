@@ -123,6 +123,9 @@ public:
 
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
+  void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+                                         ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
 
@@ -139,6 +142,20 @@ public:
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::ComputePrecisionWeightedErrorAndEnergy
+  float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
+                                               const float* p, size_t batchSize,
+                                               size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AxpyBroadcastInto
+  void AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
+                         size_t width, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MultiplyBroadcastInto
+  void MultiplyBroadcastInto(float* dst, const float* a, const float* factor, const float* b,
+                             size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::UpdatePrecisionFromError
+  void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
+                                size_t width, float pr) noexcept override;
+
 private:
 #ifdef DEEPITY_USE_CUDA
   cublasHandle_t handle;
@@ -148,7 +165,7 @@ private:
 #endif
   bool hasGraph = false;
   float* onesVector = nullptr;
-  size_t onesCapacity = 0; // <--- Add this line
+  size_t onesCapacity = 0;
   float* workspace = nullptr;
 };
 } // namespace Deep

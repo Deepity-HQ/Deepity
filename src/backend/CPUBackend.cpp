@@ -358,7 +358,7 @@ void CPUBackend::Col2Im(const float* columns, int channels, int height, int widt
 void CPUBackend::RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                                       size_t cols) noexcept
 {
-  // dst[row][batch][:] = src[batch][row][:] -- matches
+  // dst[row][batch][:] = src[batch][row][:], matches
   // SimpleConvPCLayer::UpdateWeights()'s colsRepacked/lgRepacked loops
   // exactly (same index arithmetic, same collapse(2) parallelization).
   const int maxRows = static_cast<int>(rows);
@@ -388,6 +388,20 @@ void CPUBackend::MultiplyInto(float* dst, const float* a, const float* b, size_t
     dst[i] = a[i] * b[i];
 }
 
+void CPUBackend::FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+                                                   ActivationType dType, size_t n) noexcept
+{
+  const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
+
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+  for (ptrdiff_t i = 0; i < maxN; ++i)
+  {
+    float deriv = ActivationDerivativeFromActivatedScalar(dType, activatedInOut[i]);
+    dst[i] = a[i] * deriv;
+    activatedInOut[i] = deriv;
+  }
+}
+
 void CPUBackend::Fill(float* buf, size_t n, float value) noexcept
 {
   const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
@@ -409,6 +423,85 @@ void CPUBackend::AddBiasPerChannel(float* buf, const float* bias, size_t channel
     float* row = buf + (size_t)c * spatialSize;
     for (size_t s = 0; s < spatialSize; ++s)
       row[s] += biasVal;
+  }
+}
+
+float CPUBackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
+                                                         const float* p, size_t batchSize,
+                                                         size_t width) noexcept
+{
+  float energy = 0.0f;
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) reduction(+ : energy) collapse(2) \
+    if (batchSize * width > 256 && !omp_in_parallel())
+  for (ptrdiff_t b = 0; b < maxBatch; ++b)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)b * width + (size_t)i;
+      float err = z[idx] - mu[idx];
+      e[idx] = err;
+      float precision = std::max(p[i], 1e-8f);
+      energy += 0.5f * precision * err * err - 0.5f * std::log(precision);
+    }
+  }
+  return energy;
+}
+
+void CPUBackend::AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
+                                   size_t width, float alpha) noexcept
+{
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+  for (ptrdiff_t b = 0; b < maxBatch; ++b)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)b * width + (size_t)i;
+      y[idx] += alpha * x[idx] * factor[i];
+    }
+  }
+}
+
+void CPUBackend::MultiplyBroadcastInto(float* dst, const float* a, const float* factor,
+                                       const float* b, size_t batchSize, size_t width) noexcept
+{
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+  for (ptrdiff_t batch = 0; batch < maxBatch; ++batch)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)batch * width + (size_t)i;
+      dst[idx] = a[idx] * factor[i] * b[idx];
+    }
+  }
+}
+
+void CPUBackend::UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
+                                          size_t width, float pr) noexcept
+{
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) if (width > 4096 && !omp_in_parallel())
+  for (ptrdiff_t i = 0; i < maxWidth; ++i)
+  {
+    float grad = 0.0f;
+    for (size_t b = 0; b < batchSize; ++b)
+    {
+      float err = e[b * width + (size_t)i];
+      grad += 0.5f * (p[i] * err * err - 1.0f);
+    }
+    grad /= (float)batchSize;
+    log_p[i] -= pr * grad;
+    log_p[i] = std::max(-5.0f, std::min(log_p[i], 5.0f));
+    p[i] = std::exp(log_p[i]);
   }
 }
 } // namespace Deep

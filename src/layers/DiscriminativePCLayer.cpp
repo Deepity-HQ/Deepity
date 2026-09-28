@@ -1,29 +1,26 @@
 #include <deepity/layers/DiscriminativePCLayer.h>
+#include <deepity/backend/CPUBackend.h>
 #include <deepity/utils/Optimize.h>
-#include <cstdlib>
-#include <iostream>
-#include <chrono>
-#ifdef DEEPITY_USE_MKL
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
-#endif
-#include <omp.h>
-#include <immintrin.h>
 #include <algorithm>
-#include <sleef.h>
-#include <cstring>
-
-#define ALIGN64(n) (((n) + 63) & ~63)
+#include <cmath>
+#include <type_traits>
 
 namespace Deep
 {
+    namespace
+    {
+        void DeleteBackend(IComputeBackend *p) { delete p; }
+        void NoOpDeleter(IComputeBackend *) {}
+    }
+
     DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
-                                                 float learningRate, float inferenceRate, float precisionRate, float lmbda,
-                                                 void (*act)(float *, size_t),
-                                                 void (*dAct)(float *, size_t, bool))
-        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
-          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct), activationType(ActivationType::RELU), opt(OptimizerType::SGD)
+                                                 float learningRate, float inferenceRate,
+                                                 float precisionRate, float lmbda,
+                                                 ActivationType aType, ActivationType dType,
+                                                 IComputeBackend *backend)
+        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda),
+          activationType(aType), derivativeType(dType),
+          backend(backend ? backend : new CPUBackend(), backend ? NoOpDeleter : DeleteBackend)
     {
         this->size = size;
         this->nextSize = nextSize;
@@ -33,41 +30,25 @@ namespace Deep
         BindMemory(*localArena);
     }
 
-    DiscriminativePCLayer::DiscriminativePCLayer(int size, int nextSize, int batchSize,
-                                                 float learningRate, float inferenceRate, float precisionRate, float lmbda,
-                                                 ActivationType aType, ActivationType dType)
-        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda), isClamped(false),
-          layerAbove(nullptr), layerBelow(nullptr), activationType(aType), opt(OptimizerType::SGD)
+    void DiscriminativePCLayer::SetLearningRate(float learningRate) noexcept
     {
-        this->activation = To_Fn(aType);
-        this->activationDerivative = To_dFn(dType);
-        this->size = size;
-        this->nextSize = nextSize;
-        DynamicThread(batchSize);
-
-        localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
-        BindMemory(*localArena);
+        lr = learningRate;
+        if (lr_device)
+            backend->CopyFromHost(lr_device, &lr, 1);
     }
 
     void DiscriminativePCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
     {
-        std::uniform_int_distribution<uint32_t> seedDist;
+        if (nextSize == 0)
+            return;
+
         size_t Wsz = (size_t)size * nextSize;
         float limit = std::sqrt(2.0f / (size + nextSize));
 
-        std::vector<uint32_t> seeds(omp_get_max_threads());
-        for (auto &s : seeds)
-            s = seedDist(seedGenerator);
+        std::uniform_int_distribution<uint32_t> seedDist;
+        uint32_t seed = seedDist(seedGenerator);
 
-#pragma omp parallel
-        {
-            std::mt19937 rng(seeds[omp_get_thread_num()]);
-            std::normal_distribution<float> dist(0.0f, limit);
-
-#pragma omp for
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
-                W[i] = dist(rng);
-        }
+        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
     }
 
     float DiscriminativePCLayer::CalculateState() noexcept
@@ -76,110 +57,18 @@ namespace Deep
 
         if (layerBelow == nullptr)
         {
-            std::memset(e, 0, N * sizeof(float));
+            backend->Zero(e, N);
             float totalEnergy = 0.0f;
-            for (size_t i=0; i < size; ++i)
+            for (size_t i = 0; i < size; ++i)
                 totalEnergy -= 0.5f * log_p[i] * batchSize;
-            
-            if (nextSize > 0) ComputeMuOnly();
+
+            if (nextSize > 0)
+                ComputeMuOnly();
             return totalEnergy;
         }
 
-        cblas_scopy(N, z, 1, e, 1);
-        cblas_saxpy(N, -1.0f, layerBelow->mu, 1, e, 1);
-
-        float totalEnergy = 0.0f;
-#pragma omp parallel for schedule(static) reduction(+ : totalEnergy)
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            const size_t offset = (size_t)batch * size;
-            size_t i = 0;
-
-#if defined(__AVX512F__)
-            __m512 epsFloor = _mm512_set1_ps(1e-8f);
-            __m512 half = _mm512_set1_ps(0.5f);
-            __m512 energy = _mm512_setzero_ps();
-
-            size_t r = size % 16;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 16)
-            {
-                __m512 p512 = _mm512_load_ps(&p[i]);
-                __m512 e512 = _mm512_loadu_ps(&e[offset + i]);
-                __m512 precision = _mm512_max_ps(p512, epsFloor);
-                __m512 logp512 = _mm512_loadu_ps(&log_p[i]);
-
-                __m512 m1 = _mm512_mul_ps(
-                    half,
-                    _mm512_mul_ps(precision,
-                                  _mm512_mul_ps(e512, e512)));
-                energy = _mm512_fnmadd_ps(half, logp512, energy);
-                energy = _mm512_add_ps(energy, m1);
-            }
-            totalEnergy += _mm512_reduce_add_ps(energy);
-
-#elif defined(__AVX2__) || defined(__AVX__)
-            __m256 epsFloor = _mm256_set1_ps(1e-8f);
-            __m256 half = _mm256_set1_ps(0.5f);
-            __m256 energy = _mm256_setzero_ps();
-
-            size_t r = size % 8;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 8)
-            {
-                __m256 p256 = _mm256_load_ps(&p[i]);
-                __m256 e256 = _mm256_loadu_ps(&e[offset + i]);
-                __m256 precision = _mm256_max_ps(p256, epsFloor);
-                __m256 logp256 = _mm256_loadu_ps(&log_p[i]);
-
-                __m256 m1 = _mm256_mul_ps(
-                    half,
-                    _mm256_mul_ps(precision,
-                                  _mm256_mul_ps(e256, e256)));
-                energy = _mm256_fnmadd_ps(half, logp256, energy);
-                energy = _mm256_add_ps(energy, m1);
-            }
-            totalEnergy += hsum256_ps(energy);
-
-#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-            __m128 epsFloor = _mm_set1_ps(1e-8f);
-            __m128 half = _mm_set1_ps(0.5f);
-            __m128 energy = _mm_setzero_ps();
-
-            size_t r = size % 4;
-            size_t simd_end = size - r;
-            for (; i < simd_end; i += 4)
-            {
-                __m128 p256 = _mm_load_ps(&p[i]);
-                __m128 e256 = _mm_loadu_ps(&e[offset + i]);
-                __m128 precision = _mm_max_ps(p256, epsFloor);
-                __m128 logp128 = _mm_loadu_ps(&log_p[i]);
-
-                __m128 m1 = _mm_mul_ps(
-                    half,
-                    _mm_mul_ps(precision,
-                               _mm_mul_ps(e256, e256)));
-
-#ifdef __FMA__
-                energy = _mm_fnmadd_ps(half, logp128, energy);
-#else
-                __m128 m2 = _mm_mul_ps(half, logp128);
-                energy = _mm_sub_ps(energy, m2);
-#endif
-                energy = _mm_add_ps(energy, m1);
-            }
-            totalEnergy += hsum128_ps(energy);
-
-#endif
-            for (; i < size; ++i)
-            {
-                float precision = std::max(p[i], 1e-8f);
-                float err = e[offset + i];
-
-                totalEnergy += 0.5f * precision * err * err;
-                totalEnergy -= 0.5f * log_p[i];
-            }
-        }
+        float totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
+            e, z, layerBelow->mu, p, batchSize, size);
 
         if (nextSize > 0)
             ComputeMuOnly();
@@ -189,30 +78,31 @@ namespace Deep
 
     void DiscriminativePCLayer::ComputeMuOnly() noexcept
     {
-        if (nextSize == 0) return;
+        if (nextSize == 0)
+            return;
 
         size_t Nout = (size_t)batchSize * nextSize;
         size_t N = (size_t)batchSize * size;
 
-        if (isClamped && muCacheValid) {
-            cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+        if (isClamped && muCacheValid)
+        {
+            backend->Copy(mu, cachedMu, Nout);
             return;
         }
 
-        cblas_scopy((int)N, z, 1, zF, 1);
-        activation(zF, N);
+        backend->ActivationInto(activationType, zF, z, N);
 
-        cblas_sgemm(
-            CblasRowMajor, CblasNoTrans, CblasTrans,
-            batchSize, nextSize, size,
-            1.0f, zF, size, W, size, 0.0f, mu, nextSize);
+        backend->MatMul(
+            /*transA=*/false, /*transB=*/true,
+            batchSize, (int)nextSize, (int)size,
+            1.0f, zF, (int)size, W, (int)size,
+            0.0f, mu, (int)nextSize);
 
-        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch)
-            cblas_saxpy(nextSize, 1.0f, b, 1, mu + batch * nextSize, 1);
+        backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
-        if (isClamped) {
-            cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+        if (isClamped)
+        {
+            backend->Copy(cachedMu, mu, Nout);
             muCacheValid = true;
         }
     }
@@ -228,51 +118,31 @@ namespace Deep
         {
             const float *e_above = layerAbove->GetErrors();
             const float *p_above = layerAbove->GetPrecisions();
+            size_t outN = (size_t)batchSize * nextSize;
 
-            // Derived from the actual function pointer in use, not the
-            // `activationType` member -- the raw function-pointer
-            // constructor leaves `activationType` hardcoded to RELU
-            // regardless of the (act, dAct) it was actually given, so it
-            // can't be trusted here.
-            ActivationType dType = To_AType(activationDerivative);
+            // bottom_up[b,f] = e_above[b,f] * p_above[f]
+            backend->Zero(bottom_up, outN);
+            backend->AxpyBroadcastInto(bottom_up, e_above, p_above, batchSize, nextSize, 1.0f);
 
-            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch) {
-                size_t offset = (size_t)batch * nextSize;
-                for (size_t f = 0; f < nextSize; ++f) {
-                    bottom_up[offset + f] = e_above[offset + f] * p_above[f];
-                }
-            }
+            // feedbackScratch = bottom_up @ W (no transpose)
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
+                batchSize, (int)size, (int)nextSize,
+                1.0f, bottom_up, (int)nextSize, W, (int)size,
+                0.0f, feedbackScratch, (int)size);
 
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                batchSize, size, nextSize,
-                1.0f, bottom_up, nextSize, W, size,
-                0.0f, feedbackScratch, size);
-
-            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch) {
-                size_t offset = (size_t)batch * size;
-                for (size_t i = 0; i < size; ++i) {
-                    size_t idx = offset + i;
-                    float deriv = ActivationDerivativeScalar(dType, z[idx]);
-                    dz_dt[idx] = (feedbackScratch[idx] * deriv) - (p[i] * e[idx]);
-                    z[idx] += ir * dz_dt[idx];
-                }
-            }
+            // dz_dt = feedbackScratch * f'(z), then dz_dt -= p*e
+            backend->ActivationDerivativeInto(derivativeType, dz_dt, z, N);
+            backend->MultiplyInto(dz_dt, feedbackScratch, dz_dt, N);
+            backend->AxpyBroadcastInto(dz_dt, e, p, batchSize, size, -1.0f);
         }
-        else // Output Layer
+        else // Output layer
         {
-            #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-            for (int batch = 0; batch < batchSize; ++batch) {
-                size_t offset = (size_t)batch * size;
-                for (size_t i = 0; i < size; ++i) {
-                    size_t idx = offset + i;
-                    dz_dt[idx] = -(p[i] * e[idx]);
-                    z[idx] += ir * dz_dt[idx];
-                }
-            }
+            backend->Zero(dz_dt, N);
+            backend->AxpyBroadcastInto(dz_dt, e, p, batchSize, size, -1.0f);
         }
+
+        backend->AxpyInto(z, dz_dt, N, ir);
     }
 
     void DiscriminativePCLayer::UpdateWeights() noexcept
@@ -282,63 +152,55 @@ namespace Deep
 
         const float *e_above = layerAbove->GetErrors();
         const float *p_above = layerAbove->GetPrecisions();
-        float *local_grad = bottom_up; 
+        size_t outN = (size_t)batchSize * nextSize;
 
-        #pragma omp parallel for schedule(static) if(batchSize > 4 && !omp_in_parallel())
-        for (int batch = 0; batch < batchSize; ++batch) {
-            size_t offset = (size_t)batch * nextSize;
-            for (size_t f = 0; f < nextSize; ++f) {
-                local_grad[offset + f] = e_above[offset + f] * p_above[f];
-            }
-        }
+        // local_grad[b,f] = e_above[b,f] * p_above[f], recomputed
+        // independently from UpdateState()'s own copy (cheap, and avoids
+        // an ordering dependency between the two calls).
+        backend->Zero(bottom_up, outN);
+        backend->AxpyBroadcastInto(bottom_up, e_above, p_above, batchSize, nextSize, 1.0f);
 
         switch (opt)
         {
         case OptimizerType::SGD:
         {
             if (lmbda > 0.0f)
-                cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W, 1);
-
-            cblas_sgemm(
-                CblasRowMajor, CblasTrans, CblasNoTrans,
-                nextSize, size, batchSize,
-                lr / batchSize, local_grad, nextSize, zF, size,
-                1.0f, W, size);
+                backend->Scale(W, (size_t)nextSize * size, 1.0f - lmbda);
 
             float lr_batch = lr / batchSize;
-            for (int batch = 0; batch < batchSize; batch++)
-                cblas_saxpy(nextSize, lr_batch, local_grad + batch * nextSize, 1, b, 1);
 
+            backend->MatMul(
+                /*transA=*/true, /*transB=*/false,
+                (int)nextSize, (int)size, batchSize,
+                lr_batch, bottom_up, (int)nextSize, zF, (int)size,
+                1.0f, W, (int)size);
+
+            backend->SumRows(biasGradScratch, bottom_up, batchSize, nextSize);
+            backend->AxpyInto(b, biasGradScratch, nextSize, lr_batch);
             break;
         }
         case OptimizerType::ADAM:
         case OptimizerType::ADAMW:
         {
-            t++;
+            backend->IncrementCounter(t_device);
 
-            size_t num_weights = (size_t)nextSize * size;
             float grad_scale = -1.0f;
 
-            cblas_sgemm(
-                CblasRowMajor, CblasTrans, CblasNoTrans,
-                nextSize, size, batchSize,
-                grad_scale, local_grad, nextSize, zF, size,
-                0.0f, grad_W, size);
+            backend->MatMul(
+                /*transA=*/true, /*transB=*/false,
+                (int)nextSize, (int)size, batchSize,
+                grad_scale, bottom_up, (int)nextSize, zF, (int)size,
+                0.0f, grad_W, (int)size);
 
-            std::memset(grad_b, 0, nextSize * sizeof(float));
-            for (int batch = 0; batch < batchSize; batch++)
-                cblas_saxpy(nextSize, grad_scale, local_grad + batch * nextSize, 1, grad_b, 1);
+            backend->SumRows(grad_b, bottom_up, batchSize, nextSize);
+            backend->Scale(grad_b, nextSize, grad_scale);
 
             if (opt == OptimizerType::ADAMW)
-            {
-                Deep::AdamWUpdate(W, grad_W, m_W, v_W, num_weights, t, lr, lmbda);
-            }
+                backend->AdamWStep(W, grad_W, m_W, v_W, (size_t)nextSize * size, t_device, lr_device, lmbda);
             else
-            {
-                Deep::AdamUpdate(W, grad_W, m_W, v_W, num_weights, t, lr);
-            }
+                backend->AdamStep(W, grad_W, m_W, v_W, (size_t)nextSize * size, t_device, lr_device);
 
-            Deep::AdamUpdate(b, grad_b, m_b, v_b, nextSize, t, lr);
+            backend->AdamStep(b, grad_b, m_b, v_b, nextSize, t_device, lr_device);
             break;
         }
         }
@@ -349,144 +211,18 @@ namespace Deep
         if (layerBelow == nullptr)
             return;
 
-        size_t simd_end = 0;
-
-#if defined(__AVX512F__)
-        __m512 neg_one = _mm512_set1_ps(-1.0f);
-        __m512 half = _mm512_set1_ps(0.5f);
-        float pr_inv_bs = pr / static_cast<float>(batchSize);
-        __m512 pr_inv_bs512 = _mm512_set1_ps(pr_inv_bs);
-        __m512 min_val = _mm512_set1_ps(-5.0f);
-        __m512 max_val = _mm512_set1_ps(5.0f);
-
-        size_t r = size % 16;
-        simd_end = size - r;
-#pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < simd_end; i += 16)
-        {
-            __m512 grad = _mm512_setzero_ps();
-            __m512 p512 = _mm512_load_ps(&p[i]);
-            __m512 logp512 = _mm512_load_ps(&log_p[i]);
-
-            for (int batch = 0; batch < batchSize; batch++)
-            {
-                __m512 e512 = _mm512_loadu_ps(&e[(size_t)batch * size + i]);
-
-                __m512 err_sq = _mm512_mul_ps(e512, e512);
-                __m512 p_err_sq_minus_1 = _mm512_fmadd_ps(p512, err_sq, neg_one);
-                grad = _mm512_fmadd_ps(half, p_err_sq_minus_1, grad);
-            }
-
-            logp512 = _mm512_fnmadd_ps(pr_inv_bs512, grad, logp512);
-            logp512 = _mm512_max_ps(min_val, _mm512_min_ps(logp512, max_val));
-            p512 = Sleef_expf16_u10avx512f(logp512);
-
-            _mm512_store_ps(&p[i], p512);
-            _mm512_store_ps(&log_p[i], logp512);
-        }
-#elif defined(__AVX2__) || defined(__AVX__)
-        __m256 neg_one = _mm256_set1_ps(-1.0f);
-        __m256 half = _mm256_set1_ps(0.5f);
-        float pr_inv_bs = pr / static_cast<float>(batchSize);
-        __m256 pr_inv_bs256 = _mm256_set1_ps(pr_inv_bs);
-        __m256 min_val = _mm256_set1_ps(-5.0f);
-        __m256 max_val = _mm256_set1_ps(5.0f);
-
-        size_t r = size % 8;
-        simd_end = size - r;
-#pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < (ptrdiff_t)simd_end; i += 8)
-        {
-            __m256 grad = _mm256_setzero_ps();
-            __m256 p256 = _mm256_load_ps(&p[i]);
-            __m256 logp256 = _mm256_load_ps(&log_p[i]);
-
-            for (int batch = 0; batch < batchSize; batch++)
-            {
-                __m256 e256 = _mm256_loadu_ps(&e[(size_t)batch * size + i]);
-
-                __m256 err_sq = _mm256_mul_ps(e256, e256);
-                __m256 p_err_sq_minus_1 = _mm256_fmadd_ps(p256, err_sq, neg_one);
-                grad = _mm256_fmadd_ps(half, p_err_sq_minus_1, grad);
-            }
-
-            logp256 = _mm256_fnmadd_ps(pr_inv_bs256, grad, logp256);
-            logp256 = _mm256_max_ps(min_val, _mm256_min_ps(logp256, max_val));
-            p256 = Sleef_expf8_u10avx2(logp256);
-
-            _mm256_store_ps(&p[i], p256);
-            _mm256_store_ps(&log_p[i], logp256);
-        }
-#elif defined(__SSE__) || defined(_M_AMD64) || defined(_M_X64)
-        __m128 neg_one = _mm_set1_ps(-1.0f);
-        __m128 half = _mm_set1_ps(0.5f);
-        float pr_inv_bs = pr / static_cast<float>(batchSize);
-        __m128 pr_inv_bs128 = _mm_set1_ps(pr_inv_bs);
-        __m128 min_val = _mm_set1_ps(-5.0f);
-        __m128 max_val = _mm_set1_ps(5.0f);
-
-        size_t r = size % 4;
-        simd_end = size - r;
-#pragma omp parallel for schedule(static)
-        for (size_t i = 0; i < simd_end; i += 4)
-        {
-            __m128 grad = _mm_setzero_ps();
-            __m128 p128 = _mm_load_ps(&p[i]);
-            __m128 logp128 = _mm_load_ps(&log_p[i]);
-
-            for (int batch = 0; batch < batchSize; batch++)
-            {
-                __m128 e128 = _mm_loadu_ps(&e[(size_t)batch * size + i]);
-
-                __m128 err_sq = _mm_mul_ps(e128, e128);
-#ifdef __FMA__
-                __m128 p_err_sq_minus_1 = _mm_fmadd_ps(p128, err_sq, neg_one);
-                grad = _mm_fmadd_ps(half, p_err_sq_minus_1, grad);
-#else
-                __m128 p_err_sq_minus_1 = _mm_add_ps(_mm_mul_ps(p128, err_sq), neg_one);
-                grad = _mm_add_ps(_mm_mul_ps(half, p_err_sq_minus_1), grad);
-#endif
-            }
-
-#ifdef __FMA__
-            logp128 = _mm_fnmadd_ps(pr_inv_bs128, grad, logp128);
-#else
-            logp128 = _mm_sub_ps(logp128, _mm_mul_ps(pr_inv_bs128, grad));
-#endif
-            logp128 = _mm_max_ps(min_val, _mm_min_ps(logp128, max_val));
-            p128 = Sleef_expf4_u10(logp128);
-
-            _mm_store_ps(&p[i], p128);
-            _mm_store_ps(&log_p[i], logp128);
-        }
-#endif
-
-        for (size_t i = simd_end; i < size; i++)
-        {
-            float grad = 0.0f;
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                float err = e[(size_t)batch * size + i];
-                grad += 0.5f * (p[i] * err * err - 1.0f);
-            }
-
-            grad /= batchSize;
-            log_p[i] -= pr * grad;
-            log_p[i] = std::max(-5.0f, std::min(log_p[i], 5.0f));
-            p[i] = Sleef_expf_u10(log_p[i]);
-        }
+        backend->UpdatePrecisionFromError(p, log_p, e, batchSize, size, pr);
     }
 
     void DiscriminativePCLayer::ResetState() noexcept
     {
-        size_t N = (size_t)batchSize * size;
-        std::memset(z, 0, N * sizeof(float));
+        backend->Zero(z, (size_t)batchSize * size);
     }
 
     void DiscriminativePCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
-        size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
-        memcpy(z, inputData.data(), copySize);
+        size_t copyFloats = (std::min)(inputData.size(), (size_t)batchSize * size);
+        backend->CopyFromHost(z, inputData.data(), copyFloats);
         isClamped = true;
         muCacheValid = false;
     }
@@ -498,8 +234,16 @@ namespace Deep
 
     void DiscriminativePCLayer::ResyncLogPrecision() noexcept
     {
+        // Cold path (checkpoint load only), host round-trip, same
+        // reasoning as ConvPCLayer::ResyncLogPrecision().
+        std::vector<float> hostP(size);
+        backend->CopyToHost(hostP.data(), p, size);
+
+        std::vector<float> hostLogP(size);
         for (size_t i = 0; i < size; ++i)
-            log_p[i] = std::log(std::max(p[i], 1e-8f));
+            hostLogP[i] = std::log(std::max(hostP[i], 1e-8f));
+
+        backend->CopyFromHost(log_p, hostLogP.data(), size);
     }
 
     size_t DiscriminativePCLayer::GetRequiredFloats() const noexcept
@@ -507,92 +251,121 @@ namespace Deep
         auto pad16 = [](size_t n) { return (n + 15) & ~(size_t)15; };
 
         size_t total = 0;
-        size_t own_state_size = (size_t)batchSize * size;
+        size_t ownStateSize = (size_t)batchSize * size;
 
-        total += pad16(own_state_size) * 3; // z, e, dz_dt
-        total += pad16(own_state_size) * 2; // zF, feedbackScratch
-        total += pad16(size) * 2;           // p, log_p
+        total += pad16(ownStateSize) * 3; // z, e, dz_dt
+        total += pad16(ownStateSize) * 2; // zF, feedbackScratch
+        total += pad16(size) * 2;         // p, log_p
 
         if (nextSize > 0)
         {
-            size_t out_state_size = (size_t)batchSize * nextSize;
-            size_t w_size = (size_t)size * nextSize;
-            
-            total += pad16(w_size);                  // W
-            total += pad16(nextSize);                // b
-            total += pad16(out_state_size) * 3;      // mu, bottom_up, cachedMu 
+            size_t outStateSize = (size_t)batchSize * nextSize;
+            size_t wSize = (size_t)size * nextSize;
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                total += pad16(w_size) * 3;
-                total += pad16(nextSize) * 3;
-            }
+            total += pad16(wSize);              // W
+            total += pad16(nextSize);           // b
+            total += pad16(outStateSize) * 3;   // mu, bottom_up, cachedMu
+            total += pad16(nextSize);           // biasGradScratch
+
+            // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+            total += pad16(wSize) * 3;      // grad_W, m_W, v_W
+            total += pad16(nextSize) * 3;   // grad_b, m_b, v_b
+            total += pad16(1) * 2;          // t_device, lr_device
         }
         return total;
     }
 
-    void DiscriminativePCLayer::BindMemory(MemoryArena &arena)
+    template <typename ArenaT>
+    void DiscriminativePCLayer::BindMemory(ArenaT &arena)
     {
-        size_t own_state_size = (size_t)batchSize * size;
-        size_t out_state_size = (size_t)batchSize * nextSize;
+        size_t ownStateSize = (size_t)batchSize * size;
 
-        z = arena.AllocateFloats(own_state_size);
-        e = arena.AllocateFloats(own_state_size);
-        dz_dt = arena.AllocateFloats(own_state_size);
-
-        zF = arena.AllocateFloats(own_state_size);
-        feedbackScratch = arena.AllocateFloats(own_state_size);
-
+        z = arena.AllocateFloats(ownStateSize);
+        e = arena.AllocateFloats(ownStateSize);
+        dz_dt = arena.AllocateFloats(ownStateSize);
+        zF = arena.AllocateFloats(ownStateSize);
+        feedbackScratch = arena.AllocateFloats(ownStateSize);
         p = arena.AllocateFloats(size);
         log_p = arena.AllocateFloats(size);
 
-        std::memset(z, 0, own_state_size * sizeof(float));
-        std::memset(e, 0, own_state_size * sizeof(float));
-        std::memset(dz_dt, 0, own_state_size * sizeof(float));
-
-        std::memset(zF, 0, own_state_size * sizeof(float));
-        std::memset(feedbackScratch, 0, own_state_size * sizeof(float));
-
-        std::fill_n(p, size, 1.0f);
-        std::fill_n(log_p, size, 0.0f);
+        backend->Zero(z, ownStateSize);
+        backend->Zero(e, ownStateSize);
+        backend->Zero(dz_dt, ownStateSize);
+        backend->Zero(zF, ownStateSize);
+        backend->Zero(feedbackScratch, ownStateSize);
+        backend->Fill(p, size, 1.0f);
+        backend->Zero(log_p, size);
 
         if (nextSize > 0)
         {
-            size_t w_size = (size_t)size * nextSize;
-            W = arena.AllocateFloats(w_size);
+            size_t outStateSize = (size_t)batchSize * nextSize;
+            size_t wSize = (size_t)size * nextSize;
+
+            W = arena.AllocateFloats(wSize);
             b = arena.AllocateFloats(nextSize);
-            mu = arena.AllocateFloats(out_state_size);
-            bottom_up = arena.AllocateFloats(out_state_size);
-            cachedMu = arena.AllocateFloats(out_state_size);
+            mu = arena.AllocateFloats(outStateSize);
+            bottom_up = arena.AllocateFloats(outStateSize);
+            cachedMu = arena.AllocateFloats(outStateSize);
+            biasGradScratch = arena.AllocateFloats(nextSize);
 
-            std::memset(b, 0, nextSize * sizeof(float));
-            std::memset(mu, 0, out_state_size * sizeof(float));
-            std::memset(bottom_up, 0, out_state_size * sizeof(float));
-            std::memset(cachedMu, 0, out_state_size * sizeof(float));
+            backend->Zero(b, nextSize);
+            backend->Zero(mu, outStateSize);
+            backend->Zero(bottom_up, outStateSize);
+            backend->Zero(cachedMu, outStateSize);
+            backend->Zero(biasGradScratch, nextSize);
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                grad_W = arena.AllocateFloats(w_size);
-                m_W = arena.AllocateFloats(w_size);
-                v_W = arena.AllocateFloats(w_size);
+            // Always allocated, see GetRequiredFloats().
+            grad_W = arena.AllocateFloats(wSize);
+            m_W = arena.AllocateFloats(wSize);
+            v_W = arena.AllocateFloats(wSize);
+            grad_b = arena.AllocateFloats(nextSize);
+            m_b = arena.AllocateFloats(nextSize);
+            v_b = arena.AllocateFloats(nextSize);
 
-                grad_b = arena.AllocateFloats(nextSize);
-                m_b = arena.AllocateFloats(nextSize);
-                v_b = arena.AllocateFloats(nextSize);
+            backend->Zero(m_W, wSize);
+            backend->Zero(v_W, wSize);
+            backend->Zero(m_b, nextSize);
+            backend->Zero(v_b, nextSize);
+            backend->Zero(grad_W, wSize);
+            backend->Zero(grad_b, nextSize);
 
-                std::memset(m_W, 0, w_size * sizeof(float));
-                std::memset(v_W, 0, w_size * sizeof(float));
-                std::memset(m_b, 0, nextSize * sizeof(float));
-                std::memset(v_b, 0, nextSize * sizeof(float));
-
-                std::memset(grad_W, 0, w_size * sizeof(float));
-                std::memset(grad_b, 0, nextSize * sizeof(float));
-            }
+            t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            lr_device = arena.AllocateFloats(1);
+            int zero = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+            backend->CopyFromHost(lr_device, &lr, 1);
+        }
+        else
+        {
+            W = nullptr;
+            b = nullptr;
+            mu = nullptr;
+            bottom_up = nullptr;
+            cachedMu = nullptr;
+            biasGradScratch = nullptr;
         }
 
-        if (localArena && localArena.get() != &arena)
+        if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+        {
+            if (localArena && localArena.get() != &arena)
+                localArena.reset();
+        }
+        else
         {
             localArena.reset();
         }
     }
+
+    std::map<std::string, TensorDescriptor> DiscriminativePCLayer::GetStateDict() const
+    {
+        return {
+            {"W", {W, {(size_t)nextSize, (size_t)size}}},
+            {"b", {b, {(size_t)nextSize}}},
+            {"p", {p, {(size_t)size}}}};
+    }
+
+    template void DiscriminativePCLayer::BindMemory<MemoryArena>(MemoryArena &arena);
+#if defined(DEEPITY_USE_CUDA)
+    template void DiscriminativePCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena &arena);
+#endif
 }

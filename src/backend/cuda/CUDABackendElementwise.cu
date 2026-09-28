@@ -3,7 +3,7 @@
  * @brief CUDABackend's elementwise scalar ops: Scale/AxpyInto, the
  * AddBiasBroadcast/AddBiasPerChannel bias-add pair, MultiplyInto, and Fill.
  * Mirrors the "Elementwise scalar ops" section of IComputeBackend.h. Split
- * out of the former monolithic CUDABackend.cu -- see CUDABackendCore.cu,
+ * out of the former monolithic CUDABackend.cu, see CUDABackendCore.cu,
  * CUDABackendGemm.cu, CUDABackendActivations.cu, CUDABackendFusedOps.cu,
  * CUDABackendOptimizer.cu, CUDABackendConv.cu for the rest.
  */
@@ -105,6 +105,56 @@ void CUDABackend::AddBiasPerChannel(float* buf, const float* bias, size_t channe
   size_t total = channels * spatialSize;
   const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
   AddBiasPerChannelKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, bias, channels, spatialSize);
+  CHECK_CUDA_LAUNCH();
+}
+
+__global__ void AxpyBroadcastIntoKernel(float* y, const float* x, const float* factor,
+                                        size_t batchSize, size_t width, float alpha)
+{
+  size_t col = (size_t)blockIdx.x * blockDim.x + threadIdx.x; // maps to width
+  size_t row = (size_t)blockIdx.y * blockDim.y + threadIdx.y; // maps to batchSize
+
+  if (col < width && row < batchSize)
+  {
+    size_t idx = row * width + col;
+    y[idx] += alpha * x[idx] * factor[col];
+  }
+}
+
+void CUDABackend::AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
+                                    size_t width, float alpha) noexcept
+{
+  if (!y || !x || !factor || batchSize == 0 || width == 0)
+    return;
+  dim3 threads(32, 8);
+  dim3 blocks((unsigned int)((width + threads.x - 1) / threads.x),
+              (unsigned int)((batchSize + threads.y - 1) / threads.y));
+  AxpyBroadcastIntoKernel<<<blocks, threads, 0, stream>>>(y, x, factor, batchSize, width, alpha);
+  CHECK_CUDA_LAUNCH();
+}
+
+__global__ void MultiplyBroadcastIntoKernel(float* dst, const float* a, const float* factor,
+                                            const float* b, size_t batchSize, size_t width)
+{
+  size_t col = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  size_t row = (size_t)blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (col < width && row < batchSize)
+  {
+    size_t idx = row * width + col;
+    dst[idx] = a[idx] * factor[col] * b[idx];
+  }
+}
+
+void CUDABackend::MultiplyBroadcastInto(float* dst, const float* a, const float* factor,
+                                        const float* b, size_t batchSize, size_t width) noexcept
+{
+  if (!dst || !a || !factor || !b || batchSize == 0 || width == 0)
+    return;
+  dim3 threads(32, 8);
+  dim3 blocks((unsigned int)((width + threads.x - 1) / threads.x),
+              (unsigned int)((batchSize + threads.y - 1) / threads.y));
+  MultiplyBroadcastIntoKernel<<<blocks, threads, 0, stream>>>(dst, a, factor, b, batchSize, width);
   CHECK_CUDA_LAUNCH();
 }
 } // namespace Deep

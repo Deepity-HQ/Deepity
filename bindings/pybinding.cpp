@@ -2,7 +2,7 @@
  * @file pybinding.cpp
  * @brief Entry point for the `pydeepity` nanobind module. The actual
  * bindings live in LayerBindings.cpp, NetworkBindings.cpp, and
- * UtilityBindings.cpp -- this file only wires them together.
+ * UtilityBindings.cpp, this file only wires them together.
  */
 #include <nanobind/nanobind.h>
 

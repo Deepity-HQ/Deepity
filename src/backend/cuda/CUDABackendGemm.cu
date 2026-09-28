@@ -4,7 +4,7 @@
  * SumRows pair, and the CUTLASS-fused GEMM+bias+activation path used by
  * TryFusedForwardPass. Mirrors the "GEMM" section of IComputeBackend.h (plus
  * the GEMM-flavored half of "Fused PC-specific ops"). Split out of the
- * former monolithic CUDABackend.cu -- see CUDABackendCore.cu,
+ * former monolithic CUDABackend.cu, see CUDABackendCore.cu,
  * CUDABackendElementwise.cu, CUDABackendActivations.cu,
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.

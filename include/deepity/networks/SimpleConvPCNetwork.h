@@ -11,18 +11,9 @@
 
 /**
  * @file SimpleConvPCNetwork.h
- * @brief Convolutional counterpart to SimplePCNetwork, now device-aware
- * (matches DirectKPPCNetwork's own port earlier tonight: DeviceType
- * constructor parameter, backend member, cpuArena/gpuArena split).
- *
- * Two real bugs fixed during this port, same class found and fixed in
- * SimplePCNetwork/DirectKPPCNetwork: ProjectForward() used std::memcpy
- * directly (wrong once beliefs/mu are device pointers) and had no
- * isClamped guard (would overwrite an already-clamped terminal layer's
- * z with a stale forward-projected value); Predict()/
- * PredictWithProjection() used the std::vector iterator-range
- * constructor directly on `beliefs` (dereferences immediately, wrong
- * for device memory).
+ * @brief Convolutional counterpart to SimplePCNetwork, device-aware
+ * (DeviceType constructor parameter, backend member, cpuArena/gpuArena
+ * split in Compile()).
  */
 
 namespace Deep
@@ -30,7 +21,7 @@ namespace Deep
     class PCNDiagnostics;
 
     /// @brief Convolutional Predictive Coding Network built from
-    /// SimpleConvPCLayer -- precision-free, AdamW-capable, device-aware.
+    /// SimpleConvPCLayer, precision-free, AdamW-capable, device-aware.
     class SimpleConvPCNetwork
     {
     public:
@@ -58,7 +49,7 @@ namespace Deep
                       ActivationType dType = ActivationType::dRELU);
 
         /// @brief Sets the optimizer for EVERY layer added so far. Safe to
-        /// call any time before Compile() -- unlike using SimpleConvPCLayer
+        /// call any time before Compile(), unlike using SimpleConvPCLayer
         /// standalone, memory allocation is deferred to Compile(), not the
         /// constructor, so this doesn't require a manual rebind.
         void SetOptimizer(OptimizerType opt) noexcept;

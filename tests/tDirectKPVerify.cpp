@@ -1,16 +1,15 @@
 /**
  * @file tDirectKPVerify.cpp
  * @brief Finite-difference gradient check for DirectKPPCLayer's core PC
- * math (dE/dW), matching this project's existing tGaussSeidelVerify.cpp
- * convention.
+ * math (dE/dW), matching tGaussSeidelPCLayerVerify.cpp's convention.
  *
  * Deliberately checks ONLY dE/dW here, not Psi. Psi is not a gradient of
- * this (or any) energy function -- it's a feedback-alignment matrix that
+ * this (or any) energy function, it's a feedback-alignment matrix that
  * is only supposed to gradually correlate with W's transpose chain over
  * many training steps (see DirectKPPCNetwork.h's class docs and the
  * paper's Appendix A.1). A finite-difference check against it wouldn't
  * be testing the right thing; that needs a separate, longer-horizon
- * alignment test instead (see the discussion this test came out of).
+ * alignment test instead.
  *
  * SIGN CONVENTION, worked out explicitly since it's easy to get backwards:
  * For layer L (connecting to layerAbove via W_L), the true gradient is
@@ -18,7 +17,7 @@
  * (the minus sign falls out of e_{L+1} = z_{L+1} - (W_L @ zF_L + b_L)).
  * The layer's real UpdateWeights() applies
  *   W_L += (lr/batchSize) * e_{L+1}^T @ zF_L
- * which is W -= lr * dE/dW -- ordinary gradient descent, just written
+ * which is W -= lr * dE/dW, ordinary gradient descent, just written
  * with the sign already folded into the formula rather than an explicit
  * subtraction. This test uses lr=1, batchSize=1 to strip away scaling,
  * so the "implied gradient" is simply -(W_after - W_before), and that
@@ -35,7 +34,7 @@ using namespace Deep;
 namespace
 {
     // Runs enough settling steps to reach a non-trivial, realistic
-    // (z, e) state before testing the gradient AT that state -- matching
+    // (z, e) state before testing the gradient AT that state, matching
     // how UpdateWeights() is actually used in practice (after settling
     // completes), not testing an artificial, freshly-initialized state.
     void SettleNetwork(DirectKPPCNetwork &net, const std::vector<float> &x,
@@ -51,7 +50,7 @@ namespace
     }
 
     // Total energy across every layer at the network's CURRENT state,
-    // without touching z or clamps -- just CalculateState()'s error/
+    // without touching z or clamps, just CalculateState()'s error/
     // energy computation, summed. Does not call UpdateState(), so
     // repeated calls with a perturbed W are safe and don't drift z.
     float TotalEnergy(DirectKPPCNetwork &net)
@@ -86,7 +85,7 @@ int main()
     net.RandomizeWeights(rng);
 
     net.SetOptimizer(OptimizerType::SGD);
-    net.SetLearningRate(1.0f); // strips scaling -- see file header
+    net.SetLearningRate(1.0f); // strips scaling, see file header
 
     std::vector<float> x = {0.2f, -0.5f, 0.8f, 0.1f};
     std::vector<float> y = {1.0f, -1.0f};
@@ -103,7 +102,7 @@ int main()
 
     float wOriginal = W[testIdx];
 
-    // Perturb W only -- z stays exactly where settling left it.
+    // Perturb W only, z stays exactly where settling left it.
     W[testIdx] = wOriginal + eps;
     float energyPlus = TotalEnergy(net);
 
@@ -117,16 +116,16 @@ int main()
 
     float numericalGrad = (energyPlus - energyMinus) / (2.0f * eps);
 
-    // --- Analytical gradient (via the real UpdateWeights() code) ----
+    // Analytical gradient, via the real UpdateWeights() code.
     SettleNetwork(net, x, y, /*steps=*/5);
-    TotalEnergy(net); // <--- IT NEEDS TO GO EXACTLY HERE
+    TotalEnergy(net); // refreshes mu/e to match the just-settled z/W exactly
 
     float wBefore = W[testIdx];
     testLayer->UpdateWeights();
     float wAfter = W[testIdx];
 
     // lr=1, batchSize=1 above strips scaling, so this recovers the raw
-    // gradient directly -- see the sign-convention note in the header.
+    // gradient directly, see the sign-convention note in the header.
     float impliedGrad = -(wAfter - wBefore);
 
     printf("Numerical dE/dW[%zu]:  % .6f\n", testIdx, numericalGrad);

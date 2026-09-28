@@ -115,7 +115,7 @@ BENCHMARK(BM_Network_TrainSample_128);
 static void BM_Layer_UpdateWeights_128(benchmark::State &state)
 {
     // Isolated layer for raw weight update speed
-    DiscriminativePCLayer layer(128, 128, 1, 0.05f, 0.3f, 0.0f, 0.0001f, Deep::tanh, Deep::dTanh);
+    DiscriminativePCLayer layer(128, 128, 1, 0.05f, 0.3f, 0.0f, 0.0001f, ActivationType::TANH, ActivationType::dTANH);
     std::mt19937 rng(42);
     layer.RandomizeWeights(rng);
 

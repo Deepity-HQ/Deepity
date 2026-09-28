@@ -214,7 +214,7 @@ namespace Deep
     /// @brief Two-buffer, single-pass sigmoid derivative: reads src,
     /// writes sigmoid(src)*(1-sigmoid(src)) directly into dst. Computes
     /// the sigmoid into a register and derives from that same register
-    /// immediately -- one read of src, one write to dst, no intermediate
+    /// immediately, one read of src, one write to dst, no intermediate
     /// array pass.
     static inline void dSigmoidInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
     {

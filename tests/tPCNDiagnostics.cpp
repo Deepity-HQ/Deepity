@@ -60,18 +60,6 @@ namespace Deep
             return totalEnergy;
         }
 
-        // Safe mock activation functions to prevent nullptr segfaults
-        static void LinearAct(float *x, size_t n)
-        {
-            // Linear activation is a pass-through, so we do nothing
-        }
-
-        static void LinearDeriv(float *x, size_t n, bool inPlace)
-        {
-            // Derivative of f(x)=x is 1
-            std::fill_n(x, n, 1.0f);
-        }
-
     public:
         void RunAllTests()
         {
@@ -109,7 +97,7 @@ namespace Deep
         void Test1_InferenceConvergence()
         {
             std::cout << "\n--- 1. Inference Convergence ---\n";
-            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.05f, 0.0f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.05f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
 
             std::fill_n(layer.e, 10, 0.5f);
             std::fill_n(layer.p, 10, 1.0f);
@@ -158,7 +146,7 @@ namespace Deep
         void Test2_GradientCheckWeights()
         {
             std::cout << "\n--- 2. Numerical Gradient Check (Weights) ---\n";
-            DiscriminativePCLayer layer(2, 3, 1, 0.01f, 0.01f, 0.0f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(2, 3, 1, 0.01f, 0.01f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
             layer.RandomizeWeights(rng);
             std::fill_n(layer.z, 2, 0.5f);
 
@@ -191,7 +179,7 @@ namespace Deep
         void Test3_GradientCheckStates()
         {
             std::cout << "\n--- 3. Numerical Gradient Check (States) ---\n";
-            DiscriminativePCLayer layer(5, 0, 1, 0.01f, 0.01f, 0.0f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(5, 0, 1, 0.01f, 0.01f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
             std::fill_n(layer.e, 5, 0.5f);
             std::fill_n(layer.p, 5, 1.0f);
 
@@ -228,7 +216,7 @@ namespace Deep
         void Test4_GradientCheckPrecision()
         {
             std::cout << "\n--- 4. Numerical Gradient Check (Precision) ---\n";
-            DiscriminativePCLayer layer(5, 0, 1, 0.01f, 0.01f, 0.01f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(5, 0, 1, 0.01f, 0.01f, 0.01f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
             std::fill_n(layer.e, 5, 0.5f);
             std::fill_n(layer.log_p, 5, 0.0f);
             std::fill_n(layer.p, 5, 1.0f);
@@ -273,7 +261,7 @@ namespace Deep
         void Test6_EnergyDecomposition()
         {
             std::cout << "\n--- 6. Energy Decomposition ---\n";
-            DiscriminativePCLayer layer(10, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(10, 0, 1, 0.0f, 0.0f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
             std::fill_n(layer.e, 10, 0.5f);
             std::fill_n(layer.p, 10, 2.0f);
 
@@ -312,7 +300,7 @@ namespace Deep
         void Test9_BufferPoisoning()
         {
             std::cout << "\n--- 9. Buffer Poisoning ---\n";
-            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.01f, 0.01f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.01f, 0.01f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
 
             float nan = std::numeric_limits<float>::quiet_NaN();
             std::fill_n(layer.dz_dt, layer.size, nan);
@@ -353,7 +341,7 @@ namespace Deep
         void Test11_WeightUpdateConsistency()
         {
             std::cout << "\n--- 11. Weight Update Consistency ---\n";
-            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.01f, 0.01f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(10, 10, 1, 0.01f, 0.01f, 0.01f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
             layer.RandomizeWeights(rng);
             PrintResult("Weight Update Cons.", true);
         }
@@ -361,7 +349,7 @@ namespace Deep
         void Test12_PrecisionStatistics()
         {
             std::cout << "\n--- 12. Precision Statistics ---\n";
-            DiscriminativePCLayer layer(1000, 0, 1, 0.01f, 0.01f, 0.01f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(1000, 0, 1, 0.01f, 0.01f, 0.01f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
 
             layer.p[0] = 1e-9f;
             layer.p[1] = 150.0f;
@@ -403,7 +391,7 @@ namespace Deep
         void Test14_MemoryLayout()
         {
             std::cout << "\n--- 14. Memory Layout Validation ---\n";
-            DiscriminativePCLayer layer(512, 512, 64, 0.01f, 0.01f, 0.01f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer layer(512, 512, 64, 0.01f, 0.01f, 0.01f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
 
             bool passed = true;
             auto checkAlign = [&](void *ptr, const std::string &name)
@@ -431,8 +419,8 @@ namespace Deep
         {
             std::cout << "\n--- 15. Buffer Lifecycle Audit ---\n";
 
-            DiscriminativePCLayer L0(10, 5, 1, 0.01f, 0.05f, 0.0f, 0.0f, LinearAct, LinearDeriv);
-            DiscriminativePCLayer L1(5, 0, 1, 0.01f, 0.05f, 0.0f, 0.0f, LinearAct, LinearDeriv);
+            DiscriminativePCLayer L0(10, 5, 1, 0.01f, 0.05f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
+            DiscriminativePCLayer L1(5, 0, 1, 0.01f, 0.05f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
 
             L0.layerAbove = &L1;
             L1.layerBelow = &L0;

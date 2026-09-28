@@ -1,17 +1,16 @@
 #include <deepity/layers/ConvPCLayer.h>
-#ifdef DEEPITY_USE_MKL
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
-#endif
-#include <omp.h>
-#include <cstring>
+#include <deepity/backend/CPUBackend.h>
 #include <cmath>
-#include <algorithm>
-#include <cstddef>
+#include <type_traits>
 
 namespace Deep
 {
+    namespace
+    {
+        void DeleteBackend(IComputeBackend *p) { delete p; }
+        void NoOpDeleter(IComputeBackend *) {}
+    }
+
     ConvPCLayer::ConvPCLayer(int inChannels, int outChannels,
                              int inHeight, int inWidth,
                              int kernelH, int kernelW,
@@ -20,7 +19,8 @@ namespace Deep
                              int batchSize,
                              float learningRate, float inferenceRate,
                              float precisionRate, float lmbda,
-                             ActivationType aType, ActivationType dType)
+                             ActivationType aType, ActivationType dType,
+                             IComputeBackend *backend)
         : inChannels(inChannels), outChannels(outChannels),
           inHeight(inHeight), inWidth(inWidth),
           kernelH(kernelH), kernelW(kernelW),
@@ -28,16 +28,23 @@ namespace Deep
           padH(padH), padW(padW),
           batchSize(batchSize),
           lr(learningRate), ir(inferenceRate), pr(precisionRate), lmbda(lmbda),
-          layerAbove(nullptr), layerBelow(nullptr), activationType(aType)
+          layerAbove(nullptr), layerBelow(nullptr),
+          activationType(aType), derivativeType(dType),
+          backend(backend ? backend : new CPUBackend(),
+                  backend ? NoOpDeleter : DeleteBackend)
     {
         outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
         outWidth = (outChannels > 0) ? ConvOutDim(inWidth, kernelW, strideW, padW) : 0;
 
-        this->activation = To_Fn(aType);
-        this->activationDerivative = To_dFn(dType);
-
         localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
         BindMemory(*localArena);
+    }
+
+    void ConvPCLayer::SetLearningRate(float learningRate) noexcept
+    {
+        lr = learningRate;
+        if (lr_device)
+            backend->CopyFromHost(lr_device, &lr, 1);
     }
 
     size_t ConvPCLayer::GetRequiredFloats() const noexcept
@@ -59,15 +66,22 @@ namespace Deep
             size_t colRows = (size_t)inChannels * kernelH * kernelW;
             size_t colCols = (size_t)outHeight * outWidth;
             size_t colSize = colRows * colCols;
+            size_t Wsize = (size_t)outChannels * colRows;
+            size_t M = (size_t)batchSize * colCols;
 
-            total += pad16((size_t)outChannels * colRows);   // W
+            total += pad16(Wsize);                           // W
             total += pad16((size_t)outChannels);             // b
             total += pad16(outStateSize) * 2;                // mu, cachedMu
             total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
             total += pad16(outStateSize);                    // bottom_up_cols
             total += pad16((size_t)batchSize * colSize);     // colsRepacked
             total += pad16(outStateSize);                    // lgRepacked
-            total += pad16(outStateSize);                    // muRepacked
+            total += pad16(M);                               // onesVector
+
+            // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+            total += pad16(Wsize) * 3;               // grad_W, m_W, v_W
+            total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
+            total += pad16(1) * 2;                   // t_device, lr_device
         }
 
         return total;
@@ -78,9 +92,11 @@ namespace Deep
         return {
             {"W", {W, {(size_t)outChannels, (size_t)(inChannels * kernelH * kernelW)}}},
             {"b", {b, {(size_t)outChannels}}},
-            {"p", {p, {(size_t)outChannels}}}};
+            {"p", {p, {(size_t)inChannels * inHeight * inWidth}}}};
     }
-    void ConvPCLayer::BindMemory(MemoryArena &arena)
+
+    template <typename ArenaT>
+    void ConvPCLayer::BindMemory(ArenaT &arena)
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
@@ -91,11 +107,11 @@ namespace Deep
         p = arena.AllocateFloats(ownSize);
         log_p = arena.AllocateFloats(ownSize);
 
-        std::memset(z, 0, ownStateSize * sizeof(float));
-        std::memset(e, 0, ownStateSize * sizeof(float));
-        std::memset(dz_dt, 0, ownStateSize * sizeof(float));
-        std::fill_n(p, ownSize, 1.0f);
-        std::fill_n(log_p, ownSize, 0.0f);
+        backend->Zero(z, ownStateSize);
+        backend->Zero(e, ownStateSize);
+        backend->Zero(dz_dt, ownStateSize);
+        backend->Fill(p, ownSize, 1.0f);
+        backend->Zero(log_p, ownSize);
 
         if (outChannels > 0)
         {
@@ -103,8 +119,10 @@ namespace Deep
             size_t colCols = (size_t)outHeight * outWidth;
             size_t outStateSize = (size_t)batchSize * outChannels * colCols;
             size_t colSize = (size_t)batchSize * colRows * colCols;
+            size_t Wsize = (size_t)outChannels * colRows;
+            size_t M = (size_t)batchSize * colCols;
 
-            W = arena.AllocateFloats((size_t)outChannels * colRows);
+            W = arena.AllocateFloats(Wsize);
             b = arena.AllocateFloats(outChannels);
             mu = arena.AllocateFloats(outStateSize);
             cachedMu = arena.AllocateFloats(outStateSize);
@@ -113,17 +131,38 @@ namespace Deep
             bottom_up_cols = arena.AllocateFloats(outStateSize);
             colsRepacked = arena.AllocateFloats(colSize);
             lgRepacked = arena.AllocateFloats(outStateSize);
-            muRepacked = arena.AllocateFloats(outStateSize);
+            onesVector = arena.AllocateFloats(M);
 
-            std::memset(b, 0, outChannels * sizeof(float));
-            std::memset(mu, 0, outStateSize * sizeof(float));
-            std::memset(cachedMu, 0, outStateSize * sizeof(float));
-            std::memset(colBuffer, 0, colSize * sizeof(float));
-            std::memset(feedbackScratch, 0, colSize * sizeof(float));
-            std::memset(bottom_up_cols, 0, outStateSize * sizeof(float));
-            std::memset(colsRepacked, 0, colSize * sizeof(float));
-            std::memset(lgRepacked, 0, outStateSize * sizeof(float));
-            std::memset(muRepacked, 0, outStateSize * sizeof(float));
+            backend->Zero(b, outChannels);
+            backend->Zero(mu, outStateSize);
+            backend->Zero(cachedMu, outStateSize);
+            backend->Zero(colBuffer, colSize);
+            backend->Zero(feedbackScratch, colSize);
+            backend->Zero(bottom_up_cols, outStateSize);
+            backend->Zero(colsRepacked, colSize);
+            backend->Zero(lgRepacked, outStateSize);
+            backend->Fill(onesVector, M, 1.0f);
+
+            // Always allocated, see GetRequiredFloats().
+            grad_W = arena.AllocateFloats(Wsize);
+            m_W = arena.AllocateFloats(Wsize);
+            v_W = arena.AllocateFloats(Wsize);
+            grad_b = arena.AllocateFloats(outChannels);
+            m_b = arena.AllocateFloats(outChannels);
+            v_b = arena.AllocateFloats(outChannels);
+
+            backend->Zero(m_W, Wsize);
+            backend->Zero(v_W, Wsize);
+            backend->Zero(m_b, outChannels);
+            backend->Zero(v_b, outChannels);
+            backend->Zero(grad_W, Wsize);
+            backend->Zero(grad_b, outChannels);
+
+            t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            lr_device = arena.AllocateFloats(1);
+            int zero = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+            backend->CopyFromHost(lr_device, &lr, 1);
         }
         else
         {
@@ -136,11 +175,18 @@ namespace Deep
             bottom_up_cols = nullptr;
             colsRepacked = nullptr;
             lgRepacked = nullptr;
-            muRepacked = nullptr;
+            onesVector = nullptr;
         }
 
-        if (localArena && localArena.get() != &arena)
+        if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+        {
+            if (localArena && localArena.get() != &arena)
+                localArena.reset();
+        }
+        else
+        {
             localArena.reset();
+        }
     }
 
     void ConvPCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
@@ -153,18 +199,9 @@ namespace Deep
         float limit = std::sqrt(2.0f / (float)colRows);
 
         std::uniform_int_distribution<uint32_t> seedDist;
-        std::vector<uint32_t> seeds(omp_get_max_threads());
-        for (auto &s : seeds)
-            s = seedDist(seedGenerator);
+        uint32_t seed = seedDist(seedGenerator);
 
-#pragma omp parallel
-        {
-            std::mt19937 rng(seeds[omp_get_thread_num()]);
-            std::normal_distribution<float> dist(0.0f, limit);
-#pragma omp for
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
-                W[i] = dist(rng);
-        }
+        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
     }
 
     float ConvPCLayer::CalculateState() noexcept
@@ -172,40 +209,25 @@ namespace Deep
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
 
-        // Zero-Energy bypass
+        // Zero-Energy bypass, matches the original's -0.5*sum(log_p)
+        // formula for the input layer (no e term at all, since there's
+        // no layerBelow to compare against).
         if (layerBelow == nullptr)
         {
-            std::memset(e, 0, ownStateSize * sizeof(float));
+            backend->Zero(e, ownStateSize);
             float totalEnergy = 0.0f;
             for (size_t i = 0; i < ownSize; ++i)
-            {
                 totalEnergy -= 0.5f * log_p[i] * batchSize;
-            }
             if (outChannels > 0)
                 ComputeMuOnly();
             return totalEnergy;
         }
 
-        cblas_scopy((int)ownStateSize, z, 1, e, 1);
-        cblas_saxpy((int)ownStateSize, -1.0f, layerBelow->mu, 1, e, 1);
-
-        float totalEnergy = 0.0f;
-#pragma omp parallel for schedule(static) reduction(+ : totalEnergy) collapse(2)
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            for (size_t i = 0; i < ownSize; ++i)
-            {
-                float precision = std::max(p[i], 1e-8f);
-                float err = e[(size_t)batch * ownSize + i];
-                totalEnergy += 0.5f * precision * err * err;
-                totalEnergy -= 0.5f * std::log(precision);
-            }
-        }
+        float totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
+            e, z, layerBelow->mu, p, batchSize, ownSize);
 
         if (outChannels > 0)
-        {
             ComputeMuOnly();
-        }
 
         return totalEnergy;
     }
@@ -222,42 +244,35 @@ namespace Deep
 
         if (isClamped && muCacheValid)
         {
-            cblas_scopy((int)Nout, cachedMu, 1, mu, 1);
+            backend->Copy(mu, cachedMu, Nout);
             return;
         }
 
-#pragma omp parallel for schedule(static)
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const float *z_item = z + (size_t)batch * ownSize;
             float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
 
-            Im2Col(z_item, inChannels, inHeight, inWidth,
-                   kernelH, kernelW, strideH, strideW, padH, padW,
-                   cols_item);
+            backend->Im2Col(z_item, inChannels, inHeight, inWidth,
+                            kernelH, kernelW, strideH, strideW, padH, padW,
+                            cols_item);
 
             float *mu_item = mu + (size_t)batch * outChannels * colCols;
 
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
                 outChannels, (int)colCols, (int)colRows,
                 1.0f, W, (int)colRows, cols_item, (int)colCols,
                 0.0f, mu_item, (int)colCols);
 
-            for (int oc = 0; oc < outChannels; ++oc)
-            {
-                float bias = b[oc];
-                float *row = mu_item + (size_t)oc * colCols;
-                for (size_t j = 0; j < colCols; ++j)
-                    row[j] += bias;
-            }
+            backend->AddBiasPerChannel(mu_item, b, outChannels, colCols);
         }
 
-        activation(mu, Nout);
+        backend->Activation(activationType, mu, Nout);
 
         if (isClamped)
         {
-            cblas_scopy((int)Nout, mu, 1, cachedMu, 1);
+            backend->Copy(cachedMu, mu, Nout);
             muCacheValid = true;
         }
     }
@@ -269,16 +284,19 @@ namespace Deep
         size_t colCols = (outChannels > 0) ? (size_t)outHeight * outWidth : 0;
         size_t colRows = (outChannels > 0) ? (size_t)inChannels * kernelH * kernelW : 0;
 
+        // mu must end up holding the derivative whenever outChannels > 0,
+        // regardless of isClamped/layerAbove, UpdateWeights() reads it
+        // unconditionally later.
         if (outChannels > 0)
         {
             size_t outTotal = (size_t)batchSize * outChannels * colCols;
-            activationDerivative(mu, outTotal, true);
+            backend->ActivationDerivative(derivativeType, mu, outTotal, true);
         }
 
         if (isClamped)
             return;
 
-        std::memset(dz_dt, 0, ownStateSize * sizeof(float));
+        backend->Zero(dz_dt, ownStateSize);
 
         if (layerAbove != nullptr && outChannels > 0)
         {
@@ -286,46 +304,31 @@ namespace Deep
             const float *p_above = layerAbove->GetPrecisions();
             size_t outSize = (size_t)outChannels * colCols;
 
-#pragma omp parallel for schedule(static) collapse(2)
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                for (size_t f = 0; f < outSize; ++f)
-                {
-                    size_t idx = (size_t)batch * outSize + f;
-                    bottom_up_cols[idx] = e_above[idx] * p_above[f] * mu[idx];
-                }
-            }
+            // bottom_up_cols[idx] = e_above[idx] * p_above[i] * mu[idx]
+            // (mu already holds the derivative from the call above).
+            backend->MultiplyBroadcastInto(bottom_up_cols, e_above, p_above, mu, batchSize, outSize);
 
-#pragma omp parallel for schedule(static)
             for (int batch = 0; batch < batchSize; ++batch)
             {
                 const float *lg_item = bottom_up_cols + (size_t)batch * outChannels * colCols;
                 float *scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
 
-                cblas_sgemm(
-                    CblasRowMajor, CblasTrans, CblasNoTrans,
+                backend->MatMul(
+                    /*transA=*/true, /*transB=*/false,
                     (int)colRows, (int)colCols, outChannels,
                     1.0f, W, (int)colRows, lg_item, (int)colCols,
                     0.0f, scratch_item, (int)colCols);
 
                 float *dz_item = dz_dt + (size_t)batch * ownSize;
-                Col2Im(scratch_item, inChannels, inHeight, inWidth,
-                       kernelH, kernelW, strideH, strideW, padH, padW,
-                       dz_item);
+                backend->Col2Im(scratch_item, inChannels, inHeight, inWidth,
+                                kernelH, kernelW, strideH, strideW, padH, padW,
+                                dz_item);
             }
         }
 
-#pragma omp parallel for schedule(static) collapse(2)
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            for (size_t i = 0; i < ownSize; ++i)
-            {
-                size_t idx = (size_t)batch * ownSize + i;
-                dz_dt[idx] -= p[i] * e[idx];
-            }
-        }
-
-        cblas_saxpy((int)ownStateSize, ir, dz_dt, 1, z, 1);
+        // dz_dt[idx] -= p[i] * e[idx] (own term), then z += ir * dz_dt.
+        backend->AxpyBroadcastInto(dz_dt, e, p, batchSize, ownSize, -1.0f);
+        backend->AxpyInto(z, dz_dt, ownStateSize, ir);
     }
 
     void ConvPCLayer::UpdateWeights() noexcept
@@ -336,73 +339,71 @@ namespace Deep
         size_t colRows = (size_t)inChannels * kernelH * kernelW;
         size_t colCols = (size_t)outHeight * outWidth;
         size_t outSize = (size_t)outChannels * colCols;
+        size_t Wsize = (size_t)outChannels * colRows;
+        size_t outTotal = (size_t)batchSize * outSize;
 
         const float *e_above = layerAbove->GetErrors();
         const float *p_above = layerAbove->GetPrecisions();
 
-#pragma omp parallel for schedule(static) collapse(2)
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            for (size_t f = 0; f < outSize; ++f)
-            {
-                size_t idx = (size_t)batch * outSize + f;
-                bottom_up_cols[idx] = e_above[idx] * p_above[f] * mu[idx];
-            }
-        }
+        // mu still holds the derivative left over from the last
+        // UpdateState() call.
+        backend->MultiplyBroadcastInto(bottom_up_cols, e_above, p_above, mu, batchSize, outSize);
 
-        if (lmbda > 0.0f)
-            cblas_sscal((int)((size_t)outChannels * colRows), 1.0f - lmbda, W, 1);
-
-        float lr_batch = lr / batchSize;
-
-        const ptrdiff_t maxRows = static_cast<ptrdiff_t>(colRows);
-        const ptrdiff_t maxBatch1 = static_cast<ptrdiff_t>(batchSize);
-#pragma omp parallel for schedule(static) collapse(2)
-        for (ptrdiff_t row = 0; row < maxRows; ++row)
-        {
-            for (ptrdiff_t batch = 0; batch < maxBatch1; ++batch)
-            {
-                size_t u_row = static_cast<size_t>(row);
-                size_t u_batch = static_cast<size_t>(batch);
-
-                const float *src = colBuffer + u_batch * colRows * colCols + u_row * colCols;
-                float *dst = colsRepacked + u_row * batchSize * colCols + u_batch * colCols;
-                std::memcpy(dst, src, colCols * sizeof(float));
-            }
-        }
-
-        const int maxOc = static_cast<int>(outChannels);
-        const int maxBatch2 = static_cast<int>(batchSize);
-
-#pragma omp parallel for schedule(static) collapse(2)
-        for (int oc = 0; oc < maxOc; ++oc)
-        {
-            for (int batch = 0; batch < maxBatch2; ++batch)
-            {
-                const float *src = bottom_up_cols + (size_t)batch * outSize + (size_t)oc * colCols;
-                float *dst = lgRepacked + (size_t)oc * batchSize * colCols + (size_t)batch * colCols;
-                std::memcpy(dst, src, colCols * sizeof(float));
-            }
-        }
+        backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+        backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
 
         size_t M = (size_t)batchSize * colCols;
-        cblas_sgemm(
-            CblasRowMajor, CblasNoTrans, CblasTrans,
-            outChannels, (int)colRows, (int)M,
-            lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
-            1.0f, W, (int)colRows);
 
-        for (int batch = 0; batch < batchSize; ++batch)
+        switch (opt)
         {
-            const float *lg_item = bottom_up_cols + (size_t)batch * outSize;
-            for (int oc = 0; oc < outChannels; ++oc)
-            {
-                const float *row = lg_item + (size_t)oc * colCols;
-                float sum = 0.0f;
-                for (size_t j = 0; j < colCols; ++j)
-                    sum += row[j];
-                b[oc] += lr_batch * sum;
-            }
+        case OptimizerType::SGD:
+        {
+            if (lmbda > 0.0f)
+                backend->Scale(W, Wsize, 1.0f - lmbda);
+
+            float lr_batch = lr / batchSize;
+
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/true,
+                outChannels, (int)colRows, (int)M,
+                lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
+                1.0f, W, (int)colRows);
+
+            // Bias gradient via GEMM against an all-ones vector.
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
+                outChannels, 1, (int)M,
+                lr_batch, lgRepacked, (int)M, onesVector, 1,
+                1.0f, b, 1);
+            break;
+        }
+        case OptimizerType::ADAM:
+        case OptimizerType::ADAMW:
+        {
+            backend->IncrementCounter(t_device);
+
+            float grad_scale = -1.0f / batchSize;
+
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/true,
+                outChannels, (int)colRows, (int)M,
+                grad_scale, lgRepacked, (int)M, colsRepacked, (int)M,
+                0.0f, grad_W, (int)colRows);
+
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
+                outChannels, 1, (int)M,
+                grad_scale, lgRepacked, (int)M, onesVector, 1,
+                0.0f, grad_b, 1);
+
+            if (opt == OptimizerType::ADAMW)
+                backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda);
+            else
+                backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device);
+
+            backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device);
+            break;
+        }
         }
     }
 
@@ -412,36 +413,22 @@ namespace Deep
             return;
 
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
-
-#pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < (ptrdiff_t)ownSize; ++i)
-        {
-            float grad = 0.0f;
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                float err = e[(size_t)batch * ownSize + i];
-                grad += 0.5f * (p[i] * err * err - 1.0f);
-            }
-            grad /= batchSize;
-            log_p[i] -= pr * grad;
-            log_p[i] = std::max(-5.0f, std::min(log_p[i], 5.0f));
-            p[i] = std::exp(log_p[i]);
-        }
+        backend->UpdatePrecisionFromError(p, log_p, e, batchSize, ownSize, pr);
     }
 
     void ConvPCLayer::ResetState() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * inChannels * inHeight * inWidth;
-        std::memset(z, 0, ownStateSize * sizeof(float));
+        backend->Zero(z, ownStateSize);
     }
 
     void ConvPCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
         size_t ownStateSize = (size_t)batchSize * inChannels * inHeight * inWidth;
-        size_t copySize = std::min(inputData.size(), ownStateSize) * sizeof(float);
-        std::memcpy(z, inputData.data(), copySize);
+        size_t copyFloats = (std::min)(inputData.size(), ownStateSize);
+        backend->CopyFromHost(z, inputData.data(), copyFloats);
         isClamped = true;
-        muCacheValid = false; // FLAG RESET
+        muCacheValid = false;
     }
 
     void ConvPCLayer::UnclampState() noexcept
@@ -451,8 +438,23 @@ namespace Deep
 
     void ConvPCLayer::ResyncLogPrecision() noexcept
     {
+        // Cold path (checkpoint load only), a host round-trip keeps
+        // this correct regardless of backend/device rather than adding a
+        // dedicated primitive for a log-transform that only ever runs
+        // once per load.
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
+        std::vector<float> hostP(ownSize);
+        backend->CopyToHost(hostP.data(), p, ownSize);
+
+        std::vector<float> hostLogP(ownSize);
         for (size_t i = 0; i < ownSize; ++i)
-            log_p[i] = std::log(std::max(p[i], 1e-8f));
+            hostLogP[i] = std::log(std::max(hostP[i], 1e-8f));
+
+        backend->CopyFromHost(log_p, hostLogP.data(), ownSize);
     }
+
+    template void ConvPCLayer::BindMemory<MemoryArena>(MemoryArena &arena);
+#if defined(DEEPITY_USE_CUDA)
+    template void ConvPCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena &arena);
+#endif
 }

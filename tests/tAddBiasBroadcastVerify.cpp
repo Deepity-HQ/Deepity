@@ -1,7 +1,7 @@
 /**
  * @file tAddBiasBroadcastVerify.cpp
  * @brief Verifies IComputeBackend::AddBiasBroadcast against an
- * independently, hand-computed expected result -- written specifically
+ * independently, hand-computed expected result, written specifically
  * because a live MNIST run regressed from ~97% accuracy to ~10% (exactly
  * chance) immediately after this function replaced a per-batch-row loop
  * of individual AxpyInto calls. Something in the new implementation is

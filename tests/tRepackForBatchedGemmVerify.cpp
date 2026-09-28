@@ -1,7 +1,7 @@
 /**
  * @file tRepackForBatchedGemmVerify.cpp
  * @brief Standalone, hand-computable check for
- * IComputeBackend::RepackForBatchedGemm -- verifies it correctly
+ * IComputeBackend::RepackForBatchedGemm, verifies it correctly
  * transforms a [batchSize, rows, cols] (batch-major) array into
  * [rows, batchSize, cols] (row-major, batch second), completely
  * independent of SimpleConvPCLayer.

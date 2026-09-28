@@ -7,11 +7,11 @@
 /**
  * @file Tensor.h
  * @brief A device-aware, RAII-managed buffer. Device is fixed at
- * construction -- there is no support for moving a live Tensor between
+ * construction, there is no support for moving a live Tensor between
  * CPU and GPU after creation. Loading weights saved on CPU and running
  * them on GPU doesn't need that: read the saved file into a plain
  * std::vector on the host, then construct a DEVICE_GPU Tensor directly
- * from that vector (see the host-data constructors below) -- the
+ * from that vector (see the host-data constructors below), the
  * one-time host-to-device copy happens inside the constructor, and the
  * temporary host vector falls out of scope immediately after. The
  * Tensor itself is a GPU object from the moment it's born.
@@ -23,7 +23,7 @@
 
 namespace Deep
 {
-    /// @brief A device-aware, RAII-managed, move-only buffer -- see the
+    /// @brief A device-aware, RAII-managed, move-only buffer, see the
     /// file-level note above for the full ownership/device contract.
     class Tensor
     {
@@ -32,7 +32,7 @@ namespace Deep
         /// zero-initialized.
         /// @param backend Non-owning pointer to the backend that will
         /// perform the allocation; must outlive this Tensor.
-        /// @param device Which device this Tensor lives on -- must match
+        /// @param device Which device this Tensor lives on, must match
         /// what `backend` itself actually allocates on (a CPUBackend
         /// paired with DEVICE_GPU, or vice versa, is a caller error).
         /// @param numFloats Number of floats to allocate.
@@ -45,7 +45,7 @@ namespace Deep
 
         /// @brief Allocates numFloats on the given backend/device, then
         /// copies hostData in via backend->CopyFromHost(). This is the
-        /// "load weights saved on CPU, run on GPU" pattern -- works
+        /// "load weights saved on CPU, run on GPU" pattern, works
         /// identically for device=DEVICE_CPU too, where CopyFromHost()
         /// is just a memcpy.
         Tensor(IComputeBackend *backend, DeviceType device, const float *hostData, size_t numFloats)
@@ -55,7 +55,7 @@ namespace Deep
             backend->CopyFromHost(data, hostData, numFloats);
         }
 
-        /// @brief Same as above, taking a std::vector directly -- the
+        /// @brief Same as above, taking a std::vector directly, the
         /// expected common case (read a saved model's weights into a
         /// std::vector, then hand it straight to this constructor).
         Tensor(IComputeBackend *backend, DeviceType device, const std::vector<float> &hostData)
@@ -64,7 +64,7 @@ namespace Deep
         }
 
         /// @brief Frees the underlying device allocation, if any (not
-        /// called on a moved-from Tensor -- see the move constructor).
+        /// called on a moved-from Tensor, see the move constructor).
         ~Tensor()
         {
             if (data != nullptr)
@@ -73,7 +73,7 @@ namespace Deep
             }
         }
 
-        // Move-only -- see file-level note.
+        // Move-only, see file-level note.
         Tensor(const Tensor &) = delete;
         Tensor &operator=(const Tensor &) = delete;
 
@@ -109,7 +109,7 @@ namespace Deep
         /// @brief Returns the raw device buffer. Only safe to dereference
         /// directly from code that already knows it's running on the
         /// same device this Tensor lives on (e.g. CPUBackend's own
-        /// methods for a DEVICE_CPU Tensor) -- never dereference a
+        /// methods for a DEVICE_CPU Tensor), never dereference a
         /// DEVICE_GPU Tensor's Data() from host code directly.
         float *Data() noexcept { return data; }
         /// @brief const overload of Data() above.

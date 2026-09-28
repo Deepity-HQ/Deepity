@@ -1,47 +1,42 @@
 #include <deepity/layers/GaussSeidelPCLayer.h>
-#ifdef DEEPITY_USE_MKL
-#include <mkl_cblas.h>
-#else
-#include <cblas.h>
-#endif
-#include <cstring>
-#include <immintrin.h>
-#include <omp.h>
+#include <deepity/backend/CPUBackend.h>
 #include <algorithm>
+#include <type_traits>
 
 namespace Deep
 {
-    GaussSeidelPCLayer::GaussSeidelPCLayer(int size, int nextSize, int batchSize,
-                                           float learningRate, float inferenceRate, float lmbda,
-                                           void (*act)(float *, size_t),
-                                           void (*dAct)(float *, size_t, bool))
-        : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda),
-          layerAbove(nullptr), layerBelow(nullptr), activation(act), activationDerivative(dAct),
-          activationType(ActivationType::NONE)
+    namespace
     {
-        this->size = size;
-        this->nextSize = nextSize;
-        localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
-        BindMemory(*localArena);
+        void DeleteBackend(IComputeBackend *p) { delete p; }
+        void NoOpDeleter(IComputeBackend *) {}
     }
 
     GaussSeidelPCLayer::GaussSeidelPCLayer(int size, int nextSize, int batchSize,
                                            float learningRate, float inferenceRate, float lmbda,
-                                           ActivationType aType, ActivationType dType)
+                                           ActivationType aType, ActivationType dType,
+                                           IComputeBackend *backend)
         : batchSize(batchSize), lr(learningRate), ir(inferenceRate), lmbda(lmbda),
-          layerAbove(nullptr), layerBelow(nullptr),
-          activation(To_Fn(aType)), activationDerivative(To_dFn(dType)), activationType(aType)
+          activationType(aType), derivativeType(dType),
+          backend(backend ? backend : new CPUBackend(), backend ? NoOpDeleter : DeleteBackend)
     {
         this->size = size;
         this->nextSize = nextSize;
+
         localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
         BindMemory(*localArena);
+    }
+
+    void GaussSeidelPCLayer::SetLearningRate(float learningRate) noexcept
+    {
+        lr = learningRate;
+        if (lr_device)
+            backend->CopyFromHost(lr_device, &lr, 1);
     }
 
     void GaussSeidelPCLayer::ClampState(const std::vector<float> &inputData) noexcept
     {
-        size_t copySize = std::min(inputData.size(), (size_t)(batchSize * size)) * sizeof(float);
-        memcpy(z, inputData.data(), copySize);
+        size_t copyFloats = (std::min)(inputData.size(), (size_t)batchSize * size);
+        backend->CopyFromHost(z, inputData.data(), copyFloats);
         isClamped = true;
     }
 
@@ -53,14 +48,11 @@ namespace Deep
     void GaussSeidelPCLayer::ResetState() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * size;
-        std::memset(z, 0, ownStateSize * sizeof(float));
-        std::memset(e, 0, ownStateSize * sizeof(float));
-        std::memset(dz_dt, 0, ownStateSize * sizeof(float));
+        backend->Zero(z, ownStateSize);
+        backend->Zero(e, ownStateSize);
+        backend->Zero(dz_dt, ownStateSize);
         if (nextSize > 0)
-        {
-            size_t outStateSize = (size_t)batchSize * nextSize;
-            std::memset(mu, 0, outStateSize * sizeof(float));
-        }
+            backend->Zero(mu, (size_t)batchSize * nextSize);
         isClamped = false;
     }
 
@@ -71,47 +63,24 @@ namespace Deep
         if (isClamped)
             return;
 
-        // 1. Heavy lifting: BLAS Matrix Multiplication
+        // Feedback goes through E (the independently-initialized,
+        // never-updated feedback-alignment matrix), not W.
         if (layerAbove != nullptr && nextSize > 0)
         {
             const float *e_above = layerAbove->GetErrors();
-            cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                batchSize, size, nextSize,
-                1.0f, e_above, nextSize, W, size,
-                0.0f, dz_dt, size);
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
+                batchSize, (int)size, (int)nextSize,
+                1.0f, e_above, (int)nextSize, E, (int)size,
+                0.0f, dz_dt, (int)size);
         }
         else
         {
-            std::memset(dz_dt, 0, ownStateSize * sizeof(float));
+            backend->Zero(dz_dt, ownStateSize);
         }
 
-        // 2. FUSED E-M STEP (L1 Cache Blocked)
-        // We chunk the operations so z_deriv never leaves the L1 cache.
-        constexpr int CHUNK_SIZE = 2048;
-
-#pragma omp parallel for schedule(static)
-        for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
-        {
-            int chunk = std::min(CHUNK_SIZE, (int)ownStateSize - i);
-
-            // Step A: Copy z into z_deriv for this chunk only
-            for (int j = 0; j < chunk; ++j)
-            {
-                z_deriv[i + j] = z[i + j];
-            }
-
-            // Step B: Compute derivative in-place (data is hot in L1)
-            activationDerivative(z_deriv + i, chunk, false);
-
-            // Step C: Apply E-M feedback and Euler step immediately
-            for (int j = 0; j < chunk; ++j)
-            {
-                float feedback = dz_dt[i + j];
-                float dz = -e[i + j] + (feedback * z_deriv[i + j]);
-                z[i + j] += ir * dz;
-            }
-        }
+        // z += ir * ((dz_dt * f'(z)) - e); deriv computed inline from z.
+        backend->FusedStateUpdate(z, dz_dt, derivativeType, e, ownStateSize, ir);
     }
 
     void GaussSeidelPCLayer::ComputePrediction() noexcept
@@ -119,67 +88,33 @@ namespace Deep
         if (nextSize == 0)
             return;
 
-        size_t ownStateSize = (size_t)batchSize * size;
-        size_t Nout = (size_t)batchSize * nextSize;
+        size_t N = (size_t)batchSize * size;
 
-        // FUSED: Chunked copy + activation
-        constexpr int CHUNK_SIZE = 2048;
-#pragma omp parallel for schedule(static)
-        for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
-        {
-            int chunk = (std::min)(CHUNK_SIZE, (int)ownStateSize - i);
-            for (int j = 0; j < chunk; ++j)
-                dz_dt[i + j] = z[i + j];
-            activation(dz_dt + i, chunk);
-        }
+        // dz_dt := phi(z), reused as the activated-z scratch buffer.
+        // UpdateState() (called earlier in the same Step()) is the only
+        // other writer, and it's done with dz_dt by the time this runs.
+        backend->ActivationInto(activationType, dz_dt, z, N);
 
-        // mu = phi(z) * W^T
-        cblas_sgemm(
-            CblasRowMajor, CblasNoTrans, CblasTrans,
-            batchSize, nextSize, size,
-            1.0f, dz_dt, size, W, size, 0.0f, mu, nextSize);
+        backend->MatMul(
+            /*transA=*/false, /*transB=*/true,
+            batchSize, (int)nextSize, (int)size,
+            1.0f, dz_dt, (int)size, W, (int)size,
+            0.0f, mu, (int)nextSize);
 
-        // FUSED: Bias addition
-        const int nb = batchSize;
-        const int no = nextSize;
-#pragma omp parallel for schedule(static) collapse(2)
-        for (int batch = 0; batch < nb; ++batch)
-        {
-            for (int out = 0; out < no; ++out)
-            {
-                mu[batch * no + out] += b[out];
-            }
-        }
+        backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
     }
 
-    // ------------------------------------------------------------------
-    // Step 3: fresh error, using this layer's own (just-updated) z as
-    // the target and layerBelow's FRESH mu (from its ComputePrediction()
-    // call, earlier in this same timestep) as the prediction.
-    // ------------------------------------------------------------------
     float GaussSeidelPCLayer::ComputeError() noexcept
     {
         size_t ownStateSize = (size_t)batchSize * size;
 
         if (layerBelow == nullptr)
         {
-            std::memset(e, 0, ownStateSize * sizeof(float));
+            backend->Zero(e, ownStateSize);
             return 0.0f;
         }
 
-        const float *mu_below = layerBelow->GetMu();
-        float totalEnergy = 0.0f;
-
-// FUSED: Subtract prediction and accumulate energy in one single pass
-#pragma omp parallel for schedule(static) reduction(+ : totalEnergy)
-        for (int i = 0; i < (int)ownStateSize; ++i)
-        {
-            float err = z[i] - mu_below[i];
-            e[i] = err;
-            totalEnergy += 0.5f * err * err;
-        }
-
-        return totalEnergy;
+        return backend->ComputeErrorAndEnergy(e, z, layerBelow->GetMu(), ownStateSize);
     }
 
     void GaussSeidelPCLayer::UpdateWeights() noexcept
@@ -188,60 +123,52 @@ namespace Deep
             return;
 
         const float *local_grad = layerAbove->GetErrors();
-        size_t ownStateSize = (size_t)batchSize * size;
+        size_t N = (size_t)batchSize * size;
 
-        // FUSED: Chunked copy + activation
-        constexpr int CHUNK_SIZE = 2048;
-#pragma omp parallel for schedule(static)
-        for (int i = 0; i < (int)ownStateSize; i += CHUNK_SIZE)
-        {
-            int chunk = std::min(CHUNK_SIZE, (int)ownStateSize - i);
-            for (int j = 0; j < chunk; ++j)
-                dz_dt[i + j] = z[i + j];
-            activation(dz_dt + i, chunk);
-        }
+        // dz_dt := phi(z), same reuse as ComputePrediction().
+        backend->ActivationInto(activationType, dz_dt, z, N);
 
         switch (opt)
         {
         case OptimizerType::SGD:
         {
             if (lmbda > 0.0f)
-                cblas_sscal((size_t)nextSize * size, 1.0f - lmbda, W, 1);
-
-            cblas_sgemm(
-                CblasRowMajor, CblasTrans, CblasNoTrans,
-                nextSize, size, batchSize,
-                lr / batchSize, local_grad, nextSize, dz_dt, size,
-                1.0f, W, size);
+                backend->Scale(W, (size_t)nextSize * size, 1.0f - lmbda);
 
             float lr_batch = lr / batchSize;
-            for (int batch = 0; batch < batchSize; batch++)
-                cblas_saxpy(nextSize, lr_batch, local_grad + batch * nextSize, 1, b, 1);
 
+            backend->MatMul(
+                /*transA=*/true, /*transB=*/false,
+                (int)nextSize, (int)size, batchSize,
+                lr_batch, local_grad, (int)nextSize, dz_dt, (int)size,
+                1.0f, W, (int)size);
+
+            backend->SumRows(biasGradScratch, local_grad, batchSize, nextSize);
+            backend->AxpyInto(b, biasGradScratch, nextSize, lr_batch);
             break;
         }
         case OptimizerType::ADAM:
         case OptimizerType::ADAMW:
         {
-            t++;
+            backend->IncrementCounter(t_device);
+
             float grad_scale = -1.0f / batchSize;
 
-            cblas_sgemm(
-                CblasRowMajor, CblasTrans, CblasNoTrans,
-                nextSize, size, batchSize,
-                grad_scale, local_grad, nextSize, dz_dt, size,
-                0.0f, grad_W, size);
+            backend->MatMul(
+                /*transA=*/true, /*transB=*/false,
+                (int)nextSize, (int)size, batchSize,
+                grad_scale, local_grad, (int)nextSize, dz_dt, (int)size,
+                0.0f, grad_W, (int)size);
 
-            std::memset(grad_b, 0, nextSize * sizeof(float));
-            for (int batch = 0; batch < batchSize; ++batch)
-                cblas_saxpy(nextSize, grad_scale, local_grad + batch * nextSize, 1, grad_b, 1);
+            backend->SumRows(grad_b, local_grad, batchSize, nextSize);
+            backend->Scale(grad_b, nextSize, grad_scale);
 
             if (opt == OptimizerType::ADAMW)
-                Deep::AdamWUpdate(W, grad_W, m_W, v_W, (size_t)nextSize * size, t, lr, lmbda);
+                backend->AdamWStep(W, grad_W, m_W, v_W, (size_t)nextSize * size, t_device, lr_device, lmbda);
             else
-                Deep::AdamUpdate(W, grad_W, m_W, v_W, (size_t)nextSize * size, t, lr);
+                backend->AdamStep(W, grad_W, m_W, v_W, (size_t)nextSize * size, t_device, lr_device);
 
-            Deep::AdamUpdate(b, grad_b, m_b, v_b, nextSize, t, lr);
+            backend->AdamStep(b, grad_b, m_b, v_b, nextSize, t_device, lr_device);
             break;
         }
         }
@@ -252,43 +179,18 @@ namespace Deep
         if (nextSize == 0)
             return;
 
-        std::uniform_int_distribution<uint32_t> seedDist;
         size_t Wsz = (size_t)size * nextSize;
         float limit = std::sqrt(2.0f / (size + nextSize));
 
-        std::vector<uint32_t> seeds(omp_get_max_threads());
-        for (auto &s : seeds)
-            s = seedDist(twister);
+        std::uniform_int_distribution<uint32_t> seedDist;
+        uint32_t seedW = seedDist(twister);
+        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
 
-#pragma omp parallel
-        {
-            std::mt19937 rng(seeds[omp_get_thread_num()]);
-            std::normal_distribution<float> dist(0.0f, limit);
-
-#pragma omp for
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
-                W[i] = dist(rng);
-        }
-
-        // E: feedback-alignment matrix -- INDEPENDENT random draw (fresh
-        // seeds, matching ngc-learn's use of a separate subkey for E vs
-        // W), uniform +-0.3 (matching ngc-learn's ACTUAL StaticSynapse
-        // init convention exactly -- not the Gaussian/Xavier-style limit
-        // W uses above). Never touched again after this -- no evolve()
-        // call exists for it, matching "Static" in StaticSynapse.
-        std::vector<uint32_t> eSeeds(omp_get_max_threads());
-        for (auto &s : eSeeds)
-            s = seedDist(twister);
-
-#pragma omp parallel
-        {
-            std::mt19937 rng(eSeeds[omp_get_thread_num()]);
-            std::uniform_real_distribution<float> eDist(-0.3f, 0.3f);
-
-#pragma omp for
-            for (ptrdiff_t i = 0; i < (ptrdiff_t)Wsz; ++i)
-                E[i] = eDist(rng);
-        }
+        // E: feedback-alignment matrix, an independent random draw with
+        // its own seed, uniform +-0.3, not the Gaussian/Xavier-style
+        // limit W uses above. Never touched again after this.
+        uint32_t seedE = seedDist(twister);
+        backend->RandomizeUniform(E, Wsz, -0.3f, 0.3f, seedE);
     }
 
     size_t GaussSeidelPCLayer::GetRequiredFloats() const noexcept
@@ -299,41 +201,41 @@ namespace Deep
         size_t total = 0;
         size_t own_state_size = (size_t)batchSize * size;
 
-        total += pad16(own_state_size) * 4; // z, e, dz_dt, z_deriv
+        total += pad16(own_state_size) * 2; // z, e
+        total += pad16(own_state_size);     // dz_dt
 
         if (nextSize > 0)
         {
             size_t w_size = (size_t)size * nextSize;
             size_t out_state_size = (size_t)batchSize * nextSize;
 
-            total += pad16(w_size);             // W
-            total += pad16(nextSize);           // b
-            total += pad16(out_state_size) * 3; // mu, muDeriv, bottom_up
-            total += pad16(w_size);             // E (feedback alignment, same shape as W)
+            total += pad16(w_size);           // W
+            total += pad16(nextSize);         // b
+            total += pad16(out_state_size);   // mu
+            total += pad16(w_size);           // E (feedback alignment, same shape as W)
+            total += pad16(nextSize);         // biasGradScratch
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                total += pad16(w_size) * 3;   // grad_W, m_W, v_W
-                total += pad16(nextSize) * 3; // grad_b, m_b, v_b
-            }
+            // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+            total += pad16(w_size) * 3;   // grad_W, m_W, v_W
+            total += pad16(nextSize) * 3; // grad_b, m_b, v_b
+            total += pad16(1) * 2;        // t_device, lr_device
         }
 
         return total;
     }
 
-    void GaussSeidelPCLayer::BindMemory(MemoryArena &arena)
+    template <typename ArenaT>
+    void GaussSeidelPCLayer::BindMemory(ArenaT &arena)
     {
         size_t own_state_size = (size_t)batchSize * size;
 
         z = arena.AllocateFloats(own_state_size);
         e = arena.AllocateFloats(own_state_size);
         dz_dt = arena.AllocateFloats(own_state_size);
-        z_deriv = arena.AllocateFloats(own_state_size);
 
-        std::memset(z, 0, own_state_size * sizeof(float));
-        std::memset(e, 0, own_state_size * sizeof(float));
-        std::memset(dz_dt, 0, own_state_size * sizeof(float));
-        std::memset(z_deriv, 0, own_state_size * sizeof(float));
+        backend->Zero(z, own_state_size);
+        backend->Zero(e, own_state_size);
+        backend->Zero(dz_dt, own_state_size);
 
         if (nextSize > 0)
         {
@@ -343,41 +245,65 @@ namespace Deep
             W = arena.AllocateFloats(w_size);
             b = arena.AllocateFloats(nextSize);
             mu = arena.AllocateFloats(out_state_size);
-            muDeriv = arena.AllocateFloats(out_state_size);
-            bottom_up = arena.AllocateFloats(out_state_size);
             E = arena.AllocateFloats(w_size);
+            biasGradScratch = arena.AllocateFloats(nextSize);
 
-            std::memset(b, 0, nextSize * sizeof(float));
-            std::memset(mu, 0, out_state_size * sizeof(float));
-            std::memset(muDeriv, 0, out_state_size * sizeof(float));
-            std::memset(bottom_up, 0, out_state_size * sizeof(float));
-            std::memset(E, 0, w_size * sizeof(float));
+            backend->Zero(b, nextSize);
+            backend->Zero(mu, out_state_size);
+            backend->Zero(E, w_size);
+            backend->Zero(biasGradScratch, nextSize);
 
-            if (opt == OptimizerType::ADAM || opt == OptimizerType::ADAMW)
-            {
-                grad_W = arena.AllocateFloats(w_size);
-                m_W = arena.AllocateFloats(w_size);
-                v_W = arena.AllocateFloats(w_size);
-                grad_b = arena.AllocateFloats(nextSize);
-                m_b = arena.AllocateFloats(nextSize);
-                v_b = arena.AllocateFloats(nextSize);
+            // Always allocated; see GetRequiredFloats().
+            grad_W = arena.AllocateFloats(w_size);
+            m_W = arena.AllocateFloats(w_size);
+            v_W = arena.AllocateFloats(w_size);
+            grad_b = arena.AllocateFloats(nextSize);
+            m_b = arena.AllocateFloats(nextSize);
+            v_b = arena.AllocateFloats(nextSize);
 
-                std::memset(grad_W, 0, w_size * sizeof(float));
-                std::memset(m_W, 0, w_size * sizeof(float));
-                std::memset(v_W, 0, w_size * sizeof(float));
-                std::memset(grad_b, 0, nextSize * sizeof(float));
-                std::memset(m_b, 0, nextSize * sizeof(float));
-                std::memset(v_b, 0, nextSize * sizeof(float));
-            }
+            backend->Zero(grad_W, w_size);
+            backend->Zero(m_W, w_size);
+            backend->Zero(v_W, w_size);
+            backend->Zero(grad_b, nextSize);
+            backend->Zero(m_b, nextSize);
+            backend->Zero(v_b, nextSize);
+
+            t_device = reinterpret_cast<int *>(arena.AllocateFloats(1));
+            lr_device = arena.AllocateFloats(1);
+            int zero = 0;
+            backend->CopyFromHost(reinterpret_cast<float *>(t_device), reinterpret_cast<float *>(&zero), 1);
+            backend->CopyFromHost(lr_device, &lr, 1);
         }
         else
         {
             W = nullptr;
             b = nullptr;
             mu = nullptr;
-            muDeriv = nullptr;
             E = nullptr;
-            bottom_up = nullptr;
+            biasGradScratch = nullptr;
+        }
+
+        if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+        {
+            if (localArena && localArena.get() != &arena)
+                localArena.reset();
+        }
+        else
+        {
+            localArena.reset();
         }
     }
+
+    std::map<std::string, TensorDescriptor> GaussSeidelPCLayer::GetStateDict() const
+    {
+        return {
+            {"W", {W, {(size_t)nextSize, (size_t)size}}},
+            {"b", {b, {(size_t)nextSize}}},
+            {"E", {E, {(size_t)nextSize, (size_t)size}}}};
+    }
+
+    template void GaussSeidelPCLayer::BindMemory<MemoryArena>(MemoryArena &arena);
+#if defined(DEEPITY_USE_CUDA)
+    template void GaussSeidelPCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena &arena);
+#endif
 }

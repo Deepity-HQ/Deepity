@@ -95,7 +95,6 @@ All layers derive from a common @ref Deep::Layer "Layer" base:
 - @ref Deep::GaussSeidelPCLayer
 - @ref Deep::DirectKPPCLayer
 - @ref Deep::FullPCLayer
-- @ref Deep::RBLayer
 
 @subsection architecture_support Supporting Components
 

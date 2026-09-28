@@ -9,26 +9,18 @@
 
 /**
  * @file FullPCNetwork.h
- * @brief Orchestrates FullPCLayer's phases, matching
- * DirectKPPCNetwork's exact four-phase DKP-PC structure (see that
- * class's own docs for the full phase breakdown and citation), plus
- * network-level toggles for muPC scaling and residual connections --
- * both OFF by default, so a plain FullPCNetwork with every toggle left
- * alone reproduces DirectKPPCNetwork exactly (confirmed at the layer
- * level: FullPCLayer with a=1.0, useResidual=false is a bit-identical
- * match to DirectKPPCLayer).
- *
- * THIS PASS: muPC scaling and residual connections only. iPC, muP-style
- * per-layer LR scaling, momentum settling, and cross-entropy terminal
- * loss are not yet added -- each is meant to become its own, separate
- * toggle later, following the same pattern.
+ * @brief Orchestrates FullPCLayer's phases, matching DirectKPPCNetwork's
+ * four-phase DKP-PC structure (see that class's docs for the phase
+ * breakdown and citation), plus network-level toggles for muPC scaling
+ * and residual connections, both OFF by default, so a plain
+ * FullPCNetwork reproduces DirectKPPCNetwork exactly (FullPCLayer with
+ * a=1.0, useResidual=false is bit-identical to DirectKPPCLayer).
  */
 
 namespace Deep
 {
 /// @brief Predictive Coding network combining muPC scaling, optional
-/// residual connections, and DKP direct feedback -- see the file-level
-/// note above for how its defaults reproduce DirectKPPCNetwork exactly.
+/// residual connections, and DKP direct feedback.
 class FullPCNetwork
 {
 public:
@@ -46,7 +38,7 @@ public:
   /// @param size input size
   /// @param nextSize output size (0 marks a terminal layer)
   /// @param terminalSize the size of the network's final output layer
-  /// (e.g. 10 for MNIST) -- required on every AddLayer call, not
+  /// (e.g. 10 for MNIST), required on every AddLayer call, not
   /// inferred, since the true terminal layer isn't known until the
   /// whole network has been assembled. Compile() sanity-checks this
   /// against the actual last layer's size.
@@ -62,7 +54,7 @@ public:
 
   /// @brief Enables muPC-style per-layer forward scaling (Table 1
   /// of the muPC paper). OFF by default. Must be called before
-  /// Compile() -- Compile() is what actually computes and applies
+  /// Compile(), Compile() is what actually computes and applies
   /// each layer's `a`, once the full architecture (every AddLayer
   /// call) is known.
   void SetUseMuPCScaling(bool enabled) noexcept
@@ -71,7 +63,7 @@ public:
   }
 
   /// @brief Enables residual/skip connections on middle hidden
-  /// layers (muPC's "1-skip" ResNet formulation -- see that
+  /// layers (muPC's "1-skip" ResNet formulation, see that
   /// paper's A.2.4). OFF by default. Requires every middle hidden
   /// layer to have the SAME width as its neighbor; Compile()
   /// throws std::invalid_argument if that's violated, rather than
@@ -176,7 +168,7 @@ public:
 
   /// @brief Loads all layers into one contiguous block of memory,
   /// wires layerAbove/layerBelow/terminalLayer across every
-  /// layer -- same as DirectKPPCNetwork::Compile() -- PLUS: if
+  /// layer, same as DirectKPPCNetwork::Compile(), PLUS: if
   /// useMuPCScaling, computes and applies each layer's `a` (Table
   /// 1) from the full, now-known architecture; if
   /// useResidualConnections, applies SetResidual(true) to every
@@ -185,7 +177,7 @@ public:
   void Compile();
 
   /// @brief Enables iPC: UpdateWeights() runs every settling
-  /// step instead of once after settling completes. OFF by default --
+  /// step instead of once after settling completes. OFF by default,
   /// TrainStep() matches DirectKPPCNetwork's standard, two-phase
   /// behavior exactly when this is false.
   /// @see Salvatori et al., "Incremental Predictive Coding", https://arxiv.org/abs/2212.00720
@@ -195,7 +187,7 @@ public:
   }
 
   /// @brief Enables momentum (inertial) settling on every layer.
-  /// Loops over layers and calls each one's own SetMomentum() --
+  /// Loops over layers and calls each one's own SetMomentum(),
   /// same pattern as SetLearningRate/SetFeedbackRate. OFF by default.
   void SetUseMomentum(bool enabled, float beta = 0.9f) noexcept
   {
@@ -205,7 +197,7 @@ public:
 
   /// @brief Enables softmax cross-entropy energy on the TERMINAL layer
   /// only (unlike the other Set* toggles, this does NOT loop over every
-  /// layer -- cross-entropy only ever makes sense on the final output,
+  /// layer, cross-entropy only ever makes sense on the final output,
   /// against a one-hot/class-probability target). OFF by default
   /// (plain Gaussian energy everywhere, matching DirectKPPCNetwork).
   void SetUseCrossEntropy(bool enabled) noexcept

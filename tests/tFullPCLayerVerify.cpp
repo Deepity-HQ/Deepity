@@ -5,11 +5,11 @@
  * Part A: FullPCLayer with defaults (a=1.0, useResidual=false) vs
  * DirectKPPCLayer, identically seeded, same input/target, one full
  * CalculateState+UpdateState+UpdateWeights cycle. Should match exactly
- * -- confirms the refactor didn't change default behavior at all.
+ *, confirms the refactor didn't change default behavior at all.
  *
  * Part B: FullPCLayer with a=0.5, useResidual=true (size==nextSize),
  * a few real training steps. Sanity-level only (no NaN/Inf, energy
- * stays finite) -- not a full hand-derived-value check, matching
+ * stays finite), not a full hand-derived-value check, matching
  * "just one test, enough that it runs."
  */
 #include <cmath>
@@ -109,10 +109,10 @@ int main()
   fLayer1.SetTerminalLayer(&fLayer1);
   fLayer0.SetOptimizer(OptimizerType::SGD);
   fLayer0.SetPsiOptimizer(OptimizerType::SGD);
-  // Defaults: a=1.0, useResidual=false -- deliberately NOT set here,
+  // Defaults: a=1.0, useResidual=false, deliberately NOT set here,
   // to confirm the class's own defaults reproduce DirectKPPCLayer.
 
-  // Identically-seeded RNGs, not a weight copy -- RandomizeWeights()
+  // Identically-seeded RNGs, not a weight copy, RandomizeWeights()
   // is deterministic given the same seed and identical underlying
   // logic (confirmed: both classes' RandomizeWeights() bodies are
   // byte-identical), so this produces bit-identical W/Psi on both

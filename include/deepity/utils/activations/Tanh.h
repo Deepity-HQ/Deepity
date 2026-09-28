@@ -313,7 +313,7 @@ namespace Deep
     /// in place) plus a separate copy beforehand if src can't be
     /// mutated, this computes tanh(src[i]) into a register and derives
     /// from that same register immediately, with only one read of src
-    /// and one write to dst -- no intermediate array pass at all.
+    /// and one write to dst, no intermediate array pass at all.
     static inline void dTanhInto(float *RESTRICT dst, const float *RESTRICT src, const size_t n) noexcept
     {
         assert(n != 0 && "n must not be 0.");

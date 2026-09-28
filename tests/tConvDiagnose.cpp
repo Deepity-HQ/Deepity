@@ -7,13 +7,13 @@
 //
 // Unlike tDiagnose.cpp's flat Gaussian blobs, this task has genuine SPATIAL
 // structure (a class-specific patch placed at a distinct location in a
-// small image) -- something a flat/dense network could still solve by
+// small image), something a flat/dense network could still solve by
 // memorizing pixel positions, but that specifically exercises convolution's
 // actual mechanism (Im2Col/Col2Im, spatial weight sharing) rather than just
 // being a relabeled flat-vector problem.
 //
 // Architecture collapses spatial dims to 1x1 by the second conv layer, so
-// the terminal layer's flattened size is exactly N_CLASSES -- same
+// the terminal layer's flattened size is exactly N_CLASSES, same
 // one-hot/argmax readout pattern used in every earlier gate/blob test.
 
 #include <iostream>
@@ -48,7 +48,7 @@ Dataset MakeSpatialBlobs(int n, std::mt19937 &rng)
     d.Y.resize((size_t)n * N_CLASSES);
     d.labels.resize(n);
 
-    // Fixed, well-separated patch locations per class -- spread across the
+    // Fixed, well-separated patch locations per class, spread across the
     // image so classes are trivially distinguishable BY POSITION, which is
     // exactly what convolution's spatial structure should exploit.
     static std::vector<std::pair<int, int>> patchOrigin;
@@ -112,7 +112,7 @@ int main()
                  ActivationType::TANH, ActivationType::dTANH);
 
     // Layer 1: 8x4x4 -> conv 4x4 stride1 -> N_CLASSES channels, 1x1
-    // (collapses all remaining spatial extent -- effectively a
+    // (collapses all remaining spatial extent, effectively a
     // fully-connected layer expressed as a convolution)
     net.AddLayer(8, N_CLASSES, 4, 4, 4, 4, 1, 1, 0, 0,
                  0.02f, 0.2f, 0.0f, 0.0001f,
@@ -178,15 +178,15 @@ int main()
               << " (" << std::fixed << std::setprecision(2) << acc << "%)\n\n";
 
     if (acc >= 90.0f)
-        std::cout << "PASS -- ConvPCNetwork solves an easy, spatially-separable task.\n"
+        std::cout << "PASS: ConvPCNetwork solves an easy, spatially-separable task.\n"
                   << "The architecture and Im2Col/Col2Im wiring are sound end-to-end.\n";
     else if (acc >= 50.0f)
-        std::cout << "PARTIAL -- better than chance (" << (100.0f / N_CLASSES)
+        std::cout << "PARTIAL: better than chance (" << (100.0f / N_CLASSES)
                   << "% baseline) but not solving cleanly.\n"
                   << "Worth checking epochs/inference steps/learning rate before\n"
-                  << "suspecting a correctness bug -- gradient checks already passed.\n";
+                  << "suspecting a correctness bug, gradient checks already passed.\n";
     else
-        std::cout << "FAIL -- at or near chance level. Something is wrong beyond\n"
+        std::cout << "FAIL: at or near chance level. Something is wrong beyond\n"
                   << "hyperparameters; worth re-checking the network wiring\n"
                   << "(layer shapes, AddLayer order) before MNIST.\n";
 

@@ -21,12 +21,12 @@ namespace Deep
     // Two-buffer variant: reads from src, writes the derivative directly
     // into dst, in one pass. Eliminates the copy-then-derive pattern
     // (cblas_scopy + DerivativeFn) callers currently need when they can't
-    // afford to mutate src in place -- src stays untouched throughout.
+    // afford to mutate src in place, src stays untouched throughout.
     /// @brief Pointer to a two-buffer activation derivative: reads src,
     /// writes the derivative into dst, leaving src untouched.
     using DerivativeFn2 = void (*)(float *RESTRICT, const float *RESTRICT, size_t);
 
-    // Forward declarations only -- the real definitions (and their full
+    // Forward declarations only, the real definitions (and their full
     // docs) live in the sibling Relu.h/Gelu.h/Tanh.h/Sigmoid.h/Linear.h,
     // one activation family per header. @copydoc isn't usable here: with
     // both this declaration and the real one in the same Deep namespace,
@@ -122,7 +122,7 @@ namespace Deep
     }
 
     /// @brief Dispatches to the two-buffer (dst, src, n) derivative
-    /// variant for the given activation type -- see DerivativeFn2.
+    /// variant for the given activation type, see DerivativeFn2.
     static inline DerivativeFn2 To_dFn2(ActivationType dType)
     {
         switch (dType)
@@ -184,5 +184,35 @@ namespace Deep
         if (dfn == dLinear)
             return ActivationType::dLINEAR;
         return ActivationType::NONE;
+    }
+
+    /// @brief Maps a forward ActivationType to its derivative-flavored
+    /// counterpart (e.g. TANH -> dTANH). The single canonical version of
+    /// this mapping; every layer should use this rather than maintaining
+    /// its own copy.
+    /// @return ActivationType::NONE for LINEAR, NONE, or an unrecognized
+    /// value (LINEAR's derivative is the constant-1 dLINEAR handler,
+    /// which every ActivationDerivativeScalar/Device dispatch already
+    /// maps NONE to as well, so returning NONE here is not a gap).
+    static inline ActivationType ToDerivativeType(ActivationType fwd)
+    {
+        switch (fwd)
+        {
+        case ActivationType::RELU:
+            return ActivationType::dRELU;
+        case ActivationType::GELU:
+            return ActivationType::dGELU;
+        case ActivationType::SIGMOID:
+            return ActivationType::dSIGMOID;
+        case ActivationType::eSIGMOID:
+            return ActivationType::d_eSIGMOID;
+        case ActivationType::TANH:
+            return ActivationType::dTANH;
+        case ActivationType::LINEAR:
+            return ActivationType::dLINEAR;
+        case ActivationType::NONE:
+        default:
+            return ActivationType::NONE;
+        }
     }
 } // namespace Deep

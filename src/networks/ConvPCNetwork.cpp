@@ -1,8 +1,13 @@
 #include <deepity/networks/ConvPCNetwork.h>
+#include <deepity/backend/Backend.h>
 
 namespace Deep
 {
-    ConvPCNetwork::ConvPCNetwork(int batchSize) noexcept : batchSize(batchSize) {}
+    ConvPCNetwork::ConvPCNetwork(int batchSize, DeviceType device) noexcept
+        : device(device), batchSize(batchSize)
+    {
+        backend = CreateBackend(device);
+    }
 
     void ConvPCNetwork::AddLayer(int inChannels, int outChannels,
                                  int inHeight, int inWidth,
@@ -15,7 +20,7 @@ namespace Deep
         auto l = std::make_unique<ConvPCLayer>(
             inChannels, outChannels, inHeight, inWidth,
             kernelH, kernelW, strideH, strideW, padH, padW,
-            batchSize, lr, ir, pr, lmbda, aType, dType);
+            batchSize, lr, ir, pr, lmbda, aType, dType, backend.get());
 
         if (!layers.empty())
         {
@@ -25,15 +30,37 @@ namespace Deep
         layers.push_back(std::move(l));
     }
 
+    void ConvPCNetwork::SetOptimizer(OptimizerType opt) noexcept
+    {
+        // Applied to every layer inside Compile() instead of immediately,
+        // so it works even when called before any AddLayer().
+        pendingOpt = opt;
+    }
+
     void ConvPCNetwork::Compile()
     {
+        for (auto &l : layers)
+            l->SetOptimizer(pendingOpt);
+
         size_t total = 0;
         for (auto &l : layers)
             total += l->GetRequiredFloats();
 
-        arena = std::make_unique<MemoryArena>(total);
-        for (auto &l : layers)
-            l->BindMemory(*arena);
+        if (device == DeviceType::DEVICE_CPU)
+        {
+            cpuArena = std::make_unique<MemoryArena>(total);
+            for (auto &l : layers)
+                l->BindMemory(*cpuArena);
+        }
+#if defined(DEEPITY_USE_CUDA)
+        else
+        {
+            backend->PrepareForBatchSize(batchSize);
+            gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total);
+            for (auto &l : layers)
+                l->BindMemory(*gpuArena);
+        }
+#endif
     }
 
     void ConvPCNetwork::RandomizeWeights(std::mt19937 &rng) noexcept
@@ -75,6 +102,10 @@ namespace Deep
 
     void ConvPCNetwork::UpdatePrecision() noexcept
     {
+        // NOTE: matches UpdateWeights()'s loop bound, but UpdatePrecision()
+        // gates on layerBelow (not layerAbove), so this skips the
+        // terminal layer's own precision update even though it has a
+        // layerBelow and would otherwise update.
         for (size_t i = 0; i + 1 < layers.size(); ++i)
             layers[i]->UpdatePrecision();
     }
@@ -110,10 +141,12 @@ namespace Deep
         }
 
         ConvPCLayer *terminal = GetTerminalLayer();
-        float *beliefs = terminal->GetBeliefs();
+        const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 
     void ConvPCNetwork::ProjectForward() noexcept
@@ -121,10 +154,17 @@ namespace Deep
         for (size_t i = 0; i + 1 < layers.size(); ++i)
         {
             layers[i]->ComputeMuOnly();
+
+            // Don't overwrite an already-clamped layer's target with a
+            // forward-projected guess.
+            if (layers[i + 1]->IsClamped())
+                continue;
+
             const float *mu = layers[i]->GetMu();
             float *nextZ = layers[i + 1]->GetBeliefs();
             size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
-            std::memcpy(nextZ, mu, n * sizeof(float));
+
+            backend->Copy(nextZ, mu, n);
         }
     }
 
@@ -164,6 +204,8 @@ namespace Deep
         const float *beliefs = terminal->GetBeliefs();
         size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-        return std::vector<float>(beliefs, beliefs + count);
+        std::vector<float> result(count);
+        backend->CopyToHost(result.data(), beliefs, count);
+        return result;
     }
 }
