@@ -20,6 +20,7 @@
 #include <deepity/layers/ConvPCLayer.h>
 #include <deepity/layers/DirectKPPCLayer.h>
 #include <deepity/layers/DiscriminativePCLayer.h>
+#include <deepity/layers/FullConvPCLayer.h>
 #include <deepity/layers/FullPCLayer.h>
 #include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/layers/Layer.h>
@@ -461,6 +462,157 @@ void bind_layers(nb::module_& m)
       .def_prop_ro("biases",
                    [](Deep::FullPCLayer& self)
                    { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); });
+
+  nb::class_<Deep::FullConvPCLayer, Deep::Layer>(
+      m,
+      "FullConvPCLayer",
+      "Convolutional analog of FullPCLayer: every PC variant, each independently "
+      "toggleable, off by default so plain defaults reproduce SimpleConvPCLayer exactly.")
+      .def(
+          "__init__",
+          [](Deep::FullConvPCLayer* self,
+             int in_channels,
+             int out_channels,
+             int in_height,
+             int in_width,
+             int kernel_h,
+             int kernel_w,
+             int stride_h,
+             int stride_w,
+             int pad_h,
+             int pad_w,
+             int terminal_size,
+             int batch_size,
+             float learning_rate,
+             float inference_rate,
+             float feedback_rate,
+             float lmbda,
+             const std::string& activation,
+             const std::string& activation_deriv)
+          {
+            new (self) Deep::FullConvPCLayer(in_channels,
+                                             out_channels,
+                                             in_height,
+                                             in_width,
+                                             kernel_h,
+                                             kernel_w,
+                                             stride_h,
+                                             stride_w,
+                                             pad_h,
+                                             pad_w,
+                                             terminal_size,
+                                             batch_size,
+                                             learning_rate,
+                                             inference_rate,
+                                             feedback_rate,
+                                             lmbda,
+                                             resolveActEnum(activation),
+                                             resolveActEnum(activation_deriv));
+          },
+          nb::arg("in_channels"),
+          nb::arg("out_channels"),
+          nb::arg("in_height"),
+          nb::arg("in_width"),
+          nb::arg("kernel_h"),
+          nb::arg("kernel_w"),
+          nb::arg("stride_h") = 1,
+          nb::arg("stride_w") = 1,
+          nb::arg("pad_h") = 0,
+          nb::arg("pad_w") = 0,
+          nb::arg("terminal_size") = 0,
+          nb::arg("batch_size") = 1,
+          nb::arg("learning_rate") = 1e-6f,
+          nb::arg("inference_rate") = 0.1f,
+          nb::arg("feedback_rate") = 1e-4f,
+          nb::arg("lmbda") = 1e-2f,
+          nb::arg("activation") = "relu",
+          nb::arg("activation_deriv") = "drelu")
+      .def("calculate_state", static_cast<float (Deep::FullConvPCLayer::*)()>(
+                                   &Deep::FullConvPCLayer::CalculateState))
+      .def("update_state", &Deep::FullConvPCLayer::UpdateState)
+      .def("update_weights", &Deep::FullConvPCLayer::UpdateWeights)
+      .def("direct_feedback_update", &Deep::FullConvPCLayer::DirectFeedbackUpdate)
+      .def("reset_state", &Deep::FullConvPCLayer::ResetState)
+      .def(
+          "clamp_state",
+          [](Deep::FullConvPCLayer& self, FloatArray input)
+          {
+            std::vector<float> values(input.data(), input.data() + input.size());
+            self.ClampState(values);
+          },
+          nb::arg("input"))
+      .def("unclamp_state", &Deep::FullConvPCLayer::UnclampState)
+      .def("randomize_weights",
+           [](Deep::FullConvPCLayer& self)
+           {
+             std::random_device rd;
+             std::mt19937 rng(rd());
+             self.RandomizeWeights(rng);
+           })
+      .def("set_layer_above", &Deep::FullConvPCLayer::SetLayerAbove, nb::rv_policy::reference)
+      .def("set_layer_below", &Deep::FullConvPCLayer::SetLayerBelow, nb::rv_policy::reference)
+      .def("set_terminal_layer", &Deep::FullConvPCLayer::SetTerminalLayer, nb::arg("layer"))
+      .def("set_learning_rate", &Deep::FullConvPCLayer::SetLearningRate, nb::arg("lr"))
+      .def("set_inference_rate", &Deep::FullConvPCLayer::SetInferenceRate, nb::arg("ir"))
+      .def("set_feedback_rate", &Deep::FullConvPCLayer::SetFeedbackRate, nb::arg("fl"))
+      .def("set_lambda", &Deep::FullConvPCLayer::SetLambda, nb::arg("l"))
+      .def("set_mu_pc_scale", &Deep::FullConvPCLayer::SetMuPCScale, nb::arg("a"))
+      .def("set_residual", &Deep::FullConvPCLayer::SetResidual, nb::arg("enabled"))
+      .def_prop_ro("beliefs",
+                   [](Deep::FullConvPCLayer& self)
+                   {
+                     return ViewOwnedBy(self.GetBeliefs(),
+                                        {(size_t)self.GetBatchSize(),
+                                         (size_t)self.GetInChannels(),
+                                         (size_t)self.GetInHeight(),
+                                         (size_t)self.GetInWidth()},
+                                        self);
+                   })
+      .def_prop_ro("errors",
+                   [](Deep::FullConvPCLayer& self)
+                   {
+                     return ViewOwnedBy(self.GetErrors(),
+                                        {(size_t)self.GetBatchSize(),
+                                         (size_t)self.GetInChannels(),
+                                         (size_t)self.GetInHeight(),
+                                         (size_t)self.GetInWidth()},
+                                        self);
+                   })
+      .def_prop_ro("weights",
+                   [](Deep::FullConvPCLayer& self)
+                   {
+                     return ViewOwnedBy(self.GetWeights(),
+                                        {(size_t)self.GetOutChannels(),
+                                         (size_t)self.GetInChannels(),
+                                         (size_t)self.GetKernelH(),
+                                         (size_t)self.GetKernelW()},
+                                        self);
+                   })
+      .def_prop_ro("biases",
+                   [](Deep::FullConvPCLayer& self)
+                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutChannels()}, self); })
+      .def_prop_ro("batch_size", &Deep::FullConvPCLayer::GetBatchSize)
+      .def_prop_ro("in_channels", &Deep::FullConvPCLayer::GetInChannels)
+      .def_prop_ro("out_channels", &Deep::FullConvPCLayer::GetOutChannels)
+      .def_prop_ro("in_height", &Deep::FullConvPCLayer::GetInHeight)
+      .def_prop_ro("in_width", &Deep::FullConvPCLayer::GetInWidth)
+      .def_prop_ro("out_height", &Deep::FullConvPCLayer::GetOutHeight)
+      .def_prop_ro("out_width", &Deep::FullConvPCLayer::GetOutWidth)
+      .def_prop_ro("kernel_h", &Deep::FullConvPCLayer::GetKernelH)
+      .def_prop_ro("kernel_w", &Deep::FullConvPCLayer::GetKernelW)
+      .def_prop_ro("input_size", &Deep::FullConvPCLayer::GetInputSize)
+      .def_prop_ro("output_size", &Deep::FullConvPCLayer::GetOutputSize)
+      .def_prop_ro("terminal_size", &Deep::FullConvPCLayer::GetTerminalSize)
+      .def_prop_ro("mu_pc_scale", &Deep::FullConvPCLayer::GetMuPCScale)
+      .def_prop_ro("residual", &Deep::FullConvPCLayer::GetResidual)
+      .def("__repr__",
+           [](const Deep::FullConvPCLayer& self)
+           {
+             return "<FullConvPCLayer in=(" + std::to_string(self.GetInChannels()) + "," +
+                    std::to_string(self.GetInHeight()) + "," + std::to_string(self.GetInWidth()) +
+                    ") out_channels=" + std::to_string(self.GetOutChannels()) +
+                    " batch=" + std::to_string(self.GetBatchSize()) + ">";
+           });
 
   nb::class_<Deep::ConvPCLayer, Deep::Layer>(
       m, "ConvPCLayer", "Convolutional Predictive Coding layer.")

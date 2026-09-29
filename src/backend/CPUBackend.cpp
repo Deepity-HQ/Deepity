@@ -5,6 +5,8 @@
 #include <deepity/utils/Im2Col.h>
 #include <stdexcept>
 
+#include "CPUBackendHighway.h"
+
 #ifdef _WIN32
 #include <malloc.h>
 #else
@@ -381,49 +383,42 @@ void CPUBackend::RepackForBatchedGemm(float* dst, const float* src, size_t batch
 
 void CPUBackend::MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept
 {
-  const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-  for (ptrdiff_t i = 0; i < maxN; ++i)
-    dst[i] = a[i] * b[i];
+  MultiplyIntoDispatch(dst, a, b, n);
 }
 
 void CPUBackend::FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                                    ActivationType dType, size_t n) noexcept
 {
-  const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-  for (ptrdiff_t i = 0; i < maxN; ++i)
+  // dGELU needs Sleef_tanhf_u10 (see ActivationDerivativeFromActivatedScalar's
+  // own documented GELU caveat) -- not in scope for the Highway pass yet,
+  // stays on the original scalar path. Every other type is closed-form in
+  // the activated value alone and is Highway-dispatched (SIMD, runtime
+  // ISA-selected) instead, see CPUBackendHighway.cpp.
+  if (dType == ActivationType::dGELU)
   {
-    float deriv = ActivationDerivativeFromActivatedScalar(dType, activatedInOut[i]);
-    dst[i] = a[i] * deriv;
-    activatedInOut[i] = deriv;
+    const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
+#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
+    for (ptrdiff_t i = 0; i < maxN; ++i)
+    {
+      float deriv = ActivationDerivativeFromActivatedScalar(dType, activatedInOut[i]);
+      dst[i] = a[i] * deriv;
+      activatedInOut[i] = deriv;
+    }
+    return;
   }
+
+  FusedActivationDerivativeMultiplyDispatch(dst, a, activatedInOut, dType, n);
 }
 
 void CPUBackend::Fill(float* buf, size_t n, float value) noexcept
 {
-  const ptrdiff_t maxN = static_cast<ptrdiff_t>(n);
-
-#pragma omp parallel for schedule(static) if (n > 65536 && !omp_in_parallel())
-  for (ptrdiff_t i = 0; i < maxN; ++i)
-    buf[i] = value;
+  FillDispatch(buf, n, value);
 }
 
 void CPUBackend::AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                                    size_t spatialSize) noexcept
 {
-  const int maxC = static_cast<int>(channels);
-
-#pragma omp parallel for schedule(static) if (channels * spatialSize > 65536 && !omp_in_parallel())
-  for (int c = 0; c < maxC; ++c)
-  {
-    float biasVal = bias[c];
-    float* row = buf + (size_t)c * spatialSize;
-    for (size_t s = 0; s < spatialSize; ++s)
-      row[s] += biasVal;
-  }
+  AddBiasPerChannelDispatch(buf, bias, channels, spatialSize);
 }
 
 float CPUBackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,

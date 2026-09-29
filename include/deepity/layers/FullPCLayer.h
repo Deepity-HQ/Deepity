@@ -47,6 +47,14 @@ protected:
   float a = 1.0f;           ///< muPC forward-scaling factor, see SetMuPCScale().
   bool useResidual = false; ///< Whether the residual/skip connection is enabled, see SetResidual().
 
+  // muPC's OTHER table-1 change, alongside `a`: standard PC initializes
+  // W with fan-in/fan-out-scaled variance (RandomizeWeights()'s default,
+  // b_l = N_{l-1}^-1 in the paper's notation); muPC instead uses UNIT
+  // variance for W, letting `a` alone carry the width/depth scaling.
+  // false (the default) keeps RandomizeWeights()'s existing fan-scaled
+  // behavior, matching plain PC exactly.
+  bool useMuPCInit = false; ///< Whether unit-variance W init is enabled, see SetMuPCInit().
+
   bool isClamped = false;   ///< Whether ClampState() is currently active.
   bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
 
@@ -99,6 +107,14 @@ protected:
 
   bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled, see SetCrossEntropy().
   float* rowEnergies = nullptr; ///< Per-row energy scratch for the cross-entropy path, length batchSize.
+
+  // ePC (Goemaere/Innocenti et al., see SetUseEPC()): `e` itself becomes
+  // the settled variable instead of `z`, via a full top-to-bottom
+  // backward sweep each settling step rather than a one-hop message.
+  // `adjoint` holds this layer's chained backprop sensitivity so the
+  // layer below can read it as ITS incoming signal, see ComputeAdjoint().
+  bool useEPC = false;       ///< Whether ePC settling is enabled, see SetUseEPC().
+  float* adjoint = nullptr; ///< Chained backward-sweep signal, shape [batchSize, size].
 
   /// @brief nextSize-length scratch for SumRows' output in
   /// UpdateWeights()'s SGD branch (accumulate, which SumRows
@@ -172,6 +188,21 @@ public:
     return a;
   }
 
+  /// @brief Set by the owning network at Compile() time, alongside
+  /// SetMuPCScale() (both are Table 1 of the muPC paper). Only affects
+  /// the NEXT RandomizeWeights() call; false (the default) reproduces
+  /// plain PC's fan-scaled init exactly.
+  void SetMuPCInit(bool enabled) noexcept
+  {
+    useMuPCInit = enabled;
+  }
+  /// @brief Returns whether unit-variance W init is enabled, see
+  /// SetMuPCInit().
+  bool GetMuPCInit() const noexcept
+  {
+    return useMuPCInit;
+  }
+
   /// @brief Set by the owning network at Compile() time. Requires
   /// size == nextSize (checked at the point it's actually used,
   /// not here, since nextSize may not be finalized yet when this
@@ -224,6 +255,41 @@ public:
   /// begins.
   void DirectFeedbackUpdate() noexcept;
 
+  /// @brief ePC forward-sweep step: reconstructs this layer's belief as
+  /// z := layerBelow->GetMu() + e (the paper's s_i := ŝ_i + ε_i), rather
+  /// than integrating z locally. Requires layerBelow != nullptr (the
+  /// input layer's z is the clamped input, never reconstructed this
+  /// way). See SetUseEPC().
+  void ReconstructBelief() noexcept;
+  /// @brief ePC backward-sweep step: computes this layer's chained
+  /// backprop sensitivity (`adjoint`) from the sensitivity passed down
+  /// from the layer above, via the same feedback GEMM UpdateState()
+  /// uses, but materialized into `adjoint` instead of applied inline,
+  /// so the layer below can read it as ITS `adjointAbove`. See
+  /// SetUseEPC().
+  /// @param adjointAbove The layer above's `adjoint` (or, for the
+  /// topmost hidden layer, the terminal's own error buffer).
+  /// @param adjointAboveScale Extra scale folded into the GEMM alongside
+  /// `a` (default 1.0). The topmost hidden layer needs -1.0: the true
+  /// backprop seed is dLoss/dmu_terminal, but Deepity's own error
+  /// convention stores e_terminal = -dLoss/dmu_terminal (see
+  /// IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy's docs,
+  /// same sign relationship holds for the Gaussian terminal too), so the
+  /// terminal's raw error needs negating before it's a valid seed. Every
+  /// other layer already receives a correctly-signed `adjoint` from the
+  /// layer above and uses the default.
+  void ComputeAdjoint(const float* adjointAbove, float adjointAboveScale = 1.0f) noexcept;
+  /// @brief ePC's error-update step: e := (1-ir)*e - ir*adjoint, the
+  /// paper's `ε -= λ*(ε+adjoint)` gradient-descent rule. Call
+  /// ComputeAdjoint() first. See SetUseEPC().
+  void UpdateErrorEPC() noexcept;
+  /// @brief Returns this layer's chained backward-sweep signal, see
+  /// ComputeAdjoint().
+  const float* GetAdjoint() const noexcept
+  {
+    return adjoint;
+  }
+
   /// @brief Clamps this layer's beliefs to `inputData`, fixing them
   /// against UpdateState() until UnclampState() is called.
   void ClampState(const std::vector<float>& inputData) noexcept;
@@ -269,6 +335,25 @@ public:
   float GetMomentumBeta() const noexcept
   {
     return momentumBeta;
+  }
+
+  /// @brief Enables ePC settling: `e` (not `z`) becomes the primary
+  /// variable, updated each settling step from a full top-to-bottom
+  /// backward sweep (ReconstructBelief()/ComputeAdjoint()/
+  /// UpdateErrorEPC(), orchestrated by FullPCNetwork) instead of a
+  /// one-hop local message. Only meaningful on hidden layers (input has
+  /// no free error; the terminal's error IS the loss, computed by
+  /// CalculateState() unchanged). OFF by default.
+  /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
+  /// Digital Simulation", https://arxiv.org/abs/2505.20137
+  void SetUseEPC(bool enabled) noexcept
+  {
+    useEPC = enabled;
+  }
+  /// @brief Returns whether ePC settling is enabled, see SetUseEPC().
+  bool GetUseEPC() const noexcept
+  {
+    return useEPC;
   }
 
   /// @brief Sets the optimizer for W. Call before Compile().

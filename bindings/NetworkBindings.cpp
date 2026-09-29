@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <deepity/networks/ConvPCNetwork.h>
+#include <deepity/networks/FullConvPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
 #include <deepity/networks/DiscriminativePCNetwork.h>
 #include <deepity/networks/FullPCNetwork.h>
@@ -619,9 +620,10 @@ void bind_networks(nb::module_& m)
       .def("set_use_mu_pc_scaling",
            &Deep::FullPCNetwork::SetUseMuPCScaling,
            nb::arg("enabled"),
-           "Enable/disable muPC-style per-layer forward scaling (Table 1 "
-           "of the muPC paper). OFF by default. Must be called before "
-           "compile().")
+           "Enable/disable muPC's full Table 1 parameterization: per-layer "
+           "forward scaling (`a`) AND unit-variance weight init, in place "
+           "of plain PC's fan-scaled init. OFF by default. Must be called "
+           "before compile() and before randomize_weights().")
       .def("set_use_residual_connections",
            &Deep::FullPCNetwork::SetUseResidualConnections,
            nb::arg("enabled"),
@@ -634,6 +636,12 @@ void bind_networks(nb::module_& m)
            nb::arg("enabled"),
            "Weights are updated every settling step instead of at the end of all steps when "
            "enabled.")
+      .def("set_use_epc",
+           &Deep::FullPCNetwork::SetUseEPC,
+           nb::arg("enabled"),
+           "Enable/disable ePC settling: each settling step becomes a full forward+backward "
+           "sweep through every hidden layer (exact PC gradient, no signal decay with depth) "
+           "instead of the usual one-hop local update. OFF by default.")
       .def("set_use_momentum",
            &Deep::FullPCNetwork::SetUseMomentum,
            nb::arg("enabled"),
@@ -746,6 +754,195 @@ void bind_networks(nb::module_& m)
            [](const Deep::FullPCNetwork& self)
            {
              return "<FullPCNetwork layers=" + std::to_string(self.GetLayers().size()) +
+                    " batch_size=" + std::to_string(self.GetBatchSize()) + ">";
+           });
+
+  nb::class_<Deep::FullConvPCNetwork>(
+      m,
+      "FullConvPCNetwork",
+      "Convolutional analog of FullPCNetwork: every PC variant, each independently "
+      "toggleable, off by default so plain defaults reproduce plain conv PC settling.")
+      .def(
+          "__init__",
+          [](Deep::FullConvPCNetwork* self, int batch_size, const std::string& device)
+          {
+            Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+                                      ? Deep::DeviceType::DEVICE_GPU
+                                      : Deep::DeviceType::DEVICE_CPU;
+            new (self) Deep::FullConvPCNetwork(batch_size, dt);
+          },
+          nb::arg("batch_size"),
+          nb::arg("device") = "cpu")
+      .def(
+          "add_layer",
+          [](Deep::FullConvPCNetwork& self,
+             int in_channels,
+             int out_channels,
+             int in_height,
+             int in_width,
+             int kernel_h,
+             int kernel_w,
+             int stride_h,
+             int stride_w,
+             int pad_h,
+             int pad_w,
+             int terminal_size,
+             float lr,
+             float ir,
+             float fl,
+             float lmbda,
+             const std::string& activation,
+             const std::string& activation_deriv)
+          {
+            self.AddLayer(in_channels,
+                          out_channels,
+                          in_height,
+                          in_width,
+                          kernel_h,
+                          kernel_w,
+                          stride_h,
+                          stride_w,
+                          pad_h,
+                          pad_w,
+                          terminal_size,
+                          lr,
+                          ir,
+                          fl,
+                          lmbda,
+                          resolveActEnum(activation),
+                          resolveActEnum(activation_deriv));
+          },
+          nb::arg("in_channels"),
+          nb::arg("out_channels"),
+          nb::arg("in_height"),
+          nb::arg("in_width"),
+          nb::arg("kernel_h"),
+          nb::arg("kernel_w"),
+          nb::arg("stride_h") = 1,
+          nb::arg("stride_w") = 1,
+          nb::arg("pad_h") = 0,
+          nb::arg("pad_w") = 0,
+          nb::arg("terminal_size") = 0,
+          nb::arg("lr") = 1e-6f,
+          nb::arg("ir") = 0.1f,
+          nb::arg("fl") = 1e-4f,
+          nb::arg("lmbda") = 1e-2f,
+          nb::arg("activation") = "relu",
+          nb::arg("activation_deriv") = "drelu")
+      .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
+      .def("set_use_residual_connections",
+           &Deep::FullConvPCNetwork::SetUseResidualConnections,
+           nb::arg("enabled"))
+      .def("set_use_ipc", &Deep::FullConvPCNetwork::SetUseIPC, nb::arg("enabled"))
+      .def("set_use_epc", &Deep::FullConvPCNetwork::SetUseEPC, nb::arg("enabled"))
+      .def("set_use_momentum",
+           &Deep::FullConvPCNetwork::SetUseMomentum,
+           nb::arg("enabled"),
+           nb::arg("beta") = 0.9f)
+      .def("set_use_cross_entropy", &Deep::FullConvPCNetwork::SetUseCrossEntropy, nb::arg("enabled"))
+      .def("compile", &Deep::FullConvPCNetwork::Compile)
+      .def(
+          "randomize_weights",
+          [](Deep::FullConvPCNetwork& self, std::optional<uint32_t> seed)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng);
+          },
+          nb::arg("seed") = nb::none())
+      .def("reset_state", &Deep::FullConvPCNetwork::ResetState)
+      .def(
+          "clamp_input",
+          [](Deep::FullConvPCNetwork& self, FloatArray input)
+          {
+            std::vector<float> values(input.data(), input.data() + input.size());
+            self.Clamp(values);
+          },
+          nb::arg("input"))
+      .def("project_forward", &Deep::FullConvPCNetwork::ProjectForward)
+      .def("calculate_terminal_error", &Deep::FullConvPCNetwork::CalculateTerminalError)
+      .def("direct_feedback_update", &Deep::FullConvPCNetwork::DirectFeedbackUpdate)
+      .def("step", &Deep::FullConvPCNetwork::Step)
+      .def("update_weights", &Deep::FullConvPCNetwork::UpdateWeights)
+      .def(
+          "set_optimizer",
+          [](Deep::FullConvPCNetwork& self, const std::string& opt)
+          {
+            if (opt == "ADAM")
+              self.SetOptimizer(Deep::OptimizerType::ADAM);
+            else if (opt == "ADAMW")
+              self.SetOptimizer(Deep::OptimizerType::ADAMW);
+            else
+              self.SetOptimizer(Deep::OptimizerType::SGD);
+          },
+          nb::arg("optimizer"))
+      .def(
+          "set_psi_optimizer",
+          [](Deep::FullConvPCNetwork& self, const std::string& opt)
+          {
+            if (opt == "ADAM")
+              self.SetPsiOptimizer(Deep::OptimizerType::ADAM);
+            else if (opt == "ADAMW")
+              self.SetPsiOptimizer(Deep::OptimizerType::ADAMW);
+            else
+              self.SetPsiOptimizer(Deep::OptimizerType::SGD);
+          },
+          nb::arg("optimizer"))
+      .def("set_learning_rate", &Deep::FullConvPCNetwork::SetLearningRate, nb::arg("lr"))
+      .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"))
+      .def(
+          "train_step",
+          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
+          {
+            std::vector<float> xvec(x.data(), x.data() + x.size());
+            std::vector<float> yvec(y.data(), y.data() + y.size());
+            return self.TrainStep(xvec, yvec, inference_steps);
+          },
+          nb::arg("x"),
+          nb::arg("y"),
+          nb::arg("inference_steps") = 1)
+      .def(
+          "predict",
+          [](Deep::FullConvPCNetwork& self, FloatArray x, int inference_steps)
+          {
+            std::vector<float> xvec(x.data(), x.data() + x.size());
+            std::vector<float> result = self.Predict(xvec, inference_steps);
+            Deep::FullConvPCLayer* terminal = self.GetTerminalLayer();
+            return CopyToNewArray(
+                result.data(),
+                {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
+          },
+          nb::arg("x"),
+          nb::arg("inference_steps"))
+      .def_prop_ro("batch_size", &Deep::FullConvPCNetwork::GetBatchSize)
+      .def_prop_ro("layers",
+                   [](Deep::FullConvPCNetwork& self)
+                   {
+                     nb::list result;
+                     for (auto& layer : self.GetLayers())
+                       result.append(nb::cast(layer.get(), nb::rv_policy::reference));
+                     return result;
+                   })
+      .def("get_terminal_layer",
+           &Deep::FullConvPCNetwork::GetTerminalLayer,
+           nb::rv_policy::reference)
+      .def("__len__", [](const Deep::FullConvPCNetwork& self) { return self.GetLayers().size(); })
+      .def(
+          "__getitem__",
+          [](Deep::FullConvPCNetwork& self, std::ptrdiff_t index)
+          {
+            auto& layers = self.GetLayers();
+            if (index < 0)
+              index += static_cast<std::ptrdiff_t>(layers.size());
+            if (index < 0 || index >= static_cast<std::ptrdiff_t>(layers.size()))
+              throw nb::index_error();
+            return layers[index].get();
+          },
+          nb::rv_policy::reference_internal)
+      .def("__repr__",
+           [](const Deep::FullConvPCNetwork& self)
+           {
+             return "<FullConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) +
                     " batch_size=" + std::to_string(self.GetBatchSize()) + ">";
            });
 

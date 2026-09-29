@@ -44,7 +44,15 @@ def load_full_mnist():
 def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 50
-    INFERENCE_STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 2
+    # 8, not the old 2: ePC's whole advantage over plain one-hop settling
+    # is that it doesn't need many settling steps per hop of depth, so a
+    # tiny step count is exactly where the two modes should look most
+    # different on this now-6-weight-layer-deep architecture (see the
+    # scratch investigation this session: on a 13-layer-deep net, plain
+    # one-hop settling needed ~2000-5000 steps to reach what ePC reached
+    # in ~30 -- flip set_use_epc(False) below and rerun to see the gap
+    # on THIS architecture).
+    INFERENCE_STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 8
     LR_OVERRIDE = float(sys.argv[4]) if len(sys.argv) > 4 else None
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
@@ -56,24 +64,31 @@ def main() -> None:
     LMBDA = 1e-4
     DECAY_RATE = 0.94
 
-    print(f"\nBuilding FullPCNetwork (784->512->10), seed={SEED}...")
+    print(f"\nBuilding FullPCNetwork (784->512->256->128->64->32->10), seed={SEED}...")
     print(f"LR={LR}{' (overridden)' if LR_OVERRIDE is not None else ' (original MSE-tuned default)'}")
-    print("Features: ALL OFF -- should be bit-identical to DirectKPPCNetwork's own defaults")
 
     net = dy.FullPCNetwork(batch_size=BATCH_SIZE, device="cpu")
     net.add_layer(784, 512, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
-    net.add_layer(512, 10, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="sigmoid", activation_deriv="dsigmoid")
+    net.add_layer(512, 256, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="tanh", activation_deriv="dtanh")
+    net.add_layer(256, 128, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="tanh", activation_deriv="dtanh")
+    net.add_layer(128, 64, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="tanh", activation_deriv="dtanh")
+    net.add_layer(64, 32, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="tanh", activation_deriv="dtanh")
+    net.add_layer(32, 10, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="tanh", activation_deriv="dtanh")
     net.add_layer(10, 0, 10, lr=LR, ir=IR, fl=FL, lmbda=LMBDA, activation="linear", activation_deriv="dlinear")
+
+    USE_EPC = True  # flip to False and rerun to compare against plain
+                     # one-hop settling on this same deep architecture
 
     net.set_use_ipc(False)
     net.set_use_cross_entropy(True)
     net.set_use_mu_pc_scaling(False)
+    net.set_use_epc(USE_EPC)
     net.set_optimizer("ADAMW")
     net.set_psi_optimizer("ADAMW")
     net.compile()
     net.randomize_weights(SEED)
 
-    print(f"\n*** FullPCNetwork: DKP-PC with muPC (iPC off) ***")
+    print(f"\n*** FullPCNetwork: 6 weight-layers deep, ePC {'ON' if USE_EPC else 'OFF'} ***")
     print(f"Training: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, ")
     print(f"lr={LR}, ir={IR}, lmbda={LMBDA}, decay_rate={DECAY_RATE}...\n")
 
@@ -141,7 +156,7 @@ def main() -> None:
 
     test_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"FullPCNetwork (plain DKP-PC, all toggles off) test accuracy: {test_acc:.2f}%")
+    print(f"FullPCNetwork (6 layers deep, ePC {'ON' if USE_EPC else 'OFF'}) test accuracy: {test_acc:.2f}%")
     print(f"Train time: {train_time:.1f}s")
 
 

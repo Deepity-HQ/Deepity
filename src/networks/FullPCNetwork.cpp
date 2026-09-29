@@ -85,6 +85,40 @@ float FullPCNetwork::Step(bool needEnergy) noexcept
   return needEnergy ? e : 0.0f;
 }
 
+void FullPCNetwork::EPCStep() noexcept
+{
+  // Forward sweep, bottom to top: reconstruct each hidden layer's belief
+  // from the layer below's just-computed prediction (z_i := mu_{i-1}+e_i,
+  // the paper's s_i := ŝ_i+ε_i), then compute this layer's own mu for the
+  // layer above. The input layer (index 0) is clamped, its mu is already
+  // valid from ClampState()/InvalidateMuCache(); the terminal's error
+  // (against the clamped target, Gaussian or cross-entropy) IS the loss
+  // gradient the backward sweep starts from, unchanged from every other
+  // settling mode.
+  layers[0]->ComputeMuOnly();
+  for (size_t i = 1; i + 1 < layers.size(); ++i)
+  {
+    layers[i]->ReconstructBelief();
+    layers[i]->ComputeMuOnly();
+  }
+  GetTerminalLayer()->CalculateState(false);
+
+  // Backward sweep, top to bottom: the terminal's error is the topmost
+  // hidden layer's incoming signal; each layer below then reads the one
+  // above's freshly computed `adjoint`, chaining the FULL gradient
+  // through every layer in one pass (not the one-hop message every
+  // other settling mode uses), then updates its own error in place.
+  const float* adjointAbove = GetTerminalLayer()->GetErrors();
+  bool firstHop = true; // see ComputeAdjoint()'s adjointAboveScale docs
+  for (size_t i = layers.size() - 2; i >= 1; --i)
+  {
+    layers[i]->ComputeAdjoint(adjointAbove, firstHop ? -1.0f : 1.0f);
+    firstHop = false;
+    layers[i]->UpdateErrorEPC();
+    adjointAbove = layers[i]->GetAdjoint();
+  }
+}
+
 void FullPCNetwork::UpdateWeights() noexcept
 {
   for (size_t i = 0; i + 1 < layers.size(); i++)
@@ -100,7 +134,10 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
 
   auto settleStep = [this]()
   {
-    Step(false);
+    if (useEPC)
+      EPCStep();
+    else
+      Step(false);
     if (useIPC)
     {
       UpdateWeights();
@@ -171,7 +208,12 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
   ProjectForward();
 
   for (int t = 0; t < inferenceSteps; t++)
-    Step();
+  {
+    if (useEPC)
+      EPCStep();
+    else
+      Step();
+  }
 
   FullPCLayer* terminal = GetTerminalLayer();
 
@@ -287,6 +329,7 @@ void FullPCNetwork::Compile()
         a = std::pow(N * (float)L, -0.5f);
 
       layers[l - 1]->SetMuPCScale(a);
+      layers[l - 1]->SetMuPCInit(true); // Table 1's other change: b_l = 1
     }
   }
 

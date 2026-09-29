@@ -75,6 +75,8 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     feedbackScratch = arena.AllocateFloats(own_state_size);
     v = arena.AllocateFloats(own_state_size);
     backend->Zero(v, own_state_size);
+    adjoint = arena.AllocateFloats(own_state_size);
+    backend->Zero(adjoint, own_state_size);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
     backend->Zero(b, nextSize);
@@ -155,7 +157,7 @@ size_t FullPCLayer::GetRequiredFloats() const noexcept
     total += pad16(nextSize);
     total += pad16(out_state_size) * 3;
     total += pad16(own_state_size) * 2; // zF, feedbackScratch
-    total += pad16(own_state_size);
+    total += pad16(own_state_size) * 2; // v, adjoint
     total += pad16(direct_size);
     total += pad16(nextSize);
 
@@ -179,7 +181,12 @@ void FullPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
   std::uniform_int_distribution<uint32_t> seedDist;
   size_t Wsz = size * nextSize;
   size_t Psisz = terminalSize * size;
-  float limit = std::sqrt(2.0f / (size + nextSize));
+
+  // muPC's b_l = 1 (unit variance, Table 1): `a` alone carries the
+  // width/depth scaling, so W's own init shouldn't ALSO be fan-scaled.
+  // Psi is Deepity's own direct-feedback addition, outside the muPC
+  // paper's scope, so it keeps the fan-scaled init unconditionally.
+  float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (size + nextSize));
   float limPsi = std::sqrt(2.0f / (size + terminalSize));
 
   uint32_t seedW = seedDist(seedGenerator);
@@ -511,6 +518,57 @@ void FullPCLayer::DirectFeedbackUpdate() noexcept
       (int)size);
 }
 
+void FullPCLayer::ReconstructBelief() noexcept
+{
+  if (layerBelow == nullptr)
+    return;
+
+  const size_t N = batchSize * size;
+  backend->Copy(z, layerBelow->GetMu(), N);
+  backend->AxpyInto(z, e, N, 1.0f);
+}
+
+void FullPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAboveScale) noexcept
+{
+  if (layerAbove == nullptr || nextSize == 0)
+    return;
+
+  const size_t N = batchSize * size;
+
+  // Same feedback GEMM shape UpdateState() already uses, but the result
+  // is materialized into `adjoint` (not applied inline) so the layer
+  // below can read it as ITS incoming signal -- the "global via AD"
+  // chain, one hop at a time, rather than a one-hop local message.
+  backend->MatMul(
+      /*transA=*/false,
+      /*transB=*/false,
+      (int)batchSize,
+      (int)size,
+      (int)nextSize,
+      a * adjointAboveScale,
+      adjointAbove,
+      (int)nextSize,
+      W,
+      (int)size,
+      0.0f,
+      feedbackScratch,
+      (int)size);
+
+  ActivationType dType = ToDerivativeType(activationType);
+  backend->ActivationDerivativeInto(dType, adjoint, z, N);
+  backend->MultiplyInto(adjoint, feedbackScratch, adjoint, N);
+}
+
+void FullPCLayer::UpdateErrorEPC() noexcept
+{
+  if (isClamped)
+    return;
+
+  const size_t N = batchSize * size;
+  backend->Scale(e, N, 1.0f - ir);
+  backend->AxpyInto(e, adjoint, N, -ir);
+}
+
 void FullPCLayer::ClampState(const std::vector<float>& inputData) noexcept
 {
   size_t copyFloats = (std::min)(inputData.size(), (size_t)(batchSize * size));
@@ -528,6 +586,7 @@ void FullPCLayer::ResetState() noexcept
 {
   size_t N = (size_t)batchSize * size;
   backend->Zero(z, N);
+  backend->Zero(e, N);
   if (v)
     backend->Zero(v, N);
 }

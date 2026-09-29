@@ -52,11 +52,19 @@ public:
   void AddLayer(size_t size, size_t nextSize, size_t terminalSize, float lr, float ir, float fl,
                 float lmbda, ActivationType aType, ActivationType dType);
 
-  /// @brief Enables muPC-style per-layer forward scaling (Table 1
-  /// of the muPC paper). OFF by default. Must be called before
-  /// Compile(), Compile() is what actually computes and applies
-  /// each layer's `a`, once the full architecture (every AddLayer
-  /// call) is known.
+  /// @brief Enables muPC's full Table 1 parameterization: each layer's
+  /// forward-scaling factor `a` (width/depth-dependent) AND unit-variance
+  /// weight init, in place of plain PC's fan-scaled init. Does NOT add
+  /// Depth-muP's learning-rate scaling; the paper found that made
+  /// training unstable and tunes the weight/activity learning rates as
+  /// independent hyperparameters instead, same as plain PC.
+  /// OFF by default. Must be called before Compile() and before
+  /// RandomizeWeights(): Compile() is what actually computes and applies
+  /// each layer's `a`, once the full architecture (every AddLayer call)
+  /// is known, and the init-variance change only takes effect on the
+  /// NEXT RandomizeWeights() call.
+  /// @see Innocenti et al., "muPC: Scaling Predictive Coding to 100+ Layer
+  /// Networks", https://arxiv.org/abs/2505.13124
   void SetUseMuPCScaling(bool enabled) noexcept
   {
     useMuPCScaling = enabled;
@@ -100,6 +108,13 @@ public:
   /// @param computeEnergy asks for energy to be returned
   /// @return Total energy, summed from every layer's CalculateState().
   float Step(bool computeEnergy = true) noexcept;
+  /// @brief ePC's settling step, used by TrainStep() in place of Step()
+  /// when useEPC is set: a full forward sweep (bottom to top, every
+  /// hidden layer's belief reconstructed from the layer below's fresh
+  /// prediction) followed by a full backward sweep (the terminal's
+  /// error chained all the way down through every hidden layer). See
+  /// SetUseEPC().
+  void EPCStep() noexcept;
   /// @brief Applies weight updates to every layer.
   void UpdateWeights() noexcept;
 
@@ -169,8 +184,9 @@ public:
   /// @brief Loads all layers into one contiguous block of memory,
   /// wires layerAbove/layerBelow/terminalLayer across every
   /// layer, same as DirectKPPCNetwork::Compile(), PLUS: if
-  /// useMuPCScaling, computes and applies each layer's `a` (Table
-  /// 1) from the full, now-known architecture; if
+  /// useMuPCScaling, computes and applies each layer's `a` AND enables
+  /// unit-variance init (Table 1) from the full, now-known architecture;
+  /// if
   /// useResidualConnections, applies SetResidual(true) to every
   /// middle hidden layer after checking width match (throws
   /// std::invalid_argument on mismatch).
@@ -205,6 +221,24 @@ public:
     GetTerminalLayer()->SetCrossEntropy(enabled);
   }
 
+  /// @brief Enables ePC settling: each settling step becomes a full
+  /// forward sweep (recompute every hidden layer's belief/prediction
+  /// bottom-to-top) followed by a full backward sweep (chain the
+  /// terminal's error all the way down through every hidden layer,
+  /// updating each one's error in place), instead of TrainStep()'s
+  /// usual per-layer local CalculateState()/UpdateState() loop. Only
+  /// affects HIDDEN layers (loops over layers[1..size-2]; the input
+  /// layer has no free error and the terminal's error is already the
+  /// loss, unchanged either way). OFF by default.
+  /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
+  /// Digital Simulation", https://arxiv.org/abs/2505.20137
+  void SetUseEPC(bool enabled) noexcept
+  {
+    useEPC = enabled;
+    for (size_t i = 1; i + 1 < layers.size(); ++i)
+      layers[i]->SetUseEPC(enabled);
+  }
+
 private:
   std::vector<std::unique_ptr<FullPCLayer>> layers;
 
@@ -218,6 +252,7 @@ private:
 
   int batchSize;
   bool useIPC = false;
+  bool useEPC = false;
 
   bool useMuPCScaling = false;
   bool useResidualConnections = false;
