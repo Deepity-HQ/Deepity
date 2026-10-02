@@ -1,5 +1,6 @@
 #include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/backend/Backend.h>
+#include <iostream>
 
 namespace Deep
 {
@@ -116,14 +117,61 @@ namespace Deep
         Clamp(x);
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
+        if (device == DeviceType::DEVICE_GPU)
         {
-            finalEnergy = CalculateState();
-            UpdateState();
+            if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState();
+                    UpdateState();
+                }
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCaptured = true;
+                    capturedInferenceSteps = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCaptured)
+            {
+                backend->ReplayGraph();
+            }
+            else
+            {
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState();
+                    UpdateState();
+                }
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            for (int t = 0; t < inferenceSteps; ++t)
+            {
+                CalculateState();
+                UpdateState();
+            }
+            UpdateWeights();
         }
 
-        UpdateWeights();
+        // A fresh, uncaptured call: a value returned by a call made
+        // INSIDE the captured region above would be stale on every
+        // ReplayGraph() after the first (only the GPU kernel launches
+        // are replayed, not the host-side C++ call that returned this
+        // float), so the real energy readout always happens out here,
+        // identically for both the CPU and GPU paths.
+        float finalEnergy = CalculateState();
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;
@@ -172,17 +220,72 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        ProjectForward();
+        // Clamped BEFORE ProjectForward() (reordered from the original
+        // ProjectForward()-then-clamp), required for two reasons: (1) so
+        // ProjectForward()'s own IsClamped() guard actually protects the
+        // terminal layer from being overwritten by a forward-projected
+        // guess, and (2) so ProjectForward() can safely move inside the
+        // captured region below -- ClampState()'s CopyFromHost(z, y.data(),
+        // ...) call captures a SPECIFIC host pointer; replaying that
+        // inside a captured graph with a different batch's `y` (a
+        // different vector, different address, every call) would copy
+        // stale data. Keeping it out here means it genuinely re-executes
+        // with fresh data on every call, same pattern DirectKPPCNetwork
+        // already uses.
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
+        if (device == DeviceType::DEVICE_GPU)
         {
-            finalEnergy = CalculateState();
-            UpdateState();
+            if (!graphCapturedWithProjection || capturedInferenceStepsWithProjection != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                ProjectForward();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState();
+                    UpdateState();
+                }
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCapturedWithProjection = true;
+                    capturedInferenceStepsWithProjection = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCapturedWithProjection)
+            {
+                backend->ReplayGraph();
+            }
+            else
+            {
+                ProjectForward();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState();
+                    UpdateState();
+                }
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            ProjectForward();
+            for (int t = 0; t < inferenceSteps; ++t)
+            {
+                CalculateState();
+                UpdateState();
+            }
+            UpdateWeights();
         }
 
-        UpdateWeights();
+        float finalEnergy = CalculateState();
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;

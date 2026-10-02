@@ -1,5 +1,6 @@
 #include <deepity/networks/GaussSeidelPCNetwork.h>
 #include <deepity/backend/Backend.h>
+#include <iostream>
 
 namespace Deep
 {
@@ -100,11 +101,57 @@ namespace Deep
         Clamp(x);
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
-            finalEnergy = Step();
+        if (device == DeviceType::DEVICE_GPU)
+        {
+            if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                for (int t = 0; t < inferenceSteps; ++t)
+                    Step();
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
 
-        UpdateWeights();
+                if (captureOk)
+                {
+                    graphCaptured = true;
+                    capturedInferenceSteps = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCaptured)
+            {
+                backend->ReplayGraph();
+            }
+            else
+            {
+                for (int t = 0; t < inferenceSteps; ++t)
+                    Step();
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            for (int t = 0; t < inferenceSteps; ++t)
+                Step();
+            UpdateWeights();
+        }
+
+        // Fresh, uncaptured energy readout: sweeps 2+3 of Step() (recompute
+        // predictions/errors from the CURRENT z), deliberately without
+        // sweep 1's UpdateState() -- calling the full Step() again here
+        // would apply an extra, unintended settling step beyond
+        // inferenceSteps, on top of the same stale-return-value-under-
+        // graph-capture concern every other ported network has.
+        float finalEnergy = 0.0f;
+        for (auto &l : layers)
+            l->ComputePrediction();
+        for (auto &l : layers)
+            finalEnergy += l->ComputeError();
+
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;
@@ -114,19 +161,72 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        ProjectForward();
+        // Clamped BEFORE ProjectForward() (reordered from the original
+        // ProjectForward()-then-clamp): required so ProjectForward()'s own
+        // IsClamped() guard protects the terminal layer, and so
+        // ProjectForward() can safely move inside the captured region
+        // below -- see ConvPCNetwork::TrainStepWithProjection()'s identical
+        // comment for why. The end result for z3/mu3 (and therefore the
+        // immediate ComputeError() below) is unchanged either way:
+        // ComputePrediction() for the second-to-last layer still runs
+        // unconditionally, only the backend->Copy into an ALREADY-clamped
+        // terminal's z is what gets skipped.
         GetTerminalLayer()->ClampState(y);
 
-        // Only the terminal layer's error is computed immediately (e3 =
-        // z3 - mu3, target vs. projected prediction); hidden layers stay
-        // at zero.
-        GetTerminalLayer()->ComputeError();
+        if (device == DeviceType::DEVICE_GPU)
+        {
+            if (!graphCapturedWithProjection || capturedInferenceStepsWithProjection != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                ProjectForward();
+                // Only the terminal layer's error is computed immediately
+                // (e3 = z3 - mu3, target vs. projected prediction); hidden
+                // layers stay at zero.
+                GetTerminalLayer()->ComputeError();
+                for (int t = 0; t < inferenceSteps; ++t)
+                    Step();
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCapturedWithProjection = true;
+                    capturedInferenceStepsWithProjection = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCapturedWithProjection)
+            {
+                backend->ReplayGraph();
+            }
+            else
+            {
+                ProjectForward();
+                GetTerminalLayer()->ComputeError();
+                for (int t = 0; t < inferenceSteps; ++t)
+                    Step();
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            ProjectForward();
+            GetTerminalLayer()->ComputeError();
+            for (int t = 0; t < inferenceSteps; ++t)
+                Step();
+            UpdateWeights();
+        }
 
         float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
-            finalEnergy = Step();
+        for (auto &l : layers)
+            l->ComputePrediction();
+        for (auto &l : layers)
+            finalEnergy += l->ComputeError();
 
-        UpdateWeights();
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;

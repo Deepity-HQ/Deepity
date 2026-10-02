@@ -135,6 +135,20 @@ def main() -> None:
         current_fl = FL * (DECAY_RATE ** epoch)
         net.set_feedback_rate(current_fl)
 
+        # Root cause of the late-epoch instability (energy bottoms out,
+        # then rises again, accuracy declining): ir was never decayed
+        # here, so as lr/fl made weight updates more conservative over
+        # epochs, settling kept taking full-size steps -- a growing
+        # outer/inner speed mismatch that eventually destabilized the
+        # energy landscape. Confirmed by isolating it: W itself never
+        # explodes (tracked per-layer Frobenius norms, grows <30% over 35
+        # epochs either way); disabling DKP's Psi feedback entirely
+        # (fl=0) does NOT fix it either, same pattern, slightly earlier
+        # onset; decaying ir alongside lr/fl does fix it, cleanly
+        # monotonic energy for the full run, both with and without DKP.
+        current_ir = IR * (DECAY_RATE ** epoch)
+        net.set_inference_rate(current_ir)
+
         indices = rng.permutation(len(X_train))
         X_shuf, Y_shuf = X_train[indices], Y_train[indices]
 

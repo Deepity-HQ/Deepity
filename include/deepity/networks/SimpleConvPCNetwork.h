@@ -118,5 +118,13 @@ namespace Deep
         int batchSize;
         OptimizerType pendingOpt = OptimizerType::SGD;
         friend class PCNDiagnostics;
+
+        // CUDA graph capture state, GPU-only: TrainStep() and
+        // TrainStepWithProjection() capture different op sequences, so
+        // each needs its own capture-validity tracking.
+        bool graphCaptured = false;
+        int capturedInferenceSteps = -1;
+        bool graphCapturedWithProjection = false;
+        int capturedInferenceStepsWithProjection = -1;
     };
 } // namespace Deep
