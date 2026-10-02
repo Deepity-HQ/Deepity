@@ -170,10 +170,30 @@ void CPUBackend::ActivationDerivativeInto(ActivationType type, float* dst, const
   To_dFn2(type)(dst, src, n);
 }
 
+namespace
+{
+// dGELU, dSIGMOID and dTANH need a transcendental (SLEEF tanh or
+// std::exp) when evaluated from the raw pre-activation z, as
+// FusedStateUpdate/FusedStateUpdateMomentum do -- see
+// CPUBackendHighway.cpp's file comment. Those three stay on the scalar
+// path below; everything else routes through the Highway dispatch.
+bool NeedsTranscendentalDerivative(ActivationType dType) noexcept
+{
+  return dType == ActivationType::dGELU || dType == ActivationType::dSIGMOID ||
+         dType == ActivationType::dTANH;
+}
+} // namespace
+
 void CPUBackend::FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
                                           ActivationType dType, const float* e, size_t n, float ir,
                                           float beta) noexcept
 {
+  if (!NeedsTranscendentalDerivative(dType))
+  {
+    FusedStateUpdateMomentumDispatch(z, v, feedback, dType, e, n, ir, beta);
+    return;
+  }
+
 #pragma omp parallel for schedule(static) if (n > 4 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
@@ -187,6 +207,12 @@ void CPUBackend::FusedStateUpdateMomentum(float* z, float* v, const float* feedb
 void CPUBackend::FusedStateUpdate(float* z, const float* feedback, ActivationType dType,
                                   const float* e, size_t n, float ir) noexcept
 {
+  if (!NeedsTranscendentalDerivative(dType))
+  {
+    FusedStateUpdateDispatch(z, feedback, dType, e, n, ir);
+    return;
+  }
+
 #pragma omp parallel for schedule(static) if (n > 4 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {

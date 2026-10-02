@@ -1,15 +1,17 @@
 /**
  * @file tHighwayKernelsVerify.cpp
- * @brief Correctness check for the two Highway-dispatched CPUBackend
- * kernels (AddBiasPerChannel, FusedActivationDerivativeMultiply) against
- * an independent scalar reference -- deliberately NOT reusing any
- * backend code, matching tCrossEntropyVerify.cpp's own convention.
+ * @brief Correctness check for the Highway-dispatched CPUBackend kernels
+ * (AddBiasPerChannel, FusedActivationDerivativeMultiply, Fill,
+ * MultiplyInto, FusedStateUpdate, FusedStateUpdateMomentum) against an
+ * independent scalar reference -- deliberately NOT reusing any backend
+ * code, matching tCrossEntropyVerify.cpp's own convention.
  *
  * Sizes are swept across a range DELIBERATELY including non-SIMD-aligned
  * ("odd") totals (e.g. spatialSize=1, 3, 7, 17, 31, 200000+1) -- tail
  * handling is the single most common real SIMD bug, and a happy-path-
  * only power-of-two test would never catch one.
  */
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <deepity/backend/CPUBackend.h>
@@ -23,6 +25,18 @@ namespace
 bool NearlyEqual(float a, float b, float tol = 1e-5f)
 {
   return std::fabs(a - b) <= tol * (std::fabs(a) + std::fabs(b) + 1e-6f);
+}
+
+// Like NearlyEqual, but with an absolute floor independent of magnitude --
+// needed for FusedStateUpdate/Momentum, whose "z += ir*(feedback*deriv -
+// e)" can land arbitrarily close to zero via cancellation; a purely
+// relative tolerance is then far tighter than float32 itself (the
+// vectorized path's true FMA rounds once, the scalar reference's separate
+// multiply-then-add rounds twice, differing at the ULP level even when
+// both formulas are correct).
+bool NearlyEqualAbs(float a, float b, float tol, float absFloor = 1e-4f)
+{
+  return std::fabs(a - b) <= std::max(tol * (std::fabs(a) + std::fabs(b)), absFloor);
 }
 
 // Independent reference, plain scalar, matching AddBiasPerChannel's own
@@ -148,6 +162,116 @@ bool TestMultiplyInto(CPUBackend& backend, size_t n, unsigned seed)
   return true;
 }
 
+// Independent reference matching ActivationDerivativeScalar's raw-z
+// formula (Activations.h), using std:: transcendentals rather than SLEEF
+// -- close enough for a correctness check, not a bitwise match.
+float ReferenceDerivFromRawZ(ActivationType dType, float z)
+{
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return (z > 0.0f) ? 1.0f : 0.0f;
+  case ActivationType::dGELU:
+  {
+    const float kAlpha = 0.7978845608f, kBeta = 0.044715f;
+    float zsq = z * z;
+    float inner = kAlpha * z + kAlpha * kBeta * zsq * z;
+    float t = std::tanh(inner);
+    float gprime = kAlpha + 3.0f * kAlpha * kBeta * zsq;
+    return 0.5f * (1.0f + t) + 0.5f * z * gprime * (1.0f - t * t);
+  }
+  case ActivationType::dSIGMOID:
+  {
+    float sig = 1.0f / (1.0f + std::exp(-z));
+    return sig * (1.0f - sig);
+  }
+  case ActivationType::d_eSIGMOID:
+  {
+    float a = 1.0f + std::fabs(z);
+    return 0.5f / (a * a);
+  }
+  case ActivationType::dTANH:
+  {
+    float t = std::tanh(z);
+    return 1.0f - t * t;
+  }
+  default:
+    return 1.0f;
+  }
+}
+
+bool TestFusedStateUpdate(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed,
+                          float tol = 1e-5f)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<float> dist(-1.5f, 1.5f);
+
+  std::vector<float> z(n), feedback(n), e(n), zRef(n);
+  for (auto& x : z)
+    x = dist(rng);
+  for (auto& x : feedback)
+    x = dist(rng);
+  for (auto& x : e)
+    x = dist(rng);
+  zRef = z;
+
+  const float ir = 0.37f;
+  for (size_t i = 0; i < n; ++i)
+    zRef[i] += ir * ((feedback[i] * ReferenceDerivFromRawZ(dType, zRef[i])) - e[i]);
+  backend.FusedStateUpdate(z.data(), feedback.data(), dType, e.data(), n, ir);
+
+  for (size_t i = 0; i < n; ++i)
+  {
+    if (!NearlyEqualAbs(zRef[i], z[i], tol))
+    {
+      printf("  FAIL FusedStateUpdate(dType=%d, n=%zu): mismatch at %zu: ref=%.6f got=%.6f\n",
+             (int)dType, n, i, zRef[i], z[i]);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TestFusedStateUpdateMomentum(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed,
+                                  float tol = 1e-5f)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<float> dist(-1.5f, 1.5f);
+
+  std::vector<float> z(n), v(n), feedback(n), e(n), zRef(n), vRef(n);
+  for (auto& x : z)
+    x = dist(rng);
+  for (auto& x : v)
+    x = dist(rng);
+  for (auto& x : feedback)
+    x = dist(rng);
+  for (auto& x : e)
+    x = dist(rng);
+  zRef = z;
+  vRef = v;
+
+  const float ir = 0.37f, beta = 0.9f;
+  for (size_t i = 0; i < n; ++i)
+  {
+    float update = (feedback[i] * ReferenceDerivFromRawZ(dType, zRef[i])) - e[i];
+    vRef[i] = beta * vRef[i] + (1.0f - beta) * update;
+    zRef[i] += ir * vRef[i];
+  }
+  backend.FusedStateUpdateMomentum(z.data(), v.data(), feedback.data(), dType, e.data(), n, ir, beta);
+
+  for (size_t i = 0; i < n; ++i)
+  {
+    if (!NearlyEqualAbs(zRef[i], z[i], tol) || !NearlyEqualAbs(vRef[i], v[i], tol))
+    {
+      printf("  FAIL FusedStateUpdateMomentum(dType=%d, n=%zu): mismatch at %zu: "
+             "z ref=%.6f got=%.6f, v ref=%.6f got=%.6f\n",
+             (int)dType, n, i, zRef[i], z[i], vRef[i], v[i]);
+      return false;
+    }
+  }
+  return true;
+}
+
 bool TestFusedADM(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed)
 {
   std::mt19937 rng(seed);
@@ -224,6 +348,42 @@ int main()
   printf("%s\n\n", mulPass ? "PASS" : "FAIL");
 
   allPass = allPass && fillPass && mulPass;
+
+  // dGELU/dSIGMOID/dTANH stay on the scalar path (SLEEF transcendentals);
+  // this reference uses std:: instead, so it needs a looser tolerance --
+  // it's checking the formula is right, not bit-matching SLEEF.
+  auto tolFor = [](ActivationType t) {
+    return (t == ActivationType::dGELU || t == ActivationType::dSIGMOID ||
+            t == ActivationType::dTANH)
+               ? 1e-3f
+               : 1e-5f;
+  };
+
+  printf("=== FusedStateUpdate ===\n");
+  bool fsuPass = true;
+  for (ActivationType t : {ActivationType::dRELU, ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID, ActivationType::dTANH,
+                           ActivationType::dGELU, ActivationType::dLINEAR, ActivationType::NONE})
+    for (size_t n : sizes)
+    {
+      bool ok = TestFusedStateUpdate(backend, t, n, (unsigned)((int)t * 131 + n), tolFor(t));
+      fsuPass = fsuPass && ok;
+    }
+  printf("%s\n\n", fsuPass ? "PASS" : "FAIL");
+
+  printf("=== FusedStateUpdateMomentum ===\n");
+  bool fsumPass = true;
+  for (ActivationType t : {ActivationType::dRELU, ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID, ActivationType::dTANH,
+                           ActivationType::dGELU, ActivationType::dLINEAR, ActivationType::NONE})
+    for (size_t n : sizes)
+    {
+      bool ok = TestFusedStateUpdateMomentum(backend, t, n, (unsigned)((int)t * 151 + n), tolFor(t));
+      fsumPass = fsumPass && ok;
+    }
+  printf("%s\n\n", fsumPass ? "PASS" : "FAIL");
+
+  allPass = allPass && fsuPass && fsumPass;
   printf("%s\n", allPass ? "PASS" : "FAIL");
   return allPass ? 0 : 1;
 }

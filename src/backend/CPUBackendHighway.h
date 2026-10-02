@@ -32,4 +32,20 @@ void FillDispatch(float* buf, size_t n, float value) noexcept;
 
 /// @copydoc Deep::IComputeBackend::MultiplyInto
 void MultiplyIntoDispatch(float* dst, const float* a, const float* b, size_t n) noexcept;
+
+/// @copydoc Deep::IComputeBackend::FusedStateUpdate
+/// @note Unlike FusedActivationDerivativeMultiplyDispatch, dType here is
+/// evaluated from the raw pre-activation `z` (see
+/// Deep::ActivationDerivativeScalar), not an already-activated value --
+/// dGELU, dSIGMOID and dTANH all need a transcendental (SLEEF tanh or
+/// std::exp) in that form, so only dRELU, d_eSIGMOID, dLINEAR and NONE are
+/// handled here. Callers must route the other three to the existing scalar
+/// path instead.
+void FusedStateUpdateDispatch(float* z, const float* feedback, ActivationType dType, const float* e,
+                              size_t n, float ir) noexcept;
+
+/// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
+/// @note Same dType restriction as FusedStateUpdateDispatch() above.
+void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback, ActivationType dType,
+                                      const float* e, size_t n, float ir, float beta) noexcept;
 } // namespace Deep

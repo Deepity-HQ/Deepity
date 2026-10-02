@@ -248,6 +248,11 @@ namespace Deep
             return;
         }
 
+        // Im2Col is an inherently per-image gather (no batched primitive);
+        // everything after it is batched into one big GEMM instead of
+        // batchSize small ones, reusing colsRepacked/lgRepacked as pure
+        // scratch exactly as UpdateWeights() already does for its own GEMM
+        // (see FullConvPCLayer::ComputeMuOnly() for the identical trick).
         for (int batch = 0; batch < batchSize; ++batch)
         {
             const float *z_item = z + (size_t)batch * ownSize;
@@ -256,17 +261,16 @@ namespace Deep
             backend->Im2Col(z_item, inChannels, inHeight, inWidth,
                             kernelH, kernelW, strideH, strideW, padH, padW,
                             cols_item);
-
-            float *mu_item = mu + (size_t)batch * outChannels * colCols;
-
-            backend->MatMul(
-                /*transA=*/false, /*transB=*/false,
-                outChannels, (int)colCols, (int)colRows,
-                1.0f, W, (int)colRows, cols_item, (int)colCols,
-                0.0f, mu_item, (int)colCols);
-
-            backend->AddBiasPerChannel(mu_item, b, outChannels, colCols);
         }
+
+        backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+        backend->MatMul(
+            /*transA=*/false, /*transB=*/false,
+            outChannels, (int)(batchSize * colCols), (int)colRows,
+            1.0f, W, (int)colRows, colsRepacked, (int)(batchSize * colCols),
+            0.0f, lgRepacked, (int)(batchSize * colCols));
+        backend->AddBiasPerChannel(lgRepacked, b, outChannels, batchSize * colCols);
+        backend->RepackForBatchedGemm(mu, lgRepacked, outChannels, batchSize, colCols);
 
         backend->Activation(activationType, mu, Nout);
 
@@ -308,17 +312,21 @@ namespace Deep
             // (mu already holds the derivative from the call above).
             backend->MultiplyBroadcastInto(bottom_up_cols, e_above, p_above, mu, batchSize, outSize);
 
+            // Same batched-GEMM trick as ComputeMuOnly(): one big transA
+            // GEMM instead of batchSize small ones, un-repacking the
+            // result back to per-batch-contiguous layout only where
+            // Col2Im (a genuine per-image scatter) actually needs it.
+            backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
+            backend->MatMul(
+                /*transA=*/true, /*transB=*/false,
+                (int)colRows, (int)(batchSize * colCols), outChannels,
+                1.0f, W, (int)colRows, lgRepacked, (int)(batchSize * colCols),
+                0.0f, colsRepacked, (int)(batchSize * colCols));
+            backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
+
             for (int batch = 0; batch < batchSize; ++batch)
             {
-                const float *lg_item = bottom_up_cols + (size_t)batch * outChannels * colCols;
                 float *scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-
-                backend->MatMul(
-                    /*transA=*/true, /*transB=*/false,
-                    (int)colRows, (int)colCols, outChannels,
-                    1.0f, W, (int)colRows, lg_item, (int)colCols,
-                    0.0f, scratch_item, (int)colCols);
-
                 float *dz_item = dz_dt + (size_t)batch * ownSize;
                 backend->Col2Im(scratch_item, inChannels, inHeight, inWidth,
                                 kernelH, kernelW, strideH, strideW, padH, padW,

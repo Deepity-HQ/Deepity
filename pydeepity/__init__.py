@@ -7,6 +7,7 @@ from .ConvolutionalPCN import ConvolutionalPCN
 from .SimpleConvolutionalPCN import SimpleConvolutionalPCN
 from .GaussSeidelPCN import GaussSeidelPCN
 from .DKPPCN import DKPPCN
+from .FullPCN import FullPCN
 
 # Architecture
 from .layer import (
@@ -49,6 +50,7 @@ __all__ = [
     "SimpleConvolutionalPCN",
     "GaussSeidelPCN",
     "DKPPCN",
+    "FullPCN",
 
     # Architecture
     "Layer",

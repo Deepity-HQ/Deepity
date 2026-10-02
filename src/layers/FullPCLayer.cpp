@@ -557,6 +557,18 @@ void FullPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAboveSc
   ActivationType dType = ToDerivativeType(activationType);
   backend->ActivationDerivativeInto(dType, adjoint, z, N);
   backend->MultiplyInto(adjoint, feedbackScratch, adjoint, N);
+
+  // Residual (forward): mu += z, UN-activated, bypassing phi' entirely,
+  // see ComputeMuOnly()'s own comment. Its Jacobian contributes an extra
+  // +I term to d(mu)/dz, so the adjoint needs an extra
+  // +adjointAboveScale*adjointAbove on top of the W-path above (no `a`
+  // factor: the residual add in ComputeMuOnly() has coefficient 1.0, not
+  // `a`, matching UpdateState()'s own un-scaled `AxpyInto(z, e_above, N,
+  // ir)` residual term for the one-hop settling path). Requires
+  // nextSize == size, already guaranteed wherever SetResidual(true) is
+  // actually set (checked once at network Compile() time).
+  if (useResidual)
+    backend->AxpyInto(adjoint, adjointAbove, N, adjointAboveScale);
 }
 
 void FullPCLayer::UpdateErrorEPC() noexcept

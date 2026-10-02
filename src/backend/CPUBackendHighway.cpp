@@ -1,20 +1,27 @@
 /**
  * @file CPUBackendHighway.cpp
  * @brief Google Highway (github.com/google/highway) runtime-dispatched
- * implementations for two CPUBackend elementwise kernels that were
- * previously plain scalar loops: AddBiasPerChannel and (except dGELU)
- * FusedActivationDerivativeMultiply. See CPUBackendHighway.h for why this
- * is its own CMake target, compiled without the project's -march pin.
+ * implementations for several CPUBackend elementwise kernels that were
+ * previously plain scalar loops: AddBiasPerChannel, Fill, MultiplyInto,
+ * and (for a subset of ActivationType, see below)
+ * FusedActivationDerivativeMultiply, FusedStateUpdate and
+ * FusedStateUpdateMomentum. See CPUBackendHighway.h for why this is its
+ * own CMake target, compiled without the project's -march pin.
  *
- * dGELU is deliberately NOT vectorized here: its derivative-from-
- * activated-value formula reproduces ActivationDerivativeScalar's own raw
- * (non-closed-form) formula, which calls Sleef_tanhf_u10 -- a
- * transcendental function. Wiring SLEEF's own vectorized tanh into a
- * Highway lane loop is a real, separate piece of work, not something to
- * rush into this pass; dGELU stays on CPUBackend.cpp's existing scalar
- * path, exactly as it already does for the "activated=true" caveat
- * documented on ActivationDerivativeFromActivatedScalar.
+ * dGELU is never vectorized here, in any of these kernels: its derivative
+ * needs Sleef_tanhf_u10, a transcendental function, and wiring SLEEF's own
+ * vectorized tanh into a Highway lane loop is a real, separate piece of
+ * work, not something to rush into this pass. dSIGMOID and dTANH are
+ * vectorized in FusedActivationDerivativeMultiply (its "from an already-
+ * activated value" closed form needs no transcendental: sig*(1-sig),
+ * 1-tanh^2) but NOT in FusedStateUpdate/FusedStateUpdateMomentum (their
+ * dType is evaluated from the raw pre-activation z, which for dSIGMOID
+ * and dTANH needs std::exp / Sleef_tanhf_u10 respectively -- see
+ * ActivationDerivativeScalar in Activations.h). All three transcendental
+ * cases stay on CPUBackend.cpp's existing scalar path for whichever
+ * kernel needs them.
  */
+#include <cmath>
 #include <cstddef>
 
 #define HWY_TARGET_INCLUDE "backend/CPUBackendHighway.cpp"
@@ -148,6 +155,91 @@ void MultiplyIntoHwy(float* dst, const float* a, const float* b, size_t n)
   for (; i < n; ++i) // scalar tail
     dst[i] = a[i] * b[i];
 }
+
+// Derivative-from-raw-z formula for the three transcendental-free cases
+// this file handles (dRELU, d_eSIGMOID, dLINEAR/NONE); mirrors
+// ActivationDerivativeScalar (Activations.h) exactly for those cases.
+// dGELU/dSIGMOID/dTANH are never passed in here -- see
+// CPUBackendHighway.h's note on the caller-side routing.
+template <class D, class V>
+V DerivFromRawZHwy(D d, V z, ActivationType dType)
+{
+  const auto one = hn::Set(d, 1.0f);
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return hn::IfThenElseZero(hn::Gt(z, hn::Zero(d)), one);
+  case ActivationType::d_eSIGMOID:
+  {
+    auto a = hn::Add(one, hn::Abs(z));
+    return hn::Div(hn::Set(d, 0.5f), hn::Mul(a, a));
+  }
+  default: // dLINEAR, NONE
+    return one;
+  }
+}
+
+void FusedStateUpdateHwy(float* z, const float* feedback, ActivationType dType, const float* e,
+                         size_t n, float ir)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+  const auto irVec = hn::Set(d, ir);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto zv = hn::LoadU(d, z + i);
+    auto deriv = DerivFromRawZHwy(d, zv, dType);
+    auto fv = hn::LoadU(d, feedback + i);
+    auto ev = hn::LoadU(d, e + i);
+    auto update = hn::Sub(hn::Mul(fv, deriv), ev);
+    hn::StoreU(hn::MulAdd(irVec, update, zv), d, z + i);
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formulas exactly
+  {
+    float deriv = (dType == ActivationType::dRELU) ? ((z[i] > 0.0f) ? 1.0f : 0.0f)
+                 : (dType == ActivationType::d_eSIGMOID)
+                     ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
+                     : 1.0f;
+    z[i] += ir * ((feedback[i] * deriv) - e[i]);
+  }
+}
+
+void FusedStateUpdateMomentumHwy(float* z, float* v, const float* feedback, ActivationType dType,
+                                 const float* e, size_t n, float ir, float beta)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+  const auto irVec = hn::Set(d, ir);
+  const auto betaVec = hn::Set(d, beta);
+  const auto oneMinusBetaVec = hn::Set(d, 1.0f - beta);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto zv = hn::LoadU(d, z + i);
+    auto deriv = DerivFromRawZHwy(d, zv, dType);
+    auto fv = hn::LoadU(d, feedback + i);
+    auto ev = hn::LoadU(d, e + i);
+    auto update = hn::Sub(hn::Mul(fv, deriv), ev);
+
+    auto vv = hn::LoadU(d, v + i);
+    vv = hn::MulAdd(betaVec, vv, hn::Mul(oneMinusBetaVec, update));
+    hn::StoreU(vv, d, v + i);
+    hn::StoreU(hn::MulAdd(irVec, vv, zv), d, z + i);
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formulas exactly
+  {
+    float deriv = (dType == ActivationType::dRELU) ? ((z[i] > 0.0f) ? 1.0f : 0.0f)
+                 : (dType == ActivationType::d_eSIGMOID)
+                     ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
+                     : 1.0f;
+    float update = (feedback[i] * deriv) - e[i];
+    v[i] = beta * v[i] + (1.0f - beta) * update;
+    z[i] += ir * v[i];
+  }
+}
 } // namespace HWY_NAMESPACE
 } // namespace Deep
 HWY_AFTER_NAMESPACE();
@@ -159,6 +251,8 @@ HWY_EXPORT(AddBiasPerChannelHwy);
 HWY_EXPORT(FusedActivationDerivativeMultiplyHwy);
 HWY_EXPORT(FillHwy);
 HWY_EXPORT(MultiplyIntoHwy);
+HWY_EXPORT(FusedStateUpdateHwy);
+HWY_EXPORT(FusedStateUpdateMomentumHwy);
 
 void AddBiasPerChannelDispatch(float* buf, const float* bias, size_t channels,
                                size_t spatialSize) noexcept
@@ -180,6 +274,18 @@ void FillDispatch(float* buf, size_t n, float value) noexcept
 void MultiplyIntoDispatch(float* dst, const float* a, const float* b, size_t n) noexcept
 {
   HWY_DYNAMIC_DISPATCH(MultiplyIntoHwy)(dst, a, b, n);
+}
+
+void FusedStateUpdateDispatch(float* z, const float* feedback, ActivationType dType, const float* e,
+                              size_t n, float ir) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(FusedStateUpdateHwy)(z, feedback, dType, e, n, ir);
+}
+
+void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback, ActivationType dType,
+                                      const float* e, size_t n, float ir, float beta) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(FusedStateUpdateMomentumHwy)(z, v, feedback, dType, e, n, ir, beta);
 }
 } // namespace Deep
 #endif // HWY_ONCE

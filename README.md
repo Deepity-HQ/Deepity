@@ -157,6 +157,7 @@ Naive multithreading across small batch sizes made performance worse, not better
 | `SimplePCN`                 | Synchronous (Jacobi) settling, every layer updates together each step. The default starting point.                                                              |
 | `GaussSeidelPCN`            | Sequential-sweep settling, layers see each other's already-updated values within the same step. Generally higher accuracy per epoch, at a real throughput cost. |
 | `DKPPCN`                    | Direct Kolen-Pollack feedback alignment. Needs only one settling step per batch instead of 20-30, at comparable accuracy. See above.                            |
+| `FullPCN`                   | Every PC mechanism in one class: muPC scaling, residual connections, iPC, [ePC](https://arxiv.org/abs/2505.20137), momentum, cross-entropy, each independently toggleable on top of DKP feedback. Off by default, reproduces `DKPPCN` exactly. |
 | `DiscriminativePCN`         | The original, precision-weighted variant, closest to the classical Whittington & Bogacz formulation.                                                            |
 | `ConvPCN` / `SimpleConvPCN` | Convolutional predictive coding layers, for image-shaped input rather than flat vectors.                                                                        |
 

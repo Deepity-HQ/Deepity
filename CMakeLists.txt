@@ -248,6 +248,63 @@ else()
             set(BLAS_LIBRARIES MKL::MKL)
             get_target_property(BLAS_INCLUDE_DIR MKL::MKL INTERFACE_INCLUDE_DIRECTORIES)
             set(DEEPITY_BLAS_RESOLVED TRUE)
+
+            if(UNIX AND NOT APPLE)
+                # MKL's default threading layer links against Intel's OWN
+                # OpenMP runtime (libiomp5), a SEPARATE oneAPI component
+                # (.../compiler/<ver>/lib) from MKL itself
+                # (.../mkl/<ver>/lib) -- pulled in via MKL's own link
+                # flags rather than an IMPORTED_LOCATION-bearing CMake
+                # target, so CMake's automatic build-tree RPATH
+                # propagation (the mechanism that already puts MKL's own
+                # lib dir on every linked binary's RPATH for free, no
+                # code needed) never sees it. Without this, EVERY binary
+                # linking MKL -- pydeepity and every C++ test executable
+                # alike -- fails at load time ("libiomp5.so: cannot open
+                # shared object file") unless LD_LIBRARY_PATH happens to
+                # be set by hand. Same class of gap DEEPITY_OMP_DLL above
+                # already works around for Windows' OpenMP DLL.
+                if(NOT DEEPITY_IOMP5_LIB)
+                    get_filename_component(_mkl_cmake_dir "${MKL_DIR}" DIRECTORY)
+                    get_filename_component(_mkl_lib_dir "${_mkl_cmake_dir}" DIRECTORY)
+                    get_filename_component(_mkl_ver_dir "${_mkl_lib_dir}" DIRECTORY)
+                    get_filename_component(_mkl_root_dir "${_mkl_ver_dir}" DIRECTORY)
+                    get_filename_component(_oneapi_root "${_mkl_root_dir}" DIRECTORY)
+
+                    file(GLOB _oneapi_compiler_lib_dirs "${_oneapi_root}/compiler/*/lib")
+                    find_library(DEEPITY_IOMP5_LIB
+                        NAMES iomp5
+                        PATHS "${_oneapi_root}/compiler/latest/lib" ${_oneapi_compiler_lib_dirs}
+                        NO_DEFAULT_PATH
+                    )
+                    if(NOT DEEPITY_IOMP5_LIB)
+                        # Normal system search, covers a non-oneAPI MKL
+                        # install (e.g. a distro package) where libiomp5
+                        # might already be on the default linker path.
+                        find_library(DEEPITY_IOMP5_LIB NAMES iomp5)
+                    endif()
+                endif()
+
+                if(DEEPITY_IOMP5_LIB)
+                    get_filename_component(DEEPITY_IOMP5_LIB_DIR "${DEEPITY_IOMP5_LIB}" DIRECTORY)
+                    message(STATUS "Intel OpenMP runtime (libiomp5) resolved to: ${DEEPITY_IOMP5_LIB}")
+                    # CMake's own intended global knob for exactly this --
+                    # unlike the per-target compile-flag scoping used
+                    # elsewhere in this file for ISA portability, RPATH
+                    # has no "defeats runtime SIMD dispatch" concern, so a
+                    # directory-wide default here is the right tool, not
+                    # a repeat of that earlier anti-pattern.
+                    list(APPEND CMAKE_BUILD_RPATH "${DEEPITY_IOMP5_LIB_DIR}")
+                    list(APPEND CMAKE_INSTALL_RPATH "${DEEPITY_IOMP5_LIB_DIR}")
+                else()
+                    message(WARNING "DEEPITY_USE_MKL is ON, but Intel's OpenMP runtime "
+                        "(libiomp5) could not be located automatically. Built "
+                        "binaries (including pydeepity) will fail to load at "
+                        "runtime unless libiomp5's directory is on the loader's "
+                        "search path (e.g. LD_LIBRARY_PATH), or reconfigure with "
+                        "-DDEEPITY_IOMP5_LIB=<path/to/libiomp5.so>.")
+                endif()
+            endif()
         else()
             message(WARNING "DEEPITY_USE_MKL was set, but MKL was not found "
                 "(is oneAPI/MKL installed and sourced? e.g. "

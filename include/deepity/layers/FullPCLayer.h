@@ -277,7 +277,9 @@ public:
   /// same sign relationship holds for the Gaussian terminal too), so the
   /// terminal's raw error needs negating before it's a valid seed. Every
   /// other layer already receives a correctly-signed `adjoint` from the
-  /// layer above and uses the default.
+  /// layer above and uses the default. Also correctly includes the
+  /// residual connection's identity-Jacobian term when useResidual is
+  /// set on this layer (see ComputeMuOnly()'s own residual handling).
   void ComputeAdjoint(const float* adjointAbove, float adjointAboveScale = 1.0f) noexcept;
   /// @brief ePC's error-update step: e := (1-ir)*e - ir*adjoint, the
   /// paper's `ε -= λ*(ε+adjoint)` gradient-descent rule. Call
