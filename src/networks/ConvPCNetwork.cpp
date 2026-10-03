@@ -119,8 +119,13 @@ namespace Deep
 
         if (device == DeviceType::DEVICE_GPU)
         {
+            std::cerr << "[DIAG] TrainStep called: inferenceSteps=" << inferenceSteps
+                      << " graphCaptured(before)=" << graphCaptured
+                      << " capturedInferenceSteps(before)=" << capturedInferenceSteps << "\n";
+
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
+                std::cerr << "[DIAG] entering (re)capture branch\n";
                 backend->BeginGraphCapture();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
@@ -133,6 +138,7 @@ namespace Deep
                 }
                 UpdateWeights();
                 bool captureOk = backend->EndGraphCapture();
+                std::cerr << "[DIAG] EndGraphCapture() returned captureOk=" << captureOk << "\n";
 
                 if (captureOk)
                 {
@@ -143,10 +149,17 @@ namespace Deep
                 {
                     std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
                 }
+                std::cerr << "[DIAG] after capture: graphCaptured=" << graphCaptured
+                          << " capturedInferenceSteps=" << capturedInferenceSteps << "\n";
+            }
+            else
+            {
+                std::cerr << "[DIAG] skipping capture, reusing existing graph\n";
             }
 
             if (graphCaptured)
             {
+                std::cerr << "[DIAG] calling ReplayGraph()\n";
                 backend->ReplayGraph();
                 // cudaGraphLaunch() only enqueues the replay; the fresh
                 // energy readout below needs it to have actually finished.
