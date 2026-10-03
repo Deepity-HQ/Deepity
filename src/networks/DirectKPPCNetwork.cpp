@@ -132,6 +132,7 @@ namespace Deep
             if (graphCaptured)
             {
                 backend->ReplayGraph();
+                backend->Synchronize();
             }
             else
             {

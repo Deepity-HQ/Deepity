@@ -175,6 +175,7 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     if (graphCaptured)
     {
       backend->ReplayGraph();
+      backend->Synchronize();
     }
     else
     {

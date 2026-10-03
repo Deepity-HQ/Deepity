@@ -148,6 +148,13 @@ namespace Deep
             if (graphCaptured)
             {
                 backend->ReplayGraph();
+                // cudaGraphLaunch() only enqueues the replay; the fresh
+                // energy readout below needs it to have actually finished.
+                // Same-stream ordering should guarantee this without an
+                // explicit wait, but this costs nothing extra (the
+                // ...AndEnergy() call right after does its own blocking
+                // sync regardless) and removes any doubt.
+                backend->Synchronize();
             }
             else
             {
@@ -266,6 +273,7 @@ namespace Deep
             if (graphCapturedWithProjection)
             {
                 backend->ReplayGraph();
+                backend->Synchronize();
             }
             else
             {

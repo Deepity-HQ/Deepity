@@ -161,6 +161,7 @@ namespace Deep
             if (graphCapturedWithProjection)
             {
                 backend->ReplayGraph();
+                backend->Synchronize();
             }
             else
             {
@@ -247,6 +248,7 @@ namespace Deep
             if (graphCaptured)
             {
                 backend->ReplayGraph();
+                backend->Synchronize();
             }
             else
             {

@@ -23,6 +23,8 @@ public:
   bool EndGraphCapture() noexcept override;
   /// @copydoc Deep::IComputeBackend::ReplayGraph
   void ReplayGraph() noexcept override;
+  /// @copydoc Deep::IComputeBackend::Synchronize
+  void Synchronize() noexcept override;
 
   /// @copydoc Deep::IComputeBackend::Allocate
   float* Allocate(size_t numFloats) override;

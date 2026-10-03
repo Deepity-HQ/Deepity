@@ -170,7 +170,13 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
     }
 
     if (graphCaptured)
+    {
       backend->ReplayGraph();
+      // cudaGraphLaunch() only enqueues the replay; see
+      // ConvPCNetwork::TrainStep()'s identical comment for why this
+      // matters even though same-stream ordering should already cover it.
+      backend->Synchronize();
+    }
     else
     {
       ProjectForward();
