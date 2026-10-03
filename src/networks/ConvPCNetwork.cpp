@@ -119,16 +119,8 @@ namespace Deep
 
         if (device == DeviceType::DEVICE_GPU)
         {
-            float w0Before = 0.0f;
-            backend->CopyToHost(&w0Before, layers.front()->GetWeights(), 1);
-            std::cerr << "[DIAG] TrainStep called: inferenceSteps=" << inferenceSteps
-                      << " graphCaptured(before)=" << graphCaptured
-                      << " capturedInferenceSteps(before)=" << capturedInferenceSteps
-                      << " W[0](before)=" << w0Before << "\n";
-
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
-                std::cerr << "[DIAG] entering (re)capture branch\n";
                 backend->BeginGraphCapture();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
@@ -141,7 +133,6 @@ namespace Deep
                 }
                 UpdateWeights();
                 bool captureOk = backend->EndGraphCapture();
-                std::cerr << "[DIAG] EndGraphCapture() returned captureOk=" << captureOk << "\n";
 
                 if (captureOk)
                 {
@@ -163,17 +154,10 @@ namespace Deep
                 {
                     std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
                 }
-                std::cerr << "[DIAG] after capture: graphCaptured=" << graphCaptured
-                          << " capturedInferenceSteps=" << capturedInferenceSteps << "\n";
-            }
-            else
-            {
-                std::cerr << "[DIAG] skipping capture, reusing existing graph\n";
             }
 
             if (graphCaptured)
             {
-                std::cerr << "[DIAG] calling ReplayGraph()\n";
                 backend->ReplayGraph();
                 // cudaGraphLaunch() only enqueues the replay; the fresh
                 // energy readout below needs it to have actually finished.
@@ -182,10 +166,6 @@ namespace Deep
                 // ...AndEnergy() call right after does its own blocking
                 // sync regardless) and removes any doubt.
                 backend->Synchronize();
-
-                float w0After = 0.0f;
-                backend->CopyToHost(&w0After, layers.front()->GetWeights(), 1);
-                std::cerr << "[DIAG] W[0](after replay+sync)=" << w0After << "\n";
             }
             else
             {
