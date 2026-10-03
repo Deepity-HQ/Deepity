@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <deepity/networks/FullConvPCNetwork.h>
+#include <iostream>
 #include <pmmintrin.h>
 #include <stdexcept>
 #include <xmmintrin.h>
@@ -146,13 +147,65 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     }
   };
 
-  ProjectForward();
-  CalculateTerminalError();
-  DirectFeedbackUpdate();
-  for (int t = 0; t < inferenceSteps; t++)
-    settleStep();
-  if (!useIPC)
-    UpdateWeights();
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture();
+      ProjectForward();
+      CalculateTerminalError();
+      DirectFeedbackUpdate();
+      for (int t = 0; t < inferenceSteps; t++)
+        settleStep();
+      if (!useIPC)
+        UpdateWeights();
+      bool captureOk = backend->EndGraphCapture();
+
+      if (captureOk)
+      {
+        graphCaptured = true;
+        capturedInferenceSteps = inferenceSteps;
+
+        // settleStep()'s own InvalidateMuCache() calls above only run
+        // under useIPC; without it, nothing clears a clamped layer's
+        // mu-cache after this recording pass, so the fresh CalculateState()
+        // read below would wrongly reuse mu from before this call's own
+        // weight update (see ConvPCNetwork::TrainStep()'s identical bug).
+        for (auto& l : layers)
+          l->InvalidateMuCache();
+      }
+      else
+      {
+        std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+      }
+    }
+
+    if (graphCaptured)
+    {
+      backend->ReplayGraph();
+      backend->Synchronize();
+    }
+    else
+    {
+      ProjectForward();
+      CalculateTerminalError();
+      DirectFeedbackUpdate();
+      for (int t = 0; t < inferenceSteps; t++)
+        settleStep();
+      if (!useIPC)
+        UpdateWeights();
+    }
+  }
+  else
+  {
+    ProjectForward();
+    CalculateTerminalError();
+    DirectFeedbackUpdate();
+    for (int t = 0; t < inferenceSteps; t++)
+      settleStep();
+    if (!useIPC)
+      UpdateWeights();
+  }
 
   float finalEnergy = 0.0f;
   for (auto& l : layers)

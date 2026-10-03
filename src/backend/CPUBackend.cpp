@@ -128,6 +128,15 @@ void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t 
     cblas_saxpy(width, 1.0f, src + b * width, 1, dst, 1);
 }
 
+float CPUBackend::Sum(const float* buf, size_t n) noexcept
+{
+  float total = 0.0f;
+#pragma omp parallel for schedule(static) reduction(+ : total) if (n > 4096 && !omp_in_parallel())
+  for (size_t i = 0; i < n; ++i)
+    total += buf[i];
+  return total;
+}
+
 void CPUBackend::Scale(float* buf, size_t n, float alpha) noexcept
 {
   cblas_sscal(n, alpha, buf, 1);
@@ -469,6 +478,16 @@ float CPUBackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* 
     }
   }
   return energy;
+}
+
+void CPUBackend::ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
+                                               const float* /*p*/, size_t batchSize,
+                                               size_t width) noexcept
+{
+  const size_t n = batchSize * width;
+#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+  for (size_t idx = 0; idx < n; ++idx)
+    e[idx] = z[idx] - mu[idx];
 }
 
 void CPUBackend::AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,

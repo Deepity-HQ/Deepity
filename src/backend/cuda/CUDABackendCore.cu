@@ -90,6 +90,13 @@ void CUDABackend::ReplayGraph() noexcept
     std::cerr << "cudaGraphLaunch failed: " << cudaGetErrorString(err) << "\n";
 }
 
+void CUDABackend::Synchronize() noexcept
+{
+  cudaError_t err = cudaStreamSynchronize(stream);
+  if (err != cudaSuccess)
+    std::cerr << "cudaStreamSynchronize failed: " << cudaGetErrorString(err) << "\n";
+}
+
 float* CUDABackend::Allocate(size_t numFloats)
 {
   float* ptr = nullptr;

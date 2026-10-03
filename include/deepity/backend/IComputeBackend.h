@@ -31,8 +31,19 @@ public:
   virtual bool EndGraphCapture() noexcept = 0;
   /// @brief Launches a graph previously captured and instantiated by
   /// BeginGraphCapture()/EndGraphCapture(). No-op if EndGraphCapture()
-  /// never returned true.
+  /// never returned true. cudaGraphLaunch() is asynchronous: this
+  /// returns as soon as the launch is ENQUEUED, not once it completes.
+  /// Ordinarily that's fine (CUDA guarantees same-stream ordering, so a
+  /// later call that needs the result just needs to be queued on the
+  /// same stream too) -- but call Synchronize() afterward if you need
+  /// the replayed work to have definitely finished, e.g. before reading
+  /// results back on the host through any path that ISN'T itself a
+  /// synchronous backend call.
   virtual void ReplayGraph() noexcept = 0;
+  /// @brief Blocks until all previously enqueued work on this backend's
+  /// stream has completed. A no-op on CPUBackend (every CPU call is
+  /// already synchronous).
+  virtual void Synchronize() noexcept = 0;
 
   // Memory
 
@@ -102,6 +113,14 @@ public:
   /// src's row-major [batchSize,width] layout as column-major
   /// [width,batchSize] with no data movement (verified numerically).
   virtual void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept = 0;
+
+  /// @brief Returns the plain (signed) sum of every element in buf.
+  /// Synchronous on CUDABackend (reads the reduction back to a host
+  /// float before returning) -- same constraint as ComputeErrorAndEnergy
+  /// and friends: never call this from inside a captured CUDA graph
+  /// region, only from code that runs outside any
+  /// BeginGraphCapture()/EndGraphCapture() pair.
+  virtual float Sum(const float* buf, size_t n) noexcept = 0;
 
   // Elementwise scalar ops
 
@@ -337,6 +356,17 @@ public:
   virtual float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
                                                        const float* p, size_t batchSize,
                                                        size_t width) noexcept = 0;
+  /// @brief Same as ComputePrecisionWeightedErrorAndEnergy(), without
+  /// computing (or returning) the energy, for callers that only need e.
+  /// On CUDABackend this additionally means: no blocking
+  /// cudaStreamSynchronize() -- the ...AndEnergy() variant must
+  /// synchronously read the energy reduction back to a host float, which
+  /// is illegal while a CUDA graph is being captured, exactly why this
+  /// counterpart exists (mirrors ComputeError() alongside
+  /// ComputeErrorAndEnergy() above).
+  virtual void ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
+                                             const float* p, size_t batchSize,
+                                             size_t width) noexcept = 0;
 
   /// @brief y[b*width+i] += alpha * x[b*width+i] * factor[i], for every b
   /// in [0,batchSize), i in [0,width), AxpyInto with an added

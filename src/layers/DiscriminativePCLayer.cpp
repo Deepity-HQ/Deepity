@@ -51,24 +51,35 @@ namespace Deep
         backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
     }
 
-    float DiscriminativePCLayer::CalculateState() noexcept
+    float DiscriminativePCLayer::CalculateState(bool needEnergy) noexcept
     {
         const size_t N = (size_t)batchSize * size;
 
+        // See ConvPCLayer::CalculateState()'s identical comment: this
+        // branch indexed log_p[i] from host code unconditionally before,
+        // which is illegal once log_p is a GPU device pointer
+        // (DeviceMemoryArena) -- fixed by routing through backend->Sum()
+        // (a synchronous GPU readback, same constraint as
+        // ComputePrecisionWeightedErrorAndEnergy below, so only computed
+        // when actually needed).
         if (layerBelow == nullptr)
         {
             backend->Zero(e, N);
             float totalEnergy = 0.0f;
-            for (size_t i = 0; i < size; ++i)
-                totalEnergy -= 0.5f * log_p[i] * batchSize;
+            if (needEnergy)
+                totalEnergy = -0.5f * (float)batchSize * backend->Sum(log_p, size);
 
             if (nextSize > 0)
                 ComputeMuOnly();
             return totalEnergy;
         }
 
-        float totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
-            e, z, layerBelow->mu, p, batchSize, size);
+        float totalEnergy = 0.0f;
+        if (needEnergy)
+            totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
+                e, z, layerBelow->mu, p, batchSize, size);
+        else
+            backend->ComputePrecisionWeightedError(e, z, layerBelow->mu, p, batchSize, size);
 
         if (nextSize > 0)
             ComputeMuOnly();

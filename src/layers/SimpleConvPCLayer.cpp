@@ -195,7 +195,7 @@ namespace Deep
         backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
     }
 
-    float SimpleConvPCLayer::CalculateState() noexcept
+    float SimpleConvPCLayer::CalculateState(bool needEnergy) noexcept
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
@@ -208,7 +208,11 @@ namespace Deep
             return 0.0f;
         }
 
-        float totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, ownStateSize);
+        float totalEnergy = 0.0f;
+        if (needEnergy)
+            totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, ownStateSize);
+        else
+            backend->ComputeError(e, z, layerBelow->mu, ownStateSize);
 
         if (outChannels > 0)
             ComputeMuOnly();

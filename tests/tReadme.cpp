@@ -158,7 +158,7 @@ static void BM_Activation_DeepityTanh(benchmark::State &state)
 {
     size_t size = state.range(0);
     size_t bytes = (size * sizeof(float) + 63) & ~63; // 64-byte alignment padding
-    float *data = static_cast<float *>(std::aligned_alloc(64, bytes));
+    float *data = static_cast<float *>(Deep::detail::AlignedAllocPortable(64, bytes));
     std::fill_n(data, size, 0.5f);
 
     for (auto _ : state)
@@ -166,7 +166,7 @@ static void BM_Activation_DeepityTanh(benchmark::State &state)
         Deep::tanh(data, size);
         benchmark::ClobberMemory();
     }
-    std::free(data);
+    Deep::detail::AlignedFreePortable(data);
 }
 BENCHMARK(BM_Activation_DeepityTanh)->Arg(10048)->Arg(1000064);
 
@@ -174,7 +174,7 @@ static void BM_Activation_DeepityDTanh(benchmark::State &state)
 {
     size_t size = state.range(0);
     size_t bytes = (size * sizeof(float) + 63) & ~63;
-    float *data = static_cast<float *>(std::aligned_alloc(64, bytes));
+    float *data = static_cast<float *>(Deep::detail::AlignedAllocPortable(64, bytes));
     std::fill_n(data, size, 0.5f);
 
     for (auto _ : state)
@@ -182,7 +182,7 @@ static void BM_Activation_DeepityDTanh(benchmark::State &state)
         Deep::dTanh(data, size, true);
         benchmark::ClobberMemory();
     }
-    std::free(data);
+    Deep::detail::AlignedFreePortable(data);
 }
 BENCHMARK(BM_Activation_DeepityDTanh)->Arg(10048)->Arg(1000064);
 
@@ -202,7 +202,7 @@ static void BM_Activation_DeepitySigmoid(benchmark::State &state)
 {
     size_t size = state.range(0);
     size_t bytes = (size * sizeof(float) + 63) & ~63;
-    float *data = static_cast<float *>(std::aligned_alloc(64, bytes));
+    float *data = static_cast<float *>(Deep::detail::AlignedAllocPortable(64, bytes));
     std::fill_n(data, size, 0.5f);
 
     for (auto _ : state)
@@ -210,7 +210,7 @@ static void BM_Activation_DeepitySigmoid(benchmark::State &state)
         Deep::sigmoid(data, size);
         benchmark::ClobberMemory();
     }
-    std::free(data);
+    Deep::detail::AlignedFreePortable(data);
 }
 BENCHMARK(BM_Activation_DeepitySigmoid)->Arg(10048)->Arg(1000064);
 

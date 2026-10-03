@@ -104,7 +104,7 @@ namespace Deep
         backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
     }
 
-    float GaussSeidelPCLayer::ComputeError() noexcept
+    float GaussSeidelPCLayer::ComputeError(bool needEnergy) noexcept
     {
         size_t ownStateSize = (size_t)batchSize * size;
 
@@ -114,7 +114,11 @@ namespace Deep
             return 0.0f;
         }
 
-        return backend->ComputeErrorAndEnergy(e, z, layerBelow->GetMu(), ownStateSize);
+        if (needEnergy)
+            return backend->ComputeErrorAndEnergy(e, z, layerBelow->GetMu(), ownStateSize);
+
+        backend->ComputeError(e, z, layerBelow->GetMu(), ownStateSize);
+        return 0.0f;
     }
 
     void GaussSeidelPCLayer::UpdateWeights() noexcept

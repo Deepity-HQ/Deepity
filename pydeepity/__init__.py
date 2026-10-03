@@ -62,6 +62,9 @@ __all__ = [
     "GeLU",
     "Convolution",
 
+    # Backend
+    "dy",
+
     # Backend utilities
     "StreamAlignedBatcher",
     "get_l2_cache_bytes",

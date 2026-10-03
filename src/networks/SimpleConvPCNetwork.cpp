@@ -1,5 +1,6 @@
 #include <deepity/networks/SimpleConvPCNetwork.h>
 #include <deepity/backend/Backend.h>
+#include <iostream>
 
 
 namespace Deep
@@ -81,12 +82,12 @@ namespace Deep
         layers.front()->ClampState(input);
     }
 
-    float SimpleConvPCNetwork::CalculateState() noexcept
+    float SimpleConvPCNetwork::CalculateState(bool needEnergy) noexcept
     {
         float e = 0.0f;
         for (auto &l : layers)
-            e += l->CalculateState();
-        return e;
+            e += l->CalculateState(needEnergy);
+        return needEnergy ? e : 0.0f;
     }
 
     void SimpleConvPCNetwork::UpdateState() noexcept
@@ -107,14 +108,70 @@ namespace Deep
         Clamp(x);
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
+        if (device == DeviceType::DEVICE_GPU)
         {
-            finalEnergy = CalculateState();
-            UpdateState();
+            if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    // needEnergy=false: the precision-free ComputeErrorAndEnergy
+                    // still does a synchronous GPU readback, illegal while this
+                    // stream is being captured. Real energy read happens in the
+                    // fresh, uncaptured call at the end of this function.
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCaptured = true;
+                    capturedInferenceSteps = inferenceSteps;
+
+                    // The recording pass above just ran this settling loop
+                    // as real C++, leaving muCacheValid=true behind for any
+                    // clamped layer it touched last; nothing resets that
+                    // before the fresh energy read below, which would
+                    // otherwise wrongly reuse mu from before this call's
+                    // own weight update (see ConvPCNetwork::TrainStep()'s
+                    // identical bug).
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCaptured)
+            {
+                backend->ReplayGraph();
+                backend->Synchronize();
+            }
+            else
+            {
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            for (int t = 0; t < inferenceSteps; ++t)
+            {
+                CalculateState(false);
+                UpdateState();
+            }
+            UpdateWeights();
         }
 
-        UpdateWeights();
+        float finalEnergy = CalculateState();
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;
@@ -163,17 +220,74 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        ProjectForward();
+        // Clamped BEFORE ProjectForward() (reordered from the original
+        // ProjectForward()-then-clamp): required so ProjectForward()'s own
+        // IsClamped() guard protects the terminal layer, and so
+        // ProjectForward() can safely move inside the captured region
+        // below -- see ConvPCNetwork::TrainStepWithProjection()'s identical
+        // comment for why.
         GetTerminalLayer()->ClampState(y);
 
-        float finalEnergy = 0.0f;
-        for (int t = 0; t < inferenceSteps; ++t)
+        if (device == DeviceType::DEVICE_GPU)
         {
-            finalEnergy = CalculateState();
-            UpdateState();
+            if (!graphCapturedWithProjection || capturedInferenceStepsWithProjection != inferenceSteps)
+            {
+                backend->BeginGraphCapture();
+                ProjectForward();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+                bool captureOk = backend->EndGraphCapture();
+
+                if (captureOk)
+                {
+                    graphCapturedWithProjection = true;
+                    capturedInferenceStepsWithProjection = inferenceSteps;
+
+                    // See the identical fix above in TrainStep(): the
+                    // recording pass just ran this settling loop as real
+                    // C++, leaving muCacheValid=true behind for any
+                    // clamped layer it touched last.
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
+                }
+                else
+                {
+                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+                }
+            }
+
+            if (graphCapturedWithProjection)
+            {
+                backend->ReplayGraph();
+                backend->Synchronize();
+            }
+            else
+            {
+                ProjectForward();
+                for (int t = 0; t < inferenceSteps; ++t)
+                {
+                    CalculateState(false);
+                    UpdateState();
+                }
+                UpdateWeights();
+            }
+        }
+        else
+        {
+            ProjectForward();
+            for (int t = 0; t < inferenceSteps; ++t)
+            {
+                CalculateState(false);
+                UpdateState();
+            }
+            UpdateWeights();
         }
 
-        UpdateWeights();
+        float finalEnergy = CalculateState();
         GetTerminalLayer()->UnclampState();
 
         return finalEnergy;

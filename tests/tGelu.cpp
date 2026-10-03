@@ -15,6 +15,7 @@
  * all produce errors far larger than this).
  */
 #include <deepity/utils/Activations.h>
+#include <deepity/utils/MemoryArena.h>
 #include <cstdio>
 #include <cmath>
 #include <cstdlib>
@@ -64,7 +65,7 @@ int main()
     // FMA structure) wouldn't show up in the n=1 scalar-only test above.
     printf("\n=== SIMD path (buffer large enough to exercise vectorized loop) ===\n");
     const size_t simdSize = 64; // large enough for any SIMD width (16/8/4) with a real tail too
-    float *buf = static_cast<float *>(std::aligned_alloc(64, simdSize * sizeof(float)));
+    float *buf = static_cast<float *>(detail::AlignedAllocPortable(64, simdSize * sizeof(float)));
     for (size_t i = 0; i < simdSize; ++i)
         buf[i] = cases[i % cases.size()].x;
 
@@ -80,7 +81,7 @@ int main()
             printf("  buf[%zu]: got %.6f, expected %.6f, err=%.6f  FAIL\n", i, buf[i], expected, err);
     }
     printf("  (silent = all %zu SIMD-path values passed)\n", simdSize);
-    std::free(buf);
+    detail::AlignedFreePortable(buf);
 
     printf("\n%s\n", allPassed ? "PASS: gelu() matches true GELU within tolerance." : "FAIL: gelu() does not match expected values.");
     return allPassed ? 0 : 1;

@@ -204,27 +204,37 @@ namespace Deep
         backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
     }
 
-    float ConvPCLayer::CalculateState() noexcept
+    float ConvPCLayer::CalculateState(bool needEnergy) noexcept
     {
         size_t ownSize = (size_t)inChannels * inHeight * inWidth;
         size_t ownStateSize = (size_t)batchSize * ownSize;
 
         // Zero-Energy bypass, matches the original's -0.5*sum(log_p)
         // formula for the input layer (no e term at all, since there's
-        // no layerBelow to compare against).
+        // no layerBelow to compare against). backend->Sum() is a
+        // synchronous GPU readback (same constraint as
+        // ComputePrecisionWeightedErrorAndEnergy below), so it's only
+        // computed when actually needed -- also fixes a real bug this
+        // branch had before any needEnergy existed: indexing log_p[i]
+        // directly from host code is illegal once log_p is a GPU device
+        // pointer (DeviceMemoryArena), regardless of graph capture.
         if (layerBelow == nullptr)
         {
             backend->Zero(e, ownStateSize);
             float totalEnergy = 0.0f;
-            for (size_t i = 0; i < ownSize; ++i)
-                totalEnergy -= 0.5f * log_p[i] * batchSize;
+            if (needEnergy)
+                totalEnergy = -0.5f * (float)batchSize * backend->Sum(log_p, ownSize);
             if (outChannels > 0)
                 ComputeMuOnly();
             return totalEnergy;
         }
 
-        float totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
-            e, z, layerBelow->mu, p, batchSize, ownSize);
+        float totalEnergy = 0.0f;
+        if (needEnergy)
+            totalEnergy = backend->ComputePrecisionWeightedErrorAndEnergy(
+                e, z, layerBelow->mu, p, batchSize, ownSize);
+        else
+            backend->ComputePrecisionWeightedError(e, z, layerBelow->mu, p, batchSize, ownSize);
 
         if (outChannels > 0)
             ComputeMuOnly();

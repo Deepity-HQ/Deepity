@@ -70,7 +70,14 @@ public:
 
   /// @brief Calculate energy/prediction errors for this layer.
   /// @return This layer's energy contribution at the current state.
-  float CalculateState() noexcept override;
+  float CalculateState() noexcept override { return CalculateState(true); }
+  /// @brief Same as CalculateState(), but can skip computing (and
+  /// returning) the energy. On CUDABackend, needEnergy=false also means
+  /// no blocking host sync, required for any settling-loop caller that
+  /// runs this inside a captured CUDA graph region (see
+  /// ConvPCNetwork::TrainStep()'s GPU branch).
+  /// @param needEnergy Whether to compute and return the energy.
+  float CalculateState(bool needEnergy) noexcept;
   /// @brief Update latent beliefs (z/r) via inference gradient.
   void UpdateState() noexcept override;
   /// @brief Hebbian/gradient weight update.
@@ -164,6 +171,22 @@ public:
   void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
   /// @brief Whether ClampState() is currently active on this layer.
   bool IsClamped() const noexcept { return isClamped; }
+
+  /// @brief Forces the next ComputeMuOnly() call to recompute instead of
+  /// reusing cachedMu, without otherwise touching clamp state.
+  ///
+  /// ClampState() normally does this (muCacheValid = false), and runs
+  /// fresh at the top of every TrainStep() call. But a CUDA-graph (re)capture
+  /// replays ClampState() only implicitly, by re-executing the whole
+  /// settling loop's C++ as part of recording the graph: that loop's last
+  /// ComputeMuOnly() call leaves muCacheValid = true as a side effect, and
+  /// nothing clears it again before the graph is replayed. The following
+  /// uncaptured, fresh CalculateState() read (used for the returned/printed
+  /// energy) then wrongly takes the cached branch, returning mu from
+  /// BEFORE this call's weight update instead of after it. Callers that
+  /// just finished a capture should invalidate the cache here before that
+  /// read, exactly like a fresh ClampState() call would have.
+  void InvalidateMuCache() noexcept { muCacheValid = false; }
 
   /// @brief Sets the layer immediately above this one in the network.
   /// @param above Pointer to the layer above; may be nullptr for a
