@@ -119,9 +119,12 @@ namespace Deep
 
         if (device == DeviceType::DEVICE_GPU)
         {
+            float w0Before = 0.0f;
+            backend->CopyToHost(&w0Before, layers.front()->GetWeights(), 1);
             std::cerr << "[DIAG] TrainStep called: inferenceSteps=" << inferenceSteps
                       << " graphCaptured(before)=" << graphCaptured
-                      << " capturedInferenceSteps(before)=" << capturedInferenceSteps << "\n";
+                      << " capturedInferenceSteps(before)=" << capturedInferenceSteps
+                      << " W[0](before)=" << w0Before << "\n";
 
             if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
             {
@@ -168,6 +171,10 @@ namespace Deep
                 // ...AndEnergy() call right after does its own blocking
                 // sync regardless) and removes any doubt.
                 backend->Synchronize();
+
+                float w0After = 0.0f;
+                backend->CopyToHost(&w0After, layers.front()->GetWeights(), 1);
+                std::cerr << "[DIAG] W[0](after replay+sync)=" << w0After << "\n";
             }
             else
             {
