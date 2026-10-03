@@ -147,6 +147,17 @@ namespace Deep
                 {
                     graphCaptured = true;
                     capturedInferenceSteps = inferenceSteps;
+
+                    // The settling loop just recorded above ran as real C++,
+                    // leaving muCacheValid=true whenever it last touched a
+                    // clamped layer. Nothing will reset that before the fresh
+                    // CalculateState() read below, so it would wrongly reuse
+                    // cachedMu (computed from this call's PRE-update weights,
+                    // the last time the loop's recording touched it) instead
+                    // of recomputing from the weights ReplayGraph() is about
+                    // to produce. See ConvPCLayer::InvalidateMuCache().
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
                 }
                 else
                 {

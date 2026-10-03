@@ -172,6 +172,22 @@ public:
   /// @brief Whether ClampState() is currently active on this layer.
   bool IsClamped() const noexcept { return isClamped; }
 
+  /// @brief Forces the next ComputeMuOnly() call to recompute instead of
+  /// reusing cachedMu, without otherwise touching clamp state.
+  ///
+  /// ClampState() normally does this (muCacheValid = false), and runs
+  /// fresh at the top of every TrainStep() call. But a CUDA-graph (re)capture
+  /// replays ClampState() only implicitly, by re-executing the whole
+  /// settling loop's C++ as part of recording the graph: that loop's last
+  /// ComputeMuOnly() call leaves muCacheValid = true as a side effect, and
+  /// nothing clears it again before the graph is replayed. The following
+  /// uncaptured, fresh CalculateState() read (used for the returned/printed
+  /// energy) then wrongly takes the cached branch, returning mu from
+  /// BEFORE this call's weight update instead of after it. Callers that
+  /// just finished a capture should invalidate the cache here before that
+  /// read, exactly like a fresh ClampState() call would have.
+  void InvalidateMuCache() noexcept { muCacheValid = false; }
+
   /// @brief Sets the layer immediately above this one in the network.
   /// @param above Pointer to the layer above; may be nullptr for a
   /// terminal layer.
