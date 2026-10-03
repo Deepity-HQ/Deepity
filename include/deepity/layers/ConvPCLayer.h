@@ -70,7 +70,14 @@ public:
 
   /// @brief Calculate energy/prediction errors for this layer.
   /// @return This layer's energy contribution at the current state.
-  float CalculateState() noexcept override;
+  float CalculateState() noexcept override { return CalculateState(true); }
+  /// @brief Same as CalculateState(), but can skip computing (and
+  /// returning) the energy. On CUDABackend, needEnergy=false also means
+  /// no blocking host sync, required for any settling-loop caller that
+  /// runs this inside a captured CUDA graph region (see
+  /// ConvPCNetwork::TrainStep()'s GPU branch).
+  /// @param needEnergy Whether to compute and return the energy.
+  float CalculateState(bool needEnergy) noexcept;
   /// @brief Update latent beliefs (z/r) via inference gradient.
   void UpdateState() noexcept override;
   /// @brief Hebbian/gradient weight update.

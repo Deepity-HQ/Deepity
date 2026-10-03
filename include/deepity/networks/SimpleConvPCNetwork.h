@@ -70,7 +70,11 @@ namespace Deep
 
         /// @brief Computes and returns the network's total energy at the
         /// current state, without changing it.
-        float CalculateState() noexcept;
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync anywhere
+        /// in the call, required when running this inside a captured
+        /// CUDA graph region.
+        float CalculateState(bool needEnergy = true) noexcept;
         /// @brief Runs one settling step on every layer.
         void UpdateState() noexcept;
 

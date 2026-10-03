@@ -83,7 +83,14 @@ namespace Deep
         /// E = \sum_l 1/2 p^{(l)} ||z^{(l)} - \mu^{(l)}||^2 - 1/2 \log p^{(l)}
         /// \f]
         /// @return This layer's energy contribution at the current state.
-        float CalculateState() noexcept override;
+        float CalculateState() noexcept override { return CalculateState(true); }
+        /// @brief Same as CalculateState(), but can skip computing (and
+        /// returning) the energy. On CUDABackend, needEnergy=false also
+        /// means no blocking host sync, required for any settling-loop
+        /// caller that runs this inside a captured CUDA graph region
+        /// (see DiscriminativePCNetwork::TrainStep()'s GPU branch).
+        /// @param needEnergy Whether to compute and return the energy.
+        float CalculateState(bool needEnergy) noexcept;
 
         /// @brief Computes the state derivatives for inference.
         ///

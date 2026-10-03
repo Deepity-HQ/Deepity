@@ -62,7 +62,12 @@ namespace Deep
         void Clamp(const std::vector<float> &input) noexcept;
         /// @brief Computes and returns the network's total energy at the
         /// current state, without changing it.
-        float CalculateState() noexcept;
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync anywhere
+        /// in the call, required when running this inside a captured
+        /// CUDA graph region (see TrainStep()'s GPU branch). Every
+        /// layer's own error (e) is always correctly updated either way.
+        float CalculateState(bool needEnergy = true) noexcept;
         /// @brief Runs one settling step on every layer.
         void UpdateState() noexcept;
         /// @brief Applies weight updates to every layer.

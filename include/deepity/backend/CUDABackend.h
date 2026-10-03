@@ -45,6 +45,8 @@ public:
 
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::Sum
+  float Sum(const float* buf, size_t n) noexcept override;
 
   /// @brief Must be called once, before Compile()'s first
   /// BeginGraphCapture(), for any backend that needs to prepare
@@ -146,6 +148,9 @@ public:
   float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
                                                const float* p, size_t batchSize,
                                                size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::ComputePrecisionWeightedError
+  void ComputePrecisionWeightedError(float* e, const float* z, const float* mu, const float* p,
+                                     size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackend::AxpyBroadcastInto
   void AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
                          size_t width, float alpha) noexcept override;

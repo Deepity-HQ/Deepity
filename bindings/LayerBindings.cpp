@@ -270,7 +270,10 @@ void bind_layers(nb::module_& m)
                             nb::arg("activation_deriv") = "drelu");
   gsLayerCls.def("update_state", &Deep::GaussSeidelPCLayer::UpdateState)
       .def("compute_prediction", &Deep::GaussSeidelPCLayer::ComputePrediction)
-      .def("compute_error", &Deep::GaussSeidelPCLayer::ComputeError)
+      .def("compute_error",
+           static_cast<float (Deep::GaussSeidelPCLayer::*)(bool) noexcept>(
+               &Deep::GaussSeidelPCLayer::ComputeError),
+           nb::arg("need_energy") = true)
       .def_prop_ro("mu",
                    [](Deep::GaussSeidelPCLayer& self)
                    {
@@ -672,7 +675,8 @@ void bind_layers(nb::module_& m)
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
-      .def("calculate_state", &Deep::ConvPCLayer::CalculateState)
+      .def("calculate_state",
+           static_cast<float (Deep::ConvPCLayer::*)() noexcept>(&Deep::ConvPCLayer::CalculateState))
       .def("update_state", &Deep::ConvPCLayer::UpdateState)
       .def("update_weights", &Deep::ConvPCLayer::UpdateWeights)
       .def("update_precision", &Deep::ConvPCLayer::UpdatePrecision)

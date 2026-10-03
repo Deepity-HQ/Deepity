@@ -82,12 +82,12 @@ namespace Deep
         layers.front()->ClampState(input);
     }
 
-    float SimpleConvPCNetwork::CalculateState() noexcept
+    float SimpleConvPCNetwork::CalculateState(bool needEnergy) noexcept
     {
         float e = 0.0f;
         for (auto &l : layers)
-            e += l->CalculateState();
-        return e;
+            e += l->CalculateState(needEnergy);
+        return needEnergy ? e : 0.0f;
     }
 
     void SimpleConvPCNetwork::UpdateState() noexcept
@@ -115,7 +115,11 @@ namespace Deep
                 backend->BeginGraphCapture();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
-                    CalculateState();
+                    // needEnergy=false: the precision-free ComputeErrorAndEnergy
+                    // still does a synchronous GPU readback, illegal while this
+                    // stream is being captured. Real energy read happens in the
+                    // fresh, uncaptured call at the end of this function.
+                    CalculateState(false);
                     UpdateState();
                 }
                 UpdateWeights();
@@ -140,7 +144,7 @@ namespace Deep
             {
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
-                    CalculateState();
+                    CalculateState(false);
                     UpdateState();
                 }
                 UpdateWeights();
@@ -150,7 +154,7 @@ namespace Deep
         {
             for (int t = 0; t < inferenceSteps; ++t)
             {
-                CalculateState();
+                CalculateState(false);
                 UpdateState();
             }
             UpdateWeights();
@@ -221,7 +225,7 @@ namespace Deep
                 ProjectForward();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
-                    CalculateState();
+                    CalculateState(false);
                     UpdateState();
                 }
                 UpdateWeights();
@@ -247,7 +251,7 @@ namespace Deep
                 ProjectForward();
                 for (int t = 0; t < inferenceSteps; ++t)
                 {
-                    CalculateState();
+                    CalculateState(false);
                     UpdateState();
                 }
                 UpdateWeights();
@@ -258,7 +262,7 @@ namespace Deep
             ProjectForward();
             for (int t = 0; t < inferenceSteps; ++t)
             {
-                CalculateState();
+                CalculateState(false);
                 UpdateState();
             }
             UpdateWeights();

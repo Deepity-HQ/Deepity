@@ -57,7 +57,13 @@ namespace Deep
                           ActivationType dType = ActivationType::dRELU,
                           IComputeBackend *backend = nullptr);
 
-        float CalculateState() noexcept override;
+        float CalculateState() noexcept override { return CalculateState(true); }
+        /// @brief Same as CalculateState(), but can skip computing (and
+        /// returning) the energy. On CUDABackend, needEnergy=false also
+        /// means no blocking host sync, required for any settling-loop
+        /// caller that runs this inside a captured CUDA graph region.
+        /// @param needEnergy Whether to compute and return the energy.
+        float CalculateState(bool needEnergy) noexcept;
         void UpdateState() noexcept override;
         void UpdateWeights() noexcept override;
 

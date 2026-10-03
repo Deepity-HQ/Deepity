@@ -103,6 +103,14 @@ public:
   /// [width,batchSize] with no data movement (verified numerically).
   virtual void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept = 0;
 
+  /// @brief Returns the plain (signed) sum of every element in buf.
+  /// Synchronous on CUDABackend (reads the reduction back to a host
+  /// float before returning) -- same constraint as ComputeErrorAndEnergy
+  /// and friends: never call this from inside a captured CUDA graph
+  /// region, only from code that runs outside any
+  /// BeginGraphCapture()/EndGraphCapture() pair.
+  virtual float Sum(const float* buf, size_t n) noexcept = 0;
+
   // Elementwise scalar ops
 
   /// @brief buf[i] *= alpha for all i in [0, n).
@@ -337,6 +345,17 @@ public:
   virtual float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
                                                        const float* p, size_t batchSize,
                                                        size_t width) noexcept = 0;
+  /// @brief Same as ComputePrecisionWeightedErrorAndEnergy(), without
+  /// computing (or returning) the energy, for callers that only need e.
+  /// On CUDABackend this additionally means: no blocking
+  /// cudaStreamSynchronize() -- the ...AndEnergy() variant must
+  /// synchronously read the energy reduction back to a host float, which
+  /// is illegal while a CUDA graph is being captured, exactly why this
+  /// counterpart exists (mirrors ComputeError() alongside
+  /// ComputeErrorAndEnergy() above).
+  virtual void ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
+                                             const float* p, size_t batchSize,
+                                             size_t width) noexcept = 0;
 
   /// @brief y[b*width+i] += alpha * x[b*width+i] * factor[i], for every b
   /// in [0,batchSize), i in [0,width), AxpyInto with an added

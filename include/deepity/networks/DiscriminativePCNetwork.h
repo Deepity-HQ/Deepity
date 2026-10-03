@@ -113,8 +113,12 @@ namespace Deep
         void Clamp(const std::vector<float> &input);
 
         /// @brief Calculates the state of each layer.
-        /// @return Returns total energy
-        float CalculateState();
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync anywhere
+        /// in the call, required when running this inside a captured
+        /// CUDA graph region.
+        /// @return Returns total energy, or 0.0f if needEnergy is false.
+        float CalculateState(bool needEnergy = true);
 
         /// @brief Updates each layer's state.
         void UpdateState();

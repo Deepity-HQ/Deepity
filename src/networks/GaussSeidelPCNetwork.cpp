@@ -47,7 +47,7 @@ namespace Deep
         layers.front()->ClampState(input);
     }
 
-    float GaussSeidelPCNetwork::Step() noexcept
+    float GaussSeidelPCNetwork::Step(bool needEnergy) noexcept
     {
         // Sweep 1: EVERY layer's z updates, using mu/e_above held over
         // from the end of the previous step.
@@ -62,12 +62,16 @@ namespace Deep
         // Sweep 3: EVERY layer's error recomputes, using this step's
         // fresh z and layerBelow's fresh mu from sweep 2. Order among
         // layers doesn't matter here either. Energy is only meaningful
-        // starting from this point.
+        // starting from this point. needEnergy=false still correctly
+        // updates every layer's `e` (required for the next step's
+        // dynamics), just skips the energy value itself -- on
+        // CUDABackend that also means no blocking host sync, required
+        // when this runs inside a captured CUDA graph region.
         float totalEnergy = 0.0f;
         for (auto &l : layers)
-            totalEnergy += l->ComputeError();
+            totalEnergy += l->ComputeError(needEnergy);
 
-        return totalEnergy;
+        return needEnergy ? totalEnergy : 0.0f;
     }
 
     void GaussSeidelPCNetwork::UpdateWeights() noexcept
@@ -107,7 +111,7 @@ namespace Deep
             {
                 backend->BeginGraphCapture();
                 for (int t = 0; t < inferenceSteps; ++t)
-                    Step();
+                    Step(false);
                 UpdateWeights();
                 bool captureOk = backend->EndGraphCapture();
 
@@ -129,14 +133,14 @@ namespace Deep
             else
             {
                 for (int t = 0; t < inferenceSteps; ++t)
-                    Step();
+                    Step(false);
                 UpdateWeights();
             }
         }
         else
         {
             for (int t = 0; t < inferenceSteps; ++t)
-                Step();
+                Step(false);
             UpdateWeights();
         }
 
@@ -181,10 +185,13 @@ namespace Deep
                 ProjectForward();
                 // Only the terminal layer's error is computed immediately
                 // (e3 = z3 - mu3, target vs. projected prediction); hidden
-                // layers stay at zero.
-                GetTerminalLayer()->ComputeError();
+                // layers stay at zero. needEnergy=false: this return value
+                // is discarded either way, and the call must not
+                // synchronously read back from the GPU while this stream
+                // is being captured.
+                GetTerminalLayer()->ComputeError(false);
                 for (int t = 0; t < inferenceSteps; ++t)
-                    Step();
+                    Step(false);
                 UpdateWeights();
                 bool captureOk = backend->EndGraphCapture();
 
@@ -206,18 +213,18 @@ namespace Deep
             else
             {
                 ProjectForward();
-                GetTerminalLayer()->ComputeError();
+                GetTerminalLayer()->ComputeError(false);
                 for (int t = 0; t < inferenceSteps; ++t)
-                    Step();
+                    Step(false);
                 UpdateWeights();
             }
         }
         else
         {
             ProjectForward();
-            GetTerminalLayer()->ComputeError();
+            GetTerminalLayer()->ComputeError(false);
             for (int t = 0; t < inferenceSteps; ++t)
-                Step();
+                Step(false);
             UpdateWeights();
         }
 
