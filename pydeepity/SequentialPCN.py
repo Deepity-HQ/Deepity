@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ._backend import dy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress

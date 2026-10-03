@@ -2,7 +2,7 @@ import numpy as np
 import os
 import sys
 from time import perf_counter
-from pydeepity import dy
+from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- dy is the compiled native extension; see pydeepity/_backend.py and pyrightconfig.json's pydeepity/bindings suppressions for the same reason
 from PIL import Image
 
 IMG_SIZE = 64
