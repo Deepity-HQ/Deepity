@@ -104,7 +104,18 @@ void bind_networks(nb::module_& m)
   auto discNetCls = nb::class_<Deep::DiscriminativePCNetwork>(
       m, "DiscriminativePCNetwork", "Predictive Coding Network.");
   BindCommonPCNetwork<Deep::DiscriminativePCNetwork>(discNetCls, "DiscriminativePCNetwork");
-  discNetCls.def(nb::init<>(), "Construct a network with automatic batch-size detection.")
+  discNetCls
+      .def(
+          "__init__",
+          [](Deep::DiscriminativePCNetwork* self, const std::string& device)
+          {
+            Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+                                      ? Deep::DeviceType::DEVICE_GPU
+                                      : Deep::DeviceType::DEVICE_CPU;
+            new (self) Deep::DiscriminativePCNetwork(dt);
+          },
+          nb::arg("device") = "cpu",
+          "Construct a network with automatic batch-size detection, on the given device.")
       .def(
           "add_layer",
           [](Deep::DiscriminativePCNetwork& self,
@@ -298,7 +309,17 @@ void bind_networks(nb::module_& m)
 
   nb::class_<Deep::GaussSeidelPCNetwork>(
       m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
-      .def(nb::init<int>(), nb::arg("batch_size"))
+      .def(
+          "__init__",
+          [](Deep::GaussSeidelPCNetwork* self, int batch_size, const std::string& device)
+          {
+            Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+                                      ? Deep::DeviceType::DEVICE_GPU
+                                      : Deep::DeviceType::DEVICE_CPU;
+            new (self) Deep::GaussSeidelPCNetwork(batch_size, dt);
+          },
+          nb::arg("batch_size"),
+          nb::arg("device") = "cpu")
       .def(
           "add_layer",
           [](Deep::GaussSeidelPCNetwork& self,
@@ -947,7 +968,18 @@ void bind_networks(nb::module_& m)
            });
 
   nb::class_<Deep::ConvPCNetwork>(m, "ConvPCNetwork", "Convolutional Predictive Coding Network.")
-      .def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
+      .def(
+          "__init__",
+          [](Deep::ConvPCNetwork* self, int batch_size, const std::string& device)
+          {
+            Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+                                      ? Deep::DeviceType::DEVICE_GPU
+                                      : Deep::DeviceType::DEVICE_CPU;
+            new (self) Deep::ConvPCNetwork(batch_size, dt);
+          },
+          nb::arg("batch_size"),
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size, on the given device.")
       .def(
           "add_layer",
           [](Deep::ConvPCNetwork& self,

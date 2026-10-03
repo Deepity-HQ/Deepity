@@ -57,7 +57,13 @@ namespace Deep
                           ActivationType dType = ActivationType::dRELU,
                           IComputeBackend *backend = nullptr);
 
-        float CalculateState() noexcept override;
+        float CalculateState() noexcept override { return CalculateState(true); }
+        /// @brief Same as CalculateState(), but can skip computing (and
+        /// returning) the energy. On CUDABackend, needEnergy=false also
+        /// means no blocking host sync, required for any settling-loop
+        /// caller that runs this inside a captured CUDA graph region.
+        /// @param needEnergy Whether to compute and return the energy.
+        float CalculateState(bool needEnergy) noexcept;
         void UpdateState() noexcept override;
         void UpdateWeights() noexcept override;
 
@@ -104,6 +110,15 @@ namespace Deep
         void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
         /// @brief Whether ClampState() is currently active on this layer.
         bool IsClamped() const noexcept { return isClamped; }
+
+        /// @brief Forces the next ComputeMuOnly() call to recompute mu
+        /// instead of reusing a cached value, without otherwise touching
+        /// clamp state. Needed after a CUDA-graph (re)capture: the
+        /// recording pass runs the settling loop as real C++, leaving
+        /// muCacheValid=true as a side effect, which would otherwise make
+        /// the following fresh, uncaptured energy read reuse mu from
+        /// before this call's own weight update.
+        void InvalidateMuCache() noexcept { muCacheValid = false; }
 
         /// @brief Sets the layer immediately above this one in the network.
         void SetLayerAbove(SimpleConvPCLayer *above) noexcept { layerAbove = above; }

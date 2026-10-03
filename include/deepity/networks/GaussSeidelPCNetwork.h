@@ -96,10 +96,15 @@ namespace Deep
 
         /// @brief Runs ONE full Gauss-Seidel settling step (all three
         /// sweeps, in order) across every layer.
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync anywhere
+        /// in the call, required when running this inside a captured
+        /// CUDA graph region. Sweep 1/2 (UpdateState/ComputePrediction)
+        /// and sweep 3's error update always run regardless.
         /// @return Total energy, summed from every layer's
-        /// ComputeError(). Meaningful only after all three sweeps have
-        /// run for this step.
-        float Step() noexcept;
+        /// ComputeError(), or 0.0f if needEnergy is false. Meaningful
+        /// only after all three sweeps have run for this step.
+        float Step(bool needEnergy = true) noexcept;
 
         /// @brief Updates every non-terminal layer's weights. Called
         /// once after the full settling loop completes.
@@ -162,5 +167,13 @@ namespace Deep
 #endif
         /// @brief The batch size shared by every layer in the network.
         int batchSize;
+
+        // CUDA graph capture state, GPU-only: TrainStep() and
+        // TrainStepWithProjection() capture different op sequences, so
+        // each needs its own capture-validity tracking.
+        bool graphCaptured = false;
+        int capturedInferenceSteps = -1;
+        bool graphCapturedWithProjection = false;
+        int capturedInferenceStepsWithProjection = -1;
     };
 }

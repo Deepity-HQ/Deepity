@@ -208,11 +208,19 @@ void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a, 
 // a single device accumulator via atomicAdd. Simple and obviously correct
 // rather than a tree reduction, "port first, optimize" (see
 // RepackForBatchedGemm's own doc comment for the same reasoning applied
-// elsewhere in this file), and this isn't inside any graph-captured
-// region: the ConvPCLayer/DiscriminativePCLayer family that needs this
-// doesn't use CUDA graph capture at all (unlike SimplePCNetwork/
-// FullPCNetwork/DirectKPPCNetwork), so a plain synchronous allocation
-// here is safe.
+// elsewhere in this file).
+//
+// IMPORTANT, read before touching this function: ConvPCNetwork and
+// DiscriminativePCNetwork's TrainStep()/TrainStepWithProjection() DO now
+// use CUDA graph capture (this comment previously said otherwise -- that
+// was true when written, no longer is). This kernel launch itself is
+// fine to capture, but CUDABackend::ComputePrecisionWeightedErrorAndEnergy()
+// below it does a synchronous cudaMemcpyAsync+cudaStreamSynchronize to
+// return the energy as a host float, which is illegal while a stream is
+// being captured and crashes. Every call site inside a settling loop
+// that's ever captured MUST use ComputePrecisionWeightedError() (below,
+// no energy, no sync) instead, exactly like ComputeError() exists
+// alongside ComputeErrorAndEnergy() for the same reason.
 __global__ void PrecisionWeightedErrorEnergyKernel(float* e, const float* z, const float* mu,
                                                     const float* p, size_t n, size_t width,
                                                     float* energyAccum)
@@ -227,6 +235,15 @@ __global__ void PrecisionWeightedErrorEnergyKernel(float* e, const float* z, con
     float contribution = 0.5f * precision * err * err - 0.5f * logf(precision);
     atomicAdd(energyAccum, contribution);
   }
+}
+
+// No-energy counterpart: just e = z - mu, no atomicAdd/reduction/sync at
+// all, safe to call from inside a captured region.
+__global__ void PrecisionWeightedErrorKernel(float* e, const float* z, const float* mu, size_t n)
+{
+  size_t idx = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n)
+    e[idx] = z[idx] - mu[idx];
 }
 
 float CUDABackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
@@ -252,6 +269,55 @@ float CUDABackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float*
   cudaMemcpyAsync(&total, energyAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
   cudaStreamSynchronize(stream);
   Free(energyAccum);
+
+  return total;
+}
+
+void CUDABackend::ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
+                                                const float* /*p*/, size_t batchSize,
+                                                size_t width) noexcept
+{
+  size_t n = batchSize * width;
+  if (!e || !z || !mu || n == 0)
+    return;
+
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  PrecisionWeightedErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, n);
+  CHECK_CUDA_LAUNCH();
+}
+
+// One thread per element, same atomicAdd-into-one-accumulator pattern as
+// PrecisionWeightedErrorEnergyKernel above.
+__global__ void SumKernel(const float* buf, size_t n, float* sumAccum)
+{
+  size_t idx = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (idx < n)
+    atomicAdd(sumAccum, buf[idx]);
+}
+
+float CUDABackend::Sum(const float* buf, size_t n) noexcept
+{
+  if (!buf || n == 0)
+    return 0.0f;
+
+  float* sumAccum = Allocate(1);
+  if (!sumAccum)
+    return 0.0f;
+  cudaMemsetAsync(sumAccum, 0, sizeof(float), stream);
+
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  SumKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, n, sumAccum);
+  CHECK_CUDA_LAUNCH();
+
+  // Synchronous readback, same as ComputeErrorAndEnergy and friends --
+  // see this method's own IComputeBackend doc: never call from inside a
+  // captured graph region.
+  float total = 0.0f;
+  cudaMemcpyAsync(&total, sumAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
+  cudaStreamSynchronize(stream);
+  Free(sumAccum);
 
   return total;
 }

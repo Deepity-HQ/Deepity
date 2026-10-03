@@ -112,8 +112,14 @@ namespace Deep
         /// using this layer's own (just-updated) z as the target and
         /// layerBelow's FRESH mu (from its ComputePrediction() call) as
         /// the prediction.
-        /// @return This layer's energy contribution at the current state.
-        float ComputeError() noexcept;
+        /// @return This layer's energy contribution at the current state,
+        /// or 0.0f if needEnergy is false.
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync, required
+        /// for any settling-loop caller that runs this inside a captured
+        /// CUDA graph region (see GaussSeidelPCNetwork::TrainStep()'s GPU
+        /// branch). `e` itself is always correctly updated either way.
+        float ComputeError(bool needEnergy = true) noexcept;
 
         /// @brief Computes weight updates via gradient descent, with L2
         /// weight decay. Called once after the full settling loop

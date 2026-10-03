@@ -164,13 +164,27 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
       {
         graphCaptured = true;
         capturedInferenceSteps = inferenceSteps;
+
+        // settleStep()'s own InvalidateMuCache() calls above only run
+        // under useIPC; without it, nothing clears a clamped layer's
+        // mu-cache after this recording pass, so the fresh CalculateState()
+        // read below would wrongly reuse mu from before this call's own
+        // weight update (see ConvPCNetwork::TrainStep()'s identical bug).
+        for (auto& l : layers)
+          l->InvalidateMuCache();
       }
       else
         std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
     }
 
     if (graphCaptured)
+    {
       backend->ReplayGraph();
+      // cudaGraphLaunch() only enqueues the replay; see
+      // ConvPCNetwork::TrainStep()'s identical comment for why this
+      // matters even though same-stream ordering should already cover it.
+      backend->Synchronize();
+    }
     else
     {
       ProjectForward();

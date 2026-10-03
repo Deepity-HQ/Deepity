@@ -113,8 +113,12 @@ namespace Deep
         void Clamp(const std::vector<float> &input);
 
         /// @brief Calculates the state of each layer.
-        /// @return Returns total energy
-        float CalculateState();
+        /// @param needEnergy Whether to compute and return the energy. On
+        /// CUDABackend, false also means no blocking host sync anywhere
+        /// in the call, required when running this inside a captured
+        /// CUDA graph region.
+        /// @return Returns total energy, or 0.0f if needEnergy is false.
+        float CalculateState(bool needEnergy = true);
 
         /// @brief Updates each layer's state.
         void UpdateState();
@@ -233,5 +237,13 @@ namespace Deep
         std::unique_ptr<DeviceMemoryArena> gpuArena;
 #endif
         friend class PCNDiagnostics;
+
+        // CUDA graph capture state, GPU-only: TrainStep() and
+        // TrainStepWithProjection() capture different op sequences, so
+        // each needs its own capture-validity tracking.
+        bool graphCaptured = false;
+        int capturedInferenceSteps = -1;
+        bool graphCapturedWithProjection = false;
+        int capturedInferenceStepsWithProjection = -1;
     };
 }
