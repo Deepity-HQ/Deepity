@@ -111,6 +111,15 @@ namespace Deep
         /// @brief Whether ClampState() is currently active on this layer.
         bool IsClamped() const noexcept { return isClamped; }
 
+        /// @brief Forces the next ComputeMuOnly() call to recompute mu
+        /// instead of reusing a cached value, without otherwise touching
+        /// clamp state. Needed after a CUDA-graph (re)capture: the
+        /// recording pass runs the settling loop as real C++, leaving
+        /// muCacheValid=true as a side effect, which would otherwise make
+        /// the following fresh, uncaptured energy read reuse mu from
+        /// before this call's own weight update.
+        void InvalidateMuCache() noexcept { muCacheValid = false; }
+
         /// @brief Sets the layer immediately above this one in the network.
         void SetLayerAbove(SimpleConvPCLayer *above) noexcept { layerAbove = above; }
         /// @brief Sets the layer immediately below this one in the network.

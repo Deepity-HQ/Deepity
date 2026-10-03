@@ -165,6 +165,14 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
       {
         graphCaptured = true;
         capturedInferenceSteps = inferenceSteps;
+
+        // settleStep()'s own InvalidateMuCache() calls above only run
+        // under useIPC; without it, nothing clears a clamped layer's
+        // mu-cache after this recording pass, so the fresh CalculateState()
+        // read below would wrongly reuse mu from before this call's own
+        // weight update (see ConvPCNetwork::TrainStep()'s identical bug).
+        for (auto& l : layers)
+          l->InvalidateMuCache();
       }
       else
       {

@@ -274,6 +274,13 @@ namespace Deep
                 {
                     graphCapturedWithProjection = true;
                     capturedInferenceStepsWithProjection = inferenceSteps;
+
+                    // See the identical fix in TrainStep() above: the
+                    // recording pass above just ran this settling loop as
+                    // real C++, leaving muCacheValid=true behind for any
+                    // clamped layer it touched last.
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
                 }
                 else
                 {

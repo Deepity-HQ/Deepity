@@ -129,6 +129,16 @@ namespace Deep
                 {
                     graphCaptured = true;
                     capturedInferenceSteps = inferenceSteps;
+
+                    // The recording pass above just ran this settling loop
+                    // as real C++, leaving muCacheValid=true behind for any
+                    // clamped layer it touched last; nothing resets that
+                    // before the fresh energy read below, which would
+                    // otherwise wrongly reuse mu from before this call's
+                    // own weight update (see ConvPCNetwork::TrainStep()'s
+                    // identical bug).
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
                 }
                 else
                 {
@@ -236,6 +246,13 @@ namespace Deep
                 {
                     graphCapturedWithProjection = true;
                     capturedInferenceStepsWithProjection = inferenceSteps;
+
+                    // See the identical fix above in TrainStep(): the
+                    // recording pass just ran this settling loop as real
+                    // C++, leaving muCacheValid=true behind for any
+                    // clamped layer it touched last.
+                    for (auto &l : layers)
+                        l->InvalidateMuCache();
                 }
                 else
                 {
