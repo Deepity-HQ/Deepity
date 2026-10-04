@@ -362,8 +362,18 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     net.set_use_epc(os.environ.get("USE_EPC", "1") == "1")
     net.set_use_momentum(use_momentum, 0.9)
     net.set_use_cross_entropy(True)
-    net.set_optimizer("ADAMW")
-    net.set_psi_optimizer("ADAMW")
+    # OPTIMIZER=SGD isolates ADAMW's own bias-correction ramp
+    # (sqrt(1-beta2^t)/(1-beta1^t), t = cumulative weight updates) as a
+    # suspect: that ramp depends only on step count, never on lr, which
+    # would explain why a 10x lr cut only delayed the observed blow-up
+    # by a small amount instead of ~10x -- plain SGD has no such ramp,
+    # so if IT scales cleanly with lr instead, that confirms ADAMW's
+    # bias correction (not weight growth, not ePC, not predict(), not
+    # the per-epoch decay event -- all already ruled out) as the real
+    # cause.
+    optimizer = os.environ.get("OPTIMIZER", "ADAMW")
+    net.set_optimizer(optimizer)
+    net.set_psi_optimizer(optimizer)
 
     return net
 
