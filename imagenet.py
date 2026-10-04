@@ -433,9 +433,24 @@ def main() -> None:
           f"own comments describe: monotonically decreasing is healthy, bottoming out "
           f"then rising again is the early warning sign of the LR being too high.\n")
 
+    # Isolating whether predict() itself is what destabilizes training at
+    # the epoch boundary (two straight runs blew up exponentially a few
+    # dozen batches into epoch 2, right after this diagnostic and the
+    # per-epoch accuracy eval below -- both are predict() calls),
+    # independent of lr/lmbda (neither changed WHETHER it happens, just
+    # how fast once triggered). SKIP_PREDICT=1 removes every predict()
+    # call so training runs continuously with none of them in the way;
+    # if it blows up at roughly the same batch count anyway, predict()
+    # was never the trigger, just a correlated bystander.
+    skip_predict = os.environ.get("SKIP_PREDICT", "0") == "1"
+    if skip_predict:
+        print("SKIP_PREDICT=1: skipping the PRE-training diagnostic and all per-epoch "
+              "accuracy evals -- training runs continuously with zero predict() calls.")
+
     diag_indices = pick_diagnostic_indices(y_val_idx)
-    run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, mean, std,
-                            BATCH_SIZE, INFERENCE_STEPS, N_CLASSES, "PRE-training")
+    if not skip_predict:
+        run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, mean, std,
+                                BATCH_SIZE, INFERENCE_STEPS, N_CLASSES, "PRE-training")
 
     rng = np.random.default_rng(SEED)
     n_train = len(X_train_u8)
@@ -488,18 +503,20 @@ def main() -> None:
 
         avg_energy = epoch_energy / n_batches
 
-        N_ACC_BATCHES = 20
-        correct, total = 0, 0
-        for b in range(min(N_ACC_BATCHES, len(X_val_u8) // BATCH_SIZE)):
-            X_batch = to_float_batch(X_val_u8[b * BATCH_SIZE:(b + 1) * BATCH_SIZE], mean, std)
-            y_batch = y_val_idx[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
+        epoch_acc = float("nan")
+        if not skip_predict:
+            N_ACC_BATCHES = 20
+            correct, total = 0, 0
+            for b in range(min(N_ACC_BATCHES, len(X_val_u8) // BATCH_SIZE)):
+                X_batch = to_float_batch(X_val_u8[b * BATCH_SIZE:(b + 1) * BATCH_SIZE], mean, std)
+                y_batch = y_val_idx[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-            preds = net.predict(X_batch, INFERENCE_STEPS).reshape(BATCH_SIZE, N_CLASSES)
-            pred_classes = np.argmax(preds, axis=1)
-            correct += np.sum(pred_classes == y_batch)
-            total += BATCH_SIZE
+                preds = net.predict(X_batch, INFERENCE_STEPS).reshape(BATCH_SIZE, N_CLASSES)
+                pred_classes = np.argmax(preds, axis=1)
+                correct += np.sum(pred_classes == y_batch)
+                total += BATCH_SIZE
+            epoch_acc = 100.0 * correct / total
 
-        epoch_acc = 100.0 * correct / total
         elapsed = perf_counter() - start_time
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
               f"Avg energy: {avg_energy:.4f} | lr={current_lr:.2e} ir={current_ir:.4f} "
@@ -507,6 +524,11 @@ def main() -> None:
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
+
+    if skip_predict:
+        print("SKIP_PREDICT=1: skipping final validation accuracy and the POST-training "
+              "diagnostic (both are predict() calls).")
+        return
 
     correct, total = 0, 0
     for i in range(0, len(X_val_u8), BATCH_SIZE):
