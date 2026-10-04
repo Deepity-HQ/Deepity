@@ -360,55 +360,6 @@ float CUDABackend::Sum(const float* buf, size_t n) noexcept
   return total;
 }
 
-void CUDABackend::ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
-                                                const float* /*p*/, size_t batchSize,
-                                                size_t width) noexcept
-{
-  size_t n = batchSize * width;
-  if (!e || !z || !mu || n == 0)
-    return;
-
-  constexpr int BLOCK_SIZE = 256;
-  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  PrecisionWeightedErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, n);
-  CHECK_CUDA_LAUNCH();
-}
-
-// One thread per element, same atomicAdd-into-one-accumulator pattern as
-// PrecisionWeightedErrorEnergyKernel above.
-__global__ void SumKernel(const float* buf, size_t n, float* sumAccum)
-{
-  size_t idx = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < n)
-    atomicAdd(sumAccum, buf[idx]);
-}
-
-float CUDABackend::Sum(const float* buf, size_t n) noexcept
-{
-  if (!buf || n == 0)
-    return 0.0f;
-
-  float* sumAccum = Allocate(1);
-  if (!sumAccum)
-    return 0.0f;
-  cudaMemsetAsync(sumAccum, 0, sizeof(float), stream);
-
-  constexpr int BLOCK_SIZE = 256;
-  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  SumKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, n, sumAccum);
-  CHECK_CUDA_LAUNCH();
-
-  // Synchronous readback, same as ComputeErrorAndEnergy and friends --
-  // see this method's own IComputeBackend doc: never call from inside a
-  // captured graph region.
-  float total = 0.0f;
-  cudaMemcpyAsync(&total, sumAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
-  cudaStreamSynchronize(stream);
-  Free(sumAccum);
-
-  return total;
-}
-
 __global__ void UpdatePrecisionFromErrorKernel(float* p, float* log_p, const float* e,
                                                size_t batchSize, size_t width, float pr)
 {
