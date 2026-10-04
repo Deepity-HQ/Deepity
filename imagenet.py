@@ -466,9 +466,10 @@ def main() -> None:
         # training. Decaying all three together is the fix that was
         # found to work there; applying it from the start here rather
         # than discovering the same instability again.
-        current_lr = LR * (DECAY_RATE ** epoch)
-        current_ir = IR * (DECAY_RATE ** epoch)
-        current_fl = FL * (DECAY_RATE ** epoch)
+        decay_epoch = 0 if os.environ.get("SKIP_DECAY", "0") == "1" else epoch
+        current_lr = LR * (DECAY_RATE ** decay_epoch)
+        current_ir = IR * (DECAY_RATE ** decay_epoch)
+        current_fl = FL * (DECAY_RATE ** decay_epoch)
         net.set_learning_rate(current_lr)
         net.set_feedback_rate(current_fl)
         # No network-level set_inference_rate() exists for
