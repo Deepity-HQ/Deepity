@@ -23,6 +23,7 @@ CUDABackend::CUDABackend()
   cudaStreamCreate(&this->stream);
   cublasCreate(&this->handle);
   cublasSetStream(this->handle, this->stream);
+  cudaMalloc(&scalarScratch, sizeof(float));
 }
 
 CUDABackend::~CUDABackend()
@@ -36,6 +37,8 @@ CUDABackend::~CUDABackend()
     cudaFree(onesVector);
   if (workspace)
     cudaFree(workspace);
+  if (scalarScratch)
+    cudaFree(scalarScratch);
   cublasDestroy(this->handle);
   cudaStreamDestroy(this->stream);
 }

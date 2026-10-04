@@ -174,5 +174,14 @@ private:
   float* onesVector = nullptr;
   size_t onesCapacity = 0;
   float* workspace = nullptr;
+
+  /// @brief Single-float device scratch buffer for scalar reductions
+  /// (ComputePrecisionWeightedErrorAndEnergy(), Sum()). Allocated once in
+  /// the constructor instead of per-call: cudaMalloc/cudaFree are
+  /// synchronizing driver calls that stall the whole pipeline, and both
+  /// callers already block on cudaStreamSynchronize() before returning,
+  /// so reusing one persistent buffer across calls is safe -- no two
+  /// reductions on this backend instance can ever be in flight at once.
+  float* scalarScratch = nullptr;
 };
 } // namespace Deep
