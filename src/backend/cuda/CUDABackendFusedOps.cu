@@ -107,41 +107,91 @@ void CUDABackend::ComputeError(float* e, const float* z, const float* mu, size_t
   CHECK_CUDA_LAUNCH();
 }
 
+// One block per batch row (not one thread): SOFTMAX_BLOCK_SIZE threads
+// cooperate across the nextSize class dimension via a classic
+// shared-memory halving reduction, so a small batchSize no longer leaves
+// almost the entire GPU idle while each of the few threads serially walks
+// the whole class dimension four times. SOFTMAX_BLOCK_SIZE must stay a
+// power of two (the halving reduction relies on it) and must match the
+// launch configuration below exactly.
+constexpr int SOFTMAX_BLOCK_SIZE = 256;
+
 __global__ void SoftmaxCrossEntropyKernel(float* e, const float* z, const float* mu,
                                           size_t batchSize, size_t nextSize, float* rowEnergies)
 {
-  size_t b = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  size_t b = blockIdx.x;
   if (b >= batchSize)
     return;
 
   size_t base = b * nextSize;
   const float eps = 1e-8f;
+  int tid = threadIdx.x;
 
-  float max_val = mu[base];
-  for (size_t j = 1; j < nextSize; ++j)
-    max_val = fmaxf(max_val, mu[base + j]);
+  __shared__ float sdata[SOFTMAX_BLOCK_SIZE];
 
-  float sum_exp = 0.0f;
-  for (size_t j = 0; j < nextSize; ++j)
+  // Row max, reduced across the block (numerically-stable softmax).
+  float local_max = -INFINITY;
+  for (size_t j = tid; j < nextSize; j += SOFTMAX_BLOCK_SIZE)
+    local_max = fmaxf(local_max, mu[base + j]);
+  sdata[tid] = local_max;
+  __syncthreads();
+  for (int stride = SOFTMAX_BLOCK_SIZE / 2; stride > 0; stride >>= 1)
+  {
+    if (tid < stride)
+      sdata[tid] = fmaxf(sdata[tid], sdata[tid + stride]);
+    __syncthreads();
+  }
+  float max_val = sdata[0];
+  __syncthreads();
+
+  // exp(mu - max) and its row sum, same reduction shape.
+  float local_sum = 0.0f;
+  for (size_t j = tid; j < nextSize; j += SOFTMAX_BLOCK_SIZE)
   {
     float ex = expf(mu[base + j] - max_val);
     e[base + j] = ex;
-    sum_exp += ex;
+    local_sum += ex;
   }
+  sdata[tid] = local_sum;
+  __syncthreads();
+  for (int stride = SOFTMAX_BLOCK_SIZE / 2; stride > 0; stride >>= 1)
+  {
+    if (tid < stride)
+      sdata[tid] += sdata[tid + stride];
+    __syncthreads();
+  }
+  float sum_exp = sdata[0];
+  // Every thread still needs to read sum_exp out of sdata[0] before any
+  // thread starts overwriting sdata[] below -- without this barrier a
+  // fast thread's write could stomp sdata[0] before a slow thread's read.
+  __syncthreads();
 
-  float row_energy = 0.0f;
+  // Normalize to a probability (always), optionally reducing the
+  // cross-entropy row energy alongside it.
   bool needRowEnergy = (rowEnergies != nullptr);
-  for (size_t j = 0; j < nextSize; ++j)
+  float local_energy = 0.0f;
+  for (size_t j = tid; j < nextSize; j += SOFTMAX_BLOCK_SIZE)
   {
     float prob = e[base + j] / sum_exp;
     e[base + j] = prob;
     if (needRowEnergy)
-      row_energy -= z[base + j] * logf(prob + eps);
+      local_energy -= z[base + j] * logf(prob + eps);
   }
   if (needRowEnergy)
-    rowEnergies[b] = row_energy;
+  {
+    sdata[tid] = local_energy;
+    __syncthreads();
+    for (int stride = SOFTMAX_BLOCK_SIZE / 2; stride > 0; stride >>= 1)
+    {
+      if (tid < stride)
+        sdata[tid] += sdata[tid + stride];
+      __syncthreads();
+    }
+    if (tid == 0)
+      rowEnergies[b] = sdata[0];
+  }
 
-  for (size_t j = 0; j < nextSize; ++j)
+  for (size_t j = tid; j < nextSize; j += SOFTMAX_BLOCK_SIZE)
     e[base + j] = z[base + j] - e[base + j];
 }
 
@@ -153,9 +203,7 @@ float CUDABackend::ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const floa
   if (!e || !z || !mu || !rowEnergies || batchSize == 0 || nextSize == 0)
     return 0.0f;
 
-  constexpr int BLOCK_SIZE = 256;
-  const int blocks = static_cast<int>((batchSize + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  SoftmaxCrossEntropyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+  SoftmaxCrossEntropyKernel<<<(int)batchSize, SOFTMAX_BLOCK_SIZE, 0, stream>>>(
       e, z, mu, batchSize, nextSize, rowEnergies);
   CHECK_CUDA_LAUNCH();
 
@@ -172,9 +220,7 @@ void CUDABackend::ComputeSoftmaxCrossEntropyError(float* e, const float* z, cons
   if (!e || !z || !mu || batchSize == 0 || nextSize == 0)
     return;
 
-  constexpr int BLOCK_SIZE = 256;
-  const int blocks = static_cast<int>((batchSize + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  SoftmaxCrossEntropyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+  SoftmaxCrossEntropyKernel<<<(int)batchSize, SOFTMAX_BLOCK_SIZE, 0, stream>>>(
       e, z, mu, batchSize, nextSize, /*rowEnergies=*/nullptr);
   CHECK_CUDA_LAUNCH();
 }
@@ -254,21 +300,17 @@ float CUDABackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float*
   if (!e || !z || !mu || !p || n == 0)
     return 0.0f;
 
-  float* energyAccum = Allocate(1);
-  if (!energyAccum)
-    return 0.0f;
-  cudaMemsetAsync(energyAccum, 0, sizeof(float), stream);
+  cudaMemsetAsync(scalarScratch, 0, sizeof(float), stream);
 
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
   PrecisionWeightedErrorEnergyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, p, n, width,
-                                                                        energyAccum);
+                                                                        scalarScratch);
   CHECK_CUDA_LAUNCH();
 
   float total = 0.0f;
-  cudaMemcpyAsync(&total, energyAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
+  cudaMemcpyAsync(&total, scalarScratch, sizeof(float), cudaMemcpyDeviceToHost, stream);
   cudaStreamSynchronize(stream);
-  Free(energyAccum);
 
   return total;
 }
@@ -301,23 +343,19 @@ float CUDABackend::Sum(const float* buf, size_t n) noexcept
   if (!buf || n == 0)
     return 0.0f;
 
-  float* sumAccum = Allocate(1);
-  if (!sumAccum)
-    return 0.0f;
-  cudaMemsetAsync(sumAccum, 0, sizeof(float), stream);
+  cudaMemsetAsync(scalarScratch, 0, sizeof(float), stream);
 
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  SumKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, n, sumAccum);
+  SumKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, n, scalarScratch);
   CHECK_CUDA_LAUNCH();
 
   // Synchronous readback, same as ComputeErrorAndEnergy and friends --
   // see this method's own IComputeBackend doc: never call from inside a
   // captured graph region.
   float total = 0.0f;
-  cudaMemcpyAsync(&total, sumAccum, sizeof(float), cudaMemcpyDeviceToHost, stream);
+  cudaMemcpyAsync(&total, scalarScratch, sizeof(float), cudaMemcpyDeviceToHost, stream);
   cudaStreamSynchronize(stream);
-  Free(sumAccum);
 
   return total;
 }

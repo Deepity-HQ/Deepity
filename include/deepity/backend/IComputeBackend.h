@@ -217,15 +217,26 @@ public:
                                                size_t batchSize, size_t nextSize) noexcept = 0;
 
   /// @brief Attempts a fused forward pass (GEMM + bias + activation in
-  /// one kernel, via CUTLASS on GPU) for RELU or LINEAR activation types
-  /// only, see CUDABackend's implementation for why other activation
-  /// types aren't attempted yet. Returns true if the fused path was used
-  /// (mu is fully computed, including bias and activation); false if the
-  /// caller should fall back to the existing MatMul+AddBiasBroadcast+
-  /// Activation sequence (always false on CPUBackend, CPU has no fused
-  /// path, this is a GPU-only optimization).
-  /// @param actType Activation to fuse in; only RELU and LINEAR take the
-  /// fused path, everything else returns false immediately.
+  /// one kernel, via CUTLASS on GPU) for RELU, LINEAR, GELU, TANH, or
+  /// SIGMOID activation types; anything else returns false immediately.
+  /// Returns true if the fused path was used (mu is fully computed,
+  /// including bias and activation); false if the caller should fall
+  /// back to the existing MatMul+AddBiasBroadcast+Activation sequence
+  /// (always false on CPUBackend, CPU has no fused path, this is a
+  /// GPU-only optimization).
+  /// @warning As of this writing, every existing call site
+  /// (FullPCLayer::ComputeMuOnly(), DirectKPPCLayer::ComputeMuOnly())
+  /// passes actType=LINEAR unconditionally -- their real activation is
+  /// applied via a separate ActivationInto() pass on the INPUT before
+  /// this GEMM runs, not fused into its epilogue. The RELU/GELU/TANH/
+  /// SIGMOID branches below are real and GPU-tested-correct in
+  /// isolation, but exercising them for an actual layer requires moving
+  /// that activation into this call instead (see CUDABackendGemm.cu's
+  /// file comment before doing so: it's a data-flow change to a settling
+  /// loop, not just a new branch).
+  /// @param actType Activation to fuse in; RELU, LINEAR, GELU, TANH, and
+  /// SIGMOID take the fused path, everything else returns false
+  /// immediately.
   /// @param zF Activated input, shape [batchSize, size], row-major.
   /// @param W Weight matrix, shape [nextSize, size], row-major.
   /// @param bias Bias vector, shape [nextSize].
