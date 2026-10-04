@@ -155,7 +155,15 @@ def load_val_set_cached(data_dir, wnids):
 # same statistics.
 # =============================================================================
 
-def compute_normalization_stats(X_train_u8, n_sample=10000, seed=0):
+def compute_normalization_stats(X_train_u8, n_sample=2000, seed=0):
+    # 2000 is already far more than needed for a stable per-channel
+    # mean/std estimate (law of large numbers saturates well before
+    # this for a reasonably homogeneous image dataset) -- kept modest
+    # specifically to bound this function's transient memory: the
+    # uint8->float32 cast below is the single largest temporary
+    # allocation in this script's data pipeline (4x the sample's raw
+    # byte size), and host RAM on a shared HPC node is often the
+    # tightest resource, not compute.
     rng = np.random.default_rng(seed)
     n = min(n_sample, len(X_train_u8))
     idx = rng.choice(len(X_train_u8), size=n, replace=False)
@@ -379,7 +387,7 @@ def main() -> None:
     X_val_u8, y_val_idx = load_val_set_cached(DATA_DIR, wnids)
 
     mean, std = compute_normalization_stats(X_train_u8, seed=SEED)
-    print(f"Per-channel normalization (computed once, from a 10,000-image training "
+    print(f"Per-channel normalization (computed once, from a 2,000-image training "
           f"sample): mean={mean}, std={std}")
 
     IR = 0.15
