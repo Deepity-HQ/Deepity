@@ -363,6 +363,29 @@ def main() -> None:
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else 1e-5
     BATCH_SIZE = int(sys.argv[4]) if len(sys.argv) > 4 else 250
     SEED = int(sys.argv[5]) if len(sys.argv) > 5 else 7
+    # Default raised from temp.py's inherited 1e-4 to 1.0 after the first
+    # two real GPU runs: epoch 1 trained cleanly (energy steady in
+    # 2300-3600), but epoch 2 blew up exponentially over ~50 batches
+    # (8596 -> 8.7e25 -> non-finite) at BOTH lr=1e-5 and lr=1e-6 -- same
+    # failure, just slower at the smaller lr, not avoided by it. Why lr
+    # alone can't fix this: AdamWStep's decay term is `lr * lmbda *
+    # param[i]`, and its gradient term is `(lr * sqrt(beta2_t)/beta1_t) *
+    # m[i]/(sqrt(v[i])+eps)` -- both scale with lr identically, so their
+    # RATIO (what actually determines whether weights grow or shrink)
+    # depends only on lmbda, never on lr. Adam's normalization keeps
+    # m[i]/sqrt(v[i]) around order-1 magnitude, so the gradient term's
+    # own magnitude is roughly `lr` regardless of current weight size,
+    # while the decay term is `lr * lmbda * |param|` -- for decay to
+    # meaningfully compete with an order-1 gradient push, you need
+    # roughly lmbda * |param| ~ 1, i.e. lmbda ~ 1/|param|. This
+    # architecture's He/Kaiming-style init (limit = sqrt(2/fan_in))
+    # produces weights around 0.01-0.1, which needs lmbda roughly in the
+    # 10-100 range, not 1e-4 (off by 5-6 orders of magnitude -- decay was
+    # providing essentially zero counter-pressure against growth at any
+    # lr). 1.0 is a deliberately moderate first step in that direction,
+    # not the final answer -- CLI-overridable (6th arg) specifically so
+    # finding the right value doesn't need another script edit.
+    LMBDA = float(sys.argv[6]) if len(sys.argv) > 6 else 1.0
 
     # --- Experimental toggles -----------------------------------------
     # muPC scaling is NOT here -- it's required for stability at this
@@ -392,7 +415,6 @@ def main() -> None:
 
     IR = 0.15
     FL = 1e-3
-    LMBDA = 1e-4
     DECAY_RATE = 0.94
 
     print(f"\nBuilding FullConvPCNetwork (10 weight-bearing conv layers, cross-entropy + "
@@ -404,7 +426,7 @@ def main() -> None:
 
     print(f"\n*** TINY IMAGENET, FullConvPCNetwork (cross-entropy, ePC) ***")
     print(f"Training: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, lr={LR}, "
-          f"batch_size={BATCH_SIZE}, seed={SEED}")
+          f"lmbda={LMBDA}, batch_size={BATCH_SIZE}, seed={SEED}")
     print(f"NOTE: this LR is a reasoned-but-unvalidated starting point (see "
           f"build_network()'s docstring) -- no GPU was available to tune it while "
           f"writing this. Watch the first several epochs' energy the same way temp.py's "
