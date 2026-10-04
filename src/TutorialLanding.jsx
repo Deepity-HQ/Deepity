@@ -17,7 +17,7 @@ const tutorialsData = [
     description:
       "Explanation of what makes Deepity special and how to load/use it.",
     img: "./laptop.webp",
-    link: "/notfound",
+    link: "/tutorial/1-beginning",
   },
   {
     title: "2. Training a SimplePCN on XOR",

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import TutorialLanding from "./TutorialLanding";
 import Tutorial0_Intro from "./components/tutorials/Tutorial0_Intro";
+import Tutorial1_Beginning from "./components/tutorials/Tutorial1_Beginning";
 import SplashScreen from "./components/SplashScreen";
 
 function ScrollToTop() {
@@ -36,6 +37,10 @@ export default function App() {
               <Route
                 path="/tutorial/0-introduction"
                 element={<Tutorial0_Intro />}
+              />
+              <Route
+                path="/tutorial/1-beginning"
+                element={<Tutorial1_Beginning />}
               />
               <Route path="/notfound" element={<NotFound />} />
             </Routes>

@@ -11,41 +11,39 @@ import CodeBlock from "./components/CodeBlock";
 const BenchmarkChart = lazy(() => import("./components/BenchmarkChart"));
 const PCNRepresentation = lazy(() => import("./components/PCNRepresentation"));
 
-const pythoncode = `from pydeepity import DKPPCN
+const pythoncode = `from pydeepity import SimplePCN
 from pydeepity.layer import Linear, Sigmoid
 import numpy as np
 
 # Architecture is declared, not assembled layer-by-layer.
-net = DKPPCN(
+net = SimplePCN(
     Linear(784, 512), Sigmoid(),
     Linear(512, 512), Sigmoid(),
     Linear(512, 10),
     batch_size=250,
 )
-net.configure(learning_rate=0.001, inference_rate=0.08, optimizer="ADAM", psi_optimizer="ADAM")
+net.configure(learning_rate=0.001, inference_rate=0.08, optimizer="ADAM")
 
 X = np.array([-1, -1, -1, 1, 1, -1, 1, 1], dtype=np.float32)
 Y = np.array([-1, 1, 1, -1], dtype=np.float32)
 
-# Direct feedback alignment means a single settling step is enough.
+# One call settles, updates weights, and reports energy.
 for epoch in range(1500):
-  energy = net.train_step(X, Y, inference_steps=1)
+  energy = net.train_step_with_projection(X, Y, 150)
 
-predictions = net.predict(X, inference_steps=1)
+predictions = net.predict_with_projection(X, 150)
 `;
 
-const cppcode = `#include <deepity/networks/DirectKPPCNetwork.h>
+const cppcode = `#include <deepity/networks/SimplePCNetwork.h>
 #include <random>
 
-// terminalSize (10) is required on every AddLayer call.
-Deep::DirectKPPCNetwork net(4);
-net.AddLayer(784, 512, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
-net.AddLayer(512, 512, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
-net.AddLayer(512, 10, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
-net.AddLayer(10, 0, 10, 0.001f, 0.08f, 1e-4f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
+Deep::SimplePCNetwork net(4);
+net.AddLayer(784, 512, 0.001f, 0.08f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
+net.AddLayer(512, 512, 0.001f, 0.08f, 0.0f, Deep::ActivationType::SIGMOID, Deep::ActivationType::dSIGMOID);
+net.AddLayer(512, 10, 0.001f, 0.08f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
+net.AddLayer(10, 0, 0.001f, 0.08f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
 
 net.SetOptimizer(Deep::OptimizerType::ADAM);
-net.SetPsiOptimizer(Deep::OptimizerType::ADAM);
 net.Compile();
 
 std::mt19937 rng(42);
@@ -54,11 +52,11 @@ net.RandomizeWeights(rng);
 std::vector<float> X = {-1, -1, -1, 1, 1, -1, 1, 1};
 std::vector<float> Y = {-1, 1, 1, -1};
 
-// Direct feedback alignment means a single settling step is enough.
+// One call settles, updates weights, and reports energy.
 for (int epoch = 0; epoch < 1500; ++epoch)
-    float energy = net.TrainStep(X, Y, 1);
+    float energy = net.TrainStepWithProjection(X, Y, 150);
 
-std::vector<float> predictions = net.Predict(X, 1);`;
+std::vector<float> predictions = net.PredictWithProjection(X, 150);`;
 
 const heroStyle = {
   backgroundImage: `url(${import.meta.env.BASE_URL}flowerpot.webp)`,
@@ -78,11 +76,11 @@ export default function HomePage() {
   return (
     <div className="bg-[#e4e6e7]">
       <div
-        className="min-h-screen flex flex-col items-center justify-center AllianceNo1 gap-4 text-center border-b border-[#202d3b]-200 backdrop-blur-md"
+        className="min-h-screen flex flex-col items-center justify-center AllianceNo2 gap-4 text-center border-b border-[#202d3b]-200 backdrop-blur-md"
         style={heroStyle}
       >
-        <span className="text-4xl AllianceNo1">Welcome to Deepity</span>
-        <span className="text-lg AllianceNo1 mb-10">
+        <span className="text-4xl AllianceNo2">Welcome to Deepity</span>
+        <span className="text-lg AllianceNo2 mb-10">
           A high-performance implementation of
           <br /> Predictive Coding Networks in C++ and Python.
         </span>
@@ -97,9 +95,9 @@ export default function HomePage() {
 
       <section className="bg-[#e6e8e9] border-b border-[#202d3b]-200 px-8 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl AllianceNo1">Proven Performance</h2>
+          <h2 className="text-3xl AllianceNo2">Proven Performance</h2>
 
-          <p className="mt-3 max-w-2xl text-base text-black/70">
+          <p className="mt-3 max-w-2xl text-base text-black/70 AllianceNo2 text-lg">
             Deepity's DKPPCN reaches 97.73% test accuracy on MNIST, approaching
             PyTorch's feedforward backprop accuracy while training entirely on
             the CPU.
@@ -115,9 +113,9 @@ export default function HomePage() {
         id="Explained"
       >
         <div className="mx-auto max-w-5xl justify-center align-items text-center">
-          <h2 className="text-3xl AllianceNo1">What is Predictive Coding?</h2>
+          <h2 className="text-3xl AllianceNo2">What is Predictive Coding?</h2>
 
-          <p className="mt-3 text-black/70">
+          <p className="mt-3 text-black text-lg AllianceNo2">
             Deepity implements Predictive Coding Networks, where neurons
             iteratively minimize local prediction errors rather than propagating
             gradients backward through the entire network.
@@ -125,7 +123,7 @@ export default function HomePage() {
           <Suspense fallback={<div className="h-48" />}>
             <PCNRepresentation />
           </Suspense>
-          <p className="mt-3 text-black/70">
+          <p className="mt-3 text-black text-lg AllianceNo2">
             This approach is inspired by the brain's predictive coding theory,
             which suggests that the brain constantly generates predictions about
             incoming sensory information and updates its internal model based on
@@ -143,10 +141,10 @@ export default function HomePage() {
 
       <section className="bg-[#e6e8e9] border-b border-[#202d3b]-200 px-8 py-20">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl AllianceNo1 justify-center text-center">
+          <h2 className="text-3xl AllianceNo2 justify-center text-center">
             Why Deepity?
           </h2>
-          <ul className="mt-5 list-disc list-inside text-black/70 tracking-widest AllianceNo1">
+          <ul className="mt-5 list-disc list-inside text-black/70 text-lg AllianceNo2">
             <li className="m-3">
               <b>CPU-First</b>: Bundled with OpenBLAS and OpenMP for optimized
               CPU performance, making it ideal for edge devices and low-power
@@ -183,8 +181,8 @@ export default function HomePage() {
 
       <section className="bg-[#e6e8e9] border-b border-[#202d3b]-200 px-8 py-10">
         <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl AllianceNo1">Code Examples</h2>
-          <p className="mt-2 text-black/70">
+          <h2 className="text-3xl AllianceNo2">Code Examples</h2>
+          <p className="mt-2 text-black/70 AllianceNo2">
             Deepity is designed to be easy to use and integrate into existing
             projects. Here are some code examples to get you started.
           </p>
@@ -210,9 +208,9 @@ export default function HomePage() {
       <section className="bg-[#e6e8e9] border-b border-[#202d3b]/20 px-8 py-20">
         <div className="mx-auto max-w-5xl flex flex-col md:flex-row items-start md:items-center justify-between gap-12">
           <div className="flex-1">
-            <h2 className="text-3xl AllianceNo1">Interested in Development?</h2>
+            <h2 className="text-3xl AllianceNo2">Interested in Development?</h2>
 
-            <p className="mt-3 max-w-2xl text-black/70">
+            <p className="mt-3 max-w-2xl text-black/70 AllianceNo1">
               Deepity is an open-source implementation of Predictive Coding
               Networks, and I welcome contributions from the community. If
               you're interested in contributing to the project, please check out
@@ -226,7 +224,7 @@ export default function HomePage() {
                 href="mailto:jackrose2335@gmail.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-black hover:shadow-lg px-5 py-3 font-bold no-underline text-black transition-colors hover:bg-black hover:text-white"
+                className="border border-black hover:shadow-lg px-5 py-3 font-bold no-underline text-black transition-colors hover:bg-black hover:text-white AllianceNo1"
               >
                 Contact Me
               </a>
@@ -235,7 +233,7 @@ export default function HomePage() {
                 to="/docs"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-black hover:shadow-lg px-5 py-3 font-bold no-underline text-black transition-colors hover:bg-black hover:text-white"
+                className="border border-black hover:shadow-lg px-5 py-3 font-bold no-underline text-black transition-colors hover:bg-black hover:text-white AllianceNo1"
               >
                 Learn More Theory
               </Link>
