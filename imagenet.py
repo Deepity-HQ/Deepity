@@ -450,12 +450,21 @@ def main() -> None:
             Y_batch = to_one_hot(y_train_idx[batch_idx], N_CLASSES)
 
             energy = net.train_step(X_batch, Y_batch, INFERENCE_STEPS)
+            # Checked per-batch, not just once at the epoch's end: a
+            # single non-finite batch poisons every later += (NaN
+            # propagates through addition), so checking only the
+            # epoch-end average can't tell you WHICH batch first broke --
+            # it could be batch 0 or batch 399. Catching it here instead
+            # pinpoints the exact batch, which matters for diagnosing why.
+            if not np.isfinite(energy):
+                print(f"Epoch {epoch+1}, batch {b}/{n_batches}: NON-FINITE ENERGY -- STOPPING "
+                      f"(previous batch's energy was {epoch_energy / b if b > 0 else 'N/A (first batch of epoch)'})")
+                return
             epoch_energy += energy
+            if b % 50 == 0:
+                print(f"  epoch {epoch+1}, batch {b}/{n_batches}: energy={energy:.4f}")
 
         avg_energy = epoch_energy / n_batches
-        if not np.isfinite(avg_energy):
-            print(f"Epoch {epoch+1}: NON-FINITE ENERGY -- STOPPING")
-            return
 
         N_ACC_BATCHES = 20
         correct, total = 0, 0
@@ -473,6 +482,16 @@ def main() -> None:
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
               f"Avg energy: {avg_energy:.4f} | lr={current_lr:.2e} ir={current_ir:.4f} "
               f"fl={current_fl:.2e}")
+
+        # Diagnostic: do the accuracy-eval predict() calls just above
+        # corrupt anything, independent of whatever the NEXT epoch's
+        # first train_step() does? If this ever prints non-finite,
+        # predict() itself is the culprit, not the training step that
+        # follows it.
+        all_finite = all(np.all(np.isfinite(np.array(l.weights))) for l in net.layers)
+        if not all_finite:
+            print(f"  [DIAG] non-finite weights detected after epoch {epoch+1}'s "
+                  f"accuracy eval (before next epoch's training)")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
