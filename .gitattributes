@@ -1,0 +1,39 @@
+* text=auto eol=lf
+
+# though text=auto should already catch these
+*.cpp   text eol=lf
+*.cc    text eol=lf
+*.h     text eol=lf
+*.hpp   text eol=lf
+*.cu    text eol=lf
+*.cuh   text eol=lf
+*.py    text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.toml  text eol=lf
+*.sh    text eol=lf
+.clang-format text eol=lf
+
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.pdf    binary
+*.gz     binary
+*.bin    binary
+*.so     binary
+*.pyd    binary
+*.dll    binary
+*.pyc    binary
+
+# GitHub/Linguist
+data/**                         linguist-generated=true
+resources/**                    linguist-generated=true
+**/__pycache__/**                linguist-generated=true
+experiments/step-tuning/**       linguist-generated=true
+docs/html/**                     linguist-generated=true
+docs/latex/**                    linguist-generated=true
