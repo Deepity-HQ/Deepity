@@ -367,29 +367,36 @@ void CPUBackend::AdamWStep(float* param, const float* grad, float* m, float* v, 
   }
 }
 
-void CPUBackend::Im2Col(const float* input, int channels, int height, int width, int kernelH,
-                        int kernelW, int strideH, int strideW, int padH, int padW,
+void CPUBackend::Im2Col(const float* input, int batchSize, int channels, int height, int width,
+                        int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                         float* columns) noexcept
 {
-  Deep::Im2Col(
-      input, channels, height, width, kernelH, kernelW, strideH, strideW, padH, padW, columns);
+  size_t imageSize = (size_t)channels * height * width;
+  size_t colSize = (size_t)channels * kernelH * kernelW *
+                   Deep::ConvOutDim(height, kernelH, strideH, padH) *
+                   Deep::ConvOutDim(width, kernelW, strideW, padW);
+
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    Deep::Im2Col(input + (size_t)batch * imageSize, channels, height, width, kernelH, kernelW,
+                strideH, strideW, padH, padW, columns + (size_t)batch * colSize);
+  }
 }
 
-void CPUBackend::Col2Im(const float* columns, int channels, int height, int width, int kernelH,
-                        int kernelW, int strideH, int strideW, int padH, int padW,
+void CPUBackend::Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+                        int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                         float* outputImage) noexcept
 {
-  Deep::Col2Im(columns,
-               channels,
-               height,
-               width,
-               kernelH,
-               kernelW,
-               strideH,
-               strideW,
-               padH,
-               padW,
-               outputImage);
+  size_t imageSize = (size_t)channels * height * width;
+  size_t colSize = (size_t)channels * kernelH * kernelW *
+                   Deep::ConvOutDim(height, kernelH, strideH, padH) *
+                   Deep::ConvOutDim(width, kernelW, strideW, padW);
+
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    Deep::Col2Im(columns + (size_t)batch * colSize, channels, height, width, kernelH, kernelW,
+                strideH, strideW, padH, padW, outputImage + (size_t)batch * imageSize);
+  }
 }
 
 void CPUBackend::RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,

@@ -251,27 +251,33 @@ public:
 
   // Convolution (im2col-based, ConvPCLayer family)
 
-  /// @brief Rearranges a single (channels, height, width) input
-  /// image into a (channels*kH*kW, outH*outW) column matrix,
-  /// the standard im2col transform. NOT batch-aware: call once
-  /// per batch item, with @p input and @p columns offset to that
-  /// item's slice, matching Deep::Im2Col's own documented
-  /// contract exactly (CPUBackend forwards to it directly).
-  /// Positions outside the input (due to padding) are written as
-  /// zero. @p columns is fully overwritten, not accumulated into.
-  virtual void Im2Col(const float* input, int channels, int height, int width, int kernelH,
-                      int kernelW, int strideH, int strideW, int padH, int padW,
+  /// @brief Rearranges a whole batch of (channels, height, width) input
+  /// images into (channels*kH*kW, outH*outW) column matrices, the
+  /// standard im2col transform, in one call. @p input is
+  /// [batchSize, channels, height, width] and @p columns is
+  /// [batchSize, channels*kH*kW, outH*outW], both contiguous and
+  /// batch-major (the layout RepackForBatchedGemm() already expects).
+  /// On CPUBackend this is a thin loop over Deep::Im2Col() (which
+  /// genuinely only knows how to do one image at a time); on
+  /// CUDABackend it's one kernel launch for the whole batch instead of
+  /// @p batchSize separate launches -- the whole reason this takes a
+  /// batch dimension at all rather than mirroring Deep::Im2Col()'s
+  /// single-image contract. Positions outside the input (due to
+  /// padding) are written as zero. @p columns is fully overwritten,
+  /// not accumulated into.
+  virtual void Im2Col(const float* input, int batchSize, int channels, int height, int width,
+                      int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                       float* columns) noexcept = 0;
 
-  /// @brief The adjoint of Im2Col(): scatters a
-  /// (channels*kH*kW, outH*outW) column-gradient buffer back into
-  /// a (channels, height, width) image. NOT batch-aware, same
-  /// per-item-offset contract as Im2Col(). ACCUMULATES into
-  /// @p outputImage (does not zero it first), caller must zero
-  /// the destination if a fresh result is wanted, matching
-  /// Deep::Col2Im's own contract exactly.
-  virtual void Col2Im(const float* columns, int channels, int height, int width, int kernelH,
-                      int kernelW, int strideH, int strideW, int padH, int padW,
+  /// @brief The adjoint of Im2Col(): scatters a whole batch of
+  /// (channels*kH*kW, outH*outW) column-gradient buffers back into
+  /// (channels, height, width) images, in one call. Same
+  /// [batchSize, ...] batch-major layout and one-launch-per-batch
+  /// rationale as Im2Col() above. ACCUMULATES into @p outputImage
+  /// (does not zero it first), caller must zero the destination if a
+  /// fresh result is wanted, matching Deep::Col2Im's own contract.
+  virtual void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+                      int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                       float* outputImage) noexcept = 0;
 
   /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
@@ -346,9 +352,13 @@ public:
   /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast
   /// across spatial positions, the transpose relationship to
   /// AddBiasBroadcast (which broadcasts a per-COLUMN bias across ROWS,
-  /// the dense-layer convention). NOT batch-aware: matches Im2Col/
-  /// Col2Im's contract exactly, call once per batch item, with @p buf
-  /// offset to that item's slice.
+  /// the dense-layer convention). Batch-aware for the common case of one
+  /// shared @p bias (fold batchSize into @p spatialSize, as ConvPCLayer's
+  /// family already does for the ordinary per-conv-layer bias); NOT
+  /// batch-aware when a call site instead needs a DIFFERENT bias per
+  /// batch item (e.g. FullConvPCLayer::DirectFeedbackUpdate()'s
+  /// per-image projChannel), which still has to call this once per item
+  /// with @p buf offset to that item's slice.
   virtual void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                                  size_t spatialSize) noexcept = 0;
 

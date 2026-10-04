@@ -275,7 +275,6 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   size_t colRows = (size_t)inChannels * kernelH * kernelW;
   size_t colCols = (size_t)outHeight * outWidth;
   size_t Nout = (size_t)batchSize * outChannels * colCols;
-  size_t ownSize = (size_t)inChannels * inHeight * inWidth;
 
   if (isClamped && muCacheValid)
   {
@@ -283,8 +282,7 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
     return;
   }
 
-  // Im2Col is an inherently per-image gather (no batched primitive), but
-  // everything after it was ALSO looping per-batch-item -- batchSize
+  // Everything after Im2Col was ALSO looping per-batch-item -- batchSize
   // separate small GEMMs instead of one big one, each paying its own
   // BLAS call overhead. Fixed by reusing the exact repack trick
   // UpdateWeights() already uses for its own GEMM: RepackForBatchedGemm
@@ -292,14 +290,8 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   // pure axis-swap) calling it AGAIN with `batch`/`rows` swapped
   // undoes it -- no new buffers needed, colsRepacked/lgRepacked are
   // pure scratch here exactly as they are in UpdateWeights().
-  for (int batch = 0; batch < batchSize; ++batch)
-  {
-    const float* z_item = z + (size_t)batch * ownSize;
-    float* cols_item = colBuffer + (size_t)batch * colRows * colCols;
-
-    backend->Im2Col(z_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH, strideW,
-                    padH, padW, cols_item);
-  }
+  backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW, strideH, strideW,
+                  padH, padW, colBuffer);
 
   backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
   backend->MatMul(
@@ -372,8 +364,7 @@ void FullConvPCLayer::UpdateState() noexcept
 
     // Same batched-GEMM trick as ComputeMuOnly(): one big transA GEMM
     // instead of batchSize small ones, un-repacking the result back to
-    // per-batch-contiguous layout only where Col2Im (a genuine per-image
-    // scatter, no batched form) actually needs it.
+    // per-batch-contiguous layout Col2Im() expects.
     backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
     backend->MatMul(
         /*transA=*/true,
@@ -391,13 +382,8 @@ void FullConvPCLayer::UpdateState() noexcept
         (int)(batchSize * colCols));
     backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
-    for (int batch = 0; batch < batchSize; ++batch)
-    {
-      float* scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-      float* dz_item = dz_dt + (size_t)batch * ownSize;
-      backend->Col2Im(scratch_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                      strideW, padH, padW, dz_item);
-    }
+    backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
+                    strideH, strideW, padH, padW, dz_dt);
   }
 
   backend->AxpyInto(dz_dt, e, ownStateSize, -1.0f);
@@ -626,13 +612,8 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
   backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
   backend->Zero(adjoint, (size_t)batchSize * ownSize);
-  for (int batch = 0; batch < batchSize; ++batch)
-  {
-    float* scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-    float* adj_item = adjoint + (size_t)batch * ownSize;
-    backend->Col2Im(scratch_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                    strideW, padH, padW, adj_item);
-  }
+  backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
+                  strideH, strideW, padH, padW, adjoint);
 }
 
 void FullConvPCLayer::EnsureMuHoldsDerivative() noexcept

@@ -134,11 +134,13 @@ public:
   void Fill(float* buf, size_t n, float value) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::Im2Col
-  void Im2Col(const float* input, int channels, int height, int width, int kernelH, int kernelW,
-              int strideH, int strideW, int padH, int padW, float* columns) noexcept override;
+  void Im2Col(const float* input, int batchSize, int channels, int height, int width, int kernelH,
+              int kernelW, int strideH, int strideW, int padH, int padW,
+              float* columns) noexcept override;
   /// @copydoc Deep::IComputeBackend::Col2Im
-  void Col2Im(const float* columns, int channels, int height, int width, int kernelH, int kernelW,
-              int strideH, int strideW, int padH, int padW, float* outputImage) noexcept override;
+  void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+              int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
+              float* outputImage) noexcept override;
   /// @copydoc Deep::IComputeBackend::RepackForBatchedGemm
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;
