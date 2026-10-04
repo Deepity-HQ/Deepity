@@ -348,7 +348,18 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     # set after compile(), matching tFullConvPCOtherTogglesSanity.cpp's
     # own verified ordering exactly.
     net.set_use_ipc(use_ipc)
-    net.set_use_epc(True)
+    # USE_EPC=0 isolates ePC itself as a suspect: training on real data
+    # is stable for ~400 batches then diverges exponentially within ~30
+    # more, reproducibly, regardless of predict() (ruled out), lmbda
+    # magnitude, or the per-epoch decay event (both ruled out) -- the one
+    # remaining architecture-specific variable is ePC's own per-call
+    # adjoint/reconstruction mechanism, never exercised at this depth
+    # (10 conv layers) or on real image data before now (only verified
+    # on an 8-hidden-layer synthetic C++ test). Plain one-hop settling
+    # with only 6 steps likely won't train WELL at this depth -- that's
+    # not what this flag is checking. It's checking whether the
+    # exponential blow-up still happens at all.
+    net.set_use_epc(os.environ.get("USE_EPC", "1") == "1")
     net.set_use_momentum(use_momentum, 0.9)
     net.set_use_cross_entropy(True)
     net.set_optimizer("ADAMW")
