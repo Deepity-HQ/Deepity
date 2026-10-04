@@ -483,16 +483,6 @@ def main() -> None:
               f"Avg energy: {avg_energy:.4f} | lr={current_lr:.2e} ir={current_ir:.4f} "
               f"fl={current_fl:.2e}")
 
-        # Diagnostic: do the accuracy-eval predict() calls just above
-        # corrupt anything, independent of whatever the NEXT epoch's
-        # first train_step() does? If this ever prints non-finite,
-        # predict() itself is the culprit, not the training step that
-        # follows it.
-        all_finite = all(np.all(np.isfinite(np.array(l.weights))) for l in net.layers)
-        if not all_finite:
-            print(f"  [DIAG] non-finite weights detected after epoch {epoch+1}'s "
-                  f"accuracy eval (before next epoch's training)")
-
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
 
