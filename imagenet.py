@@ -359,6 +359,22 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     net.set_use_residual_connections(False)  # see build_network's docstring
     net.compile()
 
+    # MUPC_DAMPING isolates muPC scaling's own formula as the suspect
+    # instead of depth: SHALLOW=1 (fewer layers, which the formula gives
+    # a LARGER per-layer scale `a`) blew up FASTER than the full 10-layer
+    # network, the opposite of what "too many layers" would predict --
+    # consistent with `a` itself just being too large for real image
+    # data at this channel/resolution scale, with layer count only
+    # mattering as a side effect of the formula's 1/sqrt(N*L) shape.
+    # This multiplies whatever muPC already computed by an extra
+    # constant < 1, without touching the architecture at all, each
+    # layer's compile()-computed `a` read back via the (read-only)
+    # mu_pc_scale property and overwritten via set_mu_pc_scale().
+    damping = float(os.environ.get("MUPC_DAMPING", "1.0"))
+    if damping != 1.0:
+        for layer in net.layers:
+            layer.set_mu_pc_scale(layer.mu_pc_scale * damping)
+
     # Everything else is a runtime flag, read fresh at TrainStep() time --
     # set after compile(), matching tFullConvPCOtherTogglesSanity.cpp's
     # own verified ordering exactly.
