@@ -308,27 +308,42 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     # Downsample 1: 32x32 -> 16x16, 64 -> 128 channels.
     conv(64, 128, 32, k=3, stride=2, pad=1)
 
-    # Stage 2 @ 16x16, 128 channels.
-    conv(128, 128, 16, k=3, stride=1, pad=1)
-    conv(128, 128, 16, k=3, stride=1, pad=1)
+    # SHALLOW=1 isolates depth itself as a suspect: stops here (5
+    # weight-bearing layers: stem+stage1x2+downsample1+classifier,
+    # classifying straight off downsample1's 128x16x16 instead of
+    # going on to stages 2/3), vs. the full 10-layer architecture
+    # below. Nothing else about this test changes -- same muPC scaling,
+    # same lr/lmbda you pass in, same everything -- so if THIS stays
+    # stable where the 10-layer version blew up by batch ~100-300
+    # regardless of every other toggle tried so far, depth itself is
+    # implicated; if it blows up just as fast, depth isn't the lever
+    # either and the remaining suspect is muPC scaling's formula itself.
+    if os.environ.get("SHALLOW", "0") == "1":
+        conv(128, n_classes, 16, k=16, stride=1, pad=0, activation="tanh",
+             activation_deriv="dtanh")
+    else:
+        # Stage 2 @ 16x16, 128 channels.
+        conv(128, 128, 16, k=3, stride=1, pad=1)
+        conv(128, 128, 16, k=3, stride=1, pad=1)
 
-    # Downsample 2: 16x16 -> 8x8, 128 -> 256 channels.
-    conv(128, 256, 16, k=3, stride=2, pad=1)
+        # Downsample 2: 16x16 -> 8x8, 128 -> 256 channels.
+        conv(128, 256, 16, k=3, stride=2, pad=1)
 
-    # Stage 3 @ 8x8, 256 channels.
-    conv(256, 256, 8, k=3, stride=1, pad=1)
-    conv(256, 256, 8, k=3, stride=1, pad=1)
+        # Stage 3 @ 8x8, 256 channels.
+        conv(256, 256, 8, k=3, stride=1, pad=1)
+        conv(256, 256, 8, k=3, stride=1, pad=1)
 
-    # Classifier: a full-size (8x8) kernel collapses the whole spatial
-    # extent to 1x1 in one GEMM (same trick the previous version of this
-    # script used for its own last layer), producing one score per class.
-    # TanH here, not Linear, feeding into cross-entropy: this exactly
-    # mirrors temp.py's own validated choice (its last Linear() was
-    # followed by TanH() before the auto-appended terminal, under the
-    # same use_cross_entropy=True), rather than assuming the conventional
-    # "raw linear logits into softmax" convention transfers unchanged to
-    # this framework's internals.
-    conv(256, n_classes, 8, k=8, stride=1, pad=0, activation="tanh", activation_deriv="dtanh")
+        # Classifier: a full-size (8x8) kernel collapses the whole spatial
+        # extent to 1x1 in one GEMM (same trick the previous version of
+        # this script used for its own last layer), producing one score
+        # per class. TanH here, not Linear, feeding into cross-entropy:
+        # this exactly mirrors temp.py's own validated choice (its last
+        # Linear() was followed by TanH() before the auto-appended
+        # terminal, under the same use_cross_entropy=True), rather than
+        # assuming the conventional "raw linear logits into softmax"
+        # convention transfers unchanged to this framework's internals.
+        conv(256, n_classes, 8, k=8, stride=1, pad=0, activation="tanh",
+             activation_deriv="dtanh")
 
     # Terminal sink: outChannels=0, matching every other *PCLayer family
     # in this codebase's "pure sink, no further projection" convention.
@@ -446,9 +461,13 @@ def main() -> None:
     FL = 1e-3
     DECAY_RATE = 0.94
 
-    print(f"\nBuilding FullConvPCNetwork (10 weight-bearing conv layers, cross-entropy + "
-          f"ePC + ADAMW): 3x64x64 -> 64x32x32 -> 64x32x32 -> 128x16x16 -> 128x16x16 -> "
-          f"256x8x8 -> 256x8x8 -> {N_CLASSES}x1x1")
+    if os.environ.get("SHALLOW", "0") == "1":
+        print(f"\nBuilding FullConvPCNetwork (SHALLOW=1: 5 weight-bearing conv layers): "
+              f"3x64x64 -> 64x32x32 -> 64x32x32 -> 64x32x32 -> 128x16x16 -> {N_CLASSES}x1x1")
+    else:
+        print(f"\nBuilding FullConvPCNetwork (10 weight-bearing conv layers, cross-entropy + "
+              f"ePC + ADAMW): 3x64x64 -> 64x32x32 -> 64x32x32 -> 128x16x16 -> 128x16x16 -> "
+              f"256x8x8 -> 256x8x8 -> {N_CLASSES}x1x1")
     net = build_network(BATCH_SIZE, N_CLASSES, LR, IR, FL, LMBDA, device="gpu",
                         use_momentum=USE_MOMENTUM, use_ipc=USE_IPC)
     net.randomize_weights(SEED)
