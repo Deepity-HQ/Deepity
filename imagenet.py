@@ -361,7 +361,15 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     # exponential blow-up still happens at all.
     net.set_use_epc(os.environ.get("USE_EPC", "1") == "1")
     net.set_use_momentum(use_momentum, 0.9)
-    net.set_use_cross_entropy(True)
+    # USE_CROSS_ENTROPY=0 isolates the one major component that's been
+    # active in every divergence seen so far: optimizer choice (ADAMW vs
+    # SGD) made no difference to the blow-up's shape or timing, which
+    # rules out anything optimizer-specific and points upstream, at
+    # whatever is generating the gradient signal both optimizers then
+    # apply. Cross-entropy (including this session's own rewrite of
+    # SoftmaxCrossEntropyKernel, never GPU-tested until now) is the
+    # prime remaining suspect.
+    net.set_use_cross_entropy(os.environ.get("USE_CROSS_ENTROPY", "1") == "1")
     # OPTIMIZER=SGD isolates ADAMW's own bias-correction ramp
     # (sqrt(1-beta2^t)/(1-beta1^t), t = cumulative weight updates) as a
     # suspect: that ramp depends only on step count, never on lr, which
