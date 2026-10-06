@@ -186,8 +186,11 @@ class SimplePCN(dy.SimplePCNetwork):
         self._build_backend()
 
         super().set_optimizer(self._optimizer)
-        super().randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         super().compile()
+        super().randomize_weights()
 
         self._configured = True
 

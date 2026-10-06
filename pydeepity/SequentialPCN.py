@@ -33,12 +33,19 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
     ) -> None:
-        super().__init__()
-
-        self.architecture = architecture
-        self.batch_size = (
+        # NOTE: batch_size is NOT stored as a plain attribute here,
+        # dy.DiscriminativePCNetwork (the C++ base class) exposes
+        # `batch_size` as a READ-ONLY property (def_prop_ro, no setter at
+        # all). Pass the resolved batch size straight into the base
+        # constructor instead; self.batch_size becomes valid and correct
+        # automatically once super().__init__() constructs the underlying
+        # C++ object. See SimplePCN.__init__ for the same pattern.
+        resolved_batch_size = (
             dy.auto_batch_size() if batch_size is None else batch_size
         )
+        super().__init__(resolved_batch_size)
+
+        self.architecture = architecture
 
         self._learning_rate: Optional[float] = None
         self._inference_rate: Optional[float] = None
@@ -100,8 +107,11 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
                 activation_deriv="d" + activation,
             )
 
-        self.randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
+        self.randomize_weights()
 
         self._configured = True
 
@@ -173,7 +183,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         total_energy = 0.0
 
         for _ in range(steps):
-            total_energy += self.calculate_state()
+            total_energy += self.calculate_state(True)
             self.update_state()
 
         self.update_weights()
@@ -193,7 +203,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         self.clamp_input(X.flatten())
 
         for _ in range(steps):
-            self.calculate_state()
+            self.calculate_state(False)
             self.update_state()
 
         return np.array(self[-1].beliefs)
@@ -349,7 +359,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
                     energy = 0.0
 
                     for _ in range(steps):
-                        energy += self.calculate_state()
+                        energy += self.calculate_state(True)
                         self.update_state()
 
                     self.update_weights()

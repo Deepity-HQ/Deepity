@@ -43,7 +43,13 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         batch_size: Optional[int] = None,
     ) -> None:
         self.architecture = architecture
-        self.batch_size = (
+        # NOTE: batch_size is NOT stored as a plain attribute here,
+        # dy.GaussSeidelPCNetwork (the C++ base class) exposes `batch_size`
+        # as a READ-ONLY property (def_prop_ro, no setter at all). Use a
+        # local variable instead; self.batch_size becomes valid and correct
+        # automatically once super().__init__() constructs the underlying
+        # C++ object. See SimplePCN.__init__ for the same pattern.
+        resolved_batch_size = (
             dy.auto_batch_size()
             if batch_size is None
             else batch_size
@@ -57,7 +63,7 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(self.batch_size)
+        super().__init__(resolved_batch_size)
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""
@@ -163,8 +169,11 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self._build_backend()
 
         super().set_optimizer(self._optimizer)
-        super().randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         super().compile()
+        super().randomize_weights()
 
         self._configured = True
 

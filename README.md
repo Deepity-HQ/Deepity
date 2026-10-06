@@ -1,250 +1,104 @@
-[![CI](https://github.com/ra4ster/deepity/actions/workflows/ci.yml/badge.svg)](https://github.com/ra4ster/deepity/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/ra4ster/deepity)](https://github.com/ra4ster/deepity/blob/main/LICENSE)
-[![Release](https://img.shields.io/github/v/release/ra4ster/deepity)](https://github.com/ra4ster/deepity/releases)
-[![Python](https://img.shields.io/badge/python-3.9%2B-blue)](https://github.com/ra4ster/deepity/blob/main/pyproject.toml)
-[![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://github.com/ra4ster/deepity/blob/main/CMakeLists.txt)
-[![Stars](https://img.shields.io/github/stars/ra4ster/deepity?style=social)](https://github.com/ra4ster/deepity/stargazers)
+<p align="center">
+  <img src="resources/deepity-mark.png" alt="Deepity logo" width="250"/>
+</p>
 
-![](resources/Deepity.png)
+# Deepity ⚡️
 
-**97.73% accuracy on MNIST in 60 seconds, on a laptop CPU, with a training algorithm that isn't backpropagation.** That's within 1% of standard PyTorch backprop trained on the same architecture, and roughly 50x faster than this same library's own results from a few months ago.
+A high-performance C++ / CUDA engine for Predictive Coding Networks (PCNs) and Direct Kolen-Pollack algorithms.
 
-## What is this?
+Deepity bypasses standard backpropagation memory bottlenecks using localized learning rules, allowing for highly efficient neuromorphic and edge-compute scaling.
 
-Most neural networks learn using backpropagation: a single error signal computed at the output gets sent backward through every layer in sequence. Predictive coding is a different way to train a network. Instead of one long backward pass, each layer keeps its own internal guess about what it expects to see, compares that guess to what actually arrived from the layer below, and adjusts locally to reduce the difference. No signal has to travel end to end, and no layer needs to know anything about layers it isn't directly connected to.
+**Current Benchmark:** see [Performance & Benchmarks](#performance--benchmarks) below for what's actually measured today.
 
-Deepity is a predictive coding library for Python and C++, built to make this style of network fast and practical to actually run. It's written from scratch in C++, tuned for CPU (hand-written SIMD kernels, a contiguous memory layout, an optional Intel MKL backend), with GPU support in development.
+[Website & Documentation](https://ra4ster.github.io/Deepity) • [Current Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
 
-## Installation
+---
+
+## Why Predictive Coding?
+
+Standard backpropagation (like PyTorch/TensorFlow) requires massive global memory overhead for backward passes. Deepity utilizes **local Hebbian learning rules**, allowing weight updates to occur simultaneously with forward passes.
+
+**Key Advantages:**
+
+- **O(1) Memory Footprint:** No massive gradient graphs stored in VRAM.
+- **Streaming Token Processing:** Continuous learning without catastrophic forgetting.
+- **Hardware Symbiosis:** Maps perfectly to neuromorphic architectures and extreme edge devices.
+
+## Performance & Benchmarks
+
+Development and testing happens on the Ohio Supercomputer Center (Project PAS0350), on NVIDIA A100 GPUs.
+
+The actual benchmark suite (`tests/tReadme.cpp`, built as the `ReadmeBenchmark` target via Google Benchmark) measures the CPU/CUDA settling-loop's own raw throughput and GFLOPS on synthetic workloads -- it does not train on MNIST or any other real dataset, and there is no PyTorch/standard-backprop comparison anywhere in this repository. Build it yourself and run it to get current numbers for your own hardware:
 
 ```bash
-git clone https://github.com/ra4ster/deepity
-cd deepity
-python build.py
+python build.py Release OpenBLAS --fast
+./build/Release/bin/ReadmeBenchmark
 ```
+
+_(Note: ImageNet-scale training is in active development -- see `imagenet.py` at the repo root -- and the CUDA backend generally is still being hardened.)_
+
+## Quick Start
+
+### Prerequisites
+
+- CMake 3.21+ and Ninja
+- A C++20 compiler (Clang recommended, GCC and MSVC also supported)
+- OpenBLAS or Intel MKL
+- Python 3.9+ with development headers, plus `nanobind` (for the `pydeepity` bindings)
+- CUDA Toolkit (optional -- the CUDA backend is detected automatically if present; the project builds and runs CPU-only otherwise)
+
+See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CMake invocations (e.g. Windows + Clang).
+
+### Building from Source
+
+The build is driven by `build.py`, which wraps CMake/Ninja configuration, compilation, and running the test suite in one command:
 
 ```bash
-python build.py [Release/Debug] [OpenBLAS/MKL] [--native/--fast/--distributed] [--clean] [--jobs=N] [--no-cuda] [--pgo] [--verbose]
+git clone https://github.com/Ra4ster/Deepity.git
+cd Deepity
+python build.py Release OpenBLAS --fast
 ```
 
-`--pgo` runs a full profile-guided optimization pass: builds an instrumented binary, runs a short representative workload to collect real branch and call-frequency data, then rebuilds using it. Roughly doubles build time; the workload itself takes well under a minute.
+`Release`/`Debug` and `OpenBLAS`/`MKL` select the build type and BLAS vendor; `--fast` targets a portable AVX2/FMA baseline (see `python build.py --list-profiles` for the other options, and `python build.py --help` for CUDA/test/job-count flags). This also builds the `pydeepity` Python extension module unless `--no-python-bindings` is passed.
 
-`pip install rich` first for a live build dashboard.
+### Basic Initialization (Python)
 
-<div align="center">
-<img src="resources/buildingdeepity.png" alt="Rich build visuals" width="700" />
-</div>
-
-## Quick start
+Deepity is a C++ engine, but most users drive it via the `pydeepity` bindings (powered by `nanobind`). Networks are declared with `Linear`/`Activation` objects, then built with `configure()`:
 
 ```python
 import numpy as np
-from pydeepity import SimplePCN
+from pydeepity import SimplePCN, Linear, TanH
 
-net = SimplePCN(batch_size=250)
-net.add_layer(784, 512, lr=0.001, ir=0.08, act="linear")
-net.add_layer(512, 512, lr=0.001, ir=0.08, act="sigmoid")
-net.add_layer(512, 10, lr=0.001, ir=0.08, act="sigmoid")
-net.add_layer(10, 0, lr=0.001, ir=0.08, act="linear")
-net.set_optimizer("ADAM")
-net.compile()
-net.randomize_weights()
+net = SimplePCN(
+    Linear(2, 8), TanH(),
+    Linear(8, 1),
+    batch_size=1,
+)
+net.configure(learning_rate=0.05, inference_rate=0.3, lmbda=0.0001, optimizer="SGD")
 
-energy = net.train_step_with_projection(X_batch, Y_batch, steps=20)
-predictions = net.predict_with_projection(X_batch, steps=20)
+x = np.array([1.0, -1.0], dtype=np.float32)
+y = np.array([1.0], dtype=np.float32)
+energy = net.train_step(x, y, steps=50)  # settles + updates weights locally
 ```
 
-Working examples live in [`examples/`](examples/), including full MNIST training, XOR, and comparisons against feed-forward and PyTorch baselines.
+See `imagenet.py` / `mnist.py` at the repo root for larger, end-to-end training scripts.
 
-<div align="center">
-<img src="resources/dkppcn_proof.png" alt="Results training mnist" width="500"/>
-</div>
+_(Note: If you prefer to use the engine natively in C++, see the `DiscriminativePCNetwork` example above -- most `pydeepity` wrapper classes correspond directly to a C++ network class under `include/deepity/networks/`.)_
 
----
+## Architecture & Roadmap
 
-## Latest: one settling step, real accuracy
+Deepity is currently pivoting from an academic research project into a scalable infrastructure tool.
 
-Every predictive coding network has to "settle" toward an answer over several iterative steps before it can learn from a batch, usually 20 to 30 of them. Deepity's newest variant, `DKPPCN`, implements Direct Kolen-Pollack feedback alignment (a 2026 addition to the predictive coding literature) to cut that down to a single step, without giving up accuracy:
-
-<div align="center">
-<img src="resources/dkppcn_results.png" alt="DKPPCN accuracy over 50 epochs, compared against a JAX-based predictive coding reference and PyTorch backprop" width="650" />
-</div>
-
-And the runtime difference this makes, compared against a standard backprop baseline, the JAX-based reference implementation for predictive coding, another PyTorch-based PC library, and this project's own previous results:
-
-<div align="center">
-<img src="resources/bargraph.png" alt="MNIST training runtime across implementations" width="600" />
-</div>
-
-Two of those bars are extrapolated from a real, measured per-epoch rate rather than a completed run (marked and labeled accordingly); everything else is a real, complete, timed 50-epoch run.
-
----
-
-## Performance
-
-Deepity is built CPU-first, and most of its design choices exist to make that fast rather than just correct.
-
-### Training speed
-
-Training a 784-512-512-10 network on MNIST, measured directly against two other predictive-coding libraries on the same task:
-
-<div align="center">
-<img src="resources/mnist_speed_comparison.png" alt="Training time per epoch comparison" width="550" />
-</div>
-
-Deepity also reached higher test accuracy than the JAX-based reference implementation on this task (97.04% vs 95.09%), though the two use meaningfully different architectural configurations, and this isn't the main point: the speed difference holds regardless of which one happens to score higher on a given run.
-
-### Activation functions
-
-Custom SIMD kernels (AVX2/AVX-512, backed by SLEEF) versus naive standard-library loops, across a range of array sizes:
-
-<div align="center">
-<img src="resources/ActivationCPUMetrics.png" alt="Activation function benchmark" width="650" />
-</div>
-
-The custom kernels are meaningfully faster for `tanh` and `sigmoid`, both of which lean on expensive transcendental math where a hand-tuned vectorized implementation has real room to win. `relu` is the exception: it's simple enough that the compiler's own auto-vectorizer handles a plain loop just as well, and our hand-written version actually runs slower there. We're keeping this result visible rather than only showing the wins.
-
-### Batching
-
-<div align="center">
-<img src="resources/batchsize.png" alt="Batch size vs performance" width="600" />
-</div>
-
-Throughput rises with batch size up to a point (peaking around batch size 512 on the hardware this was measured on) before cache-eviction costs start eating into the gains from larger batches.
-
-### GEMM throughput
-
-<div align="center">
-<img src="resources/perf.svg" alt="Flamegraph" width="500" />
-</div>
-
-On a Dell Inspiron 16 Plus 7620 (12th Gen Intel Core i7-12700H, 20 logical processors), Deepity sustains approximately 123 GFLOPS during predictive-coding inference and learning when compiled with Clang. Benchmark configuration: architecture 784-512-256-64-10, batch size 256, 157 iterations, ~1.175s average CPU time, dominated by batched single-precision GEMM (~144.4 GFLOPs of floating-point work).
-
-<div align="center">
-<img src="resources/PyTest.png" width="500" alt="Comparing Deepity to a naive NumPy implementation" />
-</div>
-
-| Implementation         | Avg (ms) | Min (ms) | Max (ms) |
-| :--------------------- | -------: | -------: | -------: |
-| Deepity (Python/Clang) |   1169.1 |   1167.8 |   1172.5 |
-| NumPy (naive)          |   4201.6 |   4147.5 |   4281.3 |
-
-### Threading
-
-Naive multithreading across small batch sizes made performance worse, not better, since the CPU spent more time waking threads than doing matrix math:
-
-| Batch Size | Threads | Throughput (items/sec) | Result                               |
-| ---------- | ------- | ---------------------: | ------------------------------------ |
-| 16-256     | 1       |                  ~2.6k | Single-thread dominates              |
-| 16-256     | 4       |                  ~2.5k | Multithreading penalizes performance |
-| 1024       | Max     |                 ~11.7k | 4.5x speedup                         |
-| 16384      | Max     |                 ~14.3k | Peak multi-threaded scaling          |
-
----
-
-## How it's built
-
-**Custom SIMD micro-kernels.** Activation functions are implemented with raw AVX2/AVX-512 intrinsics and SLEEF, not generic standard-library calls.
-
-**Mu-caching.** While a layer is clamped, its outgoing prediction is provably constant for the whole settling loop, since nothing feeding into it changes mid-settle. Skipping that recomputation is an exact optimization, not an approximation.
-
-**Contiguous memory arena.** Every layer's buffers live in one flat, cache-aligned allocation instead of scattered individual heap allocations, with an optional huge-pages backend for workloads that benefit from it.
-
-**Multiple network variants, choose what fits.** Deepity isn't a single fixed algorithm:
-
-| Variant                     | What it is                                                                                                                                                      |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SimplePCN`                 | Synchronous (Jacobi) settling, every layer updates together each step. The default starting point.                                                              |
-| `GaussSeidelPCN`            | Sequential-sweep settling, layers see each other's already-updated values within the same step. Generally higher accuracy per epoch, at a real throughput cost. |
-| `DKPPCN`                    | Direct Kolen-Pollack feedback alignment. Needs only one settling step per batch instead of 20-30, at comparable accuracy. See above.                            |
-| `FullPCN`                   | Every PC mechanism in one class: muPC scaling, residual connections, iPC, [ePC](https://arxiv.org/abs/2505.20137), momentum, cross-entropy, each independently toggleable on top of DKP feedback. Off by default, reproduces `DKPPCN` exactly. |
-| `DiscriminativePCN`         | The original, precision-weighted variant, closest to the classical Whittington & Bogacz formulation.                                                            |
-| `ConvPCN` / `SimpleConvPCN` | Convolutional predictive coding layers, for image-shaped input rather than flat vectors.                                                                        |
-
-**Optional Intel MKL backend.** Build with `-DDEEPITY_USE_MKL=ON` for a further speedup on Intel hardware (falls back to OpenBLAS automatically if MKL isn't found).
-
-For the algorithmic details behind these (including a couple of surprising findings from comparing against other implementations), see [`docs/ALGORITHM.md`](docs/ALGORITHM.md).
-
-## C++ Native
-
-```cpp
-#include <deepity/networks/SimplePCNetwork.h>
-
-Deep::SimplePCNetwork net(4);
-net.AddLayer(2, 4, 0.01f, 0.1f, 0.0f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
-net.AddLayer(4, 1, 0.01f, 0.1f, 0.0f, Deep::ActivationType::TANH, Deep::ActivationType::dTANH);
-net.AddLayer(1, 0, 0.01f, 0.1f, 0.0f, Deep::ActivationType::LINEAR, Deep::ActivationType::dLINEAR);
-net.Compile();
-
-std::vector<float> X = {-1, -1, -1, 1, 1, -1, 1, 1};
-std::vector<float> Y = {-1, 1, 1, -1};
-
-for (int epoch = 0; epoch < 1500; ++epoch) {
-    float energy = net.TrainStep(X, Y, 150);
-}
-
-std::vector<float> predictions = net.Predict(X, 150);
-```
-
-## Requirements
-
-- CMake
-- A C++20 compiler with AVX2/AVX-512 support (Clang recommended for the SIMD-heavy activation kernels; GCC also supported) and OpenMP
-- [Ninja](https://ninja-build.org/), optional and auto-detected
-- Python 3.9+, for the pydeepity bindings and build.py itself
-
-## Documentation
-
-API reference documentation is generated from source comments via Doxygen (see [`Doxyfile`](Doxyfile)) and published under [`docs/html`](docs/html). Regenerate locally with:
-
-```bash
-doxygen Doxyfile
-```
-
-## Roadmap
-
-- [x] SIMD micro-kernels (AVX2/AVX-512)
-- [x] Contiguous flat-memory buffers
-- [x] PCNetwork abstraction, layer hierarchy, bidirectional inference
-- [x] Python bindings (nanobind and NumPy support)
-- [x] Mu-caching
-- [x] Optional Intel MKL backend
-- [x] Optional huge-pages memory backend
-- [x] GaussSeidelPCN sequential-sweep settling
-- [x] [Direct Kolen-Pollack Predictive Coding](https://arxiv.org/pdf/2602.15571)
-- [x] File IO support (save/load trained models, via `ModelIO`)
-- [ ] CUDA backend (in progress, `IComputeBackend` abstraction and cuBLAS-backed matmul first)
+- [x] Core CUDA kernel fused optimization
+- [x] DKP-PC acceleration
+- [x] ImageNet data loading pipeline (see `imagenet.py`)
+- [ ] Stable, large-scale ImageNet training (actively being tuned)
+- [x] Cross-platform CI/CD (Ubuntu + Windows wheel builds, pyright, on every push -- see `.github/workflows`)
 
 ## Contributing
 
-Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) before opening a pull request.
-
-## Project structure
-
-```plaintext
-include/deepity/           Public headers, mirrored by src/ below
-include/deepity/layers/    SimplePCLayer, GaussSeidelPCLayer, DirectKPPCLayer, FullPCLayer, ConvPCLayer, and others
-include/deepity/networks/  SimplePCNetwork, GaussSeidelPCNetwork, DirectKPPCNetwork, FullPCNetwork, and others
-include/deepity/backend/   IComputeBackend interface, CPUBackend / CUDABackend implementations
-include/deepity/utils/     Activations, MemoryArena, AdamOptimizer, Im2Col, ModelIO, and others
-src/layers/                 Layer implementations, one file per class
-src/networks/                Network implementations, one file per class
-src/backend/                 CPUBackend; src/backend/cuda/ holds the CUDABackend split by concern
-src/utils/                    StreamAlignedBatcher and other utility implementations
-bindings/                    nanobind bindings, split by concern (layers/networks/utilities)
-pydeepity/                   Compiled Python extension module (generated) and the pydeepity Python package
-deepity_build/                Python build/test-runner tooling behind build.py
-examples/                    Runnable Python examples
-experiments/                 One-off investigations and comparisons (not maintained examples)
-tests/                       C++ correctness/gradient-check tests and Google Benchmark suites
-resources/                   Images, benchmark assets, and the Doxygen custom stylesheet
-CMakeLists.txt                Build configuration (OpenBLAS/MKL, CUDA, arch profiles)
-build.py                     Cross-platform CMake build and test runner
-mnist.py                     Train a Simple PCN to learn MNIST
-```
+We are actively looking for contributors to help build out the auxiliary systems. If you have experience with **C++/CUDA performance work** or **Python (Build Systems/DevOps)**, check out the open issues marked `good first issue` or reach out directly.
 
 ## License
 
-Deepity is distributed under the terms in [`LICENSE`](LICENSE).
-
-<small><i>Ra4ster (Jack R) @ 2026 ❤️</i></small>
+MIT License @ 2026

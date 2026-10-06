@@ -21,7 +21,13 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
     ) -> None:
         self.architecture = architecture
         self.input_shape = input_shape
-        self.batch_size = batch_size
+        # NOTE: batch_size is NOT stored as a plain attribute here,
+        # dy.ConvPCNetwork (the C++ base class) exposes `batch_size` as a
+        # READ-ONLY property (def_prop_ro, no setter at all). The `batch_size`
+        # parameter is used directly below instead; self.batch_size becomes
+        # valid and correct automatically once super().__init__() constructs
+        # the underlying C++ object. See SimplePCN.__init__ for the same
+        # pattern.
 
         self._learning_rate: Optional[float] = None
         self._inference_rate: Optional[float] = None
@@ -81,7 +87,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
                 ir=self._inference_rate,
                 pr=self._precision_rate,
                 lmbda=self._lambda,
-                act=activation,
+                activation=activation,
+                activation_deriv="d" + activation,
             )
 
             if layer.out_channels > 0:
@@ -110,8 +117,11 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         self._build_backend()
 
-        self.randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
+        self.randomize_weights()
 
         return self
 

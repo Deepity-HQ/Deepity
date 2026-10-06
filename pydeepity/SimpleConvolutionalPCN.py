@@ -122,8 +122,11 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
         # The backend requires the optimizer to be selected before compile.
         self.set_optimizer(optimizer)
-        self.randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
+        self.randomize_weights()
 
         self._configured = True
 

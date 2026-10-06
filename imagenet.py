@@ -284,7 +284,20 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     """
     net = dy.FullConvPCNetwork(batch_size=batch_size, device=device)
 
-    def conv(in_c, out_c, hw, k, stride, pad, activation="relu", activation_deriv="drelu"):
+    # GELU default, not ReLU: with muPC scaling damped down to avoid the
+    # exploding-energy failure (see MUPC_DAMPING below), pre-activations
+    # are small enough that plain ReLU reliably dies -- its gradient is
+    # EXACTLY zero for any negative input, permanently, regardless of
+    # lr. That's consistent with what two full runs just showed: lr=1e-6
+    # and lr=1e-4 (100x apart) produced matching energy traces to 4
+    # significant figures the whole way through, and collapse was
+    # already present in the PRE-training diagnostic, before any
+    # training happened at all -- 100x of a zero gradient is still
+    # zero. GELU has no such cliff (smooth everywhere, small but
+    # genuinely nonzero gradient for negative inputs too), so it
+    # degrades gracefully under a too-small forward scale instead of
+    # dying outright.
+    def conv(in_c, out_c, hw, k, stride, pad, activation="gelu", activation_deriv="dgelu"):
         net.add_layer(in_c, out_c, hw, hw, k, k, stride_h=stride, stride_w=stride,
                      pad_h=pad, pad_w=pad, terminal_size=n_classes,
                      lr=lr, ir=ir, fl=fl, lmbda=lmbda,
@@ -370,15 +383,22 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     # steps. Proof: SHALLOW=1 (fewer layers -> larger `a` per the
     # formula's own shape) blew up FASTER, not slower -- the opposite of
     # what "too many layers" would predict, but exactly what "`a` itself
-    # is too large" predicts. Damping every layer's computed `a` by 0.1
-    # gave complete stability across 1200+ real-data batches (energy
-    # locked in a tight 1596-1608 range) where the undamped formula
-    # diverged within 2-300 batches regardless of every other toggle
-    # tried. 0.1 is confirmed sufficient, not just "an improvement" --
-    # still overridable via MUPC_DAMPING for anyone who wants to
-    # experiment further (e.g. whether 0.3 is also enough, or whether
-    # 0.03 trains faster without sacrificing stability).
-    damping = float(os.environ.get("MUPC_DAMPING", "0.1"))
+    # is too large" predicts.
+    #
+    # 0.1 fixed the explosion completely (1200+ stable batches) but
+    # overcorrected into a DIFFERENT failure: two full runs at lr=1e-6
+    # and lr=1e-4 (100x apart) produced matching energy traces to 4
+    # significant figures throughout, and the collapse diagnostic showed
+    # the same degenerate single-class prediction before AND after
+    # training -- the signature of dead ReLUs (pre-activations pushed
+    # negative by the 10x-smaller scale, whose gradient is then exactly
+    # zero no matter how large lr is). Switched the internal layers'
+    # default activation to GELU above to fix that mechanism directly;
+    # 0.3 here gives GELU more forward signal to work with than 0.1 did,
+    # while still being well under the 1.0 that exploded. Both changes
+    # landed together and neither is independently re-confirmed yet --
+    # still overridable via MUPC_DAMPING if this needs further tuning.
+    damping = float(os.environ.get("MUPC_DAMPING", "0.3"))
     if damping != 1.0:
         for layer in net.layers:
             layer.set_mu_pc_scale(layer.mu_pc_scale * damping)
