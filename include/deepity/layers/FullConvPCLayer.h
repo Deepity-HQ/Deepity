@@ -6,6 +6,7 @@
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/Im2Col.h>
+#include <deepity/utils/MaxPool2D.h>
 #include <deepity/utils/MemoryArena.h>
 #include <memory>
 #include <random>
@@ -44,6 +45,19 @@ protected:
   int padH, padW;
   int batchSize;
   int terminalSize; ///< Size of the network's final output layer (flat).
+
+  // outHeight/outWidth above stay what they've always meant: mu's own
+  // (conv-native) resolution, used by every existing im2col/colBuffer/
+  // matmul computation unchanged. poolOutHeight/poolOutWidth are what
+  // this layer actually EXPOSES to the layer above (GetOutHeight/Width(),
+  // GetMu()) -- equal to outHeight/outWidth when pooling is off (the
+  // HasPooling() check below), smaller when it's on. Keeping the pooled
+  // resolution as a separate pair of members, rather than repurposing
+  // outHeight/outWidth directly, means pooling touches only the few call
+  // sites that actually read a neighboring layer's output/error, not
+  // every outHeight/outWidth use in this file.
+  int poolH = 1, poolW = 1, poolStrideH = 1, poolStrideW = 1;
+  int poolOutHeight, poolOutWidth;
 
   float lr, ir, fl, lmbda;
   bool isClamped = false;
@@ -92,6 +106,16 @@ protected:
   float* cachedMu = nullptr;
   bool muCacheValid = false;
 
+  /// [batch, outChannels, poolOutHeight, poolOutWidth], GetMu()'s actual
+  /// return value when HasPooling(); allocated only then.
+  float* pooledMu = nullptr;
+  /// Same shape as pooledMu, argmax position per Deep::MaxPool2DForward.
+  int* poolArgmax = nullptr;
+  /// [batch, outChannels, outHeight, outWidth] scratch UnpoolError()
+  /// scatters an incoming pooled error/adjoint into before any code here
+  /// combines it with mu (which stays at conv-native resolution).
+  float* unpoolScratch = nullptr;
+
   float* colBuffer = nullptr;
   float* feedbackScratch = nullptr;
   float* bottom_up_cols = nullptr;
@@ -134,7 +158,8 @@ public:
   FullConvPCLayer(int inChannels, int outChannels, int inHeight, int inWidth, int kernelH,
                   int kernelW, int strideH, int strideW, int padH, int padW, int terminalSize,
                   int batchSize, float learningRate, float inferenceRate, float feedback,
-                  float lmbda, ActivationType aType, ActivationType dType,
+                  float lmbda, ActivationType aType, ActivationType dType, int poolH = 1,
+                  int poolW = 1, int poolStrideH = 1, int poolStrideW = 1,
                   IComputeBackend* backend = nullptr);
 
   ~FullConvPCLayer() override = default;
@@ -227,7 +252,7 @@ public:
 
   float* GetBeliefs() noexcept override { return z; }
   const float* GetErrors() const noexcept override { return e; }
-  const float* GetMu() const noexcept { return mu; }
+  const float* GetMu() const noexcept { return HasPooling() ? pooledMu : mu; }
   const float* GetWeights() const noexcept { return W; }
   const float* GetDirectFeedbackWeights() const noexcept { return Psi; }
   const float* GetBiases() const noexcept { return b; }
@@ -239,16 +264,31 @@ public:
   }
   size_t GetOutputSize() const noexcept override
   {
-    return outChannels > 0 ? (size_t)outChannels * outHeight * outWidth : 0;
+    return outChannels > 0 ? (size_t)outChannels * poolOutHeight * poolOutWidth : 0;
   }
   int GetInChannels() const noexcept { return inChannels; }
   int GetOutChannels() const noexcept { return outChannels; }
   int GetInHeight() const noexcept { return inHeight; }
   int GetInWidth() const noexcept { return inWidth; }
-  int GetOutHeight() const noexcept { return outHeight; }
-  int GetOutWidth() const noexcept { return outWidth; }
+  int GetOutHeight() const noexcept { return poolOutHeight; }
+  int GetOutWidth() const noexcept { return poolOutWidth; }
   int GetKernelH() const noexcept { return kernelH; }
   int GetKernelW() const noexcept { return kernelW; }
   int GetTerminalSize() const noexcept { return terminalSize; }
+
+  bool HasPooling() const noexcept
+  {
+    return poolH > 1 || poolW > 1 || poolStrideH > 1 || poolStrideW > 1;
+  }
+
+protected:
+  /// @brief When HasPooling(), scatters @p pooledError (sized
+  /// poolOutHeight*poolOutWidth, this layer's own output resolution)
+  /// into unpoolScratch at conv-native resolution and returns that;
+  /// otherwise returns @p pooledError unchanged. Every call site that
+  /// reads a neighboring layer's error/adjoint needs this before
+  /// combining it with mu, which stays at conv-native resolution
+  /// regardless of pooling.
+  const float* UnpoolError(const float* pooledError) noexcept;
 };
 } // namespace Deep

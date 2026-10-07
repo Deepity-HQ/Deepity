@@ -17,12 +17,13 @@ FullConvPCNetwork::FullConvPCNetwork(int batchSize, DeviceType device) noexcept
 void FullConvPCNetwork::AddLayer(int inChannels, int outChannels, int inHeight, int inWidth,
                                  int kernelH, int kernelW, int strideH, int strideW, int padH,
                                  int padW, int terminalSize, float lr, float ir, float fl,
-                                 float lmbda, ActivationType aType, ActivationType dType)
+                                 float lmbda, ActivationType aType, ActivationType dType,
+                                 int poolH, int poolW, int poolStrideH, int poolStrideW)
 {
   auto l = std::make_unique<FullConvPCLayer>(inChannels, outChannels, inHeight, inWidth, kernelH,
                                              kernelW, strideH, strideW, padH, padW, terminalSize,
-                                             batchSize, lr, ir, fl, lmbda, aType, dType,
-                                             backend.get());
+                                             batchSize, lr, ir, fl, lmbda, aType, dType, poolH,
+                                             poolW, poolStrideH, poolStrideW, backend.get());
 
   if (!layers.empty())
   {

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <deepity/backend/CPUBackend.h>
 #include <deepity/utils/Im2Col.h>
+#include <deepity/utils/MaxPool2D.h>
 #include <stdexcept>
 
 #include "CPUBackendHighway.h"
@@ -396,6 +397,37 @@ void CPUBackend::Col2Im(const float* columns, int batchSize, int channels, int h
   {
     Deep::Col2Im(columns + (size_t)batch * colSize, channels, height, width, kernelH, kernelW,
                 strideH, strideW, padH, padW, outputImage + (size_t)batch * imageSize);
+  }
+}
+
+void CPUBackend::MaxPool2DForward(const float* input, int batchSize, int channels, int height,
+                                  int width, int poolH, int poolW, int strideH, int strideW,
+                                  float* output, int* argmax) noexcept
+{
+  size_t imageSize = (size_t)channels * height * width;
+  size_t outSize = (size_t)channels * Deep::PoolOutDim(height, poolH, strideH) *
+                   Deep::PoolOutDim(width, poolW, strideW);
+
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    Deep::MaxPool2DForward(input + (size_t)batch * imageSize, channels, height, width, poolH,
+                           poolW, strideH, strideW, output + (size_t)batch * outSize,
+                           argmax + (size_t)batch * outSize);
+  }
+}
+
+void CPUBackend::MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize,
+                                   int channels, int height, int width, int outH, int outW,
+                                   float* inputGrad) noexcept
+{
+  size_t imageSize = (size_t)channels * height * width;
+  size_t outSize = (size_t)channels * outH * outW;
+
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    Deep::MaxPool2DBackward(outputGrad + (size_t)batch * outSize, argmax + (size_t)batch * outSize,
+                            channels, height, width, outH, outW,
+                            inputGrad + (size_t)batch * imageSize);
   }
 }
 

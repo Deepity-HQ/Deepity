@@ -813,7 +813,11 @@ void bind_networks(nb::module_& m)
              float fl,
              float lmbda,
              const std::string& activation,
-             const std::string& activation_deriv)
+             const std::string& activation_deriv,
+             int pool_h,
+             int pool_w,
+             int pool_stride_h,
+             int pool_stride_w)
           {
             self.AddLayer(in_channels,
                           out_channels,
@@ -831,7 +835,11 @@ void bind_networks(nb::module_& m)
                           fl,
                           lmbda,
                           resolveActEnum(activation),
-                          resolveActEnum(activation_deriv));
+                          resolveActEnum(activation_deriv),
+                          pool_h,
+                          pool_w,
+                          pool_stride_h,
+                          pool_stride_w);
           },
           nb::arg("in_channels"),
           nb::arg("out_channels"),
@@ -849,7 +857,11 @@ void bind_networks(nb::module_& m)
           nb::arg("fl") = 1e-4f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
+          nb::arg("activation_deriv") = "drelu",
+          nb::arg("pool_h") = 1,
+          nb::arg("pool_w") = 1,
+          nb::arg("pool_stride_h") = 1,
+          nb::arg("pool_stride_w") = 1)
       .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
       .def("set_use_residual_connections",
            &Deep::FullConvPCNetwork::SetUseResidualConnections,

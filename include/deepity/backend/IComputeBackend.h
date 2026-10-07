@@ -280,6 +280,27 @@ public:
                       int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                       float* outputImage) noexcept = 0;
 
+  /// @brief Batched 2D max pooling, no padding. @p input is [batchSize,
+  /// channels, height, width], @p output and @p argmax are [batchSize,
+  /// channels, outH, outW] where outH/outW = Deep::PoolOutDim(height/
+  /// width, poolH/poolW, strideH/strideW). @p argmax records, per output
+  /// position, the winning input position's flat (row*width+col) offset
+  /// within its channel plane -- MaxPool2DBackward()'s only input besides
+  /// the incoming gradient, no pre-activation buffer needed (a hard max's
+  /// backward is exact from the argmax alone).
+  virtual void MaxPool2DForward(const float* input, int batchSize, int channels, int height,
+                                int width, int poolH, int poolW, int strideH, int strideW,
+                                float* output, int* argmax) noexcept = 0;
+
+  /// @brief The adjoint of MaxPool2DForward(): scatters a batch of
+  /// [batchSize, channels, outH, outW] gradients back into [batchSize,
+  /// channels, height, width] using the recorded @p argmax. ACCUMULATES
+  /// into @p inputGrad (does not zero it first), matching
+  /// Deep::MaxPool2DBackward's own contract.
+  virtual void MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize,
+                                 int channels, int height, int width, int outH, int outW,
+                                 float* inputGrad) noexcept = 0;
+
   /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
   /// into [rows, batchSize, cols] (row-major, batch second),
   /// i.e. dst[row][batch][col] = src[batch][row][col] for all

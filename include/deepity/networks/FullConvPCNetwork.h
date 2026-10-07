@@ -35,7 +35,8 @@ public:
   void AddLayer(int inChannels, int outChannels, int inHeight, int inWidth, int kernelH,
                 int kernelW, int strideH, int strideW, int padH, int padW, int terminalSize,
                 float lr, float ir, float fl, float lmbda, ActivationType aType,
-                ActivationType dType);
+                ActivationType dType, int poolH = 1, int poolW = 1, int poolStrideH = 1,
+                int poolStrideW = 1);
 
   void SetUseMuPCScaling(bool enabled) noexcept { useMuPCScaling = enabled; }
   void SetUseResidualConnections(bool enabled) noexcept { useResidualConnections = enabled; }

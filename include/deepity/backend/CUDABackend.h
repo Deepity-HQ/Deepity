@@ -141,6 +141,14 @@ public:
   void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
               int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
               float* outputImage) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MaxPool2DForward
+  void MaxPool2DForward(const float* input, int batchSize, int channels, int height, int width,
+                        int poolH, int poolW, int strideH, int strideW, float* output,
+                        int* argmax) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MaxPool2DBackward
+  void MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize, int channels,
+                         int height, int width, int outH, int outW,
+                         float* inputGrad) noexcept override;
   /// @copydoc Deep::IComputeBackend::RepackForBatchedGemm
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;

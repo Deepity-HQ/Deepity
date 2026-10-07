@@ -18,8 +18,8 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
                                  int kernelH, int kernelW, int strideH, int strideW, int padH,
                                  int padW, int terminalSize, int batchSize, float learningRate,
                                  float inferenceRate, float feedback, float lmbda,
-                                 ActivationType aType, ActivationType dType,
-                                 IComputeBackend* backend)
+                                 ActivationType aType, ActivationType dType, int poolH, int poolW,
+                                 int poolStrideH, int poolStrideW, IComputeBackend* backend)
     : inChannels(inChannels)
     , outChannels(outChannels)
     , inHeight(inHeight)
@@ -32,6 +32,10 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
     , padW(padW)
     , batchSize(batchSize)
     , terminalSize(terminalSize)
+    , poolH(poolH)
+    , poolW(poolW)
+    , poolStrideH(poolStrideH)
+    , poolStrideW(poolStrideW)
     , lr(learningRate)
     , ir(inferenceRate)
     , fl(feedback)
@@ -42,6 +46,10 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
 {
   outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
   outWidth = (outChannels > 0) ? ConvOutDim(inWidth, kernelW, strideW, padW) : 0;
+  poolOutHeight = (outChannels > 0 && HasPooling()) ? PoolOutDim(outHeight, poolH, poolStrideH)
+                                                    : outHeight;
+  poolOutWidth = (outChannels > 0 && HasPooling()) ? PoolOutDim(outWidth, poolW, poolStrideW)
+                                                   : outWidth;
 
   localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
   BindMemory(*localArena);
@@ -102,6 +110,13 @@ size_t FullConvPCLayer::GetRequiredFloats() const noexcept
     total += pad16((size_t)batchSize * outChannels); // projChannel
     total += pad16(outStateSize);            // proj
     total += pad16(1) * 2;                   // tPsi_device, fl_device
+
+    if (HasPooling())
+    {
+      size_t poolOutStateSize = (size_t)batchSize * outChannels * poolOutHeight * poolOutWidth;
+      total += pad16(poolOutStateSize) * 2; // pooledMu, poolArgmax (as floats)
+      total += pad16(outStateSize);         // unpoolScratch
+    }
   }
 
   return total;
@@ -197,6 +212,18 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     backend->CopyFromHost(
         reinterpret_cast<float*>(tPsi_device), reinterpret_cast<float*>(&zeroPsi), 1);
     backend->CopyFromHost(fl_device, &fl, 1);
+
+    if (HasPooling())
+    {
+      size_t poolOutStateSize = (size_t)batchSize * outChannels * poolOutHeight * poolOutWidth;
+      pooledMu = arena.AllocateFloats(poolOutStateSize);
+      poolArgmax = reinterpret_cast<int*>(arena.AllocateFloats(poolOutStateSize));
+      unpoolScratch = arena.AllocateFloats(outStateSize);
+
+      backend->Zero(pooledMu, poolOutStateSize);
+      backend->Zero(reinterpret_cast<float*>(poolArgmax), poolOutStateSize);
+      backend->Zero(unpoolScratch, outStateSize);
+    }
   }
 
   if constexpr (std::is_same_v<ArenaT, MemoryArena>)
@@ -248,17 +275,17 @@ float FullConvPCLayer::CalculateState(bool needEnergy) noexcept
   {
     if (needEnergy)
       totalEnergy = backend->ComputeSoftmaxCrossEntropyErrorAndEnergy(
-          e, z, layerBelow->mu, batchSize, ownSize, rowEnergies);
+          e, z, layerBelow->GetMu(), batchSize, ownSize, rowEnergies);
     else
-      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->mu, batchSize, ownSize);
+      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->GetMu(), batchSize, ownSize);
   }
   else if (needEnergy)
   {
-    totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, ownStateSize);
+    totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->GetMu(), ownStateSize);
   }
   else
   {
-    backend->ComputeError(e, z, layerBelow->mu, ownStateSize);
+    backend->ComputeError(e, z, layerBelow->GetMu(), ownStateSize);
   }
 
   if (outChannels > 0)
@@ -279,6 +306,9 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   if (isClamped && muCacheValid)
   {
     backend->Copy(mu, cachedMu, Nout);
+    if (HasPooling())
+      backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
+                                poolStrideH, poolStrideW, pooledMu, poolArgmax);
     return;
   }
 
@@ -324,6 +354,23 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
     backend->Copy(cachedMu, mu, Nout);
     muCacheValid = true;
   }
+
+  if (HasPooling())
+    backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
+                              poolStrideH, poolStrideW, pooledMu, poolArgmax);
+}
+
+const float* FullConvPCLayer::UnpoolError(const float* pooledError) noexcept
+{
+  if (!HasPooling())
+    return pooledError;
+
+  size_t outStateSize = (size_t)batchSize * outChannels * outHeight * outWidth;
+
+  backend->Zero(unpoolScratch, outStateSize);
+  backend->MaxPool2DBackward(pooledError, poolArgmax, batchSize, outChannels, outHeight, outWidth,
+                             poolOutHeight, poolOutWidth, unpoolScratch);
+  return unpoolScratch;
 }
 
 void FullConvPCLayer::UpdateState() noexcept
@@ -355,7 +402,7 @@ void FullConvPCLayer::UpdateState() noexcept
 
   if (layerAbove != nullptr && outChannels > 0)
   {
-    const float* e_above = layerAbove->GetErrors();
+    const float* e_above = UnpoolError(layerAbove->GetErrors());
     size_t outSize = (size_t)outChannels * colCols;
     size_t outTotal = (size_t)batchSize * outSize;
 
@@ -411,7 +458,7 @@ void FullConvPCLayer::UpdateWeights() noexcept
   size_t Wsize = (size_t)outChannels * colRows;
   size_t outTotal = (size_t)batchSize * outSize;
 
-  const float* e_above = layerAbove->GetErrors();
+  const float* e_above = UnpoolError(layerAbove->GetErrors());
 
   // mu still holds the derivative left over from the last
   // UpdateState()/ComputeAdjoint() call -- see both methods' docs.
@@ -579,6 +626,8 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
 {
   if (layerAbove == nullptr || outChannels == 0)
     return;
+
+  adjointAbove = UnpoolError(adjointAbove);
 
   size_t ownSize = (size_t)inChannels * inHeight * inWidth;
   size_t colRows = (size_t)inChannels * kernelH * kernelW;
