@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cmath>
 #include <deepity/networks/FullConvPCNetwork.h>
 #include <iostream>
@@ -315,9 +314,18 @@ void FullConvPCNetwork::Compile()
   // L = weight-bearing layers (excludes the terminal, outChannels==0).
   // H = L-1 hidden layers. d_in is the true fan-in of the FIRST layer
   // (inChannels*kernelH*kernelW, the conv analog of dense's input
-  // dimension); N is the widest hidden layer's CHANNEL count (conv's
-  // analog of dense's hidden width -- spatial extent isn't "capacity"
-  // the same way channel count is).
+  // dimension); N is the widest hidden layer's CHANNEL count, and
+  // midFanIn is that SAME layer's true fan-in (N*kernelH*kernelW).
+  //
+  // Middle layers need midFanIn, not N alone: a 3x3 conv's true fan-in is
+  // 9x its channel count, so using raw N there understated fan-in by 9x,
+  // making `a` too large by sqrt(9)=3 -- confirmed empirically (SHALLOW
+  // blew up faster than the full 10-layer network, the opposite of what
+  // "too many layers" predicts, but exactly what "a itself is too large"
+  // predicts) and mathematically (a flat MUPC_DAMPING of ~0.3 in
+  // imagenet.py was accidentally undoing almost exactly this 1/3 factor).
+  // The first layer's d_in formula above already got this right; this
+  // brings the middle-layer formula in line with it.
   const int L = (int)layers.size() - 1;
   const int H = L - 1;
 
@@ -330,15 +338,25 @@ void FullConvPCNetwork::Compile()
         (float)layers[0]->GetInChannels() * layers[0]->GetKernelH() * layers[0]->GetKernelW();
 
     float N;
+    float midFanIn;
     if (H > 0)
     {
       N = 0.0f;
+      midFanIn = 1.0f;
       for (int i = 0; i < L - 1; ++i)
-        N = std::max(N, (float)layers[i]->GetOutChannels());
+      {
+        float outCh = (float)layers[i]->GetOutChannels();
+        if (outCh > N)
+        {
+          N = outCh;
+          midFanIn = outCh * (float)layers[i]->GetKernelH() * (float)layers[i]->GetKernelW();
+        }
+      }
     }
     else
     {
       N = (float)layers[L - 1]->GetOutChannels();
+      midFanIn = N * (float)layers[L - 1]->GetKernelH() * (float)layers[L - 1]->GetKernelW();
     }
 
     for (int l = 1; l <= L; ++l)
@@ -349,7 +367,7 @@ void FullConvPCNetwork::Compile()
       else if (l == L)
         a = 1.0f / N;
       else
-        a = std::pow(N * (float)L, -0.5f);
+        a = std::pow(midFanIn * (float)L, -0.5f);
 
       layers[l - 1]->SetMuPCScale(a);
       layers[l - 1]->SetMuPCInit(true);

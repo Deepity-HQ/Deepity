@@ -284,19 +284,14 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     """
     net = dy.FullConvPCNetwork(batch_size=batch_size, device=device)
 
-    # GELU default, not ReLU: with muPC scaling damped down to avoid the
-    # exploding-energy failure (see MUPC_DAMPING below), pre-activations
-    # are small enough that plain ReLU reliably dies -- its gradient is
-    # EXACTLY zero for any negative input, permanently, regardless of
-    # lr. That's consistent with what two full runs just showed: lr=1e-6
-    # and lr=1e-4 (100x apart) produced matching energy traces to 4
-    # significant figures the whole way through, and collapse was
-    # already present in the PRE-training diagnostic, before any
-    # training happened at all -- 100x of a zero gradient is still
-    # zero. GELU has no such cliff (smooth everywhere, small but
-    # genuinely nonzero gradient for negative inputs too), so it
-    # degrades gracefully under a too-small forward scale instead of
-    # dying outright.
+    # GELU default, not ReLU: chosen while muPC scaling was still being
+    # flat-damped to survive its (now-fixed, see FullConvPCNetwork.cpp)
+    # fan-in bug, where plain ReLU reliably died outright (exactly-zero
+    # gradient for negative inputs, confirmed across a 100x lr range
+    # producing matching energy traces). Left as the default now that the
+    # formula itself is fixed -- GELU's smoothness has no real downside
+    # here, just no longer a load-bearing fix for a problem that no
+    # longer exists this way.
     def conv(in_c, out_c, hw, k, stride, pad, activation="gelu", activation_deriv="dgelu"):
         net.add_layer(in_c, out_c, hw, hw, k, k, stride_h=stride, stride_w=stride,
                      pad_h=pad, pad_w=pad, terminal_size=n_classes,
@@ -372,36 +367,30 @@ def build_network(batch_size, n_classes, lr, ir, fl, lmbda, device,
     net.set_use_residual_connections(False)  # see build_network's docstring
     net.compile()
 
-    # CONFIRMED ROOT CAUSE of the exponential energy blow-up that every
-    # other toggle in this file was built to rule out (predict(), the
-    # per-epoch decay event, ePC, cross-entropy, optimizer choice, lmbda
-    # magnitude, even network depth -- all individually eliminated):
-    # FullConvPCNetwork::Compile()'s muPC-scaling formula computes a
-    # per-layer scale `a` (1/sqrt(N*L) for middle layers, 1/N for the
-    # classifier) that's simply too large for real image data at this
-    # channel/resolution scale, sustained over hundreds of training
-    # steps. Proof: SHALLOW=1 (fewer layers -> larger `a` per the
-    # formula's own shape) blew up FASTER, not slower -- the opposite of
-    # what "too many layers" would predict, but exactly what "`a` itself
-    # is too large" predicts.
+    # CONFIRMED (and now fixed) ROOT CAUSE of the exponential energy
+    # blow-up that every other toggle in this file was built to rule out
+    # (predict(), the per-epoch decay event, ePC, cross-entropy, optimizer
+    # choice, lmbda magnitude, even network depth -- all individually
+    # eliminated): FullConvPCNetwork::Compile()'s muPC-scaling formula for
+    # middle layers used raw channel count as a stand-in for fan-in, but a
+    # 3x3 conv's true fan-in is 9x its channel count -- understating
+    # fan-in by 9x made `a` too large by sqrt(9)=3. A BP-equivalence
+    # control run (imagenet_bp_control.py: inference_steps=1, ir=1.0,
+    # fl=0.0, ePC forced on -- mathematically a literal backprop gradient
+    # on this exact architecture, no PC-specific settling mechanics at
+    # all) failed identically (stuck at the ~0.5% random-guess floor,
+    # output std ~0 at init, collapsed to a single predicted class after
+    # training), proving the bug was in the architecture's forward pass,
+    # not PC settling dynamics. See FullConvPCNetwork.cpp's muPC-scaling
+    # block for the actual fix (middle layers now use true fan-in,
+    # channels*kernelH*kernelW, matching what the first layer's formula
+    # already did correctly).
     #
-    # 0.1 fixed the explosion completely (1200+ stable batches) but
-    # overcorrected into a DIFFERENT failure: two full runs at lr=1e-6
-    # and lr=1e-4 (100x apart) produced matching energy traces to 4
-    # significant figures throughout, and the collapse diagnostic showed
-    # the same degenerate single-class prediction before AND after
-    # training -- the signature of dead ReLUs (pre-activations pushed
-    # negative by the 10x-smaller scale, whose gradient is then exactly
-    # zero no matter how large lr is). Switched the internal layers'
-    # default activation to GELU above to fix that mechanism directly;
-    # 0.3 here gives GELU more forward signal to work with than 0.1 did,
-    # while still being well under the 1.0 that exploded. Both changes
-    # landed together and neither is independently re-confirmed yet --
-    # still overridable via MUPC_DAMPING if this needs further tuning.
-    damping = float(os.environ.get("MUPC_DAMPING", "0.3"))
-    if damping != 1.0:
-        for layer in net.layers:
-            layer.set_mu_pc_scale(layer.mu_pc_scale * damping)
+    # The MUPC_DAMPING hack that used to live here (multiplying every
+    # layer's computed `a` by a flat 0.1-0.3) is gone: 0.3 was
+    # accidentally re-deriving almost exactly this same missing 1/3
+    # factor, so keeping it on top of the corrected formula would
+    # double-correct and reproduce the dead-signal regime seen at 0.1.
 
     # Everything else is a runtime flag, read fresh at TrainStep() time --
     # set after compile(), matching tFullConvPCOtherTogglesSanity.cpp's
