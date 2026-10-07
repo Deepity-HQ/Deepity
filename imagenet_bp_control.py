@@ -116,17 +116,47 @@ from imagenet import (
 INFERENCE_STEPS = 1  # fixed by the control's own definition, see module docstring
 
 
-def build_sane_baseline_network(batch_size, n_classes, lr):
+def augment_batch(X_uint8_batch, rng, pad=4):
+    """Standard pad-then-random-crop + random horizontal flip (the CIFAR/
+    ImageNet-style recipe: reflect-pad by `pad` on each side, crop back to
+    the original size at a random offset). Training batches only -- Tiny
+    ImageNet overfits heavily without this, and it's one of the standard
+    backprop-world tricks this run exists to apply before comparing against
+    a published baseline. Input/output are both (n, N_CHANNELS*IMG_SIZE*
+    IMG_SIZE) flat CHW uint8."""
+    n = len(X_uint8_batch)
+    X = X_uint8_batch.reshape(n, N_CHANNELS, IMG_SIZE, IMG_SIZE)
+    padded = np.pad(X, ((0, 0), (0, 0), (pad, pad), (pad, pad)), mode="reflect")
+
+    out = np.empty_like(X)
+    offsets_h = rng.integers(0, 2 * pad + 1, size=n)
+    offsets_w = rng.integers(0, 2 * pad + 1, size=n)
+    flips = rng.random(n) < 0.5
+
+    for i in range(n):
+        oh, ow = offsets_h[i], offsets_w[i]
+        crop = padded[i, :, oh:oh + IMG_SIZE, ow:ow + IMG_SIZE]
+        out[i] = crop[:, :, ::-1] if flips[i] else crop
+
+    return out.reshape(n, -1)
+
+
+def build_sane_baseline_network(batch_size, n_classes, lr, lmbda=1e-4):
     """Same conv/spatial/channel shape as imagenet.py's build_network(), but
     ReLU hidden layers, linear classifier logits, muPC off (plain Kaiming
-    init instead), and plain Adam -- see module docstring for why each of
-    these five differs from build_network()'s own recipe."""
+    init instead) -- see module docstring for why each of these differs
+    from build_network()'s own recipe. Optimizer is AdamW (decoupled weight
+    decay, lmbda~1e-4 is a standard, gentle CNN-image-classification value,
+    not the aggressive "counteract runaway growth" magnitude earlier
+    sessions needed under muPC's unit-variance init -- this network's
+    weights are now ordinary Kaiming-small, so ordinary AdamW decay
+    conventions apply)."""
     net = dy.FullConvPCNetwork(batch_size=batch_size, device="gpu")
 
     def conv(in_c, out_c, hw, k, stride, pad, activation="relu", activation_deriv="drelu"):
         net.add_layer(in_c, out_c, hw, hw, k, k, stride_h=stride, stride_w=stride,
                      pad_h=pad, pad_w=pad, terminal_size=n_classes,
-                     lr=lr, ir=1.0, fl=0.0, lmbda=0.0,
+                     lr=lr, ir=1.0, fl=0.0, lmbda=lmbda,
                      activation=activation, activation_deriv=activation_deriv)
 
     conv(N_CHANNELS, 64, IMG_SIZE, k=5, stride=2, pad=2)
@@ -143,7 +173,7 @@ def build_sane_baseline_network(batch_size, n_classes, lr):
          activation_deriv="dlinear")
 
     net.add_layer(n_classes, 0, 1, 1, 1, 1, stride_h=1, stride_w=1, pad_h=0, pad_w=0,
-                 terminal_size=n_classes, lr=lr, ir=1.0, fl=0.0, lmbda=0.0,
+                 terminal_size=n_classes, lr=lr, ir=1.0, fl=0.0, lmbda=lmbda,
                  activation="linear", activation_deriv="dlinear")
 
     # muPC scaling deliberately left OFF -- see module docstring point 4.
@@ -156,8 +186,8 @@ def build_sane_baseline_network(batch_size, n_classes, lr):
     net.set_use_epc(True)  # forced -- this is what makes it a BP control at all
     net.set_use_momentum(False, 0.9)
     net.set_use_cross_entropy(True)
-    net.set_optimizer("ADAM")
-    net.set_psi_optimizer("ADAM")
+    net.set_optimizer("ADAMW")
+    net.set_psi_optimizer("ADAMW")
 
     return net
 
@@ -182,15 +212,16 @@ def main() -> None:
     print(f"Per-channel normalization (computed once, from a 2,000-image training "
           f"sample): mean={mean}, std={std}")
 
-    print(f"\n*** TINY IMAGENET, BP CONTROL v2 (ReLU, linear head, no muPC, Adam) ***")
-    print(f"Sane-baseline test: can the architecture's basic shape learn ANYTHING "
-          f"via the most standard setup possible (ReLU, linear logits, correctly-"
-          f"summing targets, Kaiming init, plain Adam)? Double digits within a few "
-          f"epochs means the shape is fine and the PC-specific/muPC/GELU/tanh "
-          f"pieces need reintroducing one at a time. Still failing means something "
-          f"more fundamental is wrong -- see module docstring.")
+    print(f"\n*** TINY IMAGENET, BP CONTROL v3 (ReLU, linear head, no muPC, AdamW, "
+          f"augmentation) ***")
+    print(f"Same sane-baseline shape as v2 (which reached 22.76% in 5 epochs), plus "
+          f"three standard backprop-world additions to see how close that gets to "
+          f"PCX's ~41-46% published baseline before touching anything PC-specific: "
+          f"AdamW (decoupled weight decay) instead of plain Adam, the same per-epoch "
+          f"lr decay schedule imagenet.py's own recipe uses, and random-crop + "
+          f"horizontal-flip augmentation (Tiny ImageNet overfits heavily without it).")
     print(f"Training: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS} (fixed), "
-          f"ir=1.0 (fixed), fl=0.0 (fixed), lr={LR}, optimizer=ADAM, "
+          f"ir=1.0 (fixed), fl=0.0 (fixed), lr={LR} (decaying), optimizer=ADAMW, "
           f"batch_size={BATCH_SIZE}, seed={SEED}\n")
 
     net = build_sane_baseline_network(BATCH_SIZE, N_CLASSES, LR)
@@ -205,15 +236,22 @@ def main() -> None:
     n_batches = n_train // BATCH_SIZE
     start_time = perf_counter()
 
-    # No ir/fl/lr decay here: this is the simplest possible sanity check,
-    # and a fixed lr removes one more variable from what's being tested.
+    # Same per-epoch exponential decay imagenet.py's own build_network()
+    # recipe uses -- proven reasonable there, no reason to pick differently
+    # here.
+    DECAY_RATE = 0.94
+
     for epoch in range(EPOCHS):
+        current_lr = LR * (DECAY_RATE ** epoch)
+        net.set_learning_rate(current_lr)
+
         indices = rng.permutation(n_train)
         epoch_energy = 0.0
 
         for b in range(n_batches):
             batch_idx = indices[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
-            X_batch = to_float_batch(X_train_u8[batch_idx], mean, std)
+            X_batch_u8 = augment_batch(X_train_u8[batch_idx], rng)
+            X_batch = to_float_batch(X_batch_u8, mean, std)
             Y_batch = to_one_hot(y_train_idx[batch_idx], N_CLASSES)
 
             energy = net.train_step(X_batch, Y_batch, INFERENCE_STEPS)
@@ -241,7 +279,7 @@ def main() -> None:
 
         elapsed = perf_counter() - start_time
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
-              f"Avg energy: {avg_energy:.4f} | lr={LR:.2e}")
+              f"Avg energy: {avg_energy:.4f} | lr={current_lr:.2e}")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
@@ -260,9 +298,11 @@ def main() -> None:
 
     val_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"BP control v2 (ReLU, linear head, no muPC, Adam) Tiny ImageNet "
-          f"validation accuracy: {val_acc:.2f}%")
+    print(f"BP control v3 (ReLU, linear head, no muPC, AdamW, augmentation) Tiny "
+          f"ImageNet validation accuracy: {val_acc:.2f}%")
     print(f"Train time: {train_time:.1f}s")
+    print(f"Reference: PCX's published VGG-7 backprop baseline on Tiny ImageNet is "
+          f"~46% (vs. ~41% for PC).")
 
     run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, mean, std,
                             BATCH_SIZE, INFERENCE_STEPS, N_CLASSES, "POST-training")
