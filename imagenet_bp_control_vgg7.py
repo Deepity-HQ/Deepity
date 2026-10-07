@@ -45,7 +45,7 @@ import numpy as np
 from time import perf_counter
 from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- see imagenet.py's own import of this for why
 
-from imagenet import DATA_DIR, IMG_SIZE, N_CHANNELS, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot
+from imagenet import DATA_DIR, IMG_SIZE, N_CHANNELS, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
 
 CROP_SIZE = 56
 INFERENCE_STEPS = 1  # fixed by the control's own definition, see module docstring
@@ -78,6 +78,37 @@ def crop_and_normalize(X_u8_batch, train: bool, rng):
     out -= MEAN[None, :, None, None]
     out /= STD[None, :, None, None]
     return out.reshape(n, -1)
+
+
+def run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, batch_size, n_classes, label):
+    """Same diagnostic imagenet.py/imagenet_bp_control.py use, adapted to
+    this script's own crop_and_normalize() instead of to_float_batch()."""
+    rng = np.random.default_rng(0)
+    diag_X = crop_and_normalize(X_val_u8[diag_indices], train=False, rng=rng)
+    diag_true = y_val_idx[diag_indices]
+
+    pad_n = batch_size - len(diag_X)
+    if pad_n > 0:
+        filler = crop_and_normalize(X_val_u8[len(diag_indices):len(diag_indices) + pad_n],
+                                    train=False, rng=rng)
+        diag_X_padded = np.vstack([diag_X, filler])
+    else:
+        diag_X_padded = diag_X[:batch_size]
+
+    preds = net.predict(diag_X_padded, INFERENCE_STEPS).reshape(batch_size, n_classes)
+    n_real = len(diag_indices)
+    pred_classes = np.argmax(preds[:n_real], axis=1)
+    n_distinct = len(set(pred_classes.tolist()))
+
+    print(f"\n=== DIAGNOSTIC ({label}): are predictions input-dependent? ===")
+    print(f"True classes:      {diag_true}")
+    print(f"Predicted classes: {pred_classes}")
+    print(f"Distinct predicted classes: {n_distinct} out of {n_real} inputs")
+    print(f"First image's output std: {preds[0].std():.6f}, range: [{preds[0].min():.4f}, {preds[0].max():.4f}]")
+    if n_distinct == 1:
+        print(">>> COLLAPSED: same class predicted regardless of input.")
+    else:
+        print(">>> Predictions DO vary across inputs.")
 
 
 def build_vgg7_network(batch_size, n_classes, lr):
@@ -142,6 +173,10 @@ def main():
     net = build_vgg7_network(BATCH_SIZE, N_CLASSES, LR)
     net.randomize_weights(7)
 
+    diag_indices = pick_diagnostic_indices(y_val_idx)
+    run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
+                            "PRE-training")
+
     rng = np.random.default_rng(7)
     n_train = len(X_train_u8)
     n_batches = n_train // BATCH_SIZE
@@ -193,6 +228,10 @@ def main():
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | "
               f"Avg energy: {epoch_energy/n_batches:.4f} | Val top1: {acc:.2f}% | "
               f"Best top1: {best_acc:.2f}% | lr={lr_at_step(global_step):.2e}")
+
+        if epoch == 0:
+            run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
+                                    "POST-epoch-1")
 
     print(f"\n=== Result ===")
     print(f"Deepity VGG-7 BP control (exact PCX architecture): best top-1 = {best_acc:.2f}%")
