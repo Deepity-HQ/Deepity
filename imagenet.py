@@ -181,7 +181,15 @@ def to_float_batch(X_uint8_batch, mean, std):
 
 
 def to_one_hot(y_idx_batch, n_classes, eps=0.001):
-    Y = np.full((len(y_idx_batch), n_classes), eps, dtype=np.float32)
+    # eps must land on the OTHER (n_classes-1) classes, not stack on top of
+    # it: a flat eps everywhere plus (1-eps) on the true class sums to
+    # 1+eps*(n_classes-2), not 1 -- for n_classes=200 that's 1.198, a
+    # uniform positive bias on every target that pushes cross-entropy's
+    # error (e = target - softmax) upward for every class, every sample,
+    # every step. Confirmed as the mechanism behind a real run: Adam turned
+    # that steady bias into a steady climb in every output, saturating a
+    # tanh classifier head at +1 within a few epochs.
+    Y = np.full((len(y_idx_batch), n_classes), eps / (n_classes - 1), dtype=np.float32)
     Y[np.arange(len(y_idx_batch)), y_idx_batch] = 1.0 - eps
     return Y
 
@@ -580,7 +588,7 @@ def main() -> None:
                       f"(previous batch's energy was {epoch_energy / b if b > 0 else 'N/A (first batch of epoch)'})")
                 return
             epoch_energy += energy
-            if b % 50 == 0:
+            if b % 10 == 0:
                 print(f"  epoch {epoch+1}, batch {b}/{n_batches}: energy={energy:.4f}")
 
         avg_energy = epoch_energy / n_batches

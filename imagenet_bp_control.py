@@ -1,12 +1,11 @@
 """
 Backprop control experiment for imagenet.py's FullConvPCNetwork architecture.
 
-Reuses imagenet.py's exact data pipeline, architecture, and muPC-scaled
-initialization (build_network()) unchanged, with the one combination of
-settings that makes ePC's single settling step mathematically equivalent to
-plain backprop on this architecture:
+Uses the same data pipeline and overall layer shape as imagenet.py's
+build_network(), but as a deliberately SIMPLE, standard baseline rather than
+that function's full recipe -- the goal here is the most boring, best-tested
+configuration possible, so a failure can't be blamed on anything exotic:
 
-    inference_steps = 1
     ir               = 1.0   (every layer -- forces e := -adjoint exactly,
                                not a blend toward it; see EPCStep()/
                                ComputeAdjoint() in FullConvPCLayer.cpp)
@@ -15,51 +14,95 @@ plain backprop on this architecture:
                                projection) directly into W on top of whatever
                                UpdateWeights() does -- see that function's
                                own matmul call in FullConvPCLayer.cpp)
+    inference_steps  = 1
     useEPC           = True  (forced below, regardless of USE_EPC env var)
 
 With those four things true, one TrainStep() call runs ProjectForward()
 (the ordinary forward pass), one EPCStep() (which computes each hidden
 layer's error as exactly minus the backprop adjoint at the current forward
-states, since ir=1.0), then one UpdateWeights() using that error -- i.e.
-the resulting weight update IS the backprop gradient on this exact
-architecture, initialization, classifier head, and data, with none of the
-PC-specific settling dynamics (multi-step relaxation, DKP feedback
-alignment) in the loop at all.
+states, since ir=1.0), then one UpdateWeights() using that error -- i.e. the
+resulting weight update IS the backprop gradient on this architecture, with
+none of the PC-specific settling dynamics (multi-step relaxation, DKP
+feedback alignment) in the loop at all.
 
-This isolates one question: can the architecture AS CURRENTLY BUILT --
-including whatever isn't yet fixed in muPC scaling's fan-in calculation or
-the classifier head -- reach reasonable Tiny ImageNet accuracy via a method
-with zero PC-specific failure modes to blame. Two outcomes:
+On top of that BP-equivalence baseline, this version makes five further
+changes relative to imagenet.py's own build_network(), each one targeting a
+specific, independently-confirmed problem found by inspecting this exact
+architecture and the previous (failed, 0.50% accuracy, saturated-at-+1-logits)
+run of this script:
 
-  - Reaches roughly 35-45% (PCX's own published VGG-7 backprop baseline on
-    Tiny ImageNet: https://arxiv.org/html/2407.01163v2) -> the architecture
-    and setup are fine. Every failure seen in imagenet.py's real (ePC-
-    settling, multi-step) runs is specifically about PC mechanics: ir's
-    CUDA-graph-capture staleness (fixed in FullConvPCNetwork.cpp as of this
-    commit), the muPC scaling fan-in miscalibration (confirmed: middle
-    layers use channel count as fan-in, not channels*kernel_h*kernel_w,
-    overscaling by ~3x for 3x3 convs -- not yet fixed), Predict()'s
-    unclamped-terminal bias at prediction time (not yet fixed), or
-    settling-step instability at step counts > 1 (not yet investigated).
-  - Also fails to learn (stuck near the 0.5% random-guess floor) or blows
-    up -> the problem is upstream of any PC-specific mechanism, most likely
-    the muPC scaling bug (it affects the forward pass regardless of how
-    weights get updated) or the classifier head (tanh squashes logits to
-    [-1,1] before 200-way cross-entropy, capping achievable confidence far
-    below what 200 classes need -- fine for 10-way MNIST, not for this).
+  1. ReLU hidden layers, not GELU. Activations.h's own doc comment admits
+     ActivationDerivativeFromActivatedScalar's dGELU case is wrong -- it
+     evaluates the derivative formula AT THE ACTIVATED OUTPUT, not the
+     pre-activation, because GELU's derivative can't be recovered from its
+     output alone (unlike ReLU's, which only needs the output's sign).
+     Every GELU-activated hidden layer's gradient has been wrong since GELU
+     became the default. ReLU's dRELU formula has no such bug.
+  2. Linear classifier logits, not tanh. tanh bounds logits to [-1,1];
+     with 200 classes, max achievable softmax confidence from that range is
+     a few percent, and cross-entropy's pressure to push the correct
+     class's logit up (see point 3) drives EVERY logit toward tanh's +1
+     saturation plateau, where its gradient is ~0. The previous run's
+     post-training diagnostic showed exactly this: every output in
+     [0.899, 1.0].
+  3. Properly-summing one-hot targets (fixed in imagenet.py's to_one_hot()
+     itself, shared by both scripts) -- eps used to land on top of the true
+     class AND flat across every other class, summing to 1.198 instead of
+     1.0. That uniform positive bias, applied every sample and step, is
+     what Adam turned into the steady climb toward tanh saturation in
+     point 2.
+  4. muPC scaling OFF, plain Kaiming-normal init instead (RandomizeWeights()
+     already falls back to limit=sqrt(2/fan_in) normal init with a=1.0
+     when useMuPCInit is false -- no new C++ needed, just don't call
+     set_use_mu_pc_scaling(True)). Sidesteps two separate, not-yet-fully-
+     resolved issues at once: muPC's per-layer scale was computed from the
+     WIDEST middle layer's fan-in and applied uniformly to every middle
+     layer, under-scaling every layer that isn't the widest one (confirmed:
+     64-channel layers end up with effective gain 0.5, 128-channel layers
+     0.71, only the 256-channel layers get the intended gain of 1.0); and
+     separately, muPC's per-layer `a` is baked into the GRADIENT's
+     magnitude (grad_scale = -a/batchSize in UpdateWeights()), but Adam's
+     m/sqrt(v) normalization is scale-invariant to that magnitude, washing
+     out muPC's intended per-layer differentiation from the weight UPDATE
+     step (though not from the forward pass) -- correctly preserving it
+     under Adam needs per-layer learning rates, not just per-layer `a`,
+     which is real, separate work this baseline sidesteps entirely.
+  5. Adam (not ADAMW) at lr~1e-3, no muPC to interact with it -- removes
+     lmbda from the picture too (plain Adam, unlike AdamW, has no weight-
+     decay term at all, see UpdateWeights()'s optimizer switch).
 
-Usage (same positional style as imagenet.py, minus INFERENCE_STEPS/IR/FL,
-which this control fixes by definition):
+This isolates one question: can the architecture's basic shape -- the conv/
+spatial/channel structure itself, independent of every PC-specific choice
+AND independent of the GELU/tanh/muPC/target-sum issues above -- reach
+reasonable Tiny ImageNet accuracy via the most standard setup possible.
+Two outcomes:
 
-    python imagenet_bp_control.py EPOCHS LR BATCH_SIZE SEED LMBDA
+  - Reaches double digits within a few epochs -> the underlying architecture
+    is fine, and the real work is re-introducing PC-specific settling
+    (multi-step inference, ePC, DKP) and the removed techniques (muPC,
+    GELU, tanh+cross-entropy) one at a time against this now-working
+    baseline, to see which of them hold up and which need their own fix
+    before going back in.
+  - Still fails to learn -> something more fundamental is wrong (one
+    concrete next step from here: a one-batch gradient comparison against
+    PyTorch autograd on the same weights, since the existing C++
+    gradient-verify tests may share this exact derivative-from-activated
+    path and not catch it either).
+
+Usage:
+
+    python imagenet_bp_control.py EPOCHS LR BATCH_SIZE SEED
 """
 import numpy as np
 import os
 import sys
 from time import perf_counter
+from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- see imagenet.py's own import of this for why
 
 from imagenet import (
     DATA_DIR,
+    IMG_SIZE,
+    N_CHANNELS,
     load_wnids,
     load_train_set_cached,
     load_val_set_cached,
@@ -68,18 +111,62 @@ from imagenet import (
     to_one_hot,
     pick_diagnostic_indices,
     run_collapse_diagnostic,
-    build_network,
 )
 
 INFERENCE_STEPS = 1  # fixed by the control's own definition, see module docstring
 
 
+def build_sane_baseline_network(batch_size, n_classes, lr):
+    """Same conv/spatial/channel shape as imagenet.py's build_network(), but
+    ReLU hidden layers, linear classifier logits, muPC off (plain Kaiming
+    init instead), and plain Adam -- see module docstring for why each of
+    these five differs from build_network()'s own recipe."""
+    net = dy.FullConvPCNetwork(batch_size=batch_size, device="gpu")
+
+    def conv(in_c, out_c, hw, k, stride, pad, activation="relu", activation_deriv="drelu"):
+        net.add_layer(in_c, out_c, hw, hw, k, k, stride_h=stride, stride_w=stride,
+                     pad_h=pad, pad_w=pad, terminal_size=n_classes,
+                     lr=lr, ir=1.0, fl=0.0, lmbda=0.0,
+                     activation=activation, activation_deriv=activation_deriv)
+
+    conv(N_CHANNELS, 64, IMG_SIZE, k=5, stride=2, pad=2)
+    conv(64, 64, 32, k=3, stride=1, pad=1)
+    conv(64, 64, 32, k=3, stride=1, pad=1)
+    conv(64, 128, 32, k=3, stride=2, pad=1)
+    conv(128, 128, 16, k=3, stride=1, pad=1)
+    conv(128, 128, 16, k=3, stride=1, pad=1)
+    conv(128, 256, 16, k=3, stride=2, pad=1)
+    conv(256, 256, 8, k=3, stride=1, pad=1)
+    conv(256, 256, 8, k=3, stride=1, pad=1)
+    # Linear, not tanh -- see module docstring point 2.
+    conv(256, n_classes, 8, k=8, stride=1, pad=0, activation="linear",
+         activation_deriv="dlinear")
+
+    net.add_layer(n_classes, 0, 1, 1, 1, 1, stride_h=1, stride_w=1, pad_h=0, pad_w=0,
+                 terminal_size=n_classes, lr=lr, ir=1.0, fl=0.0, lmbda=0.0,
+                 activation="linear", activation_deriv="dlinear")
+
+    # muPC scaling deliberately left OFF -- see module docstring point 4.
+    # RandomizeWeights() falls back to Kaiming-normal init (limit=
+    # sqrt(2/fan_in), a=1.0) automatically when this is never turned on.
+    net.set_use_residual_connections(False)
+    net.compile()
+
+    net.set_use_ipc(False)
+    net.set_use_epc(True)  # forced -- this is what makes it a BP control at all
+    net.set_use_momentum(False, 0.9)
+    net.set_use_cross_entropy(True)
+    net.set_optimizer("ADAM")
+    net.set_psi_optimizer("ADAM")
+
+    return net
+
+
 def main() -> None:
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 20
-    LR = float(sys.argv[2]) if len(sys.argv) > 2 else 1e-4
+    LR = float(sys.argv[2]) if len(sys.argv) > 2 else 1e-3
     BATCH_SIZE = int(sys.argv[3]) if len(sys.argv) > 3 else 250
     SEED = int(sys.argv[4]) if len(sys.argv) > 4 else 7
-    LMBDA = float(sys.argv[5]) if len(sys.argv) > 5 else 1.0
 
     if not os.path.isdir(DATA_DIR):
         raise FileNotFoundError(
@@ -95,20 +182,18 @@ def main() -> None:
     print(f"Per-channel normalization (computed once, from a 2,000-image training "
           f"sample): mean={mean}, std={std}")
 
-    print(f"\n*** TINY IMAGENET, BP CONTROL (ePC, inference_steps=1, ir=1.0, fl=0.0) ***")
-    print(f"If this doesn't reach roughly 35-45% (PCX's published backprop baseline "
-          f"for a similar depth on Tiny ImageNet), the architecture/setup is the "
-          f"problem, not PC-specific settling mechanics. If it does, PC mechanics are "
-          f"the remaining suspect.")
+    print(f"\n*** TINY IMAGENET, BP CONTROL v2 (ReLU, linear head, no muPC, Adam) ***")
+    print(f"Sane-baseline test: can the architecture's basic shape learn ANYTHING "
+          f"via the most standard setup possible (ReLU, linear logits, correctly-"
+          f"summing targets, Kaiming init, plain Adam)? Double digits within a few "
+          f"epochs means the shape is fine and the PC-specific/muPC/GELU/tanh "
+          f"pieces need reintroducing one at a time. Still failing means something "
+          f"more fundamental is wrong -- see module docstring.")
     print(f"Training: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS} (fixed), "
-          f"ir=1.0 (fixed), fl=0.0 (fixed), lr={LR}, lmbda={LMBDA}, "
+          f"ir=1.0 (fixed), fl=0.0 (fixed), lr={LR}, optimizer=ADAM, "
           f"batch_size={BATCH_SIZE}, seed={SEED}\n")
 
-    net = build_network(BATCH_SIZE, N_CLASSES, LR, ir=1.0, fl=0.0, lmbda=LMBDA,
-                        device="gpu", use_momentum=False, use_ipc=False)
-    # Forced regardless of the USE_EPC env var -- ePC being on is what makes
-    # this a backprop-equivalence experiment at all, see module docstring.
-    net.set_use_epc(True)
+    net = build_sane_baseline_network(BATCH_SIZE, N_CLASSES, LR)
     net.randomize_weights(SEED)
 
     diag_indices = pick_diagnostic_indices(y_val_idx)
@@ -120,17 +205,9 @@ def main() -> None:
     n_batches = n_train // BATCH_SIZE
     start_time = perf_counter()
 
-    # No ir/fl decay loop here, unlike imagenet.py's main(): ir is pinned to
-    # 1.0 and fl to 0.0 for the entire run by the control's own definition
-    # (changing either would break the backprop-equivalence property this
-    # script exists to test). lr still decays -- that's an ordinary
-    # gradient-descent schedule choice, orthogonal to the PC-vs-BP question.
-    DECAY_RATE = 0.94
-
+    # No ir/fl/lr decay here: this is the simplest possible sanity check,
+    # and a fixed lr removes one more variable from what's being tested.
     for epoch in range(EPOCHS):
-        current_lr = LR * (DECAY_RATE ** epoch)
-        net.set_learning_rate(current_lr)
-
         indices = rng.permutation(n_train)
         epoch_energy = 0.0
 
@@ -145,7 +222,7 @@ def main() -> None:
                       f"(previous batch's energy was {epoch_energy / b if b > 0 else 'N/A (first batch of epoch)'})")
                 return
             epoch_energy += energy
-            if b % 50 == 0:
+            if b % 10 == 0:
                 print(f"  epoch {epoch+1}, batch {b}/{n_batches}: energy={energy:.4f}")
 
         avg_energy = epoch_energy / n_batches
@@ -164,7 +241,7 @@ def main() -> None:
 
         elapsed = perf_counter() - start_time
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
-              f"Avg energy: {avg_energy:.4f} | lr={current_lr:.2e}")
+              f"Avg energy: {avg_energy:.4f} | lr={LR:.2e}")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
@@ -183,13 +260,9 @@ def main() -> None:
 
     val_acc = 100.0 * correct / total
     print(f"\n=== Result ===")
-    print(f"BP control (FullConvPCNetwork architecture, exact backprop gradient) "
-          f"Tiny ImageNet validation accuracy: {val_acc:.2f}%")
+    print(f"BP control v2 (ReLU, linear head, no muPC, Adam) Tiny ImageNet "
+          f"validation accuracy: {val_acc:.2f}%")
     print(f"Train time: {train_time:.1f}s")
-    print(f"Reference: PCX's published VGG-7 backprop baseline on Tiny ImageNet is "
-          f"~46% (vs. ~41% for PC). If this run landed well below that range, the "
-          f"architecture/head/scaling -- not PC settling mechanics -- is the next "
-          f"thing to fix.")
 
     run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, mean, std,
                             BATCH_SIZE, INFERENCE_STEPS, N_CLASSES, "POST-training")
