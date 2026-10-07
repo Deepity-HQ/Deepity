@@ -155,7 +155,7 @@ def build_vgg7_network(batch_size, n_classes, lr):
 def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
-    LR = 1.585e-4
+    LR = float(sys.argv[3]) if len(sys.argv) > 3 else 1.585e-4
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 
