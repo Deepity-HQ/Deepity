@@ -98,6 +98,15 @@ void FullConvPCNetwork::EPCStep() noexcept
     layers[i]->ComputeMuOnly();
   }
 
+  // Must run BEFORE the EnsureMuHoldsDerivative() loop below: this reads
+  // layerBelow->GetMu() for whichever layer sits directly under the
+  // terminal, which needs to still hold the real activated forward value
+  // at that point, not a derivative. In a network with only one
+  // weight-bearing layer, that layer is simultaneously the clamped input
+  // AND the one directly below the terminal -- running the derivative
+  // conversion first would corrupt the exact buffer this reads.
+  GetTerminalLayer()->CalculateState(false);
+
   // Any clamped weight-bearing layer (the input layer) is never touched
   // by ComputeAdjoint() below -- it has no free error to settle -- but
   // its own UpdateWeights() still needs mu holding the derivative, same
@@ -106,8 +115,6 @@ void FullConvPCNetwork::EPCStep() noexcept
   for (size_t i = 0; i + 1 < layers.size(); ++i)
     if (layers[i]->IsClamped())
       layers[i]->EnsureMuHoldsDerivative();
-
-  GetTerminalLayer()->CalculateState(false);
 
   const float* adjointAbove = GetTerminalLayer()->GetErrors();
   bool firstHop = true;
