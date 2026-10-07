@@ -326,6 +326,23 @@ void FullConvPCNetwork::Compile()
   // imagenet.py was accidentally undoing almost exactly this 1/3 factor).
   // The first layer's d_in formula above already got this right; this
   // brings the middle-layer formula in line with it.
+  //
+  // The extra *L factor below is ONLY correct alongside residual
+  // connections: with W ~ N(0,1) (RandomizeWeights() uses limit=1.0f
+  // under muPC init -- true unit variance, not Kaiming-scaled), a middle
+  // layer's effective gain is a*sqrt(trueFanIn), and *L divides that down
+  // to 1/sqrt(L) per layer specifically so that SUMMING L such
+  // once-per-layer residual contributions into a shared stream keeps the
+  // stream's total variance bounded as L grows. With residual OFF (this
+  // architecture's current setting), there's no summed stream to bound --
+  // each layer's whole output IS the next layer's whole input, so it
+  // should be variance-preserving on its own (gain=1, i.e. a=1/sqrt
+  // (trueFanIn), no *L). Leaving *L in anyway, after fixing the fan-in
+  // term above, took effective gain from ~0.95/layer (old formula's two
+  // errors -- missing kernel-area term AND this same *L -- coincidentally
+  // offsetting at L=10) to 1/sqrt(10)~=0.32/layer, compounding to ~6e-5
+  // over 9 middle-layer hops -- exactly the near-zero output variance
+  // seen in both diagnostics after the fan-in-only fix landed.
   const int L = (int)layers.size() - 1;
   const int H = L - 1;
 
@@ -367,7 +384,8 @@ void FullConvPCNetwork::Compile()
       else if (l == L)
         a = 1.0f / N;
       else
-        a = std::pow(midFanIn * (float)L, -0.5f);
+        a = useResidualConnections ? std::pow(midFanIn * (float)L, -0.5f)
+                                    : std::pow(midFanIn, -0.5f);
 
       layers[l - 1]->SetMuPCScale(a);
       layers[l - 1]->SetMuPCInit(true);
