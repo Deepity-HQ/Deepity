@@ -149,7 +149,23 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
 
   if (device == DeviceType::DEVICE_GPU)
   {
-    if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+    // ir has no device-resident buffer (unlike lr/fl, see irDirty's own
+    // comment in FullConvPCLayer.h), so a captured graph keeps replaying
+    // whatever ir was at capture time even after SetInferenceRate()
+    // changes it. Force a recapture whenever any layer's ir changed since
+    // the last successful capture, the same way capturedInferenceSteps
+    // already forces one when the step count changes.
+    bool irChanged = false;
+    for (auto& l : layers)
+    {
+      if (l->IsIrDirty())
+      {
+        irChanged = true;
+        break;
+      }
+    }
+
+    if (!graphCaptured || capturedInferenceSteps != inferenceSteps || irChanged)
     {
       backend->BeginGraphCapture();
       ProjectForward();
@@ -172,7 +188,10 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
         // read below would wrongly reuse mu from before this call's own
         // weight update (see ConvPCNetwork::TrainStep()'s identical bug).
         for (auto& l : layers)
+        {
           l->InvalidateMuCache();
+          l->ClearIrDirty();
+        }
       }
       else
       {

@@ -48,6 +48,16 @@ protected:
   float lr, ir, fl, lmbda;
   bool isClamped = false;
 
+  // ir (unlike lr/fl) has no device-resident buffer: it's consumed BY
+  // VALUE inside UpdateState()/ComputeAdjoint()'s AxpyInto()/Scale() calls,
+  // which CUDA graph capture bakes into the captured kernel launch
+  // parameters. A later SetInferenceRate() call updates this host member
+  // but has zero effect on an already-captured graph's replays -- unlike
+  // lr/fl, which read through lr_device/fl_device each replay. This flag
+  // lets FullConvPCNetwork::TrainStep() force a recapture whenever ir
+  // actually changes, instead of silently replaying a stale value.
+  bool irDirty = false;
+
   // muPC scaling: mu = Activation(a * conv(z,W) + b) [+ z if useResidual].
   float a = 1.0f;
   bool useResidual = false;
@@ -163,9 +173,20 @@ public:
   void SetOptimizer(OptimizerType o) noexcept { opt = o; }
   void SetPsiOptimizer(OptimizerType o) noexcept { optPsi = o; }
   void SetLearningRate(float learningRate) noexcept;
-  void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
+  void SetInferenceRate(float inferenceRate) noexcept
+  {
+    ir = inferenceRate;
+    irDirty = true;
+  }
   void SetFeedbackRate(float feedbackRate) noexcept;
   void SetLambda(float lmbda) noexcept { this->lmbda = lmbda; }
+
+  /// @brief Whether ir has changed since the last successful graph
+  /// capture (see irDirty's own comment for why this exists).
+  bool IsIrDirty() const noexcept { return irDirty; }
+  /// @brief Call only after a graph capture that included this layer's
+  /// current ir actually succeeds.
+  void ClearIrDirty() noexcept { irDirty = false; }
 
   float CalculateState() noexcept override { return CalculateState(true); }
   float CalculateState(bool needEnergy) noexcept;
