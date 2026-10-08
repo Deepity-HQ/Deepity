@@ -59,6 +59,8 @@ public:
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackend::SetAllowTF32
+  void SetAllowTF32(bool allow) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::Scale
   void Scale(float* buf, size_t n, float alpha) noexcept override;

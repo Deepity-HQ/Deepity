@@ -925,15 +925,17 @@ void bind_networks(nb::module_& m)
       .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"))
       .def(
           "train_step",
-          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
+          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps,
+             bool computeEnergy)
           {
             std::vector<float> xvec(x.data(), x.data() + x.size());
             std::vector<float> yvec(y.data(), y.data() + y.size());
-            return self.TrainStep(xvec, yvec, inference_steps);
+            return self.TrainStep(xvec, yvec, inference_steps, computeEnergy);
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("inference_steps") = 1)
+          nb::arg("inference_steps") = 1,
+          nb::arg("computeEnergy") = true)
       .def(
           "predict",
           [](Deep::FullConvPCNetwork& self, FloatArray x, int inference_steps)

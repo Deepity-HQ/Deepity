@@ -72,6 +72,16 @@ protected:
   // actually changes, instead of silently replaying a stale value.
   bool irDirty = false;
 
+  // DirectFeedbackUpdate() is skipped ENTIRELY when fl==0.0f (its own
+  // contribution is exactly zero then -- see that function's own
+  // comment), which is a structural decision about what's even IN the
+  // captured graph, not a value read through a pointer each replay like
+  // fl itself. If fl later crossed the zero/nonzero boundary without
+  // forcing a recapture, a graph captured on one side of that boundary
+  // would keep replaying its own (include/skip) decision forever,
+  // silently dropping real DFA contributions. Same fix as irDirty.
+  bool flZeroDirty = false;
+
   // muPC scaling: mu = Activation(a * conv(z,W) + b) [+ z if useResidual].
   float a = 1.0f;
   bool useResidual = false;
@@ -212,6 +222,19 @@ public:
   /// @brief Call only after a graph capture that included this layer's
   /// current ir actually succeeds.
   void ClearIrDirty() noexcept { irDirty = false; }
+
+  /// @brief Whether fl crossed the zero/nonzero boundary since the last
+  /// successful graph capture (see flZeroDirty's own comment for why).
+  bool IsFlZeroDirty() const noexcept { return flZeroDirty; }
+  /// @brief Call only after a graph capture that included this layer's
+  /// current fl-is-zero-or-not status actually succeeds.
+  void ClearFlZeroDirty() noexcept { flZeroDirty = false; }
+  /// @brief Whether this layer's DirectFeedbackUpdate() is currently a
+  /// no-op (see its own early-return). FullConvPCNetwork::TrainStep()
+  /// uses this, aggregated across every layer, to decide whether
+  /// ProjectForward()/CalculateTerminalError() are redundant with what
+  /// EPCStep()'s own first iteration already does.
+  bool IsFlZero() const noexcept { return fl == 0.0f; }
 
   float CalculateState() noexcept override { return CalculateState(true); }
   float CalculateState(bool needEnergy) noexcept;

@@ -134,11 +134,42 @@ void FullConvPCNetwork::UpdateWeights() noexcept
 }
 
 float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<float>& y,
-                                   int inferenceSteps)
+                                   int inferenceSteps, bool computeEnergy)
 {
   ResetState();
   Clamp(x);
   GetTerminalLayer()->ClampState(y);
+
+  // Under ePC with every layer's fl==0 (DFA a no-op everywhere), this
+  // call's own ProjectForward()+CalculateTerminalError() are fully
+  // redundant with EPCStep()'s FIRST iteration: right after ResetState(),
+  // every e is zero, so ReconstructBelief()'s z=mu_below+e seeds each
+  // layer's z identically to what ProjectForward() would copy in, and
+  // EPCStep() recomputes the terminal error itself (see its own comment
+  // on why that has to happen before EnsureMuHoldsDerivative()). This
+  // does NOT hold for Step() (non-ePC settling): that starts every
+  // hidden layer's error from e=z-mu with z=0, which needs mu already
+  // seeded by a real ProjectForward() pass, not from scratch.
+  bool skipRedundantProjection = useEPC;
+  if (skipRedundantProjection)
+  {
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+    {
+      if (!layers[i]->IsFlZero())
+      {
+        skipRedundantProjection = false;
+        break;
+      }
+    }
+  }
+
+  auto projectAndClampTerminal = [this, skipRedundantProjection]()
+  {
+    if (skipRedundantProjection)
+      return;
+    ProjectForward();
+    CalculateTerminalError();
+  };
 
   auto settleStep = [this]()
   {
@@ -163,20 +194,19 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     // the last successful capture, the same way capturedInferenceSteps
     // already forces one when the step count changes.
     bool irChanged = false;
+    bool flZeroChanged = false;
     for (auto& l : layers)
     {
       if (l->IsIrDirty())
-      {
         irChanged = true;
-        break;
-      }
+      if (l->IsFlZeroDirty())
+        flZeroChanged = true;
     }
 
-    if (!graphCaptured || capturedInferenceSteps != inferenceSteps || irChanged)
+    if (!graphCaptured || capturedInferenceSteps != inferenceSteps || irChanged || flZeroChanged)
     {
       backend->BeginGraphCapture();
-      ProjectForward();
-      CalculateTerminalError();
+      projectAndClampTerminal();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
@@ -198,6 +228,7 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
         {
           l->InvalidateMuCache();
           l->ClearIrDirty();
+          l->ClearFlZeroDirty();
         }
       }
       else
@@ -213,8 +244,7 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     }
     else
     {
-      ProjectForward();
-      CalculateTerminalError();
+      projectAndClampTerminal();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
@@ -224,8 +254,7 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
   }
   else
   {
-    ProjectForward();
-    CalculateTerminalError();
+    projectAndClampTerminal();
     DirectFeedbackUpdate();
     for (int t = 0; t < inferenceSteps; t++)
       settleStep();
@@ -233,12 +262,18 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
       UpdateWeights();
   }
 
-  float finalEnergy = 0.0f;
-  for (auto& l : layers)
-    finalEnergy += l->CalculateState(true);
+  // This loop only reports energy -- by this point UpdateWeights() has
+  // already run, and every layer's error buffer it reads was computed
+  // where settling actually needed it, not here. Safe to skip outright.
+  if (computeEnergy)
+  {
+    lastEnergy = 0.0f;
+    for (auto& l : layers)
+      lastEnergy += l->CalculateState(true);
+  }
 
   GetTerminalLayer()->UnclampState();
-  return finalEnergy;
+  return lastEnergy;
 }
 
 std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)

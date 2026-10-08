@@ -23,6 +23,14 @@ CUDABackend::CUDABackend()
   cudaStreamCreate(&this->stream);
   cublasCreate(&this->handle);
   cublasSetStream(this->handle, this->stream);
+  // Without this, every GEMM (every conv, since this backend lowers conv
+  // to im2col+GEMM) runs in plain FP32 on CUDA cores (~19.5 TFLOPS on an
+  // A100) instead of TF32 on tensor cores (~156 TFLOPS) -- the single
+  // largest gap between this backend and PyTorch's cuDNN/cuBLAS
+  // convolutions, which use TF32 by default. See SetAllowTF32's own doc
+  // comment for why a caller doing a finite-difference gradient check
+  // needs to turn this back off.
+  SetAllowTF32(true);
   cudaMalloc(&scalarScratch, sizeof(float));
 }
 

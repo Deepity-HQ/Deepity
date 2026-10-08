@@ -105,6 +105,17 @@ public:
   virtual void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                       int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept = 0;
 
+  /// @brief Whether MatMul() may use TF32 (10 mantissa bits, ~1e-3
+  /// relative error per GEMM) instead of full FP32 on tensor cores --
+  /// CUDABackend only; a no-op on CPUBackend, which has no such
+  /// distinction. Defaults to allowed, matching PyTorch's own default,
+  /// since every conv in this library lowers to im2col+MatMul and would
+  /// otherwise run at a fraction of the GPU's peak throughput. Turn off
+  /// before a finite-difference gradient check: TF32's error is large
+  /// enough to either fail those checks for no real reason, or tempt
+  /// loosening their tolerance until it stops catching real bugs.
+  virtual void SetAllowTF32(bool allow) noexcept = 0;
+
   /// @brief dst[j] = sum over b in [0,batchSize) of src[b*width + j], for
   /// all j in [0,width). Replaces a batchSize-iteration loop of
   /// individual AxpyInto calls, the reduction-direction counterpart to

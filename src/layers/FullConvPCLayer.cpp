@@ -64,6 +64,9 @@ void FullConvPCLayer::SetLearningRate(float learningRate) noexcept
 
 void FullConvPCLayer::SetFeedbackRate(float feedbackRate) noexcept
 {
+  if ((feedbackRate == 0.0f) != (fl == 0.0f))
+    flZeroDirty = true;
+
   fl = feedbackRate;
   if (fl_device)
     backend->CopyFromHost(fl_device, &fl, 1);
@@ -560,6 +563,15 @@ void FullConvPCLayer::UpdateWeights() noexcept
 void FullConvPCLayer::DirectFeedbackUpdate() noexcept
 {
   if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)
+    return;
+
+  // fl==0 makes this function's entire contribution to W exactly zero
+  // (see the final MatMul's alpha=fl/batchSize below) -- skip the
+  // broadcast, repack, and GEMM outright rather than computing a result
+  // that just gets multiplied away. See flZeroDirty's own comment for
+  // why FullConvPCNetwork::TrainStep() has to recapture if fl crosses
+  // this boundary, instead of this skip silently sticking forever.
+  if (fl == 0.0f)
     return;
 
   size_t colCols = (size_t)outHeight * outWidth;

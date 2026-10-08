@@ -84,8 +84,13 @@ public:
   int GetBatchSize() const noexcept { return batchSize; }
   DeviceType GetDevice() const noexcept { return device; }
 
+  /// @brief Runs one training step. @p computeEnergy=false skips the
+  /// per-layer energy readout (a cublasSdot + cudaStreamSynchronize EACH,
+  /// on GPU -- a real cost even though the computation itself is cheap)
+  /// and returns the last value that WAS computed instead, for callers
+  /// that only log/check energy every few steps.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y,
-                  int inferenceSteps = 1);
+                  int inferenceSteps = 1, bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
 
   void Compile();
@@ -127,5 +132,9 @@ private:
 
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
+
+  /// @brief Last energy TrainStep() actually computed; returned as-is
+  /// when a call skips the readout via computeEnergy=false.
+  float lastEnergy = 0.0f;
 };
 } // namespace Deep

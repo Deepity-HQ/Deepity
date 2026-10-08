@@ -169,6 +169,11 @@ void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K, float al
   cublasSgemm(this->handle, opB, opA, N, M, K, &alpha, B, ldb, A, lda, &beta, C, ldc);
 }
 
+void CUDABackend::SetAllowTF32(bool allow) noexcept
+{
+  cublasSetMathMode(this->handle, allow ? CUBLAS_TF32_TENSOR_OP_MATH : CUBLAS_DEFAULT_MATH);
+}
+
 void CUDABackend::SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept
 {
   if (!dst || !src)
