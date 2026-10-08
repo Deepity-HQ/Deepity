@@ -185,6 +185,26 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     }
   };
 
+  // Step() computes e=z-mu, THEN updates z -- so right after the LAST
+  // settling iteration, e is one step stale relative to the now-updated
+  // z, and mu is in real-activated form rather than the derivative
+  // UpdateWeights() needs. EPCStep() has no equivalent gap (its own
+  // internal CalculateState()/EnsureMuHoldsDerivative() calls already
+  // keep it current by design -- see EPCStep()'s own comments), so this
+  // only applies to classic (non-ePC) settling, and only when weights
+  // update once after the full loop rather than per-step under useIPC
+  // (which calls UpdateWeights() immediately after each Step(), before
+  // this staleness has a chance to matter).
+  auto resyncErrorForClassicSettling = [this]()
+  {
+    if (useEPC)
+      return;
+    for (auto& l : layers)
+      l->CalculateState(false);
+    for (auto& l : layers)
+      l->EnsureMuHoldsDerivative();
+  };
+
   if (device == DeviceType::DEVICE_GPU)
   {
     // ir has no device-resident buffer (unlike lr/fl, see irDirty's own
@@ -211,7 +231,10 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
       if (!useIPC)
+      {
+        resyncErrorForClassicSettling();
         UpdateWeights();
+      }
       bool captureOk = backend->EndGraphCapture();
 
       if (captureOk)
@@ -249,7 +272,10 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
       if (!useIPC)
+      {
+        resyncErrorForClassicSettling();
         UpdateWeights();
+      }
     }
   }
   else
@@ -259,7 +285,10 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     for (int t = 0; t < inferenceSteps; t++)
       settleStep();
     if (!useIPC)
+    {
+      resyncErrorForClassicSettling();
       UpdateWeights();
+    }
   }
 
   // This loop only reports energy -- by this point UpdateWeights() has
