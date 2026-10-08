@@ -923,6 +923,7 @@ void bind_networks(nb::module_& m)
           nb::arg("optimizer"))
       .def("set_learning_rate", &Deep::FullConvPCNetwork::SetLearningRate, nb::arg("lr"))
       .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"))
+      .def("set_inference_rate", &Deep::FullConvPCNetwork::SetInferenceRate, nb::arg("ir"))
       .def(
           "train_step",
           [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps,
@@ -936,6 +937,21 @@ void bind_networks(nb::module_& m)
           nb::arg("y"),
           nb::arg("inference_steps") = 1,
           nb::arg("computeEnergy") = true)
+      .def(
+          "debug_settle_energy_trace",
+          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
+          {
+            std::vector<float> xvec(x.data(), x.data() + x.size());
+            std::vector<float> yvec(y.data(), y.data() + y.size());
+            std::vector<float> trace = self.DebugSettleEnergyTrace(xvec, yvec, inference_steps);
+            return CopyToNewArray(trace.data(), {trace.size()});
+          },
+          nb::arg("x"),
+          nb::arg("y"),
+          nb::arg("inference_steps"),
+          "Settles for inference_steps WITHOUT updating weights, returning total energy after "
+          "EACH step as an array -- for watching settling dynamics on real data before trusting "
+          "a long training run.")
       .def(
           "predict",
           [](Deep::FullConvPCNetwork& self, FloatArray x, int inference_steps)

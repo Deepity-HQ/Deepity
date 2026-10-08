@@ -74,6 +74,11 @@ public:
     for (auto& layer : layers)
       layer->SetFeedbackRate(fl);
   }
+  void SetInferenceRate(float ir) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetInferenceRate(ir);
+  }
 
   FullConvPCLayer* GetTerminalLayer() noexcept { return layers.back().get(); }
   std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept { return layers; }
@@ -92,6 +97,14 @@ public:
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y,
                   int inferenceSteps = 1, bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
+
+  /// @brief Settles for @p inferenceSteps steps WITHOUT updating weights,
+  /// recording total energy after EACH step. Never touches weights or
+  /// the graph-capture path (always runs live) -- purely a diagnostic
+  /// for watching settling dynamics unfold on real data/weights before
+  /// trusting a long training run with a given ir/momentum.
+  std::vector<float> DebugSettleEnergyTrace(const std::vector<float>& x,
+                                            const std::vector<float>& y, int inferenceSteps);
 
   void Compile();
 
