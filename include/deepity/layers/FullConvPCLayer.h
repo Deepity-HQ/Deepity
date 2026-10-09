@@ -60,6 +60,7 @@ protected:
   int poolOutHeight, poolOutWidth;
 
   float lr, ir, fl, lmbda;
+  float adamEpsilon = 1e-8f;
   bool isClamped = false;
 
   // ir (unlike lr/fl) has no device-resident buffer: it's consumed BY
@@ -215,6 +216,12 @@ public:
   }
   void SetFeedbackRate(float feedbackRate) noexcept;
   void SetLambda(float lmbda) noexcept { this->lmbda = lmbda; }
+  /// @brief Adam/AdamW's denominator stabilizer (default 1e-8). Raising
+  /// this caps how much a near-zero-gradient parameter's update gets
+  /// amplified by Adam's per-parameter normalization -- a mitigation
+  /// worth testing when a weak or noisy settling error signal is
+  /// suspected of getting Adam-amplified into a large, coherent step.
+  void SetAdamEpsilon(float eps) noexcept { adamEpsilon = eps; }
 
   /// @brief Whether ir has changed since the last successful graph
   /// capture (see irDirty's own comment for why this exists).
@@ -279,6 +286,17 @@ public:
   const float* GetWeights() const noexcept { return W; }
   const float* GetDirectFeedbackWeights() const noexcept { return Psi; }
   const float* GetBiases() const noexcept { return b; }
+
+  /// @brief {error mean, error RMS, weight L2 norm, fraction of mu
+  /// elements exactly 0} for this layer's CURRENT state (whatever e/W/mu
+  /// hold right now -- call right after TrainStep() for diagnostics on
+  /// the state that just drove a real weight update, not a fresh
+  /// settling pass). Device-agnostic: copies to host and computes in
+  /// plain C++, no new backend primitive. Error mean specifically is
+  /// what separates "weak but unbiased" from "systematically biased"
+  /// error signal, the distinction at stake in the VGG-7 PC-collapse
+  /// investigation.
+  std::vector<float> GetDiagnosticStats() const noexcept;
 
   size_t GetBatchSize() const noexcept override { return batchSize; }
   size_t GetInputSize() const noexcept override

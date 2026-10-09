@@ -305,6 +305,18 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
   return lastEnergy;
 }
 
+std::vector<float> FullConvPCNetwork::GetAllLayerDiagnostics() const noexcept
+{
+  std::vector<float> result;
+  result.reserve(layers.size() * 4);
+  for (auto& l : layers)
+  {
+    std::vector<float> stats = l->GetDiagnosticStats();
+    result.insert(result.end(), stats.begin(), stats.end());
+  }
+  return result;
+}
+
 std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)
 {
   ResetState();

@@ -42,7 +42,7 @@ import sys
 import numpy as np
 
 from imagenet import DATA_DIR, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
-from imagenet_pc_vgg7_ce import build_vgg7_network, crop_and_normalize, run_collapse_diagnostic, T, W_LR
+from imagenet_pc_vgg7_ce import build_vgg7_network, crop_and_normalize, run_collapse_diagnostic, quick_val_accuracy, T, W_LR
 
 BATCH_SIZE = 128
 CHECK_AT = (0, 50, 100, 150)
@@ -97,10 +97,17 @@ def main():
                                             train=False, rng=np.random.default_rng(0))
                 diag_X_padded = np.vstack([diag_X, filler])
                 preds = net.predict(diag_X_padded, 0).reshape(BATCH_SIZE, N_CLASSES)
-                n_distinct = len(set(np.argmax(preds[:len(diag_indices)], axis=1).tolist()))
-                print(f"  batch {b+1:4d}: distinct predicted classes = {n_distinct}/5, "
-                      f"output std = {preds[0].std():.6f}")
-                if n_distinct == 1 and collapsed_at is None:
+                # Cross-input logit std, not distinct-argmax-count: argmax
+                # of near-constant logits still lands on different classes
+                # depending on which position has the largest noise, which
+                # can look like "N/5 distinct" on an actually-collapsed
+                # network (Opus's own correction after the first sweep).
+                cross_input_std = preds[:len(diag_indices)].std(axis=0).mean()
+                acc = quick_val_accuracy(net, X_val_u8, y_val_idx, BATCH_SIZE, N_CLASSES,
+                                         n_batches=10)
+                print(f"  batch {b+1:4d}: cross-input logit std = {cross_input_std:.6f}, "
+                      f"val top1 (10 batches) = {acc:.2f}%")
+                if cross_input_std < 1e-3 and collapsed_at is None:
                     collapsed_at = b + 1
 
         status = f"COLLAPSED by batch {collapsed_at}" if collapsed_at else "did not collapse"

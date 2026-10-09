@@ -115,15 +115,42 @@ def run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, batch_size, 
     pred_classes = np.argmax(preds[:n_real], axis=1)
     n_distinct = len(set(pred_classes.tolist()))
 
+    # Distinct argmax count is NOT a reliable collapse signal on its own:
+    # near-constant logits still argmax to different classes depending on
+    # which position has the largest (tiny) noise, which can look like
+    # "5/5 distinct" on an actually-collapsed network. The real signal is
+    # whether the logits THEMSELVES vary across different inputs: for
+    # each of the n_classes logit positions, std across these n_real
+    # images -- near zero means the output doesn't depend on the input at
+    # all, regardless of what argmax picks.
+    cross_input_std = preds[:n_real].std(axis=0).mean()
+
     print(f"\n=== DIAGNOSTIC ({label}): are predictions input-dependent? ===")
     print(f"True classes:      {diag_true}")
     print(f"Predicted classes: {pred_classes}")
-    print(f"Distinct predicted classes: {n_distinct} out of {n_real} inputs")
-    print(f"First image's output std: {preds[0].std():.6f}, range: [{preds[0].min():.4f}, {preds[0].max():.4f}]")
-    if n_distinct == 1:
-        print(">>> COLLAPSED: same class predicted regardless of input.")
+    print(f"Distinct predicted classes: {n_distinct} out of {n_real} inputs (weak signal, see below)")
+    print(f"Mean per-logit std ACROSS these {n_real} inputs: {cross_input_std:.6f} "
+          f"(near 0 = output doesn't depend on input, regardless of argmax)")
+    if cross_input_std < 1e-3:
+        print(">>> COLLAPSED: output is essentially input-independent.")
     else:
-        print(">>> Predictions DO vary across inputs.")
+        print(">>> Output genuinely varies with input.")
+
+
+def quick_val_accuracy(net, X_val_u8, y_val_idx, batch_size, n_classes, n_batches=10):
+    """Real top-1 accuracy over n_batches held-out batches -- the robust
+    signal Opus asked for in place of energy or distinct-argmax-count for
+    judging whether a config is actually training, not just not-crashing."""
+    rng = np.random.default_rng(0)
+    correct, total = 0, 0
+    for b in range(n_batches):
+        X_batch = crop_and_normalize(X_val_u8[b * batch_size:(b + 1) * batch_size],
+                                     train=False, rng=rng)
+        y_batch = y_val_idx[b * batch_size:(b + 1) * batch_size]
+        preds = net.predict(X_batch, 0).reshape(batch_size, n_classes)
+        correct += np.sum(np.argmax(preds, axis=1) == y_batch)
+        total += batch_size
+    return 100.0 * correct / total
 
 
 def build_vgg7_network(batch_size, n_classes, lr):

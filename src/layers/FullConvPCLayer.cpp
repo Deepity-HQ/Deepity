@@ -550,11 +550,14 @@ void FullConvPCLayer::UpdateWeights() noexcept
         1);
 
     if (opt == OptimizerType::ADAMW)
-      backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda);
+      backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda, 0.9f, 0.999f,
+                        adamEpsilon);
     else
-      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device);
+      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, 0.9f, 0.999f,
+                        adamEpsilon);
 
-    backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device);
+    backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device, 0.9f, 0.999f,
+                      adamEpsilon);
     break;
   }
   }
@@ -717,6 +720,46 @@ void FullConvPCLayer::ResetState() noexcept
   backend->Zero(e, ownStateSize);
   if (v)
     backend->Zero(v, ownStateSize);
+}
+
+std::vector<float> FullConvPCLayer::GetDiagnosticStats() const noexcept
+{
+  size_t eSize = (size_t)batchSize * inChannels * inHeight * inWidth;
+  std::vector<float> eHost(eSize);
+  backend->CopyToHost(eHost.data(), e, eSize);
+
+  double eSum = 0.0, eSqSum = 0.0;
+  for (float v_ : eHost)
+  {
+    eSum += v_;
+    eSqSum += (double)v_ * v_;
+  }
+  float errorMean = eSize > 0 ? (float)(eSum / (double)eSize) : 0.0f;
+  float errorRMS = eSize > 0 ? (float)std::sqrt(eSqSum / (double)eSize) : 0.0f;
+
+  float weightNorm = 0.0f;
+  float deadFraction = 0.0f;
+  if (outChannels > 0)
+  {
+    size_t Wsize = (size_t)outChannels * inChannels * kernelH * kernelW;
+    std::vector<float> wHost(Wsize);
+    backend->CopyToHost(wHost.data(), W, Wsize);
+    double wSqSum = 0.0;
+    for (float w : wHost)
+      wSqSum += (double)w * w;
+    weightNorm = (float)std::sqrt(wSqSum);
+
+    size_t muSize = (size_t)batchSize * outChannels * outHeight * outWidth;
+    std::vector<float> muHost(muSize);
+    backend->CopyToHost(muHost.data(), mu, muSize);
+    size_t deadCount = 0;
+    for (float m : muHost)
+      if (m == 0.0f)
+        deadCount++;
+    deadFraction = muSize > 0 ? (float)deadCount / (float)muSize : 0.0f;
+  }
+
+  return {errorMean, errorRMS, weightNorm, deadFraction};
 }
 
 template void FullConvPCLayer::BindMemory<MemoryArena>(MemoryArena& arena);

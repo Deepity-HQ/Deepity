@@ -1,44 +1,41 @@
 """
-Separates two candidate explanations for the ir=0.0223 collapse, both
-zero-new-code using bindings already in place (set_optimizer("SGD") was
-already supported; net.layers exposes individual FullConvPCLayer
-objects, each with set_learning_rate() already bound):
+v2, correcting two methodology issues Opus flagged in the first run:
 
-Opus's revised mechanism: starved lower layers get a WEAK, possibly
-systematically-biased error signal under settling, but Adam normalizes
-every parameter's step to ~lr regardless of gradient magnitude -- so a
-starved layer's biased gradient still gets a full-size, coherent step
-every batch. Compounded over many batches, pre-activations drift,
-ReLUs die, outputs go flat. Two ways to test this directly:
+1. The SGD comparison wasn't fair -- it reused W_LR (8e-5), a rate tuned
+   for Adam's per-parameter normalization. Plain SGD at that rate barely
+   moves at all, so "it stayed stable" proved nothing about whether the
+   gradient itself was fine; it just proved the network was nearly
+   frozen. This version gives SGD its own, much larger learning rate
+   (SGD_LR below) so it actually has a chance to learn or visibly
+   misbehave.
+2. "N/5 distinct argmax classes" is a weak collapse signal -- near-
+   constant logits still argmax to different classes depending on which
+   position has the largest noise. This version uses
+   run_collapse_diagnostic()'s corrected cross-input logit std (near 0 =
+   output doesn't depend on input, regardless of argmax) plus real
+   validation accuracy over several batches, both from
+   imagenet_pc_vgg7_ce.py's own (now fixed) helpers.
 
-  1. Same run, SGD instead of AdamW for the weights. SGD's step size
-     scales WITH the gradient magnitude, so a genuinely starved
-     (near-zero-gradient) layer should barely move at all under SGD,
-     even if it moves under Adam. If SGD stays stable (even if it
-     learns slowly), that points at Adam's normalization as the
-     amplifier, not the settling/gradient computation itself.
-  2. Same run, AdamW, but the bottom 4 (of 7) layers' lr forced to 0 --
-     they can't update at all, regardless of what their gradient looks
-     like. If THIS stays stable, the bad updates are specifically
-     coming from those starved layers.
-
-All three configs below run at the ORIGINAL ir=0.0223 (the exact
-config that collapsed), T=12, momentum=0.55, cross-entropy -- only the
-optimizer/frozen-layers differ.
+Tests, all at the ORIGINAL ir=0.0223 (T=12, momentum=0.55, cross-entropy):
+  - AdamW baseline (should reproduce the collapse)
+  - SGD at a real SGD learning rate
+  - AdamW with the bottom 4 of 7 weight-bearing layers frozen (lr=0)
 
 Usage:
     python sweep_pc_optimizer_freeze.py [N_BATCHES]
-(default: 150, matching sweep_pc_ir.py)
+(default: 150)
 """
 import sys
 import numpy as np
 
 from imagenet import DATA_DIR, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
-from imagenet_pc_vgg7_ce import build_vgg7_network, crop_and_normalize, run_collapse_diagnostic, T, W_LR, IR
+from imagenet_pc_vgg7_ce import (build_vgg7_network, crop_and_normalize, run_collapse_diagnostic,
+                                 quick_val_accuracy, T, W_LR, IR)
 
 BATCH_SIZE = 128
 CHECK_AT = (0, 50, 100, 150)
 N_FROZEN_LAYERS = 4  # bottom 4 of 7 weight-bearing layers
+SGD_LR = 0.02         # a real SGD rate, NOT W_LR -- see module docstring
 
 
 def run_one(label, X_train_u8, y_train_idx, X_val_u8, y_val_idx, diag_indices, N_CLASSES,
@@ -57,7 +54,6 @@ def run_one(label, X_train_u8, y_train_idx, X_val_u8, y_val_idx, diag_indices, N
     run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
                             f"{label}, PRE-training")
 
-    collapsed_at = None
     for b in range(n_batches):
         batch_idx = indices[(b * BATCH_SIZE) % n_train:(b * BATCH_SIZE) % n_train + BATCH_SIZE]
         X_batch = crop_and_normalize(X_train_u8[batch_idx], train=True, rng=rng)
@@ -66,7 +62,8 @@ def run_one(label, X_train_u8, y_train_idx, X_val_u8, y_val_idx, diag_indices, N
         want_energy = (b % 20 == 0)
         energy = net.train_step(X_batch, Y_batch, T, want_energy)
         if want_energy:
-            print(f"  batch {b:4d}: energy={energy:.4f}")
+            print(f"  batch {b:4d}: energy={energy:.4f} (reference only, see Opus's note on why "
+                  f"this isn't a reliable cross-config stability signal)")
 
         if not np.isfinite(energy):
             print(f"  NON-FINITE at batch {b} -- stopping this config.")
@@ -80,14 +77,12 @@ def run_one(label, X_train_u8, y_train_idx, X_val_u8, y_val_idx, diag_indices, N
                                         train=False, rng=np.random.default_rng(0))
             diag_X_padded = np.vstack([diag_X, filler])
             preds = net.predict(diag_X_padded, 0).reshape(BATCH_SIZE, N_CLASSES)
-            n_distinct = len(set(np.argmax(preds[:len(diag_indices)], axis=1).tolist()))
-            print(f"  batch {b+1:4d}: distinct predicted classes = {n_distinct}/5, "
-                  f"output std = {preds[0].std():.6f}")
-            if n_distinct == 1 and collapsed_at is None:
-                collapsed_at = b + 1
+            cross_input_std = preds[:len(diag_indices)].std(axis=0).mean()
+            acc = quick_val_accuracy(net, X_val_u8, y_val_idx, BATCH_SIZE, N_CLASSES, n_batches=10)
+            print(f"  batch {b+1:4d}: cross-input logit std = {cross_input_std:.6f}, "
+                  f"val top1 (10 batches) = {acc:.2f}%")
 
-    status = f"COLLAPSED by batch {collapsed_at}" if collapsed_at else "did not collapse"
-    print(f"\n--- {label}: {status} within {n_batches} batches ---")
+    print(f"--- {label}: done ---")
 
 
 def main():
@@ -103,6 +98,8 @@ def main():
 
     def sgd(net):
         net.set_optimizer("SGD")
+        for layer in net.layers:
+            layer.set_learning_rate(SGD_LR)
 
     def freeze_bottom(net):
         for layer in net.layers[:N_FROZEN_LAYERS]:
@@ -110,7 +107,7 @@ def main():
 
     configs = [
         (f"ir={IR:.4g}, AdamW, no freezing (baseline, should reproduce the collapse)", baseline),
-        (f"ir={IR:.4g}, SGD instead of AdamW", sgd),
+        (f"ir={IR:.4g}, SGD, lr={SGD_LR} (a REAL SGD rate, not W_LR)", sgd),
         (f"ir={IR:.4g}, AdamW, bottom {N_FROZEN_LAYERS} layers frozen (lr=0)", freeze_bottom),
     ]
 
@@ -118,10 +115,11 @@ def main():
         run_one(label, X_train_u8, y_train_idx, X_val_u8, y_val_idx, diag_indices, N_CLASSES,
                n_batches, configure_fn)
 
-    print("\nDone. If SGD stays stable while AdamW collapses, Adam's per-parameter "
-          "normalization is amplifying a weak/biased signal from starved layers. If freezing "
-          "the bottom layers ALSO stabilizes things, that confirms those specific layers are "
-          "the source of the bad updates.")
+    print("\nDone. Judge each config by cross-input logit std and val accuracy, not energy or "
+          "distinct-argmax-count. If SGD's accuracy rises above chance (0.5%) while AdamW's "
+          "logit std collapses toward 0, that supports Adam's per-parameter normalization as "
+          "the amplifier. If freezing the bottom layers ALSO fails to keep logit std up, the "
+          "bad updates aren't confined to those layers.")
 
 
 if __name__ == "__main__":

@@ -79,6 +79,11 @@ public:
     for (auto& layer : layers)
       layer->SetInferenceRate(ir);
   }
+  void SetAdamEpsilon(float eps) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetAdamEpsilon(eps);
+  }
 
   FullConvPCLayer* GetTerminalLayer() noexcept { return layers.back().get(); }
   std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept { return layers; }
@@ -97,6 +102,12 @@ public:
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y,
                   int inferenceSteps = 1, bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
+
+  /// @brief Each layer's FullConvPCLayer::GetDiagnosticStats(), flat and
+  /// row-major [layer][stat] (4 stats/layer: error mean, error RMS,
+  /// weight norm, dead-mu fraction). Call right after TrainStep() to see
+  /// what the state that just drove a real weight update looked like.
+  std::vector<float> GetAllLayerDiagnostics() const noexcept;
 
   void Compile();
 
