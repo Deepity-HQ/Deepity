@@ -411,6 +411,14 @@ void FullConvPCLayer::UpdateState() noexcept
 
     backend->FusedActivationDerivativeMultiply(bottom_up_cols, e_above, mu, derivativeType,
                                                outTotal);
+    // Same muPC chain-rule factor as EnsureMuHoldsDerivative()'s own
+    // comment: mu = Activation(a*preact+b), so the derivative needs an
+    // extra factor of a. FusedActivationDerivativeMultiply wrote BOTH
+    // bottom_up_cols (=e_above*Activation'(mu)) and mu itself
+    // (=Activation'(mu), in place) without it; both need scaling. No-op
+    // when a==1.0 (useMuPCScaling off).
+    backend->Scale(bottom_up_cols, outTotal, a);
+    backend->Scale(mu, outTotal, a);
 
     // Same batched-GEMM trick as ComputeMuOnly(): one big transA GEMM
     // instead of batchSize small ones, un-repacking the result back to
@@ -487,7 +495,16 @@ void FullConvPCLayer::UpdateWeights() noexcept
     if (lmbda > 0.0f)
       backend->Scale(W, Wsize, 1.0f - lmbda);
 
-    float lr_batch = a * lr / batchSize;
+    // No `a` here: EnsureMuHoldsDerivative() now folds muPC's chain-rule
+    // factor into mu itself (mu = Activation(a*preact+b), so the
+    // derivative needs a*Activation'(.), not just Activation'(.)), which
+    // flows into lgRepacked below. Multiplying by `a` again here was a
+    // real, previously-uncaught bug: it double-counted the SAME factor,
+    // confirmed via finite differences (consistent ~a-sized mismatch
+    // across every weight, which cleared up once this line stopped
+    // reapplying it). a defaults to 1.0f, so this is a no-op whenever
+    // useMuPCScaling is off, unaffecting every already-verified config.
+    float lr_batch = lr / batchSize;
 
     backend->MatMul(
         /*transA=*/false,
@@ -525,7 +542,7 @@ void FullConvPCLayer::UpdateWeights() noexcept
   {
     backend->IncrementCounter(t_device);
 
-    float grad_scale = -1.0f * a / batchSize;
+    float grad_scale = -1.0f / batchSize;  // same reasoning as lr_batch's own comment above
 
     backend->MatMul(
         /*transA=*/false,
@@ -664,6 +681,13 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
                                              outTotal);
   if (adjointAboveScale != 1.0f)
     backend->Scale(bottom_up_cols, outTotal, adjointAboveScale);
+  // bottom_up_cols's own muPC chain-rule factor is already folded into
+  // the MatMul below via alpha=a. mu itself is left holding the
+  // UNSCALED derivative by the line above, though -- UpdateWeights()
+  // reads mu directly later expecting the fully-correct (scaled) value,
+  // same as the classic-settling path, so fix it here too. No-op when
+  // a==1.0 (useMuPCScaling off).
+  backend->Scale(mu, outTotal, a);
 
   // Same batched-GEMM trick as UpdateState()'s feedback path.
   backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
@@ -693,8 +717,16 @@ void FullConvPCLayer::EnsureMuHoldsDerivative() noexcept
   if (outChannels == 0)
     return;
 
+  // mu = Activation(a*preact + b), so d(mu)/d(preact) = a*Activation'(.),
+  // not just Activation'(.) -- the outer muPC scale `a` is itself part
+  // of the function being differentiated. Missing this was a real,
+  // previously-uncaught bug: every existing gradient check ran with
+  // useMuPCScaling off (a=1.0, where this line is a no-op), so nothing
+  // ever exercised a != 1 here. a defaults to 1.0f, so this changes
+  // nothing for any currently-working configuration.
   size_t outTotal = (size_t)batchSize * outChannels * outHeight * outWidth;
   backend->ActivationDerivative(derivativeType, mu, outTotal, true);
+  backend->Scale(mu, outTotal, a);
 }
 
 void FullConvPCLayer::UpdateErrorEPC() noexcept
