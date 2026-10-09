@@ -938,21 +938,6 @@ void bind_networks(nb::module_& m)
           nb::arg("inference_steps") = 1,
           nb::arg("computeEnergy") = true)
       .def(
-          "debug_settle_energy_trace",
-          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
-          {
-            std::vector<float> xvec(x.data(), x.data() + x.size());
-            std::vector<float> yvec(y.data(), y.data() + y.size());
-            std::vector<float> trace = self.DebugSettleEnergyTrace(xvec, yvec, inference_steps);
-            return CopyToNewArray(trace.data(), {trace.size()});
-          },
-          nb::arg("x"),
-          nb::arg("y"),
-          nb::arg("inference_steps"),
-          "Settles for inference_steps WITHOUT updating weights, returning total energy after "
-          "EACH step as an array -- for watching settling dynamics on real data before trusting "
-          "a long training run.")
-      .def(
           "predict",
           [](Deep::FullConvPCNetwork& self, FloatArray x, int inference_steps)
           {

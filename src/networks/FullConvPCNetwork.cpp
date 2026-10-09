@@ -305,40 +305,6 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
   return lastEnergy;
 }
 
-std::vector<float> FullConvPCNetwork::DebugSettleEnergyTrace(const std::vector<float>& x,
-                                                             const std::vector<float>& y,
-                                                             int inferenceSteps)
-{
-  ResetState();
-  Clamp(x);
-  GetTerminalLayer()->ClampState(y);
-  ProjectForward();
-  CalculateTerminalError();
-
-  std::vector<float> trace;
-  trace.reserve(inferenceSteps);
-
-  for (int t = 0; t < inferenceSteps; t++)
-  {
-    if (useEPC)
-      EPCStep();
-    else
-      Step(false);
-
-    // Same reasoning as resyncErrorForClassicSettling: after Step(), e is
-    // one iteration stale relative to the just-updated z. Recomputing
-    // error here (needed=true) resyncs it AND gives the energy at the
-    // CURRENT z, which is what we actually want to see per step.
-    float energy = 0.0f;
-    for (auto& l : layers)
-      energy += l->CalculateState(true);
-    trace.push_back(energy);
-  }
-
-  GetTerminalLayer()->UnclampState();
-  return trace;
-}
-
 std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)
 {
   ResetState();
