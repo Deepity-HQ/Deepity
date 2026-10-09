@@ -440,8 +440,16 @@ void FullConvPCLayer::UpdateState() noexcept
 
   if (useMomentum)
   {
+    // v = dz_dt + momentumBeta*v (a "trace", matching optax's SGD(momentum=.)
+    // exactly), NOT v = momentumBeta*v + (1-momentumBeta)*dz_dt (an EMA --
+    // what this used to compute). The two are NOT the same hyperparameter:
+    // the EMA's steady-state step is just ir, while the trace's is
+    // ir/(1-momentumBeta). Porting a PCX ir/momentum pair verbatim under
+    // the EMA silently under-drove settling by that factor (confirmed:
+    // at momentumBeta=0.55, 2.2x), compounding exponentially with depth.
+    // This makes ir/momentum mean exactly what PCX's own config means.
     backend->Scale(v, ownStateSize, momentumBeta);
-    backend->AxpyInto(v, dz_dt, ownStateSize, 1.0f - momentumBeta);
+    backend->AxpyInto(v, dz_dt, ownStateSize, 1.0f);
     backend->AxpyInto(z, v, ownStateSize, ir);
   }
   else

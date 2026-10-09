@@ -194,13 +194,15 @@ def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else W_LR
-    # Default changed from PCX's raw ir=0.0223 to 0.5: the ir sweep (see
-    # sweep_pc_ir.py) found 0.0223 collapses to a near-constant output
-    # within ~100-150 batches (preceded by an energy spike, not a quiet
-    # drift), while ir=0.5 is the only candidate tested that trains
-    # cleanly -- energy falls and stabilizes, outputs stay input-dependent.
-    # Pass a 4th CLI arg to override.
-    ir = float(sys.argv[4]) if len(sys.argv) > 4 else 0.5
+    # Back to PCX's original ir=0.0223, now that FullConvPCLayer's
+    # momentum convention is fixed (was computing an EMA, v=b*v+(1-b)*dz;
+    # optax's SGD(momentum=b) computes a trace, v=b*v+dz -- confirmed
+    # directly from optax's own source). At b=0.55 that's a 2.2x
+    # under-drive on every settling step, compounding exponentially with
+    # depth -- the ir sweep's earlier collapse was run under the WRONG
+    # convention. This is the first genuinely apples-to-apples retry of
+    # PCX's literal numbers. Pass a 4th CLI arg to override.
+    ir = float(sys.argv[4]) if len(sys.argv) > 4 else IR
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 
