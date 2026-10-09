@@ -44,8 +44,9 @@ Architecture, pooling, cross-entropy, ReLU-instead-of-GELU deviation,
 imagenet_bp_control_vgg7_ce.py, see that script's own docstring.
 
 Usage:
-    python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE]
-(defaults: 50, 128, matching PCX exactly)
+    python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR]
+(defaults: 50, 128, W_LR constant, ir=0.5 -- see main()'s own comment on
+why the ir default changed from PCX's raw 0.0223)
 """
 import sys
 import numpy as np
@@ -166,6 +167,13 @@ def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else W_LR
+    # Default changed from PCX's raw ir=0.0223 to 0.5: the ir sweep (see
+    # sweep_pc_ir.py) found 0.0223 collapses to a near-constant output
+    # within ~100-150 batches (preceded by an energy spike, not a quiet
+    # drift), while ir=0.5 is the only candidate tested that trains
+    # cleanly -- energy falls and stabilizes, outputs stay input-dependent.
+    # Pass a 4th CLI arg to override.
+    ir = float(sys.argv[4]) if len(sys.argv) > 4 else 0.5
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 
@@ -173,14 +181,15 @@ def main():
     X_train_u8, y_train_idx, N_CLASSES = load_train_set_cached(DATA_DIR, wnids)
     X_val_u8, y_val_idx = load_val_set_cached(DATA_DIR, wnids)
 
-    print(f"\n*** TINY IMAGENET, VGG-7 GENUINE PC (T={T}, ir={IR}, momentum={MOMENTUM}) ***")
+    print(f"\n*** TINY IMAGENET, VGG-7 GENUINE PC (T={T}, ir={ir}, momentum={MOMENTUM}) ***")
     print(f"Comparable to: PCX's own PC-NN {39.49}+-{2.69}% (Table 1) and this codebase's own "
           f"BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).")
     print(f"Training: {EPOCHS} epochs, batch_size={BATCH_SIZE}, lr={LR:.6g} "
           f"(warmup-cosine to peak {peak_lr:.6g}, end {end_lr:.6g}), AdamW, cross-entropy, "
-          f"56x56 crops, pooling on, {T} settling steps/batch.\n")
+          f"56x56 crops, pooling on, {T} settling steps/batch, ir={ir}.\n")
 
     net = build_vgg7_network(BATCH_SIZE, N_CLASSES, LR)
+    net.set_inference_rate(ir)
     net.randomize_weights(7)
 
     diag_indices = pick_diagnostic_indices(y_val_idx)

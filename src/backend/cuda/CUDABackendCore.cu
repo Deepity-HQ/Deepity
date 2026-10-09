@@ -9,6 +9,7 @@
  * the rest.
  */
 #include <deepity/backend/CUDABackend.h>
+#include <cstdlib>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA
@@ -30,7 +31,13 @@ CUDABackend::CUDABackend()
   // convolutions, which use TF32 by default. See SetAllowTF32's own doc
   // comment for why a caller doing a finite-difference gradient check
   // needs to turn this back off.
-  SetAllowTF32(true);
+  //
+  // DEEPITY_DISABLE_TF32: set this env var to test whether TF32's ~1e-3
+  // relative GEMM error is masquerading as signal in a hidden error
+  // buffer whose true magnitude is much smaller than that (suspected in
+  // the VGG-7 genuine-PC-settling collapse investigation) -- no new
+  // binding needed, since this is read once at construction.
+  SetAllowTF32(std::getenv("DEEPITY_DISABLE_TF32") == nullptr);
   cudaMalloc(&scalarScratch, sizeof(float));
 }
 
