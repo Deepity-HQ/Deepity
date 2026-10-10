@@ -84,6 +84,13 @@ public:
     for (auto& layer : layers)
       layer->SetAdamEpsilon(eps);
   }
+  /// @brief PCX's own init (uniform +-1/sqrt(fan_in)), in place of
+  /// Kaiming-normal. Call before RandomizeWeights(), like SetMuPCInit().
+  void SetUsePCXInit(bool enabled) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetPCXInit(enabled);
+  }
 
   FullConvPCLayer* GetTerminalLayer() noexcept { return layers.back().get(); }
   std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept { return layers; }

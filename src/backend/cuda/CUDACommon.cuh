@@ -83,6 +83,8 @@ __device__ __forceinline__ float ActivationDerivativeDevice(ActivationType dType
 #endif
     return fmaf(-t, t, 1.0f);
   }
+  case ActivationType::dHARD_TANH:
+    return (float)(z > -1.0f && z < 1.0f);
   case ActivationType::dLINEAR:
   case ActivationType::NONE:
   default:
@@ -116,6 +118,8 @@ __device__ __forceinline__ float ActivationDerivativeFromActivatedDevice(Activat
     return 2.0f * activated * (1.0f - activated);
   case ActivationType::dTANH:
     return fmaf(-activated, activated, 1.0f);
+  case ActivationType::dHARD_TANH:
+    return (float)(activated > -1.0f && activated < 1.0f);
   case ActivationType::dLINEAR:
   case ActivationType::NONE:
   default:

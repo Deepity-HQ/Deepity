@@ -87,6 +87,7 @@ protected:
   float a = 1.0f;
   bool useResidual = false;
   bool useMuPCInit = false;
+  bool usePCXInit = false;
 
   bool useMomentum = false;
   float momentumBeta = 0.9f;
@@ -187,6 +188,13 @@ public:
   float GetMuPCScale() const noexcept { return a; }
   void SetMuPCInit(bool enabled) noexcept { useMuPCInit = enabled; }
   bool GetMuPCInit() const noexcept { return useMuPCInit; }
+  /// @brief PCX's own init (Equinox default): weights uniform in
+  /// +-1/sqrt(fan_in), not Kaiming-normal. Takes priority over
+  /// useMuPCInit if both are somehow set; biases are already zero by
+  /// default regardless (see ResetState()/BindMemory()), matching PCX's
+  /// own zero-bias convention with no separate change needed.
+  void SetPCXInit(bool enabled) noexcept { usePCXInit = enabled; }
+  bool GetPCXInit() const noexcept { return usePCXInit; }
 
   void SetResidual(bool enabled) noexcept { useResidual = enabled; }
   bool GetResidual() const noexcept { return useResidual; }

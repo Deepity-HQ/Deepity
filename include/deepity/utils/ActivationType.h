@@ -35,6 +35,8 @@ namespace Deep
         dTANH,
         LINEAR,
         dLINEAR,
+        HARD_TANH,
+        dHARD_TANH,
         NONE
     };
 }

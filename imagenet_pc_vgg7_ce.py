@@ -3,69 +3,66 @@ Genuine multi-step predictive coding on the exact VGG-7 architecture
 imagenet_bp_control_vgg7_ce.py validated as a backprop control (38.78%
 best top-1, full 50 epochs).
 
-Earlier attempts in this history (see git log) ported PCX's own
-VGG_PCN_CE_tinyimagenet.yaml numbers directly (T=12, ir=0.0223,
-momentum=0.55, AdamW lr=7.96e-5) under classic settling -- every one
-collapsed to a near-constant, input-independent output (~0.5% val top1)
-or exploded outright, across the full ir range from 0.0223 to 0.5.
-Direct per-layer instrumentation traced this to real signal starvation:
-the early conv layers received essentially zero error (printing as
-exactly 0.0 to 6 decimal places), while Adam's per-parameter
-normalization still gave them full-size, systematically-biased steps
-anyway -- a real, measured mechanism, not a guess.
+History (see git log for the full detail of each): porting PCX's own
+VGG_PCN_CE_tinyimagenet.yaml numbers directly under classic settling
+collapsed or exploded across every ir tried (0.0223 to 0.5, both
+momentum conventions). Per-layer instrumentation traced this to real
+signal starvation with ReLU: early layers measured essentially zero
+error while Adam still gave them full-size steps anyway, and the
+affected layer's dead-ReLU fraction climbed to ~100% in lockstep with
+the collapse. Switching to muPC's own parameterization (fixing a real
+chain-rule bug along the way, see git log) showed the SAME layer stuck
+at zero error regardless of ir, momentum, or T on a depth-matched toy
+network -- never conclusively tested at VGG-7's real scale.
 
-This version switches to muPC's OWN parameterization and recipe
-(Innocenti et al., "muPC: Scaling Predictive Coding to 100+ Layer
-Networks", https://arxiv.org/abs/2505.13124) instead of PCX's, since
-that paper is specifically about fixing signal imbalance across depth
-in PC networks:
-  - useMuPCScaling=True: each layer's forward multiplier `a` (Table 1:
-    a_1=N_0^-0.5, a_hidden=(N*L)^-0.5 or N^-0.5 depending on residual
-    use, a_L=1/N) and unit-variance init, replacing Kaiming.
-  - No momentum on state settling (the paper's own experiments use
-    plain gradient descent for inference, "no other optimisation
-    techniques such as momentum, weight decay, and nudging").
-  - T = number of hidden layers (the paper's own stated rule), not
-    PCX's T=12.
-  - ir and the weight learning rate both moved into the paper's OWN
-    searched range (activity lr in {1e-2...1e3}, weight lr in
-    {1e-2...5e-1}) -- both 100-1000x larger than PCX's numbers, which
-    were tuned for a completely different (non-muPC) setup and were
-    never going to transfer as-is.
-  - Plain Adam, no weight decay, matching the paper's own optimizer
-    choice (not AdamW).
+THIS version instead replicates PCX's actual released PC-CE code
+(pcax v0.6.1) line for line, correcting a real, specific deviation:
+this script was using ReLU (borrowed from the backprop control, which
+needed it because of a documented GELU-derivative bug), but PCX's own
+VGG_PCN_CE_tinyimagenet.yaml specifies act_fn: hard_tanh for PC-CE, not
+ReLU, GELU, or leaky_relu (those are PCX's OTHER PC variants'
+activations, not this one's). ReLU is unbounded above, so activations
+can grow without limit -- exactly the shape of the 1e8-1e9 energy
+blow-ups seen earlier. hard_tanh is bounded to [-1,1] by construction,
+and PCX's own (small) init keeps most units in its linear region
+initially, which a dead ReLU unit's permanently-zero gradient never
+gets the chance to do. The per-layer data already in hand (L5 dead
+fraction -> ~100%) is exactly the failure mode hard_tanh's boundedness
+is meant to prevent.
 
-A real bug was found and fixed getting here: FullConvPCLayer's muPC
-chain-rule derivative was missing the `a` factor entirely (mu =
-Activation(a*preact+b), so d(mu)/d(preact) needs a*Activation'(.), not
-just Activation'(.)) in EnsureMuHoldsDerivative(), UpdateState()'s fused
-path, AND ComputeAdjoint(). A SEPARATE bug this exposed: UpdateWeights()
-was ALSO separately multiplying by `a` in lr_batch/grad_scale, double-
-counting the same factor once the chain rule was fixed. Both fixed and
-verified via finite differences across multiple seeds, T=1 and T=4,
-with and without pooling. Both are no-ops when useMuPCScaling is off,
-so every earlier (non-muPC) verified configuration is unaffected.
+Three changes from the previous (muPC) attempt, all matching PCX's
+PC-CE exactly, no deviations:
+  - HARD_TANH added to Deepity (one enum value, CPU+CUDA kernels,
+    exact derivative -- no GELU-style from-activated ambiguity, since
+    whether clamping happened is recoverable from the activated value
+    alone). Verified via finite differences before use (see git log).
+  - PCX's own init added (SetUsePCXInit): weights uniform in
+    +-1/sqrt(fan_in), not Kaiming-normal (biases were already zero by
+    default either way). Verified the resulting weights actually
+    respect that bound before use.
+  - muPC scaling OFF (PCX doesn't use it), momentum back ON (PCX's
+    own trace-form momentum=0.55, matching optax's own convention --
+    see the earlier momentum-fix commit), AdamW restored (PCX's own
+    optimizer, not plain Adam), and Adam's epsilon back to its
+    default (the eps mitigation was MY OWN addition from a different
+    line of reasoning, not PCX's own recipe -- removed here so this is
+    a clean test of the activation-function hypothesis specifically,
+    not a mix of several changes at once).
 
-CPU toy-network testing, first on a small 5-weight-layer/2-3-channel
-net, then on a 6-weight-layer+terminal net matching VGG-7's actual
-DEPTH (channels still much smaller: 1-16, not 128-512): the earlier,
-shallower toy found ir=10-100 avoided the permanent divergence ir=1000
-showed, but that network was a worse match for VGG-7's actual depth.
-Repeating the ir sweep on the depth-matched network gave a different,
-more specific answer: ir=10 leaves energy stuck at billions with wildly
-imbalanced per-layer signal (some layers in the thousands, others
-starved toward zero) -- "not infinite" but not healthy either. ir=0.5
-and ir=1.0 keep energy small and bounded (~4, not billions) WITH
-genuinely growing (not collapsing, not exploding) hidden-layer signal
-over 30 batches; ir=2 decays back toward starvation; ir=5 jumps back to
-energy ~33,000. ir=1.0 (also one of the paper's own grid points) is
-this script's default. Channel counts are still 8-30x smaller than
-VGG-7's real ones -- this run is the actual test of whether that gap
-matters.
+Back to PCX's own exact numbers: T=12, ir=0.0223, momentum=0.55,
+weight lr=7.96e-5, weight decay=3.53e-5.
+
+How to read the outcome: if this trains, the activation-function
+hypothesis was right, and the ~20 batches/sec classic-settling path is
+confirmed correct. If it STILL collapses with PCX's literal code
+replicated this closely, the remaining difference is a genuine Deepity
+bug in the classic settling path, not a config/hyperparameter gap --
+and the next real step is a one-batch, identical-weights comparison
+against pcax itself to find exactly where the two diverge.
 
 Usage:
     python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR]
-(defaults below are the muPC-paper-scale values, not PCX's)
+(defaults below are PCX's own PC-CE numbers)
 """
 import sys
 import numpy as np
@@ -75,13 +72,12 @@ from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue]
 from imagenet import DATA_DIR, IMG_SIZE, N_CHANNELS, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
 
 CROP_SIZE = 56
-T = 7            # VGG-7's weight-bearing layer count, matching muPC paper's "T = hidden layers"
-IR = 1.0         # one of the paper's own grid points; a 7-layer-deep CPU toy sweep found
-                 # ir=0.5-1.0 keeps energy small/bounded with genuinely GROWING hidden-layer
-                 # signal, while ir=2 decays and ir=5-10 blow up into the thousands/billions
-MOMENTUM = 0.0   # muPC paper's own recipe: no momentum on state settling
-W_LR = 0.02      # mid-range of muPC paper's own weight-lr search {1e-2...5e-1}
-W_WD = 0.0       # muPC paper's own recipe: no weight decay
+# PCX's own VGG_PCN_CE_tinyimagenet.yaml numbers, verbatim.
+T = 12
+IR = 0.0223381085942421
+MOMENTUM = 0.55           # trace-form (optax convention, see git log), not EMA
+W_LR = 7.961890843897934e-05
+W_WD = 3.5299055677719896e-05
 MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
 STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
@@ -177,7 +173,7 @@ def quick_val_accuracy(net, X_val_u8, y_val_idx, batch_size, n_classes, n_batche
 def build_vgg7_network(batch_size, n_classes, lr):
     net = dy.FullConvPCNetwork(batch_size=batch_size, device="gpu")
 
-    def conv(in_c, out_c, hw, pad, pool=1, activation="relu", activation_deriv="drelu"):
+    def conv(in_c, out_c, hw, pad, pool=1, activation="hard_tanh", activation_deriv="dhard_tanh"):
         net.add_layer(in_c, out_c, hw, hw, 3, 3, stride_h=1, stride_w=1, pad_h=pad, pad_w=pad,
                      terminal_size=n_classes, lr=lr, ir=IR, fl=0.0, lmbda=W_WD,
                      activation=activation, activation_deriv=activation_deriv,
@@ -199,19 +195,20 @@ def build_vgg7_network(batch_size, n_classes, lr):
                  activation="linear", activation_deriv="dlinear")
 
     net.set_use_residual_connections(False)
-    # Must precede compile() (and randomize_weights(), called later in
-    # main()): compile() is what actually computes and applies each
-    # layer's `a` from the full architecture, and the init-variance
-    # change only takes effect on the NEXT randomize_weights() call.
-    net.set_use_mu_pc_scaling(True)
+    # muPC scaling OFF: PCX's own PC-CE doesn't use it. PCX-style init
+    # must precede compile() (and the randomize_weights() call later in
+    # main()): the init-variance change only takes effect on the NEXT
+    # randomize_weights() call.
+    net.set_use_mu_pc_scaling(False)
+    net.set_use_pcx_init(True)
     net.compile()
 
     net.set_use_ipc(False)
     net.set_use_epc(False)  # classic PC settling, NOT the ePC adjoint trick
-    net.set_use_momentum(MOMENTUM > 0.0, MOMENTUM)  # paper's recipe: off
+    net.set_use_momentum(True, MOMENTUM)
     net.set_use_cross_entropy(True)
-    net.set_optimizer("ADAM")       # paper's own optimizer, not AdamW
-    net.set_psi_optimizer("ADAM")
+    net.set_optimizer("ADAMW")       # PCX's own optimizer
+    net.set_psi_optimizer("ADAMW")
 
     return net
 
@@ -220,8 +217,6 @@ def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else W_LR
-    # muPC-paper-scale ir (see module docstring) -- 100-1000x larger than
-    # any PCX-derived value tried before. Pass a 4th CLI arg to override.
     ir = float(sys.argv[4]) if len(sys.argv) > 4 else IR
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
@@ -230,13 +225,14 @@ def main():
     X_train_u8, y_train_idx, N_CLASSES = load_train_set_cached(DATA_DIR, wnids)
     X_val_u8, y_val_idx = load_val_set_cached(DATA_DIR, wnids)
 
-    print(f"\n*** TINY IMAGENET, VGG-7 GENUINE PC, muPC recipe (T={T}, ir={ir}, momentum={MOMENTUM}) ***")
-    print(f"Comparable to: PCX's own PC-NN {39.49}+-{2.69}% (Table 1) and this codebase's own "
+    print(f"\n*** TINY IMAGENET, VGG-7 GENUINE PC, PCX PC-CE replica (T={T}, ir={ir}, "
+          f"momentum={MOMENTUM}, hard_tanh, PCX init) ***")
+    print(f"Comparable to: PCX's own PC-CE 39.49+-2.69% (Table 1) and this codebase's own "
           f"BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).")
     print(f"Training: {EPOCHS} epochs, batch_size={BATCH_SIZE}, lr={LR:.6g} "
-          f"(warmup-cosine to peak {peak_lr:.6g}, end {end_lr:.6g}), Adam (no weight decay), "
-          f"cross-entropy, muPC scaling on, 56x56 crops, pooling on, {T} settling steps/batch, "
-          f"ir={ir}.\n")
+          f"(warmup-cosine to peak {peak_lr:.6g}, end {end_lr:.6g}), AdamW wd={W_WD:.3g}, "
+          f"cross-entropy, muPC scaling off, PCX uniform init, hard_tanh, 56x56 crops, "
+          f"pooling on, {T} settling steps/batch, ir={ir}.\n")
 
     net = build_vgg7_network(BATCH_SIZE, N_CLASSES, LR)
     net.set_inference_rate(ir)
@@ -306,9 +302,10 @@ def main():
                                     "POST-epoch-1")
 
     print(f"\n=== Result ===")
-    print(f"Deepity VGG-7 genuine PC (T={T}, ir={IR}): best top-1 = {best_acc:.2f}%")
+    print(f"Deepity VGG-7 genuine PC, PCX PC-CE replica (T={T}, ir={ir}): "
+          f"best top-1 = {best_acc:.2f}%")
     print(f"Reference points: this codebase's own BP-equivalent baseline = 38.78%, "
-          f"PCX's published PC-NN = 39.49+-2.69%.")
+          f"PCX's published PC-CE = 39.49+-2.69%.")
 
 
 if __name__ == "__main__":

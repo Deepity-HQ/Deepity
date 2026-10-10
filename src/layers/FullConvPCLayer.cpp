@@ -249,14 +249,22 @@ void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
   size_t Wsz = (size_t)outChannels * colRows;
   size_t Psisz = (size_t)outChannels * terminalSize;
 
-  float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (float)colRows);
   float limPsi = std::sqrt(2.0f / (float)(outChannels + terminalSize));
 
   std::uniform_int_distribution<uint32_t> seedDist;
   uint32_t seedW = seedDist(seedGenerator);
   uint32_t seedPsi = seedDist(seedGenerator);
 
-  backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+  if (usePCXInit)
+  {
+    float pcxLimit = std::sqrt(1.0f / (float)colRows);
+    backend->RandomizeUniform(W, Wsz, -pcxLimit, pcxLimit, seedW);
+  }
+  else
+  {
+    float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (float)colRows);
+    backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+  }
   backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
 }
 
