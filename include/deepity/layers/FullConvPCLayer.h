@@ -156,6 +156,22 @@ protected:
   float* m_Psi = nullptr;
   float* v_Psi = nullptr;
 
+  /// @name GetStateDict() host staging
+  /// Host-side mirrors of W/b/Psi and their Adam moments, for
+  /// SyncStateDictFromDevice()/SyncStateDictToDevice() to copy into/out
+  /// of when `backend` keeps the real buffers in device memory. Sized
+  /// lazily by GetStateDict() itself (via EnsureStateDictStaging()).
+  ///@{
+  mutable std::vector<float> hostW, hostB, hostPsi;
+  mutable std::vector<float> hostM_W, hostV_W, hostM_b, hostV_b, hostM_Psi, hostV_Psi;
+  ///@}
+
+  /// @brief Resizes the host staging buffers above to match W/b/Psi's
+  /// current shapes. Idempotent (a no-op once sizes already match), so
+  /// GetStateDict(), SyncStateDictFromDevice(), and SyncStateDictToDevice()
+  /// can all call it unconditionally.
+  void EnsureStateDictStaging() const noexcept;
+
   int* t_device = nullptr;
   float* lr_device = nullptr;
   int* tPsi_device = nullptr;
@@ -305,6 +321,18 @@ public:
   /// error signal, the distinction at stake in the VGG-7 PC-collapse
   /// investigation.
   std::vector<float> GetDiagnosticStats() const noexcept;
+
+  /// @copydoc Deep::Layer::GetStateDict
+  /// @return {} if outChannels == 0 (this layer owns no W/b/Psi).
+  /// Otherwise W, b, Psi, and each of their Adam moments (m_W, v_W, m_b,
+  /// v_b, m_Psi, v_Psi), pointing at this layer's host staging buffers
+  /// (see EnsureStateDictStaging()) -- always safe for ModelIO to read
+  /// or write directly, regardless of backend.
+  std::map<std::string, TensorDescriptor> GetStateDict() const override;
+  /// @copydoc Deep::Layer::SyncStateDictFromDevice
+  void SyncStateDictFromDevice() const override;
+  /// @copydoc Deep::Layer::SyncStateDictToDevice
+  void SyncStateDictToDevice() override;
 
   size_t GetBatchSize() const noexcept override { return batchSize; }
   size_t GetInputSize() const noexcept override

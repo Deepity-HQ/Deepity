@@ -61,9 +61,19 @@ and the next real step is a one-batch, identical-weights comparison
 against pcax itself to find exactly where the two diverge.
 
 Usage:
-    python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR]
-(defaults below are PCX's own PC-CE numbers)
+    python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR] [CHECKPOINT_PREFIX]
+(defaults below are PCX's own PC-CE numbers; CHECKPOINT_PREFIX defaults
+to "checkpoint" -- a "<prefix>.safetensors" + "<prefix>_meta.json" pair
+written after every epoch. Rerunning the exact same command resumes
+from it automatically if it exists: weights, Adam moments, epoch,
+global_step, best_acc, and the data-shuffling RNG state all carry over,
+so the warmup-cosine LR schedule and data order continue exactly where
+they left off rather than restarting cold. At most one epoch of
+progress is lost to a mid-epoch kill, since checkpoints are only
+written at epoch boundaries.)
 """
+import json
+import os
 import sys
 import numpy as np
 from time import perf_counter
@@ -170,6 +180,52 @@ def quick_val_accuracy(net, X_val_u8, y_val_idx, batch_size, n_classes, n_batche
     return 100.0 * correct / total
 
 
+def checkpoint_paths(prefix):
+    return prefix + ".safetensors", prefix + "_meta.json"
+
+
+def save_checkpoint(net, prefix, epoch, global_step, best_acc, elapsed, rng):
+    """Weights + Adam moments go through net.save() (safetensors, see
+    FullConvPCLayer::GetStateDict()); everything net.save() can't know
+    about -- how far the training LOOP got, not the network itself --
+    goes in a small JSON sidecar next to it. Written at epoch boundaries
+    only (not mid-epoch): resuming replays at most one epoch, in
+    exchange for not needing to serialize the in-epoch batch index or
+    permutation as well."""
+    weights_path, meta_path = checkpoint_paths(prefix)
+    net.save(weights_path)
+    meta = {
+        "epoch": epoch,
+        "global_step": global_step,
+        "best_acc": best_acc,
+        "elapsed": elapsed,
+        "rng_state": rng.bit_generator.state,
+    }
+    # Write to a temp file then rename: a kill mid-write (the exact
+    # scenario this exists for) must never leave a half-written,
+    # unparseable meta file behind for the next resume to trip over.
+    tmp_path = meta_path + ".tmp"
+    with open(tmp_path, "w") as f:
+        json.dump(meta, f)
+    os.replace(tmp_path, meta_path)
+
+
+def try_load_checkpoint(net, prefix):
+    """Returns (epoch, global_step, best_acc, rng) if a checkpoint from
+    save_checkpoint() exists at `prefix`, having already loaded its
+    weights into `net`; returns None (net left untouched) if not."""
+    weights_path, meta_path = checkpoint_paths(prefix)
+    if not (os.path.exists(weights_path) and os.path.exists(meta_path)):
+        return None
+    if not net.load(weights_path):
+        return None
+    with open(meta_path) as f:
+        meta = json.load(f)
+    rng = np.random.default_rng(7)
+    rng.bit_generator.state = meta["rng_state"]
+    return meta["epoch"], meta["global_step"], meta["best_acc"], meta["elapsed"], rng
+
+
 def build_vgg7_network(batch_size, n_classes, lr):
     net = dy.FullConvPCNetwork(batch_size=batch_size, device="gpu")
 
@@ -218,6 +274,7 @@ def main():
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else W_LR
     ir = float(sys.argv[4]) if len(sys.argv) > 4 else IR
+    CHECKPOINT_PREFIX = sys.argv[5] if len(sys.argv) > 5 else "checkpoint"
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 
@@ -236,13 +293,21 @@ def main():
 
     net = build_vgg7_network(BATCH_SIZE, N_CLASSES, LR)
     net.set_inference_rate(ir)
-    net.randomize_weights(7)
 
     diag_indices = pick_diagnostic_indices(y_val_idx)
-    run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
-                            "PRE-training")
 
-    rng = np.random.default_rng(7)
+    resumed = try_load_checkpoint(net, CHECKPOINT_PREFIX)
+    if resumed is not None:
+        start_epoch, global_step, best_acc, elapsed_before, rng = resumed
+        print(f"Resuming from checkpoint '{CHECKPOINT_PREFIX}': "
+              f"epoch={start_epoch}, global_step={global_step}, best_acc={best_acc:.2f}%\n")
+    else:
+        net.randomize_weights(7)
+        run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
+                                "PRE-training")
+        start_epoch, global_step, best_acc, elapsed_before = 0, 0, 0.0, 0.0
+        rng = np.random.default_rng(7)
+
     n_train = len(X_train_u8)
     n_batches = n_train // BATCH_SIZE
     total_steps = n_batches * EPOCHS
@@ -255,11 +320,9 @@ def main():
         cosine = 0.5 * (1.0 + np.cos(np.pi * progress))
         return end_lr + (peak_lr - end_lr) * cosine
 
-    global_step = 0
-    best_acc = 0.0
     start_time = perf_counter()
 
-    for epoch in range(EPOCHS):
+    for epoch in range(start_epoch, EPOCHS):
         indices = rng.permutation(n_train)
         epoch_energy = 0.0
         n_energy_samples = 0
@@ -292,10 +355,12 @@ def main():
 
         acc = 100.0 * correct / total
         best_acc = max(best_acc, acc)
-        elapsed = perf_counter() - start_time
+        elapsed = elapsed_before + (perf_counter() - start_time)
         print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | "
               f"Avg energy: {epoch_energy/n_energy_samples:.4f} | Val top1: {acc:.2f}% | "
               f"Best top1: {best_acc:.2f}% | lr={lr_at_step(global_step):.2e}")
+
+        save_checkpoint(net, CHECKPOINT_PREFIX, epoch + 1, global_step, best_acc, elapsed, rng)
 
         if epoch == 0:
             run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,

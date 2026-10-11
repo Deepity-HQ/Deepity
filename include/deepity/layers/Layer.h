@@ -57,7 +57,23 @@ namespace Deep
         /// @brief Returns this layer's named, shaped weight/bias tensors,
         /// for ModelIO's save/load. Empty by default; override to expose
         /// a layer's actual parameters.
+        /// @warning For a layer whose parameters live in device memory
+        /// (e.g. under a CUDA backend), the returned pointers are only
+        /// safe for ModelIO to read/write directly if SyncStateDictFromDevice()
+        /// was called first (for a save) or SyncStateDictToDevice() is
+        /// called afterward (for a load) -- see those methods.
         virtual std::map<std::string, TensorDescriptor> GetStateDict() const { return {}; }
+        /// @brief Copies this layer's parameters from device memory into
+        /// the host-readable buffers GetStateDict() exposes, so a save
+        /// can read them directly. No-op by default, for layers whose
+        /// GetStateDict() already returns live host pointers.
+        virtual void SyncStateDictFromDevice() const {}
+        /// @brief The reverse of SyncStateDictFromDevice(): pushes
+        /// GetStateDict()'s host-side buffers (just overwritten by a
+        /// load) back to this layer's actual device-resident parameters.
+        /// No-op by default, for layers whose GetStateDict() already
+        /// returns live host pointers.
+        virtual void SyncStateDictToDevice() {}
 
     protected:
         /// @brief Size of input

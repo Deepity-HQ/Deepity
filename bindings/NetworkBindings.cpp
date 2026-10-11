@@ -864,6 +864,14 @@ void bind_networks(nb::module_& m)
           nb::arg("pool_stride_w") = 1)
       .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
       .def("set_use_pcx_init", &Deep::FullConvPCNetwork::SetUsePCXInit, nb::arg("enabled"))
+      .def("save", &Deep::FullConvPCNetwork::Save,
+          "Saves every layer's weights and Adam moments to a single safetensors-format "
+          "file, for checkpoint/resume.",
+          nb::arg("filepath"))
+      .def("load", &Deep::FullConvPCNetwork::Load,
+          "Loads weights and Adam moments previously written by save() into this "
+          "(already-compiled) network.",
+          nb::arg("filepath"))
       .def("set_use_residual_connections",
            &Deep::FullConvPCNetwork::SetUseResidualConnections,
            nb::arg("enabled"))

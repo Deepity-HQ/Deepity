@@ -1,5 +1,6 @@
 #include <cmath>
 #include <deepity/networks/FullConvPCNetwork.h>
+#include <deepity/utils/ModelIO.h>
 #include <iostream>
 #include <pmmintrin.h>
 #include <stdexcept>
@@ -315,6 +316,22 @@ std::vector<float> FullConvPCNetwork::GetAllLayerDiagnostics() const noexcept
     result.insert(result.end(), stats.begin(), stats.end());
   }
   return result;
+}
+
+bool FullConvPCNetwork::Save(const std::string& filepath) const noexcept
+{
+  for (auto& l : layers)
+    l->SyncStateDictFromDevice();
+  return ModelIO::Save(*this, filepath);
+}
+
+bool FullConvPCNetwork::Load(const std::string& filepath) noexcept
+{
+  if (!ModelIO::Load(*this, filepath))
+    return false;
+  for (auto& l : layers)
+    l->SyncStateDictToDevice();
+  return true;
 }
 
 std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)

@@ -810,6 +810,77 @@ std::vector<float> FullConvPCLayer::GetDiagnosticStats() const noexcept
   return {errorMean, errorRMS, weightNorm, deadFraction};
 }
 
+void FullConvPCLayer::EnsureStateDictStaging() const noexcept
+{
+  if (outChannels == 0)
+    return;
+  size_t colRows = (size_t)inChannels * kernelH * kernelW;
+  size_t Wsz = (size_t)outChannels * colRows;
+  size_t Psisz = (size_t)outChannels * terminalSize;
+  hostW.resize(Wsz);
+  hostB.resize(outChannels);
+  hostPsi.resize(Psisz);
+  hostM_W.resize(Wsz);
+  hostV_W.resize(Wsz);
+  hostM_b.resize(outChannels);
+  hostV_b.resize(outChannels);
+  hostM_Psi.resize(Psisz);
+  hostV_Psi.resize(Psisz);
+}
+
+std::map<std::string, TensorDescriptor> FullConvPCLayer::GetStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  EnsureStateDictStaging();
+  size_t colRows = (size_t)inChannels * kernelH * kernelW;
+  return {
+      {"W", {hostW.data(), {(size_t)outChannels, colRows}}},
+      {"b", {hostB.data(), {(size_t)outChannels}}},
+      {"Psi", {hostPsi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+      {"m_W", {hostM_W.data(), {(size_t)outChannels, colRows}}},
+      {"v_W", {hostV_W.data(), {(size_t)outChannels, colRows}}},
+      {"m_b", {hostM_b.data(), {(size_t)outChannels}}},
+      {"v_b", {hostV_b.data(), {(size_t)outChannels}}},
+      {"m_Psi", {hostM_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+      {"v_Psi", {hostV_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}}};
+}
+
+void FullConvPCLayer::SyncStateDictFromDevice() const
+{
+  if (outChannels == 0)
+    return;
+  EnsureStateDictStaging();
+  backend->CopyToHost(hostW.data(), W, hostW.size());
+  backend->CopyToHost(hostB.data(), b, hostB.size());
+  backend->CopyToHost(hostPsi.data(), Psi, hostPsi.size());
+  backend->CopyToHost(hostM_W.data(), m_W, hostM_W.size());
+  backend->CopyToHost(hostV_W.data(), v_W, hostV_W.size());
+  backend->CopyToHost(hostM_b.data(), m_b, hostM_b.size());
+  backend->CopyToHost(hostV_b.data(), v_b, hostV_b.size());
+  backend->CopyToHost(hostM_Psi.data(), m_Psi, hostM_Psi.size());
+  backend->CopyToHost(hostV_Psi.data(), v_Psi, hostV_Psi.size());
+}
+
+void FullConvPCLayer::SyncStateDictToDevice()
+{
+  if (outChannels == 0)
+    return;
+  // Staging buffers are already sized+populated at this point: ModelIO::Load()
+  // calls GetStateDict() (which sizes them via EnsureStateDictStaging())
+  // before reading the file into them, this just pushes that freshly-loaded
+  // host data on to the actual device-resident parameters.
+  backend->CopyFromHost(W, hostW.data(), hostW.size());
+  backend->CopyFromHost(b, hostB.data(), hostB.size());
+  backend->CopyFromHost(Psi, hostPsi.data(), hostPsi.size());
+  backend->CopyFromHost(m_W, hostM_W.data(), hostM_W.size());
+  backend->CopyFromHost(v_W, hostV_W.data(), hostV_W.size());
+  backend->CopyFromHost(m_b, hostM_b.data(), hostM_b.size());
+  backend->CopyFromHost(v_b, hostV_b.data(), hostV_b.size());
+  backend->CopyFromHost(m_Psi, hostM_Psi.data(), hostM_Psi.size());
+  backend->CopyFromHost(v_Psi, hostV_Psi.data(), hostV_Psi.size());
+}
+
 template void FullConvPCLayer::BindMemory<MemoryArena>(MemoryArena& arena);
 #if defined(DEEPITY_USE_CUDA)
 template void FullConvPCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena& arena);

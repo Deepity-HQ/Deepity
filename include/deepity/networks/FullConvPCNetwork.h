@@ -101,6 +101,18 @@ public:
   int GetBatchSize() const noexcept { return batchSize; }
   DeviceType GetDevice() const noexcept { return device; }
 
+  /// @brief Saves every layer's weights and Adam moments (see
+  /// FullConvPCLayer::GetStateDict()) to `filepath`, as a single
+  /// safetensors-format file (see ModelIO.h). Safe under any backend:
+  /// syncs device-resident parameters to host first.
+  /// @return false if `filepath` couldn't be opened for writing.
+  bool Save(const std::string& filepath) const noexcept;
+  /// @brief The reverse of Save(): loads weights and Adam moments from
+  /// `filepath` into this (already-compiled) network, pushing them back
+  /// to device memory afterward if this network's backend needs that.
+  /// @return false if `filepath` couldn't be opened for reading.
+  bool Load(const std::string& filepath) noexcept;
+
   /// @brief Runs one training step. @p computeEnergy=false skips the
   /// per-layer energy readout (a cublasSdot + cudaStreamSynchronize EACH,
   /// on GPU -- a real cost even though the computation itself is cheap)
