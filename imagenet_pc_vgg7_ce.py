@@ -193,7 +193,10 @@ def save_checkpoint(net, prefix, epoch, global_step, best_acc, elapsed, rng):
     exchange for not needing to serialize the in-epoch batch index or
     permutation as well."""
     weights_path, meta_path = checkpoint_paths(prefix)
-    net.save(weights_path)
+    if not net.save(weights_path):
+        print(f"  WARNING: checkpoint weight save to '{weights_path}' FAILED "
+              f"(net.save() returned false) -- resume will not be possible from epoch {epoch}.")
+        return
     meta = {
         "epoch": epoch,
         "global_step": global_step,
@@ -208,6 +211,8 @@ def save_checkpoint(net, prefix, epoch, global_step, best_acc, elapsed, rng):
     with open(tmp_path, "w") as f:
         json.dump(meta, f)
     os.replace(tmp_path, meta_path)
+    print(f"  Checkpoint saved: '{weights_path}' + '{meta_path}' (epoch={epoch}, "
+          f"global_step={global_step}, best_acc={best_acc:.2f}%)")
 
 
 def try_load_checkpoint(net, prefix):
@@ -218,6 +223,8 @@ def try_load_checkpoint(net, prefix):
     if not (os.path.exists(weights_path) and os.path.exists(meta_path)):
         return None
     if not net.load(weights_path):
+        print(f"  WARNING: found '{weights_path}' but net.load() returned false -- "
+              f"starting fresh instead of resuming.")
         return None
     with open(meta_path) as f:
         meta = json.load(f)
