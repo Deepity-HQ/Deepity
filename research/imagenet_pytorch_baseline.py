@@ -42,7 +42,7 @@ Reference number this is meant to reproduce: PCX's Table 1 reports
 VGG-7 Backprop-SE on Tiny ImageNet at 46.08+-0.15% top-1.
 
 Usage:
-    python imagenet_pytorch_baseline.py [EPOCHS] [BATCH_SIZE]
+    python research/imagenet_pytorch_baseline.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching the paper exactly)
 """
 import sys

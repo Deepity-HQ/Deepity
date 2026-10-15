@@ -35,7 +35,7 @@ instrumentation. If even ir=0.5 collapses, something else is going on
 and the per-layer-RMS test becomes necessary after all.
 
 Usage:
-    python sweep_pc_ir.py [N_BATCHES]
+    python research/sweep_pc_ir.py [N_BATCHES]
 (default: 150, matching roughly where the original run's collapse appeared)
 """
 import sys

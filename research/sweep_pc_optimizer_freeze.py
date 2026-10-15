@@ -22,7 +22,7 @@ Tests, all at the ORIGINAL ir=0.0223 (T=12, momentum=0.55, cross-entropy):
   - AdamW with the bottom 4 of 7 weight-bearing layers frozen (lr=0)
 
 Usage:
-    python sweep_pc_optimizer_freeze.py [N_BATCHES]
+    python research/sweep_pc_optimizer_freeze.py [N_BATCHES]
 (default: 150)
 """
 import sys

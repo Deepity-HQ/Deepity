@@ -54,7 +54,7 @@ random-crop+flip (train) / center-crop (val), standard ImageNet mean/std
 on why.
 
 Usage:
-    python imagenet_bp_control_vgg7.py [EPOCHS] [BATCH_SIZE]
+    python research/imagenet_bp_control_vgg7_ce.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching PCX exactly)
 """
 import sys

@@ -1,0 +1,83 @@
+Deepity GFLOPS benchmark, CPU (12th Gen Intel Core i7-12700H, native + MKL build).
+Command: ninja GflopsBenchmark && ./bin/GflopsBenchmark
+Measures sustained GFLOPS for a full PC train step (SimplePCN, 784-512-256-64-10,
+batch=256, T=20 settling steps). FLOP accounting documented in tests/tGflopsBenchmark.cpp.
+
+CORRECTED after fixing a CMakeLists.txt bug: see logs/activation_benchmark.txt for the
+full explanation -- same root cause (test executables missing -march=x86-64-v3) applies
+here too, since Deep::sigmoid() runs inside this network's layers every settling step.
+This run is through the normal build (ninja GflopsBenchmark), not a manual workaround.
+Note: this is a laptop with CPU frequency scaling enabled -- re-running shows real
+run-to-run variance, not a fixed number.
+Five consecutive runs, same binary, same machine:
+
+2026-10-15T18:38:05-04:00
+Running ./bin/GflopsBenchmark
+Run on (20 X 400.555 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.33, 2.46, 1.28
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       60.3 ms         48.6 ms          157 FLOPS=237.29G/s
+---
+2026-10-15T18:38:14-04:00
+Running ./bin/GflopsBenchmark
+Run on (20 X 401.072 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.61, 2.51, 1.31
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       59.5 ms         48.6 ms          157 FLOPS=237.351G/s
+---
+2026-10-15T18:38:24-04:00
+Running ./bin/GflopsBenchmark
+Run on (20 X 770.388 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.36, 2.46, 1.30
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       53.3 ms         45.3 ms          157 FLOPS=254.803G/s
+---
+2026-10-15T18:38:32-04:00
+Running ./bin/GflopsBenchmark
+Run on (20 X 400.317 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.25, 2.44, 1.30
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       54.9 ms         45.7 ms          157 FLOPS=252.421G/s
+---
+2026-10-15T18:38:41-04:00
+Running ./bin/GflopsBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.14, 2.41, 1.30
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       55.2 ms         45.2 ms          157 FLOPS=255.042G/s
+---

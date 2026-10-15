@@ -60,7 +60,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-[rose.05.ra4@outlook.com](mailto:rose.05.ra4@outlook.com).
+[contact@deepity.dev](mailto:contact@deepity.dev).
 
 All complaints will be reviewed and investigated promptly and fairly.
 

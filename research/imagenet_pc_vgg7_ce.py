@@ -61,7 +61,7 @@ and the next real step is a one-batch, identical-weights comparison
 against pcax itself to find exactly where the two diverge.
 
 Usage:
-    python imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR] [CHECKPOINT_PREFIX]
+    python research/imagenet_pc_vgg7_ce.py [EPOCHS] [BATCH_SIZE] [W_LR] [IR] [CHECKPOINT_PREFIX] [T]
 (defaults below are PCX's own PC-CE numbers; CHECKPOINT_PREFIX defaults
 to "checkpoint" -- a "<prefix>.safetensors" + "<prefix>_meta.json" pair
 written after every epoch. Rerunning the exact same command resumes
@@ -70,7 +70,11 @@ global_step, best_acc, and the data-shuffling RNG state all carry over,
 so the warmup-cosine LR schedule and data order continue exactly where
 they left off rather than restarting cold. At most one epoch of
 progress is lost to a mid-epoch kill, since checkpoints are only
-written at epoch boundaries.)
+written at epoch boundaries. T (settling steps/batch) defaults to
+PCX's own value of 12 -- override to test whether a smaller T reaches
+comparable accuracy for proportionally less time/batch; use a distinct
+CHECKPOINT_PREFIX per T value so sweep runs don't clobber each other's
+checkpoints.)
 """
 import json
 import os
@@ -277,11 +281,14 @@ def build_vgg7_network(batch_size, n_classes, lr):
 
 
 def main():
+    global T
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else W_LR
     ir = float(sys.argv[4]) if len(sys.argv) > 4 else IR
     CHECKPOINT_PREFIX = sys.argv[5] if len(sys.argv) > 5 else "checkpoint"
+    if len(sys.argv) > 6:
+        T = int(sys.argv[6])
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 

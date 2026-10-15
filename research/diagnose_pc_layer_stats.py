@@ -20,7 +20,7 @@ What to look for in the baseline (default epsilon) run:
     ITSELF across consecutive checkpoints is the same signal).
 
 Usage:
-    python diagnose_pc_layer_stats.py [N_BATCHES]
+    python research/diagnose_pc_layer_stats.py [N_BATCHES]
 (default: 150)
 """
 import sys
