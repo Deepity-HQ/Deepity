@@ -18,8 +18,8 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
                                  int kernelH, int kernelW, int strideH, int strideW, int padH,
                                  int padW, int terminalSize, int batchSize, float learningRate,
                                  float inferenceRate, float feedback, float lmbda,
-                                 ActivationType aType, ActivationType dType,
-                                 IComputeBackend* backend)
+                                 ActivationType aType, ActivationType dType, int poolH, int poolW,
+                                 int poolStrideH, int poolStrideW, IComputeBackend* backend)
     : inChannels(inChannels)
     , outChannels(outChannels)
     , inHeight(inHeight)
@@ -32,6 +32,10 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
     , padW(padW)
     , batchSize(batchSize)
     , terminalSize(terminalSize)
+    , poolH(poolH)
+    , poolW(poolW)
+    , poolStrideH(poolStrideH)
+    , poolStrideW(poolStrideW)
     , lr(learningRate)
     , ir(inferenceRate)
     , fl(feedback)
@@ -42,6 +46,10 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
 {
   outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
   outWidth = (outChannels > 0) ? ConvOutDim(inWidth, kernelW, strideW, padW) : 0;
+  poolOutHeight = (outChannels > 0 && HasPooling()) ? PoolOutDim(outHeight, poolH, poolStrideH)
+                                                    : outHeight;
+  poolOutWidth = (outChannels > 0 && HasPooling()) ? PoolOutDim(outWidth, poolW, poolStrideW)
+                                                   : outWidth;
 
   localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
   BindMemory(*localArena);
@@ -56,6 +64,9 @@ void FullConvPCLayer::SetLearningRate(float learningRate) noexcept
 
 void FullConvPCLayer::SetFeedbackRate(float feedbackRate) noexcept
 {
+  if ((feedbackRate == 0.0f) != (fl == 0.0f))
+    flZeroDirty = true;
+
   fl = feedbackRate;
   if (fl_device)
     backend->CopyFromHost(fl_device, &fl, 1);
@@ -102,6 +113,13 @@ size_t FullConvPCLayer::GetRequiredFloats() const noexcept
     total += pad16((size_t)batchSize * outChannels); // projChannel
     total += pad16(outStateSize);            // proj
     total += pad16(1) * 2;                   // tPsi_device, fl_device
+
+    if (HasPooling())
+    {
+      size_t poolOutStateSize = (size_t)batchSize * outChannels * poolOutHeight * poolOutWidth;
+      total += pad16(poolOutStateSize) * 2; // pooledMu, poolArgmax (as floats)
+      total += pad16(outStateSize);         // unpoolScratch
+    }
   }
 
   return total;
@@ -197,6 +215,18 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     backend->CopyFromHost(
         reinterpret_cast<float*>(tPsi_device), reinterpret_cast<float*>(&zeroPsi), 1);
     backend->CopyFromHost(fl_device, &fl, 1);
+
+    if (HasPooling())
+    {
+      size_t poolOutStateSize = (size_t)batchSize * outChannels * poolOutHeight * poolOutWidth;
+      pooledMu = arena.AllocateFloats(poolOutStateSize);
+      poolArgmax = reinterpret_cast<int*>(arena.AllocateFloats(poolOutStateSize));
+      unpoolScratch = arena.AllocateFloats(outStateSize);
+
+      backend->Zero(pooledMu, poolOutStateSize);
+      backend->Zero(reinterpret_cast<float*>(poolArgmax), poolOutStateSize);
+      backend->Zero(unpoolScratch, outStateSize);
+    }
   }
 
   if constexpr (std::is_same_v<ArenaT, MemoryArena>)
@@ -219,14 +249,22 @@ void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
   size_t Wsz = (size_t)outChannels * colRows;
   size_t Psisz = (size_t)outChannels * terminalSize;
 
-  float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (float)colRows);
   float limPsi = std::sqrt(2.0f / (float)(outChannels + terminalSize));
 
   std::uniform_int_distribution<uint32_t> seedDist;
   uint32_t seedW = seedDist(seedGenerator);
   uint32_t seedPsi = seedDist(seedGenerator);
 
-  backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+  if (usePCXInit)
+  {
+    float pcxLimit = std::sqrt(1.0f / (float)colRows);
+    backend->RandomizeUniform(W, Wsz, -pcxLimit, pcxLimit, seedW);
+  }
+  else
+  {
+    float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (float)colRows);
+    backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+  }
   backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
 }
 
@@ -248,17 +286,17 @@ float FullConvPCLayer::CalculateState(bool needEnergy) noexcept
   {
     if (needEnergy)
       totalEnergy = backend->ComputeSoftmaxCrossEntropyErrorAndEnergy(
-          e, z, layerBelow->mu, batchSize, ownSize, rowEnergies);
+          e, z, layerBelow->GetMu(), batchSize, ownSize, rowEnergies);
     else
-      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->mu, batchSize, ownSize);
+      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->GetMu(), batchSize, ownSize);
   }
   else if (needEnergy)
   {
-    totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, ownStateSize);
+    totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->GetMu(), ownStateSize);
   }
   else
   {
-    backend->ComputeError(e, z, layerBelow->mu, ownStateSize);
+    backend->ComputeError(e, z, layerBelow->GetMu(), ownStateSize);
   }
 
   if (outChannels > 0)
@@ -275,16 +313,17 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   size_t colRows = (size_t)inChannels * kernelH * kernelW;
   size_t colCols = (size_t)outHeight * outWidth;
   size_t Nout = (size_t)batchSize * outChannels * colCols;
-  size_t ownSize = (size_t)inChannels * inHeight * inWidth;
 
   if (isClamped && muCacheValid)
   {
     backend->Copy(mu, cachedMu, Nout);
+    if (HasPooling())
+      backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
+                                poolStrideH, poolStrideW, pooledMu, poolArgmax);
     return;
   }
 
-  // Im2Col is an inherently per-image gather (no batched primitive), but
-  // everything after it was ALSO looping per-batch-item -- batchSize
+  // Everything after Im2Col was ALSO looping per-batch-item -- batchSize
   // separate small GEMMs instead of one big one, each paying its own
   // BLAS call overhead. Fixed by reusing the exact repack trick
   // UpdateWeights() already uses for its own GEMM: RepackForBatchedGemm
@@ -292,14 +331,8 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   // pure axis-swap) calling it AGAIN with `batch`/`rows` swapped
   // undoes it -- no new buffers needed, colsRepacked/lgRepacked are
   // pure scratch here exactly as they are in UpdateWeights().
-  for (int batch = 0; batch < batchSize; ++batch)
-  {
-    const float* z_item = z + (size_t)batch * ownSize;
-    float* cols_item = colBuffer + (size_t)batch * colRows * colCols;
-
-    backend->Im2Col(z_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH, strideW,
-                    padH, padW, cols_item);
-  }
+  backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW, strideH, strideW,
+                  padH, padW, colBuffer);
 
   backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
   backend->MatMul(
@@ -332,6 +365,23 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
     backend->Copy(cachedMu, mu, Nout);
     muCacheValid = true;
   }
+
+  if (HasPooling())
+    backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
+                              poolStrideH, poolStrideW, pooledMu, poolArgmax);
+}
+
+const float* FullConvPCLayer::UnpoolError(const float* pooledError) noexcept
+{
+  if (!HasPooling())
+    return pooledError;
+
+  size_t outStateSize = (size_t)batchSize * outChannels * outHeight * outWidth;
+
+  backend->Zero(unpoolScratch, outStateSize);
+  backend->MaxPool2DBackward(pooledError, poolArgmax, batchSize, outChannels, outHeight, outWidth,
+                             poolOutHeight, poolOutWidth, unpoolScratch);
+  return unpoolScratch;
 }
 
 void FullConvPCLayer::UpdateState() noexcept
@@ -363,17 +413,24 @@ void FullConvPCLayer::UpdateState() noexcept
 
   if (layerAbove != nullptr && outChannels > 0)
   {
-    const float* e_above = layerAbove->GetErrors();
+    const float* e_above = UnpoolError(layerAbove->GetErrors());
     size_t outSize = (size_t)outChannels * colCols;
     size_t outTotal = (size_t)batchSize * outSize;
 
     backend->FusedActivationDerivativeMultiply(bottom_up_cols, e_above, mu, derivativeType,
                                                outTotal);
+    // Same muPC chain-rule factor as EnsureMuHoldsDerivative()'s own
+    // comment: mu = Activation(a*preact+b), so the derivative needs an
+    // extra factor of a. FusedActivationDerivativeMultiply wrote BOTH
+    // bottom_up_cols (=e_above*Activation'(mu)) and mu itself
+    // (=Activation'(mu), in place) without it; both need scaling. No-op
+    // when a==1.0 (useMuPCScaling off).
+    backend->Scale(bottom_up_cols, outTotal, a);
+    backend->Scale(mu, outTotal, a);
 
     // Same batched-GEMM trick as ComputeMuOnly(): one big transA GEMM
     // instead of batchSize small ones, un-repacking the result back to
-    // per-batch-contiguous layout only where Col2Im (a genuine per-image
-    // scatter, no batched form) actually needs it.
+    // per-batch-contiguous layout Col2Im() expects.
     backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
     backend->MatMul(
         /*transA=*/true,
@@ -391,21 +448,24 @@ void FullConvPCLayer::UpdateState() noexcept
         (int)(batchSize * colCols));
     backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
-    for (int batch = 0; batch < batchSize; ++batch)
-    {
-      float* scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-      float* dz_item = dz_dt + (size_t)batch * ownSize;
-      backend->Col2Im(scratch_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                      strideW, padH, padW, dz_item);
-    }
+    backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
+                    strideH, strideW, padH, padW, dz_dt);
   }
 
   backend->AxpyInto(dz_dt, e, ownStateSize, -1.0f);
 
   if (useMomentum)
   {
+    // v = dz_dt + momentumBeta*v (a "trace", matching optax's SGD(momentum=.)
+    // exactly), NOT v = momentumBeta*v + (1-momentumBeta)*dz_dt (an EMA --
+    // what this used to compute). The two are NOT the same hyperparameter:
+    // the EMA's steady-state step is just ir, while the trace's is
+    // ir/(1-momentumBeta). Porting a PCX ir/momentum pair verbatim under
+    // the EMA silently under-drove settling by that factor (confirmed:
+    // at momentumBeta=0.55, 2.2x), compounding exponentially with depth.
+    // This makes ir/momentum mean exactly what PCX's own config means.
     backend->Scale(v, ownStateSize, momentumBeta);
-    backend->AxpyInto(v, dz_dt, ownStateSize, 1.0f - momentumBeta);
+    backend->AxpyInto(v, dz_dt, ownStateSize, 1.0f);
     backend->AxpyInto(z, v, ownStateSize, ir);
   }
   else
@@ -425,7 +485,7 @@ void FullConvPCLayer::UpdateWeights() noexcept
   size_t Wsize = (size_t)outChannels * colRows;
   size_t outTotal = (size_t)batchSize * outSize;
 
-  const float* e_above = layerAbove->GetErrors();
+  const float* e_above = UnpoolError(layerAbove->GetErrors());
 
   // mu still holds the derivative left over from the last
   // UpdateState()/ComputeAdjoint() call -- see both methods' docs.
@@ -443,7 +503,16 @@ void FullConvPCLayer::UpdateWeights() noexcept
     if (lmbda > 0.0f)
       backend->Scale(W, Wsize, 1.0f - lmbda);
 
-    float lr_batch = a * lr / batchSize;
+    // No `a` here: EnsureMuHoldsDerivative() now folds muPC's chain-rule
+    // factor into mu itself (mu = Activation(a*preact+b), so the
+    // derivative needs a*Activation'(.), not just Activation'(.)), which
+    // flows into lgRepacked below. Multiplying by `a` again here was a
+    // real, previously-uncaught bug: it double-counted the SAME factor,
+    // confirmed via finite differences (consistent ~a-sized mismatch
+    // across every weight, which cleared up once this line stopped
+    // reapplying it). a defaults to 1.0f, so this is a no-op whenever
+    // useMuPCScaling is off, unaffecting every already-verified config.
+    float lr_batch = lr / batchSize;
 
     backend->MatMul(
         /*transA=*/false,
@@ -481,7 +550,7 @@ void FullConvPCLayer::UpdateWeights() noexcept
   {
     backend->IncrementCounter(t_device);
 
-    float grad_scale = -1.0f * a / batchSize;
+    float grad_scale = -1.0f / batchSize;  // same reasoning as lr_batch's own comment above
 
     backend->MatMul(
         /*transA=*/false,
@@ -514,11 +583,14 @@ void FullConvPCLayer::UpdateWeights() noexcept
         1);
 
     if (opt == OptimizerType::ADAMW)
-      backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda);
+      backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda, 0.9f, 0.999f,
+                        adamEpsilon);
     else
-      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device);
+      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, 0.9f, 0.999f,
+                        adamEpsilon);
 
-    backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device);
+    backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device, 0.9f, 0.999f,
+                      adamEpsilon);
     break;
   }
   }
@@ -527,6 +599,15 @@ void FullConvPCLayer::UpdateWeights() noexcept
 void FullConvPCLayer::DirectFeedbackUpdate() noexcept
 {
   if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)
+    return;
+
+  // fl==0 makes this function's entire contribution to W exactly zero
+  // (see the final MatMul's alpha=fl/batchSize below) -- skip the
+  // broadcast, repack, and GEMM outright rather than computing a result
+  // that just gets multiplied away. See flZeroDirty's own comment for
+  // why FullConvPCNetwork::TrainStep() has to recapture if fl crosses
+  // this boundary, instead of this skip silently sticking forever.
+  if (fl == 0.0f)
     return;
 
   size_t colCols = (size_t)outHeight * outWidth;
@@ -594,6 +675,8 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
   if (layerAbove == nullptr || outChannels == 0)
     return;
 
+  adjointAbove = UnpoolError(adjointAbove);
+
   size_t ownSize = (size_t)inChannels * inHeight * inWidth;
   size_t colRows = (size_t)inChannels * kernelH * kernelW;
   size_t colCols = (size_t)outHeight * outWidth;
@@ -606,6 +689,13 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
                                              outTotal);
   if (adjointAboveScale != 1.0f)
     backend->Scale(bottom_up_cols, outTotal, adjointAboveScale);
+  // bottom_up_cols's own muPC chain-rule factor is already folded into
+  // the MatMul below via alpha=a. mu itself is left holding the
+  // UNSCALED derivative by the line above, though -- UpdateWeights()
+  // reads mu directly later expecting the fully-correct (scaled) value,
+  // same as the classic-settling path, so fix it here too. No-op when
+  // a==1.0 (useMuPCScaling off).
+  backend->Scale(mu, outTotal, a);
 
   // Same batched-GEMM trick as UpdateState()'s feedback path.
   backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
@@ -626,13 +716,8 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
   backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
   backend->Zero(adjoint, (size_t)batchSize * ownSize);
-  for (int batch = 0; batch < batchSize; ++batch)
-  {
-    float* scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-    float* adj_item = adjoint + (size_t)batch * ownSize;
-    backend->Col2Im(scratch_item, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                    strideW, padH, padW, adj_item);
-  }
+  backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
+                  strideH, strideW, padH, padW, adjoint);
 }
 
 void FullConvPCLayer::EnsureMuHoldsDerivative() noexcept
@@ -640,8 +725,16 @@ void FullConvPCLayer::EnsureMuHoldsDerivative() noexcept
   if (outChannels == 0)
     return;
 
+  // mu = Activation(a*preact + b), so d(mu)/d(preact) = a*Activation'(.),
+  // not just Activation'(.) -- the outer muPC scale `a` is itself part
+  // of the function being differentiated. Missing this was a real,
+  // previously-uncaught bug: every existing gradient check ran with
+  // useMuPCScaling off (a=1.0, where this line is a no-op), so nothing
+  // ever exercised a != 1 here. a defaults to 1.0f, so this changes
+  // nothing for any currently-working configuration.
   size_t outTotal = (size_t)batchSize * outChannels * outHeight * outWidth;
   backend->ActivationDerivative(derivativeType, mu, outTotal, true);
+  backend->Scale(mu, outTotal, a);
 }
 
 void FullConvPCLayer::UpdateErrorEPC() noexcept
@@ -675,6 +768,117 @@ void FullConvPCLayer::ResetState() noexcept
   backend->Zero(e, ownStateSize);
   if (v)
     backend->Zero(v, ownStateSize);
+}
+
+std::vector<float> FullConvPCLayer::GetDiagnosticStats() const noexcept
+{
+  size_t eSize = (size_t)batchSize * inChannels * inHeight * inWidth;
+  std::vector<float> eHost(eSize);
+  backend->CopyToHost(eHost.data(), e, eSize);
+
+  double eSum = 0.0, eSqSum = 0.0;
+  for (float v_ : eHost)
+  {
+    eSum += v_;
+    eSqSum += (double)v_ * v_;
+  }
+  float errorMean = eSize > 0 ? (float)(eSum / (double)eSize) : 0.0f;
+  float errorRMS = eSize > 0 ? (float)std::sqrt(eSqSum / (double)eSize) : 0.0f;
+
+  float weightNorm = 0.0f;
+  float deadFraction = 0.0f;
+  if (outChannels > 0)
+  {
+    size_t Wsize = (size_t)outChannels * inChannels * kernelH * kernelW;
+    std::vector<float> wHost(Wsize);
+    backend->CopyToHost(wHost.data(), W, Wsize);
+    double wSqSum = 0.0;
+    for (float w : wHost)
+      wSqSum += (double)w * w;
+    weightNorm = (float)std::sqrt(wSqSum);
+
+    size_t muSize = (size_t)batchSize * outChannels * outHeight * outWidth;
+    std::vector<float> muHost(muSize);
+    backend->CopyToHost(muHost.data(), mu, muSize);
+    size_t deadCount = 0;
+    for (float m : muHost)
+      if (m == 0.0f)
+        deadCount++;
+    deadFraction = muSize > 0 ? (float)deadCount / (float)muSize : 0.0f;
+  }
+
+  return {errorMean, errorRMS, weightNorm, deadFraction};
+}
+
+void FullConvPCLayer::EnsureStateDictStaging() const noexcept
+{
+  if (outChannels == 0)
+    return;
+  size_t colRows = (size_t)inChannels * kernelH * kernelW;
+  size_t Wsz = (size_t)outChannels * colRows;
+  size_t Psisz = (size_t)outChannels * terminalSize;
+  hostW.resize(Wsz);
+  hostB.resize(outChannels);
+  hostPsi.resize(Psisz);
+  hostM_W.resize(Wsz);
+  hostV_W.resize(Wsz);
+  hostM_b.resize(outChannels);
+  hostV_b.resize(outChannels);
+  hostM_Psi.resize(Psisz);
+  hostV_Psi.resize(Psisz);
+}
+
+std::map<std::string, TensorDescriptor> FullConvPCLayer::GetStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  EnsureStateDictStaging();
+  size_t colRows = (size_t)inChannels * kernelH * kernelW;
+  return {
+      {"W", {hostW.data(), {(size_t)outChannels, colRows}}},
+      {"b", {hostB.data(), {(size_t)outChannels}}},
+      {"Psi", {hostPsi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+      {"m_W", {hostM_W.data(), {(size_t)outChannels, colRows}}},
+      {"v_W", {hostV_W.data(), {(size_t)outChannels, colRows}}},
+      {"m_b", {hostM_b.data(), {(size_t)outChannels}}},
+      {"v_b", {hostV_b.data(), {(size_t)outChannels}}},
+      {"m_Psi", {hostM_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+      {"v_Psi", {hostV_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}}};
+}
+
+void FullConvPCLayer::SyncStateDictFromDevice() const
+{
+  if (outChannels == 0)
+    return;
+  EnsureStateDictStaging();
+  backend->CopyToHost(hostW.data(), W, hostW.size());
+  backend->CopyToHost(hostB.data(), b, hostB.size());
+  backend->CopyToHost(hostPsi.data(), Psi, hostPsi.size());
+  backend->CopyToHost(hostM_W.data(), m_W, hostM_W.size());
+  backend->CopyToHost(hostV_W.data(), v_W, hostV_W.size());
+  backend->CopyToHost(hostM_b.data(), m_b, hostM_b.size());
+  backend->CopyToHost(hostV_b.data(), v_b, hostV_b.size());
+  backend->CopyToHost(hostM_Psi.data(), m_Psi, hostM_Psi.size());
+  backend->CopyToHost(hostV_Psi.data(), v_Psi, hostV_Psi.size());
+}
+
+void FullConvPCLayer::SyncStateDictToDevice()
+{
+  if (outChannels == 0)
+    return;
+  // Staging buffers are already sized+populated at this point: ModelIO::Load()
+  // calls GetStateDict() (which sizes them via EnsureStateDictStaging())
+  // before reading the file into them, this just pushes that freshly-loaded
+  // host data on to the actual device-resident parameters.
+  backend->CopyFromHost(W, hostW.data(), hostW.size());
+  backend->CopyFromHost(b, hostB.data(), hostB.size());
+  backend->CopyFromHost(Psi, hostPsi.data(), hostPsi.size());
+  backend->CopyFromHost(m_W, hostM_W.data(), hostM_W.size());
+  backend->CopyFromHost(v_W, hostV_W.data(), hostV_W.size());
+  backend->CopyFromHost(m_b, hostM_b.data(), hostM_b.size());
+  backend->CopyFromHost(v_b, hostV_b.data(), hostV_b.size());
+  backend->CopyFromHost(m_Psi, hostM_Psi.data(), hostM_Psi.size());
+  backend->CopyFromHost(v_Psi, hostV_Psi.data(), hostV_Psi.size());
 }
 
 template void FullConvPCLayer::BindMemory<MemoryArena>(MemoryArena& arena);

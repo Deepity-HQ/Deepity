@@ -76,14 +76,14 @@ class SimplePCN(dy.SimplePCNetwork):
                 "Network architecture must begin with a Linear layer."
             )
 
-        if not isinstance(self.architecture[-1], Linear):
+        if not isinstance(self.architecture[-1], (Linear, Activation)):
             raise ValueError(
-                "Network architecture must end with a Linear layer."
+                "Network architecture must end with a Linear or Activation layer."
             )
 
         previous_linear = self.architecture[0]
 
-        for i, component in enumerate(self.architecture[1:], start=1):
+        for component in self.architecture[1:]:
             if isinstance(component, Linear):
                 if component.in_n != previous_linear.out_n:
                     raise ValueError(
@@ -94,11 +94,7 @@ class SimplePCN(dy.SimplePCNetwork):
                 previous_linear = component
 
             elif isinstance(component, Activation):
-                if i == len(self.architecture) - 1:
-                    raise ValueError(
-                        "An activation function cannot be the final "
-                        "architecture component."
-                    )
+                pass
 
             else:
                 raise TypeError(
@@ -139,9 +135,15 @@ class SimplePCN(dy.SimplePCNetwork):
                 activation_deriv="d" + activation,
             )
 
-        # _validate_architecture() guarantees the architecture ends with a
-        # Linear layer, so its out_n is the network's true output size.
-        terminal_size = self.architecture[-1].out_n
+        # The architecture may end with a trailing Activation (decorating
+        # the last Linear's output), so find that last Linear explicitly
+        # rather than assuming self.architecture[-1] is one -- same
+        # pattern as DKPPCN._terminal_size().
+        terminal_size = next(
+            component.out_n
+            for component in reversed(self.architecture)
+            if isinstance(component, Linear)
+        )
 
         super().add_layer(
             terminal_size,
@@ -186,8 +188,11 @@ class SimplePCN(dy.SimplePCNetwork):
         self._build_backend()
 
         super().set_optimizer(self._optimizer)
-        super().randomize_weights()
+        # Compile() must run before RandomizeWeights(): each layer uses its
+        # own small, independently-sized arena pre-compile, so randomizing
+        # first writes into a buffer Compile() then discards/reorganizes.
         super().compile()
+        super().randomize_weights()
 
         self._configured = True
 

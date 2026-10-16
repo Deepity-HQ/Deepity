@@ -110,12 +110,15 @@ All layers derive from a common @ref Deep::Layer "Layer" base:
 
 @section performance Performance
 
-On a 12th Gen Intel Core i7-12700H, Deepity sustains roughly 123 GFLOPS
-during predictive-coding inference and learning when compiled with Clang
-(LLVM), via custom SIMD micro-kernels, 64-byte-aligned buffers, and a
-contiguous memory arena. Full benchmark methodology and GCC-vs-Clang
-comparisons are in the
-[README](https://github.com/ra4ster/deepity#-performance-at-a-glance).
+Deepity's custom SIMD micro-kernels, 64-byte-aligned buffers, and
+contiguous memory arena are built for throughput, but there's no
+standing, verified GFLOPS number to quote here yet -- the benchmark
+suite (`tests/tReadme.cpp`, built as the `ReadmeBenchmark` target) measures
+raw settling-loop throughput on synthetic workloads; it does not produce
+a single platform-independent headline figure. Build and run it yourself
+for current numbers on your own hardware. See the
+[README](https://github.com/ra4ster/deepity#performance--benchmarks) for
+the exact commands.
 
 @section roadmap Roadmap
 

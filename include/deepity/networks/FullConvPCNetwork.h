@@ -35,7 +35,8 @@ public:
   void AddLayer(int inChannels, int outChannels, int inHeight, int inWidth, int kernelH,
                 int kernelW, int strideH, int strideW, int padH, int padW, int terminalSize,
                 float lr, float ir, float fl, float lmbda, ActivationType aType,
-                ActivationType dType);
+                ActivationType dType, int poolH = 1, int poolW = 1, int poolStrideH = 1,
+                int poolStrideW = 1);
 
   void SetUseMuPCScaling(bool enabled) noexcept { useMuPCScaling = enabled; }
   void SetUseResidualConnections(bool enabled) noexcept { useResidualConnections = enabled; }
@@ -73,6 +74,23 @@ public:
     for (auto& layer : layers)
       layer->SetFeedbackRate(fl);
   }
+  void SetInferenceRate(float ir) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetInferenceRate(ir);
+  }
+  void SetAdamEpsilon(float eps) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetAdamEpsilon(eps);
+  }
+  /// @brief PCX's own init (uniform +-1/sqrt(fan_in)), in place of
+  /// Kaiming-normal. Call before RandomizeWeights(), like SetMuPCInit().
+  void SetUsePCXInit(bool enabled) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetPCXInit(enabled);
+  }
 
   FullConvPCLayer* GetTerminalLayer() noexcept { return layers.back().get(); }
   std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept { return layers; }
@@ -83,9 +101,32 @@ public:
   int GetBatchSize() const noexcept { return batchSize; }
   DeviceType GetDevice() const noexcept { return device; }
 
+  /// @brief Saves every layer's weights and Adam moments (see
+  /// FullConvPCLayer::GetStateDict()) to `filepath`, as a single
+  /// safetensors-format file (see ModelIO.h). Safe under any backend:
+  /// syncs device-resident parameters to host first.
+  /// @return false if `filepath` couldn't be opened for writing.
+  bool Save(const std::string& filepath) const noexcept;
+  /// @brief The reverse of Save(): loads weights and Adam moments from
+  /// `filepath` into this (already-compiled) network, pushing them back
+  /// to device memory afterward if this network's backend needs that.
+  /// @return false if `filepath` couldn't be opened for reading.
+  bool Load(const std::string& filepath) noexcept;
+
+  /// @brief Runs one training step. @p computeEnergy=false skips the
+  /// per-layer energy readout (a cublasSdot + cudaStreamSynchronize EACH,
+  /// on GPU -- a real cost even though the computation itself is cheap)
+  /// and returns the last value that WAS computed instead, for callers
+  /// that only log/check energy every few steps.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y,
-                  int inferenceSteps = 1);
+                  int inferenceSteps = 1, bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
+
+  /// @brief Each layer's FullConvPCLayer::GetDiagnosticStats(), flat and
+  /// row-major [layer][stat] (4 stats/layer: error mean, error RMS,
+  /// weight norm, dead-mu fraction). Call right after TrainStep() to see
+  /// what the state that just drove a real weight update looked like.
+  std::vector<float> GetAllLayerDiagnostics() const noexcept;
 
   void Compile();
 
@@ -126,5 +167,9 @@ private:
 
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
+
+  /// @brief Last energy TrainStep() actually computed; returned as-is
+  /// when a call skips the readout via computeEnergy=false.
+  float lastEnergy = 0.0f;
 };
 } // namespace Deep

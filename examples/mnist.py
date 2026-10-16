@@ -3,6 +3,7 @@ import os
 import sys
 from time import perf_counter
 from pydeepity import SimplePCN
+from pydeepity.layer import Linear, Sigmoid
 
 def load_full_mnist():
     import gzip
@@ -40,33 +41,27 @@ def load_full_mnist():
     return X_train, Y_train, X_test, y_test_labels
 
 def main() -> None:
-    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7 
+    SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
+    STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 30
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
     BATCH_SIZE = 250
-    STEPS = 30
     LR = 0.00373
     DECAY_RATE = 0.94
     LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
-    net = SimplePCN(batch_size=BATCH_SIZE)
-    
-    net.add_layer(784, 512, lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
-    net.add_layer(512, 512, lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
-    net.add_layer(512, 10,  lr=LR, ir=0.091, act="sigmoid", lmbda=LMBDA)
-    net.add_layer(10, 0,    lr=LR, ir=0.091, act="linear", lmbda=LMBDA)
-    
-    # 1. Engage decoupled AdamW
-    net.set_optimizer("ADAMW")
-    net.compile()
-    
-    # 2. Engage C++ zero-energy bypass and mu caching
-    # net.set_mu_cache_threshold(0) 
-    
-    net.randomize_weights()
+    net = SimplePCN(
+        Linear(784, 512),
+        Linear(512, 512),
+        Sigmoid(),
+        Linear(512, 10),
+        Sigmoid(),
+        batch_size=BATCH_SIZE,
+    )
+    net.configure(learning_rate=LR, inference_rate=0.091, lmbda=LMBDA, optimizer="ADAMW")
 
     # Match exact +-0.3 bounds for forward-projection initialization
     rng_init = np.random.default_rng(SEED)
@@ -76,8 +71,10 @@ def main() -> None:
 
     print(f"\nTraining with FORWARD-PROJECTION init: {EPOCHS} epochs, {STEPS} steps, "
           f"lr={LR}, decay_rate={DECAY_RATE}...\n")
-    print("Reference (ngc-learn, real run): 26.91, 42.96, 60.12, 75.20, 84.68, 89.52,")
-    print("  91.90, 93.45, 94.30, 94.80, 95.13, 95.38, 95.63, 95.74, 95.95 -- test 95.09%\n")
+    print("Reference: ngc-learn's own pc_discrim exhibit (same 784-512-512-10 "
+          "architecture, classic settling, T=20, mb_size=250, 100 epochs), run "
+          "unmodified on this same machine -- see logs/ngclearn_pc_discrim_mnist.txt: "
+          "best dev acc = 98%, 1707.7s total (17.0s/epoch).\n")
 
     rng = np.random.default_rng(SEED)
     n_batches = len(X_train) // BATCH_SIZE
@@ -113,8 +110,8 @@ def main() -> None:
             net.reset_state()
             net.clamp_input(X_batch)
             net.project_forward()
-            for _ in range(STEPS): 
-                net.calculate_state()
+            for _ in range(STEPS):
+                net.calculate_state(False)
                 net.update_state()
 
             terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)

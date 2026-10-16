@@ -1,0 +1,66 @@
+Deepity activation-function microbenchmark, CPU (12th Gen Intel Core i7-12700H, native + MKL build).
+Command: ninja ActivationBenchmark && ./bin/ActivationBenchmark
+Deep_* = Deepity's SIMD kernels; Std_* = naive std::tanh/std::exp-based scalar loops,
+same input sizes, as the baseline comparison.
+
+CORRECTED after fixing a CMakeLists.txt bug: tests/*.cpp benchmark executables never
+received the -march=x86-64-v3 flag that Deepity/pydeepity get, so this binary was
+previously calling Sleef_cinz_tanhf4_u10sse2 (4-wide SSE2) instead of
+Sleef_tanhf8_u10avx2 (8-wide AVX2) -- confirmed by disassembly before and after. Fixed
+in CMakeLists.txt by applying DEEPITY_TARGET_COMPILE_OPTIONS/_DEFS to every test
+target, same as Deepity/pydeepity already had. This run is through the normal build
+(ninja ActivationBenchmark), not a manual workaround.
+(HardTanH is not yet covered by this benchmark -- added after tActivations.cpp was last touched.)
+
+2026-10-15T18:37:13-04:00
+Running ./bin/ActivationBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 3.03, 2.56, 1.23
+---------------------------------------------------------------------------------
+Benchmark                       Time             CPU   Iterations UserCounters...
+---------------------------------------------------------------------------------
+BM_Deep_Tanh/256              843 ns          843 ns       930998 items_per_second=303.577M/s
+BM_Deep_Tanh/512             1299 ns         1297 ns       564681 items_per_second=394.817M/s
+BM_Deep_Tanh/784             1704 ns         1702 ns       410758 items_per_second=460.674M/s
+BM_Deep_Tanh/16384          29336 ns        29270 ns        24044 items_per_second=559.758M/s
+BM_Deep_Tanh/131072         78443 ns        43059 ns        15945 items_per_second=3.04398G/s
+BM_Std_Tanh/256              1146 ns         1144 ns       616345 items_per_second=223.717M/s
+BM_Std_Tanh/512              2109 ns         2105 ns       338102 items_per_second=243.213M/s
+BM_Std_Tanh/784              3132 ns         3126 ns       223786 items_per_second=250.769M/s
+BM_Std_Tanh/16384           63508 ns        63365 ns        10956 items_per_second=258.567M/s
+BM_Std_Tanh/131072         503112 ns       501874 ns         1361 items_per_second=261.165M/s
+BM_Deep_Sigmoid/256           287 ns          287 ns      2426304 items_per_second=892.779M/s
+BM_Deep_Sigmoid/512           400 ns          400 ns      1755182 items_per_second=1.27962G/s
+BM_Deep_Sigmoid/784           552 ns          552 ns      1344265 items_per_second=1.42138G/s
+BM_Deep_Sigmoid/16384        8255 ns         8234 ns        82916 items_per_second=1.98971G/s
+BM_Deep_Sigmoid/131072      62894 ns        62669 ns        11263 items_per_second=2.0915G/s
+BM_Std_Sigmoid/256            716 ns          715 ns       974706 items_per_second=358.083M/s
+BM_Std_Sigmoid/512           1231 ns         1228 ns       529624 items_per_second=416.906M/s
+BM_Std_Sigmoid/784           1718 ns         1714 ns       373764 items_per_second=457.287M/s
+BM_Std_Sigmoid/16384        32513 ns        32430 ns        21435 items_per_second=505.206M/s
+BM_Std_Sigmoid/131072      259667 ns       258928 ns         2708 items_per_second=506.21M/s
+BM_Deep_Relu/256              192 ns          193 ns      4140821 items_per_second=1.32345G/s
+BM_Deep_Relu/512              193 ns          194 ns      3228964 items_per_second=2.64312G/s
+BM_Deep_Relu/784              194 ns          194 ns      3625808 items_per_second=4.0317G/s
+BM_Deep_Relu/16384            886 ns          885 ns       787540 items_per_second=18.5203G/s
+BM_Deep_Relu/131072          7863 ns         7837 ns        89583 items_per_second=16.7248G/s
+BM_Std_Relu/256               169 ns          170 ns      4116947 items_per_second=1.50444G/s
+BM_Std_Relu/512               175 ns          175 ns      3994015 items_per_second=2.91782G/s
+BM_Std_Relu/784               191 ns          191 ns      3668943 items_per_second=4.10241G/s
+BM_Std_Relu/16384             860 ns          860 ns       791156 items_per_second=19.0424G/s
+BM_Std_Relu/131072           7884 ns         7858 ns        91150 items_per_second=16.681G/s
+BM_Deep_Gelu/256              717 ns          717 ns      1001973 items_per_second=357.241M/s
+BM_Deep_Gelu/512             1229 ns         1229 ns       574224 items_per_second=416.647M/s
+BM_Deep_Gelu/784             1818 ns         1817 ns       392130 items_per_second=431.546M/s
+BM_Deep_Gelu/16384          35506 ns        35441 ns        20088 items_per_second=462.288M/s
+BM_Deep_Gelu/131072        287932 ns       287198 ns         2346 items_per_second=456.381M/s
+BM_Std_Gelu/256              1670 ns         1669 ns       406363 items_per_second=153.425M/s
+BM_Std_Gelu/512              3154 ns         3149 ns       234355 items_per_second=162.593M/s
+BM_Std_Gelu/784              4631 ns         4623 ns       144727 items_per_second=169.584M/s
+BM_Std_Gelu/16384           91348 ns        91184 ns         6514 items_per_second=179.681M/s
+BM_Std_Gelu/131072         790933 ns       788967 ns          955 items_per_second=166.131M/s

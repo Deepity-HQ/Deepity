@@ -813,7 +813,11 @@ void bind_networks(nb::module_& m)
              float fl,
              float lmbda,
              const std::string& activation,
-             const std::string& activation_deriv)
+             const std::string& activation_deriv,
+             int pool_h,
+             int pool_w,
+             int pool_stride_h,
+             int pool_stride_w)
           {
             self.AddLayer(in_channels,
                           out_channels,
@@ -831,7 +835,11 @@ void bind_networks(nb::module_& m)
                           fl,
                           lmbda,
                           resolveActEnum(activation),
-                          resolveActEnum(activation_deriv));
+                          resolveActEnum(activation_deriv),
+                          pool_h,
+                          pool_w,
+                          pool_stride_h,
+                          pool_stride_w);
           },
           nb::arg("in_channels"),
           nb::arg("out_channels"),
@@ -849,8 +857,21 @@ void bind_networks(nb::module_& m)
           nb::arg("fl") = 1e-4f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
+          nb::arg("activation_deriv") = "drelu",
+          nb::arg("pool_h") = 1,
+          nb::arg("pool_w") = 1,
+          nb::arg("pool_stride_h") = 1,
+          nb::arg("pool_stride_w") = 1)
       .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
+      .def("set_use_pcx_init", &Deep::FullConvPCNetwork::SetUsePCXInit, nb::arg("enabled"))
+      .def("save", &Deep::FullConvPCNetwork::Save,
+          "Saves every layer's weights and Adam moments to a single safetensors-format "
+          "file, for checkpoint/resume.",
+          nb::arg("filepath"))
+      .def("load", &Deep::FullConvPCNetwork::Load,
+          "Loads weights and Adam moments previously written by save() into this "
+          "(already-compiled) network.",
+          nb::arg("filepath"))
       .def("set_use_residual_connections",
            &Deep::FullConvPCNetwork::SetUseResidualConnections,
            nb::arg("enabled"))
@@ -911,17 +932,31 @@ void bind_networks(nb::module_& m)
           nb::arg("optimizer"))
       .def("set_learning_rate", &Deep::FullConvPCNetwork::SetLearningRate, nb::arg("lr"))
       .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"))
+      .def("set_inference_rate", &Deep::FullConvPCNetwork::SetInferenceRate, nb::arg("ir"))
+      .def("set_adam_epsilon", &Deep::FullConvPCNetwork::SetAdamEpsilon, nb::arg("eps"))
       .def(
           "train_step",
-          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
+          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps,
+             bool computeEnergy)
           {
             std::vector<float> xvec(x.data(), x.data() + x.size());
             std::vector<float> yvec(y.data(), y.data() + y.size());
-            return self.TrainStep(xvec, yvec, inference_steps);
+            return self.TrainStep(xvec, yvec, inference_steps, computeEnergy);
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("inference_steps") = 1)
+          nb::arg("inference_steps") = 1,
+          nb::arg("computeEnergy") = true)
+      .def(
+          "get_all_layer_diagnostics",
+          [](Deep::FullConvPCNetwork& self)
+          {
+            std::vector<float> stats = self.GetAllLayerDiagnostics();
+            return CopyToNewArray(stats.data(), {self.GetLayers().size(), (size_t)4});
+          },
+          "Each layer's [error mean, error RMS, weight norm, dead-mu fraction] as a 2D "
+          "[layer, stat] array, read from whatever TrainStep() last left in that layer's "
+          "buffers -- call right after train_step() to see the state that drove it.")
       .def(
           "predict",
           [](Deep::FullConvPCNetwork& self, FloatArray x, int inference_steps)

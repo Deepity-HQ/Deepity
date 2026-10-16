@@ -1,0 +1,48 @@
+Deepity SimplePCN, MNIST, CPU (native + MKL build), matched DIRECTLY against
+ngc-learn's own pc_discrim exhibit: identical architecture (784->512->512->10,
+sigmoid), identical settling-step count (T=20), identical mb_size (250),
+identical epoch count (100). Classic PC settling (calculate_state/
+update_state), forward-projection init, AdamW, lr=0.00373 w/ 0.94 decay/epoch.
+
+Command: python examples/mnist.py 7 100 20
+
+Building network (784->512->512->10), seed=7...
+
+Training with FORWARD-PROJECTION init: 100 epochs, 20 steps, lr=0.00373, decay_rate=0.94...
+
+(per-epoch Acc below is measured on a 10-batch TRAINING subset, not a
+held-out set -- unlike ngc-learn's per-epoch "Dev: Acc", which IS held-out.
+Only the final "Deepity Peak Test Accuracy" below is the genuine held-out
+number, and that's the one to compare against ngc-learn's Dev accuracy.)
+
+Epoch 1/100 | Time: 11.1s | Acc: 88.48% | Avg energy: 604.1679
+Epoch 10/100 | Time: 93.4s | Acc: 97.84% | Avg energy: 19.5121
+Epoch 20/100 | Time: 181.7s | Acc: 98.56% | Avg energy: 12.6975
+Epoch 30/100 | Time: 271.5s | Acc: 99.16% | Avg energy: 8.7875
+Epoch 40/100 | Time: 370.9s | Acc: 99.56% | Avg energy: 6.3341
+Epoch 50/100 | Time: 468.7s | Acc: 99.64% | Avg energy: 4.2191
+Epoch 60/100 | Time: 563.2s | Acc: 99.68% | Avg energy: 3.0525
+Epoch 70/100 | Time: 656.0s | Acc: 99.64% | Avg energy: 2.4962
+Epoch 80/100 | Time: 746.5s | Acc: 99.80% | Avg energy: 2.2369
+Epoch 90/100 | Time: 843.4s | Acc: 99.68% | Avg energy: 2.1324
+Epoch 100/100 | Time: 952.6s | Acc: 99.88% | Avg energy: 2.0842
+(full per-epoch list has all 100 entries; abbreviated here to every 10th)
+
+Training complete in 952.6s.
+
+Running final test evaluation (with forward-projection init)...
+
+=== Result ===
+Deepity Peak Test Accuracy: 98.22%   (ngc-learn: 95.09% -- see note below)
+Train time: 952.6s
+
+=== Matched comparison (same arch, same T, same mb_size, same epochs) ===
+                 Deepity SimplePCN     ngc-learn pc_discrim
+Total time       952.6s                1707.7s
+Held-out acc     98.22%                98% (best dev acc)
+=> Deepity is ~1.79x faster at effectively the same accuracy, on an
+   identical architecture/settling-step/batch-size/epoch-count config.
+
+(The "95.09%" printed by the script itself is a STALE reference from an
+older 15-epoch/T=30 run predating this session -- logs/ngclearn_pc_discrim_mnist.txt
+has the real, freshly-run ngc-learn number for this exact T=20/100-epoch config.)

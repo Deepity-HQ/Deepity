@@ -1,0 +1,35 @@
+PyTorch backprop control, MNIST, CPU, matched to examples/mnist.py's SimplePCN
+config: identical architecture (784->512->512->10, sigmoid on the two
+post-input layers), identical batch_size=250, identical lr=0.00373 w/ 0.94
+decay/epoch, identical epoch count (100), identical eps-smoothed one-hot
+targets -- MSE loss (not softmax/cross-entropy) to match the PCN's local,
+per-unit regression-style error objective rather than swapping in a
+different training objective.
+
+Command: python examples/test_ffnn_deep.py 7 100
+
+Using device: cpu
+
+Training (backprop control): 100 epochs, batch_size=250, architecture=784->512->512->10
+(sigmoid, matches SimplePCN exactly), lr=0.00373, decay_rate=0.94, MSE loss vs one-hot...
+
+Epoch 1/100   | avg loss: 0.0600 | elapsed: 1.3s
+Epoch 10/100  | avg loss: 0.0040 | elapsed: 35.4s
+Epoch 20/100  | avg loss: 0.0015 | elapsed: 98.2s
+Epoch 30/100  | avg loss: 0.0006 | elapsed: 163.3s
+Epoch 40/100  | avg loss: 0.0004 | elapsed: 227.5s
+Epoch 50/100  | avg loss: 0.0003 | elapsed: 293.0s
+Epoch 60/100  | avg loss: 0.0003 | elapsed: 359.3s
+Epoch 70/100  | avg loss: 0.0003 | elapsed: 426.0s
+Epoch 80/100  | avg loss: 0.0002 | elapsed: 493.1s
+Epoch 90/100  | avg loss: 0.0002 | elapsed: 560.2s
+Epoch 100/100 | avg loss: 0.0002 | elapsed: 627.8s
+(full per-epoch list has all 100 entries; abbreviated here to every 10th)
+
+Training complete in 627.8s.
+
+Running final test evaluation...
+
+=== Result ===
+Backprop (PyTorch) test accuracy: 97.51%
+Train time: 627.8s

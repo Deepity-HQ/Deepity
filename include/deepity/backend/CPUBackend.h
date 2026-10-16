@@ -54,6 +54,8 @@ public:
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackend::SetAllowTF32
+  void SetAllowTF32(bool) noexcept override {}
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackend::Sum
@@ -111,15 +113,26 @@ public:
   void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
                                        size_t nextSize) noexcept override;
 
-  // Convolution (im2col-based, ConvPCLayer family), forwards
-  // directly to the existing, already-verified Deep::Im2Col/
-  // Deep::Col2Im free functions in Im2Col.h.
+  // Convolution (im2col-based, ConvPCLayer family): loops over
+  // Deep::Im2Col/Deep::Col2Im (Im2Col.h), which only know how to do one
+  // image at a time -- this is just the batch loop IComputeBackend's
+  // doc comment mentions, moved here from every call site.
   /// @copydoc Deep::IComputeBackend::Im2Col
-  void Im2Col(const float* input, int channels, int height, int width, int kernelH, int kernelW,
-              int strideH, int strideW, int padH, int padW, float* columns) noexcept override;
+  void Im2Col(const float* input, int batchSize, int channels, int height, int width, int kernelH,
+              int kernelW, int strideH, int strideW, int padH, int padW,
+              float* columns) noexcept override;
   /// @copydoc Deep::IComputeBackend::Col2Im
-  void Col2Im(const float* columns, int channels, int height, int width, int kernelH, int kernelW,
-              int strideH, int strideW, int padH, int padW, float* outputImage) noexcept override;
+  void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+              int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
+              float* outputImage) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MaxPool2DForward
+  void MaxPool2DForward(const float* input, int batchSize, int channels, int height, int width,
+                        int poolH, int poolW, int strideH, int strideW, float* output,
+                        int* argmax) noexcept override;
+  /// @copydoc Deep::IComputeBackend::MaxPool2DBackward
+  void MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize, int channels,
+                         int height, int width, int outH, int outW,
+                         float* inputGrad) noexcept override;
   /// @copydoc Deep::IComputeBackend::RepackForBatchedGemm
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;

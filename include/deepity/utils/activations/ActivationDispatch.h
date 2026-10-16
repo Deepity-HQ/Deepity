@@ -45,6 +45,8 @@ namespace Deep
     static inline void tanh(float *, size_t) noexcept;
     /// @brief See Linear.h.
     static inline void linear(float *, size_t) noexcept;
+    /// @brief See HardTanh.h.
+    static inline void hardTanh(float *, size_t) noexcept;
 
     /// @brief See Relu.h.
     static inline void dRelu(float *, size_t, bool) noexcept;
@@ -58,6 +60,8 @@ namespace Deep
     static inline void dTanh(float *, size_t, bool) noexcept;
     /// @brief See Linear.h.
     static inline void dLinear(float *, size_t, bool) noexcept;
+    /// @brief See HardTanh.h.
+    static inline void dHardTanh(float *, size_t, bool) noexcept;
 
     /// @brief See Relu.h.
     static inline void dReluInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
@@ -71,6 +75,8 @@ namespace Deep
     static inline void dTanhInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
     /// @brief See Linear.h.
     static inline void dLinearInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
+    /// @brief See HardTanh.h.
+    static inline void dHardTanhInto(float *RESTRICT, const float *RESTRICT, size_t) noexcept;
 
     /// @brief Maps an ActivationType to its concrete function pointer.
     /// @return nullptr for ActivationType::NONE or an unrecognized value.
@@ -90,6 +96,8 @@ namespace Deep
             return tanh;
         case ActivationType::LINEAR:
             return linear;
+        case ActivationType::HARD_TANH:
+            return hardTanh;
         case ActivationType::NONE:
         default:
             return nullptr;
@@ -115,6 +123,8 @@ namespace Deep
             return dTanh;
         case ActivationType::dLINEAR:
             return dLinear;
+        case ActivationType::dHARD_TANH:
+            return dHardTanh;
         case ActivationType::NONE:
         default:
             return nullptr;
@@ -139,6 +149,8 @@ namespace Deep
             return dTanhInto;
         case ActivationType::dLINEAR:
             return dLinearInto;
+        case ActivationType::dHARD_TANH:
+            return dHardTanhInto;
         case ActivationType::NONE:
         default:
             return nullptr;
@@ -163,6 +175,8 @@ namespace Deep
             return ActivationType::TANH;
         if (fn == linear)
             return ActivationType::LINEAR;
+        if (fn == hardTanh)
+            return ActivationType::HARD_TANH;
         return ActivationType::NONE;
     }
 
@@ -183,6 +197,8 @@ namespace Deep
             return ActivationType::dTANH;
         if (dfn == dLinear)
             return ActivationType::dLINEAR;
+        if (dfn == dHardTanh)
+            return ActivationType::dHARD_TANH;
         return ActivationType::NONE;
     }
 
@@ -210,6 +226,8 @@ namespace Deep
             return ActivationType::dTANH;
         case ActivationType::LINEAR:
             return ActivationType::dLINEAR;
+        case ActivationType::HARD_TANH:
+            return ActivationType::dHARD_TANH;
         case ActivationType::NONE:
         default:
             return ActivationType::NONE;

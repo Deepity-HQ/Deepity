@@ -1,19 +1,32 @@
 import numpy as np
-from pydeepity import SequentialPCN
+from pydeepity import SequentialPCN, Linear, TanH
+
 
 def main():
     # 1. Setup the Network
-    net = SequentialPCN(batch_size=1)
+    #
+    # Architecture is declared with Linear/Activation objects; the final
+    # Linear(1, 0) is the terminal "sink" layer that holds the output
+    # belief itself (clamped to Y during training), per this codebase's
+    # convention of one extra weight-free layer past the last real weight
+    # matrix.
+    net = SequentialPCN(
+        Linear(2, 8), TanH(),
+        Linear(8, 1), TanH(),
+        Linear(1, 0),
+        batch_size=1,
+    )
 
-    # Using the abstracted add_layer (automatically handles 'd' + act)
-    net.add_layer(2, 8, lr=0.05, ir=0.3, pr=0.0, act="tanh", lmbda=0.0001)
-    net.add_layer(8, 1, lr=0.05, ir=0.3, pr=0.0, act="tanh", lmbda=0.0001)
-    net.add_layer(1, 0, lr=0.05, ir=0.3, pr=0.0, act="linear", lmbda=0.0001)
-
-    # Compile BEFORE randomize_weights()/training -- allocates the
-    # contiguous weight arena the layers' views are backed by.
-    net.compile()
-    net.randomize_weights()
+    # Hyperparameters and backend construction happen in configure(), not
+    # the constructor -- it calls compile() before randomize_weights()
+    # internally (required ordering, see CONTRIBUTING.md).
+    net.configure(
+        learning_rate=0.05,
+        inference_rate=0.3,
+        precision_rate=0.0,
+        lmbda=0.0001,
+        optimizer="SGD",
+    )
 
     # 2. Data
     X = np.array([
@@ -31,7 +44,7 @@ def main():
     ], dtype=np.float32)
 
     # 3. Training Loop
-    epochs = 5000
+    epochs = 2000
     inference_steps = 50
     report_every = 500
 
@@ -44,7 +57,6 @@ def main():
         indices = np.random.permutation(4)
 
         for idx in indices:
-            # Using the abstracted train_step
             total_energy += net.train_step(X[idx], Y[idx], steps=inference_steps)
 
         if epoch % report_every == 0:

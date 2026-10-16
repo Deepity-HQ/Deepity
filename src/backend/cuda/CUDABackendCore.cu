@@ -9,6 +9,7 @@
  * the rest.
  */
 #include <deepity/backend/CUDABackend.h>
+#include <cstdlib>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA
@@ -23,6 +24,20 @@ CUDABackend::CUDABackend()
   cudaStreamCreate(&this->stream);
   cublasCreate(&this->handle);
   cublasSetStream(this->handle, this->stream);
+  // Without this, every GEMM (every conv, since this backend lowers conv
+  // to im2col+GEMM) runs in plain FP32 on CUDA cores (~19.5 TFLOPS on an
+  // A100) instead of TF32 on tensor cores (~156 TFLOPS) -- the single
+  // largest gap between this backend and PyTorch's cuDNN/cuBLAS
+  // convolutions, which use TF32 by default. See SetAllowTF32's own doc
+  // comment for why a caller doing a finite-difference gradient check
+  // needs to turn this back off.
+  //
+  // DEEPITY_DISABLE_TF32: set this env var to test whether TF32's ~1e-3
+  // relative GEMM error is masquerading as signal in a hidden error
+  // buffer whose true magnitude is much smaller than that (suspected in
+  // the VGG-7 genuine-PC-settling collapse investigation) -- no new
+  // binding needed, since this is read once at construction.
+  SetAllowTF32(std::getenv("DEEPITY_DISABLE_TF32") == nullptr);
   cudaMalloc(&scalarScratch, sizeof(float));
 }
 

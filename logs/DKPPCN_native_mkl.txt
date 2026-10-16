@@ -1,0 +1,71 @@
+DKPPCN, MNIST, CPU (no local GPU available), native build (-march=native) + Intel MKL
+Command: python examples/mnist_dkppcn.py 7 50 2 cpu
+Architecture: 784 -> 512 -> 10 (sigmoid hidden), batch_size=1000, lr=0.00373, ir=0.15,
+fl=1e-3, lmbda=1e-4, decay_rate=0.94, inference_steps=2, AdamW (W and Psi)
+
+Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...
+
+Building network (784->512->10), seed=7, device=cpu...
+
+*** FULL DKP-PC RUN ***
+Training DKPPCN: 50 epochs, inference_steps=2,
+lr=0.00373, ir=0.15, lmbda=0.0001, decay_rate=0.94...
+
+Epoch 1/50 | Time: 1.0s | Acc: 85.66% | Avg energy: 489.1123
+Epoch 2/50 | Time: 2.0s | Acc: 87.57% | Avg energy: 171.3635
+Epoch 3/50 | Time: 2.9s | Acc: 89.15% | Avg energy: 153.3065
+Epoch 4/50 | Time: 3.9s | Acc: 89.94% | Avg energy: 136.7002
+Epoch 5/50 | Time: 4.9s | Acc: 91.46% | Avg energy: 121.9896
+Epoch 6/50 | Time: 5.9s | Acc: 92.11% | Avg energy: 110.1116
+Epoch 7/50 | Time: 6.9s | Acc: 92.98% | Avg energy: 100.6785
+Epoch 8/50 | Time: 7.9s | Acc: 92.89% | Avg energy: 93.3048
+Epoch 9/50 | Time: 8.9s | Acc: 93.63% | Avg energy: 87.0074
+Epoch 10/50 | Time: 9.9s | Acc: 94.00% | Avg energy: 82.0913
+Epoch 11/50 | Time: 11.0s | Acc: 94.16% | Avg energy: 78.0294
+Epoch 12/50 | Time: 12.0s | Acc: 94.06% | Avg energy: 74.6525
+Epoch 13/50 | Time: 13.0s | Acc: 94.63% | Avg energy: 71.7069
+Epoch 14/50 | Time: 14.0s | Acc: 94.72% | Avg energy: 69.2168
+Epoch 15/50 | Time: 15.1s | Acc: 95.06% | Avg energy: 67.0669
+Epoch 16/50 | Time: 16.1s | Acc: 94.90% | Avg energy: 65.1517
+Epoch 17/50 | Time: 17.1s | Acc: 95.36% | Avg energy: 63.4984
+Epoch 18/50 | Time: 18.1s | Acc: 95.81% | Avg energy: 62.0122
+Epoch 19/50 | Time: 19.1s | Acc: 95.14% | Avg energy: 60.7025
+Epoch 20/50 | Time: 20.0s | Acc: 95.77% | Avg energy: 59.4832
+Epoch 21/50 | Time: 21.0s | Acc: 95.36% | Avg energy: 58.3522
+Epoch 22/50 | Time: 22.0s | Acc: 96.18% | Avg energy: 57.3937
+Epoch 23/50 | Time: 22.9s | Acc: 96.24% | Avg energy: 56.4731
+Epoch 24/50 | Time: 23.9s | Acc: 95.75% | Avg energy: 55.6785
+Epoch 25/50 | Time: 24.9s | Acc: 95.68% | Avg energy: 54.9162
+Epoch 26/50 | Time: 25.9s | Acc: 95.98% | Avg energy: 54.2475
+Epoch 27/50 | Time: 26.9s | Acc: 96.10% | Avg energy: 53.5958
+Epoch 28/50 | Time: 27.9s | Acc: 96.26% | Avg energy: 52.9284
+Epoch 29/50 | Time: 28.9s | Acc: 96.28% | Avg energy: 52.4066
+Epoch 30/50 | Time: 29.9s | Acc: 96.22% | Avg energy: 51.8654
+Epoch 31/50 | Time: 30.8s | Acc: 96.49% | Avg energy: 51.3439
+Epoch 32/50 | Time: 31.8s | Acc: 96.33% | Avg energy: 50.8654
+Epoch 33/50 | Time: 32.8s | Acc: 96.38% | Avg energy: 50.4356
+Epoch 34/50 | Time: 33.7s | Acc: 96.60% | Avg energy: 50.0181
+Epoch 35/50 | Time: 34.7s | Acc: 96.49% | Avg energy: 49.6250
+Epoch 36/50 | Time: 35.7s | Acc: 96.52% | Avg energy: 49.2933
+Epoch 37/50 | Time: 36.6s | Acc: 96.35% | Avg energy: 48.9493
+Epoch 38/50 | Time: 37.6s | Acc: 96.31% | Avg energy: 48.6200
+Epoch 39/50 | Time: 38.6s | Acc: 96.38% | Avg energy: 48.3152
+Epoch 40/50 | Time: 39.6s | Acc: 96.78% | Avg energy: 47.9935
+Epoch 41/50 | Time: 40.6s | Acc: 96.61% | Avg energy: 47.7470
+Epoch 42/50 | Time: 41.6s | Acc: 96.51% | Avg energy: 47.4881
+Epoch 43/50 | Time: 42.7s | Acc: 96.73% | Avg energy: 47.2458
+Epoch 44/50 | Time: 43.7s | Acc: 96.61% | Avg energy: 47.0012
+Epoch 45/50 | Time: 44.7s | Acc: 96.91% | Avg energy: 46.7747
+Epoch 46/50 | Time: 45.7s | Acc: 96.77% | Avg energy: 46.5671
+Epoch 47/50 | Time: 46.7s | Acc: 96.23% | Avg energy: 46.3848
+Epoch 48/50 | Time: 47.7s | Acc: 96.53% | Avg energy: 46.1748
+Epoch 49/50 | Time: 48.6s | Acc: 96.64% | Avg energy: 45.9955
+Epoch 50/50 | Time: 49.6s | Acc: 96.80% | Avg energy: 45.8203
+
+Training complete in 49.6s.
+
+Running final test evaluation...
+
+=== Result ===
+DKPPCN test accuracy: 95.97%
+Train time: 49.6s
