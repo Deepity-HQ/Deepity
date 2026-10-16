@@ -137,6 +137,26 @@ public:
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::TryFusedConvForward
+  bool TryFusedConvForward(const float*, const float*, float*, float, int, int, int, int, int,
+                           int, int, int, int, int, int) noexcept override
+  {
+    return false; // no fused path on CPU, caller always falls back to
+                  // Im2Col()+RepackForBatchedGemm()+MatMul()
+  }
+  /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardData
+  bool TryFusedConvBackwardData(const float*, const float*, float*, float, int, int, int, int, int,
+                                int, int, int, int, int, int) noexcept override
+  {
+    return false; // ditto, falls back to MatMul()+RepackForBatchedGemm()+Col2Im()
+  }
+  /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardFilter
+  bool TryFusedConvBackwardFilter(const float*, const float*, float*, float, float, int, int, int,
+                                  int, int, int, int, int, int, int, int) noexcept override
+  {
+    return false; // ditto, falls back to RepackForBatchedGemm()+MatMul()
+  }
+
   /// @copydoc Deep::IComputeBackend::IncrementCounter
   void IncrementCounter(int* counter) noexcept override;
 
