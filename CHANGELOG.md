@@ -30,7 +30,7 @@ earlier history.
 
 ### Fixed
 
--
+- `tests/*.cpp` benchmark/verification executables didn't receive the same `-march`/ISA compile flags as the `Deepity`/`pydeepity` targets, so Deepity's header-only activation kernels silently compiled against the compiler's default ISA (SSE2) instead of whatever `build.py` selected -- `ActivationBenchmark`/`GflopsBenchmark` were measuring the wrong kernel. `Deepity`/`pydeepity` themselves were unaffected.
 
 ### Security
 
