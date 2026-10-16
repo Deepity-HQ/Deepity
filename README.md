@@ -2,7 +2,7 @@
   <img src="resources/deepity-mark.png" alt="Deepity logo" width="250"/>
 </p>
 
-# Deepity ⚡️
+# Deepity
 
 A high-performance C++ / CUDA engine for Predictive Coding Networks (PCNs) and Direct Kolen-Pollack algorithms.
 
