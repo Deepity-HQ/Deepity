@@ -32,6 +32,7 @@
 #include <deepity/utils/activations/Tanh.h>
 #include <deepity/utils/activations/Sigmoid.h>
 #include <deepity/utils/activations/Linear.h>
+#include <deepity/utils/activations/HardTanh.h>
 #include <sleef.h>
 
 namespace Deep
@@ -73,6 +74,8 @@ namespace Deep
             float t = Sleef_tanhf_u10(z);
             return 1.0f - t * t;
         }
+        case ActivationType::dHARD_TANH:
+            return (z > -1.0f && z < 1.0f) ? 1.0f : 0.0f;
         case ActivationType::dLINEAR:
         case ActivationType::NONE:
         default:
@@ -114,6 +117,8 @@ namespace Deep
             return 2.0f * activated * (1.0f - activated);
         case ActivationType::dTANH:
             return 1.0f - activated * activated;
+        case ActivationType::dHARD_TANH:
+            return (activated > -1.0f && activated < 1.0f) ? 1.0f : 0.0f;
         case ActivationType::dLINEAR:
         case ActivationType::NONE:
         default:

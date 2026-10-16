@@ -46,24 +46,25 @@ def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 50
     INFERENCE_STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 2
+    DEVICE = sys.argv[4] if len(sys.argv) > 4 else "cpu"
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
-    BATCH_SIZE = 250
+    BATCH_SIZE = 1000
     LR = 0.00373
     IR = 0.15
     FL = 1e-3
     LMBDA = 1e-4
     DECAY_RATE = 0.94
 
-    print(f"\nBuilding network (784->512->10), seed={SEED}...")
+    print(f"\nBuilding network (784->512->10), seed={SEED}, device={DEVICE}...")
 
     net = DKPPCN(
         Linear(784, 512),
         Linear(512, 10),
         Sigmoid(),
         batch_size=BATCH_SIZE,
-        device="cpu",
+        device=DEVICE,
     )
     net.configure(
         learning_rate=LR,

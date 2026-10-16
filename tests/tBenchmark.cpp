@@ -833,8 +833,8 @@ void BenchmarkConvPrimitives(int reps)
 
     auto t0 = Clock::now();
     for (int r = 0; r < reps; ++r)
-      backend.Im2Col(input.data(), s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH, s.strideW, s.padH,
-                     s.padW, cols.data());
+      backend.Im2Col(input.data(), /*batchSize=*/1, s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH,
+                     s.strideW, s.padH, s.padW, cols.data());
     double im2colT = Secs(t0, Clock::now());
 
     t0 = Clock::now();
@@ -859,8 +859,8 @@ void BenchmarkConvPrimitives(int reps)
     for (int r = 0; r < reps; ++r)
     {
       backend.Zero(outputImage.data(), outputImage.size());
-      backend.Col2Im(scratch.data(), s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH, s.strideW,
-                     s.padH, s.padW, outputImage.data());
+      backend.Col2Im(scratch.data(), /*batchSize=*/1, s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH,
+                     s.strideW, s.padH, s.padW, outputImage.data());
     }
     double col2imT = Secs(t0, Clock::now());
 

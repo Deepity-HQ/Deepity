@@ -88,6 +88,13 @@ __global__ void linearKernelInto(float* dst, const float* src, size_t n)
     dst[i] = src[i];
 }
 
+__global__ void hardTanhKernelInto(float* dst, const float* src, size_t n)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+    dst[i] = fminf(1.0f, fmaxf(-1.0f, src[i]));
+}
+
 __global__ void dReluKernelInto(float* dst, const float* src, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
@@ -130,6 +137,13 @@ __global__ void dLinearKernelInto(float* dst, const float* src, size_t n)
     dst[i] = 1.0f;
 }
 
+__global__ void dHardTanhKernelInto(float* dst, const float* src, size_t n)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+    dst[i] = ActivationDerivativeDevice(ActivationType::dHARD_TANH, src[i]);
+}
+
 void CUDABackend::Activation(ActivationType type, float* buf, size_t n) noexcept
 {
   ActivationInto(type, buf, buf, n);
@@ -162,6 +176,9 @@ void CUDABackend::ActivationInto(ActivationType type, float* dst, const float* s
     break;
   case ActivationType::LINEAR:
     linearKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
+    break;
+  case ActivationType::HARD_TANH:
+    hardTanhKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
     break;
   case ActivationType::NONE:
   default:
@@ -203,6 +220,9 @@ void CUDABackend::ActivationDerivativeInto(ActivationType type, float* dst, cons
     break;
   case ActivationType::dLINEAR:
     dLinearKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
+    break;
+  case ActivationType::dHARD_TANH:
+    dHardTanhKernelInto<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, src, n);
     break;
   case ActivationType::NONE:
   default:

@@ -105,6 +105,17 @@ public:
   virtual void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                       int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept = 0;
 
+  /// @brief Whether MatMul() may use TF32 (10 mantissa bits, ~1e-3
+  /// relative error per GEMM) instead of full FP32 on tensor cores --
+  /// CUDABackend only; a no-op on CPUBackend, which has no such
+  /// distinction. Defaults to allowed, matching PyTorch's own default,
+  /// since every conv in this library lowers to im2col+MatMul and would
+  /// otherwise run at a fraction of the GPU's peak throughput. Turn off
+  /// before a finite-difference gradient check: TF32's error is large
+  /// enough to either fail those checks for no real reason, or tempt
+  /// loosening their tolerance until it stops catching real bugs.
+  virtual void SetAllowTF32(bool allow) noexcept = 0;
+
   /// @brief dst[j] = sum over b in [0,batchSize) of src[b*width + j], for
   /// all j in [0,width). Replaces a batchSize-iteration loop of
   /// individual AxpyInto calls, the reduction-direction counterpart to
@@ -251,28 +262,55 @@ public:
 
   // Convolution (im2col-based, ConvPCLayer family)
 
-  /// @brief Rearranges a single (channels, height, width) input
-  /// image into a (channels*kH*kW, outH*outW) column matrix,
-  /// the standard im2col transform. NOT batch-aware: call once
-  /// per batch item, with @p input and @p columns offset to that
-  /// item's slice, matching Deep::Im2Col's own documented
-  /// contract exactly (CPUBackend forwards to it directly).
-  /// Positions outside the input (due to padding) are written as
-  /// zero. @p columns is fully overwritten, not accumulated into.
-  virtual void Im2Col(const float* input, int channels, int height, int width, int kernelH,
-                      int kernelW, int strideH, int strideW, int padH, int padW,
+  /// @brief Rearranges a whole batch of (channels, height, width) input
+  /// images into (channels*kH*kW, outH*outW) column matrices, the
+  /// standard im2col transform, in one call. @p input is
+  /// [batchSize, channels, height, width] and @p columns is
+  /// [batchSize, channels*kH*kW, outH*outW], both contiguous and
+  /// batch-major (the layout RepackForBatchedGemm() already expects).
+  /// On CPUBackend this is a thin loop over Deep::Im2Col() (which
+  /// genuinely only knows how to do one image at a time); on
+  /// CUDABackend it's one kernel launch for the whole batch instead of
+  /// @p batchSize separate launches -- the whole reason this takes a
+  /// batch dimension at all rather than mirroring Deep::Im2Col()'s
+  /// single-image contract. Positions outside the input (due to
+  /// padding) are written as zero. @p columns is fully overwritten,
+  /// not accumulated into.
+  virtual void Im2Col(const float* input, int batchSize, int channels, int height, int width,
+                      int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                       float* columns) noexcept = 0;
 
-  /// @brief The adjoint of Im2Col(): scatters a
-  /// (channels*kH*kW, outH*outW) column-gradient buffer back into
-  /// a (channels, height, width) image. NOT batch-aware, same
-  /// per-item-offset contract as Im2Col(). ACCUMULATES into
-  /// @p outputImage (does not zero it first), caller must zero
-  /// the destination if a fresh result is wanted, matching
-  /// Deep::Col2Im's own contract exactly.
-  virtual void Col2Im(const float* columns, int channels, int height, int width, int kernelH,
-                      int kernelW, int strideH, int strideW, int padH, int padW,
+  /// @brief The adjoint of Im2Col(): scatters a whole batch of
+  /// (channels*kH*kW, outH*outW) column-gradient buffers back into
+  /// (channels, height, width) images, in one call. Same
+  /// [batchSize, ...] batch-major layout and one-launch-per-batch
+  /// rationale as Im2Col() above. ACCUMULATES into @p outputImage
+  /// (does not zero it first), caller must zero the destination if a
+  /// fresh result is wanted, matching Deep::Col2Im's own contract.
+  virtual void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+                      int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
                       float* outputImage) noexcept = 0;
+
+  /// @brief Batched 2D max pooling, no padding. @p input is [batchSize,
+  /// channels, height, width], @p output and @p argmax are [batchSize,
+  /// channels, outH, outW] where outH/outW = Deep::PoolOutDim(height/
+  /// width, poolH/poolW, strideH/strideW). @p argmax records, per output
+  /// position, the winning input position's flat (row*width+col) offset
+  /// within its channel plane -- MaxPool2DBackward()'s only input besides
+  /// the incoming gradient, no pre-activation buffer needed (a hard max's
+  /// backward is exact from the argmax alone).
+  virtual void MaxPool2DForward(const float* input, int batchSize, int channels, int height,
+                                int width, int poolH, int poolW, int strideH, int strideW,
+                                float* output, int* argmax) noexcept = 0;
+
+  /// @brief The adjoint of MaxPool2DForward(): scatters a batch of
+  /// [batchSize, channels, outH, outW] gradients back into [batchSize,
+  /// channels, height, width] using the recorded @p argmax. ACCUMULATES
+  /// into @p inputGrad (does not zero it first), matching
+  /// Deep::MaxPool2DBackward's own contract.
+  virtual void MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize,
+                                 int channels, int height, int width, int outH, int outW,
+                                 float* inputGrad) noexcept = 0;
 
   /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
   /// into [rows, batchSize, cols] (row-major, batch second),
@@ -346,9 +384,13 @@ public:
   /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast
   /// across spatial positions, the transpose relationship to
   /// AddBiasBroadcast (which broadcasts a per-COLUMN bias across ROWS,
-  /// the dense-layer convention). NOT batch-aware: matches Im2Col/
-  /// Col2Im's contract exactly, call once per batch item, with @p buf
-  /// offset to that item's slice.
+  /// the dense-layer convention). Batch-aware for the common case of one
+  /// shared @p bias (fold batchSize into @p spatialSize, as ConvPCLayer's
+  /// family already does for the ordinary per-conv-layer bias); NOT
+  /// batch-aware when a call site instead needs a DIFFERENT bias per
+  /// batch item (e.g. FullConvPCLayer::DirectFeedbackUpdate()'s
+  /// per-image projChannel), which still has to call this once per item
+  /// with @p buf offset to that item's slice.
   virtual void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                                  size_t spatialSize) noexcept = 0;
 

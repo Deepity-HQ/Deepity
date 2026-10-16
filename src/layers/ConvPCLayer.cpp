@@ -250,7 +250,6 @@ namespace Deep
         size_t colRows = (size_t)inChannels * kernelH * kernelW;
         size_t colCols = (size_t)outHeight * outWidth;
         size_t Nout = (size_t)batchSize * outChannels * colCols;
-        size_t ownSize = (size_t)inChannels * inHeight * inWidth;
 
         if (isClamped && muCacheValid)
         {
@@ -258,20 +257,9 @@ namespace Deep
             return;
         }
 
-        // Im2Col is an inherently per-image gather (no batched primitive);
-        // everything after it is batched into one big GEMM instead of
-        // batchSize small ones, reusing colsRepacked/lgRepacked as pure
-        // scratch exactly as UpdateWeights() already does for its own GEMM
-        // (see FullConvPCLayer::ComputeMuOnly() for the identical trick).
-        for (int batch = 0; batch < batchSize; ++batch)
-        {
-            const float *z_item = z + (size_t)batch * ownSize;
-            float *cols_item = colBuffer + (size_t)batch * colRows * colCols;
-
-            backend->Im2Col(z_item, inChannels, inHeight, inWidth,
-                            kernelH, kernelW, strideH, strideW, padH, padW,
-                            cols_item);
-        }
+        backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth,
+                        kernelH, kernelW, strideH, strideW, padH, padW,
+                        colBuffer);
 
         backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
         backend->MatMul(
@@ -324,8 +312,7 @@ namespace Deep
 
             // Same batched-GEMM trick as ComputeMuOnly(): one big transA
             // GEMM instead of batchSize small ones, un-repacking the
-            // result back to per-batch-contiguous layout only where
-            // Col2Im (a genuine per-image scatter) actually needs it.
+            // result back to per-batch-contiguous layout Col2Im() expects.
             backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
             backend->MatMul(
                 /*transA=*/true, /*transB=*/false,
@@ -334,14 +321,9 @@ namespace Deep
                 0.0f, colsRepacked, (int)(batchSize * colCols));
             backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
-            for (int batch = 0; batch < batchSize; ++batch)
-            {
-                float *scratch_item = feedbackScratch + (size_t)batch * colRows * colCols;
-                float *dz_item = dz_dt + (size_t)batch * ownSize;
-                backend->Col2Im(scratch_item, inChannels, inHeight, inWidth,
-                                kernelH, kernelW, strideH, strideW, padH, padW,
-                                dz_item);
-            }
+            backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth,
+                            kernelH, kernelW, strideH, strideW, padH, padW,
+                            dz_dt);
         }
 
         // dz_dt[idx] -= p[i] * e[idx] (own term), then z += ir * dz_dt.

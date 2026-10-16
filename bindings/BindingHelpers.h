@@ -72,6 +72,10 @@ namespace
             return Deep::ActivationType::d_eSIGMOID;
         if (act == "dlinear")
             return Deep::ActivationType::dLINEAR;
+        if (act == "hard_tanh")
+            return Deep::ActivationType::HARD_TANH;
+        if (act == "dhard_tanh")
+            return Deep::ActivationType::dHARD_TANH;
         return Deep::ActivationType::LINEAR;
     }
 

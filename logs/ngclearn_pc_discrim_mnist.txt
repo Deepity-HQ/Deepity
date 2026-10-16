@@ -1,0 +1,126 @@
+ngc-learn's own "Discriminative Predictive Coding" (pc_discrim) exhibit from
+the official ngc-museum repo (https://github.com/NACLab/ngc-museum), run
+unmodified, as the external reference point for Deepity's own PC results.
+ngclearn==3.2.3, ngcsimlib==3.1.1, jax==0.11.2 (CPU, same laptop as DKPPCN run).
+
+Model: Whittington & Bogacz (2017) PCN, 784 -> 512 -> 512 -> 10 (sigmoid),
+T=20 settling steps/batch, dt=1, tau_m=25, Adam eta=0.001, mb_size=250,
+full MNIST (50000 train / 10000 dev), 100 epochs (hardcoded in train_pcn.py,
+not CLI-overridable).
+
+Command:
+  python train_pcn.py --dataX=.../trainX.npy --dataY=.../trainY.npy \
+                       --devX=.../validX.npy --devY=.../validY.npy --verbosity=1
+
+Train-set: X: trainX.npy | Y: trainY.npy
+  Dev-set: X: validX.npy | Y: validY.npy
+--- Building Model ---
+--- Starting Simulation ---
+-1: Dev: Acc = 0.11  NLL = 8.576 | Tr: Acc = 0.10 EFE = --
+
+(1/100) | Dev: Acc = 0.87, NLL = 0.543 | Tr: Acc = 0.85, EFE = -150.553 (Epoch.time = 20.39 s)
+(2/100) | Dev: Acc = 0.91, NLL = 0.413 | Tr: Acc = 0.90, EFE = -40.945 (Epoch.time = 18.55 s)
+(3/100) | Dev: Acc = 0.93, NLL = 0.371 | Tr: Acc = 0.92, EFE = -32.821 (Epoch.time = 18.62 s)
+(4/100) | Dev: Acc = 0.94, NLL = 0.330 | Tr: Acc = 0.94, EFE = -29.045 (Epoch.time = 18.56 s)
+(5/100) | Dev: Acc = 0.95, NLL = 0.315 | Tr: Acc = 0.94, EFE = -26.569 (Epoch.time = 18.57 s)
+(6/100) | Dev: Acc = 0.95, NLL = 0.292 | Tr: Acc = 0.94, EFE = -25.126 (Epoch.time = 18.51 s)
+(7/100) | Dev: Acc = 0.95, NLL = 0.276 | Tr: Acc = 0.95, EFE = -23.691 (Epoch.time = 18.59 s)
+(8/100) | Dev: Acc = 0.95, NLL = 0.281 | Tr: Acc = 0.95, EFE = -22.738 (Epoch.time = 18.88 s)
+(9/100) | Dev: Acc = 0.95, NLL = 0.268 | Tr: Acc = 0.95, EFE = -21.936 (Epoch.time = 16.77 s)
+(10/100) | Dev: Acc = 0.95, NLL = 0.239 | Tr: Acc = 0.95, EFE = -21.111 (Epoch.time = 16.56 s)
+(11/100) | Dev: Acc = 0.96, NLL = 0.246 | Tr: Acc = 0.96, EFE = -19.967 (Epoch.time = 16.36 s)
+(12/100) | Dev: Acc = 0.96, NLL = 0.228 | Tr: Acc = 0.96, EFE = -19.209 (Epoch.time = 16.03 s)
+(13/100) | Dev: Acc = 0.96, NLL = 0.213 | Tr: Acc = 0.96, EFE = -18.558 (Epoch.time = 17.56 s)
+(14/100) | Dev: Acc = 0.96, NLL = 0.207 | Tr: Acc = 0.96, EFE = -17.853 (Epoch.time = 16.43 s)
+(15/100) | Dev: Acc = 0.96, NLL = 0.197 | Tr: Acc = 0.96, EFE = -17.090 (Epoch.time = 15.95 s)
+(16/100) | Dev: Acc = 0.96, NLL = 0.193 | Tr: Acc = 0.96, EFE = -16.522 (Epoch.time = 22.11 s)
+(17/100) | Dev: Acc = 0.96, NLL = 0.184 | Tr: Acc = 0.96, EFE = -16.148 (Epoch.time = 16.60 s)
+(18/100) | Dev: Acc = 0.96, NLL = 0.196 | Tr: Acc = 0.97, EFE = -15.651 (Epoch.time = 16.53 s)
+(19/100) | Dev: Acc = 0.97, NLL = 0.178 | Tr: Acc = 0.97, EFE = -15.422 (Epoch.time = 16.58 s)
+(20/100) | Dev: Acc = 0.97, NLL = 0.178 | Tr: Acc = 0.97, EFE = -14.832 (Epoch.time = 17.29 s)
+(21/100) | Dev: Acc = 0.97, NLL = 0.177 | Tr: Acc = 0.97, EFE = -14.391 (Epoch.time = 16.64 s)
+(22/100) | Dev: Acc = 0.97, NLL = 0.173 | Tr: Acc = 0.97, EFE = -14.021 (Epoch.time = 16.64 s)
+(23/100) | Dev: Acc = 0.97, NLL = 0.169 | Tr: Acc = 0.97, EFE = -13.697 (Epoch.time = 16.78 s)
+(24/100) | Dev: Acc = 0.97, NLL = 0.163 | Tr: Acc = 0.97, EFE = -13.079 (Epoch.time = 16.53 s)
+(25/100) | Dev: Acc = 0.97, NLL = 0.156 | Tr: Acc = 0.97, EFE = -12.661 (Epoch.time = 16.66 s)
+(26/100) | Dev: Acc = 0.97, NLL = 0.156 | Tr: Acc = 0.97, EFE = -12.372 (Epoch.time = 16.74 s)
+(27/100) | Dev: Acc = 0.97, NLL = 0.158 | Tr: Acc = 0.97, EFE = -12.009 (Epoch.time = 16.63 s)
+(28/100) | Dev: Acc = 0.97, NLL = 0.159 | Tr: Acc = 0.98, EFE = -11.769 (Epoch.time = 16.37 s)
+(29/100) | Dev: Acc = 0.97, NLL = 0.156 | Tr: Acc = 0.98, EFE = -11.475 (Epoch.time = 16.54 s)
+(30/100) | Dev: Acc = 0.97, NLL = 0.150 | Tr: Acc = 0.98, EFE = -11.278 (Epoch.time = 15.96 s)
+(31/100) | Dev: Acc = 0.97, NLL = 0.149 | Tr: Acc = 0.98, EFE = -11.121 (Epoch.time = 17.22 s)
+(32/100) | Dev: Acc = 0.97, NLL = 0.142 | Tr: Acc = 0.98, EFE = -11.009 (Epoch.time = 16.40 s)
+(33/100) | Dev: Acc = 0.97, NLL = 0.147 | Tr: Acc = 0.98, EFE = -10.860 (Epoch.time = 16.00 s)
+(34/100) | Dev: Acc = 0.97, NLL = 0.141 | Tr: Acc = 0.98, EFE = -10.641 (Epoch.time = 16.50 s)
+(35/100) | Dev: Acc = 0.97, NLL = 0.139 | Tr: Acc = 0.98, EFE = -10.545 (Epoch.time = 16.19 s)
+(36/100) | Dev: Acc = 0.97, NLL = 0.143 | Tr: Acc = 0.98, EFE = -10.343 (Epoch.time = 16.44 s)
+(37/100) | Dev: Acc = 0.97, NLL = 0.140 | Tr: Acc = 0.98, EFE = -10.192 (Epoch.time = 16.09 s)
+(38/100) | Dev: Acc = 0.97, NLL = 0.134 | Tr: Acc = 0.98, EFE = -10.038 (Epoch.time = 15.99 s)
+(39/100) | Dev: Acc = 0.97, NLL = 0.125 | Tr: Acc = 0.98, EFE = -9.890 (Epoch.time = 16.15 s)
+(40/100) | Dev: Acc = 0.97, NLL = 0.131 | Tr: Acc = 0.98, EFE = -9.710 (Epoch.time = 16.05 s)
+(41/100) | Dev: Acc = 0.97, NLL = 0.120 | Tr: Acc = 0.98, EFE = -9.414 (Epoch.time = 16.24 s)
+(42/100) | Dev: Acc = 0.97, NLL = 0.130 | Tr: Acc = 0.98, EFE = -9.336 (Epoch.time = 16.33 s)
+(43/100) | Dev: Acc = 0.97, NLL = 0.119 | Tr: Acc = 0.98, EFE = -9.056 (Epoch.time = 16.16 s)
+(44/100) | Dev: Acc = 0.97, NLL = 0.122 | Tr: Acc = 0.98, EFE = -8.936 (Epoch.time = 16.31 s)
+(45/100) | Dev: Acc = 0.97, NLL = 0.120 | Tr: Acc = 0.98, EFE = -8.931 (Epoch.time = 16.48 s)
+(46/100) | Dev: Acc = 0.97, NLL = 0.120 | Tr: Acc = 0.98, EFE = -8.803 (Epoch.time = 16.63 s)
+(47/100) | Dev: Acc = 0.98, NLL = 0.120 | Tr: Acc = 0.98, EFE = -8.711 (Epoch.time = 16.21 s)
+(48/100) | Dev: Acc = 0.98, NLL = 0.117 | Tr: Acc = 0.98, EFE = -8.700 (Epoch.time = 16.48 s)
+(49/100) | Dev: Acc = 0.98, NLL = 0.120 | Tr: Acc = 0.98, EFE = -8.493 (Epoch.time = 16.13 s)
+(50/100) | Dev: Acc = 0.98, NLL = 0.121 | Tr: Acc = 0.98, EFE = -8.360 (Epoch.time = 16.70 s)
+(51/100) | Dev: Acc = 0.97, NLL = 0.122 | Tr: Acc = 0.98, EFE = -8.159 (Epoch.time = 16.61 s)
+(52/100) | Dev: Acc = 0.98, NLL = 0.118 | Tr: Acc = 0.98, EFE = -7.949 (Epoch.time = 17.49 s)
+(53/100) | Dev: Acc = 0.98, NLL = 0.116 | Tr: Acc = 0.98, EFE = -7.813 (Epoch.time = 16.66 s)
+(54/100) | Dev: Acc = 0.98, NLL = 0.114 | Tr: Acc = 0.99, EFE = -7.790 (Epoch.time = 16.40 s)
+(55/100) | Dev: Acc = 0.98, NLL = 0.115 | Tr: Acc = 0.99, EFE = -7.528 (Epoch.time = 16.47 s)
+(56/100) | Dev: Acc = 0.98, NLL = 0.112 | Tr: Acc = 0.99, EFE = -7.397 (Epoch.time = 15.90 s)
+(57/100) | Dev: Acc = 0.98, NLL = 0.108 | Tr: Acc = 0.99, EFE = -7.154 (Epoch.time = 15.95 s)
+(58/100) | Dev: Acc = 0.98, NLL = 0.116 | Tr: Acc = 0.99, EFE = -7.110 (Epoch.time = 15.99 s)
+(59/100) | Dev: Acc = 0.98, NLL = 0.116 | Tr: Acc = 0.99, EFE = -6.944 (Epoch.time = 16.18 s)
+(60/100) | Dev: Acc = 0.98, NLL = 0.109 | Tr: Acc = 0.99, EFE = -6.851 (Epoch.time = 16.22 s)
+(61/100) | Dev: Acc = 0.98, NLL = 0.108 | Tr: Acc = 0.99, EFE = -6.741 (Epoch.time = 15.74 s)
+(62/100) | Dev: Acc = 0.98, NLL = 0.107 | Tr: Acc = 0.99, EFE = -6.714 (Epoch.time = 15.98 s)
+(63/100) | Dev: Acc = 0.98, NLL = 0.106 | Tr: Acc = 0.99, EFE = -6.555 (Epoch.time = 16.02 s)
+(64/100) | Dev: Acc = 0.98, NLL = 0.112 | Tr: Acc = 0.99, EFE = -6.458 (Epoch.time = 16.17 s)
+(65/100) | Dev: Acc = 0.98, NLL = 0.105 | Tr: Acc = 0.99, EFE = -6.328 (Epoch.time = 16.13 s)
+(66/100) | Dev: Acc = 0.98, NLL = 0.108 | Tr: Acc = 0.99, EFE = -6.103 (Epoch.time = 16.64 s)
+(67/100) | Dev: Acc = 0.98, NLL = 0.104 | Tr: Acc = 0.99, EFE = -5.933 (Epoch.time = 16.58 s)
+(68/100) | Dev: Acc = 0.98, NLL = 0.105 | Tr: Acc = 0.99, EFE = -5.806 (Epoch.time = 16.45 s)
+(69/100) | Dev: Acc = 0.98, NLL = 0.095 | Tr: Acc = 0.99, EFE = -5.739 (Epoch.time = 16.09 s)
+(70/100) | Dev: Acc = 0.98, NLL = 0.103 | Tr: Acc = 0.99, EFE = -5.494 (Epoch.time = 16.44 s)
+(71/100) | Dev: Acc = 0.98, NLL = 0.097 | Tr: Acc = 0.99, EFE = -5.336 (Epoch.time = 33.14 s)
+(72/100) | Dev: Acc = 0.98, NLL = 0.097 | Tr: Acc = 0.99, EFE = -5.111 (Epoch.time = 23.79 s)
+(73/100) | Dev: Acc = 0.98, NLL = 0.096 | Tr: Acc = 0.99, EFE = -4.981 (Epoch.time = 17.14 s)
+(74/100) | Dev: Acc = 0.98, NLL = 0.087 | Tr: Acc = 0.99, EFE = -4.849 (Epoch.time = 17.27 s)
+(75/100) | Dev: Acc = 0.98, NLL = 0.086 | Tr: Acc = 0.99, EFE = -4.701 (Epoch.time = 16.88 s)
+(76/100) | Dev: Acc = 0.98, NLL = 0.086 | Tr: Acc = 0.99, EFE = -4.595 (Epoch.time = 17.07 s)
+(77/100) | Dev: Acc = 0.98, NLL = 0.094 | Tr: Acc = 0.99, EFE = -4.478 (Epoch.time = 16.77 s)
+(78/100) | Dev: Acc = 0.98, NLL = 0.091 | Tr: Acc = 0.99, EFE = -4.318 (Epoch.time = 16.78 s)
+(79/100) | Dev: Acc = 0.98, NLL = 0.091 | Tr: Acc = 0.99, EFE = -4.198 (Epoch.time = 17.49 s)
+(80/100) | Dev: Acc = 0.98, NLL = 0.096 | Tr: Acc = 0.99, EFE = -4.087 (Epoch.time = 16.48 s)
+(81/100) | Dev: Acc = 0.98, NLL = 0.089 | Tr: Acc = 0.99, EFE = -4.066 (Epoch.time = 16.25 s)
+(82/100) | Dev: Acc = 0.98, NLL = 0.088 | Tr: Acc = 0.99, EFE = -3.930 (Epoch.time = 16.11 s)
+(83/100) | Dev: Acc = 0.98, NLL = 0.091 | Tr: Acc = 0.99, EFE = -3.837 (Epoch.time = 17.20 s)
+(84/100) | Dev: Acc = 0.98, NLL = 0.092 | Tr: Acc = 0.99, EFE = -3.660 (Epoch.time = 17.11 s)
+(85/100) | Dev: Acc = 0.98, NLL = 0.086 | Tr: Acc = 0.99, EFE = -3.487 (Epoch.time = 16.51 s)
+(86/100) | Dev: Acc = 0.98, NLL = 0.095 | Tr: Acc = 0.99, EFE = -3.305 (Epoch.time = 15.91 s)
+(87/100) | Dev: Acc = 0.98, NLL = 0.088 | Tr: Acc = 0.99, EFE = -3.107 (Epoch.time = 16.52 s)
+(88/100) | Dev: Acc = 0.98, NLL = 0.086 | Tr: Acc = 1.00, EFE = -2.943 (Epoch.time = 16.13 s)
+(89/100) | Dev: Acc = 0.98, NLL = 0.087 | Tr: Acc = 1.00, EFE = -2.761 (Epoch.time = 16.84 s)
+(90/100) | Dev: Acc = 0.98, NLL = 0.086 | Tr: Acc = 1.00, EFE = -2.556 (Epoch.time = 16.11 s)
+(91/100) | Dev: Acc = 0.98, NLL = 0.080 | Tr: Acc = 1.00, EFE = -2.355 (Epoch.time = 16.62 s)
+(92/100) | Dev: Acc = 0.98, NLL = 0.077 | Tr: Acc = 1.00, EFE = -2.183 (Epoch.time = 16.98 s)
+(93/100) | Dev: Acc = 0.98, NLL = 0.077 | Tr: Acc = 1.00, EFE = -2.017 (Epoch.time = 17.26 s)
+(94/100) | Dev: Acc = 0.98, NLL = 0.078 | Tr: Acc = 1.00, EFE = -1.920 (Epoch.time = 16.61 s)
+(95/100) | Dev: Acc = 0.98, NLL = 0.078 | Tr: Acc = 1.00, EFE = -1.798 (Epoch.time = 17.17 s)
+(96/100) | Dev: Acc = 0.98, NLL = 0.083 | Tr: Acc = 1.00, EFE = -1.604 (Epoch.time = 17.54 s)
+(97/100) | Dev: Acc = 0.98, NLL = 0.073 | Tr: Acc = 1.00, EFE = -1.479 (Epoch.time = 17.03 s)
+(98/100) | Dev: Acc = 0.98, NLL = 0.076 | Tr: Acc = 1.00, EFE = -1.340 (Epoch.time = 17.37 s)
+(99/100) | Dev: Acc = 0.98, NLL = 0.074 | Tr: Acc = 1.00, EFE = -1.268 (Epoch.time = 17.79 s)
+(100/100) | Dev: Acc = 0.98, NLL = 0.077 | Tr: Acc = 1.00, EFE = -1.193 (Epoch.time = 17.49 s)
+------------------------------------
+ Trial.sim_time = 0.474 h (1707.69 sec); Epoch.time = 17.03 +- 2.00; Best Acc = 0.98
+
+=== Summary ===
+ngc-learn PCN (784->512->512->10, T=20): best dev acc = 98%, total = 1707.7s
+for 100 epochs (17.0s/epoch average, JAX/CPU, no JIT device beyond this laptop's CPU).

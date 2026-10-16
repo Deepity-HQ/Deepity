@@ -1,6 +1,6 @@
-#include <algorithm>
 #include <cmath>
 #include <deepity/networks/FullConvPCNetwork.h>
+#include <deepity/utils/ModelIO.h>
 #include <iostream>
 #include <pmmintrin.h>
 #include <stdexcept>
@@ -18,12 +18,13 @@ FullConvPCNetwork::FullConvPCNetwork(int batchSize, DeviceType device) noexcept
 void FullConvPCNetwork::AddLayer(int inChannels, int outChannels, int inHeight, int inWidth,
                                  int kernelH, int kernelW, int strideH, int strideW, int padH,
                                  int padW, int terminalSize, float lr, float ir, float fl,
-                                 float lmbda, ActivationType aType, ActivationType dType)
+                                 float lmbda, ActivationType aType, ActivationType dType,
+                                 int poolH, int poolW, int poolStrideH, int poolStrideW)
 {
   auto l = std::make_unique<FullConvPCLayer>(inChannels, outChannels, inHeight, inWidth, kernelH,
                                              kernelW, strideH, strideW, padH, padW, terminalSize,
-                                             batchSize, lr, ir, fl, lmbda, aType, dType,
-                                             backend.get());
+                                             batchSize, lr, ir, fl, lmbda, aType, dType, poolH,
+                                             poolW, poolStrideH, poolStrideW, backend.get());
 
   if (!layers.empty())
   {
@@ -98,6 +99,15 @@ void FullConvPCNetwork::EPCStep() noexcept
     layers[i]->ComputeMuOnly();
   }
 
+  // Must run BEFORE the EnsureMuHoldsDerivative() loop below: this reads
+  // layerBelow->GetMu() for whichever layer sits directly under the
+  // terminal, which needs to still hold the real activated forward value
+  // at that point, not a derivative. In a network with only one
+  // weight-bearing layer, that layer is simultaneously the clamped input
+  // AND the one directly below the terminal -- running the derivative
+  // conversion first would corrupt the exact buffer this reads.
+  GetTerminalLayer()->CalculateState(false);
+
   // Any clamped weight-bearing layer (the input layer) is never touched
   // by ComputeAdjoint() below -- it has no free error to settle -- but
   // its own UpdateWeights() still needs mu holding the derivative, same
@@ -106,8 +116,6 @@ void FullConvPCNetwork::EPCStep() noexcept
   for (size_t i = 0; i + 1 < layers.size(); ++i)
     if (layers[i]->IsClamped())
       layers[i]->EnsureMuHoldsDerivative();
-
-  GetTerminalLayer()->CalculateState(false);
 
   const float* adjointAbove = GetTerminalLayer()->GetErrors();
   bool firstHop = true;
@@ -127,11 +135,42 @@ void FullConvPCNetwork::UpdateWeights() noexcept
 }
 
 float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<float>& y,
-                                   int inferenceSteps)
+                                   int inferenceSteps, bool computeEnergy)
 {
   ResetState();
   Clamp(x);
   GetTerminalLayer()->ClampState(y);
+
+  // Under ePC with every layer's fl==0 (DFA a no-op everywhere), this
+  // call's own ProjectForward()+CalculateTerminalError() are fully
+  // redundant with EPCStep()'s FIRST iteration: right after ResetState(),
+  // every e is zero, so ReconstructBelief()'s z=mu_below+e seeds each
+  // layer's z identically to what ProjectForward() would copy in, and
+  // EPCStep() recomputes the terminal error itself (see its own comment
+  // on why that has to happen before EnsureMuHoldsDerivative()). This
+  // does NOT hold for Step() (non-ePC settling): that starts every
+  // hidden layer's error from e=z-mu with z=0, which needs mu already
+  // seeded by a real ProjectForward() pass, not from scratch.
+  bool skipRedundantProjection = useEPC;
+  if (skipRedundantProjection)
+  {
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+    {
+      if (!layers[i]->IsFlZero())
+      {
+        skipRedundantProjection = false;
+        break;
+      }
+    }
+  }
+
+  auto projectAndClampTerminal = [this, skipRedundantProjection]()
+  {
+    if (skipRedundantProjection)
+      return;
+    ProjectForward();
+    CalculateTerminalError();
+  };
 
   auto settleStep = [this]()
   {
@@ -147,18 +186,56 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     }
   };
 
+  // Step() computes e=z-mu, THEN updates z -- so right after the LAST
+  // settling iteration, e is one step stale relative to the now-updated
+  // z, and mu is in real-activated form rather than the derivative
+  // UpdateWeights() needs. EPCStep() has no equivalent gap (its own
+  // internal CalculateState()/EnsureMuHoldsDerivative() calls already
+  // keep it current by design -- see EPCStep()'s own comments), so this
+  // only applies to classic (non-ePC) settling, and only when weights
+  // update once after the full loop rather than per-step under useIPC
+  // (which calls UpdateWeights() immediately after each Step(), before
+  // this staleness has a chance to matter).
+  auto resyncErrorForClassicSettling = [this]()
+  {
+    if (useEPC)
+      return;
+    for (auto& l : layers)
+      l->CalculateState(false);
+    for (auto& l : layers)
+      l->EnsureMuHoldsDerivative();
+  };
+
   if (device == DeviceType::DEVICE_GPU)
   {
-    if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+    // ir has no device-resident buffer (unlike lr/fl, see irDirty's own
+    // comment in FullConvPCLayer.h), so a captured graph keeps replaying
+    // whatever ir was at capture time even after SetInferenceRate()
+    // changes it. Force a recapture whenever any layer's ir changed since
+    // the last successful capture, the same way capturedInferenceSteps
+    // already forces one when the step count changes.
+    bool irChanged = false;
+    bool flZeroChanged = false;
+    for (auto& l : layers)
+    {
+      if (l->IsIrDirty())
+        irChanged = true;
+      if (l->IsFlZeroDirty())
+        flZeroChanged = true;
+    }
+
+    if (!graphCaptured || capturedInferenceSteps != inferenceSteps || irChanged || flZeroChanged)
     {
       backend->BeginGraphCapture();
-      ProjectForward();
-      CalculateTerminalError();
+      projectAndClampTerminal();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
       if (!useIPC)
+      {
+        resyncErrorForClassicSettling();
         UpdateWeights();
+      }
       bool captureOk = backend->EndGraphCapture();
 
       if (captureOk)
@@ -172,7 +249,11 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
         // read below would wrongly reuse mu from before this call's own
         // weight update (see ConvPCNetwork::TrainStep()'s identical bug).
         for (auto& l : layers)
+        {
           l->InvalidateMuCache();
+          l->ClearIrDirty();
+          l->ClearFlZeroDirty();
+        }
       }
       else
       {
@@ -187,32 +268,70 @@ float FullConvPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
     }
     else
     {
-      ProjectForward();
-      CalculateTerminalError();
+      projectAndClampTerminal();
       DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
       if (!useIPC)
+      {
+        resyncErrorForClassicSettling();
         UpdateWeights();
+      }
     }
   }
   else
   {
-    ProjectForward();
-    CalculateTerminalError();
+    projectAndClampTerminal();
     DirectFeedbackUpdate();
     for (int t = 0; t < inferenceSteps; t++)
       settleStep();
     if (!useIPC)
+    {
+      resyncErrorForClassicSettling();
       UpdateWeights();
+    }
   }
 
-  float finalEnergy = 0.0f;
-  for (auto& l : layers)
-    finalEnergy += l->CalculateState(true);
+  // This loop only reports energy -- by this point UpdateWeights() has
+  // already run, and every layer's error buffer it reads was computed
+  // where settling actually needed it, not here. Safe to skip outright.
+  if (computeEnergy)
+  {
+    lastEnergy = 0.0f;
+    for (auto& l : layers)
+      lastEnergy += l->CalculateState(true);
+  }
 
   GetTerminalLayer()->UnclampState();
-  return finalEnergy;
+  return lastEnergy;
+}
+
+std::vector<float> FullConvPCNetwork::GetAllLayerDiagnostics() const noexcept
+{
+  std::vector<float> result;
+  result.reserve(layers.size() * 4);
+  for (auto& l : layers)
+  {
+    std::vector<float> stats = l->GetDiagnosticStats();
+    result.insert(result.end(), stats.begin(), stats.end());
+  }
+  return result;
+}
+
+bool FullConvPCNetwork::Save(const std::string& filepath) const noexcept
+{
+  for (auto& l : layers)
+    l->SyncStateDictFromDevice();
+  return ModelIO::Save(*this, filepath);
+}
+
+bool FullConvPCNetwork::Load(const std::string& filepath) noexcept
+{
+  if (!ModelIO::Load(*this, filepath))
+    return false;
+  for (auto& l : layers)
+    l->SyncStateDictToDevice();
+  return true;
 }
 
 std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)
@@ -296,9 +415,35 @@ void FullConvPCNetwork::Compile()
   // L = weight-bearing layers (excludes the terminal, outChannels==0).
   // H = L-1 hidden layers. d_in is the true fan-in of the FIRST layer
   // (inChannels*kernelH*kernelW, the conv analog of dense's input
-  // dimension); N is the widest hidden layer's CHANNEL count (conv's
-  // analog of dense's hidden width -- spatial extent isn't "capacity"
-  // the same way channel count is).
+  // dimension); N is the widest hidden layer's CHANNEL count, and
+  // midFanIn is that SAME layer's true fan-in (N*kernelH*kernelW).
+  //
+  // Middle layers need midFanIn, not N alone: a 3x3 conv's true fan-in is
+  // 9x its channel count, so using raw N there understated fan-in by 9x,
+  // making `a` too large by sqrt(9)=3 -- confirmed empirically (SHALLOW
+  // blew up faster than the full 10-layer network, the opposite of what
+  // "too many layers" predicts, but exactly what "a itself is too large"
+  // predicts) and mathematically (a flat MUPC_DAMPING of ~0.3 in
+  // imagenet.py was accidentally undoing almost exactly this 1/3 factor).
+  // The first layer's d_in formula above already got this right; this
+  // brings the middle-layer formula in line with it.
+  //
+  // The extra *L factor below is ONLY correct alongside residual
+  // connections: with W ~ N(0,1) (RandomizeWeights() uses limit=1.0f
+  // under muPC init -- true unit variance, not Kaiming-scaled), a middle
+  // layer's effective gain is a*sqrt(trueFanIn), and *L divides that down
+  // to 1/sqrt(L) per layer specifically so that SUMMING L such
+  // once-per-layer residual contributions into a shared stream keeps the
+  // stream's total variance bounded as L grows. With residual OFF (this
+  // architecture's current setting), there's no summed stream to bound --
+  // each layer's whole output IS the next layer's whole input, so it
+  // should be variance-preserving on its own (gain=1, i.e. a=1/sqrt
+  // (trueFanIn), no *L). Leaving *L in anyway, after fixing the fan-in
+  // term above, took effective gain from ~0.95/layer (old formula's two
+  // errors -- missing kernel-area term AND this same *L -- coincidentally
+  // offsetting at L=10) to 1/sqrt(10)~=0.32/layer, compounding to ~6e-5
+  // over 9 middle-layer hops -- exactly the near-zero output variance
+  // seen in both diagnostics after the fan-in-only fix landed.
   const int L = (int)layers.size() - 1;
   const int H = L - 1;
 
@@ -311,15 +456,25 @@ void FullConvPCNetwork::Compile()
         (float)layers[0]->GetInChannels() * layers[0]->GetKernelH() * layers[0]->GetKernelW();
 
     float N;
+    float midFanIn;
     if (H > 0)
     {
       N = 0.0f;
+      midFanIn = 1.0f;
       for (int i = 0; i < L - 1; ++i)
-        N = std::max(N, (float)layers[i]->GetOutChannels());
+      {
+        float outCh = (float)layers[i]->GetOutChannels();
+        if (outCh > N)
+        {
+          N = outCh;
+          midFanIn = outCh * (float)layers[i]->GetKernelH() * (float)layers[i]->GetKernelW();
+        }
+      }
     }
     else
     {
       N = (float)layers[L - 1]->GetOutChannels();
+      midFanIn = N * (float)layers[L - 1]->GetKernelH() * (float)layers[L - 1]->GetKernelW();
     }
 
     for (int l = 1; l <= L; ++l)
@@ -330,7 +485,8 @@ void FullConvPCNetwork::Compile()
       else if (l == L)
         a = 1.0f / N;
       else
-        a = std::pow(N * (float)L, -0.5f);
+        a = useResidualConnections ? std::pow(midFanIn * (float)L, -0.5f)
+                                    : std::pow(midFanIn, -0.5f);
 
       layers[l - 1]->SetMuPCScale(a);
       layers[l - 1]->SetMuPCInit(true);

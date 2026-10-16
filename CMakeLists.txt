@@ -515,6 +515,17 @@ option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
 enable_testing()
 
 if(DEEPITY_BUILD_TESTS)
+    # Every target added below is appended here, then given the same
+    # -march/-mtune (and, on MSVC, the same __AVX2__-style compile-time
+    # defs) that Deepity/pydeepity get, in one loop at the end of this
+    # block. These executables pull in Deepity's activation kernels as
+    # `static inline` header functions, so each TU recompiles its own
+    # copy -- without this, they silently fall back to the compiler's
+    # untouched default target (SSE2-only on this toolchain) instead of
+    # the arch build.py actually selected, making any benchmark here
+    # measure the wrong kernel entirely.
+    set(DEEPITY_TEST_TARGETS "")
+
     # --- Benchmarks (Google Benchmark, BENCHMARK_MAIN() -- perf only, not
     # registered with ctest since they have no pass/fail) -----------------
 
@@ -523,24 +534,28 @@ if(DEEPITY_BUILD_TESTS)
     set_target_properties(ActivationBenchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS ActivationBenchmark)
 
     add_executable(PCNBenchmark tests/tBenchmark.cpp)
     target_link_libraries(PCNBenchmark PRIVATE Deepity)
     set_target_properties(PCNBenchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS PCNBenchmark)
 
     add_executable(GflopsBenchmark tests/tGflopsBenchmark.cpp)
     target_link_libraries(GflopsBenchmark PRIVATE Deepity benchmark::benchmark)
     set_target_properties(GflopsBenchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS GflopsBenchmark)
 
     add_executable(ReadmeBenchmark tests/tReadme.cpp)
     target_link_libraries(ReadmeBenchmark PRIVATE Deepity benchmark::benchmark)
     set_target_properties(ReadmeBenchmark PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS ReadmeBenchmark)
 
     # --- Correctness verification tests (CPU) -----------------------------
     # Deliberately just one: an end-to-end integration smoke test. The
@@ -557,6 +572,7 @@ if(DEEPITY_BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
     add_test(NAME ConvDiagnose COMMAND ConvDiagnose)
+    list(APPEND DEEPITY_TEST_TARGETS ConvDiagnose)
 
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----
@@ -567,30 +583,35 @@ if(DEEPITY_BUILD_TESTS)
         set_target_properties(CUDALaunchErrorVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
+        list(APPEND DEEPITY_TEST_TARGETS CUDALaunchErrorVerify)
 
         add_executable(CUDAIntRoundtripVerify tests/tCUDAIntRoundtripVerify.cpp)
         target_link_libraries(CUDAIntRoundtripVerify PRIVATE Deepity)
         set_target_properties(CUDAIntRoundtripVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
+        list(APPEND DEEPITY_TEST_TARGETS CUDAIntRoundtripVerify)
 
         add_executable(CUDAIncrementCounterVerify tests/tCUDAIncrementCounterVerify.cpp)
         target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity)
         set_target_properties(CUDAIncrementCounterVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
+        list(APPEND DEEPITY_TEST_TARGETS CUDAIncrementCounterVerify)
 
         add_executable(CUDAIncrementCounterSyncVerify tests/tCUDAIncrementCounterSyncVerify.cpp)
         target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity)
         set_target_properties(CUDAIncrementCounterSyncVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
+        list(APPEND DEEPITY_TEST_TARGETS CUDAIncrementCounterSyncVerify)
 
         add_executable(MatMulLargeAsymmetricVerify tests/tMatMulLargeAsymmetricVerify.cpp)
         target_link_libraries(MatMulLargeAsymmetricVerify PRIVATE Deepity)
         set_target_properties(MatMulLargeAsymmetricVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
+        list(APPEND DEEPITY_TEST_TARGETS MatMulLargeAsymmetricVerify)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -
@@ -600,12 +621,27 @@ if(DEEPITY_BUILD_TESTS)
     set_target_properties(DiscriminativeNetworkProfile PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS DiscriminativeNetworkProfile)
 
     add_executable(SimpleNetworkProfile tests/tSimpleNetworkProfile.cpp)
     target_link_libraries(SimpleNetworkProfile PRIVATE Deepity)
     set_target_properties(SimpleNetworkProfile PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     )
+    list(APPEND DEEPITY_TEST_TARGETS SimpleNetworkProfile)
+
+    # Same arch/SIMD flags as Deepity/pydeepity (see the comment at the
+    # top of this block) -- without this, every target above silently
+    # compiles Deepity's header-only kernels against the compiler's
+    # untouched default ISA instead of whatever build.py selected.
+    foreach(DEEPITY_TEST_TARGET ${DEEPITY_TEST_TARGETS})
+        if(DEEPITY_TARGET_COMPILE_OPTIONS)
+            target_compile_options(${DEEPITY_TEST_TARGET} PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
+        endif()
+        if(DEEPITY_TARGET_COMPILE_DEFS)
+            target_compile_definitions(${DEEPITY_TEST_TARGET} PRIVATE ${DEEPITY_TARGET_COMPILE_DEFS})
+        endif()
+    endforeach()
 endif()
 
 # --- Compiler flags -------------------------------------------------
