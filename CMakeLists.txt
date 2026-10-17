@@ -196,17 +196,18 @@ endif()
 
 # cuDNN ships separately from the CUDA toolkit itself (no CUDAToolkit::
 # imported target for it), so it needs its own find_path/find_library --
-# checked against the CUDA toolkit's own install tree first (HPC module
-# systems, e.g. OSC's `module load cuda cudnn`, commonly install it right
-# alongside cudart), then standard system paths, then an explicit
-# -DCUDNN_ROOT=<path> override for anything nonstandard.
+# checked against an HPC module's own CUDNN_ROOT env var first (Lmod
+# modules on clusters like OSC commonly export one, rather than dropping
+# cudnn into the CUDA toolkit's own tree), then a -DCUDNN_ROOT=<path>
+# override, then the CUDA toolkit's install tree, then standard system
+# paths.
 set(DEEPITY_CUDNN_ENABLED OFF)
 if(DEEPITY_CUDA_ENABLED AND DEEPITY_USE_CUDNN)
     find_path(DEEPITY_CUDNN_INCLUDE_DIR cudnn.h
-        HINTS ${CUDNN_ROOT} ${CUDAToolkit_INCLUDE_DIRS}
+        HINTS $ENV{CUDNN_ROOT} ${CUDNN_ROOT} ${CUDAToolkit_INCLUDE_DIRS}
         PATH_SUFFIXES include)
     find_library(DEEPITY_CUDNN_LIBRARY cudnn
-        HINTS ${CUDNN_ROOT} ${CUDAToolkit_LIBRARY_DIR}
+        HINTS $ENV{CUDNN_ROOT} ${CUDNN_ROOT} ${CUDAToolkit_LIBRARY_DIR}
         PATH_SUFFIXES lib lib64 lib/x64)
     if(DEEPITY_CUDNN_INCLUDE_DIR AND DEEPITY_CUDNN_LIBRARY)
         set(DEEPITY_CUDNN_ENABLED ON)

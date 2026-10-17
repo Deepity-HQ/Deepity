@@ -57,9 +57,16 @@ Usage:
     python research/imagenet_bp_control_vgg7_ce.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching PCX exactly)
 """
+import os
 import sys
 import numpy as np
 from time import perf_counter
+
+# See imagenet.py's own import of this for why: running this script via
+# its documented `python research/imagenet_bp_control_vgg7_ce.py`
+# invocation puts this file's own directory, not the repo root, at
+# sys.path[0].
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- see imagenet.py's own import of this for why
 
 from imagenet import DATA_DIR, IMG_SIZE, N_CHANNELS, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
