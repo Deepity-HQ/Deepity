@@ -118,6 +118,15 @@ protected:
   float* cachedMu = nullptr;
   bool muCacheValid = false;
 
+  // mu's pre-activation value, snapshotted in ComputeMuOnly() right
+  // before Activation() overwrites mu in place. GELU has no closed form
+  // from its ACTIVATED value alone (unlike every other activation this
+  // codebase supports), so any later derivative computation needs this,
+  // not mu itself -- see ActivationDerivativeFromActivatedDevice's own
+  // @warning. cachedPreact mirrors cachedMu's clamped-layer reuse path.
+  float* preact = nullptr;
+  float* cachedPreact = nullptr;
+
   /// [batch, outChannels, poolOutHeight, poolOutWidth], GetMu()'s actual
   /// return value when HasPooling(); allocated only then.
   float* pooledMu = nullptr;

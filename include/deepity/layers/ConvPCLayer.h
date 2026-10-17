@@ -317,6 +317,16 @@ private:
   /// @brief Flag to determine if the mu cache is currently valid
   bool muCacheValid = false;
 
+  /// @brief mu's pre-activation value, snapshotted in ComputeMuOnly()
+  /// right before Activation() overwrites mu in place. GELU has no
+  /// closed form from its ACTIVATED value alone (unlike every other
+  /// activation this codebase supports), so any later derivative
+  /// computation needs this, not mu itself -- see
+  /// ActivationDerivativeFromActivatedDevice's own @warning.
+  float *preact = nullptr;
+  /// @brief cachedMu's counterpart for preact, same clamped-layer reuse.
+  float *cachedPreact = nullptr;
+
   float *grad_W = nullptr;
   float *grad_b = nullptr;
   float *m_W = nullptr;
