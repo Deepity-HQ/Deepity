@@ -370,6 +370,20 @@ public:
                                           int kernelW, int strideH, int strideW, int padH,
                                           int padW) noexcept = 0;
 
+  /// @brief Pre-grows CUDABackend's shared cuDNN conv workspace (see
+  /// TryFusedConvForward() and friends) to fit this shape's algorithm
+  /// workspace requirement. MUST be called for every distinct conv
+  /// shape BEFORE Compile()'s first BeginGraphCapture() -- same timing
+  /// constraint, and same reason, as PrepareForBatchSize(): growing the
+  /// workspace means cudaMalloc()/cudaFree(), which are illegal (not
+  /// stream-ordered) inside an active graph capture and poison the
+  /// whole captured region if TryFusedConvForward() et al. are left to
+  /// grow it lazily on first use instead. No-op on CPUBackend, which
+  /// has no such workspace.
+  virtual void PrepareConvWorkspace(int batchSize, int inChannels, int height, int width,
+                                    int outChannels, int kernelH, int kernelW, int strideH,
+                                    int strideW, int padH, int padW) noexcept = 0;
+
   // Optimizer
 
   /// @brief Atomically increments *counter by 1. Device-resident so it

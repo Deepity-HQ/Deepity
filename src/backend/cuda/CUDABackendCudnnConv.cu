@@ -42,10 +42,17 @@ bool CUDABackend::TryFusedConvBackwardFilter(const float*, const float*, float*,
 {
   return false; // ditto, falls back to RepackForBatchedGemm()+MatMul()
 }
+void CUDABackend::PrepareConvWorkspace(int, int, int, int, int, int, int, int, int, int,
+                                       int) noexcept
+{
+  // no workspace to grow -- TryFusedConv*() above always return false in
+  // this build, so nothing ever calls GrowWorkspace()
+}
 } // namespace Deep
 
 #else // DEEPITY_USE_CUDNN
 
+#include <algorithm>
 #include <iostream>
 
 /// @brief Logs the most recent cuDNN error (if any) to stderr, tagged
@@ -241,6 +248,58 @@ bool CUDABackend::TryFusedConvBackwardFilter(const float* input, const float* ou
                                                         d.output, outputGrad, d.conv, perf.algo, ws,
                                                         workspaceSize, &beta, d.filter, dW);
   return status == CUDNN_STATUS_SUCCESS;
+}
+
+void CUDABackend::PrepareConvWorkspace(int batchSize, int inChannels, int height, int width,
+                                       int outChannels, int kernelH, int kernelW, int strideH,
+                                       int strideW, int padH, int padW) noexcept
+{
+  int outH = ConvOutDim(height, kernelH, strideH, padH);
+  int outW = ConvOutDim(width, kernelW, strideW, padW);
+  ConvDescriptors d(batchSize, inChannels, height, width, outChannels, kernelH, kernelW, strideH,
+                    strideW, padH, padW, outH, outW, allowTF32);
+
+  size_t maxBytes = 0;
+
+  cudnnConvolutionFwdAlgoPerf_t fwdPerf;
+  int returned = 0;
+  if (cudnnGetConvolutionForwardAlgorithm_v7(cudnnHandle, d.input, d.filter, d.conv, d.output, 1,
+                                             &returned, &fwdPerf) == CUDNN_STATUS_SUCCESS &&
+      returned > 0 && fwdPerf.status == CUDNN_STATUS_SUCCESS)
+  {
+    size_t bytes = 0;
+    cudnnGetConvolutionForwardWorkspaceSize(cudnnHandle, d.input, d.filter, d.conv, d.output,
+                                            fwdPerf.algo, &bytes);
+    maxBytes = std::max(maxBytes, bytes);
+  }
+
+  cudnnConvolutionBwdDataAlgoPerf_t dataPerf;
+  returned = 0;
+  if (cudnnGetConvolutionBackwardDataAlgorithm_v7(cudnnHandle, d.filter, d.output, d.conv, d.input,
+                                                  1, &returned, &dataPerf) ==
+          CUDNN_STATUS_SUCCESS &&
+      returned > 0 && dataPerf.status == CUDNN_STATUS_SUCCESS)
+  {
+    size_t bytes = 0;
+    cudnnGetConvolutionBackwardDataWorkspaceSize(cudnnHandle, d.filter, d.output, d.conv, d.input,
+                                                 dataPerf.algo, &bytes);
+    maxBytes = std::max(maxBytes, bytes);
+  }
+
+  cudnnConvolutionBwdFilterAlgoPerf_t filterPerf;
+  returned = 0;
+  if (cudnnGetConvolutionBackwardFilterAlgorithm_v7(cudnnHandle, d.input, d.output, d.conv, d.filter,
+                                                    1, &returned, &filterPerf) ==
+          CUDNN_STATUS_SUCCESS &&
+      returned > 0 && filterPerf.status == CUDNN_STATUS_SUCCESS)
+  {
+    size_t bytes = 0;
+    cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnHandle, d.input, d.output, d.conv, d.filter,
+                                                   filterPerf.algo, &bytes);
+    maxBytes = std::max(maxBytes, bytes);
+  }
+
+  GrowWorkspace(&workspace, &workspaceBytes, maxBytes);
 }
 } // namespace Deep
 

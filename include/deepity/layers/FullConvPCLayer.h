@@ -274,6 +274,14 @@ public:
   void UpdateWeights() noexcept override;
   void DirectFeedbackUpdate() noexcept;
 
+  /// @brief Pre-grows the backend's cuDNN conv workspace for this
+  /// layer's own shape. MUST be called once per layer, after Compile()
+  /// binds its memory but BEFORE the network's first BeginGraphCapture()
+  /// -- see IComputeBackend::PrepareConvWorkspace()'s own doc comment
+  /// for why growing it lazily, on first use inside ComputeMuOnly() et
+  /// al., is unsafe. No-op when outChannels==0 (the terminal layer).
+  void PrepareConvWorkspace() noexcept;
+
   /// @brief ePC forward-sweep step: z := layerBelow->GetMu() + e.
   void ReconstructBelief() noexcept;
   /// @brief ePC backward-sweep step. `mu` must currently hold its

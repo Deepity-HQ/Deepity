@@ -648,6 +648,14 @@ void FullConvPCLayer::UpdateWeights() noexcept
   }
 }
 
+void FullConvPCLayer::PrepareConvWorkspace() noexcept
+{
+  if (outChannels == 0)
+    return;
+  backend->PrepareConvWorkspace(batchSize, inChannels, inHeight, inWidth, outChannels, kernelH,
+                                kernelW, strideH, strideW, padH, padW);
+}
+
 void FullConvPCLayer::DirectFeedbackUpdate() noexcept
 {
   if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)

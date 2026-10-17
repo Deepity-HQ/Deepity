@@ -173,6 +173,10 @@ public:
                                   int height, int width, int outChannels, int kernelH,
                                   int kernelW, int strideH, int strideW, int padH,
                                   int padW) noexcept override;
+  /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
+  void PrepareConvWorkspace(int batchSize, int inChannels, int height, int width, int outChannels,
+                            int kernelH, int kernelW, int strideH, int strideW, int padH,
+                            int padW) noexcept override;
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;

@@ -406,6 +406,13 @@ void FullConvPCNetwork::Compile()
       layer->BindMemory(*gpuArena);
       layer->SetTerminalLayer(layers.back().get());
     }
+    // Must happen here, before the network's first BeginGraphCapture()
+    // (the very next thing to touch these layers, from the first
+    // train_step()) -- see PrepareConvWorkspace()'s own doc comment for
+    // why growing this lazily, on first use inside a captured settling
+    // step, corrupts the whole capture.
+    for (auto& layer : layers)
+      layer->PrepareConvWorkspace();
   }
 #endif
 

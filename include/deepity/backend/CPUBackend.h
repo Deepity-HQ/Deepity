@@ -156,6 +156,12 @@ public:
   {
     return false; // ditto, falls back to RepackForBatchedGemm()+MatMul()
   }
+  /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
+  void PrepareConvWorkspace(int, int, int, int, int, int, int, int, int, int,
+                           int) noexcept override
+  {
+    // no workspace to grow on CPU
+  }
 
   /// @copydoc Deep::IComputeBackend::IncrementCounter
   void IncrementCounter(int* counter) noexcept override;
