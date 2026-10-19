@@ -20,23 +20,21 @@ backprop gradient on this architecture, no PC-specific settling at all.
 
 Architecture, pooling, 56x56 crops and ImageNet normalization are
 unchanged from the SE version (and were never the problem -- see that
-script's own history). Two deviations from PCX's own BP_CE recipe,
-both deliberate:
-  1. ReLU instead of PCX's own choice of GELU for this specific variant
-     (confirmed via their yaml) -- this codebase's GELU-derivative-from-
-     activated path is documented-but-unfixed-wrong (see
-     imagenet_bp_control.py's own history), and ReLU is already proven
-     to work fine under cross-entropy in this exact codebase.
-  2. lr/wd: starting from PCX's own BP_CE search values (lr~2.975e-4,
-     wd~5.813e-4) rather than the SE variant's (which were tuned for a
-     different loss and activation entirely).
+script's own history). Now uses PCX's own BP_CE recipe with NO
+deviations: GELU (previously substituted with ReLU, because this
+codebase's GELU-derivative-from-activated path was documented-but-
+unfixed-wrong -- see FullConvPCLayer.h's `preact` buffer and its own doc
+comment for the actual fix: GELU has no closed form from its activated
+value alone, so the raw pre-activation is now snapshotted separately
+instead of being reconstructed from mu), and lr/wd from PCX's own BP_CE
+search values (lr~2.975e-4, wd~5.813e-4).
 
-  Conv(3->128,   k3,s1,p1) -> ReLU -> MaxPool(2,2)   # 56->28
-  Conv(128->128, k3,s1,p1) -> ReLU                   # 28
-  Conv(128->256, k3,s1,p1) -> ReLU -> MaxPool(2,2)   # 28->14
-  Conv(256->256, k3,s1,p0) -> ReLU                   # 14->12
-  Conv(256->512, k3,s1,p1) -> ReLU -> MaxPool(2,2)   # 12->6
-  Conv(512->512, k3,s1,p0) -> ReLU                   # 6->4
+  Conv(3->128,   k3,s1,p1) -> GELU -> MaxPool(2,2)   # 56->28
+  Conv(128->128, k3,s1,p1) -> GELU                   # 28
+  Conv(128->256, k3,s1,p1) -> GELU -> MaxPool(2,2)   # 28->14
+  Conv(256->256, k3,s1,p0) -> GELU                   # 14->12
+  Conv(256->512, k3,s1,p1) -> GELU -> MaxPool(2,2)   # 12->6
+  Conv(512->512, k3,s1,p0) -> GELU                   # 6->4
   Conv(512->200, k4,s1,p0)                           # 4->1, linear logits --
     the conv-layer equivalent of flatten+Linear(512*4*4,200): a
     full-spatial-extent kernel collapses the whole feature map to 1x1 in
@@ -57,9 +55,16 @@ Usage:
     python research/imagenet_bp_control_vgg7_ce.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching PCX exactly)
 """
+import os
 import sys
 import numpy as np
 from time import perf_counter
+
+# See imagenet.py's own import of this for why: running this script via
+# its documented `python research/imagenet_bp_control_vgg7_ce.py`
+# invocation puts this file's own directory, not the repo root, at
+# sys.path[0].
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- see imagenet.py's own import of this for why
 
 from imagenet import DATA_DIR, IMG_SIZE, N_CHANNELS, load_wnids, load_train_set_cached, load_val_set_cached, to_one_hot, pick_diagnostic_indices
@@ -137,7 +142,7 @@ def run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, batch_size, 
 def build_vgg7_network(batch_size, n_classes, lr):
     net = dy.FullConvPCNetwork(batch_size=batch_size, device="gpu")
 
-    def conv(in_c, out_c, hw, pad, pool=1, activation="relu", activation_deriv="drelu"):
+    def conv(in_c, out_c, hw, pad, pool=1, activation="gelu", activation_deriv="dgelu"):
         net.add_layer(in_c, out_c, hw, hw, 3, 3, stride_h=1, stride_w=1, pad_h=pad, pad_w=pad,
                      terminal_size=n_classes, lr=lr, ir=1.0, fl=0.0, lmbda=5.813e-4,
                      activation=activation, activation_deriv=activation_deriv,
@@ -187,8 +192,11 @@ def main():
     X_val_u8, y_val_idx = load_val_set_cached(DATA_DIR, wnids)
 
     print(f"\n*** TINY IMAGENET, VGG-7 BP CONTROL (exact PCX architecture, pooling, cross-entropy) ***")
-    print(f"Comparable to: PCX's own BP_CE baseline (SE variant converged to the 63.68 trivial minimum -- see this script's own docstring).")
-    print(f"Deviation: ReLU instead of PCX's GELU for this variant (no working GELU derivative in this codebase).")
+    print(f"Comparable to: PCX's own BP_CE baseline, 45.32+-0.11% top-1 (Table 1) -- verified "
+          f"reproducible on this exact data/hardware via imagenet_pytorch_baseline_ce.py's own "
+          f"45.87% run.")
+    print(f"No deviations: GELU (previously substituted with ReLU; the underlying "
+          f"GELU-derivative-from-activated bug is now fixed, see FullConvPCLayer.h's `preact`).")
     print(f"Training: {EPOCHS} epochs, batch_size={BATCH_SIZE}, lr={LR:.6g} "
           f"(warmup-cosine to peak {peak_lr:.6g}, end {end_lr:.6g}), AdamW, cross-entropy, "
           f"56x56 crops, pooling on.\n")
@@ -265,11 +273,10 @@ def main():
                                     "POST-epoch-1")
 
     print(f"\n=== Result ===")
-    print(f"Deepity VGG-7 BP control, cross-entropy (exact PCX architecture): "
+    print(f"Deepity VGG-7 BP control, cross-entropy (exact PCX architecture, GELU): "
           f"best top-1 = {best_acc:.2f}%")
-    print(f"63.68 would mean it fell into the same trivial minimum the SE variant did -- "
-          f"anything meaningfully above the ~0.5% random floor means cross-entropy's "
-          f"competitive pressure between classes avoided it.")
+    print(f"Reference points: PCX's published BP-CE = 45.32+-0.11%, this exact recipe's own "
+          f"from-scratch PyTorch ground truth (imagenet_pytorch_baseline_ce.py) = 45.87%.")
 
 
 if __name__ == "__main__":

@@ -327,6 +327,63 @@ public:
   virtual void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                                     size_t cols) noexcept = 0;
 
+  /// @brief Attempts a single fused convolution forward pass, skipping
+  /// Im2Col()/RepackForBatchedGemm()/MatMul() entirely: @p output =
+  /// @p alpha * conv(@p input, @p W), in the same [batchSize, outChannels,
+  /// outH, outW] NCHW layout AddBiasPerChannel()/Activation() already
+  /// expect, so a caller's existing bias/activation calls stay unchanged
+  /// either way. Returns false (without touching @p output) when this
+  /// backend has no fused path -- always on CPUBackend, or CUDABackend
+  /// built without cuDNN -- letting the caller fall back to the manual
+  /// Im2Col()+RepackForBatchedGemm()+MatMul() sequence it already has.
+  /// @param W [outChannels, inChannels, kernelH, kernelW], the exact
+  /// same memory every ConvPCLayer-family layer already stores its flat
+  /// [outChannels, inChannels*kernelH*kernelW] weights in.
+  virtual bool TryFusedConvForward(const float* input, const float* W, float* output, float alpha,
+                                   int batchSize, int inChannels, int height, int width,
+                                   int outChannels, int kernelH, int kernelW, int strideH,
+                                   int strideW, int padH, int padW) noexcept = 0;
+
+  /// @brief The adjoint of TryFusedConvForward() w.r.t. @p input, skipping
+  /// the transposed MatMul()+RepackForBatchedGemm()+Col2Im() sequence.
+  /// OVERWRITES @p inputGrad = @p alpha * convBackwardData(@p outputGrad,
+  /// @p W) -- unlike Col2Im()'s own accumulate contract, every known
+  /// caller here Zero()s its destination immediately beforehand anyway.
+  /// Same false-means-unsupported contract as TryFusedConvForward().
+  virtual bool TryFusedConvBackwardData(const float* outputGrad, const float* W, float* inputGrad,
+                                        float alpha, int batchSize, int inChannels, int height,
+                                        int width, int outChannels, int kernelH, int kernelW,
+                                        int strideH, int strideW, int padH,
+                                        int padW) noexcept = 0;
+
+  /// @brief The adjoint of TryFusedConvForward() w.r.t. @p W, skipping
+  /// Im2Col()+RepackForBatchedGemm()+MatMul(). @p dW = @p alpha *
+  /// convBackwardFilter(@p input, @p outputGrad) + @p beta * @p dW,
+  /// matching MatMul()'s own alpha/beta convention -- a caller that
+  /// fuses its weight UPDATE directly into this GEMM (SGD: beta=1 into
+  /// W itself) and one that wants a fresh gradient buffer (Adam: beta=0
+  /// into grad_W) both work unchanged. Same false-means-unsupported
+  /// contract as TryFusedConvForward().
+  virtual bool TryFusedConvBackwardFilter(const float* input, const float* outputGrad, float* dW,
+                                          float alpha, float beta, int batchSize, int inChannels,
+                                          int height, int width, int outChannels, int kernelH,
+                                          int kernelW, int strideH, int strideW, int padH,
+                                          int padW) noexcept = 0;
+
+  /// @brief Pre-grows CUDABackend's shared cuDNN conv workspace (see
+  /// TryFusedConvForward() and friends) to fit this shape's algorithm
+  /// workspace requirement. MUST be called for every distinct conv
+  /// shape BEFORE Compile()'s first BeginGraphCapture() -- same timing
+  /// constraint, and same reason, as PrepareForBatchSize(): growing the
+  /// workspace means cudaMalloc()/cudaFree(), which are illegal (not
+  /// stream-ordered) inside an active graph capture and poison the
+  /// whole captured region if TryFusedConvForward() et al. are left to
+  /// grow it lazily on first use instead. No-op on CPUBackend, which
+  /// has no such workspace.
+  virtual void PrepareConvWorkspace(int batchSize, int inChannels, int height, int width,
+                                    int outChannels, int kernelH, int kernelW, int strideH,
+                                    int strideW, int padH, int padW) noexcept = 0;
+
   // Optimizer
 
   /// @brief Atomically increments *counter by 1. Device-resident so it

@@ -2,6 +2,9 @@
 #include <deepity/backend/IComputeBackend.h>
 #ifdef DEEPITY_USE_CUDA
 #include <cublas_v2.h>
+#ifdef DEEPITY_USE_CUDNN
+#include <cudnn.h>
+#endif
 #endif
 #include <deepity/backend/Tensor.h>
 
@@ -154,6 +157,26 @@ public:
   /// @copydoc Deep::IComputeBackend::RepackForBatchedGemm
   void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
                             size_t cols) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedConvForward
+  bool TryFusedConvForward(const float* input, const float* W, float* output, float alpha,
+                           int batchSize, int inChannels, int height, int width, int outChannels,
+                           int kernelH, int kernelW, int strideH, int strideW, int padH,
+                           int padW) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardData
+  bool TryFusedConvBackwardData(const float* outputGrad, const float* W, float* inputGrad,
+                                float alpha, int batchSize, int inChannels, int height, int width,
+                                int outChannels, int kernelH, int kernelW, int strideH,
+                                int strideW, int padH, int padW) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardFilter
+  bool TryFusedConvBackwardFilter(const float* input, const float* outputGrad, float* dW,
+                                  float alpha, float beta, int batchSize, int inChannels,
+                                  int height, int width, int outChannels, int kernelH,
+                                  int kernelW, int strideH, int strideW, int padH,
+                                  int padW) noexcept override;
+  /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
+  void PrepareConvWorkspace(int batchSize, int inChannels, int height, int width, int outChannels,
+                            int kernelH, int kernelW, int strideH, int strideW, int padH,
+                            int padW) noexcept override;
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;
@@ -181,11 +204,24 @@ private:
   cudaStream_t stream;
   cudaGraph_t graph = nullptr;
   cudaGraphExec_t graphExec = nullptr;
+#ifdef DEEPITY_USE_CUDNN
+  cudnnHandle_t cudnnHandle;
+#endif
 #endif
   bool hasGraph = false;
   float* onesVector = nullptr;
   size_t onesCapacity = 0;
   float* workspace = nullptr;
+  /// @brief Current byte capacity of @p workspace, the shared scratch
+  /// buffer TryFusedConvForward()/TryFusedConvBackwardData()/
+  /// TryFusedConvBackwardFilter() grow (never shrink) on demand for
+  /// cuDNN's algorithm workspace requirement -- same lazy-grow pattern
+  /// as PrepareForBatchSize()'s onesVector.
+  size_t workspaceBytes = 0;
+  /// @brief Mirrors the last value passed to SetAllowTF32(), so the
+  /// cuDNN conv path (which sets its own per-call math type, separate
+  /// from cublasSetMathMode()) stays in sync with it.
+  bool allowTF32 = true;
 
   /// @brief Single-float device scratch buffer for scalar reductions
   /// (ComputePrecisionWeightedErrorAndEnergy(), Sum()). Allocated once in
