@@ -2,6 +2,13 @@ import numpy as np
 import os
 import sys
 from time import perf_counter
+
+# `python research/imagenet.py` (this file's own documented invocation,
+# and every other research/ script's) sets sys.path[0] to THIS file's
+# directory, not the repo root -- fine for importing sibling research/
+# modules, but pydeepity lives one level up, as a SIBLING of research/,
+# not inside it.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pydeepity import dy  # pyright: ignore[reportAttributeAccessIssue] -- dy is the compiled native extension; see pydeepity/_backend.py and pyrightconfig.json's pydeepity/bindings suppressions for the same reason
 from PIL import Image
 

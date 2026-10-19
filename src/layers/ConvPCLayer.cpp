@@ -71,7 +71,7 @@ namespace Deep
 
             total += pad16(Wsize);                           // W
             total += pad16((size_t)outChannels);             // b
-            total += pad16(outStateSize) * 2;                // mu, cachedMu
+            total += pad16(outStateSize) * 4;                // mu, cachedMu, preact, cachedPreact
             total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
             total += pad16(outStateSize);                    // bottom_up_cols
             total += pad16((size_t)batchSize * colSize);     // colsRepacked
@@ -126,6 +126,8 @@ namespace Deep
             b = arena.AllocateFloats(outChannels);
             mu = arena.AllocateFloats(outStateSize);
             cachedMu = arena.AllocateFloats(outStateSize);
+            preact = arena.AllocateFloats(outStateSize);
+            cachedPreact = arena.AllocateFloats(outStateSize);
             colBuffer = arena.AllocateFloats(colSize);
             feedbackScratch = arena.AllocateFloats(colSize);
             bottom_up_cols = arena.AllocateFloats(outStateSize);
@@ -136,6 +138,8 @@ namespace Deep
             backend->Zero(b, outChannels);
             backend->Zero(mu, outStateSize);
             backend->Zero(cachedMu, outStateSize);
+            backend->Zero(preact, outStateSize);
+            backend->Zero(cachedPreact, outStateSize);
             backend->Zero(colBuffer, colSize);
             backend->Zero(feedbackScratch, colSize);
             backend->Zero(bottom_up_cols, outStateSize);
@@ -170,6 +174,8 @@ namespace Deep
             b = nullptr;
             mu = nullptr;
             cachedMu = nullptr;
+            preact = nullptr;
+            cachedPreact = nullptr;
             colBuffer = nullptr;
             feedbackScratch = nullptr;
             bottom_up_cols = nullptr;
@@ -254,6 +260,7 @@ namespace Deep
         if (isClamped && muCacheValid)
         {
             backend->Copy(mu, cachedMu, Nout);
+            backend->Copy(preact, cachedPreact, Nout);
             return;
         }
 
@@ -270,11 +277,17 @@ namespace Deep
         backend->AddBiasPerChannel(lgRepacked, b, outChannels, batchSize * colCols);
         backend->RepackForBatchedGemm(mu, lgRepacked, outChannels, batchSize, colCols);
 
+        // Snapshotted BEFORE Activation() overwrites mu in place: GELU's
+        // derivative has no closed form from the activated value alone
+        // (see preact's own doc comment), so every later derivative
+        // computation reads this instead of mu.
+        backend->Copy(preact, mu, Nout);
         backend->Activation(activationType, mu, Nout);
 
         if (isClamped)
         {
             backend->Copy(cachedMu, mu, Nout);
+            backend->Copy(cachedPreact, preact, Nout);
             muCacheValid = true;
         }
     }
@@ -292,7 +305,7 @@ namespace Deep
         if (outChannels > 0)
         {
             size_t outTotal = (size_t)batchSize * outChannels * colCols;
-            backend->ActivationDerivative(derivativeType, mu, outTotal, true);
+            backend->ActivationDerivativeInto(derivativeType, mu, preact, outTotal);
         }
 
         if (isClamped)

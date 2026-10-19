@@ -7,6 +7,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 option(DEEPITY_ENABLE_CUDA "Build with CUDA support" ON)
+option(DEEPITY_USE_CUDNN "Use cuDNN for ConvPCLayer-family convolutions instead of the im2col+GEMM path (CUDA only; falls back automatically if cuDNN isn't found)" ON)
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 # Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
@@ -190,6 +191,31 @@ if(DEEPITY_ENABLE_CUDA)
         message(STATUS "CUDA support enabled.")
     else()
         message(STATUS "CUDA toolkit not found. Building CPU-only.")
+    endif()
+endif()
+
+# cuDNN ships separately from the CUDA toolkit itself (no CUDAToolkit::
+# imported target for it), so it needs its own find_path/find_library --
+# checked against an HPC module's own CUDNN_ROOT env var first (Lmod
+# modules on clusters like OSC commonly export one, rather than dropping
+# cudnn into the CUDA toolkit's own tree), then a -DCUDNN_ROOT=<path>
+# override, then the CUDA toolkit's install tree, then standard system
+# paths.
+set(DEEPITY_CUDNN_ENABLED OFF)
+if(DEEPITY_CUDA_ENABLED AND DEEPITY_USE_CUDNN)
+    find_path(DEEPITY_CUDNN_INCLUDE_DIR cudnn.h
+        HINTS $ENV{CUDNN_ROOT} ${CUDNN_ROOT} ${CUDAToolkit_INCLUDE_DIRS}
+        PATH_SUFFIXES include)
+    find_library(DEEPITY_CUDNN_LIBRARY cudnn
+        HINTS $ENV{CUDNN_ROOT} ${CUDNN_ROOT} ${CUDAToolkit_LIBRARY_DIR}
+        PATH_SUFFIXES lib lib64 lib/x64)
+    if(DEEPITY_CUDNN_INCLUDE_DIR AND DEEPITY_CUDNN_LIBRARY)
+        set(DEEPITY_CUDNN_ENABLED ON)
+        message(STATUS "cuDNN found: ${DEEPITY_CUDNN_LIBRARY}")
+    else()
+        message(WARNING "DEEPITY_USE_CUDNN is ON, but cuDNN was not found "
+            "(set -DCUDNN_ROOT=<path> if it's installed somewhere "
+            "nonstandard). Falling back to the im2col+GEMM convolution path.")
     endif()
 endif()
 
@@ -418,6 +444,7 @@ if(DEEPITY_CUDA_ENABLED)
         src/backend/cuda/CUDABackendFusedOps.cu
         src/backend/cuda/CUDABackendOptimizer.cu
         src/backend/cuda/CUDABackendConv.cu
+        src/backend/cuda/CUDABackendCudnnConv.cu
     )
 endif()
 
@@ -473,6 +500,12 @@ if(DEEPITY_CUDA_ENABLED)
     target_link_libraries(Deepity PUBLIC CUDA::cublas CUDA::cudart)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
     target_compile_options(Deepity PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+endif()
+
+if(DEEPITY_CUDNN_ENABLED)
+    target_include_directories(Deepity PRIVATE ${DEEPITY_CUDNN_INCLUDE_DIR})
+    target_link_libraries(Deepity PRIVATE ${DEEPITY_CUDNN_LIBRARY})
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDNN)
 endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)

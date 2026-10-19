@@ -24,6 +24,10 @@ CUDABackend::CUDABackend()
   cudaStreamCreate(&this->stream);
   cublasCreate(&this->handle);
   cublasSetStream(this->handle, this->stream);
+#ifdef DEEPITY_USE_CUDNN
+  cudnnCreate(&this->cudnnHandle);
+  cudnnSetStream(this->cudnnHandle, this->stream);
+#endif
   // Without this, every GEMM (every conv, since this backend lowers conv
   // to im2col+GEMM) runs in plain FP32 on CUDA cores (~19.5 TFLOPS on an
   // A100) instead of TF32 on tensor cores (~156 TFLOPS) -- the single
@@ -54,6 +58,9 @@ CUDABackend::~CUDABackend()
     cudaFree(workspace);
   if (scalarScratch)
     cudaFree(scalarScratch);
+#ifdef DEEPITY_USE_CUDNN
+  cudnnDestroy(this->cudnnHandle);
+#endif
   cublasDestroy(this->handle);
   cudaStreamDestroy(this->stream);
 }
