@@ -47,10 +47,13 @@ CUDABackend::CUDABackend()
 
 CUDABackend::~CUDABackend()
 {
-  if (hasGraph)
+  for (auto& slot : graphSlots)
   {
-    cudaGraphExecDestroy(graphExec);
-    cudaGraphDestroy(graph);
+    if (slot.hasGraph)
+    {
+      cudaGraphExecDestroy(slot.graphExec);
+      cudaGraphDestroy(slot.graph);
+    }
   }
   if (onesVector)
     cudaFree(onesVector);
@@ -65,14 +68,17 @@ CUDABackend::~CUDABackend()
   cudaStreamDestroy(this->stream);
 }
 
-void CUDABackend::BeginGraphCapture() noexcept
+void CUDABackend::BeginGraphCapture(size_t /*slot*/) noexcept
 {
+  // Capture itself is a property of the STREAM, not of any particular
+  // slot -- the slot only matters once EndGraphCapture() instantiates
+  // the result, so it has nothing to do here.
   cudaError_t err = cudaStreamBeginCapture(stream, cudaStreamCaptureModeThreadLocal);
   if (err != cudaSuccess)
     std::cerr << "cudaStreamBeginCapture failed: " << cudaGetErrorString(err) << "\n";
 }
 
-bool CUDABackend::EndGraphCapture() noexcept
+bool CUDABackend::EndGraphCapture(size_t slot) noexcept
 {
   cudaGraph_t newGraph;
   cudaError_t err = cudaStreamEndCapture(stream, &newGraph);
@@ -82,35 +88,40 @@ bool CUDABackend::EndGraphCapture() noexcept
     return false;
   }
 
-  if (hasGraph)
+  if (slot >= graphSlots.size())
+    graphSlots.resize(slot + 1);
+  GraphSlot& s = graphSlots[slot];
+
+  if (s.hasGraph)
   {
-    cudaGraphExecDestroy(graphExec);
-    cudaGraphDestroy(graph);
-    hasGraph = false;
+    cudaGraphExecDestroy(s.graphExec);
+    cudaGraphDestroy(s.graph);
+    s.hasGraph = false;
   }
 
-  graph = newGraph;
-  err = cudaGraphInstantiate(&graphExec, graph, nullptr, nullptr, 0);
+  s.graph = newGraph;
+  err = cudaGraphInstantiate(&s.graphExec, s.graph, nullptr, nullptr, 0);
   if (err != cudaSuccess)
   {
     std::cerr << "cudaGraphInstantiate failed: " << cudaGetErrorString(err) << "\n";
-    cudaGraphDestroy(graph);
-    graph = nullptr;
+    cudaGraphDestroy(s.graph);
+    s.graph = nullptr;
     return false;
   }
 
-  hasGraph = true;
+  s.hasGraph = true;
   return true;
 }
 
-void CUDABackend::ReplayGraph() noexcept
+void CUDABackend::ReplayGraph(size_t slot) noexcept
 {
-  if (!hasGraph)
+  if (slot >= graphSlots.size() || !graphSlots[slot].hasGraph)
   {
-    std::cerr << "ReplayGraph() called before any graph was captured.\n";
+    std::cerr << "ReplayGraph(slot=" << slot << ") called before any graph was captured "
+              << "into that slot.\n";
     return;
   }
-  cudaError_t err = cudaGraphLaunch(graphExec, stream);
+  cudaError_t err = cudaGraphLaunch(graphSlots[slot].graphExec, stream);
   if (err != cudaSuccess)
     std::cerr << "cudaGraphLaunch failed: " << cudaGetErrorString(err) << "\n";
 }

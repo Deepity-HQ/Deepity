@@ -20,26 +20,35 @@ public:
   /// @brief Starts recording subsequent backend calls into a replayable
   /// graph, instead of executing them immediately (CUDA graph capture;
   /// a no-op record on CPUBackend). Pair with EndGraphCapture().
-  virtual void BeginGraphCapture() noexcept = 0;
-  /// @brief Ends capture and instantiates the captured graph.
+  /// @param slot Which independent graph slot to (re)capture into. Each
+  /// slot keeps its own graph/instantiated-executable, so a network
+  /// that needs two DIFFERENT, independently-replayable operations
+  /// (e.g. FullPCNetwork::TrainStep()'s forward+settle+update vs.
+  /// Predict()'s forward+settle-only, called interleaved every step)
+  /// captures each into its own slot instead of one evicting the
+  /// other's graph and forcing a recapture on every single call.
+  /// Defaults to 0, the only slot every other existing caller uses.
+  virtual void BeginGraphCapture(size_t slot = 0) noexcept = 0;
+  /// @brief Ends capture and instantiates the captured graph into
+  /// @p slot (see BeginGraphCapture()'s own doc comment).
   /// @return true if capture and instantiation both succeeded and
   /// ReplayGraph() is now safe to call; false otherwise. Callers
   /// MUST check this, silently assuming success here was the
   /// cause of a real bug: a failed capture left ReplayGraph()
   /// permanently doing nothing on every subsequent call, since the
   /// caller had no way to know capture never actually happened.
-  virtual bool EndGraphCapture() noexcept = 0;
-  /// @brief Launches a graph previously captured and instantiated by
-  /// BeginGraphCapture()/EndGraphCapture(). No-op if EndGraphCapture()
-  /// never returned true. cudaGraphLaunch() is asynchronous: this
-  /// returns as soon as the launch is ENQUEUED, not once it completes.
-  /// Ordinarily that's fine (CUDA guarantees same-stream ordering, so a
-  /// later call that needs the result just needs to be queued on the
-  /// same stream too) -- but call Synchronize() afterward if you need
-  /// the replayed work to have definitely finished, e.g. before reading
-  /// results back on the host through any path that ISN'T itself a
-  /// synchronous backend call.
-  virtual void ReplayGraph() noexcept = 0;
+  virtual bool EndGraphCapture(size_t slot = 0) noexcept = 0;
+  /// @brief Launches the graph previously captured and instantiated
+  /// into @p slot by BeginGraphCapture()/EndGraphCapture(). No-op if
+  /// EndGraphCapture() never returned true for that slot.
+  /// cudaGraphLaunch() is asynchronous: this returns as soon as the
+  /// launch is ENQUEUED, not once it completes. Ordinarily that's fine
+  /// (CUDA guarantees same-stream ordering, so a later call that needs
+  /// the result just needs to be queued on the same stream too) -- but
+  /// call Synchronize() afterward if you need the replayed work to have
+  /// definitely finished, e.g. before reading results back on the host
+  /// through any path that ISN'T itself a synchronous backend call.
+  virtual void ReplayGraph(size_t slot = 0) noexcept = 0;
   /// @brief Blocks until all previously enqueued work on this backend's
   /// stream has completed. A no-op on CPUBackend (every CPU call is
   /// already synchronous).

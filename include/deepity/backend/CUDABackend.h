@@ -7,6 +7,7 @@
 #endif
 #endif
 #include <deepity/backend/Tensor.h>
+#include <vector>
 
 namespace Deep
 {
@@ -21,11 +22,11 @@ public:
   CUDABackend();
   ~CUDABackend() override;
   /// @copydoc Deep::IComputeBackend::BeginGraphCapture
-  void BeginGraphCapture() noexcept override;
+  void BeginGraphCapture(size_t slot = 0) noexcept override;
   /// @copydoc Deep::IComputeBackend::EndGraphCapture
-  bool EndGraphCapture() noexcept override;
+  bool EndGraphCapture(size_t slot = 0) noexcept override;
   /// @copydoc Deep::IComputeBackend::ReplayGraph
-  void ReplayGraph() noexcept override;
+  void ReplayGraph(size_t slot = 0) noexcept override;
   /// @copydoc Deep::IComputeBackend::Synchronize
   void Synchronize() noexcept override;
 
@@ -205,13 +206,22 @@ private:
 #ifdef DEEPITY_USE_CUDA
   cublasHandle_t handle;
   cudaStream_t stream;
-  cudaGraph_t graph = nullptr;
-  cudaGraphExec_t graphExec = nullptr;
+  /// @brief Independent captured-graph slots, indexed by BeginGraphCapture()/
+  /// EndGraphCapture()/ReplayGraph()'s own @p slot (see their doc
+  /// comments). Grows on demand in EndGraphCapture(); a slot that's
+  /// never been captured into has graph=graphExec=nullptr and
+  /// hasGraph=false, same as every slot used to be before this existed.
+  struct GraphSlot
+  {
+    cudaGraph_t graph = nullptr;
+    cudaGraphExec_t graphExec = nullptr;
+    bool hasGraph = false;
+  };
+  std::vector<GraphSlot> graphSlots;
 #ifdef DEEPITY_USE_CUDNN
   cudnnHandle_t cudnnHandle;
 #endif
 #endif
-  bool hasGraph = false;
   float* onesVector = nullptr;
   size_t onesCapacity = 0;
   float* workspace = nullptr;

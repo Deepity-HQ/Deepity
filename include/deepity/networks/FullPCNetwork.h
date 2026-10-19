@@ -259,5 +259,15 @@ private:
 
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
+
+  // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
+  // above -- Sphota-style online usage calls predict() and train_step()
+  // interleaved every single step, and they capture genuinely different
+  // operations (no DirectFeedbackUpdate()/UpdateWeights(), no terminal
+  // clamp), so sharing one slot would force a full recapture on every
+  // call instead of each settling into its own steady-state replay.
+  bool predictGraphCaptured = false;
+  int capturedPredictInferenceSteps = -1;
+  static constexpr size_t kPredictGraphSlot = 1;
 };
 } // namespace Deep
