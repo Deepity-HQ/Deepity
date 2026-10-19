@@ -219,24 +219,68 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
 {
   ResetState();
   Clamp(x);
-  ProjectForward();
 
-  for (int t = 0; t < inferenceSteps; t++)
+  auto settleStep = [this]()
   {
     if (useEPC)
       EPCStep();
     else
       Step();
-  }
+  };
 
   FullPCLayer* terminal = GetTerminalLayer();
 
-  if (terminal->GetCrossEntropy())
+  // Everything from here down is pure forward/settling work, reading
+  // only the buffers Clamp() just filled -- no weight update, no
+  // DirectFeedbackUpdate(), no terminal ClampState(), unlike TrainStep().
+  // Captured into its OWN graph slot (kPredictGraphSlot), separate from
+  // TrainStep()'s: an online caller that calls both every step (e.g. a
+  // 0-settling-step readout before each training update) would otherwise
+  // evict TrainStep()'s graph and force a full recapture on every single
+  // call, since BeginGraphCapture()/EndGraphCapture() used to only ever
+  // address one shared slot.
+  auto settleAndProject = [&]()
   {
-    FullPCLayer* below = layers[layers.size() - 2].get();
-    below->ComputeMuOnly();
-    size_t n = below->GetBatchSize() * below->GetOutputSize();
-    backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+    ProjectForward();
+    for (int t = 0; t < inferenceSteps; t++)
+      settleStep();
+    if (terminal->GetCrossEntropy())
+    {
+      FullPCLayer* below = layers[layers.size() - 2].get();
+      below->ComputeMuOnly();
+      size_t n = below->GetBatchSize() * below->GetOutputSize();
+      backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+    }
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPredictGraphSlot);
+      settleAndProject();
+      bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCaptured = true;
+        capturedPredictInferenceSteps = inferenceSteps;
+      }
+      else
+        std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
+                     "this call.\n";
+    }
+    else
+    {
+      backend->ReplayGraph(kPredictGraphSlot);
+      // cudaGraphLaunch() only enqueues the replay -- the CopyToHost()
+      // below needs it to have actually finished.
+      backend->Synchronize();
+    }
+  }
+  else
+  {
+    settleAndProject();
   }
 
   const float* beliefs = terminal->GetBeliefs();

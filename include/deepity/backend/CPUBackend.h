@@ -15,14 +15,15 @@ public:
 
   // @remark these are no-ops for backend purposes
   /// @copydoc Deep::IComputeBackend::BeginGraphCapture
-  void BeginGraphCapture() noexcept override {}
+  void BeginGraphCapture(size_t slot = 0) noexcept override { (void)slot; }
   /// @copydoc Deep::IComputeBackend::EndGraphCapture
-  bool EndGraphCapture() noexcept override
+  bool EndGraphCapture(size_t slot = 0) noexcept override
   {
+    (void)slot;
     return true;
   } // nothing to fail on CPU
   /// @copydoc Deep::IComputeBackend::ReplayGraph
-  void ReplayGraph() noexcept override {}
+  void ReplayGraph(size_t slot = 0) noexcept override { (void)slot; }
   /// @copydoc Deep::IComputeBackend::Synchronize
   void Synchronize() noexcept override {}
 
