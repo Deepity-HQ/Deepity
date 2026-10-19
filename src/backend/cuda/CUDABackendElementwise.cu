@@ -108,6 +108,31 @@ void CUDABackend::AddBiasPerChannel(float* buf, const float* bias, size_t channe
   CHECK_CUDA_LAUNCH();
 }
 
+__global__ void AddBiasPerChannelNCHWKernel(float* buf, const float* bias, size_t batchSize,
+                                            size_t channels, size_t spatialSize)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  size_t total = batchSize * channels * spatialSize;
+  if (i < total)
+  {
+    size_t c = (i / spatialSize) % channels;
+    buf[i] += bias ? bias[c] : 0.0f;
+  }
+}
+
+void CUDABackend::AddBiasPerChannelNCHW(float* buf, const float* bias, size_t batchSize,
+                                        size_t channels, size_t spatialSize) noexcept
+{
+  if (!buf || !bias)
+    return;
+  constexpr int BLOCK_SIZE = 256;
+  size_t total = batchSize * channels * spatialSize;
+  const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  AddBiasPerChannelNCHWKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, bias, batchSize, channels,
+                                                                 spatialSize);
+  CHECK_CUDA_LAUNCH();
+}
+
 __global__ void AxpyBroadcastIntoKernel(float* y, const float* x, const float* factor,
                                         size_t batchSize, size_t width, float alpha)
 {
