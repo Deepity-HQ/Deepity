@@ -242,18 +242,31 @@ namespace Deep
             return;
         }
 
-        backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth,
-                        kernelH, kernelW, strideH, strideW, padH, padW,
-                        colBuffer);
+        // Tries a single fused cuDNN convolution straight into mu first,
+        // falling back to the original Im2Col()+RepackForBatchedGemm()+
+        // MatMul() composition otherwise -- same pattern as
+        // FullConvPCLayer::ComputeMuOnly(), see its own comment for why.
+        if (!backend->TryFusedConvForward(z, W, mu, 1.0f, batchSize, inChannels, inHeight, inWidth,
+                                          outChannels, kernelH, kernelW, strideH, strideW, padH, padW))
+        {
+            backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth,
+                            kernelH, kernelW, strideH, strideW, padH, padW,
+                            colBuffer);
 
-        backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
-        backend->MatMul(
-            /*transA=*/false, /*transB=*/false,
-            outChannels, (int)(batchSize * colCols), (int)colRows,
-            1.0f, W, (int)colRows, colsRepacked, (int)(batchSize * colCols),
-            0.0f, lgRepacked, (int)(batchSize * colCols));
-        backend->AddBiasPerChannel(lgRepacked, b, outChannels, batchSize * colCols);
-        backend->RepackForBatchedGemm(mu, lgRepacked, outChannels, batchSize, colCols);
+            backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+            backend->MatMul(
+                /*transA=*/false, /*transB=*/false,
+                outChannels, (int)(batchSize * colCols), (int)colRows,
+                1.0f, W, (int)colRows, colsRepacked, (int)(batchSize * colCols),
+                0.0f, lgRepacked, (int)(batchSize * colCols));
+            backend->RepackForBatchedGemm(mu, lgRepacked, outChannels, batchSize, colCols);
+        }
+
+        // mu is [batchSize, outChannels, colCols] (batch outermost) --
+        // AddBiasPerChannel() needs channel outermost instead (wrong
+        // here for any batchSize > 1, see its own doc comment), so this
+        // needs AddBiasPerChannelNCHW() specifically.
+        backend->AddBiasPerChannelNCHW(mu, b, batchSize, outChannels, colCols);
 
         // Snapshotted BEFORE Activation() overwrites mu in place: GELU's
         // derivative has no closed form from the activated value alone
@@ -311,20 +324,29 @@ namespace Deep
             backend->ActivationDerivativeInto(derivativeType, mu, preact, outTotal);
             backend->MultiplyInto(bottom_up_cols, e_above, mu, outTotal);
 
-            // Same batched-GEMM trick as ComputeMuOnly(): one big transA
-            // GEMM instead of batchSize small ones, un-repacking the
-            // result back to per-batch-contiguous layout Col2Im() expects.
-            backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
-            backend->MatMul(
-                /*transA=*/true, /*transB=*/false,
-                (int)colRows, (int)(batchSize * colCols), outChannels,
-                1.0f, W, (int)colRows, lgRepacked, (int)(batchSize * colCols),
-                0.0f, colsRepacked, (int)(batchSize * colCols));
-            backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
+            // Tries a single fused cuDNN backward-data convolution
+            // straight into dz_dt (already Zero()d above, so this
+            // overwrite contract matches Col2Im()'s accumulate one
+            // here); same pattern as FullConvPCLayer::UpdateState().
+            if (!backend->TryFusedConvBackwardData(bottom_up_cols, W, dz_dt, 1.0f, batchSize,
+                                                   inChannels, inHeight, inWidth, outChannels,
+                                                   kernelH, kernelW, strideH, strideW, padH, padW))
+            {
+                // Same batched-GEMM trick as ComputeMuOnly(): one big transA
+                // GEMM instead of batchSize small ones, un-repacking the
+                // result back to per-batch-contiguous layout Col2Im() expects.
+                backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
+                backend->MatMul(
+                    /*transA=*/true, /*transB=*/false,
+                    (int)colRows, (int)(batchSize * colCols), outChannels,
+                    1.0f, W, (int)colRows, lgRepacked, (int)(batchSize * colCols),
+                    0.0f, colsRepacked, (int)(batchSize * colCols));
+                backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
-            backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth,
-                            kernelH, kernelW, strideH, strideW, padH, padW,
-                            dz_dt);
+                backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth,
+                                kernelH, kernelW, strideH, strideW, padH, padW,
+                                dz_dt);
+            }
         }
 
         backend->AxpyInto(dz_dt, e, ownStateSize, -1.0f);
@@ -346,7 +368,11 @@ namespace Deep
 
         backend->MultiplyInto(bottom_up_cols, e_above, mu, outTotal);
 
-        backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+        // lgRepacked feeds the bias-gradient GEMM below regardless of
+        // which weight-gradient path runs; colBuffer/colsRepacked are
+        // only needed by the im2col+GEMM FALLBACK path inside each
+        // branch below, not by TryFusedConvBackwardFilter() (which reads
+        // z directly) -- same reasoning as FullConvPCLayer::UpdateWeights().
         backend->RepackForBatchedGemm(lgRepacked, bottom_up_cols, batchSize, outChannels, colCols);
 
         size_t M = (size_t)batchSize * colCols;
@@ -360,11 +386,26 @@ namespace Deep
 
             float lr_batch = lr / batchSize;
 
-            backend->MatMul(
-                /*transA=*/false, /*transB=*/true,
-                outChannels, (int)colRows, (int)M,
-                lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
-                1.0f, W, (int)colRows);
+            // Fuses the weight-gradient GEMM AND its lr_batch-scaled
+            // accumulate into W (beta=1.0) in one cuDNN call, straight
+            // from z -- no im2col needed. Falls back to the original
+            // Im2Col()+RepackForBatchedGemm()+MatMul() composition
+            // otherwise.
+            if (!backend->TryFusedConvBackwardFilter(z, bottom_up_cols, W, lr_batch, 1.0f,
+                                                     batchSize, inChannels, inHeight, inWidth,
+                                                     outChannels, kernelH, kernelW, strideH,
+                                                     strideW, padH, padW))
+            {
+                backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth,
+                                kernelH, kernelW, strideH, strideW, padH, padW,
+                                colBuffer);
+                backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+                backend->MatMul(
+                    /*transA=*/false, /*transB=*/true,
+                    outChannels, (int)colRows, (int)M,
+                    lr_batch, lgRepacked, (int)M, colsRepacked, (int)M,
+                    1.0f, W, (int)colRows);
+            }
 
             // Bias gradient: db[oc] = lr_batch * sum over lgRepacked's
             // oc-th row (M contiguous values, both batch AND spatial
@@ -387,11 +428,24 @@ namespace Deep
 
             float grad_scale = -1.0f / batchSize;
 
-            backend->MatMul(
-                /*transA=*/false, /*transB=*/true,
-                outChannels, (int)colRows, (int)M,
-                grad_scale, lgRepacked, (int)M, colsRepacked, (int)M,
-                0.0f, grad_W, (int)colRows);
+            // Same fused-first, im2col-fallback pattern as the SGD
+            // branch above, writing a fresh gradient (beta=0.0) into
+            // grad_W instead of accumulating into W directly.
+            if (!backend->TryFusedConvBackwardFilter(z, bottom_up_cols, grad_W, grad_scale, 0.0f,
+                                                     batchSize, inChannels, inHeight, inWidth,
+                                                     outChannels, kernelH, kernelW, strideH,
+                                                     strideW, padH, padW))
+            {
+                backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth,
+                                kernelH, kernelW, strideH, strideW, padH, padW,
+                                colBuffer);
+                backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
+                backend->MatMul(
+                    /*transA=*/false, /*transB=*/true,
+                    outChannels, (int)colRows, (int)M,
+                    grad_scale, lgRepacked, (int)M, colsRepacked, (int)M,
+                    0.0f, grad_W, (int)colRows);
+            }
 
             // grad_b = grad_scale * (lgRepacked @ ones), beta=0.0f
             // overwrites, matching the original's memset(grad_b,0,...)
@@ -412,6 +466,14 @@ namespace Deep
             break;
         }
         }
+    }
+
+    void SimpleConvPCLayer::PrepareConvWorkspace() noexcept
+    {
+        if (outChannels == 0)
+            return;
+        backend->PrepareConvWorkspace(batchSize, inChannels, inHeight, inWidth, outChannels,
+                                      kernelH, kernelW, strideH, strideW, padH, padW);
     }
 
     void SimpleConvPCLayer::ResetState() noexcept

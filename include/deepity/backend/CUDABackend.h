@@ -180,6 +180,9 @@ public:
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AddBiasPerChannelNCHW
+  void AddBiasPerChannelNCHW(float* buf, const float* bias, size_t batchSize, size_t channels,
+                             size_t spatialSize) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::ComputePrecisionWeightedErrorAndEnergy
   float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,

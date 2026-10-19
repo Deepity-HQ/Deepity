@@ -330,9 +330,12 @@ public:
   /// @brief Attempts a single fused convolution forward pass, skipping
   /// Im2Col()/RepackForBatchedGemm()/MatMul() entirely: @p output =
   /// @p alpha * conv(@p input, @p W), in the same [batchSize, outChannels,
-  /// outH, outW] NCHW layout AddBiasPerChannel()/Activation() already
-  /// expect, so a caller's existing bias/activation calls stay unchanged
-  /// either way. Returns false (without touching @p output) when this
+  /// outH, outW] NCHW layout the Im2Col()+RepackForBatchedGemm()+MatMul()
+  /// fallback's own un-repack produces. Activation() is layout-agnostic
+  /// (elementwise), but the bias-add is NOT: use AddBiasPerChannelNCHW(),
+  /// not AddBiasPerChannel() (which needs channel as the OUTERMOST
+  /// dimension, wrong for this layout whenever batchSize > 1 -- see its
+  /// own doc comment). Returns false (without touching @p output) when this
   /// backend has no fused path -- always on CPUBackend, or CUDABackend
   /// built without cuDNN -- letting the caller fall back to the manual
   /// Im2Col()+RepackForBatchedGemm()+MatMul() sequence it already has.
@@ -450,6 +453,22 @@ public:
   /// with @p buf offset to that item's slice.
   virtual void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                                  size_t spatialSize) noexcept = 0;
+
+  /// @brief Convolutional bias-add for the batch-MAJOR NCHW layout:
+  /// buf[b*channels*spatialSize + c*spatialSize + s] += bias[c] for all
+  /// b in [0,batchSize), c in [0,channels), s in [0,spatialSize). NOT
+  /// the same contract as AddBiasPerChannel() above (which needs
+  /// channel as the OUTERMOST dimension, i.e. [channels, batchSize*
+  /// spatialSize] -- correct for lgRepacked's layout, wrong for mu's).
+  /// This is what TryFusedConvForward()'s own [batchSize, outChannels,
+  /// outH, outW] output actually needs: that layout keeps batch
+  /// outermost, so AddBiasPerChannel() with spatialSize folded to
+  /// batchSize*trueSpatialSize silently adds bias[c] to the wrong
+  /// elements whenever batchSize > 1 (confirmed: every gradient-check
+  /// test in this codebase uses batchSize=1, which collapses the two
+  /// layouts into the same thing and could never have caught this).
+  virtual void AddBiasPerChannelNCHW(float* buf, const float* bias, size_t batchSize,
+                                     size_t channels, size_t spatialSize) noexcept = 0;
 
   // Precision-weighted PC ops (DiscriminativePCLayer/ConvPCLayer family,
   // a per-position "confidence" p broadcast across the batch dimension,

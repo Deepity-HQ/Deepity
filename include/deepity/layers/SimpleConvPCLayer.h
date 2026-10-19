@@ -128,6 +128,13 @@ namespace Deep
         /// @brief Computes only mu (forward prediction), skipping error/energy.
         void ComputeMuOnly() noexcept;
 
+        /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this
+        /// layer's convolution shape. Must run before the network's first
+        /// CUDA graph capture -- see IComputeBackend::PrepareConvWorkspace()'s
+        /// own doc comment for why growing it lazily, on first use inside a
+        /// captured settling step, corrupts the whole capture. No-op on CPU.
+        void PrepareConvWorkspace() noexcept;
+
         /// @brief Resets this layer's beliefs (z) without touching learned weights.
         void ResetState() noexcept;
         /// @brief Randomizes W/b.

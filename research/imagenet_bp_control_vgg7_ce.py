@@ -55,6 +55,7 @@ Usage:
     python research/imagenet_bp_control_vgg7_ce.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching PCX exactly)
 """
+import json
 import os
 import sys
 import numpy as np
@@ -184,6 +185,7 @@ def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
     LR = float(sys.argv[3]) if len(sys.argv) > 3 else 2.975e-4
+    LOG_PATH = sys.argv[4] if len(sys.argv) > 4 else "imagenet_bp_control_vgg7_ce_log.jsonl"
     peak_lr = 1.1 * LR
     end_lr = 0.1 * LR
 
@@ -200,6 +202,12 @@ def main():
     print(f"Training: {EPOCHS} epochs, batch_size={BATCH_SIZE}, lr={LR:.6g} "
           f"(warmup-cosine to peak {peak_lr:.6g}, end {end_lr:.6g}), AdamW, cross-entropy, "
           f"56x56 crops, pooling on.\n")
+    print(f"Per-epoch log: {LOG_PATH}\n")
+
+    # Same per-epoch JSONL convention as imagenet_pytorch_baseline_ce.py,
+    # so the two trajectories can be diffed directly instead of relying
+    # on pasted terminal output surviving a SLURM kill.
+    log_file = open(LOG_PATH, "w")
 
     net = build_vgg7_network(BATCH_SIZE, N_CLASSES, LR)
     net.randomize_weights(7)
@@ -268,10 +276,19 @@ def main():
               f"Avg energy: {epoch_energy/n_energy_samples:.4f} | Val top1: {acc:.2f}% | "
               f"Best top1: {best_acc:.2f}% | lr={lr_at_step(global_step):.2e}")
 
+        log_file.write(json.dumps({
+            "epoch": epoch + 1, "elapsed": elapsed,
+            "avg_energy": epoch_energy / n_energy_samples,
+            "val_top1": acc, "best_top1": best_acc,
+            "lr": lr_at_step(global_step),
+        }) + "\n")
+        log_file.flush()
+
         if epoch == 0:
             run_collapse_diagnostic(net, X_val_u8, y_val_idx, diag_indices, BATCH_SIZE, N_CLASSES,
                                     "POST-epoch-1")
 
+    log_file.close()
     print(f"\n=== Result ===")
     print(f"Deepity VGG-7 BP control, cross-entropy (exact PCX architecture, GELU): "
           f"best top-1 = {best_acc:.2f}%")

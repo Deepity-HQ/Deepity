@@ -60,6 +60,12 @@ namespace Deep
             gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total);
             for (auto &l : layers)
                 l->BindMemory(*gpuArena);
+            // Must happen here, before the network's first
+            // BeginGraphCapture() -- see PrepareConvWorkspace()'s own doc
+            // comment for why growing it lazily, on first use inside a
+            // captured settling step, corrupts the whole capture.
+            for (auto &l : layers)
+                l->PrepareConvWorkspace();
         }
 #endif
     }

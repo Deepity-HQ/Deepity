@@ -495,6 +495,21 @@ void CPUBackend::AddBiasPerChannel(float* buf, const float* bias, size_t channel
   AddBiasPerChannelDispatch(buf, bias, channels, spatialSize);
 }
 
+void CPUBackend::AddBiasPerChannelNCHW(float* buf, const float* bias, size_t batchSize,
+                                       size_t channels, size_t spatialSize) noexcept
+{
+  // Reuses the existing, already-verified per-item kernel once per batch
+  // slice -- same "call once per item with buf offset to that item's
+  // slice" convention FullConvPCLayer::DirectFeedbackUpdate() already
+  // established for this exact situation (a buffer this primitive can't
+  // address in one call because channel isn't its outermost dimension).
+  // Cheap on CPU (plain host loop); CUDABackend's own override instead
+  // uses a single kernel launch, where per-item loop overhead is the
+  // problem TryFusedConvForward() exists to eliminate elsewhere.
+  for (size_t b = 0; b < batchSize; ++b)
+    AddBiasPerChannelDispatch(buf + b * channels * spatialSize, bias, channels, spatialSize);
+}
+
 float CPUBackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
                                                          const float* p, size_t batchSize,
                                                          size_t width) noexcept

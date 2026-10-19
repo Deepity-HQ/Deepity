@@ -49,6 +49,22 @@ void ReferenceAddBiasPerChannel(std::vector<float>& buf, const std::vector<float
       buf[c * spatialSize + s] += bias[c];
 }
 
+// Independent reference for AddBiasPerChannelNCHW, matching its own
+// documented contract: buf is [batchSize, channels, spatialSize]
+// (batch OUTERMOST), unlike AddBiasPerChannel's [channels, spatialSize]
+// above -- the distinction this test exists to catch, since the two
+// contracts only coincide at batchSize=1 (see that function's own doc
+// comment on why every other test in this codebase, all batchSize=1,
+// could never have caught the regression this fixes).
+void ReferenceAddBiasPerChannelNCHW(std::vector<float>& buf, const std::vector<float>& bias,
+                                    size_t batchSize, size_t channels, size_t spatialSize)
+{
+  for (size_t b = 0; b < batchSize; ++b)
+    for (size_t c = 0; c < channels; ++c)
+      for (size_t s = 0; s < spatialSize; ++s)
+        buf[b * channels * spatialSize + c * spatialSize + s] += bias[c];
+}
+
 // Independent reference for FusedActivationDerivativeMultiply, matching
 // ActivationDerivativeFromActivatedScalar's own formulas.
 void ReferenceFusedADM(std::vector<float>& dst, const std::vector<float>& a,
@@ -104,6 +120,37 @@ bool TestAddBiasPerChannel(CPUBackend& backend, size_t channels, size_t spatialS
       printf("  FAIL AddBiasPerChannel(channels=%zu, spatialSize=%zu): mismatch at %zu: "
              "ref=%.6f hwy=%.6f\n",
              channels, spatialSize, i, bufRef[i], bufHwy[i]);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool TestAddBiasPerChannelNCHW(CPUBackend& backend, size_t batchSize, size_t channels,
+                               size_t spatialSize, unsigned seed)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<float> dist(-2.0f, 2.0f);
+
+  size_t total = batchSize * channels * spatialSize;
+  std::vector<float> bufRef(total), bufHwy(total);
+  std::vector<float> bias(channels);
+  for (auto& v : bufRef)
+    v = dist(rng);
+  bufHwy = bufRef;
+  for (auto& v : bias)
+    v = dist(rng);
+
+  ReferenceAddBiasPerChannelNCHW(bufRef, bias, batchSize, channels, spatialSize);
+  backend.AddBiasPerChannelNCHW(bufHwy.data(), bias.data(), batchSize, channels, spatialSize);
+
+  for (size_t i = 0; i < bufRef.size(); ++i)
+  {
+    if (!NearlyEqual(bufRef[i], bufHwy[i]))
+    {
+      printf("  FAIL AddBiasPerChannelNCHW(batchSize=%zu, channels=%zu, spatialSize=%zu): "
+             "mismatch at %zu: ref=%.6f hwy=%.6f\n",
+             batchSize, channels, spatialSize, i, bufRef[i], bufHwy[i]);
       return false;
     }
   }
@@ -319,6 +366,19 @@ int main()
       allPass = allPass && ok;
     }
   printf("%s\n\n", allPass ? "PASS" : "FAIL");
+
+  printf("=== AddBiasPerChannelNCHW ===\n");
+  bool nchwPass = true;
+  for (size_t batchSize : {1, 2, 3, 5, 128})
+    for (size_t channels : {1, 3, 8, 16})
+      for (size_t spatial : {1, 3, 7, 16, 49})
+      {
+        bool ok = TestAddBiasPerChannelNCHW(backend, batchSize, channels, spatial,
+                                            (unsigned)(batchSize * 10007 + channels * 97 + spatial));
+        nchwPass = nchwPass && ok;
+      }
+  printf("%s\n\n", nchwPass ? "PASS" : "FAIL");
+  allPass = allPass && nchwPass;
 
   printf("=== FusedActivationDerivativeMultiply ===\n");
   bool admPass = true;

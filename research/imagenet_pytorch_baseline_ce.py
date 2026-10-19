@@ -55,6 +55,7 @@ Usage:
     python research/imagenet_pytorch_baseline_ce.py [EPOCHS] [BATCH_SIZE]
 (defaults: 50, 128, matching the paper exactly)
 """
+import json
 import sys
 import time
 
@@ -136,6 +137,7 @@ class VGG7(nn.Module):
 def main():
     EPOCHS = int(sys.argv[1]) if len(sys.argv) > 1 else 50
     BATCH_SIZE = int(sys.argv[2]) if len(sys.argv) > 2 else 128
+    LOG_PATH = sys.argv[3] if len(sys.argv) > 3 else "imagenet_pytorch_baseline_ce_log.jsonl"
     # VGG_BP_CE_tinyimagenet.yaml's own search result for this variant,
     # verified directly against the file (distinct from BP_SE's own
     # lr=1.585e-4/wd=2.098e-5).
@@ -196,6 +198,13 @@ def main():
           f"{peak_lr:.6g}, end {end_lr:.6g}), wd={WD:.6g}, AdamW, "
           f"cross-entropy loss, 56x56 crops, GELU.")
     print(f"Reference: PCX reports 45.32+-0.11% top-1 for this exact setup.\n")
+    print(f"Per-epoch log: {LOG_PATH}\n")
+
+    # Per-epoch JSONL log, so a terminal buffer getting lost (or a SLURM
+    # time-limit kill mid-run) doesn't throw away the one thing this
+    # script exists to produce: a trajectory to compare against
+    # Deepity's own BP control, epoch by epoch.
+    log_file = open(LOG_PATH, "w")
 
     global_step = 0
     best_acc = 0.0
@@ -247,6 +256,15 @@ def main():
               f"Val top1: {acc1:.2f}% | Val top5: {acc5:.2f}% | "
               f"Best top1: {best_acc:.2f}% | lr={lr_at_step(global_step):.2e}")
 
+        log_file.write(json.dumps({
+            "epoch": epoch + 1, "elapsed": elapsed,
+            "train_loss": epoch_loss / n_batches,
+            "val_top1": acc1, "val_top5": acc5, "best_top1": best_acc,
+            "lr": lr_at_step(global_step),
+        }) + "\n")
+        log_file.flush()
+
+    log_file.close()
     print(f"\n=== Result ===")
     print(f"PyTorch VGG-7 ground truth, Tiny ImageNet, Backprop-CE: "
           f"best top-1 = {best_acc:.2f}%")

@@ -367,7 +367,12 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
     backend->RepackForBatchedGemm(mu, lgRepacked, outChannels, batchSize, colCols); // un-repack
   }
 
-  backend->AddBiasPerChannel(mu, b, outChannels, batchSize * colCols); // once, not per-batch
+  // mu is [batchSize, outChannels, colCols] (batch outermost, matching
+  // TryFusedConvForward()'s own NCHW output and the fallback's own
+  // un-repack) -- AddBiasPerChannel() needs channel outermost instead
+  // (correct for lgRepacked, wrong here for any batchSize > 1, see its
+  // own doc comment), so this needs AddBiasPerChannelNCHW() specifically.
+  backend->AddBiasPerChannelNCHW(mu, b, batchSize, outChannels, colCols);
   // Snapshotted BEFORE Activation() overwrites mu in place: GELU's
   // derivative has no closed form from the activated value alone (see
   // preact's own doc comment), so every later derivative computation

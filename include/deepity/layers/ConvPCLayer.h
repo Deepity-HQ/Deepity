@@ -215,6 +215,13 @@ public:
   /// @brief Fast-path forward projection that skips state initialization
   void ComputeMuOnly() noexcept;
 
+  /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this layer's
+  /// convolution shape. Must run before the network's first CUDA graph
+  /// capture -- see IComputeBackend::PrepareConvWorkspace()'s own doc
+  /// comment for why growing it lazily, on first use inside a captured
+  /// settling step, corrupts the whole capture. No-op on CPU.
+  void PrepareConvWorkspace() noexcept;
+
   /// @brief Returns this layer's configured activation type.
   ActivationType GetActivationType() const noexcept { return activationType; }
   /// @brief Returns this layer's configured activation-derivative type.
