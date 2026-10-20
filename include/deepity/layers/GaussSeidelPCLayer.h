@@ -224,7 +224,12 @@ namespace Deep
         /// @brief Randomizes this layer's weights (and the E
         /// feedback-alignment matrix) in place.
         /// @param twister The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &twister) noexcept;
+        /// @param distribution Distribution for W only; E (the feedback-
+        /// alignment matrix) keeps its own fixed uniform(-0.3,0.3) init
+        /// regardless. The default "normal" has no "(a,b)" and so
+        /// deliberately fails to parse, falling back to this class's own
+        /// existing default.
+        void RandomizeWeights(std::mt19937 &twister, const char *distribution = "normal") noexcept;
 
         /// @brief Returns this layer's configured activation type.
         /// @return ActivationType

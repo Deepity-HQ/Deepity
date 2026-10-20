@@ -70,10 +70,10 @@ namespace Deep
 #endif
     }
 
-    void ConvPCNetwork::RandomizeWeights(std::mt19937 &rng) noexcept
+    void ConvPCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution) noexcept
     {
         for (auto &l : layers)
-            l->RandomizeWeights(rng);
+            l->RandomizeWeights(rng, distribution);
     }
 
     void ConvPCNetwork::ResetState() noexcept

@@ -28,10 +28,10 @@ namespace Deep
         layers.push_back(std::move(l));
     }
 
-    void DirectKPPCNetwork::RandomizeWeights(std::mt19937 &rng)
+    void DirectKPPCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution)
     {
         for (auto &l : layers)
-            l->RandomizeWeights(rng);
+            l->RandomizeWeights(rng, distribution);
     }
 
     void DirectKPPCNetwork::ResetState() noexcept

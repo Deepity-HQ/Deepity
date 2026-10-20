@@ -1,5 +1,6 @@
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/backend/CPUBackend.h>
+#include <deepity/utils/RandomizeDistribution.h>
 #include <cmath>
 #include <type_traits>
 
@@ -186,7 +187,7 @@ namespace Deep
         }
     }
 
-    void SimpleConvPCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
+    void SimpleConvPCLayer::RandomizeWeights(std::mt19937 &seedGenerator, const char *distribution) noexcept
     {
         if (outChannels == 0)
             return;
@@ -198,7 +199,7 @@ namespace Deep
         std::uniform_int_distribution<uint32_t> seedDist;
         uint32_t seed = seedDist(seedGenerator);
 
-        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
+        RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seed, 0.0f, limit);
     }
 
     float SimpleConvPCLayer::CalculateState(bool needEnergy) noexcept

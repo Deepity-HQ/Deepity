@@ -46,12 +46,6 @@ namespace Deep
             l->RandomizeWeights(rng, distribution);
     }
 
-    void SimplePCNetwork::RandomizeWeights(std::mt19937 &rng)
-    {
-        for (auto &l : layers)
-            l->RandomizeWeights(rng);
-    }
-
     void SimplePCNetwork::ResetState() noexcept
     {
         for (auto &l : layers)

@@ -203,7 +203,12 @@ public:
 
   template <typename ArenaT> void BindMemory(ArenaT& arena);
   size_t GetRequiredFloats() const noexcept;
-  void RandomizeWeights(std::mt19937& seedGenerator) noexcept;
+  /// @param distribution Distribution for W only (overridden entirely by
+  /// usePCXInit when that's set -- see the .cpp); Psi keeps its own
+  /// fixed fan-scaled init regardless. The default "normal" has no
+  /// "(a,b)" and so deliberately fails to parse, falling back to this
+  /// class's own existing default.
+  void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   void SetLayerAbove(FullConvPCLayer* l) noexcept { layerAbove = l; }
   void SetLayerBelow(FullConvPCLayer* l) noexcept { layerBelow = l; }

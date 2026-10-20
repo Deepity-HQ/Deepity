@@ -57,10 +57,10 @@ namespace Deep
         layers.push_back(std::move(l));
     }
 
-    void DiscriminativePCNetwork::RandomizeWeights(std::mt19937 &rng)
+    void DiscriminativePCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution)
     {
         for (auto &l : layers)
-            l->RandomizeWeights(rng);
+            l->RandomizeWeights(rng, distribution);
     }
 
     void DiscriminativePCNetwork::ResetState() noexcept

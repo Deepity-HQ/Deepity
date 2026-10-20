@@ -5,17 +5,9 @@
 #include <deepity/backend/CPUBackend.h>
 #include <deepity/layers/SimplePCLayer.h>
 #include <deepity/utils/Optimize.h>
+#include <deepity/utils/RandomizeDistribution.h>
 #include <omp.h>
 #include <type_traits>
-
-#ifdef _MSC_VER
-#define SCANF_DISTRIBUTION(str, name, a, b)                                    \
-  sscanf_s((str), "%15[^(](%f,%f)", (name), (unsigned)_countof(name), &(a),    \
-           &(b))
-#else
-#define SCANF_DISTRIBUTION(str, name, a, b)                                    \
-  sscanf((str), "%15[^(](%f,%f)", (name), &(a), &(b))
-#endif
 
 namespace Deep {
 namespace {
@@ -65,30 +57,12 @@ SimplePCLayer::SimplePCLayer(size_t size, size_t nextSize, size_t batchSize,
 
 void SimplePCLayer::RandomizeWeights(std::mt19937 &seedGenerator,
                                      const char *distribution) noexcept {
-  char name[16] = {0};
-  float a = 0.0f, b = 1.0f;
-
-  if (SCANF_DISTRIBUTION(distribution, name, a, b) != 3) {
-    // Malformed string, fall back to this class's original,
-    // validated default (He/Xavier-style normal init) rather than
-    // silently doing nothing.
-    name[0] = '\0';
-    memcpy(name, "normal", sizeof("normal"));
-    a = 0.0f;
-    b = std::sqrt(2.0f / (size + nextSize));
-  }
-
   std::uniform_int_distribution<uint32_t> seedDist;
   size_t Wsz = size * nextSize;
   uint32_t seed = seedDist(seedGenerator);
 
-  if (strcmp(name, "normal") == 0)
-    backend->RandomizeNormal(W, Wsz, a, b, seed);
-  else if (strcmp(name, "uniform") == 0)
-    backend->RandomizeUniform(W, Wsz, a, b, seed);
-  else
-    backend->RandomizeNormal(W, Wsz, 0.0f, std::sqrt(2.0f / (size + nextSize)),
-                             seed);
+  RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seed, 0.0f,
+                            std::sqrt(2.0f / (size + nextSize)));
 }
 
 float SimplePCLayer::CalculateState(bool needEnergy) noexcept {

@@ -41,7 +41,9 @@ public:
   void SetUseMuPCScaling(bool enabled) noexcept { useMuPCScaling = enabled; }
   void SetUseResidualConnections(bool enabled) noexcept { useResidualConnections = enabled; }
 
-  void RandomizeWeights(std::mt19937& rng);
+  /// @param distribution Forwarded to every layer's RandomizeWeights();
+  /// see FullConvPCLayer::RandomizeWeights()'s own doc comment.
+  void RandomizeWeights(std::mt19937& rng, const char* distribution = "normal");
   void ResetState() noexcept;
   void Clamp(const std::vector<float>& input);
   void ProjectForward() noexcept;

@@ -128,7 +128,11 @@ public:
   /// @brief Total floats this layer needs from its MemoryArena.
   size_t GetRequiredFloats() const noexcept;
   /// @brief Randomizes W and Psi.
-  void RandomizeWeights(std::mt19937 &seedGenerator) noexcept;
+  /// @param distribution Distribution for W only; Psi keeps its own
+  /// fixed fan-scaled init regardless. The default "normal" has no
+  /// "(a,b)" and so deliberately fails to parse, falling back to this
+  /// class's own existing default.
+  void RandomizeWeights(std::mt19937 &seedGenerator, const char *distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 

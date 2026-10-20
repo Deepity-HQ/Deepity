@@ -218,8 +218,12 @@ class DKPPCN(dy.DirectKPPCNetwork):
     def compile(self) -> None:
         super().compile()
 
-    def randomize_weights(self) -> None:
-        super().randomize_weights()
+    def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
+        """Randomize all network weights. `seed` gives a reproducible run;
+        `dist` e.g. "normal(0,1)" or "uniform(-0.3,0.3)" (the default
+        "normal" has no "(a,b)" and so deliberately falls back to each
+        layer's own existing init)."""
+        super().randomize_weights(seed, dist)
 
     def train_step(
         self,

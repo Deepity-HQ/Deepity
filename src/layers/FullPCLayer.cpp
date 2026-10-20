@@ -1,6 +1,7 @@
 #include "deepity/layers/FullPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
 #include "deepity/utils/Optimize.h"
+#include "deepity/utils/RandomizeDistribution.h"
 #include <cstring>
 #include <type_traits>
 
@@ -173,7 +174,7 @@ size_t FullPCLayer::GetRequiredFloats() const noexcept
   return total;
 }
 
-void FullPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
+void FullPCLayer::RandomizeWeights(std::mt19937& seedGenerator, const char* distribution) noexcept
 {
   if (nextSize == 0)
     return;
@@ -192,7 +193,7 @@ void FullPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
   uint32_t seedW = seedDist(seedGenerator);
   uint32_t seedPsi = seedDist(seedGenerator);
 
-  backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+  RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seedW, 0.0f, limit);
   backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
 }
 

@@ -75,12 +75,10 @@ namespace Deep
 
         /// @brief Randomizes the weights of each layer
         /// @param rng The classic Mersenne Twister
-        /// @param distribution A string representation of (normal, uniform) distribution. For example: "normal(0, 1)" for a standard normal.
-        void RandomizeWeights(std::mt19937 &rng, const char *distribution);
-
-        /// @brief Randomizes the weights of each layer
-        /// @param rng The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &rng);
+        /// @param distribution A string representation of (normal, uniform) distribution. For
+        /// example: "normal(0, 1)" for a standard normal. The default "normal" has no "(a,b)"
+        /// and so deliberately fails to parse, falling back to each layer's own existing default.
+        void RandomizeWeights(std::mt19937 &rng, const char *distribution = "normal");
 
         /// @brief Resets each layer's state without touching learned weights.
         void ResetState() noexcept;
