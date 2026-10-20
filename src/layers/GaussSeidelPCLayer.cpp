@@ -1,5 +1,6 @@
 #include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/backend/CPUBackend.h>
+#include <deepity/utils/RandomizeDistribution.h>
 #include <algorithm>
 #include <type_traits>
 
@@ -178,7 +179,7 @@ namespace Deep
         }
     }
 
-    void GaussSeidelPCLayer::RandomizeWeights(std::mt19937 &twister) noexcept
+    void GaussSeidelPCLayer::RandomizeWeights(std::mt19937 &twister, const char *distribution) noexcept
     {
         if (nextSize == 0)
             return;
@@ -188,7 +189,7 @@ namespace Deep
 
         std::uniform_int_distribution<uint32_t> seedDist;
         uint32_t seedW = seedDist(twister);
-        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+        RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seedW, 0.0f, limit);
 
         // E: feedback-alignment matrix, an independent random draw with
         // its own seed, uniform +-0.3, not the Gaussian/Xavier-style

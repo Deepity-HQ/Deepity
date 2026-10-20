@@ -91,7 +91,9 @@ namespace Deep
 
         /// @brief Randomizes the weights (W and Psi) of each layer.
         /// @param rng The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &rng);
+        /// @param distribution Forwarded to every layer's RandomizeWeights();
+        /// see DirectKPPCLayer::RandomizeWeights()'s own doc comment.
+        void RandomizeWeights(std::mt19937 &rng, const char *distribution = "normal");
         /// @brief Resets each layer's state without touching learned weights.
         void ResetState() noexcept;
         /// @brief Clamps the input to the first layer.

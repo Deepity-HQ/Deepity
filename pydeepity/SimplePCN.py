@@ -161,6 +161,8 @@ class SimplePCN(dy.SimplePCNetwork):
         inference_rate: float = 1e-4,
         lmbda: float = 0.0001,
         optimizer: str = "SGD",
+        seed: Optional[int] = None,
+        dist: str = "normal",
     ) -> None:
         """
         Configure the network and build its backend layers.
@@ -178,6 +180,16 @@ class SimplePCN(dy.SimplePCNetwork):
 
         optimizer:
             Optimizer to use: SGD, ADAM, or ADAMW.
+
+        seed:
+            Optional seed for weight randomization, for reproducible
+            runs. None (the default) uses a nondeterministic seed.
+
+        dist:
+            Distribution for W's init, e.g. "normal(0,1)" or
+            "uniform(-0.3,0.3)". The default "normal" has no "(a,b)"
+            and so deliberately falls back to each layer's own
+            existing default (see RandomizeWeights()).
         """
 
         self._learning_rate = learning_rate
@@ -192,7 +204,7 @@ class SimplePCN(dy.SimplePCNetwork):
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
         super().compile()
-        super().randomize_weights()
+        super().randomize_weights(seed, dist)
 
         self._configured = True
 
@@ -229,14 +241,13 @@ class SimplePCN(dy.SimplePCNetwork):
         self._require_configured()
         super().compile()
 
-    def randomize_weights(self, dist: str = "") -> None:
+    def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
+        """Randomize all network weights. `seed` gives a reproducible run;
+        `dist` e.g. "normal(0,1)" or "uniform(-0.3,0.3)" (the default
+        "normal" has no "(a,b)" and so deliberately falls back to each
+        layer's own existing init)."""
         self._require_configured()
-        # The underlying C++ binding takes no arguments, it always uses
-        # the same, fixed randomization internally. `dist` is accepted
-        # here for forward-API-compatibility but currently has no effect;
-        # passing it through to super().randomize_weights() would fail at
-        # runtime (nanobind TypeError: expected 0 arguments, got 1).
-        super().randomize_weights()
+        super().randomize_weights(seed, dist)
 
     def train_step(
         self,

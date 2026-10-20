@@ -106,7 +106,9 @@ namespace Deep
 
         /// @brief Randomizes the weights of each layer.
         /// @param rng The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &rng);
+        /// @param distribution Forwarded to every layer's RandomizeWeights();
+        /// see DiscriminativePCLayer::RandomizeWeights()'s own doc comment.
+        void RandomizeWeights(std::mt19937 &rng, const char *distribution = "normal");
 
         /// @brief Clamps the input to the first layer, necessary for prediction.
         /// @param input reference to input vector

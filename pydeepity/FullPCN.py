@@ -194,6 +194,7 @@ class FullPCN(dy.FullPCNetwork):
         momentum_beta: float = 0.9,
         use_cross_entropy: bool = False,
         seed: Optional[int] = None,
+        dist: str = "normal",
     ) -> "FullPCN":
         """
         Configure and initialize the network.
@@ -225,6 +226,12 @@ class FullPCN(dy.FullPCNetwork):
         seed:
             Optional seed for weight randomization, for reproducible
             runs. None (the default) uses a nondeterministic seed.
+
+        dist:
+            Distribution for W's init, e.g. "normal(0,1)" or
+            "uniform(-0.3,0.3)". The default "normal" has no "(a,b)"
+            and so deliberately falls back to each layer's own
+            existing muPC-aware default (see RandomizeWeights()).
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -254,7 +261,7 @@ class FullPCN(dy.FullPCNetwork):
         super().set_psi_optimizer(psi_optimizer)
 
         self.compile()
-        self.randomize_weights(seed=seed)
+        self.randomize_weights(seed=seed, dist=dist)
 
         self._configured = True
 
@@ -339,9 +346,12 @@ class FullPCN(dy.FullPCNetwork):
     def compile(self) -> None:
         super().compile()
 
-    def randomize_weights(self, seed: Optional[int] = None) -> None:
-        """Randomize all network weights. `seed` gives a reproducible run."""
-        super().randomize_weights(seed)
+    def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
+        """Randomize all network weights. `seed` gives a reproducible run;
+        `dist` e.g. "normal(0,1)" or "uniform(-0.3,0.3)" (the default
+        "normal" has no "(a,b)" and so deliberately falls back to each
+        layer's own existing init)."""
+        super().randomize_weights(seed, dist)
 
     def train_step(
         self,

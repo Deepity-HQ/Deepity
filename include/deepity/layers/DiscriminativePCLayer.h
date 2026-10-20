@@ -221,7 +221,10 @@ namespace Deep
         /// @brief Randomizes the weights W using a normal distribution
         /// scaled by fan-in/fan-out (see RandomizeWeights()'s .cpp).
         /// @param twister The classic Mersenne Twister
-        void RandomizeWeights(std::mt19937 &twister) noexcept;
+        /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
+        /// default "normal" has no "(a,b)" and so deliberately fails to parse,
+        /// falling back to this class's own existing fan-scaled default.
+        void RandomizeWeights(std::mt19937 &twister, const char *distribution = "normal") noexcept;
 
         /// @brief Returns this layer's configured activation type.
         /// @return ActivationType

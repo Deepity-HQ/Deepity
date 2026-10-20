@@ -1,6 +1,7 @@
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/backend/CPUBackend.h>
 #include <deepity/utils/Optimize.h>
+#include <deepity/utils/RandomizeDistribution.h>
 #include <algorithm>
 #include <cmath>
 #include <type_traits>
@@ -37,7 +38,7 @@ namespace Deep
             backend->CopyFromHost(lr_device, &lr, 1);
     }
 
-    void DiscriminativePCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
+    void DiscriminativePCLayer::RandomizeWeights(std::mt19937 &seedGenerator, const char *distribution) noexcept
     {
         if (nextSize == 0)
             return;
@@ -48,7 +49,7 @@ namespace Deep
         std::uniform_int_distribution<uint32_t> seedDist;
         uint32_t seed = seedDist(seedGenerator);
 
-        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seed);
+        RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seed, 0.0f, limit);
     }
 
     float DiscriminativePCLayer::CalculateState(bool needEnergy) noexcept

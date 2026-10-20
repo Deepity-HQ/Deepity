@@ -203,7 +203,10 @@ public:
 
   /// @brief Randomizes this layer's weights (and biases) in place.
   /// @param twister The classic Mersenne Twister
-  void RandomizeWeights(std::mt19937 &twister) noexcept;
+  /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
+  /// default "normal" has no "(a,b)" and so deliberately fails to parse,
+  /// falling back to this class's own existing fan-scaled default.
+  void RandomizeWeights(std::mt19937 &twister, const char *distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 

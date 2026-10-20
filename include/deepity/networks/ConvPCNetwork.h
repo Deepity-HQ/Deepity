@@ -54,7 +54,9 @@ namespace Deep
         /// AddLayer()/SetOptimizer() calls, before RandomizeWeights().
         void Compile();
         /// @brief Initializes every layer's weights randomly.
-        void RandomizeWeights(std::mt19937 &rng) noexcept;
+        /// @param distribution Forwarded to every layer's RandomizeWeights();
+        /// see ConvPCLayer::RandomizeWeights()'s own doc comment.
+        void RandomizeWeights(std::mt19937 &rng, const char *distribution = "normal") noexcept;
         /// @brief Resets the beliefs (z) on every layer.
         void ResetState() noexcept;
         /// @brief Clamps the flattened, batched input to the first

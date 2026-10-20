@@ -30,10 +30,10 @@ namespace Deep
         layers.push_back(std::move(l));
     }
 
-    void GaussSeidelPCNetwork::RandomizeWeights(std::mt19937 &rng)
+    void GaussSeidelPCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution)
     {
         for (auto &l : layers)
-            l->RandomizeWeights(rng);
+            l->RandomizeWeights(rng, distribution);
     }
 
     void GaussSeidelPCNetwork::ResetState() noexcept

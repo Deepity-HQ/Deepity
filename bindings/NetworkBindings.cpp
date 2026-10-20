@@ -36,13 +36,16 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
   cls.def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
       .def(
           "randomize_weights",
-          [](NetT& self)
+          [](NetT& self, std::optional<uint32_t> seed, const std::string& distribution)
           {
-            std::random_device rd;
-            std::mt19937 rng(rd());
-            self.RandomizeWeights(rng);
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
           },
-          "Initialize every layer's weights randomly.")
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal",
+          "Initialize every layer's weights randomly. `distribution` e.g. \"normal(0,1)\" or "
+          "\"uniform(-0.3,0.3)\"; the default lets each layer fall back to its own existing init.")
       .def(
           "clamp_input",
           [](NetT& self, FloatArray input)
@@ -294,18 +297,7 @@ void bind_networks(nb::module_& m)
           nb::arg("x"),
           nb::arg("steps"),
           "Runs forward-projection init and settling loop entirely in C++, returning terminal "
-          "beliefs.")
-      .def(
-          "randomize_weights",
-          [](Deep::SimplePCNetwork& self, const std::string& distribution)
-          {
-            std::random_device rd;
-            std::mt19937 rng(rd());
-            self.RandomizeWeights(rng, distribution.c_str());
-          },
-          nb::arg("distribution"),
-          "Initialize every layer's weights using a distribution string, "
-          "e.g. \"normal(0, 1)\" or \"uniform(-0.3, 0.3)\".");
+          "beliefs.");
 
   nb::class_<Deep::GaussSeidelPCNetwork>(
       m, "GaussSeidelPCNetwork", "Predictive Coding Network with Gauss-Seidel settling dynamics.")
@@ -347,13 +339,17 @@ void bind_networks(nb::module_& m)
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
       .def("compile", &Deep::GaussSeidelPCNetwork::Compile)
-      .def("randomize_weights",
-           [](Deep::GaussSeidelPCNetwork& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::GaussSeidelPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("reset_state", &Deep::GaussSeidelPCNetwork::ResetState)
       .def(
           "clamp_input",
@@ -486,13 +482,17 @@ void bind_networks(nb::module_& m)
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
       .def("compile", &Deep::DirectKPPCNetwork::Compile)
-      .def("randomize_weights",
-           [](Deep::DirectKPPCNetwork& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::DirectKPPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("reset_state", &Deep::DirectKPPCNetwork::ResetState)
       .def(
           "clamp_input",
@@ -677,13 +677,15 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::FullPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::FullPCNetwork& self, std::optional<uint32_t> seed)
+          [](Deep::FullPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
                                                 : std::mt19937(std::random_device{}());
-            self.RandomizeWeights(rng);
+            self.RandomizeWeights(rng, distribution.c_str());
           },
-          nb::arg("seed") = nb::none())
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("reset_state", &Deep::FullPCNetwork::ResetState)
       .def(
           "clamp_input",
@@ -885,13 +887,15 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::FullConvPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::FullConvPCNetwork& self, std::optional<uint32_t> seed)
+          [](Deep::FullConvPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
                                                 : std::mt19937(std::random_device{}());
-            self.RandomizeWeights(rng);
+            self.RandomizeWeights(rng, distribution.c_str());
           },
-          nb::arg("seed") = nb::none())
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("reset_state", &Deep::FullConvPCNetwork::ResetState)
       .def(
           "clamp_input",
@@ -1069,13 +1073,17 @@ void bind_networks(nb::module_& m)
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
       .def("compile", &Deep::ConvPCNetwork::Compile, "Compiles all layers into a contiguous block.")
-      .def("randomize_weights",
-           [](Deep::ConvPCNetwork& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::ConvPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def(
           "clamp_input",
           [](Deep::ConvPCNetwork& self, FloatArray input)
@@ -1228,13 +1236,17 @@ void bind_networks(nb::module_& m)
       .def("compile",
            &Deep::SimpleConvPCNetwork::Compile,
            "Compiles all layers into a contiguous block.")
-      .def("randomize_weights",
-           [](Deep::SimpleConvPCNetwork& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::SimpleConvPCNetwork& self, std::optional<uint32_t> seed,
+             const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def(
           "clamp_input",
           [](Deep::SimpleConvPCNetwork& self, FloatArray input)

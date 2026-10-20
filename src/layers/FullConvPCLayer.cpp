@@ -1,5 +1,6 @@
 #include "deepity/layers/FullConvPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
+#include "deepity/utils/RandomizeDistribution.h"
 #include <cmath>
 #include <type_traits>
 
@@ -244,7 +245,7 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
   }
 }
 
-void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
+void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator, const char* distribution) noexcept
 {
   if (outChannels == 0)
     return;
@@ -261,13 +262,15 @@ void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator) noexcept
 
   if (usePCXInit)
   {
+    // usePCXInit is its own explicit toggle, unconditionally overriding
+    // any distribution string -- mixing the two would be ambiguous.
     float pcxLimit = std::sqrt(1.0f / (float)colRows);
     backend->RandomizeUniform(W, Wsz, -pcxLimit, pcxLimit, seedW);
   }
   else
   {
     float limit = useMuPCInit ? 1.0f : std::sqrt(2.0f / (float)colRows);
-    backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+    RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seedW, 0.0f, limit);
   }
   backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
 }

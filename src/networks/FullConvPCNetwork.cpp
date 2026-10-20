@@ -35,10 +35,10 @@ void FullConvPCNetwork::AddLayer(int inChannels, int outChannels, int inHeight, 
   layers.push_back(std::move(l));
 }
 
-void FullConvPCNetwork::RandomizeWeights(std::mt19937& rng)
+void FullConvPCNetwork::RandomizeWeights(std::mt19937& rng, const char* distribution)
 {
   for (auto& l : layers)
-    l->RandomizeWeights(rng);
+    l->RandomizeWeights(rng, distribution);
 }
 
 void FullConvPCNetwork::ResetState() noexcept

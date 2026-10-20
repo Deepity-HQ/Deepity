@@ -1,6 +1,7 @@
 #include "deepity/layers/DirectKPPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
 #include "deepity/utils/Optimize.h"
+#include "deepity/utils/RandomizeDistribution.h"
 #include <cstring>
 #include <type_traits>
 
@@ -169,7 +170,7 @@ namespace Deep
         return total;
     }
 
-    void DirectKPPCLayer::RandomizeWeights(std::mt19937 &seedGenerator) noexcept
+    void DirectKPPCLayer::RandomizeWeights(std::mt19937 &seedGenerator, const char *distribution) noexcept
     {
         if (nextSize == 0)
             return;
@@ -183,7 +184,7 @@ namespace Deep
         uint32_t seedW = seedDist(seedGenerator);
         uint32_t seedPsi = seedDist(seedGenerator);
 
-        backend->RandomizeNormal(W, Wsz, 0.0f, limit, seedW);
+        RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seedW, 0.0f, limit);
         backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
     }
 

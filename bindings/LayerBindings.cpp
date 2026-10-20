@@ -7,9 +7,11 @@
 #include "BindingHelpers.h"
 #include "LayerBindings.h"
 
+#include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 
+#include <optional>
 #include <random>
 #include <string>
 #include <vector>
@@ -67,11 +69,11 @@ auto resolveDAct(const std::string& act) -> void (*)(float*, size_t, bool)
   return Deep::dRelu;
 }
 
-template <typename LayerT> void RandomizeWeightsHelper(LayerT& self)
+template <typename LayerT>
+void RandomizeWeightsHelper(LayerT& self, std::optional<uint32_t> seed, const std::string& distribution)
 {
-  std::random_device rd;
-  std::mt19937 rng(rd());
-  self.RandomizeWeights(rng);
+  std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value()) : std::mt19937(std::random_device{}());
+  self.RandomizeWeights(rng, distribution.c_str());
 }
 
 template <typename LayerT> void ClampStateHelper(LayerT& self, FloatArray input)
@@ -98,7 +100,8 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
       .def("flush", &LayerT::Flush)
       .def("clamp_state", &ClampStateHelper<LayerT>, nb::arg("input"))
       .def("unclamp_state", &LayerT::UnclampState)
-      .def("randomize_weights", &RandomizeWeightsHelper<LayerT>)
+      .def("randomize_weights", &RandomizeWeightsHelper<LayerT>, nb::arg("seed") = nb::none(),
+           nb::arg("distribution") = "normal")
       .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference)
       .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference)
       .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
@@ -545,13 +548,16 @@ void bind_layers(nb::module_& m)
           },
           nb::arg("input"))
       .def("unclamp_state", &Deep::FullConvPCLayer::UnclampState)
-      .def("randomize_weights",
-           [](Deep::FullConvPCLayer& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::FullConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("set_layer_above", &Deep::FullConvPCLayer::SetLayerAbove, nb::rv_policy::reference)
       .def("set_layer_below", &Deep::FullConvPCLayer::SetLayerBelow, nb::rv_policy::reference)
       .def("set_terminal_layer", &Deep::FullConvPCLayer::SetTerminalLayer, nb::arg("layer"))
@@ -692,13 +698,16 @@ void bind_layers(nb::module_& m)
           },
           nb::arg("input"))
       .def("unclamp_state", &Deep::ConvPCLayer::UnclampState)
-      .def("randomize_weights",
-           [](Deep::ConvPCLayer& self)
-           {
-             std::random_device rd;
-             std::mt19937 rng(rd());
-             self.RandomizeWeights(rng);
-           })
+      .def(
+          "randomize_weights",
+          [](Deep::ConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def("set_layer_above", &Deep::ConvPCLayer::SetLayerAbove, nb::rv_policy::reference)
       .def("set_layer_below", &Deep::ConvPCLayer::SetLayerBelow, nb::rv_policy::reference)
       .def("set_learning_rate", &Deep::ConvPCLayer::SetLearningRate, nb::arg("lr"))
@@ -813,6 +822,16 @@ void bind_layers(nb::module_& m)
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
           nb::arg("optimizer"))
+      .def(
+          "randomize_weights",
+          [](Deep::SimpleConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
+          {
+            std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
+                                                : std::mt19937(std::random_device{}());
+            self.RandomizeWeights(rng, distribution.c_str());
+          },
+          nb::arg("seed") = nb::none(),
+          nb::arg("distribution") = "normal")
       .def(
           "clamp_state",
           [](Deep::SimpleConvPCLayer& self, FloatArray input)
