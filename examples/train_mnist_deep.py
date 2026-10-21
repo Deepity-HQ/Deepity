@@ -102,7 +102,7 @@ def main() -> None:
     rng_init = np.random.default_rng(7)
     for layer in net.layers[:-1]:  # skip the terminal -- it has no weights (nextSize=0)
         w_shape = layer.weights.shape
-        layer.weights[:] = rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32)
+        layer.set_weights(rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32).ravel())
 
     print(f"\nTraining with FORWARD-PROJECTION init: {EPOCHS} epochs, {STEPS} steps, "
           f"lr={LR}, decay_rate={DECAY_RATE}...\n")

@@ -167,6 +167,12 @@ namespace Deep
         /// @brief Returns a mutable version of the stored biases.
         /// @return float *b
         float *GetBiases() noexcept { return b; }
+        /// @brief Returns the compute backend this layer routes all math
+        /// through, so Python bindings can safely copy device-resident
+        /// buffers to the host instead of exposing a raw device pointer
+        /// as if it were host memory (see LayerBindings.cpp's
+        /// ViewOwnedBy / CopyFromBackend).
+        IComputeBackend *GetBackend() const noexcept { return backend.get(); }
 
         /// @brief Returns a read-only version of the stored precisions.
         /// @return const float *p

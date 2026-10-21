@@ -13,6 +13,7 @@
 
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -85,10 +86,63 @@ template <typename LayerT> void ClampStateHelper(LayerT& self, FloatArray input)
 // Wrap a pointer that is owned by (and must outlive as long as) `self`
 // into a zero-copy numpy view, the nanobind equivalent of pybind11's
 // `py::array_t<float>(shape, ptr, py::cast(&self))`.
+//
+// Only safe when `data` is host memory: on a GPU-backed layer,
+// GetWeights()/GetBiases()/GetBeliefs()/GetErrors() return raw CUDA
+// device (VRAM) pointers, and handing one of those to NumPy as if it
+// were host memory segfaults the first time NumPy reads/writes through
+// it. Every call site below must check self.GetBackend()->GetDeviceType()
+// first and fall back to CopyFromBackend() below when it isn't
+// DEVICE_CPU.
 template <typename T, typename Owner>
 nb::ndarray<nb::numpy, T> ViewOwnedBy(T* data, std::initializer_list<size_t> shape, Owner& owner)
 {
   return nb::ndarray<nb::numpy, T>(data, shape, nb::find(&owner));
+}
+
+// Copies a device-resident buffer to a fresh, host-owned (and
+// read-only -- see the `const T` template arg, which nanobind maps to
+// a non-writable NumPy array) numpy array. Used instead of
+// ViewOwnedBy whenever the layer's backend isn't DEVICE_CPU, since a
+// raw CUDA device pointer can't be safely exposed as a NumPy view --
+// see this function's call sites for why writing through a stale
+// host copy needs to be a loud error (readonly), not a silent no-op.
+// Use set_weights()/set_biases() instead to push values onto a
+// GPU-backed layer.
+template <typename T, typename LayerT>
+nb::ndarray<nb::numpy, const T> CopyFromBackend(LayerT& self, const T* data, std::initializer_list<size_t> shape)
+{
+  size_t count = 1;
+  for (size_t d : shape)
+    count *= d;
+
+  T* hostBuf = new T[count];
+  self.GetBackend()->CopyToHost(hostBuf, data, count);
+
+  nb::capsule owner(hostBuf, [](void* p) noexcept { delete[] static_cast<T*>(p); });
+  return nb::ndarray<nb::numpy, const T>(hostBuf, shape, owner);
+}
+
+// Validates `values.size()` against `expectedCount` and copies it onto
+// the backend's weight buffer via CopyFromHost -- a plain memcpy on
+// CPUBackend, a host->device transfer on CUDABackend. The device-safe
+// replacement for the `layer.weights[:] = ...` idiom, which only works
+// on CPU (see ViewOwnedBy's doc comment above).
+template <typename LayerT> void SetWeightsHelper(LayerT& self, FloatArray values, size_t expectedCount)
+{
+  if ((size_t)values.size() != expectedCount)
+    throw std::invalid_argument("set_weights: expected " + std::to_string(expectedCount) +
+                                 " values, got " + std::to_string(values.size()));
+  self.GetBackend()->CopyFromHost(self.GetWeights(), values.data(), expectedCount);
+}
+
+// Same as SetWeightsHelper(), for a layer's bias buffer.
+template <typename LayerT> void SetBiasesHelper(LayerT& self, FloatArray values, size_t expectedCount)
+{
+  if ((size_t)values.size() != expectedCount)
+    throw std::invalid_argument("set_biases: expected " + std::to_string(expectedCount) +
+                                 " values, got " + std::to_string(values.size()));
+  self.GetBackend()->CopyFromHost(self.GetBiases(), values.data(), expectedCount);
 }
 
 template <typename LayerT>
@@ -107,26 +161,34 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
       .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
       .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"))
       .def("set_lambda", &LayerT::SetLambda, nb::arg("l"))
+      .def("set_weights",
+           [](LayerT& self, FloatArray values)
+           { SetWeightsHelper(self, values, (size_t)self.GetOutputSize() * (size_t)self.GetInputSize()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
-                   [](LayerT& self)
+                   [](LayerT& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetBeliefs(),
-                                        {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
                    })
       .def_prop_ro("errors",
-                   [](LayerT& self)
+                   [](LayerT& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetErrors(),
-                                        {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
                    })
       .def_prop_ro("weights",
-                   [](LayerT& self)
+                   [](LayerT& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetWeights(),
-                                        {(size_t)self.GetOutputSize(), (size_t)self.GetInputSize()},
-                                        self);
+                     auto shape = {(size_t)self.GetOutputSize(), (size_t)self.GetInputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
                    })
       .def_prop_ro("batch_size", &LayerT::GetBatchSize)
       .def_prop_ro("input_size", &LayerT::GetInputSize)
@@ -221,15 +283,20 @@ void bind_layers(nb::module_& m)
               nb::arg("activation") = "relu",
               nb::arg("activation_deriv") = "drelu");
   BindCommonPCLayer<Deep::SimplePCLayer>(simpleLayerCls, "SimplePCLayer");
-  simpleLayerCls.def_prop_ro(
-      "biases",
-      [](Deep::SimplePCLayer& self)
-      { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); });
-
   simpleLayerCls
       .def_prop_ro("biases",
-                   [](Deep::SimplePCLayer& self)
-                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); })
+                   [](Deep::SimplePCLayer& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                   })
+      .def("set_biases",
+           [](Deep::SimplePCLayer& self, FloatArray values)
+           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def("set_mu_cache_threshold",
            &Deep::SimplePCLayer::SetMuCacheThreshold,
            nb::arg("threshold"),
@@ -278,11 +345,12 @@ void bind_layers(nb::module_& m)
                &Deep::GaussSeidelPCLayer::ComputeError),
            nb::arg("need_energy") = true)
       .def_prop_ro("mu",
-                   [](Deep::GaussSeidelPCLayer& self)
+                   [](Deep::GaussSeidelPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetMu(),
-                                        {(size_t)(self.GetBatchSize() * self.GetOutputSize())},
-                                        self);
+                     auto shape = {(size_t)(self.GetBatchSize() * self.GetOutputSize())};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetMu(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetMu(), shape));
                    });
   BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
 
@@ -357,16 +425,26 @@ void bind_layers(nb::module_& m)
       .def("set_feedback_rate", &Deep::DirectKPPCLayer::SetFeedbackRate, nb::arg("fl"))
       .def_prop_ro("terminal_size", &Deep::DirectKPPCLayer::GetTerminalSize)
       .def_prop_ro("psi",
-                   [](Deep::DirectKPPCLayer& self)
+                   [](Deep::DirectKPPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(
-                         self.GetDirectFeedbackWeights(),
-                         {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()},
-                         self);
+                     auto shape = {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
                    })
       .def_prop_ro("biases",
-                   [](Deep::DirectKPPCLayer& self)
-                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); });
+                   [](Deep::DirectKPPCLayer& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                   })
+      .def("set_biases",
+           [](Deep::DirectKPPCLayer& self, FloatArray values)
+           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
 
   auto fullLayerCls = nb::class_<Deep::FullPCLayer, Deep::Layer>(
                           m,
@@ -458,16 +536,26 @@ void bind_layers(nb::module_& m)
       .def_prop_ro("residual", &Deep::FullPCLayer::GetResidual)
       .def_prop_ro("terminal_size", &Deep::FullPCLayer::GetTerminalSize)
       .def_prop_ro("psi",
-                   [](Deep::FullPCLayer& self)
+                   [](Deep::FullPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(
-                         self.GetDirectFeedbackWeights(),
-                         {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()},
-                         self);
+                     auto shape = {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
                    })
       .def_prop_ro("biases",
-                   [](Deep::FullPCLayer& self)
-                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutputSize()}, self); });
+                   [](Deep::FullPCLayer& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutputSize()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                   })
+      .def("set_biases",
+           [](Deep::FullPCLayer& self, FloatArray values)
+           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
 
   nb::class_<Deep::FullConvPCLayer, Deep::Layer>(
       m,
@@ -567,39 +655,62 @@ void bind_layers(nb::module_& m)
       .def("set_lambda", &Deep::FullConvPCLayer::SetLambda, nb::arg("l"))
       .def("set_mu_pc_scale", &Deep::FullConvPCLayer::SetMuPCScale, nb::arg("a"))
       .def("set_residual", &Deep::FullConvPCLayer::SetResidual, nb::arg("enabled"))
+      .def("set_weights",
+           [](Deep::FullConvPCLayer& self, FloatArray values)
+           {
+             SetWeightsHelper(self,
+                               values,
+                               (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
+                                   (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
+           },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def("set_biases",
+           [](Deep::FullConvPCLayer& self, FloatArray values)
+           { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
-                   [](Deep::FullConvPCLayer& self)
+                   [](Deep::FullConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetBeliefs(),
-                                        {(size_t)self.GetBatchSize(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetInHeight(),
-                                         (size_t)self.GetInWidth()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetInHeight(),
+                                   (size_t)self.GetInWidth()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
                    })
       .def_prop_ro("errors",
-                   [](Deep::FullConvPCLayer& self)
+                   [](Deep::FullConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetErrors(),
-                                        {(size_t)self.GetBatchSize(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetInHeight(),
-                                         (size_t)self.GetInWidth()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetInHeight(),
+                                   (size_t)self.GetInWidth()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
                    })
       .def_prop_ro("weights",
-                   [](Deep::FullConvPCLayer& self)
+                   [](Deep::FullConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetWeights(),
-                                        {(size_t)self.GetOutChannels(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetKernelH(),
-                                         (size_t)self.GetKernelW()},
-                                        self);
+                     auto shape = {(size_t)self.GetOutChannels(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetKernelH(),
+                                   (size_t)self.GetKernelW()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
                    })
       .def_prop_ro("biases",
-                   [](Deep::FullConvPCLayer& self)
-                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutChannels()}, self); })
+                   [](Deep::FullConvPCLayer& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutChannels()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                   })
       .def_prop_ro("batch_size", &Deep::FullConvPCLayer::GetBatchSize)
       .def_prop_ro("in_channels", &Deep::FullConvPCLayer::GetInChannels)
       .def_prop_ro("out_channels", &Deep::FullConvPCLayer::GetOutChannels)
@@ -714,39 +825,62 @@ void bind_layers(nb::module_& m)
       .def("set_inference_rate", &Deep::ConvPCLayer::SetInferenceRate, nb::arg("ir"))
       .def("set_precision_rate", &Deep::ConvPCLayer::SetPrecisionRate, nb::arg("pr"))
       .def("set_lambda", &Deep::ConvPCLayer::SetLambda, nb::arg("l"))
+      .def("set_weights",
+           [](Deep::ConvPCLayer& self, FloatArray values)
+           {
+             SetWeightsHelper(self,
+                               values,
+                               (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
+                                   (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
+           },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def("set_biases",
+           [](Deep::ConvPCLayer& self, FloatArray values)
+           { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
+           nb::arg("values"),
+           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
-                   [](Deep::ConvPCLayer& self)
+                   [](Deep::ConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetBeliefs(),
-                                        {(size_t)self.GetBatchSize(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetInHeight(),
-                                         (size_t)self.GetInWidth()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetInHeight(),
+                                   (size_t)self.GetInWidth()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
                    })
       .def_prop_ro("errors",
-                   [](Deep::ConvPCLayer& self)
+                   [](Deep::ConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetErrors(),
-                                        {(size_t)self.GetBatchSize(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetInHeight(),
-                                         (size_t)self.GetInWidth()},
-                                        self);
+                     auto shape = {(size_t)self.GetBatchSize(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetInHeight(),
+                                   (size_t)self.GetInWidth()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
                    })
       .def_prop_ro("weights",
-                   [](Deep::ConvPCLayer& self)
+                   [](Deep::ConvPCLayer& self) -> nb::object
                    {
-                     return ViewOwnedBy(self.GetWeights(),
-                                        {(size_t)self.GetOutChannels(),
-                                         (size_t)self.GetInChannels(),
-                                         (size_t)self.GetKernelH(),
-                                         (size_t)self.GetKernelW()},
-                                        self);
+                     auto shape = {(size_t)self.GetOutChannels(),
+                                   (size_t)self.GetInChannels(),
+                                   (size_t)self.GetKernelH(),
+                                   (size_t)self.GetKernelW()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
                    })
       .def_prop_ro("biases",
-                   [](Deep::ConvPCLayer& self)
-                   { return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutChannels()}, self); })
+                   [](Deep::ConvPCLayer& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutChannels()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                   })
       .def_prop_ro("batch_size", &Deep::ConvPCLayer::GetBatchSize)
       .def_prop_ro("in_channels", &Deep::ConvPCLayer::GetInChannels)
       .def_prop_ro("out_channels", &Deep::ConvPCLayer::GetOutChannels)
@@ -771,32 +905,57 @@ void bind_layers(nb::module_& m)
   nb::class_<Deep::SimpleConvPCLayer>(
       m, "SimpleConvPCLayer", "Convolutional PC layer, precision-free, AdamW-capable.")
       .def_prop_ro("beliefs",
-                   [](Deep::SimpleConvPCLayer& self)
+                   [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
                      size_t n = self.GetBatchSize() * self.GetInputSize();
-                     return CopyToNewArray(self.GetBeliefs(), {n});
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(CopyToNewArray(self.GetBeliefs(), {n}));
+                     return nb::cast(CopyFromBackend(self, self.GetBeliefs(), {n}));
                    })
       .def_prop_ro("errors",
-                   [](Deep::SimpleConvPCLayer& self)
+                   [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
                      size_t n = self.GetBatchSize() * self.GetInputSize();
-                     return CopyToNewArray(self.GetErrors(), {n});
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(CopyToNewArray(self.GetErrors(), {n}));
+                     return nb::cast(CopyFromBackend(self, self.GetErrors(), {n}));
                    })
+      .def(
+          "set_weights",
+          [](Deep::SimpleConvPCLayer& self, FloatArray values)
+          {
+            size_t colRows = (size_t)self.GetInChannels() * self.GetKernelH() * self.GetKernelW();
+            SetWeightsHelper(self, values, (size_t)self.GetOutChannels() * colRows);
+          },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_biases",
+          [](Deep::SimpleConvPCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro(
           "weights",
-          [](Deep::SimpleConvPCLayer& self)
+          [](Deep::SimpleConvPCLayer& self) -> nb::object
           {
             if (self.GetOutChannels() == 0)
-              return nb::ndarray<nb::numpy, float>();
+              return nb::cast(nb::ndarray<nb::numpy, float>());
             size_t colRows = (size_t)self.GetInChannels() * self.GetKernelH() * self.GetKernelW();
-            return ViewOwnedBy(self.GetWeights(), {(size_t)self.GetOutChannels(), colRows}, self);
+            auto shape = {(size_t)self.GetOutChannels(), colRows};
+            if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+              return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+            return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
           })
       .def_prop_ro("biases",
-                   [](Deep::SimpleConvPCLayer& self)
+                   [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
                      if (self.GetOutChannels() == 0)
-                       return nb::ndarray<nb::numpy, float>();
-                     return ViewOwnedBy(self.GetBiases(), {(size_t)self.GetOutChannels()}, self);
+                       return nb::cast(nb::ndarray<nb::numpy, float>());
+                     auto shape = {(size_t)self.GetOutChannels()};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
                    })
       .def_prop_ro("in_channels", &Deep::SimpleConvPCLayer::GetInChannels)
       .def_prop_ro("out_channels", &Deep::SimpleConvPCLayer::GetOutChannels)

@@ -330,8 +330,20 @@ public:
   const float* GetErrors() const noexcept override { return e; }
   const float* GetMu() const noexcept { return HasPooling() ? pooledMu : mu; }
   const float* GetWeights() const noexcept { return W; }
+  /// @brief Mutable overload of GetWeights() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_weights bindings) can write into W.
+  float* GetWeights() noexcept { return W; }
   const float* GetDirectFeedbackWeights() const noexcept { return Psi; }
   const float* GetBiases() const noexcept { return b; }
+  /// @brief Mutable overload of GetBiases() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_biases bindings) can write into b.
+  float* GetBiases() noexcept { return b; }
+  /// @brief Returns the compute backend this layer routes all math
+  /// through, so Python bindings can safely copy device-resident
+  /// buffers to the host instead of exposing a raw device pointer
+  /// as if it were host memory (see LayerBindings.cpp's
+  /// ViewOwnedBy / CopyFromBackend).
+  IComputeBackend* GetBackend() const noexcept { return backend.get(); }
 
   /// @brief {error mean, error RMS, weight L2 norm, fraction of mu
   /// elements exactly 0} for this layer's CURRENT state (whatever e/W/mu

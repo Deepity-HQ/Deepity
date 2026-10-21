@@ -167,6 +167,13 @@ namespace Deep
         /// @brief Returns this layer's bias buffer.
         float *GetBiases() noexcept { return b; }
 
+        /// @brief Returns the compute backend this layer routes all math
+        /// through, so Python bindings can safely copy device-resident
+        /// buffers to the host instead of exposing a raw device pointer
+        /// as if it were host memory (see LayerBindings.cpp's
+        /// ViewOwnedBy / CopyFromBackend).
+        IComputeBackend *GetBackend() const noexcept { return backend.get(); }
+
         /// @brief Returns the learning rate used for weight updates.
         float GetLearningRate() const noexcept { return lr; }
         /// @brief Returns the inference rate (Euler integration step size).

@@ -204,10 +204,22 @@ public:
   const float *GetMu() const noexcept { return mu; }
   /// @brief Returns the weight matrix W, shape [nextSize, size].
   const float *GetWeights() const noexcept { return W; }
+  /// @brief Mutable overload of GetWeights() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_weights bindings) can write into W.
+  float *GetWeights() noexcept { return W; }
   /// @brief Returns the direct feedback (DFA) weight matrix Psi, shape [size, terminalSize].
   const float *GetDirectFeedbackWeights() const noexcept { return Psi; }
   /// @brief Returns the bias vector, length nextSize.
   const float *GetBiases() const noexcept { return b; }
+  /// @brief Mutable overload of GetBiases() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_biases bindings) can write into b.
+  float *GetBiases() noexcept { return b; }
+  /// @brief Returns the compute backend this layer routes all math
+  /// through, so Python bindings can safely copy device-resident
+  /// buffers to the host instead of exposing a raw device pointer
+  /// as if it were host memory (see LayerBindings.cpp's
+  /// ViewOwnedBy / CopyFromBackend).
+  IComputeBackend *GetBackend() const noexcept { return backend.get(); }
 
   size_t GetBatchSize() const noexcept override { return batchSize; }
   size_t GetInputSize() const noexcept override { return size; }

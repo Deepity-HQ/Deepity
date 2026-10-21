@@ -92,6 +92,12 @@ namespace Deep
         const float *GetBiases() const noexcept { return b; }
         /// @brief Mutable overload of GetBiases() above.
         float *GetBiases() noexcept { return b; }
+        /// @brief Returns the compute backend this layer routes all math
+        /// through, so Python bindings can safely copy device-resident
+        /// buffers to the host instead of exposing a raw device pointer
+        /// as if it were host memory (see LayerBindings.cpp's
+        /// ViewOwnedBy / CopyFromBackend).
+        IComputeBackend *GetBackend() const noexcept { return backend.get(); }
 
         /// @brief Returns the current learning rate.
         float GetLearningRate() const noexcept { return lr; }
