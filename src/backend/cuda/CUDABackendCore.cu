@@ -11,6 +11,8 @@
 #include <deepity/backend/CUDABackend.h>
 #include <cstdlib>
 #include <iostream>
+#include <stdexcept>
+#include <string>
 
 #ifdef DEEPITY_USE_CUDA
 #include <curand_kernel.h>
@@ -21,11 +23,28 @@ namespace Deep
 {
 CUDABackend::CUDABackend()
 {
-  cudaStreamCreate(&this->stream);
-  cublasCreate(&this->handle);
+  // None of these checked their return code before -- with no GPU
+  // actually visible to the process (wrong node, no SLURM GPU
+  // allocation, driver/runtime mismatch), every one of them fails and
+  // this constructor used to continue anyway with garbage handles,
+  // turning a missing-GPU mistake into a segfault with zero diagnostic
+  // output the first time something dereferenced one of them, instead
+  // of a clear exception right here.
+  cudaError_t err = cudaStreamCreate(&this->stream);
+  if (err != cudaSuccess)
+    throw std::runtime_error(
+        std::string("CUDABackend: cudaStreamCreate failed: ") + cudaGetErrorString(err) +
+        ". Is a GPU actually visible to this process? Check `nvidia-smi` and $CUDA_VISIBLE_DEVICES.");
+
+  cublasStatus_t blasErr = cublasCreate(&this->handle);
+  if (blasErr != CUBLAS_STATUS_SUCCESS)
+    throw std::runtime_error("CUDABackend: cublasCreate failed (cublasStatus_t=" +
+                              std::to_string(static_cast<int>(blasErr)) + ").");
   cublasSetStream(this->handle, this->stream);
 #ifdef DEEPITY_USE_CUDNN
-  cudnnCreate(&this->cudnnHandle);
+  cudnnStatus_t dnnErr = cudnnCreate(&this->cudnnHandle);
+  if (dnnErr != CUDNN_STATUS_SUCCESS)
+    throw std::runtime_error(std::string("CUDABackend: cudnnCreate failed: ") + cudnnGetErrorString(dnnErr));
   cudnnSetStream(this->cudnnHandle, this->stream);
 #endif
   // Without this, every GEMM (every conv, since this backend lowers conv
@@ -42,7 +61,11 @@ CUDABackend::CUDABackend()
   // the VGG-7 genuine-PC-settling collapse investigation) -- no new
   // binding needed, since this is read once at construction.
   SetAllowTF32(std::getenv("DEEPITY_DISABLE_TF32") == nullptr);
-  cudaMalloc(&scalarScratch, sizeof(float));
+
+  err = cudaMalloc(&scalarScratch, sizeof(float));
+  if (err != cudaSuccess)
+    throw std::runtime_error(std::string("CUDABackend: cudaMalloc(scalarScratch) failed: ") +
+                              cudaGetErrorString(err));
 }
 
 CUDABackend::~CUDABackend()
