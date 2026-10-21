@@ -177,11 +177,49 @@ namespace Deep
     {
         ResetState();
         Clamp(x);
-        ProjectForward();
 
-        for (int t = 0; t < inferenceSteps; t++)
+        // Pure forward/settling work, reading only the buffers Clamp() just
+        // filled -- no DirectFeedbackUpdate(), no UpdateWeights(), no
+        // terminal ClampState(), unlike TrainStep(). Captured into its OWN
+        // graph slot (kPredictGraphSlot), separate from TrainStep()'s --
+        // see FullPCNetwork::Predict()'s identical comment for why.
+        auto settleAndProject = [&]()
         {
-            Step();
+            ProjectForward();
+            for (int t = 0; t < inferenceSteps; t++)
+                Step();
+        };
+
+        if (device == DeviceType::DEVICE_GPU)
+        {
+            if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+            {
+                backend->BeginGraphCapture(kPredictGraphSlot);
+                settleAndProject();
+                bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+                if (captureOk)
+                {
+                    predictGraphCaptured = true;
+                    capturedPredictInferenceSteps = inferenceSteps;
+                }
+                else
+                {
+                    std::cerr << "Predict() graph capture failed, falling back to non-graph "
+                                 "execution for this call.\n";
+                }
+            }
+            else
+            {
+                backend->ReplayGraph(kPredictGraphSlot);
+                // cudaGraphLaunch() only enqueues the replay -- the
+                // CopyToHost() below needs it to have actually finished.
+                backend->Synchronize();
+            }
+        }
+        else
+        {
+            settleAndProject();
         }
 
         DirectKPPCLayer *terminal = GetTerminalLayer();

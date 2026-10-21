@@ -30,6 +30,8 @@ FullPCLayer::FullPCLayer(size_t size, size_t nextSize, size_t terminalSize, size
     , activationType(aType)
     , backend(backend ? backend : new CPUBackend(), backend ? NoOpDeleter : DeleteBackend)
 {
+  DynamicThread(batchSize);
+
   localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
   BindMemory(*localArena);
 }

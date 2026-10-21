@@ -377,6 +377,7 @@ void CPUBackend::Im2Col(const float* input, int batchSize, int channels, int hei
                    Deep::ConvOutDim(height, kernelH, strideH, padH) *
                    Deep::ConvOutDim(width, kernelW, strideW, padW);
 
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
   for (int batch = 0; batch < batchSize; ++batch)
   {
     Deep::Im2Col(input + (size_t)batch * imageSize, channels, height, width, kernelH, kernelW,
@@ -393,6 +394,7 @@ void CPUBackend::Col2Im(const float* columns, int batchSize, int channels, int h
                    Deep::ConvOutDim(height, kernelH, strideH, padH) *
                    Deep::ConvOutDim(width, kernelW, strideW, padW);
 
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
   for (int batch = 0; batch < batchSize; ++batch)
   {
     Deep::Col2Im(columns + (size_t)batch * colSize, channels, height, width, kernelH, kernelW,
@@ -440,7 +442,7 @@ void CPUBackend::RepackForBatchedGemm(float* dst, const float* src, size_t batch
   const int maxRows = static_cast<int>(rows);
   const int maxBatch = static_cast<int>(batchSize);
 
-#pragma omp parallel for schedule(static) collapse(2)
+#pragma omp parallel for schedule(static) collapse(2) if (rows * batchSize * cols > 65536 && !omp_in_parallel())
   for (int row = 0; row < maxRows; ++row)
   {
     for (int batch = 0; batch < maxBatch; ++batch)

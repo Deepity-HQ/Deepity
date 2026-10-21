@@ -1,5 +1,6 @@
 #include "deepity/layers/FullConvPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
+#include "deepity/utils/Optimize.h"
 #include "deepity/utils/RandomizeDistribution.h"
 #include <cmath>
 #include <type_traits>
@@ -51,6 +52,7 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
                                                     : outHeight;
   poolOutWidth = (outChannels > 0 && HasPooling()) ? PoolOutDim(outWidth, poolW, poolStrideW)
                                                    : outWidth;
+  DynamicThread(batchSize);
 
   localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
   BindMemory(*localArena);

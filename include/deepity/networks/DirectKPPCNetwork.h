@@ -215,5 +215,14 @@ namespace Deep
         // @brief CUDA Graph:
         bool graphCaptured = false;
         int capturedInferenceSteps = -1;
+
+        // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
+        // above -- see FullPCNetwork.h's identical kPredictGraphSlot
+        // comment: an online caller that interleaves predict()/train_step()
+        // every step needs each captured independently, or one evicts the
+        // other's graph and forces a recapture on every single call.
+        bool predictGraphCaptured = false;
+        int capturedPredictInferenceSteps = -1;
+        static constexpr size_t kPredictGraphSlot = 1;
     };
 }

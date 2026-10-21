@@ -1,5 +1,6 @@
 #include <deepity/layers/SimpleConvPCLayer.h>
 #include <deepity/backend/CPUBackend.h>
+#include <deepity/utils/Optimize.h>
 #include <deepity/utils/RandomizeDistribution.h>
 #include <cmath>
 #include <type_traits>
@@ -36,6 +37,7 @@ namespace Deep
     {
         outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
         outWidth = (outChannels > 0) ? ConvOutDim(inWidth, kernelW, strideW, padW) : 0;
+        DynamicThread(batchSize);
 
         localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
         BindMemory(*localArena);
