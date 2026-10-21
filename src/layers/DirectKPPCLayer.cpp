@@ -32,6 +32,7 @@ namespace Deep
         this->activation = To_Fn(aType);
         this->activationDerivative = To_dFn(dType);
         this->activationDerivativeInto = To_dFn2(dType);
+        DynamicThread(batchSize);
 
         localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
         BindMemory(*localArena);

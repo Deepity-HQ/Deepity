@@ -127,7 +127,18 @@ namespace Deep
         // cross-CCD/Infinity Fabric synchronization cost on this many-core
         // part. A smooth, capped scaling curve fits the real trend better
         // than another single hardcoded number.
-        int scaled = 8 + (batchSize / 1024) * 4;             // 8 @ <1024, ~12 @ 2048, ~16 @ 4096, etc.
+        //
+        // Below batch=1024, a separate sweep (batch=64 conv, batch=128
+        // dense; both elementwise/im2col-heavy, not pure GEMM) found the 8
+        // this bucket used to return is a local *pessimum*, not an optimum:
+        // wall time at 8 threads was 1.6-1.8x worse than at 4-6 threads, at
+        // both sizes (likely an SMT/cache-domain boundary at this core
+        // count). After also parallelizing Im2Col/Col2Im's per-batch loop
+        // (previously serial, leaving idle threads spinning through it)
+        // conv's own optimum moved from 4 to 6 threads, matching dense's
+        // already-measured optimum of 6 -- so 6 is the single choice for
+        // this smaller bucket, not 4.
+        int scaled = (batchSize < 1024) ? 6 : 8 + (batchSize / 1024) * 4; // 6 @ <1024, ~12 @ 2048, ~16 @ 4096
         const int MAX_USEFUL_THREADS = std::min(scaled, 16); // cap, 48 was confirmed worse
                                                              // every time, no reason to extrapolate past 16
 
