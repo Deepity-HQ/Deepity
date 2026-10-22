@@ -1,9 +1,9 @@
 #include "deepity/layers/FullPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
+#include "deepity/utils/LayerBindHelpers.h"
 #include "deepity/utils/Optimize.h"
 #include "deepity/utils/RandomizeDistribution.h"
 #include <cstring>
-#include <type_traits>
 
 namespace Deep
 {
@@ -92,52 +92,15 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     backend->Zero(biasGradScratch, nextSize);
 
     // Always allocated, see GetRequiredFloats().
-    grad_W = arena.AllocateFloats(w_size);
-    m_W = arena.AllocateFloats(w_size);
-    v_W = arena.AllocateFloats(w_size);
+    BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);
+    BindAdamState(arena, backend.get(), nextSize, grad_b, m_b, v_b);
+    BindLearningRateState(arena, backend.get(), t_device, lr_device, lr);
 
-    grad_b = arena.AllocateFloats(nextSize);
-    m_b = arena.AllocateFloats(nextSize);
-    v_b = arena.AllocateFloats(nextSize);
-
-    backend->Zero(m_W, w_size);
-    backend->Zero(v_W, w_size);
-    backend->Zero(m_b, nextSize);
-    backend->Zero(v_b, nextSize);
-    backend->Zero(grad_W, w_size);
-    backend->Zero(grad_b, nextSize);
-
-    t_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    lr_device = arena.AllocateFloats(1);
-    int zero = 0;
-    backend->CopyFromHost(reinterpret_cast<float*>(t_device), reinterpret_cast<float*>(&zero), 1);
-    backend->CopyFromHost(lr_device, &lr, 1);
-
-    grad_Psi = arena.AllocateFloats(direct_size);
-    m_Psi = arena.AllocateFloats(direct_size);
-    v_Psi = arena.AllocateFloats(direct_size);
-
-    backend->Zero(m_Psi, direct_size);
-    backend->Zero(v_Psi, direct_size);
-    backend->Zero(grad_Psi, direct_size);
-
-    tPsi_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    fl_device = arena.AllocateFloats(1);
-    int zeroPsi = 0;
-    backend->CopyFromHost(
-        reinterpret_cast<float*>(tPsi_device), reinterpret_cast<float*>(&zeroPsi), 1);
-    backend->CopyFromHost(fl_device, &fl, 1);
+    BindAdamState(arena, backend.get(), direct_size, grad_Psi, m_Psi, v_Psi);
+    BindLearningRateState(arena, backend.get(), tPsi_device, fl_device, fl);
   }
 
-  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
-  {
-    if (localArena && localArena.get() != &arena)
-      localArena.reset();
-  }
-  else
-  {
-    localArena.reset();
-  }
+  ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
 size_t FullPCLayer::GetRequiredFloats() const noexcept
@@ -164,7 +127,8 @@ size_t FullPCLayer::GetRequiredFloats() const noexcept
     total += pad16(direct_size);
     total += pad16(nextSize);
 
-    // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+    // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
+    // safe.
     total += pad16(w_size) * 3;
     total += pad16(nextSize) * 3;
     total += pad16(1) * 2;

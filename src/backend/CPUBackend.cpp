@@ -380,8 +380,17 @@ void CPUBackend::Im2Col(const float* input, int batchSize, int channels, int hei
 #pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
   for (int batch = 0; batch < batchSize; ++batch)
   {
-    Deep::Im2Col(input + (size_t)batch * imageSize, channels, height, width, kernelH, kernelW,
-                strideH, strideW, padH, padW, columns + (size_t)batch * colSize);
+    Deep::Im2Col(input + (size_t)batch * imageSize,
+                 channels,
+                 height,
+                 width,
+                 kernelH,
+                 kernelW,
+                 strideH,
+                 strideW,
+                 padH,
+                 padW,
+                 columns + (size_t)batch * colSize);
   }
 }
 
@@ -397,8 +406,17 @@ void CPUBackend::Col2Im(const float* columns, int batchSize, int channels, int h
 #pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
   for (int batch = 0; batch < batchSize; ++batch)
   {
-    Deep::Col2Im(columns + (size_t)batch * colSize, channels, height, width, kernelH, kernelW,
-                strideH, strideW, padH, padW, outputImage + (size_t)batch * imageSize);
+    Deep::Col2Im(columns + (size_t)batch * colSize,
+                 channels,
+                 height,
+                 width,
+                 kernelH,
+                 kernelW,
+                 strideH,
+                 strideW,
+                 padH,
+                 padW,
+                 outputImage + (size_t)batch * imageSize);
   }
 }
 
@@ -412,8 +430,15 @@ void CPUBackend::MaxPool2DForward(const float* input, int batchSize, int channel
 
   for (int batch = 0; batch < batchSize; ++batch)
   {
-    Deep::MaxPool2DForward(input + (size_t)batch * imageSize, channels, height, width, poolH,
-                           poolW, strideH, strideW, output + (size_t)batch * outSize,
+    Deep::MaxPool2DForward(input + (size_t)batch * imageSize,
+                           channels,
+                           height,
+                           width,
+                           poolH,
+                           poolW,
+                           strideH,
+                           strideW,
+                           output + (size_t)batch * outSize,
                            argmax + (size_t)batch * outSize);
   }
 }
@@ -427,8 +452,13 @@ void CPUBackend::MaxPool2DBackward(const float* outputGrad, const int* argmax, i
 
   for (int batch = 0; batch < batchSize; ++batch)
   {
-    Deep::MaxPool2DBackward(outputGrad + (size_t)batch * outSize, argmax + (size_t)batch * outSize,
-                            channels, height, width, outH, outW,
+    Deep::MaxPool2DBackward(outputGrad + (size_t)batch * outSize,
+                            argmax + (size_t)batch * outSize,
+                            channels,
+                            height,
+                            width,
+                            outH,
+                            outW,
                             inputGrad + (size_t)batch * imageSize);
   }
 }
@@ -442,7 +472,8 @@ void CPUBackend::RepackForBatchedGemm(float* dst, const float* src, size_t batch
   const int maxRows = static_cast<int>(rows);
   const int maxBatch = static_cast<int>(batchSize);
 
-#pragma omp parallel for schedule(static) collapse(2) if (rows * batchSize * cols > 65536 && !omp_in_parallel())
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (rows * batchSize * cols > 65536 && !omp_in_parallel())
   for (int row = 0; row < maxRows; ++row)
   {
     for (int batch = 0; batch < maxBatch; ++batch)
@@ -462,8 +493,9 @@ void CPUBackend::MultiplyInto(float* dst, const float* a, const float* b, size_t
   MultiplyIntoDispatch(dst, a, b, n);
 }
 
-void CPUBackend::FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
-                                                   ActivationType dType, size_t n) noexcept
+void CPUBackend::FusedActivationDerivativeMultiply(float* dst, const float* a,
+                                                   float* activatedInOut, ActivationType dType,
+                                                   size_t n) noexcept
 {
   // dGELU needs Sleef_tanhf_u10 (see ActivationDerivativeFromActivatedScalar's
   // own documented GELU caveat) -- not in scope for the Highway pass yet,
@@ -520,8 +552,8 @@ float CPUBackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float* 
   const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
   const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
 
-#pragma omp parallel for schedule(static) reduction(+ : energy) collapse(2) \
-    if (batchSize * width > 256 && !omp_in_parallel())
+#pragma omp parallel for schedule(static) reduction(+ : energy)                                    \
+    collapse(2) if (batchSize * width > 256 && !omp_in_parallel())
   for (ptrdiff_t b = 0; b < maxBatch; ++b)
   {
     for (ptrdiff_t i = 0; i < maxWidth; ++i)
@@ -552,7 +584,8 @@ void CPUBackend::AxpyBroadcastInto(float* y, const float* x, const float* factor
   const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
   const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
 
-#pragma omp parallel for schedule(static) collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
   for (ptrdiff_t b = 0; b < maxBatch; ++b)
   {
     for (ptrdiff_t i = 0; i < maxWidth; ++i)
@@ -569,7 +602,8 @@ void CPUBackend::MultiplyBroadcastInto(float* dst, const float* a, const float* 
   const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
   const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
 
-#pragma omp parallel for schedule(static) collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
   for (ptrdiff_t batch = 0; batch < maxBatch; ++batch)
   {
     for (ptrdiff_t i = 0; i < maxWidth; ++i)

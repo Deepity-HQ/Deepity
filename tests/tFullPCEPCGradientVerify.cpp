@@ -28,8 +28,7 @@ using namespace Deep;
 
 namespace
 {
-void Settle(FullPCNetwork& net, const std::vector<float>& x, const std::vector<float>& y,
-            int steps)
+void Settle(FullPCNetwork& net, const std::vector<float>& x, const std::vector<float>& y, int steps)
 {
   net.ResetState();
   net.Clamp(x);
@@ -75,7 +74,7 @@ int main()
 {
   const float eps = 3e-3f;
   const float tolerance = 1e-2f; // FD error is O(eps^2), same as every
-                                  // sibling gradient-check test
+                                 // sibling gradient-check test
 
   FullPCNetwork net(1);
   net.AddLayer(4, 4, 3, 1.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH, ActivationType::dTANH);

@@ -42,11 +42,11 @@ int main()
   net.Compile();
   net.SetOptimizer(OptimizerType::SGD);
   net.SetUseMomentum(true, beta); // the thing under test (only the hidden
-                                   // layer's UpdateState() actually reaches
-                                   // the momentum branch; input/terminal
-                                   // stay clamped throughout, so their
-                                   // UpdateState() calls are no-ops
-                                   // regardless of this flag)
+                                  // layer's UpdateState() actually reaches
+                                  // the momentum branch; input/terminal
+                                  // stay clamped throughout, so their
+                                  // UpdateState() calls are no-ops
+                                  // regardless of this flag)
 
   std::mt19937 rng(31);
   net.RandomizeWeights(rng);
@@ -63,7 +63,7 @@ int main()
 
   FullPCLayer* hidden = net.GetLayers()[1].get();
   FullPCLayer* terminal = net.GetLayers()[2].get();
-  size_t size = hidden->GetInputSize();     // 4
+  size_t size = hidden->GetInputSize();      // 4
   size_t nextSize = hidden->GetOutputSize(); // 3
   const float* W = hidden->GetWeights();     // [nextSize, size]
 

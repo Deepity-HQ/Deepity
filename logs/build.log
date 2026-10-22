@@ -1,143 +1,32 @@
---- Deepity Build Log (Release, arch=native) ---
+--- Deepity Build Log (Release, arch=fast) ---
 
 === Compilation ===
-[  2%] Built target mkrename_gnuabi
-[  2%] Built target mkdisp
-[  3%] Built target common
-[  3%] Built target mkrename
-[  4%] Built target mkalias
-[ 12%] Built target benchmark
-[ 16%] Built target hwy
-[ 16%] Built target mkmasked_gnuabi
-[ 21%] Built target nanobind-static
-[ 22%] Built target sleefgnuabiavxsp
-[ 22%] Built target sleefgnuabisse2dp
-[ 22%] Built target sleefgnuabisse2sp
-[ 23%] Built target sleefgnuabiavxdp
-[ 24%] Built target sleefgnuabiavx2sp
-[ 24%] Built target addSuffix
-[ 25%] Built target sleefgnuabiavx2dp
-[ 26%] Built target test_psha_capi
-[ 28%] Built target testerutil_obj
-[ 28%] Built target qtesterutil_obj
-[ 28%] Built target test_psha
-[ 29%] Built target hwy_test
-[ 30%] Built target hwy_list_targets
-[ 33%] Built target benchmark_main
-[ 42%] Built target headers
-[ 43%] Built target alias_avx512f.h_generated
-[ 43%] Built target renameAVX512FNOFMA.h_generated
-[ 43%] Built target renameAVX512F.h_generated
-[ 43%] Built target DeepityHighwayKernels
-[ 43%] Built target renameAVX2.h_generated
-[ 44%] Built target renameAVX2128.h_generated
-[ 44%] Built target renameFMA4.h_generated
-[ 45%] Built target renameAVX.h_generated
-[ 46%] Built target renameSSE4.h_generated
-[ 46%] Built target renamePURECFMA_SCALAR.h_generated
-[ 47%] Built target renameSSE2.h_generated
-[ 47%] Built target renamePUREC_SCALAR.h_generated
-[ 47%] Built target renamedspscalar.h_generated
-[ 47%] Built target dispscalar.c_generated
-[ 47%] Built target renamedsp128.h_generated
-[ 47%] Built target dispsse.c_generated
-[ 48%] Built target dispavx.c_generated
-[ 48%] Built target maskedAVX512F_generated
-[ 48%] Built target renamedsp256.h_generated
-[ 49%] Built target sleefdetavx512fnofma
-[ 51%] Built target sleefavx512fnofma
-[ 52%] Built target sleefdetavx512f
-[ 53%] Built target sleefavx512f
-[ 54%] Built target sleefavx2
-[ 56%] Built target sleefavx2128
-[ 56%] Built target sleefdetavx2
-[ 57%] Built target sleefdetavx2128
-[ 58%] Built target sleeffma4
-[ 59%] Built target sleefavx
-[ 60%] Built target sleefdetfma4
-[ 61%] Built target sleefdetavx
-[ 62%] Built target sleefdetsse2
-[ 63%] Built target sleefsse4
-[ 66%] Built target sleefsse2
-[ 67%] Built target sleefdetsse4
-[ 68%] Built target sleefpurec_scalar
-[ 69%] Built target sleefdetpurec_scalar
-[ 70%] Built target sleefpurecfma_scalar
-[ 71%] Built target sleefdetpurecfma_scalar
-[ 73%] Built target dispscalar_obj
-[ 74%] Built target dispsse_obj
-[ 76%] Built target sleefgnuabiavx512fdp
-[ 76%] Built target dispavx_obj
-[ 76%] Built target sleefgnuabiavx512fsp
-[ 77%] Built target sleef
-[ 77%] Built target sleefgnuabi
-[ 77%] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullPCLayer.cpp.o
-[ 78%] Building CXX object CMakeFiles/Deepity.dir/src/layers/ConvPCLayer.cpp.o
-[ 78%] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullConvPCLayer.cpp.o
-[ 79%] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimpleConvPCLayer.cpp.o
-[ 79%] Building CXX object CMakeFiles/Deepity.dir/src/layers/DiscriminativePCLayer.cpp.o
-[ 79%] Building CXX object CMakeFiles/Deepity.dir/src/layers/GaussSeidelPCLayer.cpp.o
-[ 80%] Building CXX object CMakeFiles/Deepity.dir/src/layers/DirectKPPCLayer.cpp.o
-[ 80%] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayer.cpp.o
-[ 80%] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullPCNetwork.cpp.o
-[ 81%] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullConvPCNetwork.cpp.o
-[ 81%] Building CXX object CMakeFiles/Deepity.dir/src/networks/DiscriminativePCNetwork.cpp.o
-[ 81%] Building CXX object CMakeFiles/Deepity.dir/src/networks/ConvPCNetwork.cpp.o
-[ 81%] Building CXX object CMakeFiles/Deepity.dir/src/networks/GaussSeidelPCNetwork.cpp.o
-[ 82%] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimplePCNetwork.cpp.o
-[ 82%] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimpleConvPCNetwork.cpp.o
-[ 83%] Building CXX object CMakeFiles/Deepity.dir/src/networks/DirectKPPCNetwork.cpp.o
-[ 84%] Linking CXX static library bin/libDeepity.a
-[ 88%] Built target Deepity
-[ 89%] Building CXX object CMakeFiles/ConvDiagnose.dir/tests/tConvDiagnose.cpp.o
-[ 89%] Linking CXX executable bin/ActivationBenchmark
-[ 91%] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.o
-[ 91%] Linking CXX executable bin/CUDALaunchErrorVerify
-[ 91%] Building CXX object CMakeFiles/ReadmeBenchmark.dir/tests/tReadme.cpp.o
-[ 91%] Linking CXX executable bin/CUDAIncrementCounterVerify
-[ 91%] Linking CXX executable bin/CUDAIntRoundtripVerify
-[ 92%] Building CXX object CMakeFiles/PCNBenchmark.dir/tests/tBenchmark.cpp.o
-[ 92%] Built target ActivationBenchmark
-[ 92%] Linking CXX executable bin/CUDAIncrementCounterSyncVerify
-[ 92%] Built target CUDAIncrementCounterVerify
-[ 93%] Built target CUDAIntRoundtripVerify
-[ 93%] Built target CUDALaunchErrorVerify
-[ 93%] Linking CXX executable bin/MatMulLargeAsymmetricVerify
-[ 94%] Building CXX object CMakeFiles/DiscriminativeNetworkProfile.dir/tests/tDiscriminativeNetworkProfile.cpp.o
-[ 94%] Building CXX object CMakeFiles/SimpleNetworkProfile.dir/tests/tSimpleNetworkProfile.cpp.o
-[ 95%] Linking CXX executable bin/ConvDiagnose
-[ 95%] Linking CXX executable bin/GflopsBenchmark
-[ 95%] Linking CXX executable bin/ReadmeBenchmark
-[ 96%] Built target CUDAIncrementCounterSyncVerify
-[ 96%] Building CXX object CMakeFiles/pydeepity.dir/bindings/LayerBindings.cpp.o
-[ 96%] Built target MatMulLargeAsymmetricVerify
-[ 96%] Building CXX object CMakeFiles/pydeepity.dir/bindings/NetworkBindings.cpp.o
-[ 97%] Linking CXX executable bin/SimpleNetworkProfile
-[ 97%] Linking CXX executable bin/DiscriminativeNetworkProfile
-[ 97%] Linking CXX executable bin/PCNBenchmark
-[ 97%] Built target GflopsBenchmark
-[ 97%] Built target ConvDiagnose
-lto-wrapper: warning: using serial compilation of 5 LTRANS jobs
-[ 97%] Built target ReadmeBenchmark
-[ 97%] Built target SimpleNetworkProfile
-[ 97%] Built target DiscriminativeNetworkProfile
-[ 97%] Linking CXX shared module bin/pydeepity.cpython-312-x86_64-linux-gnu.so
-[ 97%] Built target PCNBenchmark
-[100%] Built target pydeepity
+[1/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimpleConvPCLayer.cpp.o
+[2/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/ConvPCLayer.cpp.o
+[3/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/DiscriminativePCLayer.cpp.o
+[4/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/DirectKPPCLayer.cpp.o
+[5/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/GaussSeidelPCLayer.cpp.o
+[6/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullConvPCLayer.cpp.o
+[7/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayer.cpp.o
+[8/17] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullPCLayer.cpp.o
+[9/17] Linking CXX static library bin/libDeepity.a
+[10/17] Linking CXX executable bin/ActivationBenchmark
+[11/17] Linking CXX executable bin/DiscriminativeNetworkProfile
+[12/17] Linking CXX executable bin/GflopsBenchmark
+[13/17] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
+[14/17] Linking CXX executable bin/ConvDiagnose
+[15/17] Linking CXX executable bin/PCNBenchmark
+[16/17] Linking CXX executable bin/SimpleNetworkProfile
+[17/17] Linking CXX executable bin/ReadmeBenchmark
 
 
 === Tests ===
-Internal ctest changing into directory: /users/PAS0350/rubaolee2008/Jack_rose1775/Deepity/build/Release
-Test project /users/PAS0350/rubaolee2008/Jack_rose1775/Deepity/build/Release
+Test project /home/rose0/Projects/deepity/build/Release
     Start 1: ConvDiagnose
-    Start 2: test_psha
-    Start 3: test_psha_capi
-1/3 Test #1: ConvDiagnose .....................   Passed    2.36 sec
-2/3 Test #2: test_psha ........................   Passed    2.79 sec
-3/3 Test #3: test_psha_capi ...................   Passed    2.90 sec
+1/1 Test #1: ConvDiagnose .....................   Passed    2.69 sec
 
-100% tests passed, 0 tests failed out of 3
+100% tests passed, 0 tests failed out of 1
 
-Total Test time (real) =   2.94 sec
+Total Test time (real) =   2.69 sec
 
 

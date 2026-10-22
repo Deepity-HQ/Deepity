@@ -15,7 +15,10 @@ public:
 
   // @remark these are no-ops for backend purposes
   /// @copydoc Deep::IComputeBackend::BeginGraphCapture
-  void BeginGraphCapture(size_t slot = 0) noexcept override { (void)slot; }
+  void BeginGraphCapture(size_t slot = 0) noexcept override
+  {
+    (void)slot;
+  }
   /// @copydoc Deep::IComputeBackend::EndGraphCapture
   bool EndGraphCapture(size_t slot = 0) noexcept override
   {
@@ -23,7 +26,10 @@ public:
     return true;
   } // nothing to fail on CPU
   /// @copydoc Deep::IComputeBackend::ReplayGraph
-  void ReplayGraph(size_t slot = 0) noexcept override { (void)slot; }
+  void ReplayGraph(size_t slot = 0) noexcept override
+  {
+    (void)slot;
+  }
   /// @copydoc Deep::IComputeBackend::Synchronize
   void Synchronize() noexcept override {}
 
@@ -123,8 +129,8 @@ public:
               int kernelW, int strideH, int strideW, int padH, int padW,
               float* columns) noexcept override;
   /// @copydoc Deep::IComputeBackend::Col2Im
-  void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
-              int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
+  void Col2Im(const float* columns, int batchSize, int channels, int height, int width, int kernelH,
+              int kernelW, int strideH, int strideW, int padH, int padW,
               float* outputImage) noexcept override;
   /// @copydoc Deep::IComputeBackend::MaxPool2DForward
   void MaxPool2DForward(const float* input, int batchSize, int channels, int height, int width,
@@ -139,8 +145,8 @@ public:
                             size_t cols) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::TryFusedConvForward
-  bool TryFusedConvForward(const float*, const float*, float*, float, int, int, int, int, int,
-                           int, int, int, int, int, int) noexcept override
+  bool TryFusedConvForward(const float*, const float*, float*, float, int, int, int, int, int, int,
+                           int, int, int, int, int) noexcept override
   {
     return false; // no fused path on CPU, caller always falls back to
                   // Im2Col()+RepackForBatchedGemm()+MatMul()
@@ -158,8 +164,7 @@ public:
     return false; // ditto, falls back to RepackForBatchedGemm()+MatMul()
   }
   /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
-  void PrepareConvWorkspace(int, int, int, int, int, int, int, int, int, int,
-                           int) noexcept override
+  void PrepareConvWorkspace(int, int, int, int, int, int, int, int, int, int, int) noexcept override
   {
     // no workspace to grow on CPU
   }

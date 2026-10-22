@@ -67,7 +67,10 @@ struct PhaseReport
   int nBatches = 1;
   std::vector<std::pair<std::string, double>> phases;
 
-  explicit PhaseReport(std::string t) : title(std::move(t)) {}
+  explicit PhaseReport(std::string t)
+      : title(std::move(t))
+  {
+  }
 
   void Add(const std::string& name, double seconds)
   {
@@ -85,20 +88,26 @@ struct PhaseReport
   void Print() const
   {
     printf("\n=== %s ===\n", title.c_str());
-    printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n", totalTime,
-           1000.0 * totalTime / nBatches, nBatches);
+    printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n",
+           totalTime,
+           1000.0 * totalTime / nBatches,
+           nBatches);
     double accounted = 0.0;
     for (auto& [name, secs] : phases)
     {
-      printf("  %-32s %9.4f ms/batch  (%5.1f%%)\n", name.c_str(), 1000.0 * secs / nBatches,
+      printf("  %-32s %9.4f ms/batch  (%5.1f%%)\n",
+             name.c_str(),
+             1000.0 * secs / nBatches,
              totalTime > 0.0 ? 100.0 * secs / totalTime : 0.0);
       accounted += secs;
     }
     double unaccounted = totalTime - accounted;
     printf("  %-32s %9.4f ms/batch  (%5.1f%%)  <- hidden overhead: thread\n"
            "  %-32s                              spin-up, virtual dispatch, allocation\n",
-           "Unaccounted", 1000.0 * unaccounted / nBatches,
-           totalTime > 0.0 ? 100.0 * unaccounted / totalTime : 0.0, "");
+           "Unaccounted",
+           1000.0 * unaccounted / nBatches,
+           totalTime > 0.0 ? 100.0 * unaccounted / totalTime : 0.0,
+           "");
   }
 };
 
@@ -285,10 +294,14 @@ void BenchmarkDirectKPPCNetwork(int nBatches)
 {
   const int BATCH = 128, STEPS = 10;
   DirectKPPCNetwork net(BATCH);
-  net.AddLayer(784, 256, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(256, 128, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(128, 10, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(10, 0, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
+  net.AddLayer(
+      784, 256, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      256, 128, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      128, 10, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      10, 0, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
   net.Compile();
   std::mt19937 rng(42);
   net.RandomizeWeights(rng);
@@ -362,10 +375,14 @@ void BenchmarkFullPCNetworkBaseline(int nBatches)
 {
   const int BATCH = 128, STEPS = 10;
   FullPCNetwork net(BATCH);
-  net.AddLayer(784, 256, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(256, 128, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(128, 10, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(10, 0, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
+  net.AddLayer(
+      784, 256, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      256, 128, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      128, 10, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      10, 0, 10, 0.001f, 0.1f, 1e-4f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
   net.Compile();
   std::mt19937 rng(42);
   net.RandomizeWeights(rng);
@@ -381,7 +398,9 @@ void BenchmarkFullPCNetworkBaseline(int nBatches)
   double elapsed = Secs(t0, Clock::now());
 
   printf("\n=== FullPCNetwork (all toggles OFF), 784-256-128-10, batch=128 ===\n");
-  printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n", elapsed, 1000.0 * elapsed / nBatches,
+  printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n",
+         elapsed,
+         1000.0 * elapsed / nBatches,
          nBatches);
   RecordSummary("FullPCNetwork (baseline, all toggles off)", 1000.0 * elapsed / nBatches);
 }
@@ -467,20 +486,89 @@ void BenchmarkDiscriminativePCNetwork(int nBatches)
 // baseline harnesses and the batch-size sweep: a real downsampling CNN
 // shape (stride-2 convs), proven to actually train well this session --
 // not a pathological single giant collapsing kernel.
-template <typename NetT>
-void BuildConvArch(NetT& net, int batch)
+template <typename NetT> void BuildConvArch(NetT& net, int batch)
 {
   (void)batch;
-  net.AddLayer(1, 16, 28, 28, 3, 3, 2, 2, 1, 1, 0.001f, 0.1f, 0.01f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(16, 32, 14, 14, 3, 3, 2, 2, 1, 1, 0.001f, 0.1f, 0.01f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 32, 7, 7, 3, 3, 1, 1, 1, 1, 0.001f, 0.1f, 0.01f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 10, 7, 7, 7, 7, 1, 1, 0, 0, 0.001f, 0.1f, 0.01f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0.001f, 0.1f, 0.01f, 1e-4f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(1,
+               16,
+               28,
+               28,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               0.01f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(16,
+               32,
+               14,
+               14,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               0.01f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               32,
+               7,
+               7,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               0.01f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               10,
+               7,
+               7,
+               7,
+               7,
+               1,
+               1,
+               0,
+               0,
+               0.001f,
+               0.1f,
+               0.01f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(10,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               0.001f,
+               0.1f,
+               0.01f,
+               1e-4f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
 }
 
 void BenchmarkConvPCNetwork(int nBatches)
@@ -557,16 +645,81 @@ void BenchmarkSimpleConvPCNetwork(int nBatches)
 {
   const int BATCH = 64, STEPS = 10;
   SimpleConvPCNetwork net(BATCH);
-  net.AddLayer(1, 16, 28, 28, 3, 3, 2, 2, 1, 1, 0.001f, 0.1f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(16, 32, 14, 14, 3, 3, 2, 2, 1, 1, 0.001f, 0.1f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 32, 7, 7, 3, 3, 1, 1, 1, 1, 0.001f, 0.1f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 10, 7, 7, 7, 7, 1, 1, 0, 0, 0.001f, 0.1f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0.001f, 0.1f, 1e-4f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(1,
+               16,
+               28,
+               28,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(16,
+               32,
+               14,
+               14,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               32,
+               7,
+               7,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               0.001f,
+               0.1f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               10,
+               7,
+               7,
+               7,
+               7,
+               1,
+               1,
+               0,
+               0,
+               0.001f,
+               0.1f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(10,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               0.001f,
+               0.1f,
+               1e-4f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
   net.Compile();
   std::mt19937 rng(42);
   net.RandomizeWeights(rng);
@@ -632,16 +785,91 @@ void BenchmarkFullConvPCNetworkBaseline(int nBatches)
 {
   const int BATCH = 64, STEPS = 10;
   FullConvPCNetwork net(BATCH);
-  net.AddLayer(1, 16, 28, 28, 3, 3, 2, 2, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(16, 32, 14, 14, 3, 3, 2, 2, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 32, 7, 7, 3, 3, 1, 1, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(32, 10, 7, 7, 7, 7, 1, 1, 0, 0, 10, 0.001f, 0.1f, 0.0f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 0.001f, 0.1f, 0.0f, 1e-4f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(1,
+               16,
+               28,
+               28,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               10,
+               0.001f,
+               0.1f,
+               0.0f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(16,
+               32,
+               14,
+               14,
+               3,
+               3,
+               2,
+               2,
+               1,
+               1,
+               10,
+               0.001f,
+               0.1f,
+               0.0f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               32,
+               7,
+               7,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               10,
+               0.001f,
+               0.1f,
+               0.0f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(32,
+               10,
+               7,
+               7,
+               7,
+               7,
+               1,
+               1,
+               0,
+               0,
+               10,
+               0.001f,
+               0.1f,
+               0.0f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(10,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               10,
+               0.001f,
+               0.1f,
+               0.0f,
+               1e-4f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
   net.Compile();
   std::mt19937 rng(42);
   net.RandomizeWeights(rng);
@@ -657,7 +885,9 @@ void BenchmarkFullConvPCNetworkBaseline(int nBatches)
   double elapsed = Secs(t0, Clock::now());
 
   printf("\n=== FullConvPCNetwork (all toggles OFF), 1-16-32-32-10, batch=64 ===\n");
-  printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n", elapsed, 1000.0 * elapsed / nBatches,
+  printf("Total: %.3fs  (%.4f ms/batch over %d batches)\n",
+         elapsed,
+         1000.0 * elapsed / nBatches,
          nBatches);
   RecordSummary("FullConvPCNetwork (baseline, all toggles off)", 1000.0 * elapsed / nBatches);
 }
@@ -671,11 +901,21 @@ double MeasureFullPCVariant(const std::string& label, int nBatches,
 {
   const int BATCH = 128, STEPS = 10;
   FullPCNetwork net(BATCH);
-  net.AddLayer(784, 256, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(256, 256, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH,
-              ActivationType::dTANH); // same-width, so residual is valid here
-  net.AddLayer(256, 10, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
-  net.AddLayer(10, 0, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
+  net.AddLayer(
+      784, 256, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(256,
+               256,
+               10,
+               0.001f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::TANH,
+               ActivationType::dTANH); // same-width, so residual is valid here
+  net.AddLayer(
+      256, 10, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH, ActivationType::dTANH);
+  net.AddLayer(
+      10, 0, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::LINEAR, ActivationType::dLINEAR);
   configure(net);
   net.Compile();
   std::mt19937 rng(42);
@@ -701,18 +941,18 @@ void BenchmarkFullPCToggleComparison(int nBatches)
   printf("(Per-STEP cost only -- pair against this session's own convergence-speed findings,\n"
          " e.g. ePC needs far FEWER steps to reach the same energy, before judging net cost.)\n");
 
-  double baseline = MeasureFullPCVariant("baseline (all toggles off)", nBatches,
-                                        [](FullPCNetwork&) {});
-  double epc =
-      MeasureFullPCVariant("+ePC", nBatches, [](FullPCNetwork& n) { n.SetUseEPC(true); });
-  double ipc =
-      MeasureFullPCVariant("+iPC", nBatches, [](FullPCNetwork& n) { n.SetUseIPC(true); });
-  double momentum = MeasureFullPCVariant("+momentum", nBatches,
-                                        [](FullPCNetwork& n) { n.SetUseMomentum(true); });
-  double mupc = MeasureFullPCVariant("+muPC scaling", nBatches,
-                                    [](FullPCNetwork& n) { n.SetUseMuPCScaling(true); });
-  double residual = MeasureFullPCVariant("+residual connections", nBatches, [](FullPCNetwork& n)
-                                        { n.SetUseResidualConnections(true); });
+  double baseline =
+      MeasureFullPCVariant("baseline (all toggles off)", nBatches, [](FullPCNetwork&) {});
+  double epc = MeasureFullPCVariant("+ePC", nBatches, [](FullPCNetwork& n) { n.SetUseEPC(true); });
+  double ipc = MeasureFullPCVariant("+iPC", nBatches, [](FullPCNetwork& n) { n.SetUseIPC(true); });
+  double momentum =
+      MeasureFullPCVariant("+momentum", nBatches, [](FullPCNetwork& n) { n.SetUseMomentum(true); });
+  double mupc = MeasureFullPCVariant(
+      "+muPC scaling", nBatches, [](FullPCNetwork& n) { n.SetUseMuPCScaling(true); });
+  double residual =
+      MeasureFullPCVariant("+residual connections",
+                           nBatches,
+                           [](FullPCNetwork& n) { n.SetUseResidualConnections(true); });
   double dkp = MeasureFullPCVariant(
       "+DKP feedback (fl>0, set at construction)", nBatches, [](FullPCNetwork&) {});
 
@@ -724,7 +964,8 @@ void BenchmarkFullPCToggleComparison(int nBatches)
   printf("  %-38s %+7.1f%%\n", "residual connections", 100.0 * (residual - baseline) / baseline);
   printf("  %-38s (see note: fl was 0 in the baseline build above, DKP's own\n"
          "  %-38s  contribution needs a separate fl>0 construction to isolate)\n",
-         "DKP direct feedback", "");
+         "DKP direct feedback",
+         "");
   (void)dkp;
 }
 
@@ -739,14 +980,74 @@ double MeasureFullConvPCVariant(const std::string& label, int nBatches,
   // layer0's own stride, exactly like tFullPCEPCGradientVerify.cpp's
   // dense analog put the single residual-eligible layer at H=2's only
   // covered index.
-  net.AddLayer(1, 32, 28, 28, 8, 8, 4, 4, 2, 2, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU); // downsample 28x28 -> 7x7 in one stride-4 conv
-  net.AddLayer(32, 32, 7, 7, 3, 3, 1, 1, 1, 1, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU); // same-shape, the ONLY residual-eligible layer here
-  net.AddLayer(32, 10, 7, 7, 7, 7, 1, 1, 0, 0, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::RELU,
-              ActivationType::dRELU);
-  net.AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 0.001f, 0.1f, 1e-3f, 1e-4f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(1,
+               32,
+               28,
+               28,
+               8,
+               8,
+               4,
+               4,
+               2,
+               2,
+               10,
+               0.001f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU); // downsample 28x28 -> 7x7 in one stride-4 conv
+  net.AddLayer(32,
+               32,
+               7,
+               7,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               10,
+               0.001f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU); // same-shape, the ONLY residual-eligible layer here
+  net.AddLayer(32,
+               10,
+               7,
+               7,
+               7,
+               7,
+               1,
+               1,
+               0,
+               0,
+               10,
+               0.001f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::RELU,
+               ActivationType::dRELU);
+  net.AddLayer(10,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               10,
+               0.001f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
   configure(net);
   net.Compile();
   std::mt19937 rng(42);
@@ -770,19 +1071,20 @@ void BenchmarkFullConvPCToggleComparison(int nBatches)
 {
   printf("\n=== FullConvPCLayer toggle-cost comparison, 1-32-32-10, batch=64, 10 steps ===\n");
 
-  double baseline = MeasureFullConvPCVariant("baseline (all toggles off)", nBatches,
-                                            [](FullConvPCNetwork&) {});
-  double epc = MeasureFullConvPCVariant("+ePC", nBatches,
-                                       [](FullConvPCNetwork& n) { n.SetUseEPC(true); });
-  double ipc = MeasureFullConvPCVariant("+iPC", nBatches,
-                                       [](FullConvPCNetwork& n) { n.SetUseIPC(true); });
-  double momentum = MeasureFullConvPCVariant("+momentum", nBatches,
-                                            [](FullConvPCNetwork& n) { n.SetUseMomentum(true); });
-  double mupc = MeasureFullConvPCVariant("+muPC scaling", nBatches, [](FullConvPCNetwork& n)
-                                        { n.SetUseMuPCScaling(true); });
-  double residual = MeasureFullConvPCVariant(
-      "+residual connections", nBatches,
-      [](FullConvPCNetwork& n) { n.SetUseResidualConnections(true); });
+  double baseline =
+      MeasureFullConvPCVariant("baseline (all toggles off)", nBatches, [](FullConvPCNetwork&) {});
+  double epc =
+      MeasureFullConvPCVariant("+ePC", nBatches, [](FullConvPCNetwork& n) { n.SetUseEPC(true); });
+  double ipc =
+      MeasureFullConvPCVariant("+iPC", nBatches, [](FullConvPCNetwork& n) { n.SetUseIPC(true); });
+  double momentum = MeasureFullConvPCVariant(
+      "+momentum", nBatches, [](FullConvPCNetwork& n) { n.SetUseMomentum(true); });
+  double mupc = MeasureFullConvPCVariant(
+      "+muPC scaling", nBatches, [](FullConvPCNetwork& n) { n.SetUseMuPCScaling(true); });
+  double residual =
+      MeasureFullConvPCVariant("+residual connections",
+                               nBatches,
+                               [](FullConvPCNetwork& n) { n.SetUseResidualConnections(true); });
 
   printf("\n  Overhead vs baseline:\n");
   printf("  %-38s %+7.1f%%\n", "ePC", 100.0 * (epc - baseline) / baseline);
@@ -833,14 +1135,35 @@ void BenchmarkConvPrimitives(int reps)
 
     auto t0 = Clock::now();
     for (int r = 0; r < reps; ++r)
-      backend.Im2Col(input.data(), /*batchSize=*/1, s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH,
-                     s.strideW, s.padH, s.padW, cols.data());
+      backend.Im2Col(input.data(),
+                     /*batchSize=*/1,
+                     s.inC,
+                     s.inH,
+                     s.inW,
+                     s.kH,
+                     s.kW,
+                     s.strideH,
+                     s.strideW,
+                     s.padH,
+                     s.padW,
+                     cols.data());
     double im2colT = Secs(t0, Clock::now());
 
     t0 = Clock::now();
     for (int r = 0; r < reps; ++r)
-      backend.MatMul(false, false, s.outC, (int)colCols, (int)colRows, 1.0f, W.data(),
-                     (int)colRows, cols.data(), (int)colCols, 0.0f, mu.data(), (int)colCols);
+      backend.MatMul(false,
+                     false,
+                     s.outC,
+                     (int)colCols,
+                     (int)colRows,
+                     1.0f,
+                     W.data(),
+                     (int)colRows,
+                     cols.data(),
+                     (int)colCols,
+                     0.0f,
+                     mu.data(),
+                     (int)colCols);
     double gemmT = Secs(t0, Clock::now());
 
     t0 = Clock::now();
@@ -850,8 +1173,18 @@ void BenchmarkConvPrimitives(int reps)
 
     t0 = Clock::now();
     for (int r = 0; r < reps; ++r)
-      backend.MatMul(true, false, (int)colRows, (int)colCols, s.outC, 1.0f, W.data(),
-                     (int)colRows, feedback.data(), (int)colCols, 0.0f, scratch.data(),
+      backend.MatMul(true,
+                     false,
+                     (int)colRows,
+                     (int)colCols,
+                     s.outC,
+                     1.0f,
+                     W.data(),
+                     (int)colRows,
+                     feedback.data(),
+                     (int)colCols,
+                     0.0f,
+                     scratch.data(),
                      (int)colCols);
     double feedbackGemmT = Secs(t0, Clock::now());
 
@@ -859,22 +1192,42 @@ void BenchmarkConvPrimitives(int reps)
     for (int r = 0; r < reps; ++r)
     {
       backend.Zero(outputImage.data(), outputImage.size());
-      backend.Col2Im(scratch.data(), /*batchSize=*/1, s.inC, s.inH, s.inW, s.kH, s.kW, s.strideH,
-                     s.strideW, s.padH, s.padW, outputImage.data());
+      backend.Col2Im(scratch.data(),
+                     /*batchSize=*/1,
+                     s.inC,
+                     s.inH,
+                     s.inW,
+                     s.kH,
+                     s.kW,
+                     s.strideH,
+                     s.strideW,
+                     s.padH,
+                     s.padW,
+                     outputImage.data());
     }
     double col2imT = Secs(t0, Clock::now());
 
     double total = im2colT + gemmT + biasT + feedbackGemmT + col2imT;
     printf("\n  %s: (%d reps)\n", s.name, reps);
-    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n", "Im2Col", 1000.0 * im2colT / reps,
+    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n",
+           "Im2Col",
+           1000.0 * im2colT / reps,
            100.0 * im2colT / total);
-    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n", "forward GEMM", 1000.0 * gemmT / reps,
+    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n",
+           "forward GEMM",
+           1000.0 * gemmT / reps,
            100.0 * gemmT / total);
-    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n", "AddBiasPerChannel", 1000.0 * biasT / reps,
+    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n",
+           "AddBiasPerChannel",
+           1000.0 * biasT / reps,
            100.0 * biasT / total);
-    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n", "feedback GEMM", 1000.0 * feedbackGemmT / reps,
+    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n",
+           "feedback GEMM",
+           1000.0 * feedbackGemmT / reps,
            100.0 * feedbackGemmT / total);
-    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n", "Col2Im (+ zero)", 1000.0 * col2imT / reps,
+    printf("    %-24s %9.4f ms/call  (%5.1f%%)\n",
+           "Col2Im (+ zero)",
+           1000.0 * col2imT / reps,
            100.0 * col2imT / total);
   }
 }
@@ -918,16 +1271,91 @@ void BenchmarkBatchScalingConv(int nBatches)
   for (int batch : {1, 16, 64, 256})
   {
     FullConvPCNetwork net(batch);
-    net.AddLayer(1, 16, 28, 28, 3, 3, 2, 2, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f,
-                ActivationType::RELU, ActivationType::dRELU);
-    net.AddLayer(16, 32, 14, 14, 3, 3, 2, 2, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f,
-                ActivationType::RELU, ActivationType::dRELU);
-    net.AddLayer(32, 32, 7, 7, 3, 3, 1, 1, 1, 1, 10, 0.001f, 0.1f, 0.0f, 1e-4f,
-                ActivationType::RELU, ActivationType::dRELU);
-    net.AddLayer(32, 10, 7, 7, 7, 7, 1, 1, 0, 0, 10, 0.001f, 0.1f, 0.0f, 1e-4f,
-                ActivationType::RELU, ActivationType::dRELU);
-    net.AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 0.001f, 0.1f, 0.0f, 1e-4f,
-                ActivationType::LINEAR, ActivationType::dLINEAR);
+    net.AddLayer(1,
+                 16,
+                 28,
+                 28,
+                 3,
+                 3,
+                 2,
+                 2,
+                 1,
+                 1,
+                 10,
+                 0.001f,
+                 0.1f,
+                 0.0f,
+                 1e-4f,
+                 ActivationType::RELU,
+                 ActivationType::dRELU);
+    net.AddLayer(16,
+                 32,
+                 14,
+                 14,
+                 3,
+                 3,
+                 2,
+                 2,
+                 1,
+                 1,
+                 10,
+                 0.001f,
+                 0.1f,
+                 0.0f,
+                 1e-4f,
+                 ActivationType::RELU,
+                 ActivationType::dRELU);
+    net.AddLayer(32,
+                 32,
+                 7,
+                 7,
+                 3,
+                 3,
+                 1,
+                 1,
+                 1,
+                 1,
+                 10,
+                 0.001f,
+                 0.1f,
+                 0.0f,
+                 1e-4f,
+                 ActivationType::RELU,
+                 ActivationType::dRELU);
+    net.AddLayer(32,
+                 10,
+                 7,
+                 7,
+                 7,
+                 7,
+                 1,
+                 1,
+                 0,
+                 0,
+                 10,
+                 0.001f,
+                 0.1f,
+                 0.0f,
+                 1e-4f,
+                 ActivationType::RELU,
+                 ActivationType::dRELU);
+    net.AddLayer(10,
+                 0,
+                 1,
+                 1,
+                 1,
+                 1,
+                 1,
+                 1,
+                 0,
+                 0,
+                 10,
+                 0.001f,
+                 0.1f,
+                 0.0f,
+                 1e-4f,
+                 ActivationType::LINEAR,
+                 ActivationType::dLINEAR);
     net.Compile();
     std::mt19937 rng(42);
     net.RandomizeWeights(rng);

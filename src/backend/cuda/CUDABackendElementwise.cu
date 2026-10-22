@@ -128,8 +128,8 @@ void CUDABackend::AddBiasPerChannelNCHW(float* buf, const float* bias, size_t ba
   constexpr int BLOCK_SIZE = 256;
   size_t total = batchSize * channels * spatialSize;
   const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  AddBiasPerChannelNCHWKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(buf, bias, batchSize, channels,
-                                                                 spatialSize);
+  AddBiasPerChannelNCHWKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      buf, bias, batchSize, channels, spatialSize);
   CHECK_CUDA_LAUNCH();
 }
 

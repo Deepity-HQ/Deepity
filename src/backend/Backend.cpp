@@ -8,21 +8,22 @@
 
 namespace Deep
 {
-    std::unique_ptr<IComputeBackend> CreateBackend(DeviceType device)
-    {
-        if (device == DeviceType::DEVICE_CPU)
-        {
-            return std::make_unique<CPUBackend>();
-        }
-        else if (device == DeviceType::DEVICE_GPU)
-        {
+std::unique_ptr<IComputeBackend> CreateBackend(DeviceType device)
+{
+  if (device == DeviceType::DEVICE_CPU)
+  {
+    return std::make_unique<CPUBackend>();
+  }
+  else if (device == DeviceType::DEVICE_GPU)
+  {
 #ifdef DEEPITY_USE_CUDA
-            return std::make_unique<CUDABackend>();
+    return std::make_unique<CUDABackend>();
 #else
-            throw std::runtime_error("Deepity was compiled without CUDA support (-DDEEPITY_USE_CUDA=OFF). Cannot create CUDABackend.");
+    throw std::runtime_error("Deepity was compiled without CUDA support (-DDEEPITY_USE_CUDA=OFF). "
+                             "Cannot create CUDABackend.");
 #endif
-        }
+  }
 
-        throw std::invalid_argument("Unknown DeviceType requested from CreateBackend.");
-    }
+  throw std::invalid_argument("Unknown DeviceType requested from CreateBackend.");
 }
+} // namespace Deep

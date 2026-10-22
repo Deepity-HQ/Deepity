@@ -16,42 +16,42 @@
  *     row=2: [4,5, 10,11]
  *   expected dst flat: [0,1,6,7, 2,3,8,9, 4,5,10,11]
  */
-#include <deepity/backend/CPUBackend.h>
-#include <cstdio>
 #include <cmath>
+#include <cstdio>
+#include <deepity/backend/CPUBackend.h>
 #include <vector>
 
 using namespace Deep;
 
 int main()
 {
-    CPUBackend backend;
+  CPUBackend backend;
 
-    const size_t batchSize = 2, rows = 3, cols = 2;
-    std::vector<float> src(batchSize * rows * cols);
-    for (size_t i = 0; i < src.size(); ++i)
-        src[i] = (float)i;
+  const size_t batchSize = 2, rows = 3, cols = 2;
+  std::vector<float> src(batchSize * rows * cols);
+  for (size_t i = 0; i < src.size(); ++i)
+    src[i] = (float)i;
 
-    std::vector<float> dst(rows * batchSize * cols, -999.0f);
+  std::vector<float> dst(rows * batchSize * cols, -999.0f);
 
-    backend.RepackForBatchedGemm(dst.data(), src.data(), batchSize, rows, cols);
+  backend.RepackForBatchedGemm(dst.data(), src.data(), batchSize, rows, cols);
 
-    const std::vector<float> expected = {0, 1, 6, 7, 2, 3, 8, 9, 4, 5, 10, 11};
+  const std::vector<float> expected = {0, 1, 6, 7, 2, 3, 8, 9, 4, 5, 10, 11};
 
-    bool pass = true;
-    for (size_t i = 0; i < expected.size(); ++i)
-    {
-        bool ok = std::fabs(dst[i] - expected[i]) < 1e-6f;
-        pass &= ok;
-        if (!ok)
-            printf("  [%zu] got %g, expected %g  MISMATCH\n", i, dst[i], expected[i]);
-    }
+  bool pass = true;
+  for (size_t i = 0; i < expected.size(); ++i)
+  {
+    bool ok = std::fabs(dst[i] - expected[i]) < 1e-6f;
+    pass &= ok;
+    if (!ok)
+      printf("  [%zu] got %g, expected %g  MISMATCH\n", i, dst[i], expected[i]);
+  }
 
-    printf("dst: ");
-    for (float v : dst)
-        printf("%g ", v);
-    printf("\n");
+  printf("dst: ");
+  for (float v : dst)
+    printf("%g ", v);
+  printf("\n");
 
-    printf(pass ? "PASS\n" : "FAIL\n");
-    return pass ? 0 : 1;
+  printf(pass ? "PASS\n" : "FAIL\n");
+  return pass ? 0 : 1;
 }

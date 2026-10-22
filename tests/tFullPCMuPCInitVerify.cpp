@@ -58,7 +58,8 @@ int main()
     FullPCNetwork net(1);
     net.AddLayer(200, 150, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::TANH, ActivationType::dTANH);
     net.AddLayer(150, 80, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::TANH, ActivationType::dTANH);
-    net.AddLayer(80, 0, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
+    net.AddLayer(
+        80, 0, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
     net.SetUseMuPCScaling(true);
     net.Compile();
 
@@ -77,9 +78,12 @@ int main()
       // Psi must stay fan-scaled even though muPC init is on for W.
       size_t terminalSize = l->GetTerminalSize();
       float expectedPsiVar = 2.0f / (float)(l->GetInputSize() + terminalSize);
-      float psiVar = SampleVariance(l->GetDirectFeedbackWeights(), l->GetInputSize() * terminalSize);
+      float psiVar =
+          SampleVariance(l->GetDirectFeedbackWeights(), l->GetInputSize() * terminalSize);
       bool psiOk = Close(psiVar, expectedPsiVar, 0.20f);
-      printf("    Psi variance %.6f (expected ~%.6f) %s\n", psiVar, expectedPsiVar,
+      printf("    Psi variance %.6f (expected ~%.6f) %s\n",
+             psiVar,
+             expectedPsiVar,
              psiOk ? "OK" : "FAIL");
       pass = pass && psiOk;
     }
@@ -90,7 +94,8 @@ int main()
   {
     FullPCNetwork net(1);
     net.AddLayer(200, 80, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::TANH, ActivationType::dTANH);
-    net.AddLayer(80, 0, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
+    net.AddLayer(
+        80, 0, 80, 0.1f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR, ActivationType::dLINEAR);
     net.Compile(); // useMuPCScaling stays false (default)
 
     std::mt19937 rng(3);

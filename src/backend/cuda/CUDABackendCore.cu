@@ -8,8 +8,8 @@
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.
  */
-#include <deepity/backend/CUDABackend.h>
 #include <cstdlib>
+#include <deepity/backend/CUDABackend.h>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -32,19 +32,21 @@ CUDABackend::CUDABackend()
   // of a clear exception right here.
   cudaError_t err = cudaStreamCreate(&this->stream);
   if (err != cudaSuccess)
-    throw std::runtime_error(
-        std::string("CUDABackend: cudaStreamCreate failed: ") + cudaGetErrorString(err) +
-        ". Is a GPU actually visible to this process? Check `nvidia-smi` and $CUDA_VISIBLE_DEVICES.");
+    throw std::runtime_error(std::string("CUDABackend: cudaStreamCreate failed: ") +
+                             cudaGetErrorString(err) +
+                             ". Is a GPU actually visible to this process? Check `nvidia-smi` and "
+                             "$CUDA_VISIBLE_DEVICES.");
 
   cublasStatus_t blasErr = cublasCreate(&this->handle);
   if (blasErr != CUBLAS_STATUS_SUCCESS)
     throw std::runtime_error("CUDABackend: cublasCreate failed (cublasStatus_t=" +
-                              std::to_string(static_cast<int>(blasErr)) + ").");
+                             std::to_string(static_cast<int>(blasErr)) + ").");
   cublasSetStream(this->handle, this->stream);
 #ifdef DEEPITY_USE_CUDNN
   cudnnStatus_t dnnErr = cudnnCreate(&this->cudnnHandle);
   if (dnnErr != CUDNN_STATUS_SUCCESS)
-    throw std::runtime_error(std::string("CUDABackend: cudnnCreate failed: ") + cudnnGetErrorString(dnnErr));
+    throw std::runtime_error(std::string("CUDABackend: cudnnCreate failed: ") +
+                             cudnnGetErrorString(dnnErr));
   cudnnSetStream(this->cudnnHandle, this->stream);
 #endif
   // Without this, every GEMM (every conv, since this backend lowers conv
@@ -65,7 +67,7 @@ CUDABackend::CUDABackend()
   err = cudaMalloc(&scalarScratch, sizeof(float));
   if (err != cudaSuccess)
     throw std::runtime_error(std::string("CUDABackend: cudaMalloc(scalarScratch) failed: ") +
-                              cudaGetErrorString(err));
+                             cudaGetErrorString(err));
 }
 
 CUDABackend::~CUDABackend()

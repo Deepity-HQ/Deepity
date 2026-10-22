@@ -1,281 +1,280 @@
 #include <deepity/networks/DirectKPPCNetwork.h>
-#include <pmmintrin.h>
-#include <xmmintrin.h>
 #include <iostream>
+#include <pmmintrin.h>
 #include <stdexcept>
+#include <xmmintrin.h>
 
 namespace Deep
 {
-    DirectKPPCNetwork::DirectKPPCNetwork(int batchSize, DeviceType device) noexcept
-        : device(device), batchSize(batchSize)
+DirectKPPCNetwork::DirectKPPCNetwork(int batchSize, DeviceType device) noexcept
+    : device(device)
+    , batchSize(batchSize)
+{
+  backend = CreateBackend(device);
+}
+
+void DirectKPPCNetwork::AddLayer(size_t size, size_t nextSize, size_t terminalSize, float lr,
+                                 float ir, float fl, float lmbda, ActivationType aType,
+                                 ActivationType dType)
+{
+  std::unique_ptr<DirectKPPCLayer> l = std::make_unique<DirectKPPCLayer>(
+      size, nextSize, terminalSize, batchSize, lr, ir, fl, lmbda, aType, dType, backend.get());
+
+  if (!layers.empty())
+  {
+    layers.back()->SetLayerAbove(l.get());
+    l->SetLayerBelow(layers.back().get());
+  }
+
+  layers.push_back(std::move(l));
+}
+
+void DirectKPPCNetwork::RandomizeWeights(std::mt19937& rng, const char* distribution)
+{
+  for (auto& l : layers)
+    l->RandomizeWeights(rng, distribution);
+}
+
+void DirectKPPCNetwork::ResetState() noexcept
+{
+  for (auto& l : layers)
+    l->ResetState();
+}
+
+void DirectKPPCNetwork::Clamp(const std::vector<float>& input)
+{
+  layers.front()->ClampState(input);
+}
+
+void DirectKPPCNetwork::ProjectForward() noexcept
+{
+  for (size_t i = 0; i + 1 < layers.size(); ++i)
+  {
+    layers[i]->ComputeMuOnly();
+
+    // Skip a layer that's already clamped (the terminal layer,
+    // once ClampState(y) has run), don't overwrite its real
+    // target with a forward-projected guess. Requires
+    // ClampState(y) to run before this call.
+    if (layers[i + 1]->IsClamped())
+      continue;
+
+    const float* mu = layers[i]->GetMu();
+    float* nextZ = layers[i + 1]->GetBeliefs();
+    size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
+
+    backend->Copy(nextZ, mu, n);
+  }
+}
+
+void DirectKPPCNetwork::DirectFeedbackUpdate() noexcept
+{
+  for (size_t i = 0; i < layers.size() - 1; ++i)
+    layers[i]->DirectFeedbackUpdate();
+}
+
+float DirectKPPCNetwork::CalculateTerminalError() noexcept
+{
+  return GetTerminalLayer()->CalculateState(false);
+}
+
+float DirectKPPCNetwork::Step(bool needEnergy) noexcept
+{
+  float e = 0.0f;
+  for (auto& l : layers)
+    e += l->CalculateState(needEnergy);
+  for (auto& l : layers)
+    l->UpdateState();
+  return needEnergy ? e : 0.0f;
+}
+
+void DirectKPPCNetwork::UpdateWeights() noexcept
+{
+  for (size_t i = 0; i + 1 < layers.size(); i++)
+    layers[i]->UpdateWeights();
+}
+
+float DirectKPPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<float>& y,
+                                   int inferenceSteps)
+{
+  ResetState();
+  Clamp(x);
+  // Moved BEFORE ProjectForward(), required for ProjectForward's
+  // new IsClamped() guard to actually protect the terminal layer,
+  // and required so ProjectForward() can safely move inside the
+  // captured region below.
+  GetTerminalLayer()->ClampState(y);
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
     {
-        backend = CreateBackend(device);
+      backend->BeginGraphCapture();
+      ProjectForward(); // now inside capture, see note above
+      CalculateTerminalError();
+      DirectFeedbackUpdate();
+      for (int t = 0; t < inferenceSteps; t++)
+        Step(false);
+      UpdateWeights();
+      bool captureOk = backend->EndGraphCapture();
+
+      if (captureOk)
+      {
+        graphCaptured = true;
+        capturedInferenceSteps = inferenceSteps;
+
+        // The recording pass above just ran this settling loop
+        // as real C++, leaving muCacheValid=true behind for any
+        // clamped layer it touched last; nothing resets that
+        // before the fresh energy read below, which would
+        // otherwise wrongly reuse mu from before this call's
+        // own weight update (see ConvPCNetwork::TrainStep()'s
+        // identical bug).
+        for (auto& l : layers)
+          l->InvalidateMuCache();
+      }
+      else
+      {
+        std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
+      }
     }
 
-    void DirectKPPCNetwork::AddLayer(size_t size, size_t nextSize, size_t terminalSize,
-                                     float lr, float ir, float fl, float lmbda,
-                                     ActivationType aType, ActivationType dType)
+    if (graphCaptured)
     {
-        std::unique_ptr<DirectKPPCLayer> l = std::make_unique<DirectKPPCLayer>(
-            size, nextSize, terminalSize, batchSize, lr, ir, fl, lmbda, aType, dType, backend.get());
-
-        if (!layers.empty())
-        {
-            layers.back()->SetLayerAbove(l.get());
-            l->SetLayerBelow(layers.back().get());
-        }
-
-        layers.push_back(std::move(l));
+      backend->ReplayGraph();
+      backend->Synchronize();
     }
-
-    void DirectKPPCNetwork::RandomizeWeights(std::mt19937 &rng, const char *distribution)
+    else
     {
-        for (auto &l : layers)
-            l->RandomizeWeights(rng, distribution);
+      ProjectForward();
+      CalculateTerminalError();
+      DirectFeedbackUpdate();
+      for (int t = 0; t < inferenceSteps; t++)
+        Step(false);
+      UpdateWeights();
     }
+  }
+  else
+  {
+    ProjectForward();
+    CalculateTerminalError();
+    DirectFeedbackUpdate();
+    for (int t = 0; t < inferenceSteps; t++)
+      Step(false);
+    UpdateWeights();
+  }
 
-    void DirectKPPCNetwork::ResetState() noexcept
+  float finalEnergy = 0.0f;
+  for (auto& l : layers)
+    finalEnergy += l->CalculateState(true);
+
+  GetTerminalLayer()->UnclampState();
+  return finalEnergy;
+}
+
+std::vector<float> DirectKPPCNetwork::Predict(const std::vector<float>& x, int inferenceSteps)
+{
+  ResetState();
+  Clamp(x);
+
+  // Pure forward/settling work, reading only the buffers Clamp() just
+  // filled -- no DirectFeedbackUpdate(), no UpdateWeights(), no
+  // terminal ClampState(), unlike TrainStep(). Captured into its OWN
+  // graph slot (kPredictGraphSlot), separate from TrainStep()'s --
+  // see FullPCNetwork::Predict()'s identical comment for why.
+  auto settleAndProject = [&]()
+  {
+    ProjectForward();
+    for (int t = 0; t < inferenceSteps; t++)
+      Step();
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
     {
-        for (auto &l : layers)
-            l->ResetState();
+      backend->BeginGraphCapture(kPredictGraphSlot);
+      settleAndProject();
+      bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCaptured = true;
+        capturedPredictInferenceSteps = inferenceSteps;
+      }
+      else
+      {
+        std::cerr << "Predict() graph capture failed, falling back to non-graph "
+                     "execution for this call.\n";
+      }
     }
-
-    void DirectKPPCNetwork::Clamp(const std::vector<float> &input)
+    else
     {
-        layers.front()->ClampState(input);
+      backend->ReplayGraph(kPredictGraphSlot);
+      // cudaGraphLaunch() only enqueues the replay -- the
+      // CopyToHost() below needs it to have actually finished.
+      backend->Synchronize();
     }
+  }
+  else
+  {
+    settleAndProject();
+  }
 
-    void DirectKPPCNetwork::ProjectForward() noexcept
-    {
-        for (size_t i = 0; i + 1 < layers.size(); ++i)
-        {
-            layers[i]->ComputeMuOnly();
+  DirectKPPCLayer* terminal = GetTerminalLayer();
+  const float* beliefs = terminal->GetBeliefs();
+  size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
 
-            // Skip a layer that's already clamped (the terminal layer,
-            // once ClampState(y) has run), don't overwrite its real
-            // target with a forward-projected guess. Requires
-            // ClampState(y) to run before this call.
-            if (layers[i + 1]->IsClamped())
-                continue;
+  std::vector<float> result(count);
+  backend->CopyToHost(result.data(), beliefs, count);
+  return result;
+}
 
-            const float *mu = layers[i]->GetMu();
-            float *nextZ = layers[i + 1]->GetBeliefs();
-            size_t n = layers[i]->GetBatchSize() * layers[i]->GetOutputSize();
-
-            backend->Copy(nextZ, mu, n);
-        }
-    }
-
-    void DirectKPPCNetwork::DirectFeedbackUpdate() noexcept
-    {
-        for (size_t i = 0; i < layers.size() - 1; ++i)
-            layers[i]->DirectFeedbackUpdate();
-    }
-
-    float DirectKPPCNetwork::CalculateTerminalError() noexcept
-    {
-        return GetTerminalLayer()->CalculateState(false);
-    }
-
-    float DirectKPPCNetwork::Step(bool needEnergy) noexcept
-    {
-        float e = 0.0f;
-        for (auto &l : layers)
-            e += l->CalculateState(needEnergy);
-        for (auto &l : layers)
-            l->UpdateState();
-        return needEnergy ? e : 0.0f;
-    }
-
-    void DirectKPPCNetwork::UpdateWeights() noexcept
-    {
-        for (size_t i = 0; i + 1 < layers.size(); i++)
-            layers[i]->UpdateWeights();
-    }
-
-    float DirectKPPCNetwork::TrainStep(const std::vector<float> &x,
-                                       const std::vector<float> &y,
-                                       int inferenceSteps)
-    {
-        ResetState();
-        Clamp(x);
-        // Moved BEFORE ProjectForward(), required for ProjectForward's
-        // new IsClamped() guard to actually protect the terminal layer,
-        // and required so ProjectForward() can safely move inside the
-        // captured region below.
-        GetTerminalLayer()->ClampState(y);
-
-        if (device == DeviceType::DEVICE_GPU)
-        {
-            if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
-            {
-                backend->BeginGraphCapture();
-                ProjectForward(); // now inside capture, see note above
-                CalculateTerminalError();
-                DirectFeedbackUpdate();
-                for (int t = 0; t < inferenceSteps; t++)
-                    Step(false);
-                UpdateWeights();
-                bool captureOk = backend->EndGraphCapture();
-
-                if (captureOk)
-                {
-                    graphCaptured = true;
-                    capturedInferenceSteps = inferenceSteps;
-
-                    // The recording pass above just ran this settling loop
-                    // as real C++, leaving muCacheValid=true behind for any
-                    // clamped layer it touched last; nothing resets that
-                    // before the fresh energy read below, which would
-                    // otherwise wrongly reuse mu from before this call's
-                    // own weight update (see ConvPCNetwork::TrainStep()'s
-                    // identical bug).
-                    for (auto &l : layers)
-                        l->InvalidateMuCache();
-                }
-                else
-                {
-                    std::cerr << "Graph capture failed, falling back to non-graph execution for this call.\n";
-                }
-            }
-
-            if (graphCaptured)
-            {
-                backend->ReplayGraph();
-                backend->Synchronize();
-            }
-            else
-            {
-                ProjectForward();
-                CalculateTerminalError();
-                DirectFeedbackUpdate();
-                for (int t = 0; t < inferenceSteps; t++)
-                    Step(false);
-                UpdateWeights();
-            }
-        }
-        else
-        {
-            ProjectForward();
-            CalculateTerminalError();
-            DirectFeedbackUpdate();
-            for (int t = 0; t < inferenceSteps; t++)
-                Step(false);
-            UpdateWeights();
-        }
-
-        float finalEnergy = 0.0f;
-        for (auto &l : layers)
-            finalEnergy += l->CalculateState(true);
-
-        GetTerminalLayer()->UnclampState();
-        return finalEnergy;
-    }
-
-    std::vector<float> DirectKPPCNetwork::Predict(const std::vector<float> &x,
-                                                  int inferenceSteps)
-    {
-        ResetState();
-        Clamp(x);
-
-        // Pure forward/settling work, reading only the buffers Clamp() just
-        // filled -- no DirectFeedbackUpdate(), no UpdateWeights(), no
-        // terminal ClampState(), unlike TrainStep(). Captured into its OWN
-        // graph slot (kPredictGraphSlot), separate from TrainStep()'s --
-        // see FullPCNetwork::Predict()'s identical comment for why.
-        auto settleAndProject = [&]()
-        {
-            ProjectForward();
-            for (int t = 0; t < inferenceSteps; t++)
-                Step();
-        };
-
-        if (device == DeviceType::DEVICE_GPU)
-        {
-            if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
-            {
-                backend->BeginGraphCapture(kPredictGraphSlot);
-                settleAndProject();
-                bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
-
-                if (captureOk)
-                {
-                    predictGraphCaptured = true;
-                    capturedPredictInferenceSteps = inferenceSteps;
-                }
-                else
-                {
-                    std::cerr << "Predict() graph capture failed, falling back to non-graph "
-                                 "execution for this call.\n";
-                }
-            }
-            else
-            {
-                backend->ReplayGraph(kPredictGraphSlot);
-                // cudaGraphLaunch() only enqueues the replay -- the
-                // CopyToHost() below needs it to have actually finished.
-                backend->Synchronize();
-            }
-        }
-        else
-        {
-            settleAndProject();
-        }
-
-        DirectKPPCLayer *terminal = GetTerminalLayer();
-        const float *beliefs = terminal->GetBeliefs();
-        size_t count = terminal->GetBatchSize() * terminal->GetInputSize();
-
-        std::vector<float> result(count);
-        backend->CopyToHost(result.data(), beliefs, count);
-        return result;
-    }
-
-    void DirectKPPCNetwork::Compile()
-    {
-        // See FullPCNetwork::Compile()'s identical check, terminalSize is
-        // supplied on every AddLayer() call rather than inferred, and a
-        // mismatch against the real terminal layer's size previously went
-        // uncaught, silently corrupting W via an out-of-bounds GEMM in
-        // DirectFeedbackUpdate().
-        if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
-        {
-            throw std::invalid_argument(
-                "DirectKPPCNetwork::Compile(): terminalSize (" +
-                std::to_string(layers.back()->GetTerminalSize()) +
-                ") passed to AddLayer() doesn't match the actual terminal layer's size (" +
-                std::to_string(layers.back()->GetInputSize()) + ").");
-        }
+void DirectKPPCNetwork::Compile()
+{
+  // See FullPCNetwork::Compile()'s identical check, terminalSize is
+  // supplied on every AddLayer() call rather than inferred, and a
+  // mismatch against the real terminal layer's size previously went
+  // uncaught, silently corrupting W via an out-of-bounds GEMM in
+  // DirectFeedbackUpdate().
+  if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
+  {
+    throw std::invalid_argument(
+        "DirectKPPCNetwork::Compile(): terminalSize (" +
+        std::to_string(layers.back()->GetTerminalSize()) +
+        ") passed to AddLayer() doesn't match the actual terminal layer's size (" +
+        std::to_string(layers.back()->GetInputSize()) + ").");
+  }
 
 #pragma omp parallel
-        {
-            _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
-            _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
-        }
-        size_t total_floats_needed = 0;
-        for (auto &layer : layers)
-            total_floats_needed += layer->GetRequiredFloats();
+  {
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+  }
+  size_t total_floats_needed = 0;
+  for (auto& layer : layers)
+    total_floats_needed += layer->GetRequiredFloats();
 
-        if (device == DeviceType::DEVICE_CPU)
-        {
-            cpuArena = std::make_unique<MemoryArena>(total_floats_needed, false);
-            for (auto &layer : layers)
-            {
-                layer->BindMemory(*cpuArena);
-                layer->SetTerminalLayer(layers.back().get());
-            }
-        }
-#if defined(DEEPITY_USE_CUDA)
-        else
-        {
-            backend->PrepareForBatchSize(batchSize);
-            gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total_floats_needed);
-            for (auto &layer : layers)
-            {
-                layer->BindMemory(*gpuArena);
-                layer->SetTerminalLayer(layers.back().get());
-            }
-        }
-#endif
+  if (device == DeviceType::DEVICE_CPU)
+  {
+    cpuArena = std::make_unique<MemoryArena>(total_floats_needed, false);
+    for (auto& layer : layers)
+    {
+      layer->BindMemory(*cpuArena);
+      layer->SetTerminalLayer(layers.back().get());
     }
+  }
+#if defined(DEEPITY_USE_CUDA)
+  else
+  {
+    backend->PrepareForBatchSize(batchSize);
+    gpuArena = std::make_unique<DeviceMemoryArena>(backend.get(), total_floats_needed);
+    for (auto& layer : layers)
+    {
+      layer->BindMemory(*gpuArena);
+      layer->SetTerminalLayer(layers.back().get());
+    }
+  }
+#endif
 }
+} // namespace Deep

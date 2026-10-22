@@ -80,7 +80,9 @@ bool CheckLayer(FullPCNetwork& net, size_t testLayerIdx, const char* label, floa
 
   printf("[%s] Numerical dE/d(eps):  % .6f\n", label, numericalGrad);
   printf("[%s] Analytical (eps+adjoint): % .6f\n", label, impliedGrad);
-  printf("[%s] Relative error: %.6f -- %s\n", label, relError,
+  printf("[%s] Relative error: %.6f -- %s\n",
+         label,
+         relError,
          relError <= tolerance ? "MATCH" : "MISMATCH");
   return relError <= tolerance;
 }

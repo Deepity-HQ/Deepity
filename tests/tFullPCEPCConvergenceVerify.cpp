@@ -44,11 +44,11 @@ int main()
   const std::vector<float> x = {0.3f, -0.5f, 0.2f, 0.8f, -0.1f, 0.4f, -0.6f, 0.7f};
   const std::vector<float> y = {0.5f, -0.4f, 0.3f, 0.1f};
   const int inferenceSteps = 5; // deliberately small: a one-hop message
-                                 // needs ~1 step per layer of depth to
-                                 // reach the bottom of this 4-deep stack,
-                                 // starting from zero-init (see the file
-                                 // header comment on why ProjectForward()
-                                 // is deliberately skipped below)
+                                // needs ~1 step per layer of depth to
+                                // reach the bottom of this 4-deep stack,
+                                // starting from zero-init (see the file
+                                // header comment on why ProjectForward()
+                                // is deliberately skipped below)
 
   FullPCNetwork netPlain(1), netEPC(1);
   BuildNet(netPlain);

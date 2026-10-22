@@ -24,15 +24,75 @@ void BuildNet(FullConvPCNetwork& net)
 {
   // input(4,8,8) -> 7 same-res hidden conv layers -> 1 collapsing hidden
   // layer -> terminal(4,1,1). 8 genuinely hidden layers total.
-  net.AddLayer(4, 4, 8, 8, 3, 3, 1, 1, 1, 1, 4, 0.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH,
-              ActivationType::dTANH);
+  net.AddLayer(4,
+               4,
+               8,
+               8,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               4,
+               0.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
   for (int i = 0; i < 6; ++i)
-    net.AddLayer(4, 4, 8, 8, 3, 3, 1, 1, 1, 1, 4, 0.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH,
-                ActivationType::dTANH);
-  net.AddLayer(4, 4, 8, 8, 8, 8, 1, 1, 0, 0, 4, 0.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(4, 0, 1, 1, 1, 1, 1, 1, 0, 0, 4, 0.0f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+    net.AddLayer(4,
+                 4,
+                 8,
+                 8,
+                 3,
+                 3,
+                 1,
+                 1,
+                 1,
+                 1,
+                 4,
+                 0.0f,
+                 0.1f,
+                 0.0f,
+                 0.0f,
+                 ActivationType::TANH,
+                 ActivationType::dTANH);
+  net.AddLayer(4,
+               4,
+               8,
+               8,
+               8,
+               8,
+               1,
+               1,
+               0,
+               0,
+               4,
+               0.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(4,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               4,
+               0.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
   net.Compile();
 }
 } // namespace

@@ -34,14 +34,74 @@ int main()
   // input(3,6,6) -> hidden(3,6,6, same-pad, residual-eligible: H=2 so
   // this is layers[1], the only index the l=2..H residual loop covers
   // for this depth) -> collapsing hidden(4,1,1) -> terminal(4,1,1).
-  net.AddLayer(3, 3, 6, 6, 3, 3, 1, 1, 1, 1, 4, 0.01f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(3, 3, 6, 6, 3, 3, 1, 1, 1, 1, 4, 0.01f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(3, 4, 6, 6, 6, 6, 1, 1, 0, 0, 4, 0.01f, 0.1f, 1e-3f, 1e-4f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(4, 0, 1, 1, 1, 1, 1, 1, 0, 0, 4, 0.01f, 0.1f, 1e-3f, 1e-4f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(3,
+               3,
+               6,
+               6,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               4,
+               0.01f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(3,
+               3,
+               6,
+               6,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               4,
+               0.01f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(3,
+               4,
+               6,
+               6,
+               6,
+               6,
+               1,
+               1,
+               0,
+               0,
+               4,
+               0.01f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(4,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               4,
+               0.01f,
+               0.1f,
+               1e-3f,
+               1e-4f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
 
   net.SetUseMuPCScaling(true);
   net.SetUseResidualConnections(true);
@@ -75,8 +135,8 @@ int main()
     {
       if (l->GetOutChannels() > 0)
       {
-        size_t wSize = (size_t)l->GetOutChannels() * l->GetInChannels() * l->GetKernelH() *
-                       l->GetKernelW();
+        size_t wSize =
+            (size_t)l->GetOutChannels() * l->GetInChannels() * l->GetKernelH() * l->GetKernelW();
         allFinite = allFinite && AllFinite(l->GetWeights(), wSize);
       }
       allFinite = allFinite && AllFinite(l->GetBeliefs(), l->GetBatchSize() * l->GetInputSize());

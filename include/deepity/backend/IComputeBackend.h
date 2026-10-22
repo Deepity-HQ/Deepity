@@ -197,8 +197,8 @@ public:
   /// @param dType Which activation's derivative to apply to z in
   /// place, deriv is computed inline from z, element by element,
   /// rather than read from a separate precomputed buffer.
-  virtual void FusedStateUpdate(float* z, const float* feedback, ActivationType dType, const float* e,
-                                size_t n, float ir) noexcept = 0;
+  virtual void FusedStateUpdate(float* z, const float* feedback, ActivationType dType,
+                                const float* e, size_t n, float ir) noexcept = 0;
   /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2), the
   /// Gaussian error/energy used by every layer except a cross-entropy
   /// terminal.
@@ -365,8 +365,7 @@ public:
   virtual bool TryFusedConvBackwardData(const float* outputGrad, const float* W, float* inputGrad,
                                         float alpha, int batchSize, int inChannels, int height,
                                         int width, int outChannels, int kernelH, int kernelW,
-                                        int strideH, int strideW, int padH,
-                                        int padW) noexcept = 0;
+                                        int strideH, int strideW, int padH, int padW) noexcept = 0;
 
   /// @brief The adjoint of TryFusedConvForward() w.r.t. @p W, skipping
   /// Im2Col()+RepackForBatchedGemm()+MatMul(). @p dW = @p alpha *
@@ -520,8 +519,8 @@ public:
   /// bottom_up_cols[idx] = e_above[idx] * p_above[i] * mu[idx], the same
   /// shape needed in both UpdateState() and UpdateWeights() for every
   /// precision-weighted layer.
-  virtual void MultiplyBroadcastInto(float* dst, const float* a, const float* factor, const float* b,
-                                     size_t batchSize, size_t width) noexcept = 0;
+  virtual void MultiplyBroadcastInto(float* dst, const float* a, const float* factor,
+                                     const float* b, size_t batchSize, size_t width) noexcept = 0;
 
   /// @brief Precision update from accumulated squared error, fused:
   /// for each i in [0,width), grad = mean_{b in [0,batchSize)} of

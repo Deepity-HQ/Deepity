@@ -112,9 +112,9 @@ protected:
   float* dz_dt = nullptr;
   float* rowEnergies = nullptr; ///< Per-row energy scratch, cross-entropy path only.
 
-  float* W = nullptr;       ///< [outChannels, inChannels*kernelH*kernelW]
-  float* b = nullptr;       ///< [outChannels]
-  float* mu = nullptr;      ///< [batch, outChannels, outHeight, outWidth]
+  float* W = nullptr;  ///< [outChannels, inChannels*kernelH*kernelW]
+  float* b = nullptr;  ///< [outChannels]
+  float* mu = nullptr; ///< [batch, outChannels, outHeight, outWidth]
   float* cachedMu = nullptr;
   bool muCacheValid = false;
 
@@ -153,7 +153,7 @@ protected:
   /// resolution). See DirectFeedbackUpdate().
   float* Psi = nullptr;
   float* projChannel = nullptr; ///< [batch, outChannels], Psi's raw projection.
-  float* proj = nullptr;        ///< [batch, outChannels, outHeight, outWidth], broadcast of projChannel.
+  float* proj = nullptr; ///< [batch, outChannels, outHeight, outWidth], broadcast of projChannel.
 
   float* grad_W = nullptr;
   float* grad_b = nullptr;
@@ -210,42 +210,96 @@ public:
   /// class's own existing default.
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
-  void SetLayerAbove(FullConvPCLayer* l) noexcept { layerAbove = l; }
-  void SetLayerBelow(FullConvPCLayer* l) noexcept { layerBelow = l; }
-  void SetTerminalLayer(FullConvPCLayer* l) noexcept { terminalLayer = l; }
+  void SetLayerAbove(FullConvPCLayer* l) noexcept
+  {
+    layerAbove = l;
+  }
+  void SetLayerBelow(FullConvPCLayer* l) noexcept
+  {
+    layerBelow = l;
+  }
+  void SetTerminalLayer(FullConvPCLayer* l) noexcept
+  {
+    terminalLayer = l;
+  }
 
-  void SetMuPCScale(float a) noexcept { this->a = a; }
-  float GetMuPCScale() const noexcept { return a; }
-  void SetMuPCInit(bool enabled) noexcept { useMuPCInit = enabled; }
-  bool GetMuPCInit() const noexcept { return useMuPCInit; }
+  void SetMuPCScale(float a) noexcept
+  {
+    this->a = a;
+  }
+  float GetMuPCScale() const noexcept
+  {
+    return a;
+  }
+  void SetMuPCInit(bool enabled) noexcept
+  {
+    useMuPCInit = enabled;
+  }
+  bool GetMuPCInit() const noexcept
+  {
+    return useMuPCInit;
+  }
   /// @brief PCX's own init (Equinox default): weights uniform in
   /// +-1/sqrt(fan_in), not Kaiming-normal. Takes priority over
   /// useMuPCInit if both are somehow set; biases are already zero by
   /// default regardless (see ResetState()/BindMemory()), matching PCX's
   /// own zero-bias convention with no separate change needed.
-  void SetPCXInit(bool enabled) noexcept { usePCXInit = enabled; }
-  bool GetPCXInit() const noexcept { return usePCXInit; }
+  void SetPCXInit(bool enabled) noexcept
+  {
+    usePCXInit = enabled;
+  }
+  bool GetPCXInit() const noexcept
+  {
+    return usePCXInit;
+  }
 
-  void SetResidual(bool enabled) noexcept { useResidual = enabled; }
-  bool GetResidual() const noexcept { return useResidual; }
+  void SetResidual(bool enabled) noexcept
+  {
+    useResidual = enabled;
+  }
+  bool GetResidual() const noexcept
+  {
+    return useResidual;
+  }
 
-  void SetCrossEntropy(bool enabled) noexcept { useCrossEntropy = enabled; }
-  bool GetCrossEntropy() const noexcept { return useCrossEntropy; }
+  void SetCrossEntropy(bool enabled) noexcept
+  {
+    useCrossEntropy = enabled;
+  }
+  bool GetCrossEntropy() const noexcept
+  {
+    return useCrossEntropy;
+  }
 
   void SetMomentum(bool enabled, float beta = 0.9f) noexcept
   {
     useMomentum = enabled;
     momentumBeta = beta;
   }
-  bool GetMomentum() const noexcept { return useMomentum; }
+  bool GetMomentum() const noexcept
+  {
+    return useMomentum;
+  }
 
   /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
   /// Digital Simulation", https://arxiv.org/abs/2505.20137
-  void SetUseEPC(bool enabled) noexcept { useEPC = enabled; }
-  bool GetUseEPC() const noexcept { return useEPC; }
+  void SetUseEPC(bool enabled) noexcept
+  {
+    useEPC = enabled;
+  }
+  bool GetUseEPC() const noexcept
+  {
+    return useEPC;
+  }
 
-  void SetOptimizer(OptimizerType o) noexcept { opt = o; }
-  void SetPsiOptimizer(OptimizerType o) noexcept { optPsi = o; }
+  void SetOptimizer(OptimizerType o) noexcept
+  {
+    opt = o;
+  }
+  void SetPsiOptimizer(OptimizerType o) noexcept
+  {
+    optPsi = o;
+  }
   void SetLearningRate(float learningRate) noexcept;
   void SetInferenceRate(float inferenceRate) noexcept
   {
@@ -253,35 +307,59 @@ public:
     irDirty = true;
   }
   void SetFeedbackRate(float feedbackRate) noexcept;
-  void SetLambda(float lmbda) noexcept { this->lmbda = lmbda; }
+  void SetLambda(float lmbda) noexcept
+  {
+    this->lmbda = lmbda;
+  }
   /// @brief Adam/AdamW's denominator stabilizer (default 1e-8). Raising
   /// this caps how much a near-zero-gradient parameter's update gets
   /// amplified by Adam's per-parameter normalization -- a mitigation
   /// worth testing when a weak or noisy settling error signal is
   /// suspected of getting Adam-amplified into a large, coherent step.
-  void SetAdamEpsilon(float eps) noexcept { adamEpsilon = eps; }
+  void SetAdamEpsilon(float eps) noexcept
+  {
+    adamEpsilon = eps;
+  }
 
   /// @brief Whether ir has changed since the last successful graph
   /// capture (see irDirty's own comment for why this exists).
-  bool IsIrDirty() const noexcept { return irDirty; }
+  bool IsIrDirty() const noexcept
+  {
+    return irDirty;
+  }
   /// @brief Call only after a graph capture that included this layer's
   /// current ir actually succeeds.
-  void ClearIrDirty() noexcept { irDirty = false; }
+  void ClearIrDirty() noexcept
+  {
+    irDirty = false;
+  }
 
   /// @brief Whether fl crossed the zero/nonzero boundary since the last
   /// successful graph capture (see flZeroDirty's own comment for why).
-  bool IsFlZeroDirty() const noexcept { return flZeroDirty; }
+  bool IsFlZeroDirty() const noexcept
+  {
+    return flZeroDirty;
+  }
   /// @brief Call only after a graph capture that included this layer's
   /// current fl-is-zero-or-not status actually succeeds.
-  void ClearFlZeroDirty() noexcept { flZeroDirty = false; }
+  void ClearFlZeroDirty() noexcept
+  {
+    flZeroDirty = false;
+  }
   /// @brief Whether this layer's DirectFeedbackUpdate() is currently a
   /// no-op (see its own early-return). FullConvPCNetwork::TrainStep()
   /// uses this, aggregated across every layer, to decide whether
   /// ProjectForward()/CalculateTerminalError() are redundant with what
   /// EPCStep()'s own first iteration already does.
-  bool IsFlZero() const noexcept { return fl == 0.0f; }
+  bool IsFlZero() const noexcept
+  {
+    return fl == 0.0f;
+  }
 
-  float CalculateState() noexcept override { return CalculateState(true); }
+  float CalculateState() noexcept override
+  {
+    return CalculateState(true);
+  }
   float CalculateState(bool needEnergy) noexcept;
   void ComputeMuOnly() noexcept;
   void UpdateState() noexcept override;
@@ -310,7 +388,10 @@ public:
   void ComputeAdjoint(const float* adjointAbove, float adjointAboveScale = 1.0f) noexcept;
   /// @brief e := (1-ir)*e - ir*adjoint. Call ComputeAdjoint() first.
   void UpdateErrorEPC() noexcept;
-  const float* GetAdjoint() const noexcept { return adjoint; }
+  const float* GetAdjoint() const noexcept
+  {
+    return adjoint;
+  }
   /// @brief Converts `mu` from its activated value to phi'(mu) in place,
   /// matching UpdateState()'s own fallback branch for a clamped layer.
   /// Needed under ePC for any clamped weight-bearing layer (i.e. the
@@ -323,27 +404,60 @@ public:
   void ClampState(const std::vector<float>& inputData) noexcept;
   void UnclampState() noexcept;
   void ResetState() noexcept;
-  bool IsClamped() const noexcept { return isClamped; }
-  void InvalidateMuCache() noexcept { muCacheValid = false; }
+  bool IsClamped() const noexcept
+  {
+    return isClamped;
+  }
+  void InvalidateMuCache() noexcept
+  {
+    muCacheValid = false;
+  }
 
-  float* GetBeliefs() noexcept override { return z; }
-  const float* GetErrors() const noexcept override { return e; }
-  const float* GetMu() const noexcept { return HasPooling() ? pooledMu : mu; }
-  const float* GetWeights() const noexcept { return W; }
+  float* GetBeliefs() noexcept override
+  {
+    return z;
+  }
+  const float* GetErrors() const noexcept override
+  {
+    return e;
+  }
+  const float* GetMu() const noexcept
+  {
+    return HasPooling() ? pooledMu : mu;
+  }
+  const float* GetWeights() const noexcept
+  {
+    return W;
+  }
   /// @brief Mutable overload of GetWeights() above, needed so backend
   /// copies (e.g. CopyFromHost in set_weights bindings) can write into W.
-  float* GetWeights() noexcept { return W; }
-  const float* GetDirectFeedbackWeights() const noexcept { return Psi; }
-  const float* GetBiases() const noexcept { return b; }
+  float* GetWeights() noexcept
+  {
+    return W;
+  }
+  const float* GetDirectFeedbackWeights() const noexcept
+  {
+    return Psi;
+  }
+  const float* GetBiases() const noexcept
+  {
+    return b;
+  }
   /// @brief Mutable overload of GetBiases() above, needed so backend
   /// copies (e.g. CopyFromHost in set_biases bindings) can write into b.
-  float* GetBiases() noexcept { return b; }
+  float* GetBiases() noexcept
+  {
+    return b;
+  }
   /// @brief Returns the compute backend this layer routes all math
   /// through, so Python bindings can safely copy device-resident
   /// buffers to the host instead of exposing a raw device pointer
   /// as if it were host memory (see LayerBindings.cpp's
   /// ViewOwnedBy / CopyFromBackend).
-  IComputeBackend* GetBackend() const noexcept { return backend.get(); }
+  IComputeBackend* GetBackend() const noexcept
+  {
+    return backend.get();
+  }
 
   /// @brief {error mean, error RMS, weight L2 norm, fraction of mu
   /// elements exactly 0} for this layer's CURRENT state (whatever e/W/mu
@@ -368,7 +482,10 @@ public:
   /// @copydoc Deep::Layer::SyncStateDictToDevice
   void SyncStateDictToDevice() override;
 
-  size_t GetBatchSize() const noexcept override { return batchSize; }
+  size_t GetBatchSize() const noexcept override
+  {
+    return batchSize;
+  }
   size_t GetInputSize() const noexcept override
   {
     return (size_t)inChannels * inHeight * inWidth;
@@ -377,15 +494,42 @@ public:
   {
     return outChannels > 0 ? (size_t)outChannels * poolOutHeight * poolOutWidth : 0;
   }
-  int GetInChannels() const noexcept { return inChannels; }
-  int GetOutChannels() const noexcept { return outChannels; }
-  int GetInHeight() const noexcept { return inHeight; }
-  int GetInWidth() const noexcept { return inWidth; }
-  int GetOutHeight() const noexcept { return poolOutHeight; }
-  int GetOutWidth() const noexcept { return poolOutWidth; }
-  int GetKernelH() const noexcept { return kernelH; }
-  int GetKernelW() const noexcept { return kernelW; }
-  int GetTerminalSize() const noexcept { return terminalSize; }
+  int GetInChannels() const noexcept
+  {
+    return inChannels;
+  }
+  int GetOutChannels() const noexcept
+  {
+    return outChannels;
+  }
+  int GetInHeight() const noexcept
+  {
+    return inHeight;
+  }
+  int GetInWidth() const noexcept
+  {
+    return inWidth;
+  }
+  int GetOutHeight() const noexcept
+  {
+    return poolOutHeight;
+  }
+  int GetOutWidth() const noexcept
+  {
+    return poolOutWidth;
+  }
+  int GetKernelH() const noexcept
+  {
+    return kernelH;
+  }
+  int GetKernelW() const noexcept
+  {
+    return kernelW;
+  }
+  int GetTerminalSize() const noexcept
+  {
+    return terminalSize;
+  }
 
   bool HasPooling() const noexcept
   {

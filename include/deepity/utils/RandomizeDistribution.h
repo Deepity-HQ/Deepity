@@ -14,10 +14,11 @@
  */
 
 #ifdef _MSC_VER
-#define DEEPITY_SCANF_DISTRIBUTION(str, name, a, b) \
+#define DEEPITY_SCANF_DISTRIBUTION(str, name, a, b)                                                \
   sscanf_s((str), "%15[^(](%f,%f)", (name), (unsigned)sizeof(name), &(a), &(b))
 #else
-#define DEEPITY_SCANF_DISTRIBUTION(str, name, a, b) sscanf((str), "%15[^(](%f,%f)", (name), &(a), &(b))
+#define DEEPITY_SCANF_DISTRIBUTION(str, name, a, b)                                                \
+  sscanf((str), "%15[^(](%f,%f)", (name), &(a), &(b))
 #endif
 
 namespace Deep
@@ -30,8 +31,8 @@ namespace Deep
 /// pre-existing, shape-aware init formula, unchanged for every caller
 /// that doesn't pass an explicit distribution.
 inline void RandomizeWithDistribution(IComputeBackend* backend, float* buf, size_t n,
-                                      const char* distribution, uint32_t seed,
-                                      float fallbackMean, float fallbackStddev) noexcept
+                                      const char* distribution, uint32_t seed, float fallbackMean,
+                                      float fallbackStddev) noexcept
 {
   char name[16] = {0};
   float a = 0.0f, b = 1.0f;

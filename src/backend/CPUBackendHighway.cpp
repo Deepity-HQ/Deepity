@@ -161,8 +161,7 @@ void MultiplyIntoHwy(float* dst, const float* a, const float* b, size_t n)
 // ActivationDerivativeScalar (Activations.h) exactly for those cases.
 // dGELU/dSIGMOID/dTANH are never passed in here -- see
 // CPUBackendHighway.h's note on the caller-side routing.
-template <class D, class V>
-V DerivFromRawZHwy(D d, V z, ActivationType dType)
+template <class D, class V> V DerivFromRawZHwy(D d, V z, ActivationType dType)
 {
   const auto one = hn::Set(d, 1.0f);
   switch (dType)
@@ -199,9 +198,9 @@ void FusedStateUpdateHwy(float* z, const float* feedback, ActivationType dType, 
   for (; i < n; ++i) // scalar tail, must match the vector formulas exactly
   {
     float deriv = (dType == ActivationType::dRELU) ? ((z[i] > 0.0f) ? 1.0f : 0.0f)
-                 : (dType == ActivationType::d_eSIGMOID)
-                     ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
-                     : 1.0f;
+                  : (dType == ActivationType::d_eSIGMOID)
+                      ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
+                      : 1.0f;
     z[i] += ir * ((feedback[i] * deriv) - e[i]);
   }
 }
@@ -232,9 +231,9 @@ void FusedStateUpdateMomentumHwy(float* z, float* v, const float* feedback, Acti
   for (; i < n; ++i) // scalar tail, must match the vector formulas exactly
   {
     float deriv = (dType == ActivationType::dRELU) ? ((z[i] > 0.0f) ? 1.0f : 0.0f)
-                 : (dType == ActivationType::d_eSIGMOID)
-                     ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
-                     : 1.0f;
+                  : (dType == ActivationType::d_eSIGMOID)
+                      ? (0.5f / ((1.0f + std::fabs(z[i])) * (1.0f + std::fabs(z[i]))))
+                      : 1.0f;
     float update = (feedback[i] * deriv) - e[i];
     v[i] = beta * v[i] + (1.0f - beta) * update;
     z[i] += ir * v[i];
@@ -282,8 +281,9 @@ void FusedStateUpdateDispatch(float* z, const float* feedback, ActivationType dT
   HWY_DYNAMIC_DISPATCH(FusedStateUpdateHwy)(z, feedback, dType, e, n, ir);
 }
 
-void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback, ActivationType dType,
-                                      const float* e, size_t n, float ir, float beta) noexcept
+void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback,
+                                      ActivationType dType, const float* e, size_t n, float ir,
+                                      float beta) noexcept
 {
   HWY_DYNAMIC_DISPATCH(FusedStateUpdateMomentumHwy)(z, v, feedback, dType, e, n, ir, beta);
 }

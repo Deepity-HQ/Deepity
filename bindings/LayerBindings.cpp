@@ -4,8 +4,8 @@
  * Split out of the former monolithic pybinding.cpp, see
  * NetworkBindings.cpp / UtilityBindings.cpp for the rest.
  */
-#include "BindingHelpers.h"
 #include "LayerBindings.h"
+#include "BindingHelpers.h"
 
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
@@ -71,9 +71,11 @@ auto resolveDAct(const std::string& act) -> void (*)(float*, size_t, bool)
 }
 
 template <typename LayerT>
-void RandomizeWeightsHelper(LayerT& self, std::optional<uint32_t> seed, const std::string& distribution)
+void RandomizeWeightsHelper(LayerT& self, std::optional<uint32_t> seed,
+                            const std::string& distribution)
 {
-  std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value()) : std::mt19937(std::random_device{}());
+  std::mt19937 rng =
+      seed.has_value() ? std::mt19937(seed.value()) : std::mt19937(std::random_device{}());
   self.RandomizeWeights(rng, distribution.c_str());
 }
 
@@ -83,34 +85,15 @@ template <typename LayerT> void ClampStateHelper(LayerT& self, FloatArray input)
   self.ClampState(values);
 }
 
-// Wrap a pointer that is owned by (and must outlive as long as) `self`
-// into a zero-copy numpy view, the nanobind equivalent of pybind11's
-// `py::array_t<float>(shape, ptr, py::cast(&self))`.
-//
-// Only safe when `data` is host memory: on a GPU-backed layer,
-// GetWeights()/GetBiases()/GetBeliefs()/GetErrors() return raw CUDA
-// device (VRAM) pointers, and handing one of those to NumPy as if it
-// were host memory segfaults the first time NumPy reads/writes through
-// it. Every call site below must check self.GetBackend()->GetDeviceType()
-// first and fall back to CopyFromBackend() below when it isn't
-// DEVICE_CPU.
 template <typename T, typename Owner>
 nb::ndarray<nb::numpy, T> ViewOwnedBy(T* data, std::initializer_list<size_t> shape, Owner& owner)
 {
   return nb::ndarray<nb::numpy, T>(data, shape, nb::find(&owner));
 }
 
-// Copies a device-resident buffer to a fresh, host-owned (and
-// read-only -- see the `const T` template arg, which nanobind maps to
-// a non-writable NumPy array) numpy array. Used instead of
-// ViewOwnedBy whenever the layer's backend isn't DEVICE_CPU, since a
-// raw CUDA device pointer can't be safely exposed as a NumPy view --
-// see this function's call sites for why writing through a stale
-// host copy needs to be a loud error (readonly), not a silent no-op.
-// Use set_weights()/set_biases() instead to push values onto a
-// GPU-backed layer.
 template <typename T, typename LayerT>
-nb::ndarray<nb::numpy, const T> CopyFromBackend(LayerT& self, const T* data, std::initializer_list<size_t> shape)
+nb::ndarray<nb::numpy, const T> CopyFromBackend(LayerT& self, const T* data,
+                                                std::initializer_list<size_t> shape)
 {
   size_t count = 1;
   for (size_t d : shape)
@@ -123,25 +106,22 @@ nb::ndarray<nb::numpy, const T> CopyFromBackend(LayerT& self, const T* data, std
   return nb::ndarray<nb::numpy, const T>(hostBuf, shape, owner);
 }
 
-// Validates `values.size()` against `expectedCount` and copies it onto
-// the backend's weight buffer via CopyFromHost -- a plain memcpy on
-// CPUBackend, a host->device transfer on CUDABackend. The device-safe
-// replacement for the `layer.weights[:] = ...` idiom, which only works
-// on CPU (see ViewOwnedBy's doc comment above).
-template <typename LayerT> void SetWeightsHelper(LayerT& self, FloatArray values, size_t expectedCount)
+template <typename LayerT>
+void SetWeightsHelper(LayerT& self, FloatArray values, size_t expectedCount)
 {
   if ((size_t)values.size() != expectedCount)
     throw std::invalid_argument("set_weights: expected " + std::to_string(expectedCount) +
-                                 " values, got " + std::to_string(values.size()));
+                                " values, got " + std::to_string(values.size()));
   self.GetBackend()->CopyFromHost(self.GetWeights(), values.data(), expectedCount);
 }
 
 // Same as SetWeightsHelper(), for a layer's bias buffer.
-template <typename LayerT> void SetBiasesHelper(LayerT& self, FloatArray values, size_t expectedCount)
+template <typename LayerT>
+void SetBiasesHelper(LayerT& self, FloatArray values, size_t expectedCount)
 {
   if ((size_t)values.size() != expectedCount)
     throw std::invalid_argument("set_biases: expected " + std::to_string(expectedCount) +
-                                 " values, got " + std::to_string(values.size()));
+                                " values, got " + std::to_string(values.size()));
   self.GetBackend()->CopyFromHost(self.GetBiases(), values.data(), expectedCount);
 }
 
@@ -154,18 +134,24 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
       .def("flush", &LayerT::Flush)
       .def("clamp_state", &ClampStateHelper<LayerT>, nb::arg("input"))
       .def("unclamp_state", &LayerT::UnclampState)
-      .def("randomize_weights", &RandomizeWeightsHelper<LayerT>, nb::arg("seed") = nb::none(),
+      .def("randomize_weights",
+           &RandomizeWeightsHelper<LayerT>,
+           nb::arg("seed") = nb::none(),
            nb::arg("distribution") = "normal")
       .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference)
       .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference)
       .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
       .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"))
       .def("set_lambda", &LayerT::SetLambda, nb::arg("l"))
-      .def("set_weights",
-           [](LayerT& self, FloatArray values)
-           { SetWeightsHelper(self, values, (size_t)self.GetOutputSize() * (size_t)self.GetInputSize()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_weights",
+          [](LayerT& self, FloatArray values)
+          {
+            SetWeightsHelper(
+                self, values, (size_t)self.GetOutputSize() * (size_t)self.GetInputSize());
+          },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
                    [](LayerT& self) -> nb::object
                    {
@@ -292,11 +278,12 @@ void bind_layers(nb::module_& m)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
                    })
-      .def("set_biases",
-           [](Deep::SimplePCLayer& self, FloatArray values)
-           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_biases",
+          [](Deep::SimplePCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def("set_mu_cache_threshold",
            &Deep::SimplePCLayer::SetMuCacheThreshold,
            nb::arg("threshold"),
@@ -440,11 +427,12 @@ void bind_layers(nb::module_& m)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
                    })
-      .def("set_biases",
-           [](Deep::DirectKPPCLayer& self, FloatArray values)
-           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
+      .def(
+          "set_biases",
+          [](Deep::DirectKPPCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
 
   auto fullLayerCls = nb::class_<Deep::FullPCLayer, Deep::Layer>(
                           m,
@@ -551,11 +539,12 @@ void bind_layers(nb::module_& m)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
                    })
-      .def("set_biases",
-           [](Deep::FullPCLayer& self, FloatArray values)
-           { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
+      .def(
+          "set_biases",
+          [](Deep::FullPCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutputSize()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.");
 
   nb::class_<Deep::FullConvPCLayer, Deep::Layer>(
       m,
@@ -621,8 +610,8 @@ void bind_layers(nb::module_& m)
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
-      .def("calculate_state", static_cast<float (Deep::FullConvPCLayer::*)()>(
-                                   &Deep::FullConvPCLayer::CalculateState))
+      .def("calculate_state",
+           static_cast<float (Deep::FullConvPCLayer::*)()>(&Deep::FullConvPCLayer::CalculateState))
       .def("update_state", &Deep::FullConvPCLayer::UpdateState)
       .def("update_weights", &Deep::FullConvPCLayer::UpdateWeights)
       .def("direct_feedback_update", &Deep::FullConvPCLayer::DirectFeedbackUpdate)
@@ -638,7 +627,10 @@ void bind_layers(nb::module_& m)
       .def("unclamp_state", &Deep::FullConvPCLayer::UnclampState)
       .def(
           "randomize_weights",
-          [](Deep::FullConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
+          [](Deep::FullConvPCLayer& self,
+             std::optional<uint32_t>
+                 seed,
+             const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
                                                 : std::mt19937(std::random_device{}());
@@ -655,21 +647,23 @@ void bind_layers(nb::module_& m)
       .def("set_lambda", &Deep::FullConvPCLayer::SetLambda, nb::arg("l"))
       .def("set_mu_pc_scale", &Deep::FullConvPCLayer::SetMuPCScale, nb::arg("a"))
       .def("set_residual", &Deep::FullConvPCLayer::SetResidual, nb::arg("enabled"))
-      .def("set_weights",
-           [](Deep::FullConvPCLayer& self, FloatArray values)
-           {
-             SetWeightsHelper(self,
-                               values,
-                               (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
-                                   (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
-           },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
-      .def("set_biases",
-           [](Deep::FullConvPCLayer& self, FloatArray values)
-           { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_weights",
+          [](Deep::FullConvPCLayer& self, FloatArray values)
+          {
+            SetWeightsHelper(self,
+                             values,
+                             (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
+                                 (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
+          },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_biases",
+          [](Deep::FullConvPCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
                    [](Deep::FullConvPCLayer& self) -> nb::object
                    {
@@ -825,21 +819,23 @@ void bind_layers(nb::module_& m)
       .def("set_inference_rate", &Deep::ConvPCLayer::SetInferenceRate, nb::arg("ir"))
       .def("set_precision_rate", &Deep::ConvPCLayer::SetPrecisionRate, nb::arg("pr"))
       .def("set_lambda", &Deep::ConvPCLayer::SetLambda, nb::arg("l"))
-      .def("set_weights",
-           [](Deep::ConvPCLayer& self, FloatArray values)
-           {
-             SetWeightsHelper(self,
-                               values,
-                               (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
-                                   (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
-           },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
-      .def("set_biases",
-           [](Deep::ConvPCLayer& self, FloatArray values)
-           { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
-           nb::arg("values"),
-           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_weights",
+          [](Deep::ConvPCLayer& self, FloatArray values)
+          {
+            SetWeightsHelper(self,
+                             values,
+                             (size_t)self.GetOutChannels() * (size_t)self.GetInChannels() *
+                                 (size_t)self.GetKernelH() * (size_t)self.GetKernelW());
+          },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
+      .def(
+          "set_biases",
+          [](Deep::ConvPCLayer& self, FloatArray values)
+          { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
                    [](Deep::ConvPCLayer& self) -> nb::object
                    {
@@ -935,18 +931,18 @@ void bind_layers(nb::module_& m)
           { SetBiasesHelper(self, values, (size_t)self.GetOutChannels()); },
           nb::arg("values"),
           "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
-      .def_prop_ro(
-          "weights",
-          [](Deep::SimpleConvPCLayer& self) -> nb::object
-          {
-            if (self.GetOutChannels() == 0)
-              return nb::cast(nb::ndarray<nb::numpy, float>());
-            size_t colRows = (size_t)self.GetInChannels() * self.GetKernelH() * self.GetKernelW();
-            auto shape = {(size_t)self.GetOutChannels(), colRows};
-            if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
-              return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
-            return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
-          })
+      .def_prop_ro("weights",
+                   [](Deep::SimpleConvPCLayer& self) -> nb::object
+                   {
+                     if (self.GetOutChannels() == 0)
+                       return nb::cast(nb::ndarray<nb::numpy, float>());
+                     size_t colRows =
+                         (size_t)self.GetInChannels() * self.GetKernelH() * self.GetKernelW();
+                     auto shape = {(size_t)self.GetOutChannels(), colRows};
+                     if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                       return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+                     return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
+                   })
       .def_prop_ro("biases",
                    [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
@@ -983,7 +979,10 @@ void bind_layers(nb::module_& m)
           nb::arg("optimizer"))
       .def(
           "randomize_weights",
-          [](Deep::SimpleConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
+          [](Deep::SimpleConvPCLayer& self,
+             std::optional<uint32_t>
+                 seed,
+             const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
                                                 : std::mt19937(std::random_device{}());
@@ -1009,4 +1008,3 @@ void bind_layers(nb::module_& m)
                     std::to_string(self.GetInWidth()) + ">";
            });
 }
-

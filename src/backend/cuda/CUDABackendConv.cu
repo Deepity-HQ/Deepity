@@ -8,10 +8,10 @@
  * CUDABackendActivations.cu, CUDABackendFusedOps.cu, CUDABackendOptimizer.cu
  * for the rest.
  */
+#include <cfloat>
 #include <deepity/backend/CUDABackend.h>
 #include <deepity/utils/Im2Col.h>
 #include <deepity/utils/MaxPool2D.h>
-#include <cfloat>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA
@@ -56,9 +56,9 @@ void CUDABackend::RepackForBatchedGemm(float* dst, const float* src, size_t batc
 // that's 250 kernel-launch round-trips per call) for work that's
 // genuinely independent per image and trivially fits in one launch's
 // grid instead.
-__global__ void Im2ColKernel(const float* input, int batchSize, int channels, int height,
-                             int width, int kH, int kW, int strideH, int strideW, int padH,
-                             int padW, int outH, int outW, float* columns)
+__global__ void Im2ColKernel(const float* input, int batchSize, int channels, int height, int width,
+                             int kH, int kW, int strideH, int strideW, int padH, int padW, int outH,
+                             int outW, float* columns)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   size_t colCols = (size_t)outH * outW;
@@ -192,9 +192,9 @@ void CUDABackend::Col2Im(const float* columns, int batchSize, int channels, int 
 // Im2Col/Col2Im above. No padding (see Deep::PoolOutDim), so every window
 // is fully in-bounds by construction -- no boundary checks needed inside
 // the pooling loop itself.
-__global__ void MaxPool2DForwardKernel(const float* input, int batchSize, int channels,
-                                       int height, int width, int poolH, int poolW, int strideH,
-                                       int strideW, int outH, int outW, float* output, int* argmax)
+__global__ void MaxPool2DForwardKernel(const float* input, int batchSize, int channels, int height,
+                                       int width, int poolH, int poolW, int strideH, int strideW,
+                                       int outH, int outW, float* output, int* argmax)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   size_t perImage = (size_t)channels * outH * outW;
@@ -245,9 +245,19 @@ void CUDABackend::MaxPool2DForward(const float* input, int batchSize, int channe
 
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((total + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  MaxPool2DForwardKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
-      input, batchSize, channels, height, width, poolH, poolW, strideH, strideW, outH, outW,
-      output, argmax);
+  MaxPool2DForwardKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(input,
+                                                            batchSize,
+                                                            channels,
+                                                            height,
+                                                            width,
+                                                            poolH,
+                                                            poolW,
+                                                            strideH,
+                                                            strideW,
+                                                            outH,
+                                                            outW,
+                                                            output,
+                                                            argmax);
   CHECK_CUDA_LAUNCH();
 }
 
@@ -256,9 +266,9 @@ void CUDABackend::MaxPool2DForward(const float* input, int batchSize, int channe
 // recorded. atomicAdd for the same reason Col2ImKernel above needs it --
 // overlapping windows (stride < pool) can make one input position the
 // argmax for more than one output position.
-__global__ void MaxPool2DBackwardKernel(const float* outputGrad, const int* argmax,
-                                        int batchSize, int channels, int height, int width,
-                                        int outH, int outW, float* inputGrad)
+__global__ void MaxPool2DBackwardKernel(const float* outputGrad, const int* argmax, int batchSize,
+                                        int channels, int height, int width, int outH, int outW,
+                                        float* inputGrad)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   size_t perImage = (size_t)channels * outH * outW;

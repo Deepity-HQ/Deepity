@@ -119,7 +119,11 @@ bool TestAddBiasPerChannel(CPUBackend& backend, size_t channels, size_t spatialS
     {
       printf("  FAIL AddBiasPerChannel(channels=%zu, spatialSize=%zu): mismatch at %zu: "
              "ref=%.6f hwy=%.6f\n",
-             channels, spatialSize, i, bufRef[i], bufHwy[i]);
+             channels,
+             spatialSize,
+             i,
+             bufRef[i],
+             bufHwy[i]);
       return false;
     }
   }
@@ -150,7 +154,12 @@ bool TestAddBiasPerChannelNCHW(CPUBackend& backend, size_t batchSize, size_t cha
     {
       printf("  FAIL AddBiasPerChannelNCHW(batchSize=%zu, channels=%zu, spatialSize=%zu): "
              "mismatch at %zu: ref=%.6f hwy=%.6f\n",
-             batchSize, channels, spatialSize, i, bufRef[i], bufHwy[i]);
+             batchSize,
+             channels,
+             spatialSize,
+             i,
+             bufRef[i],
+             bufHwy[i]);
       return false;
     }
   }
@@ -175,7 +184,8 @@ bool TestFill(CPUBackend& backend, size_t n, float value, unsigned seed)
   {
     if (!NearlyEqual(bufRef[i], bufHwy[i]))
     {
-      printf("  FAIL Fill(n=%zu): mismatch at %zu: ref=%.6f hwy=%.6f\n", n, i, bufRef[i], bufHwy[i]);
+      printf(
+          "  FAIL Fill(n=%zu): mismatch at %zu: ref=%.6f hwy=%.6f\n", n, i, bufRef[i], bufHwy[i]);
       return false;
     }
   }
@@ -201,7 +211,10 @@ bool TestMultiplyInto(CPUBackend& backend, size_t n, unsigned seed)
   {
     if (!NearlyEqual(dstRef[i], dstHwy[i]))
     {
-      printf("  FAIL MultiplyInto(n=%zu): mismatch at %zu: ref=%.6f hwy=%.6f\n", n, i, dstRef[i],
+      printf("  FAIL MultiplyInto(n=%zu): mismatch at %zu: ref=%.6f hwy=%.6f\n",
+             n,
+             i,
+             dstRef[i],
              dstHwy[i]);
       return false;
     }
@@ -272,15 +285,19 @@ bool TestFusedStateUpdate(CPUBackend& backend, ActivationType dType, size_t n, u
     if (!NearlyEqualAbs(zRef[i], z[i], tol))
     {
       printf("  FAIL FusedStateUpdate(dType=%d, n=%zu): mismatch at %zu: ref=%.6f got=%.6f\n",
-             (int)dType, n, i, zRef[i], z[i]);
+             (int)dType,
+             n,
+             i,
+             zRef[i],
+             z[i]);
       return false;
     }
   }
   return true;
 }
 
-bool TestFusedStateUpdateMomentum(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed,
-                                  float tol = 1e-5f)
+bool TestFusedStateUpdateMomentum(CPUBackend& backend, ActivationType dType, size_t n,
+                                  unsigned seed, float tol = 1e-5f)
 {
   std::mt19937 rng(seed);
   std::uniform_real_distribution<float> dist(-1.5f, 1.5f);
@@ -304,7 +321,8 @@ bool TestFusedStateUpdateMomentum(CPUBackend& backend, ActivationType dType, siz
     vRef[i] = beta * vRef[i] + (1.0f - beta) * update;
     zRef[i] += ir * vRef[i];
   }
-  backend.FusedStateUpdateMomentum(z.data(), v.data(), feedback.data(), dType, e.data(), n, ir, beta);
+  backend.FusedStateUpdateMomentum(
+      z.data(), v.data(), feedback.data(), dType, e.data(), n, ir, beta);
 
   for (size_t i = 0; i < n; ++i)
   {
@@ -312,7 +330,13 @@ bool TestFusedStateUpdateMomentum(CPUBackend& backend, ActivationType dType, siz
     {
       printf("  FAIL FusedStateUpdateMomentum(dType=%d, n=%zu): mismatch at %zu: "
              "z ref=%.6f got=%.6f, v ref=%.6f got=%.6f\n",
-             (int)dType, n, i, zRef[i], z[i], vRef[i], v[i]);
+             (int)dType,
+             n,
+             i,
+             zRef[i],
+             z[i],
+             vRef[i],
+             v[i]);
       return false;
     }
   }
@@ -341,7 +365,13 @@ bool TestFusedADM(CPUBackend& backend, ActivationType dType, size_t n, unsigned 
     {
       printf("  FAIL FusedADM(dType=%d, n=%zu): mismatch at %zu: dst ref=%.6f hwy=%.6f, "
              "act ref=%.6f hwy=%.6f\n",
-             (int)dType, n, i, dstRef[i], dstHwy[i], actRef[i], actHwy[i]);
+             (int)dType,
+             n,
+             i,
+             dstRef[i],
+             dstHwy[i],
+             actRef[i],
+             actHwy[i]);
       return false;
     }
   }
@@ -355,14 +385,15 @@ int main()
   bool allPass = true;
 
   // Deliberately includes tiny, odd, and large-with-odd-remainder sizes.
-  std::vector<size_t> sizes = {0, 1, 2, 3, 7, 8, 15, 16, 17, 31, 32, 63, 64, 100, 4095, 4096, 4097,
-                               200003};
+  std::vector<size_t> sizes = {
+      0, 1, 2, 3, 7, 8, 15, 16, 17, 31, 32, 63, 64, 100, 4095, 4096, 4097, 200003};
 
   printf("=== AddBiasPerChannel ===\n");
   for (size_t channels : {1, 3, 8, 16})
     for (size_t spatial : sizes)
     {
-      bool ok = TestAddBiasPerChannel(backend, channels, spatial, (unsigned)(channels * 97 + spatial));
+      bool ok =
+          TestAddBiasPerChannel(backend, channels, spatial, (unsigned)(channels * 97 + spatial));
       allPass = allPass && ok;
     }
   printf("%s\n\n", allPass ? "PASS" : "FAIL");
@@ -373,8 +404,12 @@ int main()
     for (size_t channels : {1, 3, 8, 16})
       for (size_t spatial : {1, 3, 7, 16, 49})
       {
-        bool ok = TestAddBiasPerChannelNCHW(backend, batchSize, channels, spatial,
-                                            (unsigned)(batchSize * 10007 + channels * 97 + spatial));
+        bool ok =
+            TestAddBiasPerChannelNCHW(backend,
+                                      batchSize,
+                                      channels,
+                                      spatial,
+                                      (unsigned)(batchSize * 10007 + channels * 97 + spatial));
         nchwPass = nchwPass && ok;
       }
   printf("%s\n\n", nchwPass ? "PASS" : "FAIL");
@@ -382,9 +417,12 @@ int main()
 
   printf("=== FusedActivationDerivativeMultiply ===\n");
   bool admPass = true;
-  for (ActivationType t : {ActivationType::dRELU, ActivationType::dSIGMOID,
-                           ActivationType::d_eSIGMOID, ActivationType::dTANH,
-                           ActivationType::dLINEAR, ActivationType::NONE})
+  for (ActivationType t : {ActivationType::dRELU,
+                           ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID,
+                           ActivationType::dTANH,
+                           ActivationType::dLINEAR,
+                           ActivationType::NONE})
     for (size_t n : sizes)
     {
       bool ok = TestFusedADM(backend, t, n, (unsigned)((int)t * 97 + n));
@@ -412,7 +450,8 @@ int main()
   // dGELU/dSIGMOID/dTANH stay on the scalar path (SLEEF transcendentals);
   // this reference uses std:: instead, so it needs a looser tolerance --
   // it's checking the formula is right, not bit-matching SLEEF.
-  auto tolFor = [](ActivationType t) {
+  auto tolFor = [](ActivationType t)
+  {
     return (t == ActivationType::dGELU || t == ActivationType::dSIGMOID ||
             t == ActivationType::dTANH)
                ? 1e-3f
@@ -421,9 +460,13 @@ int main()
 
   printf("=== FusedStateUpdate ===\n");
   bool fsuPass = true;
-  for (ActivationType t : {ActivationType::dRELU, ActivationType::dSIGMOID,
-                           ActivationType::d_eSIGMOID, ActivationType::dTANH,
-                           ActivationType::dGELU, ActivationType::dLINEAR, ActivationType::NONE})
+  for (ActivationType t : {ActivationType::dRELU,
+                           ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID,
+                           ActivationType::dTANH,
+                           ActivationType::dGELU,
+                           ActivationType::dLINEAR,
+                           ActivationType::NONE})
     for (size_t n : sizes)
     {
       bool ok = TestFusedStateUpdate(backend, t, n, (unsigned)((int)t * 131 + n), tolFor(t));
@@ -433,12 +476,17 @@ int main()
 
   printf("=== FusedStateUpdateMomentum ===\n");
   bool fsumPass = true;
-  for (ActivationType t : {ActivationType::dRELU, ActivationType::dSIGMOID,
-                           ActivationType::d_eSIGMOID, ActivationType::dTANH,
-                           ActivationType::dGELU, ActivationType::dLINEAR, ActivationType::NONE})
+  for (ActivationType t : {ActivationType::dRELU,
+                           ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID,
+                           ActivationType::dTANH,
+                           ActivationType::dGELU,
+                           ActivationType::dLINEAR,
+                           ActivationType::NONE})
     for (size_t n : sizes)
     {
-      bool ok = TestFusedStateUpdateMomentum(backend, t, n, (unsigned)((int)t * 151 + n), tolFor(t));
+      bool ok =
+          TestFusedStateUpdateMomentum(backend, t, n, (unsigned)((int)t * 151 + n), tolFor(t));
       fsumPass = fsumPass && ok;
     }
   printf("%s\n\n", fsumPass ? "PASS" : "FAIL");

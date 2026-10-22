@@ -19,33 +19,37 @@
  * can't provide, used by the SGD branch's bias update.
  */
 
-namespace Deep {
+namespace Deep
+{
 /// @brief Predictive Coding layer using Direct Kolen-Pollack feedback
 /// alignment (DFA): a per-layer feedback matrix Psi, trained to
 /// gradually correlate with W's transpose chain, replaces symmetric
 /// weight transport for the feedback term. See DirectKPPCNetwork.h's
 /// class docs and the paper's Appendix A.1.
-class DirectKPPCLayer : public Layer {
+class DirectKPPCLayer : public Layer
+{
 protected:
   size_t size;         ///< This layer's own belief (z) size.
-  size_t nextSize;      ///< Size of the layer above (0 marks a terminal layer).
-  size_t terminalSize;  ///< Size of the network's final output layer.
-  size_t batchSize;     ///< Batch size.
+  size_t nextSize;     ///< Size of the layer above (0 marks a terminal layer).
+  size_t terminalSize; ///< Size of the network's final output layer.
+  size_t batchSize;    ///< Batch size.
 
-  float lr;     ///< Learning rate for W.
-  float ir;     ///< Inference rate (Euler integration step size).
-  float fl;     ///< Feedback rate for Psi.
-  float lmbda;  ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
+  float lr;    ///< Learning rate for W.
+  float ir;    ///< Inference rate (Euler integration step size).
+  float fl;    ///< Feedback rate for Psi.
+  float lmbda; ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
 
-  bool isClamped = false;   ///< Whether ClampState() is currently active.
+  bool isClamped = false;    ///< Whether ClampState() is currently active.
   bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
 
-  DirectKPPCLayer *layerAbove = nullptr;   ///< The next layer up, or nullptr if this is terminal.
-  DirectKPPCLayer *layerBelow = nullptr;   ///< The next layer down, or nullptr if this is the input layer.
-  DirectKPPCLayer *terminalLayer = nullptr; ///< The network's terminal layer, for DirectFeedbackUpdate().
+  DirectKPPCLayer* layerAbove = nullptr; ///< The next layer up, or nullptr if this is terminal.
+  DirectKPPCLayer* layerBelow =
+      nullptr; ///< The next layer down, or nullptr if this is the input layer.
+  DirectKPPCLayer* terminalLayer =
+      nullptr; ///< The network's terminal layer, for DirectFeedbackUpdate().
 
-  ActivationType activationType;  ///< This layer's activation type.
-  ActivationFn activation;        ///< Resolved function pointer for activationType.
+  ActivationType activationType;          ///< This layer's activation type.
+  ActivationFn activation;                ///< Resolved function pointer for activationType.
   DerivativeFn activationDerivative;      ///< Resolved function pointer for the derivative.
   DerivativeFn2 activationDerivativeInto; ///< Two-buffer variant of activationDerivative.
 
@@ -54,37 +58,38 @@ protected:
 
   /// @brief Custom deleter type for `backend`, needed since IComputeBackend
   /// is an abstract base, see the member below.
-  using BackendDeleter = void (*)(IComputeBackend *);
+  using BackendDeleter = void (*)(IComputeBackend*);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend; ///< This layer's compute backend.
 
-  float *z = nullptr; ///< This layer's belief buffer, shape [batchSize, size].
-  float *e = nullptr; ///< This layer's error buffer, shape [batchSize, size].
+  float* z = nullptr; ///< This layer's belief buffer, shape [batchSize, size].
+  float* e = nullptr; ///< This layer's error buffer, shape [batchSize, size].
 
-  float *W = nullptr;       ///< Weight matrix, shape [nextSize, size].
-  float *b = nullptr;       ///< Bias vector, length nextSize.
-  float *mu = nullptr;      ///< Forward prediction buffer, shape [batchSize, nextSize].
-  float *cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
-  float *Psi = nullptr;     ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
-  float *proj = nullptr;    ///< Scratch buffer: terminal error projected back through layerAbove's Psi, for DirectFeedbackUpdate()'s W update.
+  float* W = nullptr;        ///< Weight matrix, shape [nextSize, size].
+  float* b = nullptr;        ///< Bias vector, length nextSize.
+  float* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
+  float* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
+  float* Psi = nullptr;      ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
+  float* proj = nullptr;     ///< Scratch buffer: terminal error projected back through layerAbove's
+                             ///< Psi, for DirectFeedbackUpdate()'s W update.
 
-  float *grad_W = nullptr; ///< W's gradient scratch buffer.
-  float *grad_b = nullptr; ///< b's gradient scratch buffer.
-  float *m_W = nullptr;    ///< Adam/AdamW first-moment buffer for W.
-  float *v_W = nullptr;    ///< Adam/AdamW second-moment buffer for W.
-  float *m_b = nullptr;    ///< Adam/AdamW first-moment buffer for b.
-  float *v_b = nullptr;    ///< Adam/AdamW second-moment buffer for b.
+  float* grad_W = nullptr; ///< W's gradient scratch buffer.
+  float* grad_b = nullptr; ///< b's gradient scratch buffer.
+  float* m_W = nullptr;    ///< Adam/AdamW first-moment buffer for W.
+  float* v_W = nullptr;    ///< Adam/AdamW second-moment buffer for W.
+  float* m_b = nullptr;    ///< Adam/AdamW first-moment buffer for b.
+  float* v_b = nullptr;    ///< Adam/AdamW second-moment buffer for b.
 
-  float *grad_Psi = nullptr; ///< Psi's gradient scratch buffer.
-  float *m_Psi = nullptr;    ///< Adam/AdamW first-moment buffer for Psi.
-  float *v_Psi = nullptr;    ///< Adam/AdamW second-moment buffer for Psi.
+  float* grad_Psi = nullptr; ///< Psi's gradient scratch buffer.
+  float* m_Psi = nullptr;    ///< Adam/AdamW first-moment buffer for Psi.
+  float* v_Psi = nullptr;    ///< Adam/AdamW second-moment buffer for Psi.
 
-  int *t_device = nullptr;      ///< Device-resident mirror of `t`, for graph-captured Adam steps.
-  float *lr_device = nullptr;   ///< Device-resident mirror of `lr`.
-  int *tPsi_device = nullptr;   ///< Device-resident mirror of `tPsi`.
-  float *fl_device = nullptr;   ///< Device-resident mirror of `fl`.
+  int* t_device = nullptr;    ///< Device-resident mirror of `t`, for graph-captured Adam steps.
+  float* lr_device = nullptr; ///< Device-resident mirror of `lr`.
+  int* tPsi_device = nullptr; ///< Device-resident mirror of `tPsi`.
+  float* fl_device = nullptr; ///< Device-resident mirror of `fl`.
 
-  float *zF = nullptr;             ///< Activated belief, phi(z), used as the forward GEMM's input.
-  float *feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
+  float* zF = nullptr;              ///< Activated belief, phi(z), used as the forward GEMM's input.
+  float* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
   /// @brief nextSize-length scratch buffer for SumRows' output in
   /// UpdateWeights()'s SGD branch, SGD needs `b += lr_batch *
@@ -93,9 +98,10 @@ protected:
   /// (regardless of which optimizer is selected) since it's cheap
   ///, at most `nextSize` floats, and simpler than branching
   /// allocation on optimizer choice for this one small buffer.
-  float *biasGradScratch = nullptr;
+  float* biasGradScratch = nullptr;
 
-  std::unique_ptr<MemoryArena> localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
+  std::unique_ptr<MemoryArena>
+      localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
 
 public:
   /// @param size input size
@@ -114,17 +120,16 @@ public:
   /// @param dType activation derivative type
   /// @param backend Compute backend to run on; defaults to a new
   /// CPUBackend if nullptr.
-  DirectKPPCLayer(size_t size, size_t nextSize, size_t terminalSize,
-                  size_t batchSize, float learningRate, float inferenceRate,
-                  float feedback, float lmbda, ActivationType aType,
-                  ActivationType dType, IComputeBackend *backend = nullptr);
+  DirectKPPCLayer(size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
+                  float learningRate, float inferenceRate, float feedback, float lmbda,
+                  ActivationType aType, ActivationType dType, IComputeBackend* backend = nullptr);
 
   ~DirectKPPCLayer() override = default;
 
   /// @brief Binds this layer's buffers into a pre-allocated arena
   /// (MemoryArena for CPU, DeviceMemoryArena for GPU).
   /// @tparam ArenaT Either MemoryArena or DeviceMemoryArena.
-  template <typename ArenaT> void BindMemory(ArenaT &arena);
+  template <typename ArenaT> void BindMemory(ArenaT& arena);
   /// @brief Total floats this layer needs from its MemoryArena.
   size_t GetRequiredFloats() const noexcept;
   /// @brief Randomizes W and Psi.
@@ -132,20 +137,32 @@ public:
   /// fixed fan-scaled init regardless. The default "normal" has no
   /// "(a,b)" and so deliberately fails to parse, falling back to this
   /// class's own existing default.
-  void RandomizeWeights(std::mt19937 &seedGenerator, const char *distribution = "normal") noexcept;
+  void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 
   /// @brief Sets the layer immediately above this one in the network.
-  void SetLayerAbove(DirectKPPCLayer *l) noexcept { layerAbove = l; }
+  void SetLayerAbove(DirectKPPCLayer* l) noexcept
+  {
+    layerAbove = l;
+  }
   /// @brief Sets the layer immediately below this one in the network.
-  void SetLayerBelow(DirectKPPCLayer *l) noexcept { layerBelow = l; }
+  void SetLayerBelow(DirectKPPCLayer* l) noexcept
+  {
+    layerBelow = l;
+  }
   /// @brief Sets the network's terminal layer, for DirectFeedbackUpdate().
-  void SetTerminalLayer(DirectKPPCLayer *l) noexcept { terminalLayer = l; }
+  void SetTerminalLayer(DirectKPPCLayer* l) noexcept
+  {
+    terminalLayer = l;
+  }
 
   /// @brief Matches Layer's virtual interface exactly (always
   /// computes real energy).
-  float CalculateState() noexcept override { return CalculateState(true); }
+  float CalculateState() noexcept override
+  {
+    return CalculateState(true);
+  }
   /// @brief NOT a virtual override, see SimplePCLayer's
   /// identical pattern. Lets the settling loop skip the
   /// cublasSdot-based energy reduction (and its capture-time
@@ -163,7 +180,7 @@ public:
 
   /// @brief Clamps this layer's beliefs to `inputData`, fixing them
   /// against UpdateState() until UnclampState() is called.
-  void ClampState(const std::vector<float> &inputData) noexcept;
+  void ClampState(const std::vector<float>& inputData) noexcept;
   /// @brief Releases a previous ClampState() call.
   void UnclampState() noexcept;
   /// @brief Resets this layer's beliefs (z) without touching learned weights.
@@ -175,7 +192,10 @@ public:
   /// Same real bug SimplePCNetwork::ProjectForward() had; fixed
   /// here for the same reason, before it gets exercised for the
   /// first time by moving ProjectForward() inside graph capture.
-  bool IsClamped() const noexcept { return isClamped; }
+  bool IsClamped() const noexcept
+  {
+    return isClamped;
+  }
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu instead
   /// of reusing a cached value, without otherwise touching clamp state.
@@ -183,48 +203,102 @@ public:
   /// settling loop as real C++, leaving muCacheValid=true as a side
   /// effect, which would otherwise make the following fresh, uncaptured
   /// energy read reuse mu from before this call's own weight update.
-  void InvalidateMuCache() noexcept { muCacheValid = false; }
+  void InvalidateMuCache() noexcept
+  {
+    muCacheValid = false;
+  }
 
   /// @brief Sets the optimizer for W. Call before Compile().
-  void SetOptimizer(OptimizerType o) noexcept { opt = o; }
+  void SetOptimizer(OptimizerType o) noexcept
+  {
+    opt = o;
+  }
   /// @brief Sets the optimizer for Psi. Call before Compile().
-  void SetPsiOptimizer(OptimizerType o) noexcept { optPsi = o; }
+  void SetPsiOptimizer(OptimizerType o) noexcept
+  {
+    optPsi = o;
+  }
   /// @brief Sets the learning rate, propagating it to the optimizer state.
   void SetLearningRate(float learningRate) noexcept;
   /// @brief Sets the inference rate.
-  void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
+  void SetInferenceRate(float inferenceRate) noexcept
+  {
+    ir = inferenceRate;
+  }
   /// @brief Sets the feedback rate, propagating it to the optimizer state.
   void SetFeedbackRate(float feedbackRate) noexcept;
   /// @brief Sets the weight decay coefficient.
-  void SetLambda(float lmbda) noexcept { this->lmbda = lmbda; }
+  void SetLambda(float lmbda) noexcept
+  {
+    this->lmbda = lmbda;
+  }
 
-  float *GetBeliefs() noexcept override { return z; }
-  const float *GetErrors() const noexcept override { return e; }
+  float* GetBeliefs() noexcept override
+  {
+    return z;
+  }
+  const float* GetErrors() const noexcept override
+  {
+    return e;
+  }
   /// @brief Returns this layer's forward prediction buffer.
-  const float *GetMu() const noexcept { return mu; }
+  const float* GetMu() const noexcept
+  {
+    return mu;
+  }
   /// @brief Returns the weight matrix W, shape [nextSize, size].
-  const float *GetWeights() const noexcept { return W; }
+  const float* GetWeights() const noexcept
+  {
+    return W;
+  }
   /// @brief Mutable overload of GetWeights() above, needed so backend
   /// copies (e.g. CopyFromHost in set_weights bindings) can write into W.
-  float *GetWeights() noexcept { return W; }
+  float* GetWeights() noexcept
+  {
+    return W;
+  }
   /// @brief Returns the direct feedback (DFA) weight matrix Psi, shape [size, terminalSize].
-  const float *GetDirectFeedbackWeights() const noexcept { return Psi; }
+  const float* GetDirectFeedbackWeights() const noexcept
+  {
+    return Psi;
+  }
   /// @brief Returns the bias vector, length nextSize.
-  const float *GetBiases() const noexcept { return b; }
+  const float* GetBiases() const noexcept
+  {
+    return b;
+  }
   /// @brief Mutable overload of GetBiases() above, needed so backend
   /// copies (e.g. CopyFromHost in set_biases bindings) can write into b.
-  float *GetBiases() noexcept { return b; }
+  float* GetBiases() noexcept
+  {
+    return b;
+  }
   /// @brief Returns the compute backend this layer routes all math
   /// through, so Python bindings can safely copy device-resident
   /// buffers to the host instead of exposing a raw device pointer
   /// as if it were host memory (see LayerBindings.cpp's
   /// ViewOwnedBy / CopyFromBackend).
-  IComputeBackend *GetBackend() const noexcept { return backend.get(); }
+  IComputeBackend* GetBackend() const noexcept
+  {
+    return backend.get();
+  }
 
-  size_t GetBatchSize() const noexcept override { return batchSize; }
-  size_t GetInputSize() const noexcept override { return size; }
-  size_t GetOutputSize() const noexcept override { return nextSize; }
+  size_t GetBatchSize() const noexcept override
+  {
+    return batchSize;
+  }
+  size_t GetInputSize() const noexcept override
+  {
+    return size;
+  }
+  size_t GetOutputSize() const noexcept override
+  {
+    return nextSize;
+  }
   /// @brief Returns the network's final output layer size, as given at construction.
-  size_t GetTerminalSize() const noexcept { return terminalSize; }
+  size_t GetTerminalSize() const noexcept
+  {
+    return terminalSize;
+  }
 };
 } // namespace Deep

@@ -4,8 +4,8 @@
  * the former monolithic pybinding.cpp, see LayerBindings.cpp /
  * UtilityBindings.cpp for the rest.
  */
-#include "BindingHelpers.h"
 #include "NetworkBindings.h"
+#include "BindingHelpers.h"
 
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
@@ -17,9 +17,9 @@
 #include <vector>
 
 #include <deepity/networks/ConvPCNetwork.h>
-#include <deepity/networks/FullConvPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
 #include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/networks/FullConvPCNetwork.h>
 #include <deepity/networks/FullPCNetwork.h>
 #include <deepity/networks/GaussSeidelPCNetwork.h>
 #include <deepity/networks/SimpleConvPCNetwork.h>
@@ -341,7 +341,9 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::GaussSeidelPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::GaussSeidelPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::GaussSeidelPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -484,7 +486,9 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::DirectKPPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::DirectKPPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::DirectKPPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -589,12 +593,11 @@ void bind_networks(nb::module_& m)
                     " batch_size=" + std::to_string(self.GetBatchSize()) + ">";
            });
 
-  nb::class_<Deep::FullPCNetwork>(
-      m,
-      "FullPCNetwork",
-      "Predictive Coding Network combining muPC scaling, optional "
-      "residual connections, and DKP direct feedback, every extra OFF "
-      "by default, matching FullPCLayer's own defaults.")
+  nb::class_<Deep::FullPCNetwork>(m,
+                                  "FullPCNetwork",
+                                  "Predictive Coding Network combining muPC scaling, optional "
+                                  "residual connections, and DKP direct feedback, every extra OFF "
+                                  "by default, matching FullPCLayer's own defaults.")
       .def(
           "__init__",
           [](Deep::FullPCNetwork* self, int batch_size, const std::string& device)
@@ -677,7 +680,9 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::FullPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::FullPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::FullPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -866,14 +871,16 @@ void bind_networks(nb::module_& m)
           nb::arg("pool_stride_w") = 1)
       .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
       .def("set_use_pcx_init", &Deep::FullConvPCNetwork::SetUsePCXInit, nb::arg("enabled"))
-      .def("save", &Deep::FullConvPCNetwork::Save,
-          "Saves every layer's weights and Adam moments to a single safetensors-format "
-          "file, for checkpoint/resume.",
-          nb::arg("filepath"))
-      .def("load", &Deep::FullConvPCNetwork::Load,
-          "Loads weights and Adam moments previously written by save() into this "
-          "(already-compiled) network.",
-          nb::arg("filepath"))
+      .def("save",
+           &Deep::FullConvPCNetwork::Save,
+           "Saves every layer's weights and Adam moments to a single safetensors-format "
+           "file, for checkpoint/resume.",
+           nb::arg("filepath"))
+      .def("load",
+           &Deep::FullConvPCNetwork::Load,
+           "Loads weights and Adam moments previously written by save() into this "
+           "(already-compiled) network.",
+           nb::arg("filepath"))
       .def("set_use_residual_connections",
            &Deep::FullConvPCNetwork::SetUseResidualConnections,
            nb::arg("enabled"))
@@ -883,11 +890,14 @@ void bind_networks(nb::module_& m)
            &Deep::FullConvPCNetwork::SetUseMomentum,
            nb::arg("enabled"),
            nb::arg("beta") = 0.9f)
-      .def("set_use_cross_entropy", &Deep::FullConvPCNetwork::SetUseCrossEntropy, nb::arg("enabled"))
+      .def(
+          "set_use_cross_entropy", &Deep::FullConvPCNetwork::SetUseCrossEntropy, nb::arg("enabled"))
       .def("compile", &Deep::FullConvPCNetwork::Compile)
       .def(
           "randomize_weights",
-          [](Deep::FullConvPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::FullConvPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -940,7 +950,10 @@ void bind_networks(nb::module_& m)
       .def("set_adam_epsilon", &Deep::FullConvPCNetwork::SetAdamEpsilon, nb::arg("eps"))
       .def(
           "train_step",
-          [](Deep::FullConvPCNetwork& self, FloatArray x, FloatArray y, int inference_steps,
+          [](Deep::FullConvPCNetwork& self,
+             FloatArray x,
+             FloatArray y,
+             int inference_steps,
              bool computeEnergy)
           {
             std::vector<float> xvec(x.data(), x.data() + x.size());
@@ -1075,7 +1088,9 @@ void bind_networks(nb::module_& m)
       .def("compile", &Deep::ConvPCNetwork::Compile, "Compiles all layers into a contiguous block.")
       .def(
           "randomize_weights",
-          [](Deep::ConvPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::ConvPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -1238,7 +1253,9 @@ void bind_networks(nb::module_& m)
            "Compiles all layers into a contiguous block.")
       .def(
           "randomize_weights",
-          [](Deep::SimpleConvPCNetwork& self, std::optional<uint32_t> seed,
+          [](Deep::SimpleConvPCNetwork& self,
+             std::optional<uint32_t>
+                 seed,
              const std::string& distribution)
           {
             std::mt19937 rng = seed.has_value() ? std::mt19937(seed.value())
@@ -1318,4 +1335,3 @@ void bind_networks(nb::module_& m)
       .def("predict_with_projection", &Deep::SimpleConvPCNetwork::PredictWithProjection)
       .def("project_forward", &Deep::SimpleConvPCNetwork::ProjectForward);
 }
-

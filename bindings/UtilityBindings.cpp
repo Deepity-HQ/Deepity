@@ -5,8 +5,8 @@
  * monolithic pybinding.cpp, see LayerBindings.cpp / NetworkBindings.cpp for
  * the rest.
  */
-#include "BindingHelpers.h"
 #include "UtilityBindings.h"
+#include "BindingHelpers.h"
 
 #include <omp.h>
 
@@ -95,4 +95,3 @@ void bind_utilities(nb::module_& m)
   m.def("sigmoid", [](FloatArray x) { Deep::sigmoid(x.data(), x.size()); });
   m.def("dsigmoid", [](FloatArray x) { Deep::dSigmoid(x.data(), x.size()); });
 }
-
