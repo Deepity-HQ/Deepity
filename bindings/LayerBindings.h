@@ -9,4 +9,4 @@
  */
 
 /// @brief Binds Deep::Layer and every concrete layer subclass into `m`.
-void bind_layers(nanobind::module_ &m);
+void bind_layers(nanobind::module_& m);

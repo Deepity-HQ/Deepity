@@ -8,8 +8,8 @@
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.
  */
-#include <deepity/backend/CUDABackend.h>
 #include <cmath>
+#include <deepity/backend/CUDABackend.h>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA

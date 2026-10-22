@@ -9,4 +9,4 @@
  */
 
 /// @brief Binds every concrete PC network type into `m`.
-void bind_networks(nanobind::module_ &m);
+void bind_networks(nanobind::module_& m);

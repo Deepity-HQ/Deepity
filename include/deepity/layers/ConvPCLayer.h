@@ -31,11 +31,13 @@
  * @author Jack Rose
  */
 
-namespace Deep {
+namespace Deep
+{
 
 /// @brief Convolutional Predictive Coding layer (im2col-based),
 /// precision-weighted, routed through IComputeBackend for GPU portability.
-class ConvPCLayer : public Layer {
+class ConvPCLayer : public Layer
+{
 public:
   /// @brief Constructor for a convolutional PC layer.
   /// @param inChannels Number of input channels
@@ -59,18 +61,18 @@ public:
   /// @param dType Activation derivative type
   /// @param backend Compute backend to run on; defaults to a new
   /// CPUBackend if nullptr.
-  ConvPCLayer(int inChannels, int outChannels, int inHeight, int inWidth,
-              int kernelH, int kernelW, int strideH = 1, int strideW = 1,
-              int padH = 0, int padW = 0, int batchSize = 1,
-              float learningRate = 1e-6f, float inferenceRate = 0.1f,
-              float precisionRate = 0.01f, float lmbda = 1e-2f,
-              ActivationType aType = ActivationType::RELU,
-              ActivationType dType = ActivationType::dRELU,
-              IComputeBackend *backend = nullptr);
+  ConvPCLayer(int inChannels, int outChannels, int inHeight, int inWidth, int kernelH, int kernelW,
+              int strideH = 1, int strideW = 1, int padH = 0, int padW = 0, int batchSize = 1,
+              float learningRate = 1e-6f, float inferenceRate = 0.1f, float precisionRate = 0.01f,
+              float lmbda = 1e-2f, ActivationType aType = ActivationType::RELU,
+              ActivationType dType = ActivationType::dRELU, IComputeBackend* backend = nullptr);
 
   /// @brief Calculate energy/prediction errors for this layer.
   /// @return This layer's energy contribution at the current state.
-  float CalculateState() noexcept override { return CalculateState(true); }
+  float CalculateState() noexcept override
+  {
+    return CalculateState(true);
+  }
   /// @brief Same as CalculateState(), but can skip computing (and
   /// returning) the energy. On CUDABackend, needEnergy=false also means
   /// no blocking host sync, required for any settling-loop caller that
@@ -93,7 +95,7 @@ public:
   /// preventing them from being updated by UpdateState().
   /// @param inputData Flattened input data matching
   /// (inChannels, inHeight, inWidth) per batch item.
-  void ClampState(const std::vector<float> &inputData) noexcept;
+  void ClampState(const std::vector<float>& inputData) noexcept;
   /// @brief Releases a previous ClampState() call, allowing this
   /// layer's beliefs to update normally again.
   void UnclampState() noexcept;
@@ -101,76 +103,141 @@ public:
   /// @brief Returns this layer's belief buffer.
   /// @return Pointer to (outChannels, outHeight, outWidth) beliefs
   /// per batch item.
-  float *GetBeliefs() noexcept override { return z; }
+  float* GetBeliefs() noexcept override
+  {
+    return z;
+  }
   /// @brief Returns this layer's prediction-error buffer.
   /// @return Pointer to (outChannels, outHeight, outWidth) errors
   /// per batch item.
-  const float *GetErrors() const noexcept override { return e; }
+  const float* GetErrors() const noexcept override
+  {
+    return e;
+  }
 
   /// @brief Returns this layer's top-down prediction buffer.
-  const float *GetMu() const noexcept { return mu; }
+  const float* GetMu() const noexcept
+  {
+    return mu;
+  }
 
   /// @brief Flattened element count per batch item (inChannels*H*W).
-  size_t GetInputSize() const noexcept override {
+  size_t GetInputSize() const noexcept override
+  {
     return (size_t)inChannels * inHeight * inWidth;
   }
   /// @brief Flattened element count of this layer's OUTGOING
   /// prediction (outChannels*outH*outW), 0 for a terminal layer.
-  size_t GetOutputSize() const noexcept override {
+  size_t GetOutputSize() const noexcept override
+  {
     return outChannels > 0 ? (size_t)outChannels * outHeight * outWidth : 0;
   }
   /// @brief Returns the batch size this layer was constructed with.
   /// @return The batch size.
-  size_t GetBatchSize() const noexcept override { return batchSize; }
+  size_t GetBatchSize() const noexcept override
+  {
+    return batchSize;
+  }
 
   /// @brief Returns this layer's weight buffer.
   /// @return Pointer to (outChannels, inChannels*kernelH*kernelW) weights.
-  const float *GetWeights() const noexcept { return W; }
+  const float* GetWeights() const noexcept
+  {
+    return W;
+  }
   /// @brief Returns this layer's weight buffer.
   /// @return Pointer to (outChannels, inChannels*kernelH*kernelW) weights.
-  float *GetWeights() noexcept { return W; }
+  float* GetWeights() noexcept
+  {
+    return W;
+  }
   /// @brief Returns this layer's bias buffer.
   /// @return Pointer to (outChannels,) biases.
-  const float *GetBiases() const noexcept { return b; }
+  const float* GetBiases() const noexcept
+  {
+    return b;
+  }
   /// @brief Returns this layer's bias buffer.
   /// @return Pointer to (outChannels,) biases.
-  float *GetBiases() noexcept { return b; }
+  float* GetBiases() noexcept
+  {
+    return b;
+  }
+  /// @brief Returns the compute backend this layer routes all math
+  /// through, so Python bindings can safely copy device-resident
+  /// buffers to the host instead of exposing a raw device pointer
+  /// as if it were host memory (see LayerBindings.cpp's
+  /// ViewOwnedBy / CopyFromBackend).
+  IComputeBackend* GetBackend() const noexcept
+  {
+    return backend.get();
+  }
   /// @brief Returns this layer's precision buffer.
   /// @return Pointer to (inChannels*inHeight*inWidth,) precisions, one
   /// per own-position, NOT per outChannel, despite this layer's
   /// outgoing prediction being channel-shaped; precision weights THIS
   /// layer's own error against layerBelow, which is input-shaped.
-  const float *GetPrecisions() const noexcept { return p; }
+  const float* GetPrecisions() const noexcept
+  {
+    return p;
+  }
 
   /// @brief Returns the learning rate used for weight updates.
   /// @return The learning rate.
-  float GetLearningRate() const noexcept { return lr; }
+  float GetLearningRate() const noexcept
+  {
+    return lr;
+  }
   /// @brief Returns the learning rate used for internal-state updates.
   /// @return The inference rate.
-  float GetInferenceRate() const noexcept { return ir; }
+  float GetInferenceRate() const noexcept
+  {
+    return ir;
+  }
   /// @brief Returns the learning rate used for precision updates.
   /// @return The precision rate.
-  float GetPrecisionRate() const noexcept { return pr; }
+  float GetPrecisionRate() const noexcept
+  {
+    return pr;
+  }
   /// @brief Returns the weight-decay (L2 regularization) coefficient.
   /// @return Lambda.
-  float GetLambda() const noexcept { return lmbda; }
+  float GetLambda() const noexcept
+  {
+    return lmbda;
+  }
 
   /// @brief Sets the learning rate used for weight updates.
   /// @param learningRate The new learning rate.
   void SetLearningRate(float learningRate) noexcept;
   /// @brief Sets the learning rate used for internal-state updates.
   /// @param inferenceRate The new inference rate.
-  void SetInferenceRate(float inferenceRate) noexcept { ir = inferenceRate; }
+  void SetInferenceRate(float inferenceRate) noexcept
+  {
+    ir = inferenceRate;
+  }
   /// @brief Sets the learning rate used for precision updates.
   /// @param precisionRate The new precision rate.
-  void SetPrecisionRate(float precisionRate) noexcept { pr = precisionRate; }
+  void SetPrecisionRate(float precisionRate) noexcept
+  {
+    pr = precisionRate;
+  }
   /// @brief Sets the weight-decay (L2 regularization) coefficient.
   /// @param l The new lambda value.
-  void SetLambda(float l) noexcept { lmbda = l; }
+  void SetLambda(float l) noexcept
+  {
+    lmbda = l;
+  }
   /// @brief Sets the weight optimizer. Call BEFORE Compile().
-  void SetOptimizer(const OptimizerType o) noexcept { opt = o; }
+  void SetOptimizer(const OptimizerType o) noexcept
+  {
+    opt = o;
+  }
   /// @brief Whether ClampState() is currently active on this layer.
-  bool IsClamped() const noexcept { return isClamped; }
+  bool IsClamped() const noexcept
+  {
+    return isClamped;
+  }
 
   /// @brief Forces the next ComputeMuOnly() call to recompute instead of
   /// reusing cachedMu, without otherwise touching clamp state.
@@ -186,16 +253,25 @@ public:
   /// BEFORE this call's weight update instead of after it. Callers that
   /// just finished a capture should invalidate the cache here before that
   /// read, exactly like a fresh ClampState() call would have.
-  void InvalidateMuCache() noexcept { muCacheValid = false; }
+  void InvalidateMuCache() noexcept
+  {
+    muCacheValid = false;
+  }
 
   /// @brief Sets the layer immediately above this one in the network.
   /// @param above Pointer to the layer above; may be nullptr for a
   /// terminal layer.
-  void SetLayerAbove(ConvPCLayer *above) noexcept { layerAbove = above; }
+  void SetLayerAbove(ConvPCLayer* above) noexcept
+  {
+    layerAbove = above;
+  }
   /// @brief Sets the layer immediately below this one in the network.
   /// @param below Pointer to the layer below; may be nullptr for the
   /// input layer.
-  void SetLayerBelow(ConvPCLayer *below) noexcept { layerBelow = below; }
+  void SetLayerBelow(ConvPCLayer* below) noexcept
+  {
+    layerBelow = below;
+  }
 
   /// @brief Resets this layer's beliefs/errors back to their initial
   /// values, without touching learned weights.
@@ -206,7 +282,7 @@ public:
   /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
   /// default "normal" has no "(a,b)" and so deliberately fails to parse,
   /// falling back to this class's own existing fan-scaled default.
-  void RandomizeWeights(std::mt19937 &twister, const char *distribution = "normal") noexcept;
+  void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 
@@ -226,26 +302,56 @@ public:
   void PrepareConvWorkspace() noexcept;
 
   /// @brief Returns this layer's configured activation type.
-  ActivationType GetActivationType() const noexcept { return activationType; }
+  ActivationType GetActivationType() const noexcept
+  {
+    return activationType;
+  }
   /// @brief Returns this layer's configured activation-derivative type.
-  ActivationType GetDerivativeType() const noexcept { return derivativeType; }
+  ActivationType GetDerivativeType() const noexcept
+  {
+    return derivativeType;
+  }
 
   /// @brief Returns the number of input channels.
-  int GetInChannels() const noexcept { return inChannels; }
+  int GetInChannels() const noexcept
+  {
+    return inChannels;
+  }
   /// @brief Returns the number of output channels (0 for a terminal layer).
-  int GetOutChannels() const noexcept { return outChannels; }
+  int GetOutChannels() const noexcept
+  {
+    return outChannels;
+  }
   /// @brief Returns the input feature-map height.
-  int GetInHeight() const noexcept { return inHeight; }
+  int GetInHeight() const noexcept
+  {
+    return inHeight;
+  }
   /// @brief Returns the input feature-map width.
-  int GetInWidth() const noexcept { return inWidth; }
+  int GetInWidth() const noexcept
+  {
+    return inWidth;
+  }
   /// @brief Returns the output feature-map height.
-  int GetOutHeight() const noexcept { return outHeight; }
+  int GetOutHeight() const noexcept
+  {
+    return outHeight;
+  }
   /// @brief Returns the output feature-map width.
-  int GetOutWidth() const noexcept { return outWidth; }
+  int GetOutWidth() const noexcept
+  {
+    return outWidth;
+  }
   /// @brief Returns the convolution kernel height.
-  int GetKernelH() const noexcept { return kernelH; }
+  int GetKernelH() const noexcept
+  {
+    return kernelH;
+  }
   /// @brief Returns the convolution kernel width.
-  int GetKernelW() const noexcept { return kernelW; }
+  int GetKernelW() const noexcept
+  {
+    return kernelW;
+  }
 
   /// @brief Computes the total number of floats this layer requires
   /// from a MemoryArena (weights, biases, beliefs, errors, and every
@@ -256,8 +362,7 @@ public:
   /// supplied arena. Must be called before any other operation.
   /// @tparam ArenaT Either MemoryArena or DeviceMemoryArena.
   /// @param arena The arena to bind into.
-  template <typename ArenaT>
-  void BindMemory(ArenaT &arena);
+  template <typename ArenaT> void BindMemory(ArenaT& arena);
 
 private:
   std::unique_ptr<MemoryArena> localArena;
@@ -275,21 +380,21 @@ private:
 
   /// @name Weight and bias buffers
   /// @{
-  float *W = nullptr; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
-  float *b = nullptr; ///< Biases: (outChannels)
+  float* W = nullptr; ///< Weights: (outChannels, inChannels*kernelH*kernelW)
+  float* b = nullptr; ///< Biases: (outChannels)
 
-  float *z = nullptr; ///< Beliefs/activations: (inChannels, inHeight,
-                      ///< inWidth) per batch item
-  float *e = nullptr; ///< Prediction errors: same shape as z.
-  float *dz_dt = nullptr; ///< State derivatives: same shape as z.
-  float *p = nullptr;     ///< Precisions: (inChannels*inHeight*inWidth,),
+  float* z = nullptr;     ///< Beliefs/activations: (inChannels, inHeight,
+                          ///< inWidth) per batch item
+  float* e = nullptr;     ///< Prediction errors: same shape as z.
+  float* dz_dt = nullptr; ///< State derivatives: same shape as z.
+  float* p = nullptr;     ///< Precisions: (inChannels*inHeight*inWidth,),
                           ///< see GetPrecisions()'s doc for why this is
                           ///< input-shaped, not outChannels-shaped.
-  float *log_p = nullptr; ///< Log-precisions: same shape as p.
+  float* log_p = nullptr; ///< Log-precisions: same shape as p.
   /// @}
 
   /// @brief Predictions from above (incoming error feedback)
-  float *mu = nullptr;
+  float* mu = nullptr;
 
   /// @name Scratch buffers for convolution operations
   /// @{
@@ -297,33 +402,33 @@ private:
   /// batch item. Holds this layer's im2col(z) result computed in
   /// CalculateState(). Reused by UpdateWeights() for weight-gradient GEMM. Must
   /// NOT be overwritten between CalculateState() and UpdateWeights().
-  float *colBuffer = nullptr;
+  float* colBuffer = nullptr;
 
   /// Feedback term scratch: holds transposed-GEMM result before Col2Im scatter
   /// into dz_dt. Separate from colBuffer to avoid ordering dependencies between
   /// UpdateState() and UpdateWeights().
-  float *feedbackScratch = nullptr;
+  float* feedbackScratch = nullptr;
 
   /// Bottom-up error modulation: (outChannels, outHeight*outWidth) per batch
   /// item. Holds (e_above * p_above * mu(f')). Recomputed independently in both
   /// UpdateState() and UpdateWeights() (cheap elementwise, not cached).
-  float *bottom_up_cols = nullptr;
+  float* bottom_up_cols = nullptr;
 
   /// Repacked column buffer: row-major layout (row, batch, col) for
   /// single-batched GEMM.
-  float *colsRepacked = nullptr;
+  float* colsRepacked = nullptr;
   /// Repacked bottom-up gradient: row-major layout for efficient GEMM
   /// operations.
-  float *lgRepacked = nullptr;
+  float* lgRepacked = nullptr;
 
   /// All-ones vector for the bias-gradient GEMM trick (grad_b =
   /// lgRepacked @ ones), matching SimpleConvPCLayer::UpdateWeights()'s
   /// own use of the same trick.
-  float *onesVector = nullptr;
+  float* onesVector = nullptr;
   /// @}
 
   /// @brief Cache for the clamped input forward-projection
-  float *cachedMu = nullptr;
+  float* cachedMu = nullptr;
   /// @brief Flag to determine if the mu cache is currently valid
   bool muCacheValid = false;
 
@@ -333,32 +438,32 @@ private:
   /// activation this codebase supports), so any later derivative
   /// computation needs this, not mu itself -- see
   /// ActivationDerivativeFromActivatedDevice's own @warning.
-  float *preact = nullptr;
+  float* preact = nullptr;
   /// @brief cachedMu's counterpart for preact, same clamped-layer reuse.
-  float *cachedPreact = nullptr;
+  float* cachedPreact = nullptr;
 
-  float *grad_W = nullptr;
-  float *grad_b = nullptr;
-  float *m_W = nullptr;
-  float *v_W = nullptr;
-  float *m_b = nullptr;
-  float *v_b = nullptr;
+  float* grad_W = nullptr;
+  float* grad_b = nullptr;
+  float* m_W = nullptr;
+  float* v_W = nullptr;
+  float* m_b = nullptr;
+  float* v_b = nullptr;
 
   /// @brief Device-resident Adam step count and learning rate, same
   /// reasoning as SimpleConvPCLayer/SimplePCLayer's own ports.
-  int *t_device = nullptr;
-  float *lr_device = nullptr;
+  int* t_device = nullptr;
+  float* lr_device = nullptr;
 
   float lr, ir, pr, lmbda;
   bool isClamped = false;
 
-  ConvPCLayer *layerAbove = nullptr;
-  ConvPCLayer *layerBelow = nullptr;
+  ConvPCLayer* layerAbove = nullptr;
+  ConvPCLayer* layerBelow = nullptr;
   ActivationType activationType;
   ActivationType derivativeType;
   OptimizerType opt = OptimizerType::SGD;
 
-  using BackendDeleter = void (*)(IComputeBackend *);
+  using BackendDeleter = void (*)(IComputeBackend*);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 };
 

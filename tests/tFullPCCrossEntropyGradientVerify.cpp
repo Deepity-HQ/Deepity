@@ -27,7 +27,7 @@ int main()
 {
   const float eps = 3e-3f;
   const float tolerance = 1e-2f; // FD error is O(eps^2), see the two
-                                  // sibling files for the same choice
+                                 // sibling files for the same choice
 
   FullPCNetwork net(1);
   net.AddLayer(5, 4, 4, 1.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH, ActivationType::dTANH);
@@ -57,9 +57,9 @@ int main()
   auto TotalEnergy = [&]()
   {
     l0->InvalidateMuCache(); // otherwise ComputeMuOnly() would just
-                              // replay the stale cached mu from before
-                              // W was perturbed, see FullPCLayer.h's
-                              // own docs on this exact hazard
+                             // replay the stale cached mu from before
+                             // W was perturbed, see FullPCLayer.h's
+                             // own docs on this exact hazard
     l0->CalculateState(false);
     return l1->CalculateState(true);
   };

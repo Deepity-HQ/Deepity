@@ -12,31 +12,31 @@
  * full Activations.h), so IComputeBackend.h, and everything that
  * includes it (crucially CUDABackend.h/.cu, compiled by nvcc), never
  * needed the SIMD-intrinsics half of Activations.h at all.
-*/
+ */
 
 namespace Deep
 {
-    /// @brief Identifies an activation function or its derivative, for
-    /// dispatch tables and layer/backend APIs that need to name an
-    /// activation without depending on the SIMD implementations
-    /// themselves (see the file-level note above on why this is split
-    /// out of Activations.h).
-    enum class ActivationType : uint8_t
-    {
-        RELU,
-        dRELU,
-        GELU,
-        dGELU,
-        SIGMOID,
-        dSIGMOID,
-        eSIGMOID,
-        d_eSIGMOID,
-        TANH,
-        dTANH,
-        LINEAR,
-        dLINEAR,
-        HARD_TANH,
-        dHARD_TANH,
-        NONE
-    };
-}
+/// @brief Identifies an activation function or its derivative, for
+/// dispatch tables and layer/backend APIs that need to name an
+/// activation without depending on the SIMD implementations
+/// themselves (see the file-level note above on why this is split
+/// out of Activations.h).
+enum class ActivationType : uint8_t
+{
+  RELU,
+  dRELU,
+  GELU,
+  dGELU,
+  SIGMOID,
+  dSIGMOID,
+  eSIGMOID,
+  d_eSIGMOID,
+  TANH,
+  dTANH,
+  LINEAR,
+  dLINEAR,
+  HARD_TANH,
+  dHARD_TANH,
+  NONE
+};
+} // namespace Deep

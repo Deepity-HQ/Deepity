@@ -10,34 +10,35 @@
  * stream-timing issue the synchronous CopyToHost isn't actually
  * catching, despite that same pattern working for every other kernel.
  */
-#include <deepity/backend/Backend.h>
-#include <cuda_runtime.h>
 #include <cstdio>
+#include <cuda_runtime.h>
+#include <deepity/backend/Backend.h>
 
 using namespace Deep;
 
 int main()
 {
-    auto gpuBackend = CreateBackend(DeviceType::DEVICE_GPU);
+  auto gpuBackend = CreateBackend(DeviceType::DEVICE_GPU);
 
-    int *dT = reinterpret_cast<int *>(gpuBackend->Allocate(1));
-    int zero = 0;
-    gpuBackend->CopyFromHost(reinterpret_cast<float *>(dT), reinterpret_cast<float *>(&zero), 1);
+  int* dT = reinterpret_cast<int*>(gpuBackend->Allocate(1));
+  int zero = 0;
+  gpuBackend->CopyFromHost(reinterpret_cast<float*>(dT), reinterpret_cast<float*>(&zero), 1);
 
-    gpuBackend->IncrementCounter(dT);
+  gpuBackend->IncrementCounter(dT);
 
-    // THE ONLY CHANGE from tCUDAIncrementCounterVerify.cpp:
-    cudaError_t syncErr = cudaDeviceSynchronize();
-    printf("cudaDeviceSynchronize() after IncrementCounter: %s\n", cudaGetErrorString(syncErr));
+  // THE ONLY CHANGE from tCUDAIncrementCounterVerify.cpp:
+  cudaError_t syncErr = cudaDeviceSynchronize();
+  printf("cudaDeviceSynchronize() after IncrementCounter: %s\n", cudaGetErrorString(syncErr));
 
-    int readback = -999;
-    gpuBackend->CopyToHost(reinterpret_cast<float *>(&readback), reinterpret_cast<float *>(dT), 1);
-    printf("After ONE IncrementCounter call + explicit sync (expect 1): %d\n", readback);
+  int readback = -999;
+  gpuBackend->CopyToHost(reinterpret_cast<float*>(&readback), reinterpret_cast<float*>(dT), 1);
+  printf("After ONE IncrementCounter call + explicit sync (expect 1): %d\n", readback);
 
-    bool pass = (readback == 1);
-    printf("\n%s\n", pass ? "PASS (explicit sync fixed it, real stream-timing bug found)"
-                          : "FAIL (still wrong even with explicit sync, bug is elsewhere)");
+  bool pass = (readback == 1);
+  printf("\n%s\n",
+         pass ? "PASS (explicit sync fixed it, real stream-timing bug found)"
+              : "FAIL (still wrong even with explicit sync, bug is elsewhere)");
 
-    gpuBackend->Free(reinterpret_cast<float *>(dT));
-    return pass ? 0 : 1;
+  gpuBackend->Free(reinterpret_cast<float*>(dT));
+  return pass ? 0 : 1;
 }

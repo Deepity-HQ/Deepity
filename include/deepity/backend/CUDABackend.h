@@ -144,8 +144,8 @@ public:
               int kernelW, int strideH, int strideW, int padH, int padW,
               float* columns) noexcept override;
   /// @copydoc Deep::IComputeBackend::Col2Im
-  void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
-              int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
+  void Col2Im(const float* columns, int batchSize, int channels, int height, int width, int kernelH,
+              int kernelW, int strideH, int strideW, int padH, int padW,
               float* outputImage) noexcept override;
   /// @copydoc Deep::IComputeBackend::MaxPool2DForward
   void MaxPool2DForward(const float* input, int batchSize, int channels, int height, int width,
@@ -166,14 +166,13 @@ public:
   /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardData
   bool TryFusedConvBackwardData(const float* outputGrad, const float* W, float* inputGrad,
                                 float alpha, int batchSize, int inChannels, int height, int width,
-                                int outChannels, int kernelH, int kernelW, int strideH,
-                                int strideW, int padH, int padW) noexcept override;
+                                int outChannels, int kernelH, int kernelW, int strideH, int strideW,
+                                int padH, int padW) noexcept override;
   /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardFilter
   bool TryFusedConvBackwardFilter(const float* input, const float* outputGrad, float* dW,
                                   float alpha, float beta, int batchSize, int inChannels,
-                                  int height, int width, int outChannels, int kernelH,
-                                  int kernelW, int strideH, int strideW, int padH,
-                                  int padW) noexcept override;
+                                  int height, int width, int outChannels, int kernelH, int kernelW,
+                                  int strideH, int strideW, int padH, int padW) noexcept override;
   /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
   void PrepareConvWorkspace(int batchSize, int inChannels, int height, int width, int outChannels,
                             int kernelH, int kernelW, int strideH, int strideW, int padH,

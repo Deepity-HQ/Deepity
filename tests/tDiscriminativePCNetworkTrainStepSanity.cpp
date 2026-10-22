@@ -64,7 +64,10 @@ int main()
   }
 
   printf("TrainStep(): %.6f -> %.6f, TrainStepWithProjection(): %.6f -> %.6f\n",
-         firstTrainStepEnergy, lastTrainStepEnergy, firstProjEnergy, lastProjEnergy);
+         firstTrainStepEnergy,
+         lastTrainStepEnergy,
+         firstProjEnergy,
+         lastProjEnergy);
 
   // The real check: energy actually decreased over 20 calls, not an
   // arbitrary absolute threshold.

@@ -39,9 +39,9 @@
 #ifndef CUTLASS_USE_TANH_FOR_SIGMOID
 #define CUTLASS_USE_TANH_FOR_SIGMOID
 #endif
-#include <cutlass/epilogue/thread/linear_combination_sigmoid.h>
-#include <cutlass/epilogue/thread/linear_combination_generic.h>
 #include <cutlass/epilogue/thread/activation.h>
+#include <cutlass/epilogue/thread/linear_combination_generic.h>
+#include <cutlass/epilogue/thread/linear_combination_sigmoid.h>
 #include <cutlass/gemm/device/gemm.h>
 
 namespace Deep
@@ -54,7 +54,8 @@ namespace Deep
 // every unfused call site actually computes.
 using LinearCombinationGELUTaylor = cutlass::epilogue::thread::LinearCombinationGeneric<
     cutlass::epilogue::thread::GELU_taylor, float, 128 / cutlass::sizeof_bits<float>::value, float,
-    float, cutlass::epilogue::thread::ScaleType::Default, cutlass::FloatRoundStyle::round_to_nearest,
+    float, cutlass::epilogue::thread::ScaleType::Default,
+    cutlass::FloatRoundStyle::round_to_nearest,
     /*IsHeavy=*/true>;
 using LinearCombinationGELUTaylorScalar = cutlass::epilogue::thread::LinearCombinationGeneric<
     cutlass::epilogue::thread::GELU_taylor, float, 1, float, float,

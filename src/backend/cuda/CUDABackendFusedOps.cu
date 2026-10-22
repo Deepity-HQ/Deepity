@@ -9,8 +9,8 @@
  * CUDABackendActivations.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.
  */
-#include <deepity/backend/CUDABackend.h>
 #include <cmath>
+#include <deepity/backend/CUDABackend.h>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA
@@ -226,8 +226,8 @@ void CUDABackend::ComputeSoftmaxCrossEntropyError(float* e, const float* z, cons
 }
 
 __global__ void FusedActivationDerivativeMultiplyKernel(float* dst, const float* a,
-                                                         float* activatedInOut, ActivationType dType,
-                                                         size_t n)
+                                                        float* activatedInOut, ActivationType dType,
+                                                        size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (i < n)
@@ -238,15 +238,16 @@ __global__ void FusedActivationDerivativeMultiplyKernel(float* dst, const float*
   }
 }
 
-void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
-                                                     ActivationType dType, size_t n) noexcept
+void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a,
+                                                    float* activatedInOut, ActivationType dType,
+                                                    size_t n) noexcept
 {
   if (!dst || !a || !activatedInOut || n == 0)
     return;
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  FusedActivationDerivativeMultiplyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(dst, a, activatedInOut,
-                                                                             dType, n);
+  FusedActivationDerivativeMultiplyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      dst, a, activatedInOut, dType, n);
   CHECK_CUDA_LAUNCH();
 }
 
@@ -268,8 +269,8 @@ void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a, 
 // no energy, no sync) instead, exactly like ComputeError() exists
 // alongside ComputeErrorAndEnergy() for the same reason.
 __global__ void PrecisionWeightedErrorEnergyKernel(float* e, const float* z, const float* mu,
-                                                    const float* p, size_t n, size_t width,
-                                                    float* energyAccum)
+                                                   const float* p, size_t n, size_t width,
+                                                   float* energyAccum)
 {
   size_t idx = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
   if (idx < n)
@@ -304,8 +305,8 @@ float CUDABackend::ComputePrecisionWeightedErrorAndEnergy(float* e, const float*
 
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  PrecisionWeightedErrorEnergyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(e, z, mu, p, n, width,
-                                                                        scalarScratch);
+  PrecisionWeightedErrorEnergyKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      e, z, mu, p, n, width, scalarScratch);
   CHECK_CUDA_LAUNCH();
 
   float total = 0.0f;
@@ -388,8 +389,8 @@ void CUDABackend::UpdatePrecisionFromError(float* p, float* log_p, const float* 
     return;
   constexpr int BLOCK_SIZE = 256;
   const int blocks = static_cast<int>((width + BLOCK_SIZE - 1) / BLOCK_SIZE);
-  UpdatePrecisionFromErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(p, log_p, e, batchSize, width,
-                                                                    pr);
+  UpdatePrecisionFromErrorKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      p, log_p, e, batchSize, width, pr);
   CHECK_CUDA_LAUNCH();
 }
 } // namespace Deep

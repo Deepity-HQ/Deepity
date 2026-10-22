@@ -33,14 +33,14 @@ class FullPCLayer : public Layer
 {
 protected:
   size_t size;         ///< This layer's own belief (z) size.
-  size_t nextSize;      ///< Size of the layer above (0 marks a terminal layer).
-  size_t terminalSize;  ///< Size of the network's final output layer.
-  size_t batchSize;     ///< Batch size.
+  size_t nextSize;     ///< Size of the layer above (0 marks a terminal layer).
+  size_t terminalSize; ///< Size of the network's final output layer.
+  size_t batchSize;    ///< Batch size.
 
-  float lr;     ///< Learning rate for W.
-  float ir;     ///< Inference rate (Euler integration step size).
-  float fl;     ///< Feedback rate for Psi.
-  float lmbda;  ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
+  float lr;    ///< Learning rate for W.
+  float ir;    ///< Inference rate (Euler integration step size).
+  float fl;    ///< Feedback rate for Psi.
+  float lmbda; ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
 
   // muPC scaling: mu = a * (W @ phi(z)) + b [+ z if useResidual].
   // a=1.0, useResidual=false reproduces plain PC exactly.
@@ -55,12 +55,14 @@ protected:
   // behavior, matching plain PC exactly.
   bool useMuPCInit = false; ///< Whether unit-variance W init is enabled, see SetMuPCInit().
 
-  bool isClamped = false;   ///< Whether ClampState() is currently active.
+  bool isClamped = false;    ///< Whether ClampState() is currently active.
   bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
 
-  FullPCLayer* layerAbove = nullptr;   ///< The next layer up, or nullptr if this is terminal.
-  FullPCLayer* layerBelow = nullptr;   ///< The next layer down, or nullptr if this is the input layer.
-  FullPCLayer* terminalLayer = nullptr; ///< The network's terminal layer, for DirectFeedbackUpdate().
+  FullPCLayer* layerAbove = nullptr; ///< The next layer up, or nullptr if this is terminal.
+  FullPCLayer* layerBelow =
+      nullptr; ///< The next layer down, or nullptr if this is the input layer.
+  FullPCLayer* terminalLayer =
+      nullptr; ///< The network's terminal layer, for DirectFeedbackUpdate().
 
   ActivationType activationType; ///< This layer's activation type.
 
@@ -75,12 +77,37 @@ protected:
   float* z = nullptr; ///< This layer's belief buffer, shape [batchSize, size].
   float* e = nullptr; ///< This layer's error buffer, shape [batchSize, size].
 
-  float* W = nullptr;       ///< Weight matrix, shape [nextSize, size].
-  float* b = nullptr;       ///< Bias vector, length nextSize.
-  float* mu = nullptr;      ///< Forward prediction buffer, shape [batchSize, nextSize].
+  float* W = nullptr;        ///< Weight matrix, shape [nextSize, size].
+  float* b = nullptr;        ///< Bias vector, length nextSize.
+  float* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
   float* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
-  float* Psi = nullptr;     ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
-  float* proj = nullptr;    ///< Scratch buffer: terminal error projected back through layerAbove's Psi, for DirectFeedbackUpdate()'s W update.
+  /// @brief Pre-activation snapshot of mu (mu=phi(a*W@z+b)'s raw
+  /// a*W@z+b, before Activation() is applied in place; the residual
+  /// add, when enabled, happens AFTER activation and is NOT part of
+  /// this), shape [batchSize, nextSize]. f'(preact) -- not f'(z) and
+  /// not a shortcut from the activated mu -- is what UpdateState(),
+  /// UpdateWeights(), DirectFeedbackUpdate() and ComputeAdjoint() all
+  /// apply to the feedback signal.
+  float* preact = nullptr;
+  /// @brief Cached pre-activation, valid alongside cachedMu when this
+  /// layer is clamped (same reasoning as cachedMu itself).
+  float* cachedPreact = nullptr;
+  /// @brief nextSize-shaped scratch holding f'(preact), recomputed
+  /// fresh from preact wherever needed. Deliberately never stashed in
+  /// mu itself (mu must stay the clean, activated value --
+  /// ComputeMuOnly() is publicly callable between settling calls and
+  /// UpdateWeights() and would silently clobber a derivative stashed
+  /// in mu back into the plain activated value).
+  float* derivScratch = nullptr;
+  /// @brief nextSize-shaped scratch holding the top-down signal
+  /// (e_above, adjointAbove, or proj) pre-multiplied by f'(preact),
+  /// i.e. the quantity that then gets projected through W/Psi -- the
+  /// derivative applies at the source of the nonlinearity, before
+  /// projecting down, not after.
+  float* feedbackError = nullptr;
+  float* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
+  float* proj = nullptr; ///< Scratch buffer: terminal error projected back through layerAbove's
+                         ///< Psi, for DirectFeedbackUpdate()'s W update.
 
   float* grad_W = nullptr; ///< W's gradient scratch buffer.
   float* grad_b = nullptr; ///< b's gradient scratch buffer.
@@ -93,27 +120,29 @@ protected:
   float* m_Psi = nullptr;    ///< Adam/AdamW first-moment buffer for Psi.
   float* v_Psi = nullptr;    ///< Adam/AdamW second-moment buffer for Psi.
 
-  int* t_device = nullptr;      ///< Device-resident Adam/AdamW step count for W/b, for graph-captured steps.
-  float* lr_device = nullptr;   ///< Device-resident mirror of `lr`.
-  int* tPsi_device = nullptr;   ///< Device-resident Adam/AdamW step count for Psi.
-  float* fl_device = nullptr;   ///< Device-resident mirror of `fl`.
+  int* t_device =
+      nullptr; ///< Device-resident Adam/AdamW step count for W/b, for graph-captured steps.
+  float* lr_device = nullptr; ///< Device-resident mirror of `lr`.
+  int* tPsi_device = nullptr; ///< Device-resident Adam/AdamW step count for Psi.
+  float* fl_device = nullptr; ///< Device-resident mirror of `fl`.
 
-  float* zF = nullptr;             ///< Activated belief, phi(z), used as the forward GEMM's input.
   float* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
-  float* v = nullptr;          ///< Momentum buffer for the settling update, see SetMomentum().
-  bool useMomentum = false;    ///< Whether momentum settling is enabled, see SetMomentum().
-  float momentumBeta = 0.9f;   ///< Momentum EMA decay rate, see SetMomentum().
+  float* v = nullptr;        ///< Momentum buffer for the settling update, see SetMomentum().
+  bool useMomentum = false;  ///< Whether momentum settling is enabled, see SetMomentum().
+  float momentumBeta = 0.9f; ///< Momentum EMA decay rate, see SetMomentum().
 
-  bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled, see SetCrossEntropy().
-  float* rowEnergies = nullptr; ///< Per-row energy scratch for the cross-entropy path, length batchSize.
+  bool useCrossEntropy =
+      false; ///< Whether softmax cross-entropy energy is enabled, see SetCrossEntropy().
+  float* rowEnergies =
+      nullptr; ///< Per-row energy scratch for the cross-entropy path, length batchSize.
 
   // ePC (Goemaere/Innocenti et al., see SetUseEPC()): `e` itself becomes
   // the settled variable instead of `z`, via a full top-to-bottom
   // backward sweep each settling step rather than a one-hop message.
   // `adjoint` holds this layer's chained backprop sensitivity so the
   // layer below can read it as ITS incoming signal, see ComputeAdjoint().
-  bool useEPC = false;       ///< Whether ePC settling is enabled, see SetUseEPC().
+  bool useEPC = false;      ///< Whether ePC settling is enabled, see SetUseEPC().
   float* adjoint = nullptr; ///< Chained backward-sweep signal, shape [batchSize, size].
 
   /// @brief nextSize-length scratch for SumRows' output in
@@ -122,7 +151,8 @@ protected:
   /// identical buffer.
   float* biasGradScratch = nullptr;
 
-  std::unique_ptr<MemoryArena> localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
+  std::unique_ptr<MemoryArena>
+      localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
 
 public:
   /// @param size input size
@@ -407,6 +437,12 @@ public:
   {
     return W;
   }
+  /// @brief Mutable overload of GetWeights() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_weights bindings) can write into W.
+  float* GetWeights() noexcept
+  {
+    return W;
+  }
   /// @brief Returns the direct feedback (DFA) weight matrix Psi, shape [size, terminalSize].
   const float* GetDirectFeedbackWeights() const noexcept
   {
@@ -416,6 +452,21 @@ public:
   const float* GetBiases() const noexcept
   {
     return b;
+  }
+  /// @brief Mutable overload of GetBiases() above, needed so backend
+  /// copies (e.g. CopyFromHost in set_biases bindings) can write into b.
+  float* GetBiases() noexcept
+  {
+    return b;
+  }
+  /// @brief Returns the compute backend this layer routes all math
+  /// through, so Python bindings can safely copy device-resident
+  /// buffers to the host instead of exposing a raw device pointer
+  /// as if it were host memory (see LayerBindings.cpp's
+  /// ViewOwnedBy / CopyFromBackend).
+  IComputeBackend* GetBackend() const noexcept
+  {
+    return backend.get();
   }
 
   size_t GetBatchSize() const noexcept override

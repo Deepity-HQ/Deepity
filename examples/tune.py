@@ -69,7 +69,7 @@ def objective(trial, X_train, Y_train, X_test, y_test_labels):
     rng_init = np.random.default_rng(7)
     for layer in net.layers[:-1]:
         w_shape = layer.weights.shape
-        layer.weights[:] = rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32)
+        layer.set_weights(rng_init.uniform(-0.3, 0.3, w_shape).astype(np.float32).ravel())
 
     rng = np.random.default_rng(7)
     n_batches = len(X_train) // batch_size

@@ -120,8 +120,8 @@ int main()
   const int steps = 4;
   for (int t = 0; t < steps && partBPass; ++t)
   {
-    net.Step(false);        // CalculateState + UpdateState on every layer
-    net.UpdateWeights();    // iPC: applied every settling step
+    net.Step(false);     // CalculateState + UpdateState on every layer
+    net.UpdateWeights(); // iPC: applied every settling step
 
     // Snapshot the STALE cached mu: the cache is still marked valid from
     // before this step's UpdateWeights() call, so this replays the old
@@ -140,7 +140,7 @@ int main()
     for (size_t i = 0; i < nextSize; ++i)
       freshMu[i] = inputLayer->GetMu()[i];
 
-    // Independent from-scratch reference: mu = tanh(z) @ W^T + b, using
+    // Independent from-scratch reference: mu = tanh(z @ W^T + b), using
     // the CURRENT (just-updated) W/b directly, matching FullPCLayer's
     // defaults (a=1.0, no residual) -- deliberately not reusing
     // ComputeMuOnly() at all.
@@ -152,14 +152,16 @@ int main()
     {
       float acc = b[j];
       for (size_t i = 0; i < size; ++i)
-        acc += std::tanh(z[i]) * W[j * size + i];
-      manualMu[j] = acc;
+        acc += z[i] * W[j * size + i];
+      manualMu[j] = std::tanh(acc);
     }
 
     float freshDiff = MaxAbsDiff(freshMu, manualMu);
     float staleVsFreshDiff = MaxAbsDiff(staleMu, freshMu);
 
-    printf("  step %d: fresh-vs-manual diff %g, stale-vs-fresh diff %g\n", t, freshDiff,
+    printf("  step %d: fresh-vs-manual diff %g, stale-vs-fresh diff %g\n",
+           t,
+           freshDiff,
            staleVsFreshDiff);
 
     // Invalidating must produce the mathematically correct mu ...

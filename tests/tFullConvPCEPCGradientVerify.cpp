@@ -71,12 +71,57 @@ int main()
   FullConvPCNetwork net(1);
   // input(2ch,4x4) -> hidden(4ch,4x4, same-padded) -> hidden(3ch,1x1,
   // kernel covers remaining extent) -> terminal(3ch,1x1).
-  net.AddLayer(2, 4, 4, 4, 3, 3, 1, 1, 1, 1, 3, 1.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(4, 3, 4, 4, 4, 4, 1, 1, 0, 0, 3, 1.0f, 0.1f, 0.0f, 0.0f, ActivationType::TANH,
-              ActivationType::dTANH);
-  net.AddLayer(3, 0, 1, 1, 1, 1, 1, 1, 0, 0, 3, 1.0f, 0.1f, 0.0f, 0.0f, ActivationType::LINEAR,
-              ActivationType::dLINEAR);
+  net.AddLayer(2,
+               4,
+               4,
+               4,
+               3,
+               3,
+               1,
+               1,
+               1,
+               1,
+               3,
+               1.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(4,
+               3,
+               4,
+               4,
+               4,
+               4,
+               1,
+               1,
+               0,
+               0,
+               3,
+               1.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::TANH,
+               ActivationType::dTANH);
+  net.AddLayer(3,
+               0,
+               1,
+               1,
+               1,
+               1,
+               1,
+               1,
+               0,
+               0,
+               3,
+               1.0f,
+               0.1f,
+               0.0f,
+               0.0f,
+               ActivationType::LINEAR,
+               ActivationType::dLINEAR);
   net.Compile();
   net.SetUseEPC(true);
   net.SetOptimizer(OptimizerType::SGD);

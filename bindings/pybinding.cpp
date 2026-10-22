@@ -12,9 +12,9 @@
 
 NB_MODULE(pydeepity, m)
 {
-    m.doc() = "Deepity: A high-performance Predictive Coding library.";
+  m.doc() = "Deepity: A high-performance Predictive Coding library.";
 
-    bind_layers(m);
-    bind_networks(m);
-    bind_utilities(m);
+  bind_layers(m);
+  bind_networks(m);
+  bind_utilities(m);
 }

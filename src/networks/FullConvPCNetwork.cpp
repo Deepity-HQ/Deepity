@@ -18,13 +18,32 @@ FullConvPCNetwork::FullConvPCNetwork(int batchSize, DeviceType device) noexcept
 void FullConvPCNetwork::AddLayer(int inChannels, int outChannels, int inHeight, int inWidth,
                                  int kernelH, int kernelW, int strideH, int strideW, int padH,
                                  int padW, int terminalSize, float lr, float ir, float fl,
-                                 float lmbda, ActivationType aType, ActivationType dType,
-                                 int poolH, int poolW, int poolStrideH, int poolStrideW)
+                                 float lmbda, ActivationType aType, ActivationType dType, int poolH,
+                                 int poolW, int poolStrideH, int poolStrideW)
 {
-  auto l = std::make_unique<FullConvPCLayer>(inChannels, outChannels, inHeight, inWidth, kernelH,
-                                             kernelW, strideH, strideW, padH, padW, terminalSize,
-                                             batchSize, lr, ir, fl, lmbda, aType, dType, poolH,
-                                             poolW, poolStrideH, poolStrideW, backend.get());
+  auto l = std::make_unique<FullConvPCLayer>(inChannels,
+                                             outChannels,
+                                             inHeight,
+                                             inWidth,
+                                             kernelH,
+                                             kernelW,
+                                             strideH,
+                                             strideW,
+                                             padH,
+                                             padW,
+                                             terminalSize,
+                                             batchSize,
+                                             lr,
+                                             ir,
+                                             fl,
+                                             lmbda,
+                                             aType,
+                                             dType,
+                                             poolH,
+                                             poolW,
+                                             poolStrideH,
+                                             poolStrideW,
+                                             backend.get());
 
   if (!layers.empty())
   {
@@ -493,7 +512,7 @@ void FullConvPCNetwork::Compile()
         a = 1.0f / N;
       else
         a = useResidualConnections ? std::pow(midFanIn * (float)L, -0.5f)
-                                    : std::pow(midFanIn, -0.5f);
+                                   : std::pow(midFanIn, -0.5f);
 
       layers[l - 1]->SetMuPCScale(a);
       layers[l - 1]->SetMuPCInit(true);
@@ -513,11 +532,11 @@ void FullConvPCNetwork::Compile()
         throw std::invalid_argument(
             "FullConvPCNetwork::Compile(): residual connections require matching "
             "channels/spatial dims, layer index " +
-            std::to_string(l - 1) + " has input shape [" +
-            std::to_string(layer->GetInChannels()) + "," + std::to_string(layer->GetInHeight()) +
-            "," + std::to_string(layer->GetInWidth()) + "] but output shape [" +
-            std::to_string(layer->GetOutChannels()) + "," + std::to_string(layer->GetOutHeight()) +
-            "," + std::to_string(layer->GetOutWidth()) + "].");
+            std::to_string(l - 1) + " has input shape [" + std::to_string(layer->GetInChannels()) +
+            "," + std::to_string(layer->GetInHeight()) + "," + std::to_string(layer->GetInWidth()) +
+            "] but output shape [" + std::to_string(layer->GetOutChannels()) + "," +
+            std::to_string(layer->GetOutHeight()) + "," + std::to_string(layer->GetOutWidth()) +
+            "].");
       }
       layer->SetResidual(true);
     }

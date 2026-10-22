@@ -11,4 +11,4 @@
 
 /// @brief Binds StreamAlignedBatcher and the free-standing utility
 /// functions/activations into `m`.
-void bind_utilities(nanobind::module_ &m);
+void bind_utilities(nanobind::module_& m);

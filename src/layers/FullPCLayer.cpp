@@ -1,9 +1,9 @@
 #include "deepity/layers/FullPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
+#include "deepity/utils/LayerBindHelpers.h"
 #include "deepity/utils/Optimize.h"
 #include "deepity/utils/RandomizeDistribution.h"
 #include <cstring>
-#include <type_traits>
 
 namespace Deep
 {
@@ -72,9 +72,12 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     b = arena.AllocateFloats(nextSize);
     mu = arena.AllocateFloats(out_state_size);
     cachedMu = arena.AllocateFloats(out_state_size);
+    preact = arena.AllocateFloats(out_state_size);
+    cachedPreact = arena.AllocateFloats(out_state_size);
+    derivScratch = arena.AllocateFloats(out_state_size);
+    feedbackError = arena.AllocateFloats(out_state_size);
     proj = arena.AllocateFloats(out_state_size);
     Psi = arena.AllocateFloats(direct_size);
-    zF = arena.AllocateFloats(own_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
     v = arena.AllocateFloats(own_state_size);
     backend->Zero(v, own_state_size);
@@ -85,59 +88,25 @@ template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
+    backend->Zero(preact, out_state_size);
+    backend->Zero(cachedPreact, out_state_size);
+    backend->Zero(derivScratch, out_state_size);
+    backend->Zero(feedbackError, out_state_size);
     backend->Zero(proj, out_state_size);
     backend->Zero(Psi, direct_size);
-    backend->Zero(zF, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
     backend->Zero(biasGradScratch, nextSize);
 
     // Always allocated, see GetRequiredFloats().
-    grad_W = arena.AllocateFloats(w_size);
-    m_W = arena.AllocateFloats(w_size);
-    v_W = arena.AllocateFloats(w_size);
+    BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);
+    BindAdamState(arena, backend.get(), nextSize, grad_b, m_b, v_b);
+    BindLearningRateState(arena, backend.get(), t_device, lr_device, lr);
 
-    grad_b = arena.AllocateFloats(nextSize);
-    m_b = arena.AllocateFloats(nextSize);
-    v_b = arena.AllocateFloats(nextSize);
-
-    backend->Zero(m_W, w_size);
-    backend->Zero(v_W, w_size);
-    backend->Zero(m_b, nextSize);
-    backend->Zero(v_b, nextSize);
-    backend->Zero(grad_W, w_size);
-    backend->Zero(grad_b, nextSize);
-
-    t_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    lr_device = arena.AllocateFloats(1);
-    int zero = 0;
-    backend->CopyFromHost(reinterpret_cast<float*>(t_device), reinterpret_cast<float*>(&zero), 1);
-    backend->CopyFromHost(lr_device, &lr, 1);
-
-    grad_Psi = arena.AllocateFloats(direct_size);
-    m_Psi = arena.AllocateFloats(direct_size);
-    v_Psi = arena.AllocateFloats(direct_size);
-
-    backend->Zero(m_Psi, direct_size);
-    backend->Zero(v_Psi, direct_size);
-    backend->Zero(grad_Psi, direct_size);
-
-    tPsi_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    fl_device = arena.AllocateFloats(1);
-    int zeroPsi = 0;
-    backend->CopyFromHost(
-        reinterpret_cast<float*>(tPsi_device), reinterpret_cast<float*>(&zeroPsi), 1);
-    backend->CopyFromHost(fl_device, &fl, 1);
+    BindAdamState(arena, backend.get(), direct_size, grad_Psi, m_Psi, v_Psi);
+    BindLearningRateState(arena, backend.get(), tPsi_device, fl_device, fl);
   }
 
-  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
-  {
-    if (localArena && localArena.get() != &arena)
-      localArena.reset();
-  }
-  else
-  {
-    localArena.reset();
-  }
+  ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
 size_t FullPCLayer::GetRequiredFloats() const noexcept
@@ -158,13 +127,15 @@ size_t FullPCLayer::GetRequiredFloats() const noexcept
 
     total += pad16(w_size);
     total += pad16(nextSize);
-    total += pad16(out_state_size) * 3;
-    total += pad16(own_state_size) * 2; // zF, feedbackScratch
+    total += pad16(out_state_size) * 3; // mu, cachedMu, proj
+    total += pad16(out_state_size) * 4; // preact, cachedPreact, derivScratch, feedbackError
+    total += pad16(own_state_size);     // feedbackScratch
     total += pad16(own_state_size) * 2; // v, adjoint
     total += pad16(direct_size);
     total += pad16(nextSize);
 
-    // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays safe.
+    // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
+    // safe.
     total += pad16(w_size) * 3;
     total += pad16(nextSize) * 3;
     total += pad16(1) * 2;
@@ -253,54 +224,46 @@ void FullPCLayer::ComputeMuOnly() noexcept
   if (isClamped && muCacheValid)
   {
     backend->Copy(mu, cachedMu, Nout);
+    backend->Copy(preact, cachedPreact, Nout);
     return;
   }
 
-  backend->ActivationInto(activationType, zF, z, N);
+  backend->MatMul(
+      /*transA=*/false,
+      /*transB=*/true,
+      (int)batchSize,
+      (int)nextSize,
+      (int)size,
+      a,
+      z,
+      (int)size,
+      W,
+      (int)size,
+      0.0f,
+      mu,
+      (int)nextSize);
 
-  // The fused CUTLASS path has no alpha/residual parameter at
-  // all (written for a=1.0, useResidual=false implicitly).
-  // Calling it while either feature is active would silently
-  // ignore them, not error, guard explicitly.
-  bool fused = false;
-  if (a == 1.0f && !useResidual)
-  {
-    fused = backend->TryFusedForwardPass(
-        ActivationType::LINEAR, zF, W, b, mu, (int)batchSize, (int)size, (int)nextSize);
-  }
+  backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
-  if (!fused)
-  {
-    backend->MatMul(
-        /*transA=*/false,
-        /*transB=*/true,
-        (int)batchSize,
-        (int)nextSize,
-        (int)size,
-        a,
-        zF,
-        (int)size,
-        W,
-        (int)size,
-        0.0f,
-        mu,
-        (int)nextSize);
+  // Snapshotted BEFORE Activation() overwrites mu in place, same
+  // reasoning as SimplePCLayer/SimpleConvPCLayer's own preact. The
+  // residual add below happens AFTER activation, so it's deliberately
+  // NOT part of this snapshot.
+  backend->Copy(preact, mu, Nout);
+  backend->Activation(activationType, mu, Nout);
 
-    backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
-
-    // Residual (forward): mu += z (raw, un-activated, the
-    // skip bypasses the nonlinearity entirely, matching muPC's
-    // "1-skip" formulation). Requires size == nextSize; not
-    // checked here (checked once at network Compile() time
-    // when SetResidual() is called with full shape info
-    // available).
-    if (useResidual)
-      backend->AxpyInto(mu, z, Nout, 1.0f);
-  }
+  // Residual (forward): mu += z (raw, un-activated, the skip bypasses
+  // the nonlinearity entirely, matching muPC's "1-skip" formulation).
+  // Requires size == nextSize; not checked here (checked once at
+  // network Compile() time when SetResidual() is called with full
+  // shape info available).
+  if (useResidual)
+    backend->AxpyInto(mu, z, Nout, 1.0f);
 
   if (isClamped)
   {
     backend->Copy(cachedMu, mu, Nout);
+    backend->Copy(cachedPreact, preact, Nout);
     muCacheValid = true;
   }
 }
@@ -327,6 +290,17 @@ void FullPCLayer::UpdateState() noexcept
     }
     else
     {
+      size_t Nout = (size_t)batchSize * nextSize;
+
+      // The derivative applies at the source (mu=phi(a*W@z+b)'s own
+      // nonlinearity), to e_above, before projecting it through W --
+      // not after, and not via f'(z). Computed into derivScratch,
+      // never into mu itself -- see derivScratch's own doc comment
+      // for why.
+      ActivationType dType = ToDerivativeType(activationType);
+      backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
+      backend->MultiplyInto(feedbackError, e_above, derivScratch, Nout);
+
       backend->MatMul(
           /*transA=*/false,
           /*transB=*/false,
@@ -334,7 +308,7 @@ void FullPCLayer::UpdateState() noexcept
           (int)size,
           (int)nextSize,
           a,
-          e_above,
+          feedbackError,
           (int)nextSize,
           W,
           (int)size,
@@ -342,11 +316,22 @@ void FullPCLayer::UpdateState() noexcept
           feedbackScratch,
           (int)size);
 
-      ActivationType dType = ToDerivativeType(activationType);
       if (useMomentum)
-        backend->FusedStateUpdateMomentum(z, v, feedbackScratch, dType, e, N, ir, momentumBeta);
+      {
+        // v = beta*v + (1-beta)*(feedbackScratch - e); z += ir*v.
+        // Same formula FusedStateUpdateMomentum() documents, just
+        // without ITS inline f'(z)-at-destination multiply, already
+        // folded into feedbackScratch above instead.
+        backend->AxpyInto(feedbackScratch, e, N, -1.0f);
+        backend->Scale(v, N, momentumBeta);
+        backend->AxpyInto(v, feedbackScratch, N, 1.0f - momentumBeta);
+        backend->AxpyInto(z, v, N, ir);
+      }
       else
-        backend->FusedStateUpdate(z, feedbackScratch, dType, e, N, ir);
+      {
+        backend->AxpyInto(feedbackScratch, e, N, -1.0f);
+        backend->AxpyInto(z, feedbackScratch, N, ir);
+      }
 
       if (useResidual)
         backend->AxpyInto(z, e_above, N, ir);
@@ -363,7 +348,16 @@ void FullPCLayer::UpdateWeights() noexcept
   if (layerAbove == nullptr || nextSize == 0)
     return;
 
-  const float* local_grad = layerAbove->GetErrors();
+  size_t Nout = (size_t)batchSize * nextSize;
+  const float* e_above = layerAbove->GetErrors();
+
+  // Recomputed fresh from preact, not read back from a previous
+  // UpdateState() call -- see UpdateState()'s own comment on why mu
+  // itself must never hold this.
+  ActivationType dType = ToDerivativeType(activationType);
+  backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
+  backend->MultiplyInto(feedbackError, e_above, derivScratch, Nout);
+  const float* local_grad = feedbackError;
 
   switch (opt)
   {
@@ -372,8 +366,9 @@ void FullPCLayer::UpdateWeights() noexcept
     if (lmbda > 0.0f)
       backend->Scale(W, (size_t)nextSize * size, 1.0f - lmbda);
 
-    // d(mu)/dW = a * zF, so the weight-gradient GEMM's scale
-    // factor picks up an extra *a (was just lr/batchSize).
+    // d(mu)/dW = a * f'(preact) * z, so the weight-gradient GEMM's
+    // scale factor picks up an extra *a (was just lr/batchSize); the
+    // f'(preact) factor is already folded into local_grad above.
     backend->MatMul(
         /*transA=*/true,
         /*transB=*/false,
@@ -383,7 +378,7 @@ void FullPCLayer::UpdateWeights() noexcept
         a * lr / batchSize,
         local_grad,
         (int)nextSize,
-        zF,
+        z,
         (int)size,
         1.0f,
         W,
@@ -412,7 +407,7 @@ void FullPCLayer::UpdateWeights() noexcept
         adam_scale,
         local_grad,
         (int)nextSize,
-        zF,
+        z,
         (int)size,
         0.0f,
         grad_W,
@@ -505,6 +500,18 @@ void FullPCLayer::DirectFeedbackUpdate() noexcept
       proj,
       (int)nextSize);
 
+  // The derivative applies at the source (mu's own nonlinearity),
+  // same convention as UpdateWeights()'s real gradient -- keeps this
+  // DFA approximation structurally consistent with it, even though
+  // Psi/proj are never exact (see tDirectKPVerify.cpp's file header,
+  // same reasoning here).
+  {
+    size_t Nout = (size_t)batchSize * nextSize;
+    ActivationType dType = ToDerivativeType(activationType);
+    backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
+    backend->MultiplyInto(proj, proj, derivScratch, Nout);
+  }
+
   backend->MatMul(
       /*transA=*/true,
       /*transB=*/false,
@@ -514,7 +521,7 @@ void FullPCLayer::DirectFeedbackUpdate() noexcept
       fl / batchSize,
       proj,
       (int)nextSize,
-      zF,
+      z,
       (int)size,
       1.0f,
       W,
@@ -537,11 +544,19 @@ void FullPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAboveSc
     return;
 
   const size_t N = batchSize * size;
+  const size_t Nout = batchSize * nextSize;
 
-  // Same feedback GEMM shape UpdateState() already uses, but the result
-  // is materialized into `adjoint` (not applied inline) so the layer
-  // below can read it as ITS incoming signal -- the "global via AD"
-  // chain, one hop at a time, rather than a one-hop local message.
+  // The derivative applies at the source (mu=phi(a*W@z+b)'s own
+  // nonlinearity), to adjointAbove, before projecting it through W --
+  // not after, and not via f'(z). Same feedback-signal shape
+  // UpdateState() already uses, but the result is materialized into
+  // `adjoint` (not applied inline) so the layer below can read it as
+  // ITS incoming signal -- the "global via AD" chain, one hop at a
+  // time, rather than a one-hop local message.
+  ActivationType dType = ToDerivativeType(activationType);
+  backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
+  backend->MultiplyInto(feedbackError, adjointAbove, derivScratch, Nout);
+
   backend->MatMul(
       /*transA=*/false,
       /*transB=*/false,
@@ -549,17 +564,13 @@ void FullPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAboveSc
       (int)size,
       (int)nextSize,
       a * adjointAboveScale,
-      adjointAbove,
+      feedbackError,
       (int)nextSize,
       W,
       (int)size,
       0.0f,
-      feedbackScratch,
+      adjoint,
       (int)size);
-
-  ActivationType dType = ToDerivativeType(activationType);
-  backend->ActivationDerivativeInto(dType, adjoint, z, N);
-  backend->MultiplyInto(adjoint, feedbackScratch, adjoint, N);
 
   // Residual (forward): mu += z, UN-activated, bypassing phi' entirely,
   // see ComputeMuOnly()'s own comment. Its Jacobian contributes an extra

@@ -46,6 +46,7 @@ void FusedStateUpdateDispatch(float* z, const float* feedback, ActivationType dT
 
 /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
 /// @note Same dType restriction as FusedStateUpdateDispatch() above.
-void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback, ActivationType dType,
-                                      const float* e, size_t n, float ir, float beta) noexcept;
+void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback,
+                                      ActivationType dType, const float* e, size_t n, float ir,
+                                      float beta) noexcept;
 } // namespace Deep

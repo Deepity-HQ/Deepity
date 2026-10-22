@@ -38,8 +38,14 @@ public:
                 ActivationType dType, int poolH = 1, int poolW = 1, int poolStrideH = 1,
                 int poolStrideW = 1);
 
-  void SetUseMuPCScaling(bool enabled) noexcept { useMuPCScaling = enabled; }
-  void SetUseResidualConnections(bool enabled) noexcept { useResidualConnections = enabled; }
+  void SetUseMuPCScaling(bool enabled) noexcept
+  {
+    useMuPCScaling = enabled;
+  }
+  void SetUseResidualConnections(bool enabled) noexcept
+  {
+    useResidualConnections = enabled;
+  }
 
   /// @param distribution Forwarded to every layer's RandomizeWeights();
   /// see FullConvPCLayer::RandomizeWeights()'s own doc comment.
@@ -94,14 +100,26 @@ public:
       layer->SetPCXInit(enabled);
   }
 
-  FullConvPCLayer* GetTerminalLayer() noexcept { return layers.back().get(); }
-  std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept { return layers; }
+  FullConvPCLayer* GetTerminalLayer() noexcept
+  {
+    return layers.back().get();
+  }
+  std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() noexcept
+  {
+    return layers;
+  }
   const std::vector<std::unique_ptr<FullConvPCLayer>>& GetLayers() const noexcept
   {
     return layers;
   }
-  int GetBatchSize() const noexcept { return batchSize; }
-  DeviceType GetDevice() const noexcept { return device; }
+  int GetBatchSize() const noexcept
+  {
+    return batchSize;
+  }
+  DeviceType GetDevice() const noexcept
+  {
+    return device;
+  }
 
   /// @brief Saves every layer's weights and Adam moments (see
   /// FullConvPCLayer::GetStateDict()) to `filepath`, as a single
@@ -120,8 +138,8 @@ public:
   /// on GPU -- a real cost even though the computation itself is cheap)
   /// and returns the last value that WAS computed instead, for callers
   /// that only log/check energy every few steps.
-  float TrainStep(const std::vector<float>& x, const std::vector<float>& y,
-                  int inferenceSteps = 1, bool computeEnergy = true);
+  float TrainStep(const std::vector<float>& x, const std::vector<float>& y, int inferenceSteps = 1,
+                  bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
 
   /// @brief Each layer's FullConvPCLayer::GetDiagnosticStats(), flat and
@@ -133,13 +151,19 @@ public:
   void Compile();
 
   /// @see Salvatori et al., "Incremental Predictive Coding", https://arxiv.org/abs/2212.00720
-  void SetUseIPC(bool enabled) noexcept { useIPC = enabled; }
+  void SetUseIPC(bool enabled) noexcept
+  {
+    useIPC = enabled;
+  }
   void SetUseMomentum(bool enabled, float beta = 0.9f) noexcept
   {
     for (auto& layer : layers)
       layer->SetMomentum(enabled, beta);
   }
-  void SetUseCrossEntropy(bool enabled) noexcept { GetTerminalLayer()->SetCrossEntropy(enabled); }
+  void SetUseCrossEntropy(bool enabled) noexcept
+  {
+    GetTerminalLayer()->SetCrossEntropy(enabled);
+  }
   /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
   /// Digital Simulation", https://arxiv.org/abs/2505.20137
   void SetUseEPC(bool enabled) noexcept

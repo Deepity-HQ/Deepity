@@ -1,0 +1,33 @@
+Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...
+
+Building network (784->512->512->10), seed=7...
+
+Training with FORWARD-PROJECTION init: 15 epochs, 30 steps, lr=0.00373, decay_rate=0.94...
+
+Reference: ngc-learn's own pc_discrim exhibit (same 784-512-512-10 architecture, classic settling, T=20, mb_size=250, 100 epochs), run unmodified on this same machine -- see logs/ngclearn_pc_discrim_mnist.txt: best dev acc = 98%, 1707.7s total (17.0s/epoch).
+
+Epoch 1/15 | Time: 1.1s | Acc: 88.36% | Avg energy: 668.1758
+Epoch 2/15 | Time: 1.9s | Acc: 92.68% | Avg energy: 38.2706
+Epoch 3/15 | Time: 2.7s | Acc: 94.64% | Avg energy: 32.4146
+Epoch 4/15 | Time: 3.5s | Acc: 94.60% | Avg energy: 29.5150
+Epoch 5/15 | Time: 4.4s | Acc: 95.68% | Avg energy: 28.5225
+Epoch 6/15 | Time: 5.2s | Acc: 96.36% | Avg energy: 24.4576
+Epoch 7/15 | Time: 6.0s | Acc: 96.68% | Avg energy: 25.1617
+Epoch 8/15 | Time: 6.8s | Acc: 96.68% | Avg energy: 23.6869
+Epoch 9/15 | Time: 7.6s | Acc: 97.20% | Avg energy: 21.2502
+Epoch 10/15 | Time: 8.4s | Acc: 97.80% | Avg energy: 22.2505
+Epoch 11/15 | Time: 9.2s | Acc: 98.00% | Avg energy: 21.5565
+Epoch 12/15 | Time: 10.0s | Acc: 97.32% | Avg energy: 20.9790
+Epoch 13/15 | Time: 10.8s | Acc: 97.68% | Avg energy: 19.2894
+Epoch 14/15 | Time: 11.6s | Acc: 97.68% | Avg energy: 18.9608
+Epoch 15/15 | Time: 12.4s | Acc: 98.24% | Avg energy: 17.8965
+
+Training complete in 12.4s.
+
+Running final test evaluation (with forward-projection init)...
+
+=== Result ===
+Deepity Peak Test Accuracy: 97.02%   (ngc-learn: 95.09%)
+Train time: 12.4s
+
+Deepity per-epoch: [np.float64(88.36), np.float64(92.68), np.float64(94.64), np.float64(94.6), np.float64(95.68), np.float64(96.36), np.float64(96.68), np.float64(96.68), np.float64(97.2), np.float64(97.8), np.float64(98.0), np.float64(97.32), np.float64(97.68), np.float64(97.68), np.float64(98.24)]

@@ -134,7 +134,7 @@ int main()
 {
   const float eps = 3e-3f;
   const float tolerance = 1e-2f; // FD error is O(eps^2), same as every
-                                  // sibling gradient-check test
+                                 // sibling gradient-check test
 
   FullPCNetwork net(1);
   BuildNet(net);
@@ -158,8 +158,8 @@ int main()
     net.EPCStep();
 
   auto& layers = net.GetLayers();
-  size_t topHidden = layers.size() - 2;    // firstHop=-1 case
-  size_t bottomHidden = 1;                 // fully chained case
+  size_t topHidden = layers.size() - 2; // firstHop=-1 case
+  size_t bottomHidden = 1;              // fully chained case
 
   bool passTop = CheckLayer(net, topHidden, "topmost hidden (firstHop)", eps, tolerance);
   printf("\n");

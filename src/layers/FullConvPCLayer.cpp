@@ -1,9 +1,9 @@
 #include "deepity/layers/FullConvPCLayer.h"
 #include "deepity/backend/CPUBackend.h"
+#include "deepity/utils/LayerBindHelpers.h"
 #include "deepity/utils/Optimize.h"
 #include "deepity/utils/RandomizeDistribution.h"
 #include <cmath>
-#include <type_traits>
 
 namespace Deep
 {
@@ -48,10 +48,10 @@ FullConvPCLayer::FullConvPCLayer(int inChannels, int outChannels, int inHeight, 
 {
   outHeight = (outChannels > 0) ? ConvOutDim(inHeight, kernelH, strideH, padH) : 0;
   outWidth = (outChannels > 0) ? ConvOutDim(inWidth, kernelW, strideW, padW) : 0;
-  poolOutHeight = (outChannels > 0 && HasPooling()) ? PoolOutDim(outHeight, poolH, poolStrideH)
-                                                    : outHeight;
-  poolOutWidth = (outChannels > 0 && HasPooling()) ? PoolOutDim(outWidth, poolW, poolStrideW)
-                                                   : outWidth;
+  poolOutHeight =
+      (outChannels > 0 && HasPooling()) ? PoolOutDim(outHeight, poolH, poolStrideH) : outHeight;
+  poolOutWidth =
+      (outChannels > 0 && HasPooling()) ? PoolOutDim(outWidth, poolW, poolStrideW) : outWidth;
   DynamicThread(batchSize);
 
   localArena = std::make_unique<MemoryArena>(GetRequiredFloats());
@@ -83,8 +83,8 @@ size_t FullConvPCLayer::GetRequiredFloats() const noexcept
   size_t ownSize = (size_t)inChannels * inHeight * inWidth;
   size_t ownStateSize = (size_t)batchSize * ownSize;
 
-  total += pad16(ownStateSize) * 3; // z, e, dz_dt
-  total += pad16((size_t)batchSize);  // rowEnergies
+  total += pad16(ownStateSize) * 3;  // z, e, dz_dt
+  total += pad16((size_t)batchSize); // rowEnergies
 
   if (outChannels > 0)
   {
@@ -98,24 +98,24 @@ size_t FullConvPCLayer::GetRequiredFloats() const noexcept
     size_t Psisize = (size_t)outChannels * terminalSize;
 
     total += pad16(Wsize);
-    total += pad16((size_t)outChannels); // b
-    total += pad16(outStateSize) * 4;    // mu, cachedMu, preact, cachedPreact
+    total += pad16((size_t)outChannels);             // b
+    total += pad16(outStateSize) * 4;                // mu, cachedMu, preact, cachedPreact
     total += pad16((size_t)batchSize * colSize) * 2; // colBuffer, feedbackScratch
-    total += pad16(outStateSize);        // bottom_up_cols
-    total += pad16((size_t)batchSize * colSize); // colsRepacked
-    total += pad16(outStateSize);        // lgRepacked
-    total += pad16(M);                   // onesVector
-    total += pad16(ownStateSize);        // v (momentum)
-    total += pad16(ownStateSize);        // adjoint
+    total += pad16(outStateSize);                    // bottom_up_cols
+    total += pad16((size_t)batchSize * colSize);     // colsRepacked
+    total += pad16(outStateSize);                    // lgRepacked
+    total += pad16(M);                               // onesVector
+    total += pad16(ownStateSize);                    // v (momentum)
+    total += pad16(ownStateSize);                    // adjoint
 
     total += pad16(Wsize) * 3;               // grad_W, m_W, v_W
     total += pad16((size_t)outChannels) * 3; // grad_b, m_b, v_b
     total += pad16(1) * 2;                   // t_device, lr_device
 
-    total += pad16(Psisize) * 4;             // Psi, grad_Psi, m_Psi, v_Psi
+    total += pad16(Psisize) * 4;                     // Psi, grad_Psi, m_Psi, v_Psi
     total += pad16((size_t)batchSize * outChannels); // projChannel
-    total += pad16(outStateSize);            // proj
-    total += pad16(1) * 2;                   // tPsi_device, fl_device
+    total += pad16(outStateSize);                    // proj
+    total += pad16(1) * 2;                           // tPsi_device, fl_device
 
     if (HasPooling())
     {
@@ -182,46 +182,20 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     backend->Zero(v, ownStateSize);
     backend->Zero(adjoint, ownStateSize);
 
-    grad_W = arena.AllocateFloats(Wsize);
-    m_W = arena.AllocateFloats(Wsize);
-    v_W = arena.AllocateFloats(Wsize);
-    grad_b = arena.AllocateFloats(outChannels);
-    m_b = arena.AllocateFloats(outChannels);
-    v_b = arena.AllocateFloats(outChannels);
-
-    backend->Zero(grad_W, Wsize);
-    backend->Zero(m_W, Wsize);
-    backend->Zero(v_W, Wsize);
-    backend->Zero(grad_b, outChannels);
-    backend->Zero(m_b, outChannels);
-    backend->Zero(v_b, outChannels);
-
-    t_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    lr_device = arena.AllocateFloats(1);
-    int zero = 0;
-    backend->CopyFromHost(reinterpret_cast<float*>(t_device), reinterpret_cast<float*>(&zero), 1);
-    backend->CopyFromHost(lr_device, &lr, 1);
+    BindAdamState(arena, backend.get(), Wsize, grad_W, m_W, v_W);
+    BindAdamState(arena, backend.get(), outChannels, grad_b, m_b, v_b);
+    BindLearningRateState(arena, backend.get(), t_device, lr_device, lr);
 
     Psi = arena.AllocateFloats(Psisize);
-    grad_Psi = arena.AllocateFloats(Psisize);
-    m_Psi = arena.AllocateFloats(Psisize);
-    v_Psi = arena.AllocateFloats(Psisize);
     projChannel = arena.AllocateFloats((size_t)batchSize * outChannels);
     proj = arena.AllocateFloats(outStateSize);
 
     backend->Zero(Psi, Psisize);
-    backend->Zero(grad_Psi, Psisize);
-    backend->Zero(m_Psi, Psisize);
-    backend->Zero(v_Psi, Psisize);
     backend->Zero(projChannel, (size_t)batchSize * outChannels);
     backend->Zero(proj, outStateSize);
 
-    tPsi_device = reinterpret_cast<int*>(arena.AllocateFloats(1));
-    fl_device = arena.AllocateFloats(1);
-    int zeroPsi = 0;
-    backend->CopyFromHost(
-        reinterpret_cast<float*>(tPsi_device), reinterpret_cast<float*>(&zeroPsi), 1);
-    backend->CopyFromHost(fl_device, &fl, 1);
+    BindAdamState(arena, backend.get(), Psisize, grad_Psi, m_Psi, v_Psi);
+    BindLearningRateState(arena, backend.get(), tPsi_device, fl_device, fl);
 
     if (HasPooling())
     {
@@ -236,18 +210,11 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     }
   }
 
-  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
-  {
-    if (localArena && localArena.get() != &arena)
-      localArena.reset();
-  }
-  else
-  {
-    localArena.reset();
-  }
+  ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
-void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator, const char* distribution) noexcept
+void FullConvPCLayer::RandomizeWeights(std::mt19937& seedGenerator,
+                                       const char* distribution) noexcept
 {
   if (outChannels == 0)
     return;
@@ -328,8 +295,17 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
     backend->Copy(mu, cachedMu, Nout);
     backend->Copy(preact, cachedPreact, Nout);
     if (HasPooling())
-      backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
-                                poolStrideH, poolStrideW, pooledMu, poolArgmax);
+      backend->MaxPool2DForward(mu,
+                                batchSize,
+                                outChannels,
+                                outHeight,
+                                outWidth,
+                                poolH,
+                                poolW,
+                                poolStrideH,
+                                poolStrideW,
+                                pooledMu,
+                                poolArgmax);
     return;
   }
 
@@ -348,11 +324,34 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   // they are in UpdateWeights(). NOTE: the fused path does not populate
   // colBuffer -- UpdateWeights()'s own fused attempt reads z directly
   // instead, see its own comment.
-  if (!backend->TryFusedConvForward(z, W, mu, a, batchSize, inChannels, inHeight, inWidth,
-                                    outChannels, kernelH, kernelW, strideH, strideW, padH, padW))
+  if (!backend->TryFusedConvForward(z,
+                                    W,
+                                    mu,
+                                    a,
+                                    batchSize,
+                                    inChannels,
+                                    inHeight,
+                                    inWidth,
+                                    outChannels,
+                                    kernelH,
+                                    kernelW,
+                                    strideH,
+                                    strideW,
+                                    padH,
+                                    padW))
   {
-    backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                    strideW, padH, padW, colBuffer);
+    backend->Im2Col(z,
+                    batchSize,
+                    inChannels,
+                    inHeight,
+                    inWidth,
+                    kernelH,
+                    kernelW,
+                    strideH,
+                    strideW,
+                    padH,
+                    padW,
+                    colBuffer);
 
     backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
     backend->MatMul(
@@ -399,8 +398,17 @@ void FullConvPCLayer::ComputeMuOnly() noexcept
   }
 
   if (HasPooling())
-    backend->MaxPool2DForward(mu, batchSize, outChannels, outHeight, outWidth, poolH, poolW,
-                              poolStrideH, poolStrideW, pooledMu, poolArgmax);
+    backend->MaxPool2DForward(mu,
+                              batchSize,
+                              outChannels,
+                              outHeight,
+                              outWidth,
+                              poolH,
+                              poolW,
+                              poolStrideH,
+                              poolStrideW,
+                              pooledMu,
+                              poolArgmax);
 }
 
 const float* FullConvPCLayer::UnpoolError(const float* pooledError) noexcept
@@ -411,8 +419,15 @@ const float* FullConvPCLayer::UnpoolError(const float* pooledError) noexcept
   size_t outStateSize = (size_t)batchSize * outChannels * outHeight * outWidth;
 
   backend->Zero(unpoolScratch, outStateSize);
-  backend->MaxPool2DBackward(pooledError, poolArgmax, batchSize, outChannels, outHeight, outWidth,
-                             poolOutHeight, poolOutWidth, unpoolScratch);
+  backend->MaxPool2DBackward(pooledError,
+                             poolArgmax,
+                             batchSize,
+                             outChannels,
+                             outHeight,
+                             outWidth,
+                             poolOutHeight,
+                             poolOutWidth,
+                             unpoolScratch);
   return unpoolScratch;
 }
 
@@ -472,9 +487,21 @@ void FullConvPCLayer::UpdateState() noexcept
     // mirrored rather than re-derived -- see TryFusedConvForward()'s own
     // call site for why this project's `a` convention isn't this
     // substitution's business to second-guess.
-    if (!backend->TryFusedConvBackwardData(bottom_up_cols, W, dz_dt, a, batchSize, inChannels,
-                                           inHeight, inWidth, outChannels, kernelH, kernelW,
-                                           strideH, strideW, padH, padW))
+    if (!backend->TryFusedConvBackwardData(bottom_up_cols,
+                                           W,
+                                           dz_dt,
+                                           a,
+                                           batchSize,
+                                           inChannels,
+                                           inHeight,
+                                           inWidth,
+                                           outChannels,
+                                           kernelH,
+                                           kernelW,
+                                           strideH,
+                                           strideW,
+                                           padH,
+                                           padW))
     {
       // Same batched-GEMM trick as ComputeMuOnly(): one big transA GEMM
       // instead of batchSize small ones, un-repacking the result back to
@@ -496,8 +523,18 @@ void FullConvPCLayer::UpdateState() noexcept
           (int)(batchSize * colCols));
       backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
-      backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
-                      strideH, strideW, padH, padW, dz_dt);
+      backend->Col2Im(feedbackScratch,
+                      batchSize,
+                      inChannels,
+                      inHeight,
+                      inWidth,
+                      kernelH,
+                      kernelW,
+                      strideH,
+                      strideW,
+                      padH,
+                      padW,
+                      dz_dt);
     }
   }
 
@@ -573,12 +610,35 @@ void FullConvPCLayer::UpdateWeights() noexcept
     // into W (beta=1.0) in one cuDNN call, straight from z -- no im2col
     // needed at all on this path. Falls back to the original
     // Im2Col()+RepackForBatchedGemm()+MatMul() composition otherwise.
-    if (!backend->TryFusedConvBackwardFilter(z, bottom_up_cols, W, lr_batch, 1.0f, batchSize,
-                                             inChannels, inHeight, inWidth, outChannels, kernelH,
-                                             kernelW, strideH, strideW, padH, padW))
+    if (!backend->TryFusedConvBackwardFilter(z,
+                                             bottom_up_cols,
+                                             W,
+                                             lr_batch,
+                                             1.0f,
+                                             batchSize,
+                                             inChannels,
+                                             inHeight,
+                                             inWidth,
+                                             outChannels,
+                                             kernelH,
+                                             kernelW,
+                                             strideH,
+                                             strideW,
+                                             padH,
+                                             padW))
     {
-      backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                      strideW, padH, padW, colBuffer);
+      backend->Im2Col(z,
+                      batchSize,
+                      inChannels,
+                      inHeight,
+                      inWidth,
+                      kernelH,
+                      kernelW,
+                      strideH,
+                      strideW,
+                      padH,
+                      padW,
+                      colBuffer);
       backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
       backend->MatMul(
           /*transA=*/false,
@@ -617,17 +677,40 @@ void FullConvPCLayer::UpdateWeights() noexcept
   {
     backend->IncrementCounter(t_device);
 
-    float grad_scale = -1.0f / batchSize;  // same reasoning as lr_batch's own comment above
+    float grad_scale = -1.0f / batchSize; // same reasoning as lr_batch's own comment above
 
     // Same fused-first, im2col-fallback pattern as the SGD branch above,
     // writing a fresh gradient (beta=0.0) into grad_W instead of
     // accumulating into W directly.
-    if (!backend->TryFusedConvBackwardFilter(z, bottom_up_cols, grad_W, grad_scale, 0.0f, batchSize,
-                                             inChannels, inHeight, inWidth, outChannels, kernelH,
-                                             kernelW, strideH, strideW, padH, padW))
+    if (!backend->TryFusedConvBackwardFilter(z,
+                                             bottom_up_cols,
+                                             grad_W,
+                                             grad_scale,
+                                             0.0f,
+                                             batchSize,
+                                             inChannels,
+                                             inHeight,
+                                             inWidth,
+                                             outChannels,
+                                             kernelH,
+                                             kernelW,
+                                             strideH,
+                                             strideW,
+                                             padH,
+                                             padW))
     {
-      backend->Im2Col(z, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW, strideH,
-                      strideW, padH, padW, colBuffer);
+      backend->Im2Col(z,
+                      batchSize,
+                      inChannels,
+                      inHeight,
+                      inWidth,
+                      kernelH,
+                      kernelW,
+                      strideH,
+                      strideW,
+                      padH,
+                      padW,
+                      colBuffer);
       backend->RepackForBatchedGemm(colsRepacked, colBuffer, batchSize, colRows, colCols);
       backend->MatMul(
           /*transA=*/false,
@@ -661,14 +744,13 @@ void FullConvPCLayer::UpdateWeights() noexcept
         1);
 
     if (opt == OptimizerType::ADAMW)
-      backend->AdamWStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda, 0.9f, 0.999f,
-                        adamEpsilon);
+      backend->AdamWStep(
+          W, grad_W, m_W, v_W, Wsize, t_device, lr_device, lmbda, 0.9f, 0.999f, adamEpsilon);
     else
-      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, 0.9f, 0.999f,
-                        adamEpsilon);
+      backend->AdamStep(W, grad_W, m_W, v_W, Wsize, t_device, lr_device, 0.9f, 0.999f, adamEpsilon);
 
-    backend->AdamStep(b, grad_b, m_b, v_b, outChannels, t_device, lr_device, 0.9f, 0.999f,
-                      adamEpsilon);
+    backend->AdamStep(
+        b, grad_b, m_b, v_b, outChannels, t_device, lr_device, 0.9f, 0.999f, adamEpsilon);
     break;
   }
   }
@@ -678,8 +760,17 @@ void FullConvPCLayer::PrepareConvWorkspace() noexcept
 {
   if (outChannels == 0)
     return;
-  backend->PrepareConvWorkspace(batchSize, inChannels, inHeight, inWidth, outChannels, kernelH,
-                                kernelW, strideH, strideW, padH, padW);
+  backend->PrepareConvWorkspace(batchSize,
+                                inChannels,
+                                inHeight,
+                                inWidth,
+                                outChannels,
+                                kernelH,
+                                kernelW,
+                                strideH,
+                                strideW,
+                                padH,
+                                padW);
 }
 
 void FullConvPCLayer::DirectFeedbackUpdate() noexcept
@@ -804,8 +895,18 @@ void FullConvPCLayer::ComputeAdjoint(const float* adjointAbove, float adjointAbo
   backend->RepackForBatchedGemm(feedbackScratch, colsRepacked, colRows, batchSize, colCols);
 
   backend->Zero(adjoint, (size_t)batchSize * ownSize);
-  backend->Col2Im(feedbackScratch, batchSize, inChannels, inHeight, inWidth, kernelH, kernelW,
-                  strideH, strideW, padH, padW, adjoint);
+  backend->Col2Im(feedbackScratch,
+                  batchSize,
+                  inChannels,
+                  inHeight,
+                  inWidth,
+                  kernelH,
+                  kernelW,
+                  strideH,
+                  strideW,
+                  padH,
+                  padW,
+                  adjoint);
 }
 
 void FullConvPCLayer::EnsureMuHoldsDerivative() noexcept
@@ -922,16 +1023,15 @@ std::map<std::string, TensorDescriptor> FullConvPCLayer::GetStateDict() const
     return {};
   EnsureStateDictStaging();
   size_t colRows = (size_t)inChannels * kernelH * kernelW;
-  return {
-      {"W", {hostW.data(), {(size_t)outChannels, colRows}}},
-      {"b", {hostB.data(), {(size_t)outChannels}}},
-      {"Psi", {hostPsi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
-      {"m_W", {hostM_W.data(), {(size_t)outChannels, colRows}}},
-      {"v_W", {hostV_W.data(), {(size_t)outChannels, colRows}}},
-      {"m_b", {hostM_b.data(), {(size_t)outChannels}}},
-      {"v_b", {hostV_b.data(), {(size_t)outChannels}}},
-      {"m_Psi", {hostM_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
-      {"v_Psi", {hostV_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}}};
+  return {{"W", {hostW.data(), {(size_t)outChannels, colRows}}},
+          {"b", {hostB.data(), {(size_t)outChannels}}},
+          {"Psi", {hostPsi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+          {"m_W", {hostM_W.data(), {(size_t)outChannels, colRows}}},
+          {"v_W", {hostV_W.data(), {(size_t)outChannels, colRows}}},
+          {"m_b", {hostM_b.data(), {(size_t)outChannels}}},
+          {"v_b", {hostV_b.data(), {(size_t)outChannels}}},
+          {"m_Psi", {hostM_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}},
+          {"v_Psi", {hostV_Psi.data(), {(size_t)outChannels, (size_t)terminalSize}}}};
 }
 
 void FullConvPCLayer::SyncStateDictFromDevice() const

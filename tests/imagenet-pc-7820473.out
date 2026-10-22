@@ -1,0 +1,460 @@
+Loading cached (CHW) training set from tiny-imagenet-200/_train_cache_chw.npz...
+Loading cached (CHW) validation set from tiny-imagenet-200/_val_cache_chw.npz...
+
+*** TINY IMAGENET, VGG-7 GENUINE PC, PCX PC-CE replica (T=12, ir=0.0223381085942421, momentum=0.55, hard_tanh, PCX init) ***
+Comparable to: PCX's own PC-CE 39.49+-2.69% (Table 1) and this codebase's own BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).
+Training: 5 epochs, batch_size=128, lr=7.96189e-05 (warmup-cosine to peak 8.75808e-05, end 7.96189e-06), AdamW wd=3.53e-05, cross-entropy, muPC scaling off, PCX uniform init, hard_tanh, 56x56 crops, pooling on, 12 settling steps/batch, ir=0.0223381085942421.
+
+
+=== DIAGNOSTIC (PRE-training): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [122 122 154  13 122]
+Distinct predicted classes: 3 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 0.015433 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 1, batch 0/781: energy=1159.6508
+  epoch 1, batch 50/781: energy=741.3674
+  epoch 1, batch 100/781: energy=924.1595
+  epoch 1, batch 150/781: energy=851.0695
+  epoch 1, batch 200/781: energy=1030.9104
+  epoch 1, batch 250/781: energy=797.5618
+  epoch 1, batch 300/781: energy=775.9567
+  epoch 1, batch 350/781: energy=922.9633
+  epoch 1, batch 400/781: energy=964.8729
+  epoch 1, batch 450/781: energy=772.5425
+  epoch 1, batch 500/781: energy=1074.6606
+  epoch 1, batch 550/781: energy=695.1019
+  epoch 1, batch 600/781: energy=1056.9629
+  epoch 1, batch 650/781: energy=761.1803
+  epoch 1, batch 700/781: energy=991.1533
+  epoch 1, batch 750/781: energy=920.3146
+Epoch 1/5 | Time: 263.0s | Avg energy: 902.5268 | Val top1: 15.62% | Best top1: 15.62% | lr=8.52e-05
+  Checkpoint saved: 'ckpt_T12.safetensors' + 'ckpt_T12_meta.json' (epoch=1, global_step=781, best_acc=15.62%)
+
+=== DIAGNOSTIC (POST-epoch-1): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [ 83 125 179 166 123]
+Distinct predicted classes: 5 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 1.282928 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 2, batch 0/781: energy=830.8296
+  epoch 2, batch 50/781: energy=878.2088
+  epoch 2, batch 100/781: energy=829.7148
+  epoch 2, batch 150/781: energy=793.6235
+  epoch 2, batch 200/781: energy=732.9141
+  epoch 2, batch 250/781: energy=765.4635
+  epoch 2, batch 300/781: energy=744.8209
+  epoch 2, batch 350/781: energy=791.2472
+  epoch 2, batch 400/781: energy=740.2736
+  epoch 2, batch 450/781: energy=616.6318
+  epoch 2, batch 500/781: energy=606.4136
+  epoch 2, batch 550/781: energy=627.1707
+  epoch 2, batch 600/781: energy=616.2032
+  epoch 2, batch 650/781: energy=637.3781
+  epoch 2, batch 700/781: energy=600.1022
+  epoch 2, batch 750/781: energy=723.9218
+Epoch 2/5 | Time: 528.0s | Avg energy: 720.9323 | Val top1: 21.66% | Best top1: 21.66% | lr=6.77e-05
+  Checkpoint saved: 'ckpt_T12.safetensors' + 'ckpt_T12_meta.json' (epoch=2, global_step=1562, best_acc=21.66%)
+  epoch 3, batch 0/781: energy=595.2596
+  epoch 3, batch 50/781: energy=688.5187
+  epoch 3, batch 100/781: energy=513.5997
+  epoch 3, batch 150/781: energy=705.8151
+  epoch 3, batch 200/781: energy=567.4990
+  epoch 3, batch 250/781: energy=476.1895
+  epoch 3, batch 300/781: energy=580.2564
+  epoch 3, batch 350/781: energy=558.3800
+  epoch 3, batch 400/781: energy=552.2089
+  epoch 3, batch 450/781: energy=560.9356
+  epoch 3, batch 500/781: energy=497.9504
+  epoch 3, batch 550/781: energy=540.4617
+  epoch 3, batch 600/781: energy=496.4251
+  epoch 3, batch 650/781: energy=478.8596
+  epoch 3, batch 700/781: energy=496.9031
+  epoch 3, batch 750/781: energy=457.6997
+Epoch 3/5 | Time: 792.7s | Avg energy: 547.9351 | Val top1: 24.86% | Best top1: 24.86% | lr=4.09e-05
+  Checkpoint saved: 'ckpt_T12.safetensors' + 'ckpt_T12_meta.json' (epoch=3, global_step=2343, best_acc=24.86%)
+  epoch 4, batch 0/781: energy=452.5258
+  epoch 4, batch 50/781: energy=434.4964
+  epoch 4, batch 100/781: energy=495.1613
+  epoch 4, batch 150/781: energy=509.1731
+  epoch 4, batch 200/781: energy=418.1027
+  epoch 4, batch 250/781: energy=426.5445
+  epoch 4, batch 300/781: energy=438.7900
+  epoch 4, batch 350/781: energy=444.5245
+  epoch 4, batch 400/781: energy=409.2477
+  epoch 4, batch 450/781: energy=445.2632
+  epoch 4, batch 500/781: energy=430.1210
+  epoch 4, batch 550/781: energy=399.7694
+  epoch 4, batch 600/781: energy=431.4240
+  epoch 4, batch 650/781: energy=399.2714
+  epoch 4, batch 700/781: energy=396.8989
+  epoch 4, batch 750/781: energy=402.6977
+Epoch 4/5 | Time: 1058.1s | Avg energy: 433.3757 | Val top1: 27.17% | Best top1: 27.17% | lr=1.73e-05
+  Checkpoint saved: 'ckpt_T12.safetensors' + 'ckpt_T12_meta.json' (epoch=4, global_step=3124, best_acc=27.17%)
+  epoch 5, batch 0/781: energy=404.1625
+  epoch 5, batch 50/781: energy=367.9964
+  epoch 5, batch 100/781: energy=380.0851
+  epoch 5, batch 150/781: energy=371.4410
+  epoch 5, batch 200/781: energy=397.9142
+  epoch 5, batch 250/781: energy=358.5951
+  epoch 5, batch 300/781: energy=420.6395
+  epoch 5, batch 350/781: energy=370.8878
+  epoch 5, batch 400/781: energy=388.6579
+  epoch 5, batch 450/781: energy=368.9462
+  epoch 5, batch 500/781: energy=382.5970
+  epoch 5, batch 550/781: energy=354.7650
+  epoch 5, batch 600/781: energy=377.5940
+  epoch 5, batch 650/781: energy=388.9658
+  epoch 5, batch 700/781: energy=378.3601
+  epoch 5, batch 750/781: energy=394.7147
+Epoch 5/5 | Time: 1322.9s | Avg energy: 381.6451 | Val top1: 27.79% | Best top1: 27.79% | lr=7.96e-06
+  Checkpoint saved: 'ckpt_T12.safetensors' + 'ckpt_T12_meta.json' (epoch=5, global_step=3905, best_acc=27.79%)
+
+=== Result ===
+Deepity VGG-7 genuine PC, PCX PC-CE replica (T=12, ir=0.0223381085942421): best top-1 = 27.79%
+Reference points: this codebase's own BP-equivalent baseline = 38.78%, PCX's published PC-CE = 39.49+-2.69%.
+Loading cached (CHW) training set from tiny-imagenet-200/_train_cache_chw.npz...
+Loading cached (CHW) validation set from tiny-imagenet-200/_val_cache_chw.npz...
+
+*** TINY IMAGENET, VGG-7 GENUINE PC, PCX PC-CE replica (T=8, ir=0.0223381085942421, momentum=0.55, hard_tanh, PCX init) ***
+Comparable to: PCX's own PC-CE 39.49+-2.69% (Table 1) and this codebase's own BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).
+Training: 5 epochs, batch_size=128, lr=7.96189e-05 (warmup-cosine to peak 8.75808e-05, end 7.96189e-06), AdamW wd=3.53e-05, cross-entropy, muPC scaling off, PCX uniform init, hard_tanh, 56x56 crops, pooling on, 8 settling steps/batch, ir=0.0223381085942421.
+
+
+=== DIAGNOSTIC (PRE-training): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [122 122 154  13 122]
+Distinct predicted classes: 3 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 0.015433 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 1, batch 0/781: energy=929.8590
+  epoch 1, batch 50/781: energy=703.2429
+  epoch 1, batch 100/781: energy=820.7800
+  epoch 1, batch 150/781: energy=676.3105
+  epoch 1, batch 200/781: energy=778.0436
+  epoch 1, batch 250/781: energy=641.3302
+  epoch 1, batch 300/781: energy=644.1724
+  epoch 1, batch 350/781: energy=656.2186
+  epoch 1, batch 400/781: energy=676.6261
+  epoch 1, batch 450/781: energy=667.6598
+  epoch 1, batch 500/781: energy=684.0465
+  epoch 1, batch 550/781: energy=611.2513
+  epoch 1, batch 600/781: energy=663.7796
+  epoch 1, batch 650/781: energy=584.7853
+  epoch 1, batch 700/781: energy=624.8562
+  epoch 1, batch 750/781: energy=599.4497
+Epoch 1/5 | Time: 185.4s | Avg energy: 685.1507 | Val top1: 14.82% | Best top1: 14.82% | lr=8.52e-05
+  Checkpoint saved: 'ckpt_T8.safetensors' + 'ckpt_T8_meta.json' (epoch=1, global_step=781, best_acc=14.82%)
+
+=== DIAGNOSTIC (POST-epoch-1): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [ 83 125 162  99 170]
+Distinct predicted classes: 5 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 1.243051 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 2, batch 0/781: energy=634.7471
+  epoch 2, batch 50/781: energy=613.9159
+  epoch 2, batch 100/781: energy=570.4324
+  epoch 2, batch 150/781: energy=584.5161
+  epoch 2, batch 200/781: energy=630.2410
+  epoch 2, batch 250/781: energy=592.9903
+  epoch 2, batch 300/781: energy=525.8012
+  epoch 2, batch 350/781: energy=602.7385
+  epoch 2, batch 400/781: energy=599.9716
+  epoch 2, batch 450/781: energy=515.7704
+  epoch 2, batch 500/781: energy=571.6530
+  epoch 2, batch 550/781: energy=527.5803
+  epoch 2, batch 600/781: energy=540.0320
+  epoch 2, batch 650/781: energy=499.7646
+  epoch 2, batch 700/781: energy=524.6985
+  epoch 2, batch 750/781: energy=532.8268
+Epoch 2/5 | Time: 371.2s | Avg energy: 566.7300 | Val top1: 19.68% | Best top1: 19.68% | lr=6.77e-05
+  Checkpoint saved: 'ckpt_T8.safetensors' + 'ckpt_T8_meta.json' (epoch=2, global_step=1562, best_acc=19.68%)
+  epoch 3, batch 0/781: energy=533.8134
+  epoch 3, batch 50/781: energy=566.7236
+  epoch 3, batch 100/781: energy=556.6865
+  epoch 3, batch 150/781: energy=565.0014
+  epoch 3, batch 200/781: energy=546.5442
+  epoch 3, batch 250/781: energy=504.4042
+  epoch 3, batch 300/781: energy=506.6389
+  epoch 3, batch 350/781: energy=458.6041
+  epoch 3, batch 400/781: energy=521.6243
+  epoch 3, batch 450/781: energy=486.1727
+  epoch 3, batch 500/781: energy=486.9006
+  epoch 3, batch 550/781: energy=495.6021
+  epoch 3, batch 600/781: energy=461.6034
+  epoch 3, batch 650/781: energy=451.9815
+  epoch 3, batch 700/781: energy=511.0993
+  epoch 3, batch 750/781: energy=452.6915
+Epoch 3/5 | Time: 557.0s | Avg energy: 506.6307 | Val top1: 22.95% | Best top1: 22.95% | lr=4.09e-05
+  Checkpoint saved: 'ckpt_T8.safetensors' + 'ckpt_T8_meta.json' (epoch=3, global_step=2343, best_acc=22.95%)
+  epoch 4, batch 0/781: energy=451.6692
+  epoch 4, batch 50/781: energy=451.8277
+  epoch 4, batch 100/781: energy=464.7308
+  epoch 4, batch 150/781: energy=463.1517
+  epoch 4, batch 200/781: energy=423.4474
+  epoch 4, batch 250/781: energy=446.5926
+  epoch 4, batch 300/781: energy=481.4625
+  epoch 4, batch 350/781: energy=452.8134
+  epoch 4, batch 400/781: energy=423.0087
+  epoch 4, batch 450/781: energy=452.3447
+  epoch 4, batch 500/781: energy=446.4398
+  epoch 4, batch 550/781: energy=411.6473
+  epoch 4, batch 600/781: energy=448.9891
+  epoch 4, batch 650/781: energy=415.4362
+  epoch 4, batch 700/781: energy=403.5652
+  epoch 4, batch 750/781: energy=435.2748
+Epoch 4/5 | Time: 743.3s | Avg energy: 442.0251 | Val top1: 25.18% | Best top1: 25.18% | lr=1.73e-05
+  Checkpoint saved: 'ckpt_T8.safetensors' + 'ckpt_T8_meta.json' (epoch=4, global_step=3124, best_acc=25.18%)
+  epoch 5, batch 0/781: energy=416.1061
+  epoch 5, batch 50/781: energy=380.3719
+  epoch 5, batch 100/781: energy=401.9118
+  epoch 5, batch 150/781: energy=396.3274
+  epoch 5, batch 200/781: energy=418.6602
+  epoch 5, batch 250/781: energy=386.9653
+  epoch 5, batch 300/781: energy=445.5281
+  epoch 5, batch 350/781: energy=398.3412
+  epoch 5, batch 400/781: energy=413.0995
+  epoch 5, batch 450/781: energy=398.6112
+  epoch 5, batch 500/781: energy=414.0135
+  epoch 5, batch 550/781: energy=372.1707
+  epoch 5, batch 600/781: energy=403.1277
+  epoch 5, batch 650/781: energy=416.4456
+  epoch 5, batch 700/781: energy=401.7189
+  epoch 5, batch 750/781: energy=431.2457
+Epoch 5/5 | Time: 929.2s | Avg energy: 405.9153 | Val top1: 26.10% | Best top1: 26.10% | lr=7.96e-06
+  Checkpoint saved: 'ckpt_T8.safetensors' + 'ckpt_T8_meta.json' (epoch=5, global_step=3905, best_acc=26.10%)
+
+=== Result ===
+Deepity VGG-7 genuine PC, PCX PC-CE replica (T=8, ir=0.0223381085942421): best top-1 = 26.10%
+Reference points: this codebase's own BP-equivalent baseline = 38.78%, PCX's published PC-CE = 39.49+-2.69%.
+Loading cached (CHW) training set from tiny-imagenet-200/_train_cache_chw.npz...
+Loading cached (CHW) validation set from tiny-imagenet-200/_val_cache_chw.npz...
+
+*** TINY IMAGENET, VGG-7 GENUINE PC, PCX PC-CE replica (T=6, ir=0.0223381085942421, momentum=0.55, hard_tanh, PCX init) ***
+Comparable to: PCX's own PC-CE 39.49+-2.69% (Table 1) and this codebase's own BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).
+Training: 5 epochs, batch_size=128, lr=7.96189e-05 (warmup-cosine to peak 8.75808e-05, end 7.96189e-06), AdamW wd=3.53e-05, cross-entropy, muPC scaling off, PCX uniform init, hard_tanh, 56x56 crops, pooling on, 6 settling steps/batch, ir=0.0223381085942421.
+
+
+=== DIAGNOSTIC (PRE-training): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [122 122 154  13 122]
+Distinct predicted classes: 3 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 0.015433 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 1, batch 0/781: energy=807.8642
+  epoch 1, batch 50/781: energy=690.6395
+  epoch 1, batch 100/781: energy=752.3876
+  epoch 1, batch 150/781: energy=669.4265
+  epoch 1, batch 200/781: energy=710.0349
+  epoch 1, batch 250/781: energy=620.3621
+  epoch 1, batch 300/781: energy=616.2455
+  epoch 1, batch 350/781: energy=628.9446
+  epoch 1, batch 400/781: energy=639.7990
+  epoch 1, batch 450/781: energy=645.5045
+  epoch 1, batch 500/781: energy=659.5221
+  epoch 1, batch 550/781: energy=602.9271
+  epoch 1, batch 600/781: energy=597.1459
+  epoch 1, batch 650/781: energy=565.6083
+  epoch 1, batch 700/781: energy=608.8046
+  epoch 1, batch 750/781: energy=593.0433
+Epoch 1/5 | Time: 146.2s | Avg energy: 650.5162 | Val top1: 14.90% | Best top1: 14.90% | lr=8.52e-05
+  Checkpoint saved: 'ckpt_T6.safetensors' + 'ckpt_T6_meta.json' (epoch=1, global_step=781, best_acc=14.90%)
+
+=== DIAGNOSTIC (POST-epoch-1): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [128 183  35  99 170]
+Distinct predicted classes: 5 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 1.264126 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 2, batch 0/781: energy=559.4680
+  epoch 2, batch 50/781: energy=600.9117
+  epoch 2, batch 100/781: energy=543.9747
+  epoch 2, batch 150/781: energy=544.3373
+  epoch 2, batch 200/781: energy=530.5977
+  epoch 2, batch 250/781: energy=513.2964
+  epoch 2, batch 300/781: energy=485.6323
+  epoch 2, batch 350/781: energy=533.0607
+  epoch 2, batch 400/781: energy=530.7480
+  epoch 2, batch 450/781: energy=482.2487
+  epoch 2, batch 500/781: energy=492.9460
+  epoch 2, batch 550/781: energy=498.1676
+  epoch 2, batch 600/781: energy=505.6495
+  epoch 2, batch 650/781: energy=476.2560
+  epoch 2, batch 700/781: energy=477.2230
+  epoch 2, batch 750/781: energy=509.8568
+Epoch 2/5 | Time: 292.8s | Avg energy: 517.7734 | Val top1: 20.49% | Best top1: 20.49% | lr=6.77e-05
+  Checkpoint saved: 'ckpt_T6.safetensors' + 'ckpt_T6_meta.json' (epoch=2, global_step=1562, best_acc=20.49%)
+  epoch 3, batch 0/781: energy=519.2352
+  epoch 3, batch 50/781: energy=489.2711
+  epoch 3, batch 100/781: energy=484.7550
+  epoch 3, batch 150/781: energy=524.7483
+  epoch 3, batch 200/781: energy=521.1529
+  epoch 3, batch 250/781: energy=463.4263
+  epoch 3, batch 300/781: energy=483.0507
+  epoch 3, batch 350/781: energy=449.4236
+  epoch 3, batch 400/781: energy=489.0639
+  epoch 3, batch 450/781: energy=454.2475
+  epoch 3, batch 500/781: energy=452.1937
+  epoch 3, batch 550/781: energy=474.2302
+  epoch 3, batch 600/781: energy=447.0627
+  epoch 3, batch 650/781: energy=446.3802
+  epoch 3, batch 700/781: energy=472.6443
+  epoch 3, batch 750/781: energy=429.7006
+Epoch 3/5 | Time: 439.5s | Avg energy: 475.0366 | Val top1: 23.29% | Best top1: 23.29% | lr=4.09e-05
+  Checkpoint saved: 'ckpt_T6.safetensors' + 'ckpt_T6_meta.json' (epoch=3, global_step=2343, best_acc=23.29%)
+  epoch 4, batch 0/781: energy=443.1126
+  epoch 4, batch 50/781: energy=418.0078
+  epoch 4, batch 100/781: energy=454.5484
+  epoch 4, batch 150/781: energy=446.0308
+  epoch 4, batch 200/781: energy=408.6029
+  epoch 4, batch 250/781: energy=428.9108
+  epoch 4, batch 300/781: energy=441.4323
+  epoch 4, batch 350/781: energy=440.4171
+  epoch 4, batch 400/781: energy=417.6457
+  epoch 4, batch 450/781: energy=441.6753
+  epoch 4, batch 500/781: energy=434.6362
+  epoch 4, batch 550/781: energy=404.1957
+  epoch 4, batch 600/781: energy=441.4592
+  epoch 4, batch 650/781: energy=416.0731
+  epoch 4, batch 700/781: energy=401.0128
+  epoch 4, batch 750/781: energy=424.1294
+Epoch 4/5 | Time: 586.7s | Avg energy: 428.8681 | Val top1: 25.52% | Best top1: 25.52% | lr=1.73e-05
+  Checkpoint saved: 'ckpt_T6.safetensors' + 'ckpt_T6_meta.json' (epoch=4, global_step=3124, best_acc=25.52%)
+  epoch 5, batch 0/781: energy=412.4614
+  epoch 5, batch 50/781: energy=383.9874
+  epoch 5, batch 100/781: energy=401.1776
+  epoch 5, batch 150/781: energy=389.2571
+  epoch 5, batch 200/781: energy=416.3406
+  epoch 5, batch 250/781: energy=381.9935
+  epoch 5, batch 300/781: energy=445.9110
+  epoch 5, batch 350/781: energy=389.8099
+  epoch 5, batch 400/781: energy=410.8510
+  epoch 5, batch 450/781: energy=393.6067
+  epoch 5, batch 500/781: energy=411.7137
+  epoch 5, batch 550/781: energy=371.3737
+  epoch 5, batch 600/781: energy=402.8817
+  epoch 5, batch 650/781: energy=413.3377
+  epoch 5, batch 700/781: energy=398.4888
+  epoch 5, batch 750/781: energy=416.9214
+Epoch 5/5 | Time: 733.5s | Avg energy: 402.5071 | Val top1: 26.44% | Best top1: 26.44% | lr=7.96e-06
+  Checkpoint saved: 'ckpt_T6.safetensors' + 'ckpt_T6_meta.json' (epoch=5, global_step=3905, best_acc=26.44%)
+
+=== Result ===
+Deepity VGG-7 genuine PC, PCX PC-CE replica (T=6, ir=0.0223381085942421): best top-1 = 26.44%
+Reference points: this codebase's own BP-equivalent baseline = 38.78%, PCX's published PC-CE = 39.49+-2.69%.
+Loading cached (CHW) training set from tiny-imagenet-200/_train_cache_chw.npz...
+Loading cached (CHW) validation set from tiny-imagenet-200/_val_cache_chw.npz...
+
+*** TINY IMAGENET, VGG-7 GENUINE PC, PCX PC-CE replica (T=4, ir=0.0223381085942421, momentum=0.55, hard_tanh, PCX init) ***
+Comparable to: PCX's own PC-CE 39.49+-2.69% (Table 1) and this codebase's own BP-equivalent baseline, 38.78% (imagenet_bp_control_vgg7_ce.py, full 50 epochs).
+Training: 5 epochs, batch_size=128, lr=7.96189e-05 (warmup-cosine to peak 8.75808e-05, end 7.96189e-06), AdamW wd=3.53e-05, cross-entropy, muPC scaling off, PCX uniform init, hard_tanh, 56x56 crops, pooling on, 4 settling steps/batch, ir=0.0223381085942421.
+
+
+=== DIAGNOSTIC (PRE-training): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [122 122 154  13 122]
+Distinct predicted classes: 3 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 0.015433 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 1, batch 0/781: energy=753.9171
+  epoch 1, batch 50/781: energy=675.4543
+  epoch 1, batch 100/781: energy=692.0582
+  epoch 1, batch 150/781: energy=668.6877
+  epoch 1, batch 200/781: energy=678.7756
+  epoch 1, batch 250/781: energy=624.6743
+  epoch 1, batch 300/781: energy=647.7938
+  epoch 1, batch 350/781: energy=630.3657
+  epoch 1, batch 400/781: energy=667.6644
+  epoch 1, batch 450/781: energy=652.8177
+  epoch 1, batch 500/781: energy=621.0491
+  epoch 1, batch 550/781: energy=619.7607
+  epoch 1, batch 600/781: energy=646.3464
+  epoch 1, batch 650/781: energy=597.7568
+  epoch 1, batch 700/781: energy=673.6533
+  epoch 1, batch 750/781: energy=599.8235
+Epoch 1/5 | Time: 107.3s | Avg energy: 653.1624 | Val top1: 12.96% | Best top1: 12.96% | lr=8.52e-05
+  Checkpoint saved: 'ckpt_T4.safetensors' + 'ckpt_T4_meta.json' (epoch=1, global_step=781, best_acc=12.96%)
+
+=== DIAGNOSTIC (POST-epoch-1): are predictions input-dependent? ===
+True classes:      [163   1 136 123  92]
+Predicted classes: [ 83  52 162  99 170]
+Distinct predicted classes: 5 out of 5 inputs (weak signal, see below)
+Mean per-logit std ACROSS these 5 inputs: 1.273275 (near 0 = output doesn't depend on input, regardless of argmax)
+>>> Output genuinely varies with input.
+  epoch 2, batch 0/781: energy=578.7435
+  epoch 2, batch 50/781: energy=588.9398
+  epoch 2, batch 100/781: energy=572.3477
+  epoch 2, batch 150/781: energy=574.2458
+  epoch 2, batch 200/781: energy=554.4783
+  epoch 2, batch 250/781: energy=530.3340
+  epoch 2, batch 300/781: energy=520.6760
+  epoch 2, batch 350/781: energy=580.9172
+  epoch 2, batch 400/781: energy=563.9482
+  epoch 2, batch 450/781: energy=498.6239
+  epoch 2, batch 500/781: energy=532.1913
+  epoch 2, batch 550/781: energy=537.6741
+  epoch 2, batch 600/781: energy=529.2776
+  epoch 2, batch 650/781: energy=506.8581
+  epoch 2, batch 700/781: energy=505.6584
+  epoch 2, batch 750/781: energy=529.1040
+Epoch 2/5 | Time: 215.0s | Avg energy: 544.0011 | Val top1: 18.38% | Best top1: 18.38% | lr=6.77e-05
+  Checkpoint saved: 'ckpt_T4.safetensors' + 'ckpt_T4_meta.json' (epoch=2, global_step=1562, best_acc=18.38%)
+  epoch 3, batch 0/781: energy=543.1173
+  epoch 3, batch 50/781: energy=521.8054
+  epoch 3, batch 100/781: energy=532.3020
+  epoch 3, batch 150/781: energy=549.0217
+  epoch 3, batch 200/781: energy=540.7769
+  epoch 3, batch 250/781: energy=504.4993
+  epoch 3, batch 300/781: energy=503.0593
+  epoch 3, batch 350/781: energy=464.5165
+  epoch 3, batch 400/781: energy=509.3843
+  epoch 3, batch 450/781: energy=486.1484
+  epoch 3, batch 500/781: energy=478.8400
+  epoch 3, batch 550/781: energy=508.6931
+  epoch 3, batch 600/781: energy=476.3306
+  epoch 3, batch 650/781: energy=460.6111
+  epoch 3, batch 700/781: energy=488.4538
+  epoch 3, batch 750/781: energy=459.5838
+Epoch 3/5 | Time: 322.7s | Avg energy: 501.6965 | Val top1: 21.72% | Best top1: 21.72% | lr=4.09e-05
+  Checkpoint saved: 'ckpt_T4.safetensors' + 'ckpt_T4_meta.json' (epoch=3, global_step=2343, best_acc=21.72%)
+  epoch 4, batch 0/781: energy=462.9884
+  epoch 4, batch 50/781: energy=451.7544
+  epoch 4, batch 100/781: energy=474.5194
+  epoch 4, batch 150/781: energy=468.2892
+  epoch 4, batch 200/781: energy=437.4280
+  epoch 4, batch 250/781: energy=454.4771
+  epoch 4, batch 300/781: energy=477.2706
+  epoch 4, batch 350/781: energy=457.9079
+  epoch 4, batch 400/781: energy=441.0718
+  epoch 4, batch 450/781: energy=468.9798
+  epoch 4, batch 500/781: energy=464.7469
+  epoch 4, batch 550/781: energy=432.9650
+  epoch 4, batch 600/781: energy=469.0860
+  epoch 4, batch 650/781: energy=445.4118
+  epoch 4, batch 700/781: energy=430.4523
+  epoch 4, batch 750/781: energy=449.4119
+Epoch 4/5 | Time: 431.0s | Avg energy: 455.4225 | Val top1: 23.83% | Best top1: 23.83% | lr=1.73e-05
+  Checkpoint saved: 'ckpt_T4.safetensors' + 'ckpt_T4_meta.json' (epoch=4, global_step=3124, best_acc=23.83%)
+  epoch 5, batch 0/781: energy=436.3016
+  epoch 5, batch 50/781: energy=403.1144
+  epoch 5, batch 100/781: energy=426.9231
+  epoch 5, batch 150/781: energy=426.3988
+  epoch 5, batch 200/781: energy=437.6378
+  epoch 5, batch 250/781: energy=411.1731
+  epoch 5, batch 300/781: energy=459.5075
+  epoch 5, batch 350/781: energy=415.2081
+  epoch 5, batch 400/781: energy=441.2655
+  epoch 5, batch 450/781: energy=421.4445
+  epoch 5, batch 500/781: energy=439.3031
+  epoch 5, batch 550/781: energy=392.7029
+  epoch 5, batch 600/781: energy=429.0320
+  epoch 5, batch 650/781: energy=433.2381
+  epoch 5, batch 700/781: energy=421.3689
+  epoch 5, batch 750/781: energy=444.9431
+Epoch 5/5 | Time: 538.8s | Avg energy: 427.4727 | Val top1: 24.22% | Best top1: 24.22% | lr=7.96e-06
+  Checkpoint saved: 'ckpt_T4.safetensors' + 'ckpt_T4_meta.json' (epoch=5, global_step=3905, best_acc=24.22%)
+
+=== Result ===
+Deepity VGG-7 genuine PC, PCX PC-CE replica (T=4, ir=0.0223381085942421): best top-1 = 24.22%
+Reference points: this codebase's own BP-equivalent baseline = 38.78%, PCX's published PC-CE = 39.49+-2.69%.
