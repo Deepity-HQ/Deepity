@@ -109,15 +109,13 @@ void SimplePCLayer::ComputeMuOnly() noexcept
     return;
 
   size_t Nout = batchSize * nextSize;
-  size_t N = batchSize * size;
 
   if (isClamped && muCacheValid)
   {
     backend->Copy(mu, cachedMu, Nout);
+    backend->Copy(preact, cachedPreact, Nout);
     return;
   }
-
-  backend->ActivationInto(activationType, zF, z, N);
 
   backend->MatMul(false,
                   true,
@@ -125,7 +123,7 @@ void SimplePCLayer::ComputeMuOnly() noexcept
                   (int)nextSize,
                   (int)size,
                   1.0f,
-                  zF,
+                  z,
                   (int)size,
                   W,
                   (int)size,
@@ -135,9 +133,18 @@ void SimplePCLayer::ComputeMuOnly() noexcept
 
   backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
+  // Snapshotted BEFORE Activation() overwrites mu in place: GELU's
+  // derivative has no closed form from the activated value alone, so
+  // every later derivative computation (UpdateState()/UpdateWeights())
+  // reads this instead of mu. Same reasoning as SimpleConvPCLayer's
+  // own preact.
+  backend->Copy(preact, mu, Nout);
+  backend->Activation(activationType, mu, Nout);
+
   if (isClamped)
   {
     backend->Copy(cachedMu, mu, Nout);
+    backend->Copy(cachedPreact, preact, Nout);
     muCacheValid = true;
   }
 }
@@ -145,6 +152,7 @@ void SimplePCLayer::ComputeMuOnly() noexcept
 void SimplePCLayer::UpdateState() noexcept
 {
   size_t N = batchSize * size;
+  size_t Nout = batchSize * nextSize;
 
   if (isClamped)
     return;
@@ -153,6 +161,16 @@ void SimplePCLayer::UpdateState() noexcept
   {
     const float* e_above = layerAbove->GetErrors();
 
+    // The derivative applies at the source (mu=phi(W@z+b)'s own
+    // nonlinearity), to e_above, before projecting it through W -- not
+    // after, and not via f'(z). Computed into feedbackError, never
+    // into mu itself: mu must stay clean, since ComputeMuOnly() is
+    // publicly callable (e.g. ProjectForward()) between this and
+    // UpdateWeights(), which would silently clobber a derivative
+    // stashed in mu back into the plain activated value.
+    backend->ActivationDerivativeInto(ToDerivativeType(activationType), feedbackError, preact, Nout);
+    backend->MultiplyInto(feedbackError, e_above, feedbackError, Nout);
+
     backend->MatMul(
         /*transA=*/false,
         /*transB=*/false,
@@ -160,7 +178,7 @@ void SimplePCLayer::UpdateState() noexcept
         (int)size,
         (int)nextSize,
         1.0f,
-        e_above,
+        feedbackError,
         (int)nextSize,
         W,
         (int)size,
@@ -168,7 +186,8 @@ void SimplePCLayer::UpdateState() noexcept
         feedbackScratch,
         (int)size);
 
-    backend->FusedStateUpdate(z, feedbackScratch, ToDerivativeType(activationType), e, N, ir);
+    backend->AxpyInto(feedbackScratch, e, N, -1.0f);
+    backend->AxpyInto(z, feedbackScratch, N, ir);
   }
   else // Output Layer
   {
@@ -183,7 +202,15 @@ void SimplePCLayer::UpdateWeights() noexcept
   if (layerAbove == nullptr || nextSize == 0)
     return;
 
-  const float* local_grad = layerAbove->GetErrors();
+  size_t Nout = batchSize * nextSize;
+  const float* e_above = layerAbove->GetErrors();
+
+  // Recomputed fresh from preact, not read back from a previous
+  // UpdateState() call -- see UpdateState()'s own comment on why mu
+  // itself must never hold this.
+  backend->ActivationDerivativeInto(ToDerivativeType(activationType), feedbackError, preact, Nout);
+  backend->MultiplyInto(feedbackError, e_above, feedbackError, Nout);
+  const float* local_grad = feedbackError;
 
   switch (opt)
   {
@@ -200,7 +227,7 @@ void SimplePCLayer::UpdateWeights() noexcept
                     lr / batchSize,
                     local_grad,
                     (int)nextSize,
-                    zF,
+                    z,
                     (int)size,
                     1.0f,
                     W,
@@ -228,7 +255,7 @@ void SimplePCLayer::UpdateWeights() noexcept
                     grad_scale,
                     local_grad,
                     (int)nextSize,
-                    zF,
+                    z,
                     (int)size,
                     0.0f,
                     grad_W,
@@ -284,8 +311,8 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept
 
     total += pad16(w_size);
     total += pad16(nextSize);
-    total += pad16(out_state_size) * 2;
-    total += pad16(own_state_size) * 2; // zF, feedbackScratch
+    total += pad16(out_state_size) * 5; // mu, cachedMu, preact, cachedPreact, feedbackError
+    total += pad16(own_state_size);     // feedbackScratch
 
     // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
     // safe.
@@ -323,13 +350,17 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
     b = arena.AllocateFloats(nextSize);
     mu = arena.AllocateFloats(out_state_size);
     cachedMu = arena.AllocateFloats(out_state_size);
-    zF = arena.AllocateFloats(own_state_size);
+    preact = arena.AllocateFloats(out_state_size);
+    cachedPreact = arena.AllocateFloats(out_state_size);
+    feedbackError = arena.AllocateFloats(out_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
-    backend->Zero(zF, own_state_size);
+    backend->Zero(preact, out_state_size);
+    backend->Zero(cachedPreact, out_state_size);
+    backend->Zero(feedbackError, out_state_size);
     backend->Zero(feedbackScratch, own_state_size);
 
     // Always allocated, see GetRequiredFloats().

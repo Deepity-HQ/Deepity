@@ -90,8 +90,8 @@ public:
   /// \f[
   /// E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
   /// \f]
-  /// mu = W @ phi(z) + b: activation applied to z before the
-  /// linear transform.
+  /// mu = phi(W @ z + b): activation applied to the linear
+  /// transform's result, not to z beforehand.
   /// @param needEnergy Asks for energy
   /// @return This layer's energy contribution at the current state, if asked for.
   float CalculateState(bool needEnergy = true) noexcept;
@@ -104,11 +104,11 @@ public:
   /// @brief Computes the state derivatives for inference.
   ///
   /// \f[
-  /// \frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma'(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
+  /// \frac{dz^{(l)}}{dt} = -e^{(l)} + (W^{(l-1)})^T (\sigma'(\mu_{pre}^{(l-1)}) \odot e^{(l-1)})
   /// \f]
-  /// The derivative multiply applies after the W transform, using
-  /// f'(z) (this layer's own state derivative), not f'(mu) applied
-  /// before.
+  /// The derivative multiply applies at the source, to e^{(l-1)}
+  /// before projecting it through W, using f'(this layer's own
+  /// pre-activation mu) -- not after projecting, and not f'(z).
   void UpdateState() noexcept override;
 
   /// @brief Computes weight updates via gradient descent, with L2 weight decay.
@@ -272,8 +272,8 @@ public:
   /// @brief Computes only mu (forward prediction), skipping error/energy
   /// entirely. Extracted from CalculateState() for callers (like
   /// ProjectForward()) that don't need the discarded error/energy values.
-  /// Computes zF=phi(z) internally and uses it for the GEMM
-  /// (mu=W\@phi(z)+b).
+  /// Computes mu=phi(W\@z+b), snapshotting the pre-activation value into
+  /// preact before Activation() overwrites mu in place.
   void ComputeMuOnly() noexcept;
 
   /// @brief Sets the layer immediately above this one in the network.
@@ -367,16 +367,33 @@ private:
                           // its derivative), so caching must copy a
                           // preserved value back into mu each skipped
                           // step, not just skip writing to mu entirely.
-  float* zF;              // This layer's own activated belief, phi(z),
-                          // needed both for the forward GEMM
-                          // (mu=zF@W+b) and the weight gradient (dW
-                          // uses zF, not raw z): mu_l = W_l . phi(z_{l-1}).
-  float* feedbackScratch; // own_state_size scratch for the raw
-                          // feedback GEMM's output. The f'(z) multiply
-                          // applies only to the feedback term, not the
-                          // -e term already in dz_dt, so it can't
-                          // accumulate directly into dz_dt via the
-                          // GEMM itself.
+  float* preact;          // mu's pre-activation value (W@z+b, before
+                          // Activation() overwrites mu in place with
+                          // f(preact)). Snapshotted because the
+                          // derivative needed by both UpdateState()
+                          // and UpdateWeights() isn't closed-form from
+                          // the activated value alone for every
+                          // activation type (e.g. GELU); see
+                          // SimpleConvPCLayer's own preact for the
+                          // same reasoning.
+  float* cachedPreact;    // preact's counterpart to cachedMu, same
+                          // clamped-caching reasoning.
+  float* feedbackError;   // out_state_size scratch holding
+                          // layerAbove's error pre-multiplied by
+                          // f'(preact), i.e. the quantity that then
+                          // gets projected through W (this is the
+                          // mu=f(W@z+b) convention: the derivative
+                          // applies at the source of the nonlinearity,
+                          // before projecting down, not after).
+                          // Deliberately never stashed in mu itself
+                          // (mu must stay the clean, activated value --
+                          // ComputeMuOnly() is publicly callable
+                          // between UpdateState() and UpdateWeights()
+                          // and would silently clobber it otherwise).
+  float* feedbackScratch; // own_state_size scratch for feedbackError
+                          // projected through W. The -e term already
+                          // in dz_dt can't be fused into the GEMM
+                          // itself, so this stays a separate buffer.
   float lr;
   float ir;
   float lmbda;

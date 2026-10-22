@@ -59,7 +59,10 @@ void GaussSeidelPCLayer::ResetState() noexcept
   backend->Zero(e, ownStateSize);
   backend->Zero(dz_dt, ownStateSize);
   if (nextSize > 0)
+  {
     backend->Zero(mu, (size_t)batchSize * nextSize);
+    backend->Zero(preact, (size_t)batchSize * nextSize);
+  }
   isClamped = false;
 }
 
@@ -71,10 +74,18 @@ void GaussSeidelPCLayer::UpdateState() noexcept
     return;
 
   // Feedback goes through E (the independently-initialized,
-  // never-updated feedback-alignment matrix), not W.
+  // never-updated feedback-alignment matrix), not W. The derivative
+  // applies at the source (mu's own nonlinearity), to e_above using
+  // the PREVIOUS timestep's preact (held over, not yet fresh for this
+  // one -- same staleness as mu/e_above), before projecting through E.
   if (layerAbove != nullptr && nextSize > 0)
   {
+    size_t outSize = (size_t)batchSize * nextSize;
     const float* e_above = layerAbove->GetErrors();
+
+    backend->ActivationDerivativeInto(derivativeType, feedbackError, preact, outSize);
+    backend->MultiplyInto(feedbackError, e_above, feedbackError, outSize);
+
     backend->MatMul(
         /*transA=*/false,
         /*transB=*/false,
@@ -82,7 +93,7 @@ void GaussSeidelPCLayer::UpdateState() noexcept
         (int)size,
         (int)nextSize,
         1.0f,
-        e_above,
+        feedbackError,
         (int)nextSize,
         E,
         (int)size,
@@ -95,8 +106,8 @@ void GaussSeidelPCLayer::UpdateState() noexcept
     backend->Zero(dz_dt, ownStateSize);
   }
 
-  // z += ir * ((dz_dt * f'(z)) - e); deriv computed inline from z.
-  backend->FusedStateUpdate(z, dz_dt, derivativeType, e, ownStateSize, ir);
+  backend->AxpyInto(dz_dt, e, ownStateSize, -1.0f);
+  backend->AxpyInto(z, dz_dt, ownStateSize, ir);
 }
 
 void GaussSeidelPCLayer::ComputePrediction() noexcept
@@ -104,12 +115,7 @@ void GaussSeidelPCLayer::ComputePrediction() noexcept
   if (nextSize == 0)
     return;
 
-  size_t N = (size_t)batchSize * size;
-
-  // dz_dt := phi(z), reused as the activated-z scratch buffer.
-  // UpdateState() (called earlier in the same Step()) is the only
-  // other writer, and it's done with dz_dt by the time this runs.
-  backend->ActivationInto(activationType, dz_dt, z, N);
+  size_t Nout = (size_t)batchSize * nextSize;
 
   backend->MatMul(
       /*transA=*/false,
@@ -118,7 +124,7 @@ void GaussSeidelPCLayer::ComputePrediction() noexcept
       (int)nextSize,
       (int)size,
       1.0f,
-      dz_dt,
+      z,
       (int)size,
       W,
       (int)size,
@@ -127,6 +133,13 @@ void GaussSeidelPCLayer::ComputePrediction() noexcept
       (int)nextSize);
 
   backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
+
+  // Snapshotted BEFORE Activation() overwrites mu in place, same
+  // reasoning as SimplePCLayer/SimpleConvPCLayer's own preact. mu
+  // still ends this function clean and activated, same invariant the
+  // class doc already requires.
+  backend->Copy(preact, mu, Nout);
+  backend->Activation(activationType, mu, Nout);
 }
 
 float GaussSeidelPCLayer::ComputeError(bool needEnergy) noexcept
@@ -151,11 +164,14 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
   if (layerAbove == nullptr || nextSize == 0)
     return;
 
-  const float* local_grad = layerAbove->GetErrors();
-  size_t N = (size_t)batchSize * size;
+  size_t Nout = (size_t)batchSize * nextSize;
+  const float* e_above = layerAbove->GetErrors();
 
-  // dz_dt := phi(z), same reuse as ComputePrediction().
-  backend->ActivationInto(activationType, dz_dt, z, N);
+  // feedbackError := e_above * f'(preact), using the final preact from
+  // this timestep's last ComputePrediction() call.
+  backend->ActivationDerivativeInto(derivativeType, feedbackError, preact, Nout);
+  backend->MultiplyInto(feedbackError, e_above, feedbackError, Nout);
+  const float* local_grad = feedbackError;
 
   switch (opt)
   {
@@ -175,7 +191,7 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
         lr_batch,
         local_grad,
         (int)nextSize,
-        dz_dt,
+        z,
         (int)size,
         1.0f,
         W,
@@ -201,7 +217,7 @@ void GaussSeidelPCLayer::UpdateWeights() noexcept
         grad_scale,
         local_grad,
         (int)nextSize,
-        dz_dt,
+        z,
         (int)size,
         0.0f,
         grad_W,
@@ -255,11 +271,11 @@ size_t GaussSeidelPCLayer::GetRequiredFloats() const noexcept
     size_t w_size = (size_t)size * nextSize;
     size_t out_state_size = (size_t)batchSize * nextSize;
 
-    total += pad16(w_size);         // W
-    total += pad16(nextSize);       // b
-    total += pad16(out_state_size); // mu
-    total += pad16(w_size);         // E (feedback alignment, same shape as W)
-    total += pad16(nextSize);       // biasGradScratch
+    total += pad16(w_size);           // W
+    total += pad16(nextSize);         // b
+    total += pad16(out_state_size) * 3; // mu, preact, feedbackError
+    total += pad16(w_size);           // E (feedback alignment, same shape as W)
+    total += pad16(nextSize);         // biasGradScratch
 
     // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
     // safe.
@@ -291,11 +307,15 @@ template <typename ArenaT> void GaussSeidelPCLayer::BindMemory(ArenaT& arena)
     W = arena.AllocateFloats(w_size);
     b = arena.AllocateFloats(nextSize);
     mu = arena.AllocateFloats(out_state_size);
+    preact = arena.AllocateFloats(out_state_size);
+    feedbackError = arena.AllocateFloats(out_state_size);
     E = arena.AllocateFloats(w_size);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
+    backend->Zero(preact, out_state_size);
+    backend->Zero(feedbackError, out_state_size);
     backend->Zero(E, w_size);
     backend->Zero(biasGradScratch, nextSize);
 
@@ -309,6 +329,8 @@ template <typename ArenaT> void GaussSeidelPCLayer::BindMemory(ArenaT& arena)
     W = nullptr;
     b = nullptr;
     mu = nullptr;
+    preact = nullptr;
+    feedbackError = nullptr;
     E = nullptr;
     biasGradScratch = nullptr;
   }

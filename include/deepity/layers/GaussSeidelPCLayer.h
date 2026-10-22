@@ -50,9 +50,14 @@
  * the way SimplePCLayer's UpdateState() does. It needs to stay in its
  * clean, activated form, since the layer above's ComputeError() reads it
  * later in this same timestep. Neither UpdateState() nor UpdateWeights()
- * ever writes to mu; they only read/derive z, via the shared `dz_dt`
- * scratch buffer, reused as a plain activation-derivative or
- * activated-z scratch across phases, never simultaneously.
+ * ever writes to mu; they derive the needed f'(preact) into the
+ * dedicated feedbackError scratch instead, never into mu itself.
+ *
+ * mu = phi(W\@z+b): activation applied to the linear transform's
+ * result (preact), not to z beforehand -- preact is snapshotted in
+ * ComputePrediction() before Activation() overwrites mu in place, and
+ * held over across timesteps exactly like mu/e_above are (UpdateState()
+ * reads the previous timestep's preact, not yet fresh for this one).
  *
  * Does not implement mu-caching or activateBeforeTransform.
  *
@@ -352,10 +357,19 @@ private:
   /// @brief This layer's own outgoing prediction. Stays clean and
   /// activated at all times, never mutated into a derivative.
   float* mu = nullptr;
-  /// @brief Shared scratch buffer, own_state_size-length, reused
-  /// across phases (never simultaneously): the feedback GEMM's
-  /// output in UpdateState(), and the activated-z (phi(z)) input
-  /// to the forward GEMM in ComputePrediction()/UpdateWeights().
+  /// @brief mu's pre-activation value (W@z+b, before Activation()
+  /// overwrites mu in place with f(preact)), held over across
+  /// timesteps the same way mu itself is -- UpdateState() reads the
+  /// PREVIOUS timestep's preact (set by the previous ComputePrediction()
+  /// call), same staleness pattern as mu/e_above.
+  float* preact = nullptr;
+  /// @brief out_state_size scratch holding layerAbove's error
+  /// pre-multiplied by f'(preact), used by both UpdateState() and
+  /// UpdateWeights(). The derivative applies at the source (mu's own
+  /// nonlinearity) before projecting through E or W, not after.
+  float* feedbackError = nullptr;
+  /// @brief own_state_size scratch for the feedback GEMM's output in
+  /// UpdateState() (feedbackError projected through E).
   float* dz_dt = nullptr;
   /// @brief Feedback-alignment matrix. Separate from W, same
   /// shape, randomly initialized once, never updated again. This

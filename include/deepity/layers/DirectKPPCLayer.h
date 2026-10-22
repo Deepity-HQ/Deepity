@@ -68,9 +68,31 @@ protected:
   float* b = nullptr;        ///< Bias vector, length nextSize.
   float* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
   float* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
-  float* Psi = nullptr;      ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
-  float* proj = nullptr;     ///< Scratch buffer: terminal error projected back through layerAbove's
-                             ///< Psi, for DirectFeedbackUpdate()'s W update.
+  /// @brief Pre-activation snapshot of mu (mu=phi(W@z+b)'s raw
+  /// W@z+b, before Activation() is applied in place), shape
+  /// [batchSize, nextSize]. Needed because f'(preact) (not f'(z) and
+  /// not a shortcut from the activated mu) is what both UpdateState()
+  /// and UpdateWeights() apply to the feedback signal.
+  float* preact = nullptr;
+  /// @brief Cached pre-activation, valid alongside cachedMu when this
+  /// layer is clamped (same reasoning as cachedMu itself).
+  float* cachedPreact = nullptr;
+  /// @brief nextSize-shaped scratch holding f'(preact), recomputed
+  /// fresh from preact wherever needed. Deliberately never stashed in
+  /// mu itself (mu must stay the clean, activated value --
+  /// ComputeMuOnly() is publicly callable between UpdateState() and
+  /// UpdateWeights() and would silently clobber a derivative stashed
+  /// in mu back into the plain activated value).
+  float* derivScratch = nullptr;
+  /// @brief nextSize-shaped scratch holding e_above (or, in
+  /// DirectFeedbackUpdate(), proj) pre-multiplied by f'(preact), i.e.
+  /// the quantity that then gets projected through W/Psi -- the
+  /// derivative applies at the source of the nonlinearity, before
+  /// projecting down, not after.
+  float* feedbackError = nullptr;
+  float* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
+  float* proj = nullptr; ///< Scratch buffer: terminal error projected back through layerAbove's
+                         ///< Psi, for DirectFeedbackUpdate()'s W update.
 
   float* grad_W = nullptr; ///< W's gradient scratch buffer.
   float* grad_b = nullptr; ///< b's gradient scratch buffer.
@@ -88,7 +110,6 @@ protected:
   int* tPsi_device = nullptr; ///< Device-resident mirror of `tPsi`.
   float* fl_device = nullptr; ///< Device-resident mirror of `fl`.
 
-  float* zF = nullptr;              ///< Activated belief, phi(z), used as the forward GEMM's input.
   float* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
   /// @brief nextSize-length scratch buffer for SumRows' output in

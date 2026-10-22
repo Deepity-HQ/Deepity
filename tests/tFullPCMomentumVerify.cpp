@@ -5,13 +5,16 @@
  * before this file.
  *
  * Unlike the finite-difference checks elsewhere in this test suite, the
- * documented update is a closed-form recurrence (FullPCLayer.h /
- * IComputeBackend.h's FusedStateUpdateMomentum docs):
- *   v = beta*v + (1-beta)*((feedback*deriv) - e)
+ * documented update is a closed-form recurrence, under the
+ * mu=phi(a*W@z+b) convention (derivative applies at the source, to
+ * e_above, BEFORE projecting through W -- not after, and not via
+ * f'(z)):
+ *   feedbackError = e_above * f'(preact)
+ *   v = beta*v + (1-beta)*((feedbackError @ (a*W)) - e)
  *   z += ir*v
  * so it's checked exactly (tight tolerance, not O(eps^2)), by
  * independently re-deriving `v`/`z` step by step from the layer's own
- * W/z/e/e_above buffers and comparing against the real UpdateState().
+ * W/b/z/e/e_above buffers and comparing against the real UpdateState().
  *
  * Uses input(4) -> hidden(4) -> terminal(3): the hidden layer is the one
  * under test, since it's the only one with BOTH a nonzero bottom-up error
@@ -66,6 +69,7 @@ int main()
   size_t size = hidden->GetInputSize();      // 4
   size_t nextSize = hidden->GetOutputSize(); // 3
   const float* W = hidden->GetWeights();     // [nextSize, size]
+  const float* b = hidden->GetBiases();      // [nextSize]
 
   std::vector<float> vManual(size, 0.0f);
 
@@ -86,17 +90,30 @@ int main()
     for (size_t j = 0; j < nextSize; ++j)
       eAbove[j] = terminal->GetErrors()[j];
 
+    // preact[j] = hidden's own a*(W@zBefore)+b (a=1.0 here, no
+    // SetMuPCScale() call), the argument to hidden's own TANH -- the
+    // derivative applies HERE, over nextSize, before projecting
+    // through W, not over size after.
+    std::vector<float> feedbackError(nextSize);
+    for (size_t j = 0; j < nextSize; ++j)
+    {
+      float preact_j = b[j];
+      for (size_t i = 0; i < size; ++i)
+        preact_j += zBefore[i] * W[j * size + i];
+
+      float t_ = std::tanh(preact_j);
+      float deriv = 1.0f - t_ * t_;
+      feedbackError[j] = eAbove[j] * deriv;
+    }
+
     std::vector<float> zManual(size);
     for (size_t i = 0; i < size; ++i)
     {
-      float t_ = std::tanh(zBefore[i]);
-      float deriv = 1.0f - t_ * t_;
-
       float feedback = 0.0f;
       for (size_t j = 0; j < nextSize; ++j)
-        feedback += eAbove[j] * W[j * size + i];
+        feedback += feedbackError[j] * W[j * size + i];
 
-      float update = feedback * deriv - eOwn[i];
+      float update = feedback - eOwn[i];
       vManual[i] = beta * vManual[i] + (1.0f - beta) * update;
       zManual[i] = zBefore[i] + ir * vManual[i];
     }

@@ -102,15 +102,13 @@ void DiscriminativePCLayer::ComputeMuOnly() noexcept
     return;
 
   size_t Nout = (size_t)batchSize * nextSize;
-  size_t N = (size_t)batchSize * size;
 
   if (isClamped && muCacheValid)
   {
     backend->Copy(mu, cachedMu, Nout);
+    backend->Copy(preact, cachedPreact, Nout);
     return;
   }
-
-  backend->ActivationInto(activationType, zF, z, N);
 
   backend->MatMul(
       /*transA=*/false,
@@ -119,7 +117,7 @@ void DiscriminativePCLayer::ComputeMuOnly() noexcept
       (int)nextSize,
       (int)size,
       1.0f,
-      zF,
+      z,
       (int)size,
       W,
       (int)size,
@@ -129,9 +127,15 @@ void DiscriminativePCLayer::ComputeMuOnly() noexcept
 
   backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
 
+  // Snapshotted BEFORE Activation() overwrites mu in place, same
+  // reasoning as SimplePCLayer/SimpleConvPCLayer's own preact.
+  backend->Copy(preact, mu, Nout);
+  backend->Activation(activationType, mu, Nout);
+
   if (isClamped)
   {
     backend->Copy(cachedMu, mu, Nout);
+    backend->Copy(cachedPreact, preact, Nout);
     muCacheValid = true;
   }
 }
@@ -139,6 +143,7 @@ void DiscriminativePCLayer::ComputeMuOnly() noexcept
 void DiscriminativePCLayer::UpdateState() noexcept
 {
   size_t N = (size_t)batchSize * size;
+  size_t Nout = (size_t)batchSize * nextSize;
 
   if (isClamped)
     return;
@@ -147,11 +152,16 @@ void DiscriminativePCLayer::UpdateState() noexcept
   {
     const float* e_above = layerAbove->GetErrors();
     const float* p_above = layerAbove->GetPrecisions();
-    size_t outN = (size_t)batchSize * nextSize;
 
-    // bottom_up[b,f] = e_above[b,f] * p_above[f]
-    backend->Zero(bottom_up, outN);
+    // bottom_up[b,f] = e_above[b,f] * p_above[f] * f'(preact[b,f]).
+    // The activation derivative applies at the source (mu's own
+    // nonlinearity), before projecting through W, not after via f'(z).
+    // Computed into derivScratch, never into mu itself -- see
+    // derivScratch's own doc comment for why.
+    backend->Zero(bottom_up, Nout);
     backend->AxpyBroadcastInto(bottom_up, e_above, p_above, batchSize, nextSize, 1.0f);
+    backend->ActivationDerivativeInto(derivativeType, derivScratch, preact, Nout);
+    backend->MultiplyInto(bottom_up, bottom_up, derivScratch, Nout);
 
     // feedbackScratch = bottom_up @ W (no transpose)
     backend->MatMul(
@@ -169,9 +179,8 @@ void DiscriminativePCLayer::UpdateState() noexcept
         feedbackScratch,
         (int)size);
 
-    // dz_dt = feedbackScratch * f'(z), then dz_dt -= p*e
-    backend->ActivationDerivativeInto(derivativeType, dz_dt, z, N);
-    backend->MultiplyInto(dz_dt, feedbackScratch, dz_dt, N);
+    // dz_dt = feedbackScratch, then dz_dt -= p*e
+    backend->Copy(dz_dt, feedbackScratch, N);
     backend->AxpyBroadcastInto(dz_dt, e, p, batchSize, size, -1.0f);
   }
   else // Output layer
@@ -192,11 +201,14 @@ void DiscriminativePCLayer::UpdateWeights() noexcept
   const float* p_above = layerAbove->GetPrecisions();
   size_t outN = (size_t)batchSize * nextSize;
 
-  // local_grad[b,f] = e_above[b,f] * p_above[f], recomputed
-  // independently from UpdateState()'s own copy (cheap, and avoids
-  // an ordering dependency between the two calls).
+  // local_grad[b,f] = e_above[b,f] * p_above[f] * f'(preact[b,f]),
+  // recomputed fresh from preact -- not read back from a previous
+  // UpdateState() call, see UpdateState()'s own comment on why mu
+  // itself must never hold this.
   backend->Zero(bottom_up, outN);
   backend->AxpyBroadcastInto(bottom_up, e_above, p_above, batchSize, nextSize, 1.0f);
+  backend->ActivationDerivativeInto(derivativeType, derivScratch, preact, outN);
+  backend->MultiplyInto(bottom_up, bottom_up, derivScratch, outN);
 
   switch (opt)
   {
@@ -216,7 +228,7 @@ void DiscriminativePCLayer::UpdateWeights() noexcept
         lr_batch,
         bottom_up,
         (int)nextSize,
-        zF,
+        z,
         (int)size,
         1.0f,
         W,
@@ -242,7 +254,7 @@ void DiscriminativePCLayer::UpdateWeights() noexcept
         grad_scale,
         bottom_up,
         (int)nextSize,
-        zF,
+        z,
         (int)size,
         0.0f,
         grad_W,
@@ -310,7 +322,7 @@ size_t DiscriminativePCLayer::GetRequiredFloats() const noexcept
   size_t ownStateSize = (size_t)batchSize * size;
 
   total += pad16(ownStateSize) * 3; // z, e, dz_dt
-  total += pad16(ownStateSize) * 2; // zF, feedbackScratch
+  total += pad16(ownStateSize);     // feedbackScratch
   total += pad16(size) * 2;         // p, log_p
 
   if (nextSize > 0)
@@ -320,7 +332,7 @@ size_t DiscriminativePCLayer::GetRequiredFloats() const noexcept
 
     total += pad16(wSize);            // W
     total += pad16(nextSize);         // b
-    total += pad16(outStateSize) * 3; // mu, bottom_up, cachedMu
+    total += pad16(outStateSize) * 6; // mu, bottom_up, cachedMu, preact, cachedPreact, derivScratch
     total += pad16(nextSize);         // biasGradScratch
 
     // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
@@ -339,7 +351,6 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
   z = arena.AllocateFloats(ownStateSize);
   e = arena.AllocateFloats(ownStateSize);
   dz_dt = arena.AllocateFloats(ownStateSize);
-  zF = arena.AllocateFloats(ownStateSize);
   feedbackScratch = arena.AllocateFloats(ownStateSize);
   p = arena.AllocateFloats(size);
   log_p = arena.AllocateFloats(size);
@@ -347,7 +358,6 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
   backend->Zero(z, ownStateSize);
   backend->Zero(e, ownStateSize);
   backend->Zero(dz_dt, ownStateSize);
-  backend->Zero(zF, ownStateSize);
   backend->Zero(feedbackScratch, ownStateSize);
   backend->Fill(p, size, 1.0f);
   backend->Zero(log_p, size);
@@ -362,12 +372,18 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
     mu = arena.AllocateFloats(outStateSize);
     bottom_up = arena.AllocateFloats(outStateSize);
     cachedMu = arena.AllocateFloats(outStateSize);
+    preact = arena.AllocateFloats(outStateSize);
+    cachedPreact = arena.AllocateFloats(outStateSize);
+    derivScratch = arena.AllocateFloats(outStateSize);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, outStateSize);
     backend->Zero(bottom_up, outStateSize);
     backend->Zero(cachedMu, outStateSize);
+    backend->Zero(preact, outStateSize);
+    backend->Zero(cachedPreact, outStateSize);
+    backend->Zero(derivScratch, outStateSize);
     backend->Zero(biasGradScratch, nextSize);
 
     // Always allocated, see GetRequiredFloats().
@@ -382,6 +398,9 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
     mu = nullptr;
     bottom_up = nullptr;
     cachedMu = nullptr;
+    preact = nullptr;
+    cachedPreact = nullptr;
+    derivScratch = nullptr;
     biasGradScratch = nullptr;
   }
 

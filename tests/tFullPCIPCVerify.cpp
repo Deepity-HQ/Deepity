@@ -140,7 +140,7 @@ int main()
     for (size_t i = 0; i < nextSize; ++i)
       freshMu[i] = inputLayer->GetMu()[i];
 
-    // Independent from-scratch reference: mu = tanh(z) @ W^T + b, using
+    // Independent from-scratch reference: mu = tanh(z @ W^T + b), using
     // the CURRENT (just-updated) W/b directly, matching FullPCLayer's
     // defaults (a=1.0, no residual) -- deliberately not reusing
     // ComputeMuOnly() at all.
@@ -152,8 +152,8 @@ int main()
     {
       float acc = b[j];
       for (size_t i = 0; i < size; ++i)
-        acc += std::tanh(z[i]) * W[j * size + i];
-      manualMu[j] = acc;
+        acc += z[i] * W[j * size + i];
+      manualMu[j] = std::tanh(acc);
     }
 
     float freshDiff = MaxAbsDiff(freshMu, manualMu);

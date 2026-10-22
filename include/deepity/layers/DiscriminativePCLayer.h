@@ -366,14 +366,26 @@ private:
   /// @brief Cached copy of this layer's most recently computed
   /// outgoing prediction, used to skip recomputation while clamped.
   float* cachedMu = nullptr;
-  /// @brief True once cachedMu holds a valid, up-to-date value.
+  /// @brief preact's counterpart to cachedMu, same clamped-caching
+  /// reasoning.
+  float* cachedPreact = nullptr;
+  /// @brief True once cachedMu/cachedPreact hold a valid, up-to-date
+  /// value.
   bool muCacheValid = false;
 
-  /// @brief This layer's own activated belief, phi(z), used both
-  /// for the forward GEMM (mu=zF@W^T+b) and the weight gradient.
-  float* zF = nullptr;
-  /// @brief Scratch buffer for the feedback term's raw GEMM output,
-  /// prior to the elementwise activation-derivative multiply.
+  /// @brief mu's pre-activation value (W@z+b, before Activation()
+  /// overwrites mu in place with f(preact)). Snapshotted because the
+  /// derivative needed by both UpdateState() and UpdateWeights()
+  /// isn't closed-form from the activated value alone for every
+  /// activation type (e.g. GELU); see SimpleConvPCLayer's own preact.
+  float* preact = nullptr;
+  /// @brief out_state_size scratch holding f'(preact), kept separate
+  /// from mu itself: mu must stay the clean, activated value, since
+  /// ComputeMuOnly() is publicly callable between UpdateState() and
+  /// UpdateWeights() and would silently clobber a derivative stashed
+  /// in mu back into the plain activated value.
+  float* derivScratch = nullptr;
+  /// @brief Scratch buffer for the feedback term's raw GEMM output.
   float* feedbackScratch = nullptr;
 
   int batchSize;
