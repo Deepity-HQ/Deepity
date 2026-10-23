@@ -28,6 +28,15 @@
 #include <tuple>
 #endif
 
+#ifdef DEEPITY_USE_LIBXSMM
+#include "CPUBackendLibxsmm.h"
+#endif
+
+#ifdef DEEPITY_USE_HALIDE
+#include "HalideBuffer.h"
+#include "deepity_feedback_update_sigmoid.h"
+#endif
+
 namespace Deep
 {
 #ifdef DEEPITY_USE_ONEDNN
@@ -52,6 +61,28 @@ struct CPUBackend::OneDnnMatMulCache
   // sequentially from one thread (the training loop), never concurrently
   // across layers -- see SimplePCNetwork::TrainStepWithProjection.
   std::map<std::tuple<bool, bool, int, int, int, int, int, int>, Entry> cache;
+
+  struct NoBiasEntry
+  {
+    dnnl::memory::desc srcMd, weightsMd, dstMd;
+    dnnl::matmul prim;
+  };
+  // Separate from `cache` above: TryFusedMatMul() has no bias operand
+  // and instead folds `alpha` in as a post-op, so its primitive_desc
+  // shape (3 operands, not 4) and cache key (alpha included) both
+  // differ from TryFusedMatMulBias()'s.
+  std::map<std::tuple<bool, bool, int, int, int, int, int, int, float>, NoBiasEntry> noBiasCache;
+
+  struct FeedbackFusedEntry
+  {
+    dnnl::memory::desc srcMd, weightsMd, dstMd;
+    dnnl::matmul prim;
+  };
+  // Keyed on (batchSize, size, nextSize) only: TryFusedFeedbackUpdate()'s
+  // operands are always non-transposed and tightly packed (see
+  // SimplePCLayer::UpdateState(), the only caller), unlike
+  // TryFusedMatMul{,Bias}() above which also vary transA/transB/strides.
+  std::map<std::tuple<int, int, int>, FeedbackFusedEntry> feedbackFusedCache;
 };
 #endif
 
@@ -218,7 +249,6 @@ bool CPUBackend::TryFusedMatMulBias(bool transA, bool transB, int M, int N, int 
 #ifndef DEEPITY_USE_ONEDNN
   (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)A, (void)lda, (void)B, (void)ldb,
       (void)bias, (void)C, (void)ldc;
-  return false;
 #else
   // Row-major operand with logical shape (R,C): contiguous (ld>=C) when
   // not transposed, strides {ld,1}; when transposed, the array is
@@ -271,9 +301,211 @@ bool CPUBackend::TryFusedMatMulBias(bool transA, bool transB, int M, int N, int 
   }
   catch (const dnnl::error&)
   {
-    return false; // caller falls back to MatMul()+AddBiasBroadcast()
+    // falls through to libxsmm/false below, same as !DEEPITY_USE_ONEDNN
   }
 #endif
+#ifdef DEEPITY_USE_LIBXSMM
+  // Fallback, not first choice: oneDNN's dnnl::matmul above already
+  // internally parallelizes and consistently beat a hand-rolled
+  // OpenMP-row-blocked libxsmm dispatch loop at every shape this
+  // project actually uses when measured head to head (~13% slower
+  // overall on a full MNIST profiling pass) -- see CPUBackendLibxsmm.h.
+  // Kept as a fallback for builds without oneDNN, where libxsmm still
+  // beats plain cblas_sgemm's per-call dispatch overhead.
+  if (TryLibxsmmMatMul(transA, transB, M, N, K, A, lda, B, ldb, C, ldc, bias))
+    return true;
+#endif
+  return false; // caller falls back to MatMul()+AddBiasBroadcast()
+}
+
+bool CPUBackend::TryFusedMatMul(bool transA, bool transB, int M, int N, int K, float alpha,
+                                const float* A, int lda, const float* B, int ldb, float* C,
+                                int ldc) noexcept
+{
+#ifndef DEEPITY_USE_ONEDNN
+  (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)alpha, (void)A, (void)lda,
+      (void)B, (void)ldb, (void)C, (void)ldc;
+#else
+  auto operandMd = [](int R, int C, int ld, bool transposed)
+  {
+    return dnnl::memory::desc(
+        {R, C}, dnnl::memory::data_type::f32,
+        transposed ? dnnl::memory::dims{1, ld} : dnnl::memory::dims{ld, 1});
+  };
+
+  try
+  {
+    auto key = std::make_tuple(transA, transB, M, N, K, lda, ldb, ldc, alpha);
+    auto it = m_oneDnnCache->noBiasCache.find(key);
+    if (it == m_oneDnnCache->noBiasCache.end())
+    {
+      OneDnnMatMulCache::NoBiasEntry entry;
+      entry.srcMd = operandMd(M, K, lda, transA);
+      entry.weightsMd = operandMd(K, N, ldb, transB);
+      entry.dstMd = operandMd(M, N, ldc, false);
+
+      // alpha folded in as a post-op (dst = 1*(A@B) + 0, then
+      // eltwise_linear scales it by alpha) rather than a primitive
+      // attribute, since dnnl::matmul has no alpha scalar of its own --
+      // see MatMul()'s cblas_sgemm call for the primitive this mirrors.
+      dnnl::post_ops postOps;
+      postOps.append_eltwise(dnnl::algorithm::eltwise_linear, alpha, 0.0f);
+      dnnl::primitive_attr attr;
+      attr.set_post_ops(postOps);
+
+      dnnl::matmul::primitive_desc pd(m_oneDnnCache->engine, entry.srcMd, entry.weightsMd,
+                                      entry.dstMd, attr);
+      entry.prim = dnnl::matmul(pd);
+      it = m_oneDnnCache->noBiasCache.emplace(key, std::move(entry)).first;
+    }
+    const auto& entry = it->second;
+    const auto& eng = m_oneDnnCache->engine;
+
+    dnnl::memory srcMem(entry.srcMd, eng, const_cast<float*>(A));
+    dnnl::memory weightsMem(entry.weightsMd, eng, const_cast<float*>(B));
+    dnnl::memory dstMem(entry.dstMd, eng, C);
+
+    entry.prim.execute(
+        m_oneDnnCache->stream,
+        {{DNNL_ARG_SRC, srcMem}, {DNNL_ARG_WEIGHTS, weightsMem}, {DNNL_ARG_DST, dstMem}});
+    m_oneDnnCache->stream.wait();
+    return true;
+  }
+  catch (const dnnl::error&)
+  {
+    // falls through to libxsmm/false below, same as !DEEPITY_USE_ONEDNN
+  }
+#endif
+#ifdef DEEPITY_USE_LIBXSMM
+  // Fallback, not first choice -- see TryFusedMatMulBias()'s matching
+  // comment. libxsmm's JIT'd kernels also bake alpha=1 in at dispatch
+  // time (no runtime scalar), so this only ever applies when the
+  // caller's alpha is exactly 1 (true for UpdateState()'s feedback
+  // GEMM, not for UpdateWeights()'s grad_scale=-1 GEMM).
+  if (alpha == 1.0f && TryLibxsmmMatMul(transA, transB, M, N, K, A, lda, B, ldb, C, ldc))
+    return true;
+#endif
+  return false; // caller falls back to MatMul()
+}
+
+bool CPUBackend::TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int size,
+                                        int nextSize, const float* eAbove, const float* W,
+                                        float* z, const float* e, float ir, float* scratch,
+                                        float* derivScratch) noexcept
+{
+#ifdef DEEPITY_USE_ONEDNN
+  // Primary path: weld the elementwise update onto the feedback GEMM as
+  // post-ops on the SAME dnnl::matmul primitive, evaluated in registers
+  // on each output tile right as oneDNN's own GEMM microkernel produces
+  // it -- same kernel, same thread pool as every other matmul in this
+  // file, no separate elementwise pass and no second thread pool
+  // competing with this one (see this method's @copydoc in
+  // IComputeBackend.h for why that second-thread-pool problem is exactly
+  // what sank the Halide fallback below). This mirrors what XLA's CPU
+  // backend does for jpc/JAX's matmul+elementwise fusions (confirmed via
+  // strings in jaxlib's own binary: PopulateOneDnnPostOps,
+  // OneDnnFusionConfig).
+  try
+  {
+    size_t n = (size_t)batchSize * size;
+
+    // derivScratch = f'(z) is the only elementwise precompute pass this
+    // needs -- e and z both feed the post-op chain directly below
+    // (unscaled), with the ir scale and the -e subtraction folded into
+    // the chain itself instead of a second/third precompute pass.
+    // ActivationDerivativeInto() handles every ActivationType this
+    // project has (see To_dFn2()'s switch), unlike the Halide kernel
+    // below which only ever covered SIGMOID.
+    ActivationDerivativeInto(dType, derivScratch, z, n);
+
+    auto key = std::make_tuple(batchSize, size, nextSize);
+    auto it = m_oneDnnCache->feedbackFusedCache.find(key);
+    if (it == m_oneDnnCache->feedbackFusedCache.end())
+    {
+      OneDnnMatMulCache::FeedbackFusedEntry entry;
+      entry.srcMd = dnnl::memory::desc({batchSize, nextSize}, dnnl::memory::data_type::f32,
+                                       dnnl::memory::dims{nextSize, 1});
+      entry.weightsMd = dnnl::memory::desc({nextSize, size}, dnnl::memory::data_type::f32,
+                                           dnnl::memory::dims{size, 1});
+      entry.dstMd = dnnl::memory::desc({batchSize, size}, dnnl::memory::data_type::f32,
+                                       dnnl::memory::dims{size, 1});
+
+      // dst = feedback; dst = dst*derivScratch; dst = dst-e; dst = ir*dst;
+      // dst = dst+z  ==>  dst = z + ir*(f'(z)*feedback - e), exactly
+      // FusedStateUpdate()'s formula.
+      dnnl::post_ops postOps;
+      postOps.append_binary(dnnl::algorithm::binary_mul, entry.dstMd);
+      postOps.append_binary(dnnl::algorithm::binary_sub, entry.dstMd);
+      postOps.append_eltwise(dnnl::algorithm::eltwise_linear, ir, 0.0f);
+      postOps.append_binary(dnnl::algorithm::binary_add, entry.dstMd);
+      dnnl::primitive_attr attr;
+      attr.set_post_ops(postOps);
+
+      dnnl::matmul::primitive_desc pd(m_oneDnnCache->engine, entry.srcMd, entry.weightsMd,
+                                      entry.dstMd, attr);
+      entry.prim = dnnl::matmul(pd);
+      it = m_oneDnnCache->feedbackFusedCache.emplace(key, std::move(entry)).first;
+    }
+    const auto& entry = it->second;
+    const auto& eng = m_oneDnnCache->engine;
+
+    dnnl::memory srcMem(entry.srcMd, eng, const_cast<float*>(eAbove));
+    dnnl::memory weightsMem(entry.weightsMd, eng, const_cast<float*>(W));
+    // scratch (never z itself -- see this method's no-aliasing @copydoc)
+    // is the primitive's dst; one plain copy below finishes the
+    // in-place-from-the-caller's-perspective contract.
+    dnnl::memory dstMem(entry.dstMd, eng, scratch);
+    dnnl::memory derivMem(entry.dstMd, eng, derivScratch);
+    dnnl::memory eMem(entry.dstMd, eng, const_cast<float*>(e));
+    dnnl::memory zMem(entry.dstMd, eng, const_cast<float*>(z));
+
+    // Post-op 2 (eltwise_linear) has no runtime memory operand -- its
+    // scale is baked into the post-op descriptor above -- so the binary
+    // post-ops' indices in the chain are 0, 1, 3, not 0, 1, 2.
+    entry.prim.execute(
+        m_oneDnnCache->stream,
+        {{DNNL_ARG_SRC, srcMem},
+         {DNNL_ARG_WEIGHTS, weightsMem},
+         {DNNL_ARG_DST, dstMem},
+         {DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, derivMem},
+         {DNNL_ARG_ATTR_MULTIPLE_POST_OP(1) | DNNL_ARG_SRC_1, eMem},
+         {DNNL_ARG_ATTR_MULTIPLE_POST_OP(3) | DNNL_ARG_SRC_1, zMem}});
+    m_oneDnnCache->stream.wait();
+
+    std::memcpy(z, scratch, n * sizeof(float));
+    return true;
+  }
+  catch (const dnnl::error&)
+  {
+    // falls through to Halide/false below
+  }
+#endif
+
+#ifdef DEEPITY_USE_HALIDE
+  // Secondary fallback only: this project's first attempt at this
+  // fusion, kept because it's verified correct, not because it's fast
+  // -- see this method's @copydoc in IComputeBackend.h. Only SIGMOID has
+  // an AOT kernel, and only for nextSize>=64 (a short reduction doesn't
+  // amortize the tiled schedule's overhead).
+  if (dType == ActivationType::dSIGMOID && nextSize >= 64)
+  {
+    Halide::Runtime::Buffer<const float> eAboveBuf(eAbove, nextSize, batchSize);
+    Halide::Runtime::Buffer<const float> wBuf(W, size, nextSize);
+    Halide::Runtime::Buffer<const float> zInBuf(z, size, batchSize);
+    Halide::Runtime::Buffer<const float> eBuf(e, size, batchSize);
+    Halide::Runtime::Buffer<float> scratchBuf(scratch, size, batchSize);
+
+    if (deepity_feedback_update_sigmoid(eAboveBuf, wBuf, zInBuf, eBuf, ir, scratchBuf) == 0)
+    {
+      std::memcpy(z, scratch, (size_t)batchSize * size * sizeof(float));
+      return true;
+    }
+  }
+#endif
+
+  (void)dType, (void)batchSize, (void)size, (void)nextSize, (void)eAbove, (void)W, (void)z,
+      (void)e, (void)ir, (void)scratch, (void)derivScratch;
+  return false;
 }
 
 void CPUBackend::Activation(ActivationType type, float* buf, size_t n) noexcept
@@ -378,6 +610,27 @@ void CPUBackend::ComputeError(float* e, const float* z, const float* mu, size_t 
 #pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
     e[i] = z[i] - mu[i];
+}
+
+bool CPUBackend::TryComputeErrorAndActivation(ActivationType activationType, float* e, float* zF,
+                                              const float* z, const float* mu,
+                                              size_t n) noexcept
+{
+  // Plain scalar loop, not the hand-vectorized AVX/SLEEF path
+  // ActivationInto() uses -- same tradeoff FusedStateUpdate() already
+  // accepts for its own transcendental-derivative cases (see
+  // NeedsTranscendentalDerivative()'s comment above): this trades some
+  // per-call vector throughput for reading z once instead of twice and
+  // paying one fork/join instead of two, which is the actual win at the
+  // layer sizes this engine settles on (see ComputeError()'s comment on
+  // where that fork/join cost dominates).
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
+  for (size_t i = 0; i < n; ++i)
+  {
+    e[i] = z[i] - mu[i];
+    zF[i] = ActivationScalar(activationType, z[i]);
+  }
+  return true;
 }
 
 float CPUBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy(

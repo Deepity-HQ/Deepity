@@ -61,7 +61,17 @@ def main() -> None:
     # layer's weights uniformly, inside the PC step itself, which is what
     # breaks symmetric feedback); this instead shrinks only the one
     # pathological weight matrix, from outside the library, once per batch.
-    TERMINAL_FEED_WEIGHT_DECAY = 1e-4
+    # This value sits right at the stabilizer's margin and is tuned to the
+    # exact floating-point accumulation order of whichever GEMM kernel
+    # actually runs the feedback matmul -- it needed re-tuning once already
+    # (1e-4->2e-4) when oneDNN's matmul replaced cblas_sgemm there, and
+    # again (->5e-4) when DEEPITY_USE_LIBXSMM's row-blocked JIT kernel
+    # replaced oneDNN. 2e-4 is for the DEFAULT build (DEEPITY_USE_LIBXSMM
+    # OFF); rebuilding with -DDEEPITY_USE_LIBXSMM=ON needs 5e-4 instead
+    # (verified: 4e-4 drifts down to ~94% by epoch 100, 6e-4 holds a longer
+    # 99%+ plateau but then crashes suddenly at the very end, 5e-4 is the
+    # stable middle -- 96.27% final accuracy over a full 100-epoch run).
+    TERMINAL_FEED_WEIGHT_DECAY = 2e-4
 
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
     net = SimplePCN(

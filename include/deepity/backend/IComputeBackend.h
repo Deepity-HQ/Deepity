@@ -182,6 +182,75 @@ public:
                                   int lda, const float* B, int ldb, const float* bias, float* C,
                                   int ldc) noexcept = 0;
 
+  /// @brief Attempts C = alpha * (A @ B(^T)) via oneDNN's matmul
+  /// primitive instead of MatMul()'s cblas_sgemm (CPU only,
+  /// DEEPITY_USE_ONEDNN build only) -- no bias, beta=0 implied (this is
+  /// NOT a general GEMM: it cannot accumulate into an existing C, unlike
+  /// MatMul()). Exists to test whether oneDNN's own kernel simply beats
+  /// cblas_sgemm's dispatch overhead at the small per-settling-step
+  /// shapes PC layers use, independent of any bias-fusion benefit.
+  /// Returns true if the fused path ran; false if the caller should
+  /// fall back to MatMul() with the same alpha and beta=0 (always false
+  /// when oneDNN isn't compiled in, and on CUDABackend).
+  /// @param transA/transB/M/N/K/A/lda/B/ldb/C/ldc Same meaning and
+  /// shapes as MatMul(). @param alpha Scalar multiplier on the product,
+  /// same convention as MatMul().
+  virtual bool TryFusedMatMul(bool transA, bool transB, int M, int N, int K, float alpha,
+                              const float* A, int lda, const float* B, int ldb, float* C,
+                              int ldc) noexcept = 0;
+
+  /// @brief Fuses SimplePCLayer::UpdateState()'s feedback GEMM directly
+  /// into its own elementwise state update -- the GEMM's output is never
+  /// separately read back and re-walked by its own pass:
+  ///   feedback = e_above @ W                   (M=batchSize,N=size,K=nextSize)
+  ///   z += ir * (f'(z) * feedback - e)
+  /// Primary mechanism (CPUBackend, DEEPITY_USE_ONEDNN): a dnnl::matmul
+  /// primitive with the elementwise update welded on as post-ops
+  /// (binary_mul/binary_add), evaluated in registers on each output tile
+  /// right as oneDNN's own GEMM microkernel produces it -- same kernel,
+  /// same thread pool as every other matmul in this file, just with the
+  /// epilogue attached. Works for every ActivationType oneDNN can be
+  /// handed a precomputed derivative for (i.e. all of them, via
+  /// ActivationDerivativeInto()), unlike the Halide fallback below.
+  /// Secondary fallback (DEEPITY_USE_HALIDE only, off by default): an
+  /// ahead-of-time Halide kernel (src/backend/halide/
+  /// FeedbackUpdateGenerator.cpp) that was this project's first attempt at
+  /// this fusion -- kept only because it's verified correct, not because
+  /// it's fast: measured slower than oneDNN's separate GEMM+elementwise
+  /// pair even after a properly-tiled schedule, because its own thread
+  /// pool oversubscribes CPU cores alongside oneDNN's (see
+  /// DEEPITY_USE_HALIDE's CMakeLists.txt comment for the full writeup).
+  /// Only ActivationType::SIGMOID and nextSize>=64 reach it. Any dType
+  /// neither path handles, or every path failing/disabled, returns false
+  /// so the caller falls back to its own separate TryFusedMatMul()/
+  /// FusedStateUpdate() calls, same convention as TryFusedMatMul() above.
+  /// @param dType Which activation's derivative to apply to z, matching
+  /// FusedStateUpdate()'s own dType parameter.
+  /// @param batchSize/size/nextSize Shapes as named in SimplePCLayer.
+  /// @param eAbove (batchSize, nextSize) row-major, tightly packed.
+  /// @param W (nextSize, size) row-major, tightly packed.
+  /// @param z In/out, (batchSize, size) row-major, tightly packed. Must
+  /// NOT alias scratch/derivScratch (each is both read and written
+  /// across the two mechanisms above; aliasing silently produces wrong
+  /// results -- verified empirically with the Halide kernel, see
+  /// FeedbackUpdateGenerator.cpp's file comment).
+  /// @param e (batchSize, size) row-major, tightly packed.
+  /// @param ir Inference rate, same meaning as FusedStateUpdate()'s ir.
+  /// @param scratch Caller-owned (batchSize, size) scratch buffer (e.g.
+  /// SimplePCLayer's own feedbackScratch, otherwise unused on this
+  /// path) -- the fused result is written here, then copied into z, to
+  /// satisfy the no-aliasing requirement above without a per-call heap
+  /// allocation.
+  /// @param derivScratch Caller-owned (batchSize, size) scratch buffer
+  /// holding f'(z), precomputed once by the oneDNN path (the only
+  /// elementwise precompute pass this path needs -- e and z feed the
+  /// post-op chain directly, see CPUBackend.cpp's implementation) and
+  /// bound as a post-op's runtime operand. Unused on the Halide path.
+  virtual bool TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int size, int nextSize,
+                                      const float* eAbove, const float* W, float* z,
+                                      const float* e, float ir, float* scratch,
+                                      float* derivScratch) noexcept = 0;
+
   // Activation
 
   /// @brief Applies `type` to `buf` in place.
@@ -235,6 +304,32 @@ public:
   /// @brief Same as ComputeErrorAndEnergy(), without computing (or
   /// returning) the energy, for callers that only need e.
   virtual void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept = 0;
+
+  /// @brief Fuses ComputeError()'s e = z - mu with the forward
+  /// activation zF = f(z) that SimplePCLayer::ComputeMuOnly() computes
+  /// right afterward in the common (non-cross-entropy, no-energy-needed)
+  /// settling step -- both read the same z, so this halves that read and
+  /// pays one OpenMP fork/join instead of two, see
+  /// SimplePCLayer::CalculateState()'s call site for the exact condition
+  /// under which this applies instead of the separate ComputeError()/
+  /// ActivationInto() pair. Unlike TryFusedMatMul() et al., this isn't a
+  /// GEMM-adjacent fusion -- oneDNN's post-ops only transform a
+  /// primitive's *output*, and the activation here runs strictly before
+  /// the mu GEMM reads zF, so there's no post-op slot to weld it onto;
+  /// this is a plain elementwise loop fusion instead.
+  /// @param activationType A forward-flavored ActivationType (e.g.
+  /// SIGMOID), matching ComputeMuOnly()'s own activationType.
+  /// @param e Output, length n: z - mu.
+  /// @param zF Output, length n: f(z).
+  /// @param z Input, length n.
+  /// @param mu Input, length n.
+  /// @param n Element count (batchSize * size).
+  /// @return false if this backend has no fused implementation, in
+  /// which case the caller falls back to separate ComputeError()/
+  /// ActivationInto() calls, same convention as TryFusedMatMul() above.
+  virtual bool TryComputeErrorAndActivation(ActivationType activationType, float* e, float* zF,
+                                            const float* z, const float* mu,
+                                            size_t n) noexcept = 0;
 
   /// @brief Softmax cross-entropy variant of ComputeErrorAndEnergy, for
   /// the terminal layer only. Unlike the Gaussian version, this needs

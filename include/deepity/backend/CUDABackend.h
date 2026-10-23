@@ -83,6 +83,26 @@ public:
     return false; // CUDA's own fused path is TryFusedForwardPass instead
   }
 
+  /// @copydoc Deep::IComputeBackend::TryFusedMatMul
+  bool TryFusedMatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
+                      int lda, const float* B, int ldb, float* C, int ldc) noexcept override
+  {
+    (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)alpha, (void)A, (void)lda,
+        (void)B, (void)ldb, (void)C, (void)ldc;
+    return false; // CUDA's own fused path is TryFusedForwardPass instead
+  }
+
+  /// @copydoc Deep::IComputeBackend::TryFusedFeedbackUpdate
+  bool TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int size, int nextSize,
+                              const float* eAbove, const float* W, float* z, const float* e,
+                              float ir, float* scratch, float* derivScratch) noexcept override
+  {
+    (void)dType, (void)batchSize, (void)size, (void)nextSize, (void)eAbove, (void)W, (void)z,
+        (void)e, (void)ir, (void)scratch, (void)derivScratch;
+    return false; // no CUDA kernel for this fusion yet -- caller falls
+                  // back to TryFusedMatMul() + FusedStateUpdate()
+  }
+
   /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
   void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, ActivationType dType,
                                 const float* e, size_t n, float ir, float beta) noexcept override;
@@ -112,6 +132,14 @@ public:
                               size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::ComputeError
   void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept override;
+
+  /// @copydoc Deep::IComputeBackend::TryComputeErrorAndActivation
+  bool TryComputeErrorAndActivation(ActivationType activationType, float* e, float* zF,
+                                    const float* z, const float* mu, size_t n) noexcept override
+  {
+    (void)activationType, (void)e, (void)zF, (void)z, (void)mu, (void)n;
+    return false; // caller falls back to separate ComputeError()/ActivationInto() calls
+  }
 
   /// @copydoc Deep::IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy
   float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,

@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.21)
+# 3.28 is Halide's own declared floor (see DEEPITY_USE_HALIDE below);
+# CMake 4.x is what's actually installed on every machine this project
+# builds on today, so this costs nothing in practice.
+cmake_minimum_required(VERSION 3.28)
 
 project(deepity C CXX)
 
@@ -15,6 +18,59 @@ option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MK
 # oneDNN matmul-with-bias call (CPU only; falls back to the existing
 # separate-call path automatically if OFF or oneDNN isn't found).
 option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass (experimental)" OFF)
+# Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
+# for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
+# unlike the mu GEMM above), avoiding cblas_sgemm's generic-large-GEMM
+# dispatch overhead at these small shapes (CPU only; falls back to the
+# existing MatMul() path automatically if OFF or dispatch fails).
+option(DEEPITY_USE_LIBXSMM "Use libxsmm for small-matrix GEMMs instead of cblas_sgemm (experimental)" OFF)
+# Experimental, measured SLOWER -- kept OFF by default, see below. Fuses
+# SimplePCLayer::UpdateState()'s feedback GEMM (feedbackScratch = e_above
+# @ W) directly into its own elementwise state update (z +=
+# ir*(f'(z)*feedbackScratch - e)) via an ahead-of-time-compiled Halide
+# kernel, so feedbackScratch is never materialized to memory at all -- a
+# structural fusion oneDNN/libxsmm can't express (both are GEMM
+# dispatchers, not schedulable compilers). Building Halide itself requires
+# LLVM (uses the system install via find_package, not a from-source build
+# -- see cmake/PatchHalideForNewerLLVM.cmake's file comment for the one
+# compatibility patch that needs).
+#
+# Verified correct (direct reference comparison at the real MNIST shapes,
+# plus a finite-difference gradient check through a real UpdateWeights()
+# call). Two rounds measured:
+#
+# Round 1 (plain RDom reduction, no tiling): ~4x SLOWER than the oneDNN
+# baseline for this GEMM bucket alone (1.54s vs. 0.24s+0.13s combined, same
+# 40-batch run) -- oneDNN's cache-blocked multi-threaded GEMM comfortably
+# beat an untiled hand-scheduled reduction, same as the libxsmm result
+# above.
+#
+# Round 2 (register-tiled schedule adapted from Halide's own
+# test/performance/matrix_multiplication.cpp, see FeedbackUpdateGenerator.cpp):
+# closed almost all of that gap in isolation -- a standalone GEMM-only probe
+# at the real (M,N,K) shapes measured this schedule at parity with MKL
+# single-threaded and only ~1.6-2x behind multi-threaded. But wiring it into
+# the real training loop made things *worse* than round 1's raw number would
+# suggest (total time ~1.8-1.9x the oneDNN baseline), and crucially degraded
+# *unrelated* oneDNN GEMM calls elsewhere in the same loop (muGemmSeconds,
+# which never touches Halide, rose ~40-60%) -- i.e. the regression is not
+# (only) schedule quality anymore, it's Halide's own thread pool and
+# oneDNN's thread pool oversubscribing the same cores when interleaved in
+# one hot loop. Forcing Halide down to 1 thread (HL_NUM_THREADS=1) restored
+# the unrelated oneDNN buckets to baseline but made the fused GEMM itself
+# ~13x slower solo -- every thread-count tried nets out worse than baseline
+# end to end. A real fix would mean routing Halide's parallel-for through
+# oneDNN's own thread pool instead of spinning up a second one
+# (halide_do_par_for override) -- a substantially bigger undertaking than
+# schedule tuning, not attempted yet.
+#
+# Kept as an experimental, off-by-default option (same convention as
+# DEEPITY_USE_LIBXSMM above) rather than deleted. CPU only; falls back to
+# the existing separate-calls path automatically if OFF, dispatch fails,
+# the activation isn't SIGMOID (the only one with an AOT kernel today), or
+# nextSize < 64 (the tiled schedule's reduction-tile overhead doesn't
+# amortize for the output layer's short nextSize=10 feedback GEMM).
+option(DEEPITY_USE_HALIDE "Use an AOT Halide kernel to fuse the feedback GEMM with its state update (experimental, measured slower than the oneDNN baseline)" OFF)
 
 # AMD ROCm Coming soon...
 
@@ -504,6 +560,75 @@ if(DEEPITY_USE_ONEDNN)
     FetchContent_MakeAvailable(onednn)
 endif()
 
+if(DEEPITY_USE_LIBXSMM)
+    # libxsmm's own CMake configure step shells out to a Python script
+    # (scripts/libxsmm_config.py) to generate libxsmm_version.h.
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    # Not needed and pulls in a gfortran requirement for nothing -- we
+    # only use the C dispatch API.
+    set(LIBXSMM_FORTRAN OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+        libxsmm
+        GIT_REPOSITORY https://github.com/libxsmm/libxsmm.git
+        GIT_TAG 2.1.0
+    )
+    FetchContent_MakeAvailable(libxsmm)
+
+    # Isolated into its own target, deliberately never linked against
+    # MKL: libxsmm's CMake build (unlike its GNU Make build) hardcodes
+    # LP64 (32-bit libxsmm_blasint) with no option to request ILP64
+    # through this path, and its headers refuse to compile at all if
+    # MKL_ILP64 is visible alongside that mismatch -- see
+    # CPUBackendLibxsmm.h's file comment for the full reasoning. Mirrors
+    # DeepityHighwayKernels' existing use of a separate target for the
+    # same kind of per-translation-unit compilation isolation.
+    add_library(DeepityLibxsmm STATIC src/backend/CPUBackendLibxsmm.cpp)
+    target_include_directories(DeepityLibxsmm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    # OpenMP, not MKL: libxsmm's dispatched kernels are deliberately
+    # single-threaded per call (see CPUBackendLibxsmm.cpp) -- the
+    # caller supplies parallelism itself, here via a row-blocked
+    # #pragma omp parallel for across the batch dimension.
+    target_link_libraries(DeepityLibxsmm PRIVATE libxsmm::libxsmm OpenMP::OpenMP_CXX)
+endif()
+
+if(DEEPITY_USE_HALIDE)
+    # Not needed and would otherwise pull in flatbuffers/wabt for nothing --
+    # Deepity only uses Halide's AOT Generator workflow (plain
+    # add_halide_library() static libs), never JIT, serialization, the
+    # WASM backend, or the Python bindings.
+    set(WITH_SERIALIZATION OFF CACHE BOOL "" FORCE)
+    set(Halide_WASM_BACKEND OFF CACHE STRING "" FORCE)
+    set(WITH_PYTHON_BINDINGS OFF CACHE BOOL "" FORCE)
+    set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+    set(WITH_TUTORIALS OFF CACHE BOOL "" FORCE)
+    set(WITH_DOCS OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+        halide
+        GIT_REPOSITORY https://github.com/halide/Halide.git
+        GIT_TAG v21.0.0
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            "-DDEEPITY_HALIDE_SRC_DIR=${CMAKE_BINARY_DIR}/_deps/halide-src"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchHalideForNewerLLVM.cmake"
+        UPDATE_DISCONNECTED TRUE
+    )
+    FetchContent_MakeAvailable(halide)
+
+    # The generator program: runs at BUILD time only (links Halide +
+    # LLVM), never shipped. Its output (below) has no such dependency --
+    # see IComputeBackend.h's TryFusedFeedbackUpdate comment.
+    add_executable(DeepityHalideGenerators src/backend/halide/FeedbackUpdateGenerator.cpp)
+    target_link_libraries(DeepityHalideGenerators PRIVATE Halide::Generator)
+
+    add_halide_library(deepity_feedback_update_sigmoid
+        FROM DeepityHalideGenerators
+        GENERATOR deepity_feedback_update_sigmoid
+        FUNCTION_NAME deepity_feedback_update_sigmoid
+    )
+endif()
+
 # --- Deepity library ------------------------------------------------
 
 set(DEEPITY_SOURCES
@@ -605,6 +730,16 @@ endif()
 if(DEEPITY_USE_ONEDNN)
     target_link_libraries(Deepity PRIVATE dnnl)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_ONEDNN)
+endif()
+
+if(DEEPITY_USE_LIBXSMM)
+    target_link_libraries(Deepity PRIVATE DeepityLibxsmm)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_LIBXSMM)
+endif()
+
+if(DEEPITY_USE_HALIDE)
+    target_link_libraries(Deepity PRIVATE deepity_feedback_update_sigmoid)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_HALIDE)
 endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)

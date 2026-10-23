@@ -91,6 +91,14 @@ public:
   bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A, int lda,
                           const float* B, int ldb, const float* bias, float* C,
                           int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedMatMul
+  bool TryFusedMatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
+                      int lda, const float* B, int ldb, float* C, int ldc) noexcept override;
+
+  /// @copydoc Deep::IComputeBackend::TryFusedFeedbackUpdate
+  bool TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int size, int nextSize,
+                              const float* eAbove, const float* W, float* z, const float* e,
+                              float ir, float* scratch, float* derivScratch) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::TryFusedForwardPass
   bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
@@ -126,6 +134,11 @@ public:
                               size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::ComputeError
   void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept override;
+
+  /// @copydoc Deep::IComputeBackend::TryComputeErrorAndActivation
+  bool TryComputeErrorAndActivation(ActivationType activationType, float* e, float* zF,
+                                    const float* z, const float* mu,
+                                    size_t n) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy
   float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,
@@ -239,8 +252,9 @@ public:
 
 private:
 #ifdef DEEPITY_USE_ONEDNN
-  // Opaque: TryFusedMatMulBias() caches oneDNN engine/primitive objects
-  // here, keyed by shape, since building a matmul primitive JIT-compiles
+  // Opaque: TryFusedMatMulBias() and TryFusedMatMul() cache oneDNN
+  // engine/primitive objects here, keyed by shape, since building a
+  // matmul primitive JIT-compiles
   // a kernel (expensive) while executing one is cheap -- every layer
   // calls this with the same fixed shape on every settling step, every
   // training iteration, so the cache amortizes that cost to once per

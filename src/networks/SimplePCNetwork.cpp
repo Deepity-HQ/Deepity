@@ -227,10 +227,12 @@ float SimplePCNetwork::TrainStepWithProjection(const std::vector<float>& x,
       double total = sProjectForwardSec + sSettlingSec + sUpdateWeightsSec;
       double gemmSec = DebugGetGemmSeconds();
       double muGemmSec = DebugGetMuGemmSeconds();
+      double feedbackGemmSec = DebugGetFeedbackGemmSeconds();
+      double weightGradGemmSec = DebugGetWeightGradGemmSeconds();
       double errSec = DebugGetErrorSeconds();
       double muSec = DebugGetMuOnlyElementwiseSeconds();
       double updSec = DebugGetUpdateStateElementwiseSeconds();
-      double allGemmSec = gemmSec + muGemmSec;
+      double allGemmSec = gemmSec + muGemmSec + feedbackGemmSec + weightGradGemmSec;
       std::cerr << "[PROFILE] calls=" << sCalls << " total=" << total << "s"
                 << " ProjectForward=" << sProjectForwardSec << "s ("
                 << (100.0 * sProjectForwardSec / total) << "%)"
@@ -238,9 +240,13 @@ float SimplePCNetwork::TrainStepWithProjection(const std::vector<float>& x,
                 << (100.0 * sSettlingSec / total) << "%)"
                 << " UpdateWeights=" << sUpdateWeightsSec << "s ("
                 << (100.0 * sUpdateWeightsSec / total) << "%)"
-                << " | GEMM(cblas)=" << gemmSec << "s (" << (100.0 * gemmSec / total)
+                << " | GEMM(cblas, remaining)=" << gemmSec << "s (" << (100.0 * gemmSec / total)
                 << "% of total, " << DebugGetGemmCalls() << " calls)"
                 << " GEMM(oneDNN mu)=" << muGemmSec << "s (" << (100.0 * muGemmSec / total) << "%)"
+                << " GEMM(oneDNN feedback)=" << feedbackGemmSec << "s ("
+                << (100.0 * feedbackGemmSec / total) << "%)"
+                << " GEMM(oneDNN weightGrad)=" << weightGradGemmSec << "s ("
+                << (100.0 * weightGradGemmSec / total) << "%)"
                 << " allGEMM=" << allGemmSec << "s (" << (100.0 * allGemmSec / total) << "%)"
                 << " non-GEMM=" << (total - allGemmSec) << "s ("
                 << (100.0 * (total - allGemmSec) / total) << "%)"

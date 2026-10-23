@@ -24,12 +24,16 @@ void NoOpDeleter(IComputeBackend*) {}
 double g_debugErrorSeconds = 0.0;
 double g_debugMuOnlyElementwiseSeconds = 0.0;
 double g_debugMuGemmSeconds = 0.0;
+double g_debugFeedbackGemmSeconds = 0.0;
+double g_debugWeightGradGemmSeconds = 0.0;
 double g_debugUpdateStateElementwiseSeconds = 0.0;
 } // namespace
 
 double DebugGetErrorSeconds() noexcept { return g_debugErrorSeconds; }
 double DebugGetMuOnlyElementwiseSeconds() noexcept { return g_debugMuOnlyElementwiseSeconds; }
 double DebugGetMuGemmSeconds() noexcept { return g_debugMuGemmSeconds; }
+double DebugGetFeedbackGemmSeconds() noexcept { return g_debugFeedbackGemmSeconds; }
+double DebugGetWeightGradGemmSeconds() noexcept { return g_debugWeightGradGemmSeconds; }
 double DebugGetUpdateStateElementwiseSeconds() noexcept
 {
   return g_debugUpdateStateElementwiseSeconds;
@@ -111,6 +115,15 @@ float SimplePCLayer::CalculateState(bool needEnergy) noexcept
   }
 
   float totalEnergy = 0.0f;
+  // ComputeMuOnly() is about to read z again right after this to compute
+  // zF=f(z) for its own GEMM -- unless it's about to skip that entirely
+  // via the mu cache-hit branch (see ComputeMuOnly()'s own early
+  // return), in which case zF isn't needed at all right now and
+  // computing it here would be pure waste.
+  bool tryMergeActivation =
+      nextSize > 0 && !useCrossEntropy && !needEnergy && !(isClamped && muCacheValid);
+  bool mergedActivation = false;
+
   auto t0 = std::chrono::steady_clock::now();
   if (useCrossEntropy)
   {
@@ -124,6 +137,11 @@ float SimplePCLayer::CalculateState(bool needEnergy) noexcept
   {
     totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, N);
   }
+  else if (tryMergeActivation &&
+          backend->TryComputeErrorAndActivation(activationType, e, zF, z, layerBelow->mu, N))
+  {
+    mergedActivation = true;
+  }
   else
   {
     backend->ComputeError(e, z, layerBelow->mu, N);
@@ -132,12 +150,12 @@ float SimplePCLayer::CalculateState(bool needEnergy) noexcept
   g_debugErrorSeconds += std::chrono::duration<double>(t1 - t0).count();
 
   if (nextSize > 0)
-    ComputeMuOnly();
+    ComputeMuOnly(/*zFAlreadyComputed=*/mergedActivation);
 
   return totalEnergy;
 }
 
-void SimplePCLayer::ComputeMuOnly() noexcept
+void SimplePCLayer::ComputeMuOnly(bool zFAlreadyComputed) noexcept
 {
   if (nextSize == 0)
     return;
@@ -158,7 +176,8 @@ void SimplePCLayer::ComputeMuOnly() noexcept
   // zF survives a later cache hit untouched: while clamped, z doesn't
   // change, so zF computed here stays valid for UpdateWeights() even
   // on settling steps that skip straight to the cache-hit branch above.
-  backend->ActivationInto(activationType, zF, z, N);
+  if (!zFAlreadyComputed)
+    backend->ActivationInto(activationType, zF, z, N);
   auto tAct = std::chrono::steady_clock::now();
 
   // mu = zF @ W^T + b, with no further activation -- see this class's
@@ -218,20 +237,66 @@ void SimplePCLayer::UpdateState() noexcept
     // here, unlike the mu=f(W@z+b) convention: under mu=W@phi(z)+b,
     // the nonlinearity lives on z, so its derivative applies AFTER
     // this projection (inside FusedStateUpdate below), not before it.
-    backend->MatMul(
-        /*transA=*/false,
-        /*transB=*/false,
-        (int)batchSize,
-        (int)size,
-        (int)nextSize,
-        1.0f,
-        e_above,
-        (int)nextSize,
-        W,
-        (int)size,
-        0.0f,
-        feedbackScratch,
-        (int)size);
+    // TryFusedMatMul (oneDNN) is tried first: no bias to fuse here,
+    // but its kernel may simply beat cblas_sgemm's per-call dispatch
+    // overhead at this shape -- see IComputeBackend::TryFusedMatMul.
+    // TEMPORARY: timed separately from MatMul()'s own g_debugGemmSeconds,
+    // since the oneDNN path bypasses it entirely (same reason as
+    // DebugGetMuGemmSeconds() above) -- see DebugGetFeedbackGemmSeconds().
+    // TryFusedFeedbackUpdate fuses this GEMM directly into the
+    // elementwise state update below, welding it on as oneDNN post-ops
+    // on the SAME matmul primitive (DEEPITY_USE_ONEDNN, the default) or,
+    // failing that, an AOT Halide kernel (DEEPITY_USE_HALIDE, off by
+    // default -- verified correct but slower, kept only as a documented
+    // dead end) -- see IComputeBackend::TryFusedFeedbackUpdate for which
+    // mechanism actually ran and why. Falls back to the separate GEMM +
+    // FusedStateUpdate pair otherwise.
+    // TEMPORARY: both branches' timing is folded into the two existing
+    // buckets below so the fused path's buckets stay comparable to the
+    // baseline's in profiling output.
+    auto tFeedbackGemm0 = std::chrono::steady_clock::now();
+    if (backend->TryFusedFeedbackUpdate(ToDerivativeType(activationType), (int)batchSize,
+                                        (int)size, (int)nextSize, e_above, W, z, e, ir,
+                                        feedbackScratch, feedbackDerivScratch))
+    {
+      auto tFused1 = std::chrono::steady_clock::now();
+      g_debugFeedbackGemmSeconds +=
+          std::chrono::duration<double>(tFused1 - tFeedbackGemm0).count();
+      return;
+    }
+
+    if (!backend->TryFusedMatMul(
+            /*transA=*/false,
+            /*transB=*/false,
+            (int)batchSize,
+            (int)size,
+            (int)nextSize,
+            1.0f,
+            e_above,
+            (int)nextSize,
+            W,
+            (int)size,
+            feedbackScratch,
+            (int)size))
+    {
+      backend->MatMul(
+          /*transA=*/false,
+          /*transB=*/false,
+          (int)batchSize,
+          (int)size,
+          (int)nextSize,
+          1.0f,
+          e_above,
+          (int)nextSize,
+          W,
+          (int)size,
+          0.0f,
+          feedbackScratch,
+          (int)size);
+    }
+    auto tFeedbackGemm1 = std::chrono::steady_clock::now();
+    g_debugFeedbackGemmSeconds +=
+        std::chrono::duration<double>(tFeedbackGemm1 - tFeedbackGemm0).count();
 
     // z += ir*(f'(z)*feedbackScratch - e), one fused pass (handles its
     // own scalar fallback internally for activations needing a
@@ -300,19 +365,40 @@ void SimplePCLayer::UpdateWeights() noexcept
     size_t num_weights = (size_t)nextSize * size;
     float grad_scale = -1.0f;
 
-    backend->MatMul(true,
-                    false,
-                    (int)nextSize,
-                    (int)size,
-                    (int)batchSize,
-                    grad_scale,
-                    local_grad,
-                    (int)nextSize,
-                    zF,
-                    (int)size,
-                    0.0f,
-                    grad_W,
-                    (int)size);
+    // TryFusedMatMul (oneDNN) first -- see UpdateState()'s feedback
+    // GEMM above for why; this write is fresh (beta=0), so it fits the
+    // same no-bias, no-accumulate contract. TEMPORARY timing -- see
+    // DebugGetWeightGradGemmSeconds().
+    auto tGradGemm0 = std::chrono::steady_clock::now();
+    if (!backend->TryFusedMatMul(true,
+                                 false,
+                                 (int)nextSize,
+                                 (int)size,
+                                 (int)batchSize,
+                                 grad_scale,
+                                 local_grad,
+                                 (int)nextSize,
+                                 zF,
+                                 (int)size,
+                                 grad_W,
+                                 (int)size))
+    {
+      backend->MatMul(true,
+                      false,
+                      (int)nextSize,
+                      (int)size,
+                      (int)batchSize,
+                      grad_scale,
+                      local_grad,
+                      (int)nextSize,
+                      zF,
+                      (int)size,
+                      0.0f,
+                      grad_W,
+                      (int)size);
+    }
+    auto tGradGemm1 = std::chrono::steady_clock::now();
+    g_debugWeightGradGemmSeconds += std::chrono::duration<double>(tGradGemm1 - tGradGemm0).count();
 
     backend->Zero(grad_b, nextSize);
     for (int batch = 0; batch < batchSize; batch++)
@@ -366,7 +452,8 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept
     total += pad16(w_size);
     total += pad16(nextSize);
     total += pad16(out_state_size) * 2; // mu, cachedMu
-    total += pad16(own_state_size) * 2; // zF, feedbackScratch
+    total += pad16(own_state_size) * 3; // zF, feedbackScratch,
+                                         // feedbackDerivScratch
 
     // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
     // safe.
@@ -408,12 +495,14 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
     cachedMu = arena.AllocateFloats(out_state_size);
     zF = arena.AllocateFloats(own_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
+    feedbackDerivScratch = arena.AllocateFloats(own_state_size);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
     backend->Zero(zF, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
+    backend->Zero(feedbackDerivScratch, own_state_size);
 
     // Always allocated, see GetRequiredFloats().
     BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);

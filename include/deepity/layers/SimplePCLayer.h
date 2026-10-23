@@ -57,6 +57,8 @@ class SimplePCNDiagnostics;
 double DebugGetErrorSeconds() noexcept;
 double DebugGetMuOnlyElementwiseSeconds() noexcept;
 double DebugGetMuGemmSeconds() noexcept;
+double DebugGetFeedbackGemmSeconds() noexcept;
+double DebugGetWeightGradGemmSeconds() noexcept;
 double DebugGetUpdateStateElementwiseSeconds() noexcept;
 
 /// @brief Predictive Coding layer without precision weighting: the
@@ -297,7 +299,11 @@ public:
   /// ProjectForward()) that don't need the discarded error/energy values.
   /// Computes zF=phi(z) internally and uses it for the GEMM
   /// (mu=W\@phi(z)+b). mu itself is never activated.
-  void ComputeMuOnly() noexcept;
+  /// @param zFAlreadyComputed CalculateState() may have just computed
+  /// zF itself, fused with its own error pass (see
+  /// TryComputeErrorAndActivation()) -- true skips recomputing it here.
+  /// Callers other than CalculateState() always pass false.
+  void ComputeMuOnly(bool zFAlreadyComputed = false) noexcept;
 
   /// @brief Enables softmax cross-entropy energy for THIS layer's
   /// error against layerBelow's mu (i.e. only makes sense on the
@@ -420,6 +426,10 @@ private:
                           // only to this term, not the -e term already
                           // in dz_dt, so it can't accumulate directly
                           // into dz_dt via the GEMM itself.
+  float* feedbackDerivScratch; // own_state_size scratch holding f'(z),
+                               // precomputed by TryFusedFeedbackUpdate()'s
+                               // oneDNN path and bound as a post-op's
+                               // runtime operand -- see IComputeBackend.h.
 
   bool useCrossEntropy = false; // Whether softmax cross-entropy energy
                                 // is enabled, see SetCrossEntropy().
