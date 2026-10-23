@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -21,8 +22,48 @@
 #endif
 #include <random>
 
+#ifdef DEEPITY_USE_ONEDNN
+#include <map>
+#include <oneapi/dnnl/dnnl.hpp>
+#include <tuple>
+#endif
+
 namespace Deep
 {
+#ifdef DEEPITY_USE_ONEDNN
+struct CPUBackend::OneDnnMatMulCache
+{
+  dnnl::engine engine{dnnl::engine::kind::cpu, 0};
+  dnnl::stream stream{engine};
+
+  struct Entry
+  {
+    dnnl::memory::desc srcMd, weightsMd, biasMd, dstMd;
+    dnnl::matmul prim;
+  };
+  // Keyed on every shape parameter TryFusedMatMulBias() takes, since
+  // building a dnnl::matmul JIT-compiles a kernel for that exact shape
+  // (expensive); executing a cached one is cheap. Every real caller
+  // (SimplePCLayer::ComputeMuOnly()) uses the SAME shape on every
+  // settling step of every training iteration, so this amortizes to
+  // once per distinct shape a network actually has.
+  //
+  // Not mutex-guarded: every current caller invokes backend methods
+  // sequentially from one thread (the training loop), never concurrently
+  // across layers -- see SimplePCNetwork::TrainStepWithProjection.
+  std::map<std::tuple<bool, bool, int, int, int, int, int, int>, Entry> cache;
+};
+#endif
+
+CPUBackend::CPUBackend()
+{
+#ifdef DEEPITY_USE_ONEDNN
+  m_oneDnnCache = std::make_unique<OneDnnMatMulCache>();
+#endif
+}
+
+CPUBackend::~CPUBackend() = default;
+
 float* CPUBackend::Allocate(size_t numFloats)
 {
 #ifdef _WIN32
@@ -103,9 +144,20 @@ void CPUBackend::RandomizeUniform(float* buf, size_t n, float min, float max,
   }
 }
 
+namespace
+{
+// TEMPORARY profiling accumulator -- see DebugGetGemmSeconds()'s declaration.
+double g_debugGemmSeconds = 0.0;
+long g_debugGemmCalls = 0;
+} // namespace
+
+double DebugGetGemmSeconds() noexcept { return g_debugGemmSeconds; }
+long DebugGetGemmCalls() noexcept { return g_debugGemmCalls; }
+
 void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                         int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept
 { // Multithreading is the caller's job.
+  auto t0 = std::chrono::steady_clock::now();
   cblas_sgemm(CblasRowMajor,
               transA ? CblasTrans : CblasNoTrans,
               transB ? CblasTrans : CblasNoTrans,
@@ -120,6 +172,9 @@ void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K, float alp
               beta,
               C,
               ldc);
+  auto t1 = std::chrono::steady_clock::now();
+  g_debugGemmSeconds += std::chrono::duration<double>(t1 - t0).count();
+  ++g_debugGemmCalls;
 }
 
 void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept
@@ -154,6 +209,71 @@ void CPUBackend::AddBiasBroadcast(float* buf, const float* bias, size_t batchSiz
 #pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
   for (size_t b = 0; b < batchSize; ++b)
     cblas_saxpy(width, 1.0f, bias, 1, buf + b * width, 1);
+}
+
+bool CPUBackend::TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A,
+                                    int lda, const float* B, int ldb, const float* bias, float* C,
+                                    int ldc) noexcept
+{
+#ifndef DEEPITY_USE_ONEDNN
+  (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)A, (void)lda, (void)B, (void)ldb,
+      (void)bias, (void)C, (void)ldc;
+  return false;
+#else
+  // Row-major operand with logical shape (R,C): contiguous (ld>=C) when
+  // not transposed, strides {ld,1}; when transposed, the array is
+  // physically (C,R) row-major with ld>=R, so logical dim R is the
+  // contiguous one -- strides {1,ld}. Matches cblas_sgemm's own
+  // RowMajor+Trans semantics exactly (see MatMul() above), just
+  // expressed as explicit strides instead of a transpose flag, since
+  // dnnl::matmul has no transpose flag of its own.
+  auto operandMd = [](int R, int C, int ld, bool transposed)
+  {
+    return dnnl::memory::desc(
+        {R, C}, dnnl::memory::data_type::f32,
+        transposed ? dnnl::memory::dims{1, ld} : dnnl::memory::dims{ld, 1});
+  };
+
+  try
+  {
+    auto key = std::make_tuple(transA, transB, M, N, K, lda, ldb, ldc);
+    auto it = m_oneDnnCache->cache.find(key);
+    if (it == m_oneDnnCache->cache.end())
+    {
+      OneDnnMatMulCache::Entry entry;
+      entry.srcMd = operandMd(M, K, lda, transA);
+      entry.weightsMd = operandMd(K, N, ldb, transB);
+      entry.dstMd = operandMd(M, N, ldc, false);
+      entry.biasMd =
+          dnnl::memory::desc({1, N}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::ab);
+      dnnl::matmul::primitive_desc pd(m_oneDnnCache->engine, entry.srcMd, entry.weightsMd,
+                                      entry.biasMd, entry.dstMd);
+      entry.prim = dnnl::matmul(pd);
+      it = m_oneDnnCache->cache.emplace(key, std::move(entry)).first;
+    }
+    const auto& entry = it->second;
+    const auto& eng = m_oneDnnCache->engine;
+
+    // User formats were given explicitly above (never format_tag::any),
+    // so dnnl executes directly on this memory, no implicit reorder.
+    dnnl::memory srcMem(entry.srcMd, eng, const_cast<float*>(A));
+    dnnl::memory weightsMem(entry.weightsMd, eng, const_cast<float*>(B));
+    dnnl::memory biasMem(entry.biasMd, eng, const_cast<float*>(bias));
+    dnnl::memory dstMem(entry.dstMd, eng, C);
+
+    entry.prim.execute(m_oneDnnCache->stream,
+                       {{DNNL_ARG_SRC, srcMem},
+                        {DNNL_ARG_WEIGHTS, weightsMem},
+                        {DNNL_ARG_BIAS, biasMem},
+                        {DNNL_ARG_DST, dstMem}});
+    m_oneDnnCache->stream.wait();
+    return true;
+  }
+  catch (const dnnl::error&)
+  {
+    return false; // caller falls back to MatMul()+AddBiasBroadcast()
+  }
+#endif
 }
 
 void CPUBackend::Activation(ActivationType type, float* buf, size_t n) noexcept
@@ -236,7 +356,8 @@ float CPUBackend::ComputeErrorAndEnergy(float* e, const float* z, const float* m
 {
   float energy = 0.0f;
 
-#pragma omp parallel for reduction(+ : energy) schedule(static) if (n > 256 && !omp_in_parallel())
+  // See ComputeError() above for the empirical basis of this threshold.
+#pragma omp parallel for reduction(+ : energy) schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
     float err = z[i] - mu[i];
@@ -249,7 +370,12 @@ float CPUBackend::ComputeErrorAndEnergy(float* e, const float* z, const float* m
 
 void CPUBackend::ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept
 {
-#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+  // OpenMP fork/join costs a fixed ~10us on this kind of trivial
+  // elementwise loop regardless of n, so parallelizing below ~100k
+  // elements is a net loss (measured on this engine's own settling
+  // loop: a 256x64 ComputeError call was paying ~8.5us of thread
+  // overhead for ~1.6us of actual serial work).
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
     e[i] = z[i] - mu[i];
 }
@@ -337,7 +463,7 @@ void CPUBackend::AdamStep(float* param, const float* grad, float* m, float* v, s
   float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(*t));
   float step_size = *lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
-#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
     float g = grad[i];
@@ -356,7 +482,7 @@ void CPUBackend::AdamWStep(float* param, const float* grad, float* m, float* v, 
   float beta2_t = 1.0f - Sleef_powf_u10(beta2, static_cast<float>(*t));
   float step_size = *lr * Sleef_sqrtf(beta2_t) / beta1_t;
 
-#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
   {
     float g = grad[i];
@@ -518,6 +644,17 @@ void CPUBackend::FusedActivationDerivativeMultiply(float* dst, const float* a,
   FusedActivationDerivativeMultiplyDispatch(dst, a, activatedInOut, dType, n);
 }
 
+void CPUBackend::FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a,
+                                                              const float* preact,
+                                                              ActivationType dType, size_t n) noexcept
+{
+  // Unlike FusedActivationDerivativeMultiply above, no scalar carve-out:
+  // the Highway kernel handles every ActivationType, including
+  // dGELU/dSIGMOID/dTANH, via hwy/contrib/math's vectorized Exp/Tanh --
+  // see CPUBackendHighway.cpp's file comment.
+  FusedActivationDerivativeMultiplyFromPreactDispatch(dst, a, preact, dType, n);
+}
+
 void CPUBackend::Fill(float* buf, size_t n, float value) noexcept
 {
   FillDispatch(buf, n, value);
@@ -573,7 +710,7 @@ void CPUBackend::ComputePrecisionWeightedError(float* e, const float* z, const f
                                                size_t width) noexcept
 {
   const size_t n = batchSize * width;
-#pragma omp parallel for schedule(static) if (n > 256 && !omp_in_parallel())
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t idx = 0; idx < n; ++idx)
     e[idx] = z[idx] - mu[idx];
 }

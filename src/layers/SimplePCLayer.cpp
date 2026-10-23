@@ -18,7 +18,22 @@ void DeleteBackend(IComputeBackend* p)
   delete p;
 }
 void NoOpDeleter(IComputeBackend*) {}
+
+// TEMPORARY profiling accumulators -- see SimplePCLayer.h's
+// DebugGetErrorSeconds() & co. declarations.
+double g_debugErrorSeconds = 0.0;
+double g_debugMuOnlyElementwiseSeconds = 0.0;
+double g_debugMuGemmSeconds = 0.0;
+double g_debugUpdateStateElementwiseSeconds = 0.0;
 } // namespace
+
+double DebugGetErrorSeconds() noexcept { return g_debugErrorSeconds; }
+double DebugGetMuOnlyElementwiseSeconds() noexcept { return g_debugMuOnlyElementwiseSeconds; }
+double DebugGetMuGemmSeconds() noexcept { return g_debugMuGemmSeconds; }
+double DebugGetUpdateStateElementwiseSeconds() noexcept
+{
+  return g_debugUpdateStateElementwiseSeconds;
+}
 
 SimplePCLayer::SimplePCLayer(size_t size, size_t nextSize, size_t batchSize, float learningRate,
                              float inferenceRate, float lmbda, void (*act)(float*, size_t),
@@ -85,17 +100,36 @@ float SimplePCLayer::CalculateState(bool needEnergy) noexcept
 
   if (layerBelow == nullptr)
   {
+    auto t0 = std::chrono::steady_clock::now();
     backend->Zero(e, N);
+    auto t1 = std::chrono::steady_clock::now();
+    g_debugErrorSeconds += std::chrono::duration<double>(t1 - t0).count();
+
     if (nextSize > 0)
       ComputeMuOnly();
     return 0.0f;
   }
 
   float totalEnergy = 0.0f;
-  if (needEnergy)
+  auto t0 = std::chrono::steady_clock::now();
+  if (useCrossEntropy)
+  {
+    if (needEnergy)
+      totalEnergy = backend->ComputeSoftmaxCrossEntropyErrorAndEnergy(
+          e, z, layerBelow->mu, batchSize, size, rowEnergies);
+    else
+      backend->ComputeSoftmaxCrossEntropyError(e, z, layerBelow->mu, batchSize, size);
+  }
+  else if (needEnergy)
+  {
     totalEnergy = backend->ComputeErrorAndEnergy(e, z, layerBelow->mu, N);
+  }
   else
+  {
     backend->ComputeError(e, z, layerBelow->mu, N);
+  }
+  auto t1 = std::chrono::steady_clock::now();
+  g_debugErrorSeconds += std::chrono::duration<double>(t1 - t0).count();
 
   if (nextSize > 0)
     ComputeMuOnly();
@@ -109,50 +143,69 @@ void SimplePCLayer::ComputeMuOnly() noexcept
     return;
 
   size_t Nout = batchSize * nextSize;
+  size_t N = batchSize * size;
 
   if (isClamped && muCacheValid)
   {
+    auto t0 = std::chrono::steady_clock::now();
     backend->Copy(mu, cachedMu, Nout);
-    backend->Copy(preact, cachedPreact, Nout);
+    auto t1 = std::chrono::steady_clock::now();
+    g_debugMuOnlyElementwiseSeconds += std::chrono::duration<double>(t1 - t0).count();
     return;
   }
 
-  backend->MatMul(false,
-                  true,
-                  (int)batchSize,
-                  (int)nextSize,
-                  (int)size,
-                  1.0f,
-                  z,
-                  (int)size,
-                  W,
-                  (int)size,
-                  0.0f,
-                  mu,
-                  (int)nextSize);
+  auto t0 = std::chrono::steady_clock::now();
+  // zF survives a later cache hit untouched: while clamped, z doesn't
+  // change, so zF computed here stays valid for UpdateWeights() even
+  // on settling steps that skip straight to the cache-hit branch above.
+  backend->ActivationInto(activationType, zF, z, N);
+  auto tAct = std::chrono::steady_clock::now();
 
-  backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
-
-  // Snapshotted BEFORE Activation() overwrites mu in place: GELU's
-  // derivative has no closed form from the activated value alone, so
-  // every later derivative computation (UpdateState()/UpdateWeights())
-  // reads this instead of mu. Same reasoning as SimpleConvPCLayer's
-  // own preact.
-  backend->Copy(preact, mu, Nout);
-  backend->Activation(activationType, mu, Nout);
+  // mu = zF @ W^T + b, with no further activation -- see this class's
+  // file comment on the mu=W@phi(z)+b convention. TryFusedMatMulBias
+  // fuses the bias-add into the GEMM itself via oneDNN
+  // (DEEPITY_USE_ONEDNN only; falls back to the separate calls
+  // otherwise), since cblas_sgemm has no bias epilogue of its own.
+  // TEMPORARY: timed separately from the activation above, since
+  // TryFusedMatMulBias's oneDNN path bypasses CPUBackend::MatMul()
+  // (and so DebugGetGemmSeconds() never sees this GEMM) -- see
+  // DebugGetMuGemmSeconds()'s declaration.
+  bool fused = backend->TryFusedMatMulBias(
+      false, true, (int)batchSize, (int)nextSize, (int)size, zF, (int)size, W, (int)size, b, mu,
+      (int)nextSize);
+  if (!fused)
+  {
+    backend->MatMul(false,
+                    true,
+                    (int)batchSize,
+                    (int)nextSize,
+                    (int)size,
+                    1.0f,
+                    zF,
+                    (int)size,
+                    W,
+                    (int)size,
+                    0.0f,
+                    mu,
+                    (int)nextSize);
+    backend->AddBiasBroadcast(mu, b, batchSize, nextSize);
+  }
+  auto tGemm = std::chrono::steady_clock::now();
 
   if (isClamped)
   {
     backend->Copy(cachedMu, mu, Nout);
-    backend->Copy(cachedPreact, preact, Nout);
     muCacheValid = true;
   }
+  auto t1 = std::chrono::steady_clock::now();
+  g_debugMuOnlyElementwiseSeconds +=
+      std::chrono::duration<double>(tAct - t0).count() + std::chrono::duration<double>(t1 - tGemm).count();
+  g_debugMuGemmSeconds += std::chrono::duration<double>(tGemm - tAct).count();
 }
 
 void SimplePCLayer::UpdateState() noexcept
 {
   size_t N = batchSize * size;
-  size_t Nout = batchSize * nextSize;
 
   if (isClamped)
     return;
@@ -161,16 +214,10 @@ void SimplePCLayer::UpdateState() noexcept
   {
     const float* e_above = layerAbove->GetErrors();
 
-    // The derivative applies at the source (mu=phi(W@z+b)'s own
-    // nonlinearity), to e_above, before projecting it through W -- not
-    // after, and not via f'(z). Computed into feedbackError, never
-    // into mu itself: mu must stay clean, since ComputeMuOnly() is
-    // publicly callable (e.g. ProjectForward()) between this and
-    // UpdateWeights(), which would silently clobber a derivative
-    // stashed in mu back into the plain activated value.
-    backend->ActivationDerivativeInto(ToDerivativeType(activationType), feedbackError, preact, Nout);
-    backend->MultiplyInto(feedbackError, e_above, feedbackError, Nout);
-
+    // e_above projects through W raw -- no derivative pre-multiply
+    // here, unlike the mu=f(W@z+b) convention: under mu=W@phi(z)+b,
+    // the nonlinearity lives on z, so its derivative applies AFTER
+    // this projection (inside FusedStateUpdate below), not before it.
     backend->MatMul(
         /*transA=*/false,
         /*transB=*/false,
@@ -178,7 +225,7 @@ void SimplePCLayer::UpdateState() noexcept
         (int)size,
         (int)nextSize,
         1.0f,
-        feedbackError,
+        e_above,
         (int)nextSize,
         W,
         (int)size,
@@ -186,14 +233,23 @@ void SimplePCLayer::UpdateState() noexcept
         feedbackScratch,
         (int)size);
 
-    backend->AxpyInto(feedbackScratch, e, N, -1.0f);
-    backend->AxpyInto(z, feedbackScratch, N, ir);
+    // z += ir*(f'(z)*feedbackScratch - e), one fused pass (handles its
+    // own scalar fallback internally for activations needing a
+    // transcendental derivative, e.g. SIGMOID -- see
+    // CPUBackend::FusedStateUpdate).
+    auto t0 = std::chrono::steady_clock::now();
+    backend->FusedStateUpdate(z, feedbackScratch, ToDerivativeType(activationType), e, N, ir);
+    auto t1 = std::chrono::steady_clock::now();
+    g_debugUpdateStateElementwiseSeconds += std::chrono::duration<double>(t1 - t0).count();
   }
   else // Output Layer
   {
     // z[i] += ir * (-e[i])  ==  z += (-ir) * e, i.e. AxpyInto
     // with alpha = -ir.
+    auto t0 = std::chrono::steady_clock::now();
     backend->AxpyInto(z, e, N, -ir);
+    auto t1 = std::chrono::steady_clock::now();
+    g_debugUpdateStateElementwiseSeconds += std::chrono::duration<double>(t1 - t0).count();
   }
 }
 
@@ -202,15 +258,12 @@ void SimplePCLayer::UpdateWeights() noexcept
   if (layerAbove == nullptr || nextSize == 0)
     return;
 
-  size_t Nout = batchSize * nextSize;
-  const float* e_above = layerAbove->GetErrors();
-
-  // Recomputed fresh from preact, not read back from a previous
-  // UpdateState() call -- see UpdateState()'s own comment on why mu
-  // itself must never hold this.
-  backend->ActivationDerivativeInto(ToDerivativeType(activationType), feedbackError, preact, Nout);
-  backend->MultiplyInto(feedbackError, e_above, feedbackError, Nout);
-  const float* local_grad = feedbackError;
+  // No derivative multiply here: mu=W@phi(z)+b has no activation of
+  // its own for dW to chain through -- the nonlinearity already lives
+  // on zF (consumed below), not on mu, so dE/dW is just e_above^T@zF
+  // directly. Contrast UpdateState() above, where z (not W) is what's
+  // being adjusted, and f'(z) is needed there.
+  const float* local_grad = layerAbove->GetErrors();
 
   switch (opt)
   {
@@ -227,7 +280,7 @@ void SimplePCLayer::UpdateWeights() noexcept
                     lr / batchSize,
                     local_grad,
                     (int)nextSize,
-                    z,
+                    zF,
                     (int)size,
                     1.0f,
                     W,
@@ -255,7 +308,7 @@ void SimplePCLayer::UpdateWeights() noexcept
                     grad_scale,
                     local_grad,
                     (int)nextSize,
-                    z,
+                    zF,
                     (int)size,
                     0.0f,
                     grad_W,
@@ -302,7 +355,8 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept
   size_t total = 0;
   size_t own_state_size = (size_t)batchSize * size;
 
-  total += pad16(own_state_size) * 2;
+  total += pad16(own_state_size) * 2; // z, e
+  total += pad16(batchSize);          // rowEnergies
 
   if (nextSize > 0)
   {
@@ -311,8 +365,8 @@ size_t SimplePCLayer::GetRequiredFloats() const noexcept
 
     total += pad16(w_size);
     total += pad16(nextSize);
-    total += pad16(out_state_size) * 5; // mu, cachedMu, preact, cachedPreact, feedbackError
-    total += pad16(own_state_size);     // feedbackScratch
+    total += pad16(out_state_size) * 2; // mu, cachedMu
+    total += pad16(own_state_size) * 2; // zF, feedbackScratch
 
     // Always allocated, regardless of optimizer, so switching to Adam/AdamW after Compile() stays
     // safe.
@@ -338,9 +392,11 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
 
   z = arena.AllocateFloats(own_state_size);
   e = arena.AllocateFloats(own_state_size);
+  rowEnergies = arena.AllocateFloats(batchSize);
 
   backend->Zero(z, own_state_size);
   backend->Zero(e, own_state_size);
+  backend->Zero(rowEnergies, batchSize);
 
   if (nextSize > 0)
   {
@@ -350,17 +406,13 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
     b = arena.AllocateFloats(nextSize);
     mu = arena.AllocateFloats(out_state_size);
     cachedMu = arena.AllocateFloats(out_state_size);
-    preact = arena.AllocateFloats(out_state_size);
-    cachedPreact = arena.AllocateFloats(out_state_size);
-    feedbackError = arena.AllocateFloats(out_state_size);
+    zF = arena.AllocateFloats(own_state_size);
     feedbackScratch = arena.AllocateFloats(own_state_size);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
-    backend->Zero(preact, out_state_size);
-    backend->Zero(cachedPreact, out_state_size);
-    backend->Zero(feedbackError, out_state_size);
+    backend->Zero(zF, own_state_size);
     backend->Zero(feedbackScratch, own_state_size);
 
     // Always allocated, see GetRequiredFloats().

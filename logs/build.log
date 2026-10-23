@@ -1,6 +1,31 @@
 --- Deepity Build Log (Release, arch=native) ---
 
 === Compilation ===
-ninja: no work to do.
+[1/16] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.o
+[2/16] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimplePCNetwork.cpp.o
+[3/16] Building CXX object CMakeFiles/SimpleNetworkProfile.dir/tests/tSimpleNetworkProfile.cpp.o
+[4/16] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayer.cpp.o
+[5/16] Linking CXX static library bin/libDeepity.a
+[6/16] Linking CXX executable bin/ActivationBenchmark
+[7/16] Building CXX object CMakeFiles/pydeepity.dir/bindings/LayerBindings.cpp.o
+[8/16] Building CXX object CMakeFiles/PCNBenchmark.dir/tests/tBenchmark.cpp.o
+[9/16] Building CXX object CMakeFiles/pydeepity.dir/bindings/NetworkBindings.cpp.o
+[10/16] Linking CXX executable bin/SimpleNetworkProfile
+[11/16] Linking CXX executable bin/ReadmeBenchmark
+[12/16] Linking CXX executable bin/GflopsBenchmark
+[13/16] Linking CXX executable bin/ConvDiagnose
+[14/16] Linking CXX executable bin/DiscriminativeNetworkProfile
+[15/16] Linking CXX executable bin/PCNBenchmark
+[16/16] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
+
+
+=== Tests ===
+Test project /home/rose0/Projects/deepity/build/Release
+    Start 1: ConvDiagnose
+1/1 Test #1: ConvDiagnose .....................   Passed    1.19 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   1.19 sec
 
 

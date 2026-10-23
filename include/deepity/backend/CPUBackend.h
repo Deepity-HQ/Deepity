@@ -1,17 +1,29 @@
 #pragma once
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/backend/Tensor.h>
+#include <memory>
 
 namespace Deep
 {
+// TEMPORARY profiling hooks (to isolate GEMM time from everything else in
+// TrainStepWithProjection's wall-clock breakdown) -- remove once that
+// investigation is done, along with the accumulation in MatMul() and the
+// call sites in SimplePCNetwork::TrainStepWithProjection().
+double DebugGetGemmSeconds() noexcept;
+long DebugGetGemmCalls() noexcept;
+
 /// @brief CPU implementation of IComputeBackend: SIMD (via Activations.h)
 /// for elementwise ops, BLAS for GEMM. Graph capture/replay are no-ops
 /// (there's no async device queue to record).
 class CPUBackend : public IComputeBackend
 {
 public:
-  CPUBackend() = default;
-  ~CPUBackend() override = default;
+  CPUBackend();
+  // Defined in CPUBackend.cpp, not defaulted here: m_oneDnnCache's
+  // unique_ptr<OneDnnMatMulCache> needs that type complete to destroy
+  // it, and OneDnnMatMulCache is only defined in the .cpp (see its
+  // forward declaration below).
+  ~CPUBackend() override;
 
   // @remark these are no-ops for backend purposes
   /// @copydoc Deep::IComputeBackend::BeginGraphCapture
@@ -75,6 +87,10 @@ public:
   /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedMatMulBias
+  bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A, int lda,
+                          const float* B, int ldb, const float* bias, float* C,
+                          int ldc) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::TryFusedForwardPass
   bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
@@ -192,6 +208,9 @@ public:
   /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
   void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                          ActivationType dType, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiplyFromPreact
+  void FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a, const float* preact,
+                                                    ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
@@ -217,5 +236,18 @@ public:
   /// @copydoc Deep::IComputeBackend::UpdatePrecisionFromError
   void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
                                 size_t width, float pr) noexcept override;
+
+private:
+#ifdef DEEPITY_USE_ONEDNN
+  // Opaque: TryFusedMatMulBias() caches oneDNN engine/primitive objects
+  // here, keyed by shape, since building a matmul primitive JIT-compiles
+  // a kernel (expensive) while executing one is cheap -- every layer
+  // calls this with the same fixed shape on every settling step, every
+  // training iteration, so the cache amortizes that cost to once per
+  // distinct (M,N,K) a network actually uses. Defined in CPUBackend.cpp
+  // so this header doesn't need oneDNN's own headers in its include path.
+  struct OneDnnMatMulCache;
+  std::unique_ptr<OneDnnMatMulCache> m_oneDnnCache;
+#endif
 };
 } // namespace Deep

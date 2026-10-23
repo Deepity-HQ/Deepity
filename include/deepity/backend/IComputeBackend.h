@@ -154,6 +154,34 @@ public:
   virtual void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                                 size_t width) noexcept = 0;
 
+  /// @brief Attempts C = A @ B(^T) + bias in one fused kernel (CPU only,
+  /// via oneDNN's matmul-with-bias primitive, DEEPITY_USE_ONEDNN build
+  /// only) -- avoids AddBiasBroadcast's separate, full memory pass over
+  /// C after MatMul(). Returns true if the fused path ran (C is fully
+  /// computed); false if the caller should fall back to the existing
+  /// MatMul()+AddBiasBroadcast() sequence (always false when oneDNN
+  /// isn't compiled in, and on CUDABackend -- that backend's own fused
+  /// path is TryFusedForwardPass, which also fuses the activation).
+  /// @note Deliberately separate from TryFusedForwardPass: this one
+  /// stops at the bias-add, so callers that need the pre-activation
+  /// value (e.g. FullPCLayer's preact, for GELU's exact derivative)
+  /// keep getting it from a normal Activation()/ActivationInto() call
+  /// afterward, unlike TryFusedForwardPass's fused activation which
+  /// would discard it. (SimplePCLayer itself has no such need under
+  /// its own mu=W\@phi(z)+b convention -- the activation it needs lives
+  /// on the GEMM's INPUT, applied before this call, not on its output
+  /// -- but this method stays activation-free regardless, for any
+  /// caller that does need the snapshot.)
+  /// @param transA/transB Same meaning as MatMul(). @param M/N/K/A/lda/
+  /// B/ldb/C/ldc Same meaning and shapes as MatMul() (alpha=1, beta=0
+  /// implied -- this is specifically the forward-layer GEMM+bias
+  /// pattern, not a general GEMM).
+  /// @param bias Length-N vector, broadcast across all M rows of C
+  /// (same convention as AddBiasBroadcast).
+  virtual bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A,
+                                  int lda, const float* B, int ldb, const float* bias, float* C,
+                                  int ldc) noexcept = 0;
+
   // Activation
 
   /// @brief Applies `type` to `buf` in place.
@@ -446,6 +474,23 @@ public:
   /// @param dType A derivative-flavored ActivationType.
   virtual void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                                  ActivationType dType, size_t n) noexcept = 0;
+  /// @brief Sibling of FusedActivationDerivativeMultiply() above, for
+  /// callers that hold the PRE-activation value instead of the
+  /// activated one: dst[i] = a[i] * f'(preact[i]). preact is read-only
+  /// here (never overwritten) -- there is no reuse-the-overwrite caller
+  /// for this variant.
+  /// @warning Deliberately NOT a drop-in replacement for
+  /// FusedActivationDerivativeMultiply(): that sibling is wrong for
+  /// GELU (no derivative closed form from the activated value alone,
+  /// see its own GELU caveat above). This one is exact for every
+  /// activation type, including GELU, because it reads preact
+  /// directly -- the same correctness distinction
+  /// FullConvPCLayer/SimpleConvPCLayer's UpdateWeights() already had to
+  /// un-fuse their own call sites over.
+  /// @param dType A derivative-flavored ActivationType.
+  virtual void FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a,
+                                                            const float* preact, ActivationType dType,
+                                                            size_t n) noexcept = 0;
   /// @brief buf[i] = value for all i in [0, n).
   virtual void Fill(float* buf, size_t n, float value) noexcept = 0;
   /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for

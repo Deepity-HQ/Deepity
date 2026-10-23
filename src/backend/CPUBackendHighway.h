@@ -49,4 +49,17 @@ void FusedStateUpdateDispatch(float* z, const float* feedback, ActivationType dT
 void FusedStateUpdateMomentumDispatch(float* z, float* v, const float* feedback,
                                       ActivationType dType, const float* e, size_t n, float ir,
                                       float beta) noexcept;
+
+/// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiplyFromPreact
+/// @note Unlike FusedActivationDerivativeMultiplyDispatch above, dType here
+/// is evaluated from the raw pre-activation value (see
+/// Deep::ActivationDerivativeScalar), not an already-activated one --
+/// dGELU, dSIGMOID and dTANH all need a transcendental in that form. Unlike
+/// FusedStateUpdateDispatch, this one DOES handle all three: see this
+/// function's own file comment on hwy/contrib/math's portable vectorized
+/// Exp/Tanh. No caller-side routing needed; every ActivationType is
+/// handled here.
+void FusedActivationDerivativeMultiplyFromPreactDispatch(float* dst, const float* a,
+                                                          const float* preact, ActivationType dType,
+                                                          size_t n) noexcept;
 } // namespace Deep

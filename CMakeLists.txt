@@ -11,6 +11,10 @@ option(DEEPITY_USE_CUDNN "Use cuDNN for ConvPCLayer-family convolutions instead 
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 # Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
+# Experimental: fuses SimplePCLayer's MatMul + AddBiasBroadcast into one
+# oneDNN matmul-with-bias call (CPU only; falls back to the existing
+# separate-call path automatically if OFF or oneDNN isn't found).
+option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass (experimental)" OFF)
 
 # AMD ROCm Coming soon...
 
@@ -114,7 +118,36 @@ endif()
 # meaningfully slows compilation with no benefit for Debug builds.
 include(CheckIPOSupported)
 check_ipo_supported(RESULT DEEPITY_IPO_SUPPORTED OUTPUT DEEPITY_IPO_ERROR)
-if(NOT DEEPITY_IPO_SUPPORTED)
+
+# check_ipo_supported() only confirms the COMPILER can emit LTO objects --
+# it says nothing about whether the LINKER driving the final executable
+# can read them. Clang emits LLVM bitcode, which GNU ld (bfd), the
+# default system linker on most Linux distros, cannot read at all
+# ("file format not recognized") -- only lld (or gold+LLVMgold.so) can.
+# GCC's own bitcode format has the same bfd-plugin requirement but bfd
+# distros normally ship GCC's LTO plugin by default, which is why this
+# only bites Clang. Without this check, a machine where Clang happens to
+# be the detected compiler links every executable target successfully
+# right up until this exact failure, with no earlier signal.
+set(DEEPITY_IPO_DISABLED_BY_LINKER_CHECK FALSE)
+if(DEEPITY_IPO_SUPPORTED AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    find_program(DEEPITY_LLD_PROGRAM NAMES ld.lld lld)
+    if(DEEPITY_LLD_PROGRAM)
+        message(STATUS "Clang + LTO detected: using lld (${DEEPITY_LLD_PROGRAM}) as the "
+            "linker, since the default system linker can't read Clang's LTO bitcode.")
+        add_link_options(-fuse-ld=lld)
+    else()
+        set(DEEPITY_IPO_SUPPORTED FALSE)
+        set(DEEPITY_IPO_DISABLED_BY_LINKER_CHECK TRUE)
+        message(WARNING "Clang was detected as the compiler, but lld (the only linker "
+            "that can read Clang's LTO bitcode objects on this platform) was not found. "
+            "Disabling LTO for this build -- otherwise every executable target would "
+            "fail to link with \"file format not recognized\". Install lld (e.g. "
+            "'dnf install lld') and reconfigure to get LTO working with Clang.")
+    endif()
+endif()
+
+if(NOT DEEPITY_IPO_SUPPORTED AND NOT DEEPITY_IPO_DISABLED_BY_LINKER_CHECK)
     message(WARNING "LTO/IPO not supported by this toolchain: ${DEEPITY_IPO_ERROR}. Building without it.")
 endif()
 
@@ -342,6 +375,38 @@ else()
     if(NOT DEEPITY_BLAS_RESOLVED)
         set(BLA_VENDOR OpenBLAS)
         find_package(BLAS REQUIRED)
+
+        if(UNIX AND NOT APPLE)
+            # Some distros (Fedora/RHEL) package OpenBLAS as separate
+            # serial/pthread/openmp builds behind one generic
+            # "libopenblas.so" alternative, which find_package(BLAS)
+            # above resolves blindly to whatever that alternative
+            # currently points to. On this project's own dev machine
+            # that silently resolved to the SERIAL build: every GEMM
+            # call -- the majority of a train step's wall-clock time --
+            # ran on a single core while this engine's own OpenMP
+            # elementwise kernels used several (confirmed via
+            # openblas_get_num_threads() returning 1 regardless of what
+            # was requested). Prefer an explicitly-named threaded
+            # variant over whatever the generic alternative happens to
+            # point to. OpenMP-threaded, not pthread, to match this
+            # project's own threading model instead of running two
+            # separate thread pools against each other.
+            find_library(DEEPITY_OPENBLAS_THREADED_LIB NAMES openblaso)
+            if(DEEPITY_OPENBLAS_THREADED_LIB)
+                message(STATUS "Using explicitly multi-threaded OpenBLAS: "
+                    "${DEEPITY_OPENBLAS_THREADED_LIB} (overriding find_package(BLAS)'s "
+                    "generic result: ${BLAS_LIBRARIES})")
+                set(BLAS_LIBRARIES "${DEEPITY_OPENBLAS_THREADED_LIB}")
+            else()
+                message(WARNING "Could not find an explicitly multi-threaded OpenBLAS "
+                    "variant (e.g. libopenblaso.so); falling back to find_package(BLAS)'s "
+                    "generic result: ${BLAS_LIBRARIES}. If that resolves to a SERIAL "
+                    "OpenBLAS build, every GEMM call runs on a single CPU core -- verify "
+                    "with openblas_get_num_threads() if train steps seem slow.")
+            endif()
+        endif()
+
         find_path(BLAS_INCLUDE_DIR
             NAMES cblas.h
             PATH_SUFFIXES openblas include/openblas
@@ -409,6 +474,35 @@ target_include_directories(DeepityHighwayKernels PUBLIC ${CMAKE_CURRENT_SOURCE_D
 # an include search path -- add src/ so it does.
 target_include_directories(DeepityHighwayKernels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(DeepityHighwayKernels PUBLIC hwy)
+
+if(DEEPITY_USE_ONEDNN)
+    # Only the forward matmul primitive is needed -- Deepity computes its
+    # own backward/feedback pass manually, never via a oneDNN primitive --
+    # so both the primitive set and the workload (training-specific
+    # primitives need backward variants too) are restricted to keep the
+    # build small.
+    set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(DNNL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(DNNL_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
+    set(DNNL_ENABLE_WORKLOAD "INFERENCE" CACHE STRING "" FORCE)
+    set(DNNL_ENABLE_PRIMITIVE "MATMUL" CACHE STRING "" FORCE)
+    # Graph API (whole-subgraph pattern fusion) can't coexist with
+    # restricting ONEDNN_ENABLE_PRIMITIVE -- not needed here, we're only
+    # calling the matmul primitive directly.
+    set(ONEDNN_BUILD_GRAPH OFF CACHE BOOL "" FORCE)
+    set(DNNL_GPU_RUNTIME "NONE" CACHE STRING "" FORCE)
+    # Shares Intel's iomp5 runtime with MKL rather than standing up a
+    # third thread pool alongside OpenBLAS's own (see this session's
+    # earlier, ultimately-false lead chasing oversubscription via perf).
+    set(DNNL_CPU_RUNTIME "OMP" CACHE STRING "" FORCE)
+
+    FetchContent_Declare(
+        onednn
+        GIT_REPOSITORY https://github.com/oneapi-src/oneDNN.git
+        GIT_TAG v3.13.4
+    )
+    FetchContent_MakeAvailable(onednn)
+endif()
 
 # --- Deepity library ------------------------------------------------
 
@@ -508,6 +602,11 @@ if(DEEPITY_CUDNN_ENABLED)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDNN)
 endif()
 
+if(DEEPITY_USE_ONEDNN)
+    target_link_libraries(Deepity PRIVATE dnnl)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_ONEDNN)
+endif()
+
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
 # --- Optional: Use CUTLASS for fused GEMM kernels ---------------------
@@ -536,7 +635,24 @@ FetchContent_Declare(
     GIT_TAG v1.9.1
 )
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+# Google Benchmark defaults this ON and applies -Werror/-pedantic-errors
+# to ITS OWN sources -- on a newer Clang, that turns its (harmless,
+# widely-supported) use of __COUNTER__ into a hard failure under
+# -Wc2y-extensions, since __COUNTER__ isn't standardized until C2y. Not
+# our code, not our warning bar -- just let this dependency build.
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(benchmark)
+# BENCHMARK_ENABLE_WERROR above doesn't cover this: benchmark's own
+# CMakeLists.txt applies -pedantic-errors to itself UNCONDITIONALLY (not
+# gated by that option), which alone is enough to promote the
+# __COUNTER__ diagnostic above to a hard error. A later -Wno-* on the
+# command line overrides an earlier -pedantic-errors for that specific
+# category, so suppress it directly on the already-defined target
+# rather than patching benchmark's vendored source.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(benchmark PRIVATE -Wno-c2y-extensions)
+    target_compile_options(benchmark_main PRIVATE -Wno-c2y-extensions)
+endif()
 
 # --- Tests -----------------------------------------------------------
 

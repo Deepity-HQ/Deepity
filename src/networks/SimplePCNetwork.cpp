@@ -1,3 +1,5 @@
+#include <chrono>
+#include <deepity/backend/CPUBackend.h>
 #include <deepity/networks/SimplePCNetwork.h>
 #include <iostream>
 #include <omp.h>
@@ -196,13 +198,59 @@ float SimplePCNetwork::TrainStepWithProjection(const std::vector<float>& x,
   }
   else
   {
+    // TEMPORARY profiling instrumentation -- see CPUBackend.h's
+    // DebugGetGemmSeconds() declaration for the GEMM-side half of this.
+    // Remove this whole block (and that declaration/accumulator) once
+    // the wall-clock breakdown investigation is done.
+    static double sProjectForwardSec = 0.0, sSettlingSec = 0.0, sUpdateWeightsSec = 0.0;
+    static long sCalls = 0;
+
+    auto t0 = std::chrono::steady_clock::now();
     ProjectForward();
+    auto t1 = std::chrono::steady_clock::now();
     for (int t = 0; t < inferenceSteps; ++t)
     {
       CalculateState(false);
       UpdateState();
     }
+    auto t2 = std::chrono::steady_clock::now();
     UpdateWeights();
+    auto t3 = std::chrono::steady_clock::now();
+
+    sProjectForwardSec += std::chrono::duration<double>(t1 - t0).count();
+    sSettlingSec += std::chrono::duration<double>(t2 - t1).count();
+    sUpdateWeightsSec += std::chrono::duration<double>(t3 - t2).count();
+    ++sCalls;
+
+    if (sCalls % 240 == 0)
+    {
+      double total = sProjectForwardSec + sSettlingSec + sUpdateWeightsSec;
+      double gemmSec = DebugGetGemmSeconds();
+      double muGemmSec = DebugGetMuGemmSeconds();
+      double errSec = DebugGetErrorSeconds();
+      double muSec = DebugGetMuOnlyElementwiseSeconds();
+      double updSec = DebugGetUpdateStateElementwiseSeconds();
+      double allGemmSec = gemmSec + muGemmSec;
+      std::cerr << "[PROFILE] calls=" << sCalls << " total=" << total << "s"
+                << " ProjectForward=" << sProjectForwardSec << "s ("
+                << (100.0 * sProjectForwardSec / total) << "%)"
+                << " Settling(T=" << inferenceSteps << ")=" << sSettlingSec << "s ("
+                << (100.0 * sSettlingSec / total) << "%)"
+                << " UpdateWeights=" << sUpdateWeightsSec << "s ("
+                << (100.0 * sUpdateWeightsSec / total) << "%)"
+                << " | GEMM(cblas)=" << gemmSec << "s (" << (100.0 * gemmSec / total)
+                << "% of total, " << DebugGetGemmCalls() << " calls)"
+                << " GEMM(oneDNN mu)=" << muGemmSec << "s (" << (100.0 * muGemmSec / total) << "%)"
+                << " allGEMM=" << allGemmSec << "s (" << (100.0 * allGemmSec / total) << "%)"
+                << " non-GEMM=" << (total - allGemmSec) << "s ("
+                << (100.0 * (total - allGemmSec) / total) << "%)"
+                << " [[error=" << errSec << "s (" << (100.0 * errSec / total) << "%)"
+                << " muOnlyElementwise(activation+cache)=" << muSec << "s ("
+                << (100.0 * muSec / total) << "%)"
+                << " updateStateElementwise=" << updSec << "s (" << (100.0 * updSec / total)
+                << "%) sum=" << (errSec + muSec + updSec) << "s ("
+                << (100.0 * (errSec + muSec + updSec) / total) << "%)]]\n";
+    }
   }
 
   float finalEnergy = CalculateState(computeEnergy);

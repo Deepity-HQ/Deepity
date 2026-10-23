@@ -1,7 +1,7 @@
 /**
  * @file tSimplePCLayerVerify.cpp
  * @brief Finite-difference gradient check for SimplePCLayer's weight
- * update (dE/dW) under the new mu=phi(W@z+b) convention, deliberately
+ * update (dE/dW) under the mu=W@phi(z)+b convention, deliberately
  * including an extra CalculateState()-driven energy read between the
  * settling loop and UpdateWeights() (exactly the pattern that exposed
  * DiscriminativePCLayer's mu-reuse fragility). Ad hoc verification

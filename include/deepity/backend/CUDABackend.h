@@ -73,6 +73,15 @@ public:
   /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryFusedMatMulBias
+  bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A, int lda,
+                          const float* B, int ldb, const float* bias, float* C,
+                          int ldc) noexcept override
+  {
+    (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)A, (void)lda, (void)B, (void)ldb,
+        (void)bias, (void)C, (void)ldc;
+    return false; // CUDA's own fused path is TryFusedForwardPass instead
+  }
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
   void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, ActivationType dType,
@@ -136,6 +145,9 @@ public:
   /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
   void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                          ActivationType dType, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiplyFromPreact
+  void FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a, const float* preact,
+                                                    ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
 

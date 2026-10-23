@@ -52,6 +52,17 @@ def main() -> None:
     DECAY_RATE = 0.94
     LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
+    # Under mu=W@phi(z)+b, the second-to-last layer's mu (unbounded logits
+    # into the terminal layer's softmax cross-entropy) has nothing bounding
+    # its scale. On separable batches, cross-entropy's true minimum is at
+    # infinite weight magnitude, so ADAMW keeps growing that one weight
+    # matrix until training destabilizes (observed: energy explodes ~epoch
+    # 24, accuracy never recovers). LMBDA must stay 0 (it decays every
+    # layer's weights uniformly, inside the PC step itself, which is what
+    # breaks symmetric feedback); this instead shrinks only the one
+    # pathological weight matrix, from outside the library, once per batch.
+    TERMINAL_FEED_WEIGHT_DECAY = 1e-4
+
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
     net = SimplePCN(
         Linear(784, 512),
@@ -62,6 +73,15 @@ def main() -> None:
         batch_size=BATCH_SIZE,
     )
     net.configure(learning_rate=LR, inference_rate=0.091, lmbda=LMBDA, optimizer="ADAMW")
+
+    # mu=W@phi(z)+b (see SimplePCLayer.h) carries no final activation of
+    # its own, so the terminal layer's prediction target (mu from the
+    # second-to-last layer) is unbounded logits, not [0,1]. Softmax
+    # cross-entropy bounds the terminal layer's error/settling target
+    # at the comparison itself instead, so the terminal belief (used
+    # for argmax accuracy below) still settles toward a valid
+    # probability distribution during free (unclamped) inference.
+    net[-1].set_cross_entropy(True)
 
     # Match exact +-0.3 bounds for forward-projection initialization
     rng_init = np.random.default_rng(SEED)
@@ -100,6 +120,14 @@ def main() -> None:
             # 3. Call C++ Native Loop (avoid Nanobind overhead)
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
+
+            if TERMINAL_FEED_WEIGHT_DECAY > 0.0:
+                terminal_feed_layer = net.layers[-2]
+                terminal_feed_layer.set_weights(
+                    (terminal_feed_layer.weights * (1.0 - TERMINAL_FEED_WEIGHT_DECAY))
+                    .astype(np.float32)
+                    .ravel()
+                )
 
         # Real accuracy check on a subset
         N_ACC_BATCHES = 10
