@@ -8,7 +8,7 @@ A high-performance C++ / CUDA engine for Predictive Coding Networks (PCNs) and D
 
 Deepity bypasses standard backpropagation's memory overhead using local, layer-by-layer learning rules instead of one global backward pass -- see [Why Predictive Coding?](#why-predictive-coding) below for what that actually means.
 
-**Current Benchmark:** 98.22% MNIST test accuracy in 952.6s on CPU — matching ngc-learn's own PC reference implementation's accuracy in ~1.79x less wall-clock time, on an identical architecture/settling-step/batch-size/epoch-count configuration. See [Performance & Benchmarks](#performance--benchmarks) below for the full picture, including where Deepity does *not* win (e.g. wall-clock vs. single-pass backprop).
+**Current Benchmark:** 98.21% MNIST test accuracy in 487.5s on CPU — faster than jpc (JAX) and ngc-learn's own PC reference implementations at matching or better accuracy, on an identical architecture/settling-step/batch-size/epoch-count configuration. See [Performance & Benchmarks](#performance--benchmarks) below for the full picture, including where Deepity does *not* win (e.g. wall-clock vs. single-pass backprop).
 
 [Website & Documentation](https://ra4ster.github.io/Deepity) • [Current Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
 
@@ -36,15 +36,16 @@ Development and testing for the CUDA backend happens on the Ohio Supercomputer C
 
 784&rarr;512&rarr;512&rarr;10 (sigmoid), T=20 settling steps/batch, batch size 250, 100 epochs, AdamW lr=0.00373 with 0.94/epoch decay -- identical across the first two columns so the comparison is apples-to-apples.
 
-| | Deepity `SimplePCN` | ngc-learn `pc_discrim` | PyTorch backprop (control) |
-|---|---|---|---|
-| Test / dev accuracy | **98.22%** | 98% (best dev) | 97.51% |
-| Wall-clock, 100 epochs | **952.6s** | 1707.7s | 627.8s |
-| Command | `python examples/mnist.py 7 100 20` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
-| Raw log | `logs/SimplePCN_vs_ngclearn_mnist.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
+| | Deepity `SimplePCN` | jpc (JAX) | ngc-learn `pc_discrim` | PyTorch backprop (control) |
+|---|---|---|---|---|
+| Test / dev accuracy | **98.21%** | 97.55% | 98% (best dev) | 97.51% |
+| Wall-clock, 100 epochs | **487.5s** | 531.4s | 1707.7s | 627.8s |
+| Command | `python examples/mnist.py 7 100 20` | `python benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
+| Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/jpc_mnist_run.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
 
-- **Deepity vs. ngc-learn** is the matched comparison -- identical architecture, settling-step count, batch size, epoch count, forward-projection init, and optimizer schedule, run as two independent predictive-coding implementations on the same machine. Deepity reaches equal-or-better accuracy in ~1.79x less time than ngc-learn's own PC reference implementation.
-- **The PyTorch column is a reference point, not a PC run.** It's single-pass backprop (one forward + one backward per batch) against the same targets via MSE loss. Backprop is faster in wall-clock here, since it does one pass per batch where PC does T=20 settling passes -- the 1.79x figure is Deepity vs. another PC implementation, not Deepity vs. backprop.
+- **Deepity vs. jpc** is the closest comparison: both are predictive-coding implementations on the same architecture, settling-step count, batch size, epoch count, and optimizer schedule, jpc built on JAX/XLA rather than hand-tuned C++. Deepity trains faster at matching accuracy.
+- **Deepity vs. ngc-learn** -- identical architecture, settling-step count, batch size, epoch count, forward-projection init, and optimizer schedule, run as two independent predictive-coding implementations on the same machine. Deepity reaches equal-or-better accuracy in less time.
+- **The PyTorch column is a reference point, not a PC run.** It's single-pass backprop (one forward + one backward per batch) against the same targets via MSE loss -- it does one pass per batch where PC does T=20 settling passes, so it isn't directly comparable to the PC columns.
 
 A separate, cheaper variant, `DKPPCN` (784&rarr;512&rarr;10, batch size 1000, only 2 inference steps/batch instead of 20), reaches 95.97% in 49.6s on the same CPU (`python examples/mnist_dkppcn.py 7 50 2 cpu`, `logs/DKPPCN_native_mkl.txt`) -- a different point on the speed/accuracy trade-off curve.
 
@@ -83,7 +84,7 @@ $$
 \text{GFLOPS/s} = \frac{11.54 \times 10^{9}\ \text{FLOPs}}{\text{measured wall time}} \approx \textbf{690 GFLOPS/s}
 $$
 
--- the median of eight consecutive runs on the same machine (see `logs/gflops_benchmark.txt` for all raw runs; this is a laptop with CPU frequency scaling enabled, not a pinned benchmark server, hence some run-to-run spread).
+See `logs/gflops_benchmark.txt` for the raw runs.
 
 The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run -- 329 TFLOP total across 100 epochs (24,000 train steps), at 487.5s wall-clock -- gives **675 GFLOPS/s** sustained, end to end.
 
