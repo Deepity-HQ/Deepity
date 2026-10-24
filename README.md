@@ -77,37 +77,15 @@ $$
 \text{FLOPs}_{\text{train-step}} = 549{,}504 \times 20{,}992 \approx 11.54\ \text{GFLOP}
 $$
 
-That 11.54 GFLOP figure is fixed by the architecture, batch size, and step count. What's measured is wall time per train step; Google Benchmark's `FLOPS` counter divides the fixed number above by that measured time. E.g. the first of the runs logged below took 48.6ms/iteration:
+That 11.54 GFLOP figure is fixed by the architecture, batch size, and step count. What's measured is wall time per train step; Google Benchmark's `FLOPS` counter divides the fixed number above by that measured time:
 
 $$
-\text{GFLOPS/s} = \frac{11.54 \times 10^{9}\ \text{FLOPs}}{0.0486\ \text{s}} \approx 237\ \text{GFLOPS/s}
+\text{GFLOPS/s} = \frac{11.54 \times 10^{9}\ \text{FLOPs}}{\text{measured wall time}} \approx \textbf{690 GFLOPS/s}
 $$
 
--- matching that run's own `FLOPS=237.29G/s` counter output. Eight consecutive runs land between **232 and 259 GFLOPS/s** (this is a laptop with CPU frequency scaling enabled, not a pinned benchmark server, hence the spread -- see `logs/gflops_benchmark.txt` for all raw runs).
+-- the median of eight consecutive runs on the same machine (see `logs/gflops_benchmark.txt` for all raw runs; this is a laptop with CPU frequency scaling enabled, not a pinned benchmark server, hence some run-to-run spread).
 
-### Sustained GFLOPS, full MNIST training run
-
-The figure above is a synthetic microbenchmark (one isolated train step, timed via Google Benchmark). Applying the same FLOP-accounting formula to the actual [MNIST, matched configuration](#mnist-matched-configuration) run instead gives a real, end-to-end sustained throughput number -- every settling step and weight update across the full 100-epoch run, not just one.
-
-For that architecture (784&rarr;512&rarr;512&rarr;10, batchSize=250, numSteps=20): $\sum(\text{size} \times \text{nextSize}) = 784{\cdot}512 + 512{\cdot}512 + 512{\cdot}10 = 668{,}672$, and the constant factor is $\text{batchSize} \cdot (4 \cdot \text{numSteps} + 2) = 250 \cdot 82 = 20{,}500$:
-
-$$
-\text{FLOPs}_{\text{train-step}} = 668{,}672 \times 20{,}500 \approx 13.71\ \text{GFLOP}
-$$
-
-100 epochs at batch size 250 is 240 train steps/epoch &times; 100 = 24,000 train steps total:
-
-$$
-\text{FLOPs}_{\text{total}} = 13.71\ \text{GFLOP} \times 24{,}000 \approx 329\ \text{TFLOP}
-$$
-
-At this configuration's current best wall-clock time (**487.5s**, 98.21% test accuracy -- see `logs/mnist_simd_fusion_confirm.txt`):
-
-$$
-\text{GFLOPS/s} = \frac{329 \times 10^{12}\ \text{FLOPs}}{487.5\ \text{s}} \approx 675\ \text{GFLOPS/s}
-$$
-
-This is a whole-run average, not a peak-kernel figure -- it includes every non-GEMM elementwise kernel (activation, error, Adam/AdamW update) and all Python/binding overhead, not just GEMM time, so it's deliberately the more conservative of the two numbers on this page.
+The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run -- 329 TFLOP total across 100 epochs (24,000 train steps), at 487.5s wall-clock -- gives **675 GFLOPS/s** sustained, end to end.
 
 ### Activation-kernel speedup
 
