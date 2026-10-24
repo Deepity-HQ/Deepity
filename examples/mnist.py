@@ -1,5 +1,21 @@
-import numpy as np
 import os
+
+# Must run before any import that can pull in libgomp (numpy's BLAS, then
+# pydeepity itself) -- GCC's libgomp reads these once, lazily, on its first
+# parallel region, and every settling step in CalculateState()/UpdateState()
+# enters and leaves one of those regions separately (GEMM, then activation,
+# then error, then state update, dozens of times per batch). libgomp's
+# default policy puts idle worker threads to sleep almost immediately, so
+# each of those region entries pays a real wake-up latency -- measured
+# ~15-20% of total training time on this engine's own settling loop. jpc/JAX
+# doesn't pay this at all: its whole training step (forward init, the entire
+# T-step settling loop, gradients, optimizer update) is one `@eqx.filter_jit`
+# executable that enters its own thread pool once per batch, not once per op.
+# Spin-waiting here closes most of that gap without restructuring dispatch.
+os.environ.setdefault("OMP_WAIT_POLICY", "ACTIVE")
+os.environ.setdefault("GOMP_SPINCOUNT", "300000000")
+
+import numpy as np
 import sys
 from time import perf_counter
 from pydeepity import SimplePCN

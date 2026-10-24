@@ -49,6 +49,7 @@
  */
 #include <cmath>
 #include <cstddef>
+#include <limits>
 
 #define HWY_TARGET_INCLUDE "backend/CPUBackendHighway.cpp"
 #include <hwy/foreach_target.h>
@@ -399,6 +400,204 @@ void FusedActivationDerivativeMultiplyFromPreactHwy(float* dst, const float* a, 
     dst[i] = a[i] * deriv;
   }
 }
+
+void ComputeSoftmaxCrossEntropyErrorRowHwy(float* eRow, const float* zRow, const float* muRow,
+                                            size_t nextSize)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+
+  auto vmax = hn::Set(d, -std::numeric_limits<float>::infinity());
+  size_t j = 0;
+  for (; j + lanes <= nextSize; j += lanes)
+    vmax = hn::Max(vmax, hn::LoadU(d, muRow + j));
+  float max_val = hn::ReduceMax(d, vmax);
+  for (; j < nextSize; ++j) // scalar tail, must match the vector formula exactly
+    max_val = std::max(max_val, muRow[j]);
+
+  // See this function's declaration in CPUBackendHighway.h for why
+  // hn::Exp is safe here (unlike elsewhere in this file): x <= 0 always.
+  auto vsum = hn::Zero(d);
+  const auto vmaxb = hn::Set(d, max_val);
+  j = 0;
+  for (; j + lanes <= nextSize; j += lanes)
+  {
+    auto vexp = hn::Exp(d, hn::Sub(hn::LoadU(d, muRow + j), vmaxb));
+    hn::StoreU(vexp, d, eRow + j); // eRow temporarily holds unnormalized exp
+    vsum = hn::Add(vsum, vexp);
+  }
+  float sum_exp = hn::ReduceSum(d, vsum);
+  for (; j < nextSize; ++j)
+  {
+    float ex = std::exp(muRow[j] - max_val);
+    eRow[j] = ex;
+    sum_exp += ex;
+  }
+
+  const auto vsumb = hn::Set(d, sum_exp);
+  j = 0;
+  for (; j + lanes <= nextSize; j += lanes)
+  {
+    auto vprob = hn::Div(hn::LoadU(d, eRow + j), vsumb);
+    hn::StoreU(hn::Sub(hn::LoadU(d, zRow + j), vprob), d, eRow + j); // eRow now holds the error
+  }
+  for (; j < nextSize; ++j)
+    eRow[j] = zRow[j] - eRow[j] / sum_exp;
+}
+
+// Forward-activation counterpart to ActivationDerivFromPreactHwy above --
+// same tanh-identity approach for every transcendental case (GELU,
+// SIGMOID, TANH), mirroring Deep::ActivationScalar (Activations.h)
+// exactly, for the same reason that function's own doc comment gives.
+template <class D, class V> V ActivationForwardHwy(D d, V z, ActivationType type)
+{
+  switch (type)
+  {
+  case ActivationType::RELU:
+    return hn::IfThenElseZero(hn::Gt(z, hn::Zero(d)), z);
+  case ActivationType::GELU:
+  {
+    constexpr float kGeluAlpha = 0.7978845608028654f;
+    constexpr float kGeluBeta = 0.044715f;
+    auto zsq = hn::Mul(z, z);
+    auto inner = hn::MulAdd(hn::Set(d, kGeluBeta * kGeluAlpha), hn::Mul(zsq, z),
+                            hn::Mul(hn::Set(d, kGeluAlpha), z));
+    auto t = hn::Tanh(d, inner);
+    return hn::Mul(hn::Mul(hn::Set(d, 0.5f), z), hn::Add(hn::Set(d, 1.0f), t));
+  }
+  case ActivationType::SIGMOID:
+  {
+    auto t = hn::Tanh(d, hn::Mul(z, hn::Set(d, 0.5f)));
+    return hn::MulAdd(hn::Set(d, 0.5f), t, hn::Set(d, 0.5f));
+  }
+  case ActivationType::eSIGMOID:
+  {
+    auto a = hn::Add(hn::Set(d, 1.0f), hn::Abs(z));
+    return hn::MulAdd(hn::Set(d, 0.5f), hn::Div(z, a), hn::Set(d, 0.5f));
+  }
+  case ActivationType::TANH:
+    return hn::Tanh(d, z);
+  case ActivationType::HARD_TANH:
+    return hn::Max(hn::Set(d, -1.0f), hn::Min(hn::Set(d, 1.0f), z));
+  default: // LINEAR, NONE
+    return z;
+  }
+}
+
+void ComputeErrorAndActivationChunkHwy(float* e, float* zF, const float* z, const float* mu,
+                                        ActivationType activationType, size_t start, size_t end)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+
+  size_t i = start;
+  for (; i + lanes <= end; i += lanes)
+  {
+    auto zv = hn::LoadU(d, z + i);
+    hn::StoreU(hn::Sub(zv, hn::LoadU(d, mu + i)), d, e + i);
+    hn::StoreU(ActivationForwardHwy(d, zv, activationType), d, zF + i);
+  }
+  for (; i < end; ++i) // scalar tail -- mirrors Deep::ActivationScalar (Activations.h),
+                        // not called directly since that header pulls in SLEEF, which
+                        // this isolated, deliberately SLEEF-free target doesn't link
+  {
+    e[i] = z[i] - mu[i];
+    float zi = z[i];
+    switch (activationType)
+    {
+    case ActivationType::RELU:
+      zF[i] = zi > 0.0f ? zi : 0.0f;
+      break;
+    case ActivationType::GELU:
+    {
+      constexpr float kGeluAlpha = 0.7978845608028654f;
+      constexpr float kGeluBeta = 0.044715f;
+      float zsq = zi * zi;
+      float inner = kGeluAlpha * zi + (kGeluBeta * kGeluAlpha) * zsq * zi;
+      zF[i] = 0.5f * zi * (1.0f + std::tanh(inner));
+      break;
+    }
+    case ActivationType::SIGMOID:
+      zF[i] = 0.5f + 0.5f * std::tanh(0.5f * zi);
+      break;
+    case ActivationType::eSIGMOID:
+      zF[i] = 0.5f + 0.5f * (zi / (1.0f + std::fabs(zi)));
+      break;
+    case ActivationType::TANH:
+      zF[i] = std::tanh(zi);
+      break;
+    case ActivationType::HARD_TANH:
+      zF[i] = std::max(-1.0f, std::min(1.0f, zi));
+      break;
+    default: // LINEAR, NONE
+      zF[i] = zi;
+      break;
+    }
+  }
+}
+
+void AdamStepChunkHwy(float* param, const float* grad, float* m, float* v, size_t start,
+                       size_t end, float stepSize, float beta1, float beta2, float eps)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+  const auto vb1 = hn::Set(d, beta1), vb1c = hn::Set(d, 1.0f - beta1);
+  const auto vb2 = hn::Set(d, beta2), vb2c = hn::Set(d, 1.0f - beta2);
+  const auto vstep = hn::Set(d, stepSize), veps = hn::Set(d, eps);
+
+  size_t i = start;
+  for (; i + lanes <= end; i += lanes)
+  {
+    auto g = hn::LoadU(d, grad + i);
+    auto mv = hn::MulAdd(vb1, hn::LoadU(d, m + i), hn::Mul(vb1c, g));
+    auto vv = hn::MulAdd(vb2, hn::LoadU(d, v + i), hn::Mul(vb2c, hn::Mul(g, g)));
+    hn::StoreU(mv, d, m + i);
+    hn::StoreU(vv, d, v + i);
+    auto p = hn::Sub(hn::LoadU(d, param + i), hn::Div(hn::Mul(vstep, mv), hn::Add(hn::Sqrt(vv), veps)));
+    hn::StoreU(p, d, param + i);
+  }
+  for (; i < end; ++i) // scalar tail, must match the vector formula exactly
+  {
+    float g = grad[i];
+    m[i] = beta1 * m[i] + (1.0f - beta1) * g;
+    v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
+    param[i] -= stepSize * m[i] / (std::sqrt(v[i]) + eps);
+  }
+}
+
+void AdamWStepChunkHwy(float* param, const float* grad, float* m, float* v, size_t start,
+                        size_t end, float stepSize, float beta1, float beta2, float eps,
+                        float lrWeightDecay)
+{
+  const hn::ScalableTag<float> d;
+  const size_t lanes = hn::Lanes(d);
+  const auto vb1 = hn::Set(d, beta1), vb1c = hn::Set(d, 1.0f - beta1);
+  const auto vb2 = hn::Set(d, beta2), vb2c = hn::Set(d, 1.0f - beta2);
+  const auto vlrwd = hn::Set(d, lrWeightDecay);
+  const auto vstep = hn::Set(d, stepSize), veps = hn::Set(d, eps);
+
+  size_t i = start;
+  for (; i + lanes <= end; i += lanes)
+  {
+    auto g = hn::LoadU(d, grad + i);
+    auto mv = hn::MulAdd(vb1, hn::LoadU(d, m + i), hn::Mul(vb1c, g));
+    auto vv = hn::MulAdd(vb2, hn::LoadU(d, v + i), hn::Mul(vb2c, hn::Mul(g, g)));
+    hn::StoreU(mv, d, m + i);
+    hn::StoreU(vv, d, v + i);
+    auto p = hn::LoadU(d, param + i);
+    p = hn::Sub(p, hn::Mul(vlrwd, p));
+    p = hn::Sub(p, hn::Div(hn::Mul(vstep, mv), hn::Add(hn::Sqrt(vv), veps)));
+    hn::StoreU(p, d, param + i);
+  }
+  for (; i < end; ++i) // scalar tail, must match the vector formula exactly
+  {
+    float g = grad[i];
+    m[i] = beta1 * m[i] + (1.0f - beta1) * g;
+    v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
+    param[i] -= lrWeightDecay * param[i];
+    param[i] -= stepSize * m[i] / (std::sqrt(v[i]) + eps);
+  }
+}
 } // namespace HWY_NAMESPACE
 } // namespace Deep
 HWY_AFTER_NAMESPACE();
@@ -413,6 +612,10 @@ HWY_EXPORT(MultiplyIntoHwy);
 HWY_EXPORT(FusedStateUpdateHwy);
 HWY_EXPORT(FusedStateUpdateMomentumHwy);
 HWY_EXPORT(FusedActivationDerivativeMultiplyFromPreactHwy);
+HWY_EXPORT(ComputeSoftmaxCrossEntropyErrorRowHwy);
+HWY_EXPORT(ComputeErrorAndActivationChunkHwy);
+HWY_EXPORT(AdamStepChunkHwy);
+HWY_EXPORT(AdamWStepChunkHwy);
 
 void AddBiasPerChannelDispatch(float* buf, const float* bias, size_t channels,
                                size_t spatialSize) noexcept
@@ -454,6 +657,34 @@ void FusedActivationDerivativeMultiplyFromPreactDispatch(float* dst, const float
                                                           size_t n) noexcept
 {
   HWY_DYNAMIC_DISPATCH(FusedActivationDerivativeMultiplyFromPreactHwy)(dst, a, preact, dType, n);
+}
+
+void ComputeSoftmaxCrossEntropyErrorRowDispatch(float* eRow, const float* zRow,
+                                                 const float* muRow, size_t nextSize) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ComputeSoftmaxCrossEntropyErrorRowHwy)(eRow, zRow, muRow, nextSize);
+}
+
+void ComputeErrorAndActivationChunkDispatch(float* e, float* zF, const float* z, const float* mu,
+                                             ActivationType activationType, size_t start,
+                                             size_t end) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ComputeErrorAndActivationChunkHwy)(e, zF, z, mu, activationType, start, end);
+}
+
+void AdamStepChunkDispatch(float* param, const float* grad, float* m, float* v, size_t start,
+                           size_t end, float stepSize, float beta1, float beta2,
+                           float eps) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(AdamStepChunkHwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps);
+}
+
+void AdamWStepChunkDispatch(float* param, const float* grad, float* m, float* v, size_t start,
+                            size_t end, float stepSize, float beta1, float beta2, float eps,
+                            float lrWeightDecay) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(AdamWStepChunkHwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps,
+                                          lrWeightDecay);
 }
 } // namespace Deep
 #endif // HWY_ONCE
