@@ -3,6 +3,18 @@
 # builds on today, so this costs nothing in practice.
 cmake_minimum_required(VERSION 3.28)
 
+# Must be set before project()/enable_language() -- CMake only consults
+# CMAKE_<LANG>_COMPILER_LAUNCHER at that point, not later. Wraps every
+# compile invocation (including inside FetchContent subbuilds like
+# oneDNN/SLEEF/Highway, which don't override this themselves) so a
+# second clean build of unchanged sources is a cache hit instead of a
+# full recompile -- a no-op if ccache isn't installed.
+find_program(DEEPITY_CCACHE_PROGRAM ccache)
+if(DEEPITY_CCACHE_PROGRAM)
+    set(CMAKE_C_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")
+endif()
+
 project(deepity C CXX)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
@@ -20,6 +32,19 @@ option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MK
 # default -- this is the GEMM path every benchmark number in the README
 # was measured against.
 option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass" ON)
+# Building oneDNN from source (the default, via FetchContent below) takes
+# ~90 minutes of single-threaded compile time by itself (measured via
+# .ninja_log on this project's own CI-equivalent build -- one file,
+# ref_rnn.cpp, alone costs 250s, despite DNNL_ENABLE_PRIMITIVE=MATMUL
+# below not needing RNN at all; oneDNN's own build doesn't exclude it
+# from compilation, only from the runtime primitive table). ON trades
+# that away for a system-installed, dynamically-linked oneDNN instead
+# (e.g. Fedora/RHEL's `onednn-devel` package) via find_package(dnnl
+# CONFIG) -- falls back to the FetchContent source build automatically
+# if not found. Meant for local dev iteration, not for the wheel-building
+# CI job, which wants the fully static, self-contained build this
+# defaults to.
+option(DEEPITY_ONEDNN_SYSTEM "Prefer a system-installed oneDNN (via find_package) over building one from source" OFF)
 # Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
 # for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
 # unlike the mu GEMM above), avoiding cblas_sgemm's generic-large-GEMM
@@ -274,6 +299,9 @@ if(DEEPITY_ENABLE_CUDA)
         # targeting one known GPU.
         if(NOT CMAKE_CUDA_ARCHITECTURES)
             set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;90")
+        endif()
+        if(DEEPITY_CCACHE_PROGRAM)
+            set(CMAKE_CUDA_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")
         endif()
         enable_language(CUDA)
         set(CMAKE_CUDA_STANDARD 17)
@@ -534,32 +562,50 @@ target_include_directories(DeepityHighwayKernels PRIVATE ${CMAKE_CURRENT_SOURCE_
 target_link_libraries(DeepityHighwayKernels PUBLIC hwy)
 
 if(DEEPITY_USE_ONEDNN)
-    # Only the forward matmul primitive is needed -- Deepity computes its
-    # own backward/feedback pass manually, never via a oneDNN primitive --
-    # so both the primitive set and the workload (training-specific
-    # primitives need backward variants too) are restricted to keep the
-    # build small.
-    set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    set(DNNL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(DNNL_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
-    set(DNNL_ENABLE_WORKLOAD "INFERENCE" CACHE STRING "" FORCE)
-    set(DNNL_ENABLE_PRIMITIVE "MATMUL" CACHE STRING "" FORCE)
-    # Graph API (whole-subgraph pattern fusion) can't coexist with
-    # restricting ONEDNN_ENABLE_PRIMITIVE -- not needed here, we're only
-    # calling the matmul primitive directly.
-    set(ONEDNN_BUILD_GRAPH OFF CACHE BOOL "" FORCE)
-    set(DNNL_GPU_RUNTIME "NONE" CACHE STRING "" FORCE)
-    # Shares Intel's iomp5 runtime with MKL rather than standing up a
-    # third thread pool alongside OpenBLAS's own (see this session's
-    # earlier, ultimately-false lead chasing oversubscription via perf).
-    set(DNNL_CPU_RUNTIME "OMP" CACHE STRING "" FORCE)
+    set(DEEPITY_DNNL_RESOLVED FALSE)
 
-    FetchContent_Declare(
-        onednn
-        GIT_REPOSITORY https://github.com/oneapi-src/oneDNN.git
-        GIT_TAG v3.13.4
-    )
-    FetchContent_MakeAvailable(onednn)
+    if(DEEPITY_ONEDNN_SYSTEM)
+        find_package(dnnl CONFIG QUIET)
+        if(TARGET DNNL::dnnl)
+            message(STATUS "Using system oneDNN (found via find_package(dnnl)).")
+            set(DEEPITY_DNNL_TARGET DNNL::dnnl)
+            set(DEEPITY_DNNL_RESOLVED TRUE)
+        else()
+            message(WARNING "DEEPITY_ONEDNN_SYSTEM is ON, but no system oneDNN "
+                "install was found (e.g. 'dnf install onednn-devel' on Fedora/RHEL). "
+                "Falling back to building oneDNN from source.")
+        endif()
+    endif()
+
+    if(NOT DEEPITY_DNNL_RESOLVED)
+        # Only the forward matmul primitive is needed -- Deepity computes
+        # its own backward/feedback pass manually, never via a oneDNN
+        # primitive -- so both the primitive set and the workload
+        # (training-specific primitives need backward variants too) are
+        # restricted to keep the build small.
+        set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(DNNL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(DNNL_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
+        set(DNNL_ENABLE_WORKLOAD "INFERENCE" CACHE STRING "" FORCE)
+        set(DNNL_ENABLE_PRIMITIVE "MATMUL" CACHE STRING "" FORCE)
+        # Graph API (whole-subgraph pattern fusion) can't coexist with
+        # restricting ONEDNN_ENABLE_PRIMITIVE -- not needed here, we're
+        # only calling the matmul primitive directly.
+        set(ONEDNN_BUILD_GRAPH OFF CACHE BOOL "" FORCE)
+        set(DNNL_GPU_RUNTIME "NONE" CACHE STRING "" FORCE)
+        # Shares Intel's iomp5 runtime with MKL rather than standing up a
+        # third thread pool alongside OpenBLAS's own (see this session's
+        # earlier, ultimately-false lead chasing oversubscription via perf).
+        set(DNNL_CPU_RUNTIME "OMP" CACHE STRING "" FORCE)
+
+        FetchContent_Declare(
+            onednn
+            GIT_REPOSITORY https://github.com/oneapi-src/oneDNN.git
+            GIT_TAG v3.13.4
+        )
+        FetchContent_MakeAvailable(onednn)
+        set(DEEPITY_DNNL_TARGET dnnl)
+    endif()
 endif()
 
 if(DEEPITY_USE_LIBXSMM)
@@ -730,7 +776,7 @@ if(DEEPITY_CUDNN_ENABLED)
 endif()
 
 if(DEEPITY_USE_ONEDNN)
-    target_link_libraries(Deepity PRIVATE dnnl)
+    target_link_libraries(Deepity PRIVATE ${DEEPITY_DNNL_TARGET})
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_ONEDNN)
 endif()
 

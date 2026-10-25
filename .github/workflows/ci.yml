@@ -176,12 +176,45 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp
-      # install inside the manylinux container (Linux) or via Homebrew
-      # (macOS) through the before-all hooks in pyproject.toml's
+      # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp/
+      # ccache install inside the manylinux container (Linux) or via
+      # Homebrew (macOS) through the before-all hooks in pyproject.toml's
       # [tool.cibuildwheel.linux] / [tool.cibuildwheel.macos] tables.
+      # Windows has no such container-level hook (cibuildwheel runs
+      # directly on the runner), so ccache is installed as a normal step
+      # here instead, same as build-and-test-windows already does for
+      # Ninja/LLVM above.
+      - name: Install ccache (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install ccache -y --no-progress
+
+      # oneDNN's from-source build is by far the dominant compile cost
+      # here (~94 minutes from scratch, see this project's own
+      # build-speed investigation) -- ccache turns that into a cache hit
+      # on every run after the first. Keyed on its pinned version
+      # (CMakeLists.txt's GIT_TAG) so an oneDNN bump naturally starts a
+      # fresh cache instead of silently reusing stale objects; bump the
+      # key's suffix below if that pin ever changes.
+      #
+      # Linux builds happen inside cibuildwheel's manylinux container,
+      # which mounts the host filesystem root at /host -- CCACHE_DIR
+      # below points there specifically so the cache this step
+      # restores (a HOST path) is what the container actually reads/
+      # writes, not some path local to the container's own throwaway
+      # filesystem.
+      - name: Cache ccache compiler cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
+          restore-keys: |
+            ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21
+        env:
+          CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache
+          CIBW_ENVIRONMENT_WINDOWS: CCACHE_DIR=${{ github.workspace }}\.ccache
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
