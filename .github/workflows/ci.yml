@@ -181,7 +181,6 @@ jobs:
 
   build-wheels:
     name: wheels (${{ matrix.os }})
-    needs: [build-and-test, build-and-test-windows]
     strategy:
       fail-fast: false
       matrix:
@@ -194,6 +193,13 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      # Windows/macOS cibuildwheel runs natively, not in a container, so
+      # it needs uv on the runner's own PATH (Linux gets uv inside the
+      # manylinux container already).
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
       # Linux/macOS get ccache via pyproject.toml's before-all hooks instead.
       - name: Install ccache (Windows)
         if: matrix.os == 'windows-latest'
