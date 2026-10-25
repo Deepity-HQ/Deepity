@@ -88,8 +88,13 @@ Include in the PR description:
 - CMake >= 3.16, Ninja
 - A C++20 compiler: Clang (recommended, see below), GCC, or MSVC
 - OpenBLAS (via vcpkg on Windows, system packages on Linux/macOS)
-- `nanobind` (installed via pip -- see `pyproject.toml`)
+- `nanobind` (`uv pip install --system nanobind` -- see `pyproject.toml`)
 - Python 3.8+ with development headers
+- [`uv`](https://docs.astral.sh/uv/) for everything else Python-side:
+  `uv sync --group dev --no-install-project` sets up a venv with what
+  `examples/`/`research/` import plus `pyright` (see `pyproject.toml`'s
+  `[dependency-groups]`); `--no-install-project` skips building the C++
+  extension through this path, use `build.py` for that instead.
 
 ### Configuring locally
 

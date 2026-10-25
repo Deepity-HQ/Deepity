@@ -3,6 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    tags:
+      # Publishes to PyPI (see the publish job below) -- push a tag
+      # matching this to cut a release, e.g. `git tag v1.0.1 && git push
+      # --tags`.
+      - "v[0-9]+.[0-9]+.[0-9]+"
   pull_request:
     branches: [main]
   workflow_dispatch: {}
@@ -38,6 +43,9 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -49,7 +57,10 @@ jobs:
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
 
       - name: Install Python build dependencies
-        run: python -m pip install nanobind rich
+        # --system: install into actions/setup-python's interpreter
+        # directly (build.py's own CMake configure step needs nanobind
+        # importable from there), not an isolated uv-managed venv.
+        run: uv pip install --system nanobind rich
 
       - name: Build (Release)
         # --no-tests: CMakeLists.txt no longer registers any CTest tests
@@ -77,6 +88,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
 
       - name: Set up MSVC developer environment
         # Clang on Windows still links via the MSVC toolchain (link.exe,
@@ -117,7 +131,7 @@ jobs:
         run: C:/vcpkg/vcpkg.exe install openblas --triplet x64-windows
 
       - name: Install Python build dependencies
-        run: python -m pip install nanobind rich
+        run: uv pip install --system nanobind rich
 
       - name: Configure (CMake, using the windows-clang preset)
         # Uses CMakePresets.json's "windows-clang" preset directly, rather
@@ -146,20 +160,28 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.x"
 
       - name: Install dependencies
-        # requirements-dev.txt covers everything examples/ imports, plus
-        # rich (for build.py's optional dashboard) and pyright itself - see
-        # that file for details. experiments/ is intentionally excluded in
-        # pyrightconfig.json instead, so its deps aren't required here.
-        run: pip install -r requirements-dev.txt
+        # pyproject.toml's [dependency-groups] dev covers everything
+        # examples/ imports beyond the runtime deps, plus rich (for
+        # build.py's optional dashboard) and pyright itself. --no-install-
+        # project: skips building the C++ extension (needs the full
+        # toolchain, not needed just to type-check). experiments/ is
+        # intentionally excluded in pyrightconfig.json instead, so its
+        # deps aren't required here.
+        run: uv sync --group dev --no-install-project
 
       - name: Run pyright
-        run: pyright
+        # --no-sync: `uv run` re-syncs by default, which (without
+        # --no-install-project) means building the C++ extension via
+        # scikit-build-core -- needs the full CMake/compiler toolchain and
+        # defeats the point of the --no-install-project sync just above.
+        # Reuses that exact venv instead.
+        run: uv run --no-sync pyright
 
   build-wheels:
     name: wheels (${{ matrix.os }})
@@ -230,22 +252,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           python-version: "3.x"
 
-      - name: Install build
-        run: pip install build
-
       - name: Build sdist
-        # NOT `python -m build` - `-m` makes Python search sys.path with the
-        # current working directory prepended, and this repo has a
-        # `build.py` at the root, which shadows the installed `build`
-        # package entirely (the error you'd see is literally build.py's own
-        # --help text). `pyproject-build` is the console-script entry point
-        # the `build` package ships specifically to avoid this collision.
-        run: pyproject-build --sdist
+        run: uv build --sdist
 
       - name: Upload sdist
         uses: actions/upload-artifact@v4
@@ -254,8 +267,49 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
-  # Not wired up yet: publishing needs the PyPI project configured for
-  # Trusted Publishing (pypi.org project settings -> Publishing) with this
-  # repo/workflow registered, then a job here gated on a tag push using
-  # `pypa/gh-action-pypi-publish` and `permissions: id-token: write` -
-  # no API token needs to live in repo secrets with that approach.
+  publish:
+    name: publish to PyPI
+    needs: [build-wheels, build-sdist]
+    # Only an actual release tag push runs this -- a plain push to main or
+    # a PR still builds/uploads wheels+sdist as artifacts above (so a
+    # broken build is caught early) but stops there.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Download wheels (ubuntu)
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-latest
+          path: dist
+
+      - name: Download wheels (windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-windows-latest
+          path: dist
+
+      - name: Download sdist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+      # No token/password needed: PyPI Trusted Publishing uses this job's
+      # OIDC identity (permissions.id-token above + the "pypi" environment)
+      # instead. One-time setup this repo still needs before this job can
+      # actually succeed, neither of which can be done from here:
+      #   1. A GitHub Environment named "pypi" under this repo's Settings
+      #      -> Environments.
+      #   2. A Trusted Publisher registered on the PyPI project ("pydeepity")
+      #      under pypi.org account Settings -> Publishing, with owner/repo
+      #      set to this repo, workflow filename "ci.yml", and environment
+      #      name "pypi" -- must match exactly or publishing is rejected.
+      - name: Publish to PyPI
+        run: uv publish
