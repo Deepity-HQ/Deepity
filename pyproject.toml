@@ -87,8 +87,9 @@ DEEPITY_MSVC_ARCH_FLAGS = ""
 build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
 skip = "*-musllinux* *-win32 *-manylinux_i686"
 build-verbosity = 1
-# bare "uv" isn't valid on cibuildwheel 2.21.3 (pinned in ci.yml).
-build-frontend = "build[uv]"
+# Not "build"/"build[uv]": `python -m build` adds cwd to sys.path, and
+# this repo's own root-level build.py shadows the `build` package there.
+build-frontend = "pip"
 
 test-requires = ["numpy"]
 test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file__)\""
