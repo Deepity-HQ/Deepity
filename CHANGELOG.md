@@ -41,7 +41,7 @@ When cutting a release:
   1. Rename [Unreleased] to the new version + date, e.g. [0.2.0] - 2026-09-01
   2. Add a fresh, empty [Unreleased] section above it using the template above
   3. Add a link reference at the bottom (see the pattern below)
-  4. Bump the version in pyproject.toml / setup.py to match
+  4. Bump the version in pyproject.toml to match
 -->
 
 <!--
@@ -60,7 +60,7 @@ Deepity follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`)
 once tagged releases begin:
 
 - **MAJOR** — incompatible C++ or Python API changes (e.g. changing
-  `AddLayer`'s signature, renaming/removing a public header or `pydeepity`
+  `AddLayer`'s signature, renaming/removing a public header or `deepity`
   function).
 - **MINOR** — backwards-compatible functionality (new layer types, new
   optimizers, new Python bindings, new build targets).
@@ -72,5 +72,5 @@ Until the first `1.0.0` release, the project may make breaking changes in
 **Changed**/**Removed** in this file.
 
 The authoritative version number lives in [`pyproject.toml`](pyproject.toml)
-/ [`setup.py`](setup.py) and should be bumped as part of the same PR/commit
-that promotes `[Unreleased]` to a versioned entry in this file.
+and should be bumped as part of the same PR/commit that promotes
+`[Unreleased]` to a versioned entry in this file.
