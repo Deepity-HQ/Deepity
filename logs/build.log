@@ -1,27 +1,102 @@
 --- Deepity Build Log (Release, arch=native) ---
 
+=== CMake Configuration ===
+-- CXX compiler: /usr/bin/c++
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- CUDA toolkit not found. Building CPU-only.
+-- Using explicitly multi-threaded OpenBLAS: /usr/lib64/libopenblaso.so (overriding find_package(BLAS)'s generic result: /usr/lib64/libopenblas.so)
+-- Configuring SLEEF 3.9.0
+-- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Configuring build for SLEEF-v3.9.0
+   Target system: Linux-7.2.11-200.fc44.x86_64
+   Target processor: x86_64
+   Host system: Linux-7.2.11-200.fc44.x86_64
+   Host processor: x86_64
+   Detected C compiler: GNU @ /usr/bin/cc
+   CMake: 4.3.0
+   Make program: /usr/bin/ninja-build
+   CMake build type: Release
+-- Using option `-Wall -Wno-unused-function -Wno-attributes -Wno-unused-result -Wno-psabi -ffp-contract=off -fno-math-errno -fno-trapping-math` to compile libsleef
+-- Building shared libs : OFF
+-- Building static test bins: OFF
+-- MPFR : LIB_MPFR-NOTFOUND
+-- GMP : LIBGMP-NOTFOUND
+-- RT : /usr/lib64/librt.a
+-- FFTW3 : LIBFFTW3-NOTFOUND
+-- FFTW3F : LIBFFTW3F-NOTFOUND
+-- OPENSSL : 
+-- SDE : SDE_COMMAND-NOTFOUND
+-- COMPILER_SUPPORTS_OPENMP : 1
+-- A version of SLEEF compatible  with libm and libmvec in GNU libc will be produced (sleefgnuabi.so)
+CMake Deprecation Warning at build/Release/_deps/highway-src/CMakeLists.txt:28 (cmake_policy):
+  The OLD behavior for policy CMP0111 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+
+
+CMake Deprecation Warning at build/Release/_deps/onednn-src/CMakeLists.txt:36 (cmake_policy):
+  The OLD behavior for policy CMP0146 will be removed from a future version
+  of CMake.
+
+  The cmake-policies(7) manual explains that the OLD behaviors of all
+  policies are deprecated and that a policy should be set to OLD only under
+  specific short-term circumstances.  Projects should be ported to the NEW
+  behavior and not rely on setting a policy to OLD.
+
+
+-- DNNL_TARGET_ARCH: X64
+-- ONEDNN_LIBRARY_TYPE: STATIC (default: SHARED)
+-- ONEDNN_BUILD_GRAPH: OFF (default: ON)
+-- ONEDNN_ENABLE_WORKLOAD: INFERENCE (default: TRAINING)
+-- ONEDNN_ENABLE_PRIMITIVE: MATMUL (default: ALL)
+-- Found OpenCL headers: /home/rose0/Projects/deepity/build/Release/_deps/onednn-src/third_party/opencl
+-- Enabled testing coverage: CI
+-- Enabled workload: INFERENCE
+-- Enabled primitives: MATMUL
+-- Enabled primitive CPU ISA: ALL
+-- Enabled primitive GPU ISA: ALL
+-- Enabled GeMM kernels ISA: ALL
+-- Primitive cache is enabled
+-- LLVM FileCheck Found: /usr/bin/FileCheck
+-- Google Benchmark version: v1.9.1, normalized to 1.9.1
+-- Performing Test HAVE_STD_REGEX -- success
+-- Performing Test HAVE_GNU_POSIX_REGEX -- failed to compile
+-- Performing Test HAVE_POSIX_REGEX -- success
+-- Performing Test HAVE_STEADY_CLOCK -- success
+-- Performing Test HAVE_PTHREAD_AFFINITY -- success
+-- Configuring done (2.7s)
+-- Generating done (0.3s)
+-- Build files have been written to: /home/rose0/Projects/deepity/build/Release
+
+
 === Compilation ===
-[1/31] Scanning /home/rose0/Projects/deepity/src/backend/CPUBackend.cpp for CXX dependencies
-[2/31] Generating CXX dyndep file CMakeFiles/Deepity.dir/CXX.dd
-[3/12] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackend.cpp.o
-[4/12] Linking CXX static library bin/libDeepity.a
-[5/12] Linking CXX executable bin/ActivationBenchmark
-[6/12] Linking CXX executable bin/SimpleNetworkProfile
-[7/12] Linking CXX executable bin/ReadmeBenchmark
-[8/12] Linking CXX executable bin/ConvDiagnose
-[9/12] Linking CXX executable bin/PCNBenchmark
-[10/12] Linking CXX executable bin/GflopsBenchmark
-[11/12] Linking CXX executable bin/DiscriminativeNetworkProfile
-[12/12] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
+[1/65] Generating CXX dyndep file CMakeFiles/ActivationBenchmark.dir/CXX.dd
+[2/64] Generating CXX dyndep file CMakeFiles/GflopsBenchmark.dir/CXX.dd
+[3/63] Generating CXX dyndep file CMakeFiles/ReadmeBenchmark.dir/CXX.dd
+[4/62] Generating CXX dyndep file CMakeFiles/ConvDiagnose.dir/CXX.dd
+[5/61] Generating CXX dyndep file CMakeFiles/Deepity.dir/CXX.dd
+[6/40] Generating CXX dyndep file CMakeFiles/DeepityHighwayKernels.dir/CXX.dd
+[7/34] Generating CXX dyndep file CMakeFiles/PCNBenchmark.dir/CXX.dd
+[8/32] Generating CXX dyndep file CMakeFiles/nanobind-static.dir/CXX.dd
+[9/20] Generating CXX dyndep file CMakeFiles/DiscriminativeNetworkProfile.dir/CXX.dd
+[10/18] Generating CXX dyndep file CMakeFiles/pydeepity.dir/CXX.dd
+[11/13] Generating CXX dyndep file CMakeFiles/SimpleNetworkProfile.dir/CXX.dd
 
 
 === Tests ===
 Test project /home/rose0/Projects/deepity/build/Release
     Start 1: ConvDiagnose
-1/1 Test #1: ConvDiagnose .....................   Passed    1.35 sec
+1/1 Test #1: ConvDiagnose .....................   Passed    2.68 sec
 
 100% tests passed, 0 tests failed out of 1
 
-Total Test time (real) =   1.35 sec
+Total Test time (real) =   2.69 sec
 
 

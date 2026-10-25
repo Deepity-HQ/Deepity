@@ -14,10 +14,12 @@ option(DEEPITY_USE_CUDNN "Use cuDNN for ConvPCLayer-family convolutions instead 
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 # Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
-# Experimental: fuses SimplePCLayer's MatMul + AddBiasBroadcast into one
-# oneDNN matmul-with-bias call (CPU only; falls back to the existing
-# separate-call path automatically if OFF or oneDNN isn't found).
-option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass (experimental)" OFF)
+# Fuses SimplePCLayer's MatMul + AddBiasBroadcast into one oneDNN
+# matmul-with-bias call (CPU only; falls back to the existing
+# separate-call path automatically if OFF or oneDNN isn't found). ON by
+# default -- this is the GEMM path every benchmark number in the README
+# was measured against.
+option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass" ON)
 # Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
 # for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
 # unlike the mu GEMM above), avoiding cblas_sgemm's generic-large-GEMM
