@@ -171,7 +171,7 @@ def parse_args(argv: list[str] | None = None) -> tuple[argparse.Namespace, list[
     parser.add_argument(
         "--no-python-bindings",
         action="store_true",
-        help="Skip building the pydeepity extension module",
+        help="Skip building the deepity extension module",
     )
     parser.add_argument(
         "--clean",
@@ -400,7 +400,7 @@ def _run_pgo_workload(config: BuildConfig) -> None:
 
     # Python sets sys.path[0] to the launched SCRIPT's own directory
     # (deepity_build/), not the process's cwd, so `cwd=repo_root` below
-    # doesn't help pgo_workload.py find the `pydeepity` package that CMake
+    # doesn't help pgo_workload.py find the `deepity` package that CMake
     # drops at the repo root -- PYTHONPATH has to say so explicitly.
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(

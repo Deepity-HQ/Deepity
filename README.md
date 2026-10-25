@@ -35,7 +35,7 @@ Most neural networks today (anything you'd build in PyTorch or TensorFlow) learn
 Deepity is an engine for building and training these networks quickly:
 
 - **A C++ core** with hand-optimized CPU kernels (SIMD, Intel MKL or OpenBLAS) and a **CUDA backend** for NVIDIA GPUs.
-- **A Python package, `pydeepity`,** so you can define and train networks in a few lines, without writing any C++.
+- **A Python package** (`pip install pydeepity`, `import deepity`) so you can define and train networks in a few lines, without writing any C++.
 - **Several PCN variants,** from a plain beginner-friendly network to one that bundles recent research techniques you can switch on one at a time.
 
 You don't need to know anything about predictive coding to try it. The next section explains the core idea in plain terms.
@@ -74,7 +74,22 @@ Deepity implements two ways of turning prediction errors into weight updates:
 
 ### 1. Install
 
-Deepity currently builds from source. You'll need CMake 3.21+, Ninja, a C++20 compiler, OpenBLAS or Intel MKL, and Python 3.9+ with `nanobind` (the full list is in [Building from source](#building-from-source)). Then:
+**From PyPI** (prebuilt wheels, Linux + Windows, Python 3.9-3.13):
+
+```bash
+uv add pydeepity
+# or: pip install pydeepity
+```
+
+This is an early pre-release (`0.1.0a1`) -- the CPU engine itself is
+well-tested (see [Performance & Benchmarks](#performance--benchmarks)
+below), but these wheels are CPU-only and some edge cases are still being
+worked through; see [Architecture & Roadmap](#architecture--roadmap).
+
+**From source** (needed for CUDA, or to track the latest `dev/CUDA` work):
+you'll need CMake 3.21+, Ninja, a C++20 compiler, OpenBLAS or Intel MKL, and
+Python 3.9+ with `nanobind` (the full list is in [Building from
+source](#building-from-source)). Then:
 
 ```bash
 git clone https://github.com/Ra4ster/Deepity.git
@@ -82,7 +97,7 @@ cd Deepity
 python build.py Release OpenBLAS --fast
 ```
 
-This builds the C++ engine, runs the test suite, and builds the `pydeepity` Python package.
+This builds the C++ engine, runs the test suite, and builds the `deepity` Python package.
 
 ### 2. Train your first network
 
@@ -90,7 +105,7 @@ A tiny network with 2 inputs, 8 hidden units and 1 output, trained on a single e
 
 ```python
 import numpy as np
-from pydeepity import SimplePCN, Linear, TanH
+from deepity import SimplePCN, Linear, TanH
 
 # Declare the layers, the same way you would in PyTorch.
 net = SimplePCN(
@@ -117,7 +132,7 @@ Run `train_step` in a loop over your data and the energy should fall as the netw
 
 - **A full training script:** `examples/mnist.py` trains on MNIST end to end. It's the script behind the headline benchmark.
 - **Larger experiments:** `research/imagenet.py` and `research/imagenet_pc_vgg7_ce.py` train convolutional PCNs on ImageNet-scale data.
-- **Using C++ directly:** start with `include/deepity/networks/DiscriminativePCNetwork.h`. Most `pydeepity` classes correspond directly to a C++ network class under `include/deepity/networks/`.
+- **Using C++ directly:** start with `include/deepity/networks/DiscriminativePCNetwork.h`. Most `deepity` classes correspond directly to a C++ network class under `include/deepity/networks/`.
 
 ---
 
@@ -148,7 +163,7 @@ The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps
 |---|---|---|---|---|
 | Test / dev accuracy | **98.21%** | 97.55% | 98% (best dev) | 97.51% |
 | Wall-clock, 100 epochs | **487.5s** | 531.4s | 1707.7s | 627.8s |
-| Command | `python examples/mnist.py 7 100 20` | `python benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
+| Command | `python examples/mnist.py 7 100 20` | `python experiments/benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
 | Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/jpc_mnist_run.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
 
 - **Deepity vs. jpc** is the closest comparison: both are predictive-coding implementations on the same architecture, settling-step count, batch size, epoch count and optimizer schedule. jpc is built on JAX/XLA; Deepity is hand-tuned C++. Deepity trains faster at matching accuracy.
@@ -255,7 +270,7 @@ _Note: the CUDA (GPU) backend is a separate code path with its own characteristi
 - CMake 3.21+ and Ninja
 - A C++20 compiler (Clang recommended; GCC and MSVC are also supported)
 - OpenBLAS or Intel MKL
-- Python 3.9+ with development headers, plus `nanobind` (for the `pydeepity` bindings)
+- Python 3.9+ with development headers, plus `nanobind` (for the `deepity` bindings)
 - CUDA Toolkit (optional: the CUDA backend is detected automatically if present; otherwise the project builds and runs CPU-only)
 
 See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CMake invocations (for example, Windows + Clang).
@@ -274,7 +289,7 @@ python build.py Release OpenBLAS --fast
 - `OpenBLAS` / `MKL` selects the linear-algebra library.
 - `--fast` targets a portable AVX2/FMA baseline. Run `python build.py --list-profiles` for the other options, and `python build.py --help` for CUDA, test and job-count flags.
 
-The `pydeepity` Python package is built too, unless you pass `--no-python-bindings`.
+The `deepity` Python package is built too, unless you pass `--no-python-bindings`.
 
 ---
 

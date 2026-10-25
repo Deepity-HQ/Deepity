@@ -3,12 +3,8 @@
 # builds on today, so this costs nothing in practice.
 cmake_minimum_required(VERSION 3.28)
 
-# Must be set before project()/enable_language() -- CMake only consults
-# CMAKE_<LANG>_COMPILER_LAUNCHER at that point, not later. Wraps every
-# compile invocation (including inside FetchContent subbuilds like
-# oneDNN/SLEEF/Highway, which don't override this themselves) so a
-# second clean build of unchanged sources is a cache hit instead of a
-# full recompile -- a no-op if ccache isn't installed.
+# Must be set before project() -- CMake only reads this launcher var here.
+# No-op if ccache isn't installed.
 find_program(DEEPITY_CCACHE_PROGRAM ccache)
 if(DEEPITY_CCACHE_PROGRAM)
     set(CMAKE_C_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")
@@ -32,18 +28,9 @@ option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MK
 # default -- this is the GEMM path every benchmark number in the README
 # was measured against.
 option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass" ON)
-# Building oneDNN from source (the default, via FetchContent below) takes
-# ~90 minutes of single-threaded compile time by itself (measured via
-# .ninja_log on this project's own CI-equivalent build -- one file,
-# ref_rnn.cpp, alone costs 250s, despite DNNL_ENABLE_PRIMITIVE=MATMUL
-# below not needing RNN at all; oneDNN's own build doesn't exclude it
-# from compilation, only from the runtime primitive table). ON trades
-# that away for a system-installed, dynamically-linked oneDNN instead
-# (e.g. Fedora/RHEL's `onednn-devel` package) via find_package(dnnl
-# CONFIG) -- falls back to the FetchContent source build automatically
-# if not found. Meant for local dev iteration, not for the wheel-building
-# CI job, which wants the fully static, self-contained build this
-# defaults to.
+# Building oneDNN from source takes ~90 min; ON uses a system package
+# (e.g. Fedora's onednn-devel) instead, falling back to source if not
+# found. For local dev only -- wheel builds want the static source build.
 option(DEEPITY_ONEDNN_SYSTEM "Prefer a system-installed oneDNN (via find_package) over building one from source" OFF)
 # Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
 # for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
@@ -152,7 +139,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # plain, un-instrumented build with a warning instead of silently doing
 # something unexpected.
 #
-# Applied ONLY to Deepity/pydeepity (via target_compile_options/
+# Applied ONLY to Deepity/deepity_ext (via target_compile_options/
 # target_link_options below, once those targets exist), NOT globally:
 # the pgo_workload.py profiling run only ever exercises our own code, so
 # third-party FetchContent deps (Google Benchmark, nanobind-static,
@@ -404,7 +391,7 @@ else()
                 # propagation (the mechanism that already puts MKL's own
                 # lib dir on every linked binary's RPATH for free, no
                 # code needed) never sees it. Without this, EVERY binary
-                # linking MKL -- pydeepity and every C++ test executable
+                # linking MKL -- deepity_ext and every C++ test executable
                 # alike -- fails at load time ("libiomp5.so: cannot open
                 # shared object file") unless LD_LIBRARY_PATH happens to
                 # be set by hand. Same class of gap DEEPITY_OMP_DLL above
@@ -444,7 +431,7 @@ else()
                 else()
                     message(WARNING "DEEPITY_USE_MKL is ON, but Intel's OpenMP runtime "
                         "(libiomp5) could not be located automatically. Built "
-                        "binaries (including pydeepity) will fail to load at "
+                        "binaries (including deepity_ext) will fail to load at "
                         "runtime unless libiomp5's directory is on the loader's "
                         "search path (e.g. LD_LIBRARY_PATH), or reconfigure with "
                         "-DDEEPITY_IOMP5_LIB=<path/to/libiomp5.so>.")
@@ -849,7 +836,7 @@ enable_testing()
 if(DEEPITY_BUILD_TESTS)
     # Every target added below is appended here, then given the same
     # -march/-mtune (and, on MSVC, the same __AVX2__-style compile-time
-    # defs) that Deepity/pydeepity get, in one loop at the end of this
+    # defs) that Deepity/deepity_ext get, in one loop at the end of this
     # block. These executables pull in Deepity's activation kernels as
     # `static inline` header functions, so each TU recompiles its own
     # copy -- without this, they silently fall back to the compiler's
@@ -962,7 +949,7 @@ if(DEEPITY_BUILD_TESTS)
     )
     list(APPEND DEEPITY_TEST_TARGETS SimpleNetworkProfile)
 
-    # Same arch/SIMD flags as Deepity/pydeepity (see the comment at the
+    # Same arch/SIMD flags as Deepity/deepity_ext (see the comment at the
     # top of this block) -- without this, every target above silently
     # compiles Deepity's header-only kernels against the compiler's
     # untouched default ISA instead of whatever build.py selected.
@@ -998,72 +985,83 @@ set_target_properties(Deepity PROPERTIES
     INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
 )
 
-# --- pydeepity ------------------------------------------------------
+# --- deepity (Python bindings) ---------------------------------------
+# Target named `deepity_ext`, not `deepity` -- would collide case-
+# insensitively with the `Deepity` library target on Windows/macOS.
+# OUTPUT_NAME below still makes the produced file deepity.cpython-*.so.
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    nanobind_add_module(pydeepity
+    nanobind_add_module(deepity_ext
         bindings/pybinding.cpp
         bindings/LayerBindings.cpp
         bindings/NetworkBindings.cpp
         bindings/UtilityBindings.cpp
     )
 
-    target_link_libraries(pydeepity PRIVATE Deepity)
+    target_link_libraries(deepity_ext PRIVATE Deepity)
 
     if(DEEPITY_TARGET_COMPILE_OPTIONS)
-        target_compile_options(pydeepity PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
+        target_compile_options(deepity_ext PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
     endif()
     if(DEEPITY_TARGET_COMPILE_DEFS)
-        target_compile_definitions(pydeepity PRIVATE ${DEEPITY_TARGET_COMPILE_DEFS})
+        target_compile_definitions(deepity_ext PRIVATE ${DEEPITY_TARGET_COMPILE_DEFS})
     endif()
 
     if(DEEPITY_PGO_COMPILE_FLAGS)
         # Bindings are pure C++, no COMPILE_LANGUAGE guard needed here.
-        target_compile_options(pydeepity PRIVATE ${DEEPITY_PGO_COMPILE_FLAGS})
-        target_link_options(pydeepity PRIVATE ${DEEPITY_PGO_LINK_FLAGS})
+        target_compile_options(deepity_ext PRIVATE ${DEEPITY_PGO_COMPILE_FLAGS})
+        target_link_options(deepity_ext PRIVATE ${DEEPITY_PGO_LINK_FLAGS})
     endif()
 
-    set_target_properties(pydeepity PROPERTIES
+    set_target_properties(deepity_ext PROPERTIES
         INTERPROCEDURAL_OPTIMIZATION_RELEASE ${DEEPITY_IPO_SUPPORTED}
     )
 
     if(WIN32)
-        target_compile_definitions(pydeepity PRIVATE NOMINMAX)
+        target_compile_definitions(deepity_ext PRIVATE NOMINMAX)
     endif()
 
-    set_target_properties(pydeepity PROPERTIES
+    set_target_properties(deepity_ext PROPERTIES
         PREFIX ""
+        OUTPUT_NAME "deepity"
     )
 
+    # MODULE targets ignore ARCHIVE_OUTPUT_NAME -- MSVC still names the
+    # import lib after OUTPUT_NAME, colliding with Deepity.lib (LNK1149).
+    if(MSVC)
+        target_link_options(deepity_ext PRIVATE
+            "/IMPLIB:$<TARGET_FILE_DIR:deepity_ext>/deepity_ext.lib")
+    endif()
+
     # Modern cross-platform way to copy the compiled extension and required runtime libs
-    add_custom_command(TARGET pydeepity POST_BUILD
+    add_custom_command(TARGET deepity_ext POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:pydeepity>
-        ${CMAKE_SOURCE_DIR}/pydeepity/
+        $<TARGET_FILE:deepity_ext>
+        ${CMAKE_SOURCE_DIR}/deepity/
     )
-    add_custom_command(TARGET pydeepity POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:pydeepity>>,copy_if_different,true>
-        $<TARGET_RUNTIME_DLLS:pydeepity>
-        ${CMAKE_SOURCE_DIR}/pydeepity/
+    add_custom_command(TARGET deepity_ext POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:deepity_ext>>,copy_if_different,true>
+        $<TARGET_RUNTIME_DLLS:deepity_ext>
+        ${CMAKE_SOURCE_DIR}/deepity/
         COMMAND_EXPAND_LISTS
     )
     if(DEEPITY_OMP_DLL)
-        add_custom_command(TARGET pydeepity POST_BUILD
+        add_custom_command(TARGET deepity_ext POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${DEEPITY_OMP_DLL}"
-            ${CMAKE_SOURCE_DIR}/pydeepity/
+            ${CMAKE_SOURCE_DIR}/deepity/
         )
     endif()
 
-    install(TARGETS pydeepity
-        LIBRARY DESTINATION pydeepity
-        RUNTIME DESTINATION pydeepity
+    install(TARGETS deepity_ext
+        LIBRARY DESTINATION deepity
+        RUNTIME DESTINATION deepity
     )
 endif()
 
 if(WIN32)
-    install(FILES ${OPENBLAS_DLL} DESTINATION pydeepity)
+    install(FILES ${OPENBLAS_DLL} DESTINATION deepity)
     if(DEEPITY_OMP_DLL)
-        install(FILES ${DEEPITY_OMP_DLL} DESTINATION pydeepity)
+        install(FILES ${DEEPITY_OMP_DLL} DESTINATION deepity)
     endif()
 endif()

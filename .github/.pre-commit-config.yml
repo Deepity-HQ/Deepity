@@ -1,5 +1,5 @@
 # Install with:
-#   pip install pre-commit
+#   uv tool install pre-commit
 #   pre-commit install
 #
 # Run against all files once (recommended the first time, and after editing

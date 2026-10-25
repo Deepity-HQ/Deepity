@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from pydeepity import ConvolutionalPCN
+from deepity import ConvolutionalPCN
 
 # Same architecture as test.py, but a much smaller, much cheaper diagnostic:
 # does energy for a SINGLE batch actually decrease as inference steps grow?

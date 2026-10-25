@@ -3,6 +3,11 @@ name: CI
 on:
   push:
     branches: [main]
+    tags:
+      # Triggers the publish job below, e.g. `git tag v0.1.0a1`.
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+[ab][0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
   pull_request:
     branches: [main]
   workflow_dispatch: {}
@@ -38,6 +43,9 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -49,7 +57,10 @@ jobs:
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
 
       - name: Install Python build dependencies
-        run: python -m pip install nanobind rich
+        # --system: install into actions/setup-python's interpreter
+        # directly (build.py's own CMake configure step needs nanobind
+        # importable from there), not an isolated uv-managed venv.
+        run: uv pip install --system nanobind rich
 
       - name: Build (Release)
         # --no-tests: CMakeLists.txt no longer registers any CTest tests
@@ -77,6 +88,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
 
       - name: Set up MSVC developer environment
         # Clang on Windows still links via the MSVC toolchain (link.exe,
@@ -117,7 +131,7 @@ jobs:
         run: C:/vcpkg/vcpkg.exe install openblas --triplet x64-windows
 
       - name: Install Python build dependencies
-        run: python -m pip install nanobind rich
+        run: uv pip install --system nanobind rich
 
       - name: Configure (CMake, using the windows-clang preset)
         # Uses CMakePresets.json's "windows-clang" preset directly, rather
@@ -146,24 +160,27 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
         with:
-          python-version: "3.x"
+          python-version: "3.13"
 
       - name: Install dependencies
-        # requirements-dev.txt covers everything examples/ imports, plus
-        # rich (for build.py's optional dashboard) and pyright itself - see
-        # that file for details. experiments/ is intentionally excluded in
-        # pyrightconfig.json instead, so its deps aren't required here.
-        run: pip install -r requirements-dev.txt
+        # pyproject.toml's [dependency-groups] dev covers everything
+        # examples/ imports beyond the runtime deps, plus rich (for
+        # build.py's optional dashboard) and pyright itself. --no-install-
+        # project: skips building the C++ extension (needs the full
+        # toolchain, not needed just to type-check). experiments/ is
+        # intentionally excluded in pyrightconfig.json instead, so its
+        # deps aren't required here.
+        run: uv sync --group dev --no-install-project
 
       - name: Run pyright
-        run: pyright
+        # --no-sync: `uv run` alone re-syncs, which rebuilds the C++ extension.
+        run: uv run --no-sync pyright
 
   build-wheels:
     name: wheels (${{ matrix.os }})
-    needs: [build-and-test, build-and-test-windows]
     strategy:
       fail-fast: false
       matrix:
@@ -176,34 +193,22 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp/
-      # ccache install inside the manylinux container (Linux) or via
-      # Homebrew (macOS) through the before-all hooks in pyproject.toml's
-      # [tool.cibuildwheel.linux] / [tool.cibuildwheel.macos] tables.
-      # Windows has no such container-level hook (cibuildwheel runs
-      # directly on the runner), so ccache is installed as a normal step
-      # here instead, same as build-and-test-windows already does for
-      # Ninja/LLVM above.
+
+      # Windows/macOS cibuildwheel runs natively, not in a container, so
+      # it needs uv on the runner's own PATH (Linux gets uv inside the
+      # manylinux container already).
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      # Linux/macOS get ccache via pyproject.toml's before-all hooks instead.
       - name: Install ccache (Windows)
         if: matrix.os == 'windows-latest'
         run: choco install ccache -y --no-progress
 
-      # oneDNN's from-source build is by far the dominant compile cost
-      # here (~94 minutes from scratch, see this project's own
-      # build-speed investigation) -- ccache turns that into a cache hit
-      # on every run after the first. Keyed on its pinned version
-      # (CMakeLists.txt's GIT_TAG) so an oneDNN bump naturally starts a
-      # fresh cache instead of silently reusing stale objects; bump the
-      # key's suffix below if that pin ever changes.
-      #
-      # Linux builds happen inside cibuildwheel's manylinux container,
-      # which mounts the host filesystem root at /host -- CCACHE_DIR
-      # below points there specifically so the cache this step
-      # restores (a HOST path) is what the container actually reads/
-      # writes, not some path local to the container's own throwaway
-      # filesystem.
-      - name: Cache ccache compiler cache
-        uses: actions/cache@v4
+      # Keyed on oneDNN's pinned version; bump the suffix if that changes.
+      - name: Restore ccache compiler cache
+        id: ccache-restore
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/.ccache
           key: ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
@@ -215,6 +220,16 @@ jobs:
         env:
           CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache
           CIBW_ENVIRONMENT_WINDOWS: CCACHE_DIR=${{ github.workspace }}\.ccache
+
+      # if: always() -- restore/save split so a failed build still keeps
+      # whatever ccache populated, instead of actions/cache's default
+      # save-on-post (which skips entirely once a later step fails).
+      - name: Save ccache compiler cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -230,22 +245,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
         with:
-          python-version: "3.x"
-
-      - name: Install build
-        run: pip install build
+          python-version: "3.13"
 
       - name: Build sdist
-        # NOT `python -m build` - `-m` makes Python search sys.path with the
-        # current working directory prepended, and this repo has a
-        # `build.py` at the root, which shadows the installed `build`
-        # package entirely (the error you'd see is literally build.py's own
-        # --help text). `pyproject-build` is the console-script entry point
-        # the `build` package ships specifically to avoid this collision.
-        run: pyproject-build --sdist
+        run: uv build --sdist
 
       - name: Upload sdist
         uses: actions/upload-artifact@v4
@@ -254,8 +260,41 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
-  # Not wired up yet: publishing needs the PyPI project configured for
-  # Trusted Publishing (pypi.org project settings -> Publishing) with this
-  # repo/workflow registered, then a job here gated on a tag push using
-  # `pypa/gh-action-pypi-publish` and `permissions: id-token: write` -
-  # no API token needs to live in repo secrets with that approach.
+  publish:
+    name: publish to PyPI
+    needs: [build-wheels, build-sdist]
+    # Only an actual release tag push runs this -- a plain push to main or
+    # a PR still builds/uploads wheels+sdist as artifacts above (so a
+    # broken build is caught early) but stops there.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Download wheels (ubuntu)
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-ubuntu-latest
+          path: dist
+
+      - name: Download wheels (windows)
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-windows-latest
+          path: dist
+
+      - name: Download sdist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdist
+          path: dist
+
+      # Trusted Publishing (OIDC) -- no token needed, see pypi.org's
+      # Publishing settings for this project's registered publisher.
+      - name: Publish to PyPI
+        run: uv publish

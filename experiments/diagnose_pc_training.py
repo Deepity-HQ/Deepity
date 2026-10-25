@@ -14,8 +14,9 @@ state, since that call never touches weights. If settling-on-a-fresh-
 batch degrades (grows/spikes) as training proceeds, that pins the
 instability to weight evolution, not to the settling mechanism itself.
 
-Usage:
-    python diagnose_pc_training.py [N_BATCHES]
+Usage (from research/, since this imports imagenet/imagenet_pc_vgg7_ce as
+top-level modules):
+    cd research && python ../experiments/diagnose_pc_training.py [N_BATCHES]
 (default: 200, covering where the original run's collapse appeared)
 """
 import sys

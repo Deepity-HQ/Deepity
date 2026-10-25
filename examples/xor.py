@@ -1,4 +1,4 @@
-import pydeepity as pd
+import deepity as pd
 import numpy as np
 import time
 

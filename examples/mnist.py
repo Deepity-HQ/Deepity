@@ -1,7 +1,7 @@
 import os
 
 # Must run before any import that can pull in libgomp (numpy's BLAS, then
-# pydeepity itself) -- GCC's libgomp reads these once, lazily, on its first
+# deepity itself) -- GCC's libgomp reads these once, lazily, on its first
 # parallel region, and every settling step in CalculateState()/UpdateState()
 # enters and leaves one of those regions separately (GEMM, then activation,
 # then error, then state update, dozens of times per batch). libgomp's
@@ -18,8 +18,8 @@ os.environ.setdefault("GOMP_SPINCOUNT", "300000000")
 import numpy as np
 import sys
 from time import perf_counter
-from pydeepity import SimplePCN
-from pydeepity.layer import Linear, Sigmoid
+from deepity import SimplePCN
+from deepity.layer import Linear, Sigmoid
 
 def load_full_mnist():
     import gzip

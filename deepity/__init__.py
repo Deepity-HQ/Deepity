@@ -1,4 +1,15 @@
-__version__ = "1.0.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    # Reads the installed distribution's metadata (pyproject.toml's
+    # [project] name/version) rather than duplicating it here, where it's
+    # guaranteed to drift -- see git history for this line.
+    __version__ = version("pydeepity")
+except PackageNotFoundError:
+    # Not installed as a distribution -- e.g. build.py's local dev flow,
+    # which points PYTHONPATH straight at the build output with no pip
+    # install step, so no dist-info metadata exists to read.
+    __version__ = "0+unknown"
 
 # Networks
 from .SequentialPCN import SequentialPCN

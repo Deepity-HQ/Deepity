@@ -49,81 +49,32 @@ CMake Deprecation Warning at build/Release/_deps/highway-src/CMakeLists.txt:28 (
 -- Performing Test HAVE_POSIX_REGEX -- success
 -- Performing Test HAVE_STEADY_CLOCK -- success
 -- Performing Test HAVE_PTHREAD_AFFINITY -- success
--- Configuring done (1.0s)
+-- Configuring done (0.9s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/rose0/Projects/deepity/build/Release
 
 
 === Compilation ===
-[1/85] Generating CXX dyndep file CMakeFiles/DeepityHighwayKernels.dir/CXX.dd
-[2/83] Scanning /home/rose0/Projects/deepity/src/utils/StreamAlignedBatcher.cpp for CXX dependencies
-[3/83] Generating CXX dyndep file CMakeFiles/nanobind-static.dir/CXX.dd
-[4/71] Generating CXX dyndep file CMakeFiles/ActivationBenchmark.dir/CXX.dd
-[5/70] Generating CXX dyndep file CMakeFiles/PCNBenchmark.dir/CXX.dd
-[6/69] Generating CXX dyndep file CMakeFiles/GflopsBenchmark.dir/CXX.dd
-[7/68] Generating CXX dyndep file CMakeFiles/ReadmeBenchmark.dir/CXX.dd
-[8/67] Generating CXX dyndep file CMakeFiles/ConvDiagnose.dir/CXX.dd
-[9/66] Generating CXX dyndep file CMakeFiles/DiscriminativeNetworkProfile.dir/CXX.dd
-[10/65] Scanning /home/rose0/Projects/deepity/src/backend/Tensor.cpp for CXX dependencies
-[11/65] Generating CXX dyndep file CMakeFiles/SimpleNetworkProfile.dir/CXX.dd
-[12/64] Generating CXX dyndep file CMakeFiles/pydeepity.dir/CXX.dd
-[13/60] Scanning /home/rose0/Projects/deepity/src/backend/Backend.cpp for CXX dependencies
-[14/60] Scanning /home/rose0/Projects/deepity/src/networks/FullPCNetwork.cpp for CXX dependencies
-[15/60] Scanning /home/rose0/Projects/deepity/src/networks/GaussSeidelPCNetwork.cpp for CXX dependencies
-[16/60] Scanning /home/rose0/Projects/deepity/src/layers/DiscriminativePCLayer.cpp for CXX dependencies
-[17/60] Scanning /home/rose0/Projects/deepity/src/networks/ConvPCNetwork.cpp for CXX dependencies
-[18/60] Scanning /home/rose0/Projects/deepity/src/layers/GaussSeidelPCLayer.cpp for CXX dependencies
-[19/60] Scanning /home/rose0/Projects/deepity/src/layers/FullConvPCLayer.cpp for CXX dependencies
-[20/60] Scanning /home/rose0/Projects/deepity/src/layers/ConvPCLayer.cpp for CXX dependencies
-[21/60] Scanning /home/rose0/Projects/deepity/src/layers/SimpleConvPCLayer.cpp for CXX dependencies
-[22/60] Scanning /home/rose0/Projects/deepity/src/layers/FullPCLayer.cpp for CXX dependencies
-[23/60] Scanning /home/rose0/Projects/deepity/src/layers/DirectKPPCLayer.cpp for CXX dependencies
-[24/60] Scanning /home/rose0/Projects/deepity/src/networks/SimpleConvPCNetwork.cpp for CXX dependencies
-[25/60] Scanning /home/rose0/Projects/deepity/src/networks/DirectKPPCNetwork.cpp for CXX dependencies
-[26/60] Scanning /home/rose0/Projects/deepity/src/layers/SimplePCLayer.cpp for CXX dependencies
-[27/60] Scanning /home/rose0/Projects/deepity/src/networks/SimplePCNetwork.cpp for CXX dependencies
-[28/60] Scanning /home/rose0/Projects/deepity/src/backend/CPUBackend.cpp for CXX dependencies
-[29/60] Scanning /home/rose0/Projects/deepity/src/networks/DiscriminativePCNetwork.cpp for CXX dependencies
-[30/60] Scanning /home/rose0/Projects/deepity/src/networks/FullConvPCNetwork.cpp for CXX dependencies
-[31/60] Generating CXX dyndep file CMakeFiles/Deepity.dir/CXX.dd
-[32/60] Building CXX object CMakeFiles/Deepity.dir/src/utils/StreamAlignedBatcher.cpp.o
-[33/60] Building CXX object CMakeFiles/Deepity.dir/src/backend/Tensor.cpp.o
-[34/60] Building CXX object CMakeFiles/Deepity.dir/src/backend/Backend.cpp.o
-[35/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/DirectKPPCLayer.cpp.o
-[36/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullPCLayer.cpp.o
-[37/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/GaussSeidelPCLayer.cpp.o
-[38/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/ConvPCNetwork.cpp.o
-[39/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/ConvPCLayer.cpp.o
-[40/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullConvPCLayer.cpp.o
-[41/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimpleConvPCNetwork.cpp.o
-[42/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimpleConvPCLayer.cpp.o
-[43/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/DirectKPPCNetwork.cpp.o
-[44/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayer.cpp.o
-[45/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullPCNetwork.cpp.o
-[46/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/GaussSeidelPCNetwork.cpp.o
-[47/60] Building CXX object CMakeFiles/Deepity.dir/src/layers/DiscriminativePCLayer.cpp.o
-[48/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimplePCNetwork.cpp.o
-[49/60] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackend.cpp.o
-[50/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullConvPCNetwork.cpp.o
-[51/60] Building CXX object CMakeFiles/Deepity.dir/src/networks/DiscriminativePCNetwork.cpp.o
-[52/60] Linking CXX static library bin/libDeepity.a
-[53/60] Linking CXX executable bin/ActivationBenchmark
-[54/60] Linking CXX executable bin/PCNBenchmark
-[55/60] Linking CXX executable bin/GflopsBenchmark
-[56/60] Linking CXX executable bin/SimpleNetworkProfile
-[57/60] Linking CXX executable bin/ReadmeBenchmark
-[58/60] Linking CXX executable bin/DiscriminativeNetworkProfile
-[59/60] Linking CXX executable bin/ConvDiagnose
-[60/60] Linking CXX shared module bin/pydeepity.cpython-314-x86_64-linux-gnu.so
+[1/65] Generating CXX dyndep file CMakeFiles/ActivationBenchmark.dir/CXX.dd
+[2/64] Generating CXX dyndep file CMakeFiles/PCNBenchmark.dir/CXX.dd
+[3/63] Generating CXX dyndep file CMakeFiles/ConvDiagnose.dir/CXX.dd
+[4/62] Generating CXX dyndep file CMakeFiles/DiscriminativeNetworkProfile.dir/CXX.dd
+[5/61] Generating CXX dyndep file CMakeFiles/Deepity.dir/CXX.dd
+[6/40] Generating CXX dyndep file CMakeFiles/deepity_ext.dir/CXX.dd
+[7/36] Generating CXX dyndep file CMakeFiles/DeepityHighwayKernels.dir/CXX.dd
+[8/30] Generating CXX dyndep file CMakeFiles/GflopsBenchmark.dir/CXX.dd
+[9/28] Generating CXX dyndep file CMakeFiles/ReadmeBenchmark.dir/CXX.dd
+[10/26] Generating CXX dyndep file CMakeFiles/SimpleNetworkProfile.dir/CXX.dd
+[11/24] Generating CXX dyndep file CMakeFiles/nanobind-static.dir/CXX.dd
 
 
 === Tests ===
 Test project /home/rose0/Projects/deepity/build/Release
     Start 1: ConvDiagnose
-1/1 Test #1: ConvDiagnose .....................   Passed    1.23 sec
+1/1 Test #1: ConvDiagnose .....................   Passed    1.20 sec
 
 100% tests passed, 0 tests failed out of 1
 
-Total Test time (real) =   1.23 sec
+Total Test time (real) =   1.20 sec
 
 

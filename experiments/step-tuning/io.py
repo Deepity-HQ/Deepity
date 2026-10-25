@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from pydeepity import SequentialPCN
+from deepity import SequentialPCN
 from time import perf_counter
 
 def load_tiny_digits():

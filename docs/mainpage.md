@@ -15,7 +15,8 @@ Deepity implements Predictive Coding Networks (PCNs) as an alternative to
 standard backpropagation-based training. The library is written in C++20,
 uses custom AVX2/AVX-512 SIMD kernels for activation functions, and packs
 layer buffers into a single contiguous memory arena for cache locality. A
-`nanobind`-based Python extension (`pydeepity`) exposes the same native
+`nanobind`-based Python extension (`deepity`, distributed on PyPI as
+`pydeepity`) exposes the same native
 engine to Python with negligible overhead.
 
 @section quickstart Quick Start
@@ -60,7 +61,7 @@ Deep::DiscriminativePCNetwork net(4);
 
 @subsection quickstart_py Python
 
-The same engine is available from Python via the compiled `pydeepity`
+The same engine is available from Python via the compiled `deepity`
 extension module. Runnable examples live in `examples/`, including
 `examples/xor.py` (minimal training loop) and
 `examples/train_mnist_deep.py` (end-to-end MNIST training).

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from pydeepity import SimplePCN
+from deepity import SimplePCN
 from time import perf_counter
 
 # PC-vs-backprop gradient fidelity experiment (per ChatGPT's plan, Section 2/5).

@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from time import perf_counter
-from pydeepity import SimplePCN, GaussSeidelPCN, ConvolutionalPCN, SimpleConvolutionalPCN
+from deepity import SimplePCN, GaussSeidelPCN, ConvolutionalPCN, SimpleConvolutionalPCN
 
 def load_full_mnist():
     import gzip
