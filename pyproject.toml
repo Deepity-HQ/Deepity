@@ -13,11 +13,37 @@ version = "0.1.0a1"
 description = "A high-performance Predictive Coding library."
 readme = "README.md"
 requires-python = ">=3.9"
+license = "MIT"
+authors = [
+    { name = "Jack R" },
+]
 dependencies = [
     "numpy",
     "rich",
     "torch>=2.8.0",
 ]
+# Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
+# `license` field above is the modern replacement for that classifier,
+# and pairing both is a deprecated pattern some build backends warn on.
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+]
+
+[project.urls]
+Homepage = "https://github.com/Ra4ster/Deepity"
+Repository = "https://github.com/Ra4ster/Deepity"
+Issues = "https://github.com/Ra4ster/Deepity/issues"
 
 # ══════════════════════════════════════════════════════════════════════════
 # Dev dependencies (PEP 735): everything examples/research/ import beyond
