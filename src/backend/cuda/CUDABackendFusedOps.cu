@@ -251,6 +251,29 @@ void CUDABackend::FusedActivationDerivativeMultiply(float* dst, const float* a,
   CHECK_CUDA_LAUNCH();
 }
 
+__global__ void FusedActivationDerivativeMultiplyFromPreactKernel(float* dst, const float* a,
+                                                                   const float* preact,
+                                                                   ActivationType dType, size_t n)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i < n)
+    dst[i] = a[i] * ActivationDerivativeDevice(dType, preact[i]);
+}
+
+void CUDABackend::FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a,
+                                                               const float* preact,
+                                                               ActivationType dType,
+                                                               size_t n) noexcept
+{
+  if (!dst || !a || !preact || n == 0)
+    return;
+  constexpr int BLOCK_SIZE = 256;
+  const int blocks = static_cast<int>((n + BLOCK_SIZE - 1) / BLOCK_SIZE);
+  FusedActivationDerivativeMultiplyFromPreactKernel<<<blocks, BLOCK_SIZE, 0, stream>>>(
+      dst, a, preact, dType, n);
+  CHECK_CUDA_LAUNCH();
+}
+
 // One thread per element; each thread's energy contribution is folded into
 // a single device accumulator via atomicAdd. Simple and obviously correct
 // rather than a tree reduction, "port first, optimize" (see

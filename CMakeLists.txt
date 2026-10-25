@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.21)
+# 3.28 is Halide's own declared floor (see DEEPITY_USE_HALIDE below);
+# CMake 4.x is what's actually installed on every machine this project
+# builds on today, so this costs nothing in practice.
+cmake_minimum_required(VERSION 3.28)
 
 project(deepity C CXX)
 
@@ -11,6 +14,65 @@ option(DEEPITY_USE_CUDNN "Use cuDNN for ConvPCLayer-family convolutions instead 
 option(DEEPITY_BUILD_PYTHON_BINDINGS "Build the Python bindings target" ON)
 # Recommended if on Intel CPUs
 option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MKL has a documented history of deliberately worse performance on non-Intel CPUs via runtime dispatch)" OFF)
+# Fuses SimplePCLayer's MatMul + AddBiasBroadcast into one oneDNN
+# matmul-with-bias call (CPU only; falls back to the existing
+# separate-call path automatically if OFF or oneDNN isn't found). ON by
+# default -- this is the GEMM path every benchmark number in the README
+# was measured against.
+option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass" ON)
+# Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
+# for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
+# unlike the mu GEMM above), avoiding cblas_sgemm's generic-large-GEMM
+# dispatch overhead at these small shapes (CPU only; falls back to the
+# existing MatMul() path automatically if OFF or dispatch fails).
+option(DEEPITY_USE_LIBXSMM "Use libxsmm for small-matrix GEMMs instead of cblas_sgemm (experimental)" OFF)
+# Experimental, measured SLOWER -- kept OFF by default, see below. Fuses
+# SimplePCLayer::UpdateState()'s feedback GEMM (feedbackScratch = e_above
+# @ W) directly into its own elementwise state update (z +=
+# ir*(f'(z)*feedbackScratch - e)) via an ahead-of-time-compiled Halide
+# kernel, so feedbackScratch is never materialized to memory at all -- a
+# structural fusion oneDNN/libxsmm can't express (both are GEMM
+# dispatchers, not schedulable compilers). Building Halide itself requires
+# LLVM (uses the system install via find_package, not a from-source build
+# -- see cmake/PatchHalideForNewerLLVM.cmake's file comment for the one
+# compatibility patch that needs).
+#
+# Verified correct (direct reference comparison at the real MNIST shapes,
+# plus a finite-difference gradient check through a real UpdateWeights()
+# call). Two rounds measured:
+#
+# Round 1 (plain RDom reduction, no tiling): ~4x SLOWER than the oneDNN
+# baseline for this GEMM bucket alone (1.54s vs. 0.24s+0.13s combined, same
+# 40-batch run) -- oneDNN's cache-blocked multi-threaded GEMM comfortably
+# beat an untiled hand-scheduled reduction, same as the libxsmm result
+# above.
+#
+# Round 2 (register-tiled schedule adapted from Halide's own
+# test/performance/matrix_multiplication.cpp, see FeedbackUpdateGenerator.cpp):
+# closed almost all of that gap in isolation -- a standalone GEMM-only probe
+# at the real (M,N,K) shapes measured this schedule at parity with MKL
+# single-threaded and only ~1.6-2x behind multi-threaded. But wiring it into
+# the real training loop made things *worse* than round 1's raw number would
+# suggest (total time ~1.8-1.9x the oneDNN baseline), and crucially degraded
+# *unrelated* oneDNN GEMM calls elsewhere in the same loop (muGemmSeconds,
+# which never touches Halide, rose ~40-60%) -- i.e. the regression is not
+# (only) schedule quality anymore, it's Halide's own thread pool and
+# oneDNN's thread pool oversubscribing the same cores when interleaved in
+# one hot loop. Forcing Halide down to 1 thread (HL_NUM_THREADS=1) restored
+# the unrelated oneDNN buckets to baseline but made the fused GEMM itself
+# ~13x slower solo -- every thread-count tried nets out worse than baseline
+# end to end. A real fix would mean routing Halide's parallel-for through
+# oneDNN's own thread pool instead of spinning up a second one
+# (halide_do_par_for override) -- a substantially bigger undertaking than
+# schedule tuning, not attempted yet.
+#
+# Kept as an experimental, off-by-default option (same convention as
+# DEEPITY_USE_LIBXSMM above) rather than deleted. CPU only; falls back to
+# the existing separate-calls path automatically if OFF, dispatch fails,
+# the activation isn't SIGMOID (the only one with an AOT kernel today), or
+# nextSize < 64 (the tiled schedule's reduction-tile overhead doesn't
+# amortize for the output layer's short nextSize=10 feedback GEMM).
+option(DEEPITY_USE_HALIDE "Use an AOT Halide kernel to fuse the feedback GEMM with its state update (experimental, measured slower than the oneDNN baseline)" OFF)
 
 # AMD ROCm Coming soon...
 
@@ -114,7 +176,36 @@ endif()
 # meaningfully slows compilation with no benefit for Debug builds.
 include(CheckIPOSupported)
 check_ipo_supported(RESULT DEEPITY_IPO_SUPPORTED OUTPUT DEEPITY_IPO_ERROR)
-if(NOT DEEPITY_IPO_SUPPORTED)
+
+# check_ipo_supported() only confirms the COMPILER can emit LTO objects --
+# it says nothing about whether the LINKER driving the final executable
+# can read them. Clang emits LLVM bitcode, which GNU ld (bfd), the
+# default system linker on most Linux distros, cannot read at all
+# ("file format not recognized") -- only lld (or gold+LLVMgold.so) can.
+# GCC's own bitcode format has the same bfd-plugin requirement but bfd
+# distros normally ship GCC's LTO plugin by default, which is why this
+# only bites Clang. Without this check, a machine where Clang happens to
+# be the detected compiler links every executable target successfully
+# right up until this exact failure, with no earlier signal.
+set(DEEPITY_IPO_DISABLED_BY_LINKER_CHECK FALSE)
+if(DEEPITY_IPO_SUPPORTED AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    find_program(DEEPITY_LLD_PROGRAM NAMES ld.lld lld)
+    if(DEEPITY_LLD_PROGRAM)
+        message(STATUS "Clang + LTO detected: using lld (${DEEPITY_LLD_PROGRAM}) as the "
+            "linker, since the default system linker can't read Clang's LTO bitcode.")
+        add_link_options(-fuse-ld=lld)
+    else()
+        set(DEEPITY_IPO_SUPPORTED FALSE)
+        set(DEEPITY_IPO_DISABLED_BY_LINKER_CHECK TRUE)
+        message(WARNING "Clang was detected as the compiler, but lld (the only linker "
+            "that can read Clang's LTO bitcode objects on this platform) was not found. "
+            "Disabling LTO for this build -- otherwise every executable target would "
+            "fail to link with \"file format not recognized\". Install lld (e.g. "
+            "'dnf install lld') and reconfigure to get LTO working with Clang.")
+    endif()
+endif()
+
+if(NOT DEEPITY_IPO_SUPPORTED AND NOT DEEPITY_IPO_DISABLED_BY_LINKER_CHECK)
     message(WARNING "LTO/IPO not supported by this toolchain: ${DEEPITY_IPO_ERROR}. Building without it.")
 endif()
 
@@ -342,6 +433,38 @@ else()
     if(NOT DEEPITY_BLAS_RESOLVED)
         set(BLA_VENDOR OpenBLAS)
         find_package(BLAS REQUIRED)
+
+        if(UNIX AND NOT APPLE)
+            # Some distros (Fedora/RHEL) package OpenBLAS as separate
+            # serial/pthread/openmp builds behind one generic
+            # "libopenblas.so" alternative, which find_package(BLAS)
+            # above resolves blindly to whatever that alternative
+            # currently points to. On this project's own dev machine
+            # that silently resolved to the SERIAL build: every GEMM
+            # call -- the majority of a train step's wall-clock time --
+            # ran on a single core while this engine's own OpenMP
+            # elementwise kernels used several (confirmed via
+            # openblas_get_num_threads() returning 1 regardless of what
+            # was requested). Prefer an explicitly-named threaded
+            # variant over whatever the generic alternative happens to
+            # point to. OpenMP-threaded, not pthread, to match this
+            # project's own threading model instead of running two
+            # separate thread pools against each other.
+            find_library(DEEPITY_OPENBLAS_THREADED_LIB NAMES openblaso)
+            if(DEEPITY_OPENBLAS_THREADED_LIB)
+                message(STATUS "Using explicitly multi-threaded OpenBLAS: "
+                    "${DEEPITY_OPENBLAS_THREADED_LIB} (overriding find_package(BLAS)'s "
+                    "generic result: ${BLAS_LIBRARIES})")
+                set(BLAS_LIBRARIES "${DEEPITY_OPENBLAS_THREADED_LIB}")
+            else()
+                message(WARNING "Could not find an explicitly multi-threaded OpenBLAS "
+                    "variant (e.g. libopenblaso.so); falling back to find_package(BLAS)'s "
+                    "generic result: ${BLAS_LIBRARIES}. If that resolves to a SERIAL "
+                    "OpenBLAS build, every GEMM call runs on a single CPU core -- verify "
+                    "with openblas_get_num_threads() if train steps seem slow.")
+            endif()
+        endif()
+
         find_path(BLAS_INCLUDE_DIR
             NAMES cblas.h
             PATH_SUFFIXES openblas include/openblas
@@ -409,6 +532,104 @@ target_include_directories(DeepityHighwayKernels PUBLIC ${CMAKE_CURRENT_SOURCE_D
 # an include search path -- add src/ so it does.
 target_include_directories(DeepityHighwayKernels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(DeepityHighwayKernels PUBLIC hwy)
+
+if(DEEPITY_USE_ONEDNN)
+    # Only the forward matmul primitive is needed -- Deepity computes its
+    # own backward/feedback pass manually, never via a oneDNN primitive --
+    # so both the primitive set and the workload (training-specific
+    # primitives need backward variants too) are restricted to keep the
+    # build small.
+    set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(DNNL_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(DNNL_LIBRARY_TYPE STATIC CACHE STRING "" FORCE)
+    set(DNNL_ENABLE_WORKLOAD "INFERENCE" CACHE STRING "" FORCE)
+    set(DNNL_ENABLE_PRIMITIVE "MATMUL" CACHE STRING "" FORCE)
+    # Graph API (whole-subgraph pattern fusion) can't coexist with
+    # restricting ONEDNN_ENABLE_PRIMITIVE -- not needed here, we're only
+    # calling the matmul primitive directly.
+    set(ONEDNN_BUILD_GRAPH OFF CACHE BOOL "" FORCE)
+    set(DNNL_GPU_RUNTIME "NONE" CACHE STRING "" FORCE)
+    # Shares Intel's iomp5 runtime with MKL rather than standing up a
+    # third thread pool alongside OpenBLAS's own (see this session's
+    # earlier, ultimately-false lead chasing oversubscription via perf).
+    set(DNNL_CPU_RUNTIME "OMP" CACHE STRING "" FORCE)
+
+    FetchContent_Declare(
+        onednn
+        GIT_REPOSITORY https://github.com/oneapi-src/oneDNN.git
+        GIT_TAG v3.13.4
+    )
+    FetchContent_MakeAvailable(onednn)
+endif()
+
+if(DEEPITY_USE_LIBXSMM)
+    # libxsmm's own CMake configure step shells out to a Python script
+    # (scripts/libxsmm_config.py) to generate libxsmm_version.h.
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    # Not needed and pulls in a gfortran requirement for nothing -- we
+    # only use the C dispatch API.
+    set(LIBXSMM_FORTRAN OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+        libxsmm
+        GIT_REPOSITORY https://github.com/libxsmm/libxsmm.git
+        GIT_TAG 2.1.0
+    )
+    FetchContent_MakeAvailable(libxsmm)
+
+    # Isolated into its own target, deliberately never linked against
+    # MKL: libxsmm's CMake build (unlike its GNU Make build) hardcodes
+    # LP64 (32-bit libxsmm_blasint) with no option to request ILP64
+    # through this path, and its headers refuse to compile at all if
+    # MKL_ILP64 is visible alongside that mismatch -- see
+    # CPUBackendLibxsmm.h's file comment for the full reasoning. Mirrors
+    # DeepityHighwayKernels' existing use of a separate target for the
+    # same kind of per-translation-unit compilation isolation.
+    add_library(DeepityLibxsmm STATIC src/backend/CPUBackendLibxsmm.cpp)
+    target_include_directories(DeepityLibxsmm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    # OpenMP, not MKL: libxsmm's dispatched kernels are deliberately
+    # single-threaded per call (see CPUBackendLibxsmm.cpp) -- the
+    # caller supplies parallelism itself, here via a row-blocked
+    # #pragma omp parallel for across the batch dimension.
+    target_link_libraries(DeepityLibxsmm PRIVATE libxsmm::libxsmm OpenMP::OpenMP_CXX)
+endif()
+
+if(DEEPITY_USE_HALIDE)
+    # Not needed and would otherwise pull in flatbuffers/wabt for nothing --
+    # Deepity only uses Halide's AOT Generator workflow (plain
+    # add_halide_library() static libs), never JIT, serialization, the
+    # WASM backend, or the Python bindings.
+    set(WITH_SERIALIZATION OFF CACHE BOOL "" FORCE)
+    set(Halide_WASM_BACKEND OFF CACHE STRING "" FORCE)
+    set(WITH_PYTHON_BINDINGS OFF CACHE BOOL "" FORCE)
+    set(WITH_TESTS OFF CACHE BOOL "" FORCE)
+    set(WITH_TUTORIALS OFF CACHE BOOL "" FORCE)
+    set(WITH_DOCS OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+        halide
+        GIT_REPOSITORY https://github.com/halide/Halide.git
+        GIT_TAG v21.0.0
+        PATCH_COMMAND ${CMAKE_COMMAND}
+            "-DDEEPITY_HALIDE_SRC_DIR=${CMAKE_BINARY_DIR}/_deps/halide-src"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchHalideForNewerLLVM.cmake"
+        UPDATE_DISCONNECTED TRUE
+    )
+    FetchContent_MakeAvailable(halide)
+
+    # The generator program: runs at BUILD time only (links Halide +
+    # LLVM), never shipped. Its output (below) has no such dependency --
+    # see IComputeBackend.h's TryFusedFeedbackUpdate comment.
+    add_executable(DeepityHalideGenerators src/backend/halide/FeedbackUpdateGenerator.cpp)
+    target_link_libraries(DeepityHalideGenerators PRIVATE Halide::Generator)
+
+    add_halide_library(deepity_feedback_update_sigmoid
+        FROM DeepityHalideGenerators
+        GENERATOR deepity_feedback_update_sigmoid
+        FUNCTION_NAME deepity_feedback_update_sigmoid
+    )
+endif()
 
 # --- Deepity library ------------------------------------------------
 
@@ -508,6 +729,21 @@ if(DEEPITY_CUDNN_ENABLED)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDNN)
 endif()
 
+if(DEEPITY_USE_ONEDNN)
+    target_link_libraries(Deepity PRIVATE dnnl)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_ONEDNN)
+endif()
+
+if(DEEPITY_USE_LIBXSMM)
+    target_link_libraries(Deepity PRIVATE DeepityLibxsmm)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_LIBXSMM)
+endif()
+
+if(DEEPITY_USE_HALIDE)
+    target_link_libraries(Deepity PRIVATE deepity_feedback_update_sigmoid)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_HALIDE)
+endif()
+
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
 # --- Optional: Use CUTLASS for fused GEMM kernels ---------------------
@@ -536,7 +772,24 @@ FetchContent_Declare(
     GIT_TAG v1.9.1
 )
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+# Google Benchmark defaults this ON and applies -Werror/-pedantic-errors
+# to ITS OWN sources -- on a newer Clang, that turns its (harmless,
+# widely-supported) use of __COUNTER__ into a hard failure under
+# -Wc2y-extensions, since __COUNTER__ isn't standardized until C2y. Not
+# our code, not our warning bar -- just let this dependency build.
+set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(benchmark)
+# BENCHMARK_ENABLE_WERROR above doesn't cover this: benchmark's own
+# CMakeLists.txt applies -pedantic-errors to itself UNCONDITIONALLY (not
+# gated by that option), which alone is enough to promote the
+# __COUNTER__ diagnostic above to a hard error. A later -Wno-* on the
+# command line overrides an earlier -pedantic-errors for that specific
+# category, so suppress it directly on the already-defined target
+# rather than patching benchmark's vendored source.
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(benchmark PRIVATE -Wno-c2y-extensions)
+    target_compile_options(benchmark_main PRIVATE -Wno-c2y-extensions)
+endif()
 
 # --- Tests -----------------------------------------------------------
 

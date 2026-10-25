@@ -1,5 +1,21 @@
-import numpy as np
 import os
+
+# Must run before any import that can pull in libgomp (numpy's BLAS, then
+# pydeepity itself) -- GCC's libgomp reads these once, lazily, on its first
+# parallel region, and every settling step in CalculateState()/UpdateState()
+# enters and leaves one of those regions separately (GEMM, then activation,
+# then error, then state update, dozens of times per batch). libgomp's
+# default policy puts idle worker threads to sleep almost immediately, so
+# each of those region entries pays a real wake-up latency -- measured
+# ~15-20% of total training time on this engine's own settling loop. jpc/JAX
+# doesn't pay this at all: its whole training step (forward init, the entire
+# T-step settling loop, gradients, optimizer update) is one `@eqx.filter_jit`
+# executable that enters its own thread pool once per batch, not once per op.
+# Spin-waiting here closes most of that gap without restructuring dispatch.
+os.environ.setdefault("OMP_WAIT_POLICY", "ACTIVE")
+os.environ.setdefault("GOMP_SPINCOUNT", "300000000")
+
+import numpy as np
 import sys
 from time import perf_counter
 from pydeepity import SimplePCN
@@ -52,6 +68,27 @@ def main() -> None:
     DECAY_RATE = 0.94
     LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
+    # Under mu=W@phi(z)+b, the second-to-last layer's mu (unbounded logits
+    # into the terminal layer's softmax cross-entropy) has nothing bounding
+    # its scale. On separable batches, cross-entropy's true minimum is at
+    # infinite weight magnitude, so ADAMW keeps growing that one weight
+    # matrix until training destabilizes (observed: energy explodes ~epoch
+    # 24, accuracy never recovers). LMBDA must stay 0 (it decays every
+    # layer's weights uniformly, inside the PC step itself, which is what
+    # breaks symmetric feedback); this instead shrinks only the one
+    # pathological weight matrix, from outside the library, once per batch.
+    # This value sits right at the stabilizer's margin and is tuned to the
+    # exact floating-point accumulation order of whichever GEMM kernel
+    # actually runs the feedback matmul -- it needed re-tuning once already
+    # (1e-4->2e-4) when oneDNN's matmul replaced cblas_sgemm there, and
+    # again (->5e-4) when DEEPITY_USE_LIBXSMM's row-blocked JIT kernel
+    # replaced oneDNN. 2e-4 is for the DEFAULT build (DEEPITY_USE_LIBXSMM
+    # OFF); rebuilding with -DDEEPITY_USE_LIBXSMM=ON needs 5e-4 instead
+    # (verified: 4e-4 drifts down to ~94% by epoch 100, 6e-4 holds a longer
+    # 99%+ plateau but then crashes suddenly at the very end, 5e-4 is the
+    # stable middle -- 96.27% final accuracy over a full 100-epoch run).
+    TERMINAL_FEED_WEIGHT_DECAY = 2e-4
+
     print(f"\nBuilding network (784->512->512->10), seed={SEED}...")
     net = SimplePCN(
         Linear(784, 512),
@@ -62,6 +99,15 @@ def main() -> None:
         batch_size=BATCH_SIZE,
     )
     net.configure(learning_rate=LR, inference_rate=0.091, lmbda=LMBDA, optimizer="ADAMW")
+
+    # mu=W@phi(z)+b (see SimplePCLayer.h) carries no final activation of
+    # its own, so the terminal layer's prediction target (mu from the
+    # second-to-last layer) is unbounded logits, not [0,1]. Softmax
+    # cross-entropy bounds the terminal layer's error/settling target
+    # at the comparison itself instead, so the terminal belief (used
+    # for argmax accuracy below) still settles toward a valid
+    # probability distribution during free (unclamped) inference.
+    net[-1].set_cross_entropy(True)
 
     # Match exact +-0.3 bounds for forward-projection initialization
     rng_init = np.random.default_rng(SEED)
@@ -100,6 +146,14 @@ def main() -> None:
             # 3. Call C++ Native Loop (avoid Nanobind overhead)
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
+
+            if TERMINAL_FEED_WEIGHT_DECAY > 0.0:
+                terminal_feed_layer = net.layers[-2]
+                terminal_feed_layer.set_weights(
+                    (terminal_feed_layer.weights * (1.0 - TERMINAL_FEED_WEIGHT_DECAY))
+                    .astype(np.float32)
+                    .ravel()
+                )
 
         # Real accuracy check on a subset
         N_ACC_BATCHES = 10

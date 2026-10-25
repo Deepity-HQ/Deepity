@@ -290,7 +290,14 @@ void bind_layers(nb::module_& m)
            "Sets the mu-cache staleness threshold: -1 disables caching (default), "
            "0 reproduces the exact clamped-only behavior, >0 extends caching to "
            "unclamped layers as a genuine approximation.")
-      .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold);
+      .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold)
+      .def("set_cross_entropy",
+           &Deep::SimplePCLayer::SetCrossEntropy,
+           nb::arg("enabled"),
+           "Enables softmax cross-entropy energy for this layer's error against "
+           "layerBelow's mu (only makes sense on the terminal layer). OFF by "
+           "default (plain Gaussian energy).")
+      .def("get_cross_entropy", &Deep::SimplePCLayer::GetCrossEntropy);
 
   auto gsLayerCls = nb::class_<Deep::GaussSeidelPCLayer, Deep::Layer>(
                         m,

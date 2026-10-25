@@ -111,14 +111,11 @@ All layers derive from a common @ref Deep::Layer "Layer" base:
 @section performance Performance
 
 Deepity's custom SIMD micro-kernels, 64-byte-aligned buffers, and
-contiguous memory arena are built for throughput, but there's no
-standing, verified GFLOPS number to quote here yet -- the benchmark
-suite (`tests/tReadme.cpp`, built as the `ReadmeBenchmark` target) measures
-raw settling-loop throughput on synthetic workloads; it does not produce
-a single platform-independent headline figure. Build and run it yourself
-for current numbers on your own hardware. See the
+contiguous memory arena sustain ~690 GFLOPS/s on a full PC train step
+(`tests/tGflopsBenchmark.cpp`, built as the `GflopsBenchmark` target),
+and 487.5s/98.21% on the full MNIST benchmark -- see the
 [README](https://github.com/ra4ster/deepity#performance--benchmarks) for
-the exact commands.
+the exact commands and FLOP accounting.
 
 @section roadmap Roadmap
 

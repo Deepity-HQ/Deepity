@@ -37,6 +37,43 @@
 
 namespace Deep
 {
+/// @brief Single-element forward activation, for hot loops (e.g. a
+/// fused error+activation pass) that need f(z) inline, one element at
+/// a time, rather than through a whole-buffer ActivationFn/
+/// ActivationInto call. Mirrors each family's own vectorized forward
+/// formula exactly, not a separate approximation -- see
+/// ActivationDerivativeScalar's matching comment.
+/// @param type A forward-flavored ActivationType (e.g. TANH, not
+/// dTANH). Anything else (including NONE) falls back to the identity.
+/// @param z The pre-activation value.
+static inline float ActivationScalar(ActivationType type, float z) noexcept
+{
+  switch (type)
+  {
+  case ActivationType::RELU:
+    return z > 0.0f ? z : 0.0f;
+  case ActivationType::GELU:
+  {
+    float zsq = z * z;
+    float inner = MAGIC_GELU_1 * z + (MAGIC_GELU_2 * MAGIC_GELU_1) * zsq * z;
+    float t = Sleef_tanhf_u10(inner);
+    return 0.5f * z * (1.0f + t);
+  }
+  case ActivationType::SIGMOID:
+    return 1.0f / (1.0f + std::exp(-z));
+  case ActivationType::eSIGMOID:
+    return 0.5f + 0.5f * (z / (1.0f + std::fabs(z)));
+  case ActivationType::TANH:
+    return Sleef_tanhf_u10(z);
+  case ActivationType::HARD_TANH:
+    return std::clamp(z, -1.0f, 1.0f);
+  case ActivationType::LINEAR:
+  case ActivationType::NONE:
+  default:
+    return z;
+  }
+}
+
 /// @brief Single-element activation derivative, for hot loops (e.g. a
 /// fused settling-state update) that need f'(z) inline, one element at
 /// a time, rather than through a whole-buffer DerivativeFn/DerivativeFn2

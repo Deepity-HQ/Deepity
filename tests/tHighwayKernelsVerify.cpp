@@ -255,9 +255,21 @@ float ReferenceDerivFromRawZ(ActivationType dType, float z)
     float t = std::tanh(z);
     return 1.0f - t * t;
   }
+  case ActivationType::dHARD_TANH:
+    return (z > -1.0f && z < 1.0f) ? 1.0f : 0.0f;
   default:
     return 1.0f;
   }
+}
+
+// Independent reference for FusedActivationDerivativeMultiplyFromPreact:
+// ReferenceDerivFromRawZ's formula (now covering every ActivationType,
+// including dHARD_TANH above) times a[i].
+void ReferenceFusedADMFromPreact(std::vector<float>& dst, const std::vector<float>& a,
+                                 const std::vector<float>& preact, ActivationType dType, size_t n)
+{
+  for (size_t i = 0; i < n; ++i)
+    dst[i] = a[i] * ReferenceDerivFromRawZ(dType, preact[i]);
 }
 
 bool TestFusedStateUpdate(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed,
@@ -377,6 +389,44 @@ bool TestFusedADM(CPUBackend& backend, ActivationType dType, size_t n, unsigned 
   }
   return true;
 }
+
+bool TestFusedADMFromPreact(CPUBackend& backend, ActivationType dType, size_t n, unsigned seed,
+                            float tol = 1e-5f, float preactLo = -1.5f, float preactHi = 1.5f)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<float> distA(-1.5f, 1.5f);
+  std::uniform_real_distribution<float> distPreact(preactLo, preactHi);
+
+  std::vector<float> a(n), preact(n), dstRef(n), dstHwy(n);
+  for (auto& v : a)
+    v = distA(rng);
+  for (auto& v : preact)
+    v = distPreact(rng);
+
+  ReferenceFusedADMFromPreact(dstRef, a, preact, dType, n);
+  backend.FusedActivationDerivativeMultiplyFromPreact(
+      dstHwy.data(), a.data(), preact.data(), dType, n);
+
+  // NearlyEqualAbs, not NearlyEqual: dGELU's derivative formula has a
+  // real cancellation zone (two terms nearly canceling for some z, e.g.
+  // z=-0.752 -> deriv~1.2e-5) where a purely relative tolerance is far
+  // tighter than float32 itself -- same reasoning as
+  // TestFusedStateUpdate's own NearlyEqualAbs above.
+  for (size_t i = 0; i < n; ++i)
+  {
+    if (!NearlyEqualAbs(dstRef[i], dstHwy[i], tol))
+    {
+      printf("  FAIL FusedADMFromPreact(dType=%d, n=%zu): mismatch at %zu: ref=%.6f hwy=%.6f\n",
+             (int)dType,
+             n,
+             i,
+             dstRef[i],
+             dstHwy[i]);
+      return false;
+    }
+  }
+  return true;
+}
 } // namespace
 
 int main()
@@ -491,7 +541,51 @@ int main()
     }
   printf("%s\n\n", fsumPass ? "PASS" : "FAIL");
 
-  allPass = allPass && fsuPass && fsumPass;
+  printf("=== FusedActivationDerivativeMultiplyFromPreact ===\n");
+  bool admPreactPass = true;
+  for (ActivationType t : {ActivationType::dRELU,
+                           ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID,
+                           ActivationType::dTANH,
+                           ActivationType::dGELU,
+                           ActivationType::dHARD_TANH,
+                           ActivationType::dLINEAR,
+                           ActivationType::NONE})
+    for (size_t n : sizes)
+    {
+      bool ok = TestFusedADMFromPreact(backend, t, n, (unsigned)((int)t * 173 + n), tolFor(t));
+      admPreactPass = admPreactPass && ok;
+    }
+  printf("%s\n\n", admPreactPass ? "PASS" : "FAIL");
+
+  // Wide-range preact sweep: [-1.5, 1.5] above never exercises a
+  // transcendental's documented domain limit (e.g. math-inl.h's Exp is
+  // only valid up to float32 +104), so a formula that quietly relies on
+  // an out-of-domain call can pass every size above and still corrupt a
+  // real training run once z legitimately drifts past that point --
+  // which is exactly what happened here before dSIGMOID was rewritten
+  // through Tanh's identity instead of a direct Exp call. This sweep
+  // exists specifically so that class of bug fails HERE, not 15 minutes
+  // into an MNIST run.
+  printf("=== FusedActivationDerivativeMultiplyFromPreact (wide range) ===\n");
+  bool admPreactWidePass = true;
+  for (ActivationType t : {ActivationType::dRELU,
+                           ActivationType::dSIGMOID,
+                           ActivationType::d_eSIGMOID,
+                           ActivationType::dTANH,
+                           ActivationType::dGELU,
+                           ActivationType::dHARD_TANH,
+                           ActivationType::dLINEAR,
+                           ActivationType::NONE})
+    for (size_t n : sizes)
+    {
+      bool ok = TestFusedADMFromPreact(
+          backend, t, n, (unsigned)((int)t * 191 + n), tolFor(t), -1000.0f, 1000.0f);
+      admPreactWidePass = admPreactWidePass && ok;
+    }
+  printf("%s\n\n", admPreactWidePass ? "PASS" : "FAIL");
+
+  allPass = allPass && fsuPass && fsumPass && admPreactPass && admPreactWidePass;
   printf("%s\n", allPass ? "PASS" : "FAIL");
   return allPass ? 0 : 1;
 }

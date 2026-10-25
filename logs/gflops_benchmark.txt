@@ -81,3 +81,123 @@ Benchmark                                  Time             CPU   Iterations Use
 --------------------------------------------------------------------------------------------
 BM_TrainStepGFLOPS/iterations:157       55.2 ms         45.2 ms          157 FLOPS=255.042G/s
 ---
+
+=== UPDATE 2026-10-24: after this session's SIMD-vectorization work ===
+(softmax cross-entropy error, AdamStep/AdamWStep, and the fused hidden-layer
+error+activation step all moved from scalar loops to Google Highway SIMD kernels
+-- see src/backend/CPUBackendHighway.cpp). Same binary build process, same
+machine, same architecture/batch/T as above -- only the kernel code changed.
+Eight consecutive runs, same binary, same machine:
+
+2026-10-24T13:20:16-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.30, 1.15, 0.48
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       21.1 ms         17.2 ms          157 FLOPS=670.717G/s
+---
+2026-10-24T13:20:20-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 398.563 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.20, 1.15, 0.48
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       19.4 ms         16.2 ms          157 FLOPS=710.899G/s
+---
+2026-10-24T13:20:23-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.50, 1.23, 0.51
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       21.1 ms         17.3 ms          157 FLOPS=666.849G/s
+---
+2026-10-24T13:20:26-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 401.165 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.50, 1.23, 0.51
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       20.6 ms         16.9 ms          157 FLOPS=681.784G/s
+---
+2026-10-24T13:20:29-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 3197.58 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.46, 1.25, 0.52
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       19.8 ms         16.8 ms          157 FLOPS=686.533G/s
+---
+2026-10-24T13:20:32-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 2730.47 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.51, 1.27, 0.53
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       21.1 ms         16.7 ms          157 FLOPS=689.451G/s
+---
+2026-10-24T13:20:36-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.51, 1.27, 0.53
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       20.5 ms         16.8 ms          157 FLOPS=685.894G/s
+---
+2026-10-24T13:20:39-04:00
+Running ./build/Release/bin/GflopsBenchmark
+Run on (20 X 400 MHz CPU s)
+CPU Caches:
+  L1 Data 48 KiB (x10)
+  L1 Instruction 32 KiB (x10)
+  L2 Unified 1280 KiB (x10)
+  L3 Unified 24576 KiB (x1)
+Load Average: 2.55, 1.30, 0.55
+--------------------------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations UserCounters...
+--------------------------------------------------------------------------------------------
+BM_TrainStepGFLOPS/iterations:157       21.3 ms         16.9 ms          157 FLOPS=681.932G/s
+---
