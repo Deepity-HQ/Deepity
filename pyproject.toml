@@ -97,7 +97,8 @@ test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file_
 # manylinux2014's stock GCC is too old for -std=c++20; the _2_28 images
 # (AlmaLinux 8 based) ship GCC 12+, which is required here.
 manylinux-x86_64-image = "manylinux_2_28"
-before-all = "dnf install -y openblas-devel libgomp ccache"
+# ccache isn't in AlmaLinux 8's base repos, only EPEL.
+before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache"
 
 [tool.cibuildwheel.macos]
 # Not exercised by CI (arm64 runners, but DEEPITY_ARCH_FLAGS is x86-only).
