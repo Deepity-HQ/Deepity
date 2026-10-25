@@ -260,6 +260,93 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  # Convenience downloads attached to the GitHub Release, separate from
+  # the PyPI publish job above: "fast" profile (-march=x86-64-v3) rather
+  # than PyPI's maximally-portable "distributed" wheels, CPU-only.
+  release-fast-wheels:
+    name: fast wheels (${{ matrix.os }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.2
+
+      - name: Install ccache (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install ccache -y --no-progress
+
+      - name: Restore ccache compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-fast-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
+          restore-keys: |
+            ccache-fast-wheels-${{ matrix.os }}-onednn-v3.13.4-
+
+      # CMAKE_ARGS overrides pyproject.toml's portable-build arch flags --
+      # CMake's own last-one-wins for a repeated -D takes this override.
+      - name: Build wheels (fast profile)
+        uses: pypa/cibuildwheel@v2.21
+        env:
+          CIBW_ENVIRONMENT_LINUX: CMAKE_ARGS=-DDEEPITY_ARCH_FLAGS=-march=x86-64-v3 CCACHE_DIR=/host${{ github.workspace }}/.ccache
+          CIBW_ENVIRONMENT_WINDOWS: CMAKE_ARGS=-DDEEPITY_MSVC_ARCH_FLAGS=/arch:AVX2 CCACHE_DIR=${{ github.workspace }}\.ccache
+
+      - name: Save ccache compiler cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-fast-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
+
+      - name: Attach wheels to GitHub Release
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          files: wheelhouse/*.whl
+          prerelease: true
+          draft: true
+
+  release-cpp-binaries:
+    name: C++ binaries (linux)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libopenblas-dev
+
+      - name: Build (fast profile, CPU-only, library only)
+        run: python3 build.py --fast --no-cuda --no-tests --no-python-bindings
+
+      # Ships the whole include/ tree, not just include/deepity/ --
+      # ModelIO.h pulls in the vendored nlohmann/json.hpp header too.
+      - name: Package library + headers
+        run: |
+          pkg="deepity-${GITHUB_REF_NAME#v}-linux-x86_64"
+          mkdir -p "$pkg/lib" "$pkg/include"
+          cp build/Release/bin/libDeepity.a "$pkg/lib/"
+          cp -r include/. "$pkg/include/"
+          tar czf "${pkg}.tar.gz" "$pkg"
+
+      - name: Attach archive to GitHub Release
+        uses: softprops/action-gh-release@v3.0.3
+        with:
+          files: deepity-*.tar.gz
+          prerelease: true
+          draft: true
+
   publish:
     name: publish to PyPI
     needs: [build-wheels, build-sdist]
