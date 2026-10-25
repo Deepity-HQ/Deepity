@@ -163,7 +163,7 @@ The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps
 |---|---|---|---|---|
 | Test / dev accuracy | **98.21%** | 97.55% | 98% (best dev) | 97.51% |
 | Wall-clock, 100 epochs | **487.5s** | 531.4s | 1707.7s | 627.8s |
-| Command | `python examples/mnist.py 7 100 20` | `python benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
+| Command | `python examples/mnist.py 7 100 20` | `python experiments/benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
 | Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/jpc_mnist_run.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
 
 - **Deepity vs. jpc** is the closest comparison: both are predictive-coding implementations on the same architecture, settling-step count, batch size, epoch count and optimizer schedule. jpc is built on JAX/XLA; Deepity is hand-tuned C++. Deepity trains faster at matching accuracy.

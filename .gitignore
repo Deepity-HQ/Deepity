@@ -20,6 +20,12 @@ experiments/outputs/
 experiments/data/
 experiments/checkpoints/
 
+# Downloaded datasets (MNIST etc.) -- regenerate via whatever example
+# script downloads them, don't commit the blobs. Root-anchored: unlike
+# the MNIST/* rule above (which only matches a top-level MNIST/, not
+# nested ones), this covers data/ wherever it sits at the repo root.
+/data/
+
 # Doxygen output -- regenerate with `doxygen Doxyfile`, don't commit it.
 # docs/mainpage.md is hand-written Doxygen input and stays tracked.
 docs/html/
