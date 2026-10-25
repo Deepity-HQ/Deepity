@@ -295,7 +295,6 @@ Deepity started as an academic research project and is now becoming a scalable i
 - [ ] Stable, large-scale ImageNet training (actively being tuned)
 - [ ] cuDNN-backed convolution (Winograd / implicit-GEMM), replacing the current im2col + cuBLAS-GEMM path in `CUDABackendConv.cu`. TF32 is already on by default, but im2col+GEMM still trails cuDNN's specialized small-kernel (e.g. 3x3) convolution algorithms.
 - [ ] Fewer settling steps (smaller T) for genuine multi-step PC. T is currently taken directly from [PCX](https://github.com/liukidar/pcax) (a JAX-based predictive-coding research library, used here as an external reference point) and its per-architecture recipes, e.g. T=12 for VGG-7. It's now a command-line argument on `research/imagenet_pc_vgg7_ce.py` for sweeping, but whether a smaller T reaches comparable accuracy for proportionally less compute per batch is still untested.
-- [ ] mimalloc-backed allocation path, replacing the current `MemoryArena` allocator
 
 ---
 
