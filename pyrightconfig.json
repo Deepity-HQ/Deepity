@@ -1,5 +1,5 @@
 {
-    "extraPaths": ["tests/python"],
+    "extraPaths": ["tests/python", "research"],
 
     "exclude": [
         "**/__pycache__",
@@ -9,7 +9,9 @@
         "examples",
         "**/node_modules",
         "**/.*",
-        ".venv"
+        ".venv",
+        "benchmark_jpc.py",
+        "benchmark_jpc_mnist.py"
     ],
 
     "executionEnvironments": [
