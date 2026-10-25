@@ -107,10 +107,14 @@ skip = "*-musllinux* *-win32 *-manylinux_i686"
 build-verbosity = 1
 # uv instead of pip for every per-interpreter build env in the matrix below
 # (cp39..cp313 x each OS) -- meaningfully faster dependency resolution/
-# install per isolated env than pip. Preinstalled by cibuildwheel itself on
-# Windows/macOS when not already on PATH; the manylinux container gets it
-# the same way.
-build-frontend = "uv"
+# install per isolated env than pip. "build[uv]" (runs the `build` frontend,
+# but uses uv for env setup/installs), NOT bare "uv" -- the cibuildwheel
+# version pinned in ci.yml (2.21.3) only recognizes 'pip', 'build', and
+# 'build[uv]'; bare 'uv' is a later cibuildwheel release's addition and
+# fails configuration entirely on this version ("Unrecognised build
+# frontend 'uv'"). Preinstalled by cibuildwheel itself on Windows/macOS
+# when not already on PATH; the manylinux container gets it the same way.
+build-frontend = "build[uv]"
 
 test-requires = ["numpy"]
 test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file__)\""
