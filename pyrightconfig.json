@@ -20,7 +20,7 @@
             "reportAttributeAccessIssue": "none"
         },
         {
-            "root": "pydeepity",
+            "root": "deepity",
             "reportAttributeAccessIssue": "none"
         }
     ]

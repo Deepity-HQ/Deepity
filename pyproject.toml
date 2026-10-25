@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pydeepity"
-version = "1.0.0"
+version = "0.1.0a1"
 description = "A high-performance Predictive Coding library."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -23,7 +23,7 @@ dependencies = [
 # Dev dependencies (PEP 735): everything examples/research/ import beyond
 # the runtime deps above, plus pyright (CI's typecheck job,
 # CONTRIBUTING.md's pre-push checklist). NOT required to build or use the
-# compiled deepity/pydeepity extension itself (see CMakeLists.txt for
+# compiled deepity extension itself (see CMakeLists.txt for
 # that) -- install with `uv sync --group dev --no-install-project`
 # (--no-install-project skips building the C++ extension via this path;
 # use build.py for that instead, see README.md).
@@ -45,10 +45,12 @@ dev = [
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"
 
-# Pure-Python sources under pydeepity/ (__init__.py, utils.py, etc.) get
-# merged with whatever CMake's install() step places under pydeepity/ (the
-# compiled pydeepity*.so) into a single wheel.
-wheel.packages = ["pydeepity"]
+# Pure-Python sources under deepity/ (__init__.py, utils.py, etc.) get
+# merged with whatever CMake's install() step places under deepity/ (the
+# compiled deepity*.so) into a single wheel. The distribution is named
+# "pydeepity" (see [project] name above) but imports as `deepity`, same
+# convention as e.g. scikit-learn/sklearn.
+wheel.packages = ["deepity"]
 
 sdist.exclude = [
     "tests",
@@ -85,7 +87,7 @@ build-verbosity = 1
 build-frontend = "uv"
 
 test-requires = ["numpy"]
-test-command = "python -c \"import pydeepity; print('pydeepity OK:', pydeepity.__file__)\""
+test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file__)\""
 
 [tool.cibuildwheel.linux]
 # manylinux2014's stock GCC is too old for -std=c++20; the _2_28 images
@@ -112,4 +114,4 @@ archs = ["x86_64"]
 
 [tool.cibuildwheel.windows]
 before-build = "uv pip install delvewheel"
-repair-wheel-command = "delvewheel repair --add-path pydeepity -w {dest_dir} {wheel}"
+repair-wheel-command = "delvewheel repair --add-path deepity -w {dest_dir} {wheel}"

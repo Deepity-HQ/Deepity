@@ -4,7 +4,7 @@ import numpy.typing as npt
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.utils import Bunch
-from pydeepity import SequentialPCN
+from deepity import SequentialPCN
 from time import perf_counter
 
 def load_tiny_digits() -> tuple[

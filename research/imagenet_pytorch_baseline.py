@@ -1,7 +1,7 @@
 """
 PyTorch ground-truth replica of PCX's VGG-7 backprop baseline on Tiny
 ImageNet (arXiv 2407.01163, "Benchmarking Predictive Coding Networks --
-Made Simple"). Pure PyTorch, no Deepity/pydeepity involved at all -- the
+Made Simple"). Pure PyTorch, no Deepity/deepity involved at all -- the
 point is an independent, trustworthy number for THIS exact data pipeline
 and THIS exact hardware, rather than trusting a number copied from a paper
 that may have used different preprocessing.

@@ -1,7 +1,7 @@
 import numpy as np
 import os
-from pydeepity import SimplePCN
-from pydeepity.layer import Linear, Sigmoid
+from deepity import SimplePCN
+from deepity.layer import Linear, Sigmoid
 
 N_BATCHES = 20  # enough to exercise every activation type, both
                  # mu-cache branches (hit and miss), and the full

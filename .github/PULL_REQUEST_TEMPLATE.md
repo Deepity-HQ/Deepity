@@ -17,7 +17,7 @@ Closes #
 
 - [ ] `python build.py Release` builds and `DeepityTests` passes
 - [ ] `python build.py Debug` builds and `DeepityTests` passes (required for anything correctness-sensitive)
-- [ ] `pyright` passes (if you touched `bindings/`, `pydeepity/`, `examples/`, or `experiments/`)
+- [ ] `pyright` passes (if you touched `bindings/`, `deepity/`, `examples/`, or `experiments/`)
 
 **Platform(s) and compiler(s) tested:**
 

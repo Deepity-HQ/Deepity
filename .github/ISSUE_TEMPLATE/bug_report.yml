@@ -73,7 +73,7 @@ body:
   - type: input
     id: python-version
     attributes:
-      label: Python version (if relevant to the `pydeepity` bindings)
+      label: Python version (if relevant to the `deepity` bindings)
       placeholder: e.g. 3.11.4
 
   - type: textarea

@@ -39,7 +39,7 @@ body:
       multiple: true
       options:
         - Core C++ library (layers/networks)
-        - Python bindings (pydeepity)
+        - Python bindings (deepity)
         - Build system (CMake / build.py)
         - CUDA backend
         - Documentation

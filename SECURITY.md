@@ -33,7 +33,7 @@ in particular include:
 - **Memory safety in the core library** — buffer overflows, use-after-free,
   or misaligned access in `MemoryArena`, the layer implementations, or the
   SIMD micro-kernels, particularly anything reachable from Python-supplied
-  array shapes/sizes via the `pydeepity` bindings.
+  array shapes/sizes via the `deepity` bindings.
 - **The Python bindings themselves** (`bindings/pybinding.cpp`) — any way that
   Python-level inputs (array shapes, dtypes, batch sizes) can be used to
   corrupt memory or crash the interpreter in a way that wouldn't be a "normal"

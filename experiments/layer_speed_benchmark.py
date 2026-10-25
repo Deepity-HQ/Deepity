@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from pydeepity import SequentialPCN, SimplePCN
+from deepity import SequentialPCN, SimplePCN
 from time import perf_counter
 
 # TIMING-ONLY comparison. Accuracy is NOT compared -- with pr=0 (the only

@@ -1,8 +1,8 @@
 import numpy as np
 import os
 import sys
-from pydeepity import DKPPCN
-from pydeepity.layer import Linear, Sigmoid
+from deepity import DKPPCN
+from deepity.layer import Linear, Sigmoid
 from time import perf_counter
 
 

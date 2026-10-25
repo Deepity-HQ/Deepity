@@ -4,7 +4,7 @@ Tiny ImageNet (arXiv 2407.01163, "Benchmarking Predictive Coding Networks
 -- Made Simple") -- the cross-entropy sibling of
 imagenet_pytorch_baseline.py's BP_SE replica, which already reproduced
 its own target (46.24% vs. the paper's 46.08+-0.15%) almost exactly on
-this exact data pipeline and hardware. Pure PyTorch, no Deepity/pydeepity
+this exact data pipeline and hardware. Pure PyTorch, no Deepity/deepity
 involved -- the point here is specifically to pin down how much accuracy
 Deepity's own BP control (imagenet_bp_control_vgg7_ce.py, 38.78%) is
 leaving on the table from its one deliberate deviation: substituting

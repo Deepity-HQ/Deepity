@@ -3,7 +3,7 @@ import os
 import sys
 import optuna
 from time import perf_counter
-from pydeepity import SimplePCN
+from deepity import SimplePCN
 
 def load_full_mnist():
     import gzip

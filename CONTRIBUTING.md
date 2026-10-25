@@ -42,7 +42,7 @@ you hit a build error that looks like it should be obvious, check here first.
   correctness-sensitive, since Debug enables additional checks). This also
   runs the `DeepityTests` suite automatically, see
   [`logs/build.log`](logs/build.log) for full output if anything fails.
-- **Run `pyright`** if you touched `bindings/`, `pydeepity/`, or anything
+- **Run `pyright`** if you touched `bindings/`, `deepity/`, or anything
   under `examples/`/`experiments/`, see [`pyrightconfig.json`](pyrightconfig.json)
   for the project's type-checking configuration. A change that fails
   type-checking will fail CI in the same way.
@@ -172,8 +172,8 @@ how the environment is set up; branch on `CMAKE_CXX_COMPILER_ID`, not on
 ### 5. `target_compile_definitions` / `target_compile_options` require the target to already exist
 
 CMake processes a `CMakeLists.txt` strictly top-to-bottom. Calling
-`target_compile_definitions(pydeepity ...)` before the `nanobind_add_module
-(pydeepity ...)` call that creates that target produces a confusing "target is
+`target_compile_definitions(deepity_ext ...)` before the `nanobind_add_module
+(deepity_ext ...)` call that creates that target produces a confusing "target is
 not built by this project" error. Place any per-target configuration
 immediately after the `add_library` / `add_executable` /
 `nanobind_add_module` call that defines that target, not grouped together

@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
-from pydeepity import SequentialPCN
+from deepity import SequentialPCN
 from time import perf_counter
 
 # Tests the leading unconfirmed hypothesis from today's I_avg investigation:

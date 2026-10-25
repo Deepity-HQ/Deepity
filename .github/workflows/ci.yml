@@ -5,9 +5,12 @@ on:
     branches: [main]
     tags:
       # Publishes to PyPI (see the publish job below) -- push a tag
-      # matching this to cut a release, e.g. `git tag v1.0.1 && git push
-      # --tags`.
+      # matching one of these to cut a release, e.g. `git tag v0.1.0a1 &&
+      # git push --tags`. Covers plain releases plus alpha/beta/rc
+      # pre-releases, matching pyproject.toml's PEP 440 version field.
       - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+[ab][0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
   pull_request:
     branches: [main]
   workflow_dispatch: {}

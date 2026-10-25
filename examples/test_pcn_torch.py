@@ -44,7 +44,7 @@ def main():
     # Structuring a dense network: 784 (input) -> 256 (hidden) -> 128 (top latent) -> 10 (output)
     model = PredictiveCodingNetwork(
         dims=[784, 512],   
-        activation="tanh",      # Matching the activation from the pydeepity setup
+        activation="tanh",      # Matching the activation from the deepity setup
         output_dim=10,
         mode="classification",
     )
