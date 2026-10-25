@@ -4,10 +4,7 @@ on:
   push:
     branches: [main]
     tags:
-      # Publishes to PyPI (see the publish job below) -- push a tag
-      # matching one of these to cut a release, e.g. `git tag v0.1.0a1 &&
-      # git push --tags`. Covers plain releases plus alpha/beta/rc
-      # pre-releases, matching pyproject.toml's PEP 440 version field.
+      # Triggers the publish job below, e.g. `git tag v0.1.0a1`.
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+[ab][0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+"
@@ -179,11 +176,7 @@ jobs:
         run: uv sync --group dev --no-install-project
 
       - name: Run pyright
-        # --no-sync: `uv run` re-syncs by default, which (without
-        # --no-install-project) means building the C++ extension via
-        # scikit-build-core -- needs the full CMake/compiler toolchain and
-        # defeats the point of the --no-install-project sync just above.
-        # Reuses that exact venv instead.
+        # --no-sync: `uv run` alone re-syncs, which rebuilds the C++ extension.
         run: uv run --no-sync pyright
 
   build-wheels:
@@ -201,32 +194,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-      # --- Linux and macOS need no host-side setup: OpenBLAS/libgomp/
-      # ccache install inside the manylinux container (Linux) or via
-      # Homebrew (macOS) through the before-all hooks in pyproject.toml's
-      # [tool.cibuildwheel.linux] / [tool.cibuildwheel.macos] tables.
-      # Windows has no such container-level hook (cibuildwheel runs
-      # directly on the runner), so ccache is installed as a normal step
-      # here instead, same as build-and-test-windows already does for
-      # Ninja/LLVM above.
+      # Linux/macOS get ccache via pyproject.toml's before-all hooks instead.
       - name: Install ccache (Windows)
         if: matrix.os == 'windows-latest'
         run: choco install ccache -y --no-progress
 
-      # oneDNN's from-source build is by far the dominant compile cost
-      # here (~94 minutes from scratch, see this project's own
-      # build-speed investigation) -- ccache turns that into a cache hit
-      # on every run after the first. Keyed on its pinned version
-      # (CMakeLists.txt's GIT_TAG) so an oneDNN bump naturally starts a
-      # fresh cache instead of silently reusing stale objects; bump the
-      # key's suffix below if that pin ever changes.
-      #
-      # Linux builds happen inside cibuildwheel's manylinux container,
-      # which mounts the host filesystem root at /host -- CCACHE_DIR
-      # below points there specifically so the cache this step
-      # restores (a HOST path) is what the container actually reads/
-      # writes, not some path local to the container's own throwaway
-      # filesystem.
+      # Keyed on oneDNN's pinned version; bump the suffix if that changes.
       - name: Cache ccache compiler cache
         uses: actions/cache@v4
         with:
@@ -304,15 +277,7 @@ jobs:
           name: sdist
           path: dist
 
-      # No token/password needed: PyPI Trusted Publishing uses this job's
-      # OIDC identity (permissions.id-token above + the "pypi" environment)
-      # instead. One-time setup this repo still needs before this job can
-      # actually succeed, neither of which can be done from here:
-      #   1. A GitHub Environment named "pypi" under this repo's Settings
-      #      -> Environments.
-      #   2. A Trusted Publisher registered on the PyPI project ("pydeepity")
-      #      under pypi.org account Settings -> Publishing, with owner/repo
-      #      set to this repo, workflow filename "ci.yml", and environment
-      #      name "pypi" -- must match exactly or publishing is rejected.
+      # Trusted Publishing (OIDC) -- no token needed, see pypi.org's
+      # Publishing settings for this project's registered publisher.
       - name: Publish to PyPI
         run: uv publish

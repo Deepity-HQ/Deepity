@@ -3,12 +3,8 @@
 # builds on today, so this costs nothing in practice.
 cmake_minimum_required(VERSION 3.28)
 
-# Must be set before project()/enable_language() -- CMake only consults
-# CMAKE_<LANG>_COMPILER_LAUNCHER at that point, not later. Wraps every
-# compile invocation (including inside FetchContent subbuilds like
-# oneDNN/SLEEF/Highway, which don't override this themselves) so a
-# second clean build of unchanged sources is a cache hit instead of a
-# full recompile -- a no-op if ccache isn't installed.
+# Must be set before project() -- CMake only reads this launcher var here.
+# No-op if ccache isn't installed.
 find_program(DEEPITY_CCACHE_PROGRAM ccache)
 if(DEEPITY_CCACHE_PROGRAM)
     set(CMAKE_C_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")
@@ -32,18 +28,9 @@ option(DEEPITY_USE_MKL "Use Intel MKL instead of OpenBLAS (Intel CPUs only -- MK
 # default -- this is the GEMM path every benchmark number in the README
 # was measured against.
 option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoiding AddBiasBroadcast's separate memory pass" ON)
-# Building oneDNN from source (the default, via FetchContent below) takes
-# ~90 minutes of single-threaded compile time by itself (measured via
-# .ninja_log on this project's own CI-equivalent build -- one file,
-# ref_rnn.cpp, alone costs 250s, despite DNNL_ENABLE_PRIMITIVE=MATMUL
-# below not needing RNN at all; oneDNN's own build doesn't exclude it
-# from compilation, only from the runtime primitive table). ON trades
-# that away for a system-installed, dynamically-linked oneDNN instead
-# (e.g. Fedora/RHEL's `onednn-devel` package) via find_package(dnnl
-# CONFIG) -- falls back to the FetchContent source build automatically
-# if not found. Meant for local dev iteration, not for the wheel-building
-# CI job, which wants the fully static, self-contained build this
-# defaults to.
+# Building oneDNN from source takes ~90 min; ON uses a system package
+# (e.g. Fedora's onednn-devel) instead, falling back to source if not
+# found. For local dev only -- wheel builds want the static source build.
 option(DEEPITY_ONEDNN_SYSTEM "Prefer a system-installed oneDNN (via find_package) over building one from source" OFF)
 # Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
 # for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
@@ -999,14 +986,9 @@ set_target_properties(Deepity PROPERTIES
 )
 
 # --- deepity (Python bindings) ---------------------------------------
-# CMake target deliberately named `deepity_ext`, NOT `deepity`: this
-# project's main library target is `Deepity`, and a target named
-# `deepity` would collide with it on a case-insensitive filesystem
-# (Windows/macOS both build this project in CI) -- CMake's Ninja
-# generator makes a CMakeFiles/<target>.dir/ per target, and
-# `Deepity.dir`/`deepity.dir` are the same path there. OUTPUT_NAME below
-# is what actually controls the importable module's filename
-# (deepity.cpython-*.so), independent of this target name.
+# Target named `deepity_ext`, not `deepity` -- would collide case-
+# insensitively with the `Deepity` library target on Windows/macOS.
+# OUTPUT_NAME below still makes the produced file deepity.cpython-*.so.
 
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     nanobind_add_module(deepity_ext
