@@ -206,8 +206,9 @@ jobs:
         run: choco install ccache -y --no-progress
 
       # Keyed on oneDNN's pinned version; bump the suffix if that changes.
-      - name: Cache ccache compiler cache
-        uses: actions/cache@v4
+      - name: Restore ccache compiler cache
+        id: ccache-restore
+        uses: actions/cache/restore@v4
         with:
           path: ${{ github.workspace }}/.ccache
           key: ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
@@ -219,6 +220,16 @@ jobs:
         env:
           CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache
           CIBW_ENVIRONMENT_WINDOWS: CCACHE_DIR=${{ github.workspace }}\.ccache
+
+      # if: always() -- restore/save split so a failed build still keeps
+      # whatever ccache populated, instead of actions/cache's default
+      # save-on-post (which skips entirely once a later step fails).
+      - name: Save ccache compiler cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: ccache-wheels-${{ matrix.os }}-onednn-v3.13.4-${{ github.sha }}
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
