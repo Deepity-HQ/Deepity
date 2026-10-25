@@ -57,6 +57,11 @@ dev = [
     "pyright",
 ]
 
+# Forces a newer Pillow floor (matplotlib/torchvision pull it in) than the
+# package's own requires-python -- see CVE-2026-96639, fixed only in 13.0.0.
+[tool.uv.dependency-groups]
+dev = { requires-python = ">=3.11" }
+
 # ══════════════════════════════════════════════════════════════════════════
 # scikit-build-core: how `pip install .` / `pip wheel .` invokes CMake
 # ══════════════════════════════════════════════════════════════════════════
