@@ -1026,6 +1026,13 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         OUTPUT_NAME "deepity"
     )
 
+    # MODULE targets ignore ARCHIVE_OUTPUT_NAME -- MSVC still names the
+    # import lib after OUTPUT_NAME, colliding with Deepity.lib (LNK1149).
+    if(MSVC)
+        target_link_options(deepity_ext PRIVATE
+            "/IMPLIB:$<TARGET_FILE_DIR:deepity_ext>/deepity_ext.lib")
+    endif()
+
     # Modern cross-platform way to copy the compiled extension and required runtime libs
     add_custom_command(TARGET deepity_ext POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
