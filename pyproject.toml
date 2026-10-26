@@ -65,6 +65,11 @@ build-dir = "build/{wheel_tag}"
 # Distribution is "pydeepity" (see [project] name) but imports as `deepity`.
 wheel.packages = ["deepity"]
 
+# Without this, every FetchContent dep's own install() rules (oneDNN,
+# SLEEF, benchmark, ...) land in the wheel too -- see CMakeLists.txt's
+# python_runtime COMPONENT tags on Deepity's own install() calls.
+install.components = ["python_runtime"]
+
 sdist.exclude = [
     "tests",
     "experiments",

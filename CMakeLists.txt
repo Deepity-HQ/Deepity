@@ -1053,15 +1053,20 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         )
     endif()
 
+    # COMPONENT python_runtime -- pyproject.toml's install.components limits
+    # the wheel to this component, since FetchContent deps (oneDNN, SLEEF,
+    # benchmark, ...) register their own install() rules with no COMPONENT,
+    # and those static libs/headers/docs have no business in a Python wheel.
     install(TARGETS deepity_ext
+        COMPONENT python_runtime
         LIBRARY DESTINATION deepity
         RUNTIME DESTINATION deepity
     )
 endif()
 
 if(WIN32)
-    install(FILES ${OPENBLAS_DLL} DESTINATION deepity)
+    install(FILES ${OPENBLAS_DLL} DESTINATION deepity COMPONENT python_runtime)
     if(DEEPITY_OMP_DLL)
-        install(FILES ${DEEPITY_OMP_DLL} DESTINATION deepity)
+        install(FILES ${DEEPITY_OMP_DLL} DESTINATION deepity COMPONENT python_runtime)
     endif()
 endif()
