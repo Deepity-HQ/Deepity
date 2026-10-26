@@ -1293,13 +1293,12 @@ wheels = [
 
 [[package]]
 name = "pydeepity"
-version = "0.1.0a1"
+version = "0.1.0a3"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "rich" },
-    { name = "torch" },
 ]
 
 [package.dev-dependencies]
@@ -1309,6 +1308,7 @@ dev = [
     { name = "pyright" },
     { name = "scikit-learn" },
     { name = "setuptools" },
+    { name = "torch" },
     { name = "torchvision" },
 ]
 
@@ -1316,7 +1316,6 @@ dev = [
 requires-dist = [
     { name = "numpy" },
     { name = "rich" },
-    { name = "torch", specifier = ">=2.8.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -1326,6 +1325,7 @@ dev = [
     { name = "pyright" },
     { name = "scikit-learn" },
     { name = "setuptools" },
+    { name = "torch", specifier = ">=2.8.0" },
     { name = "torchvision" },
 ]
 

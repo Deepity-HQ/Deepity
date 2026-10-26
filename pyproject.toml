@@ -9,7 +9,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "pydeepity"
-version = "0.1.0a2"
+version = "0.1.0a3"
 description = "A high-performance Predictive Coding library."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,7 +20,6 @@ authors = [
 dependencies = [
     "numpy",
     "rich",
-    "torch>=2.8.0",
 ]
 # Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
 # `license` field above is the modern replacement for that classifier,
@@ -47,6 +46,7 @@ Issues = "https://github.com/Ra4ster/Deepity/issues"
 # (use build.py to actually build the C++ extension, see README.md).
 [dependency-groups]
 dev = [
+    "torch>=2.8.0",
     "torchvision",
     "scikit-learn",
     "matplotlib",
