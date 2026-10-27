@@ -26,6 +26,12 @@ using FloatArray = nb::ndarray<float, nb::c_contig, nb::device::cpu>;
 /// @brief Same as FloatArray, for int32 label/index arrays.
 using IntArray = nb::ndarray<int, nb::c_contig, nb::device::cpu>;
 
+/// @brief Generic counterpart to FloatArray/DoubleArray, for the
+/// templated FullPCLayerT<T, AccumT>/FullPCNetworkT<T, AccumT>
+/// bindings (BindFullPCLayerT/BindFullPCNetworkT), which bind once per
+/// storage type T rather than being hardcoded to float.
+template <typename T> using TArray = nb::ndarray<T, nb::c_contig, nb::device::cpu>;
+
 namespace
 {
 

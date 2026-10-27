@@ -51,6 +51,14 @@ public:
 
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::SumRowsAccum
+  /// CUDABackend's T and AccumT are always float, same as CPUBackend's
+  /// own identical-override reasoning -- see CPUBackend.h's own comment
+  /// on MatMulAccum/SumRowsAccum for why these exist at all.
+  void SumRowsAccum(float* dst, const float* src, size_t batchSize, size_t width) noexcept override
+  {
+    SumRows(dst, src, batchSize, width);
+  }
   /// @copydoc Deep::IComputeBackend::Sum
   float Sum(const float* buf, size_t n) noexcept override;
 
@@ -63,6 +71,14 @@ public:
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::MatMulAccum
+  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
+  void MatMulAccum(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
+                   int lda, const float* B, int ldb, float beta, float* C,
+                   int ldc) noexcept override
+  {
+    MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  }
   /// @copydoc Deep::IComputeBackend::SetAllowTF32
   void SetAllowTF32(bool allow) noexcept override;
 

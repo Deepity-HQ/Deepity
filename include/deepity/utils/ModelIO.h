@@ -1,13 +1,25 @@
 #pragma once
 #include <cstdint>
+#include <deepity/utils/DTypeTag.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 
 /**
  * @file ModelIO.h
  * @brief Saves/loads a network's compiled weight arena to/from disk, as a
- * JSON header (per-layer shapes/offsets) plus a raw binary float blob.
+ * JSON header (per-layer shapes/offsets/dtypes) plus a raw binary data
+ * blob. Templated on NetworkType the same as before (works across every
+ * PC network variant that exposes GetLayers()), but the element type
+ * backing each tensor is no longer assumed to be `float`: Save() derives
+ * it from each tensor's own `.data` pointer (via DTypeTag<T>), so a
+ * FullPCNetworkT<double, ...> writes real "F64" tensors at their real
+ * 8-byte stride, not truncated through float. Load() checks that
+ * dtype against what the CALLING network's own tensors expect and
+ * throws std::runtime_error on a mismatch -- strictly new behavior:
+ * the previous version never checked "dtype" on read at all.
  */
 
 namespace Deep
@@ -29,6 +41,7 @@ public:
     nlohmann::json header;
     size_t current_offset = 0;
     int layer_idx = 0;
+    std::string fileDtype = "F32"; // stays "F32" for an empty network, matching old behavior.
 
     for (const auto& layerPtr : net.GetLayers())
     {
@@ -36,6 +49,9 @@ public:
 
       for (const auto& [name, tensor] : state_dict)
       {
+        using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
+        fileDtype = DTypeTag<ElementType>::Name();
+
         std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
 
         size_t num_elements = 1;
@@ -43,9 +59,9 @@ public:
         {
           num_elements *= dim;
         }
-        size_t byte_size = num_elements * sizeof(float);
+        size_t byte_size = num_elements * sizeof(ElementType);
 
-        header[key] = {{"dtype", "F32"},
+        header[key] = {{"dtype", fileDtype},
                        {"shape", tensor.shape},
                        {"data_offsets", {current_offset, current_offset + byte_size}}};
         current_offset += byte_size;
@@ -53,7 +69,7 @@ public:
       layer_idx++;
     }
 
-    header["__metadata__"] = {{"format", "deepity_safetensors"}};
+    header["__metadata__"] = {{"format", "deepity_safetensors"}, {"dtype", fileDtype}};
 
     std::string header_str = header.dump();
     uint64_t header_size = header_str.size();
@@ -69,12 +85,13 @@ public:
     {
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
       {
+        using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
         size_t num_elements = 1;
         for (size_t dim : tensor.shape)
         {
           num_elements *= dim;
         }
-        out.write(reinterpret_cast<const char*>(tensor.data), num_elements * sizeof(float));
+        out.write(reinterpret_cast<const char*>(tensor.data), num_elements * sizeof(ElementType));
       }
     }
     return true;
@@ -106,10 +123,20 @@ public:
       auto state_dict = layerPtr->GetStateDict();
       for (auto& [name, tensor] : state_dict)
       {
+        using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
         std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
 
         if (header.contains(key))
         {
+          std::string fileDtype = header[key].value("dtype", std::string());
+          const char* expectedDtype = DTypeTag<ElementType>::Name();
+          if (!fileDtype.empty() && fileDtype != expectedDtype)
+          {
+            throw std::runtime_error("ModelIO::Load: dtype mismatch for '" + key + "' -- file "
+                                     "has " +
+                                     fileDtype + ", network expects " + expectedDtype + ".");
+          }
+
           size_t start_offset = header[key]["data_offsets"][0];
           size_t end_offset = header[key]["data_offsets"][1];
           size_t byte_size = end_offset - start_offset;

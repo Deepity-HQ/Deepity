@@ -686,7 +686,9 @@ set(DEEPITY_SOURCES
     src/utils/StreamAlignedBatcher.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
+    src/backend/CPUBackendT.cpp
     src/backend/Tensor.cpp
+    src/layers/FullPCLayerT.cpp
 )
 
 if(DEEPITY_CUDA_ENABLED)
@@ -748,7 +750,14 @@ target_link_libraries(Deepity PUBLIC
     sleef
 )
 
-target_link_libraries(Deepity PRIVATE hwy DeepityHighwayKernels)
+# hwy is PUBLIC (not PRIVATE like DeepityHighwayKernels below it): the
+# quantization templating pass's hwy::float16_t storage type now
+# appears in Deepity's own public headers (DTypeTag.h, FullPCLayerT.h),
+# so any consumer of Deepity that touches FullPCLayerT<hwy::float16_t, ...>
+# -- including this project's own test binaries -- needs hwy/base.h on
+# its include path too, not just inside Deepity's own translation units.
+target_link_libraries(Deepity PUBLIC hwy)
+target_link_libraries(Deepity PRIVATE DeepityHighwayKernels)
 
 if(DEEPITY_CUDA_ENABLED)
     target_link_libraries(Deepity PUBLIC CUDA::cublas CUDA::cudart)

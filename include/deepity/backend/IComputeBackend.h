@@ -10,10 +10,27 @@ namespace Deep
 /// primitive a layer/network needs, implemented once each by CPUBackend
 /// (SIMD/BLAS) and CUDABackend (kernels/cuBLAS/CUTLASS), so layer code
 /// never branches on device directly.
-class IComputeBackend
+///
+/// @tparam T Element type for this backend's data buffers (activations,
+/// weights, errors, biases, ...). `IComputeBackend` (see the alias
+/// below) is `IComputeBackendT<float, float>`, bit-for-bit identical to
+/// this interface before it was templated -- every existing caller
+/// (SimplePCLayer, DirectKPPCLayer, GaussSeidelPCLayer, the conv
+/// family) keeps using that exact spelling, unchanged.
+/// @tparam AccumT Wider type used for optimizer accumulator state
+/// (AdamStep/AdamWStep's grad/m/v/lr) and for scalar
+/// hyperparameters/reductions (alpha, beta, eps, ir, Sum()'s return,
+/// ...) -- "accumulate wider than you store/compute the forward pass
+/// at," so a sub-8-bit T never gets Adam-stepped in its own
+/// low-precision representation. Defaults to T for every existing
+/// (non-templated) caller, where it's simply unused distinction
+/// (AccumT=T=float there); FullPCLayer<T, AccumT=double> is the only
+/// place this is ever spelled as something other than T.
+template <typename T, typename AccumT = T>
+class IComputeBackendT
 {
 public:
-  virtual ~IComputeBackend() = default;
+  virtual ~IComputeBackendT() = default;
 
   // Graphs
 
@@ -56,38 +73,38 @@ public:
 
   // Memory
 
-  /// @brief Allocates `numFloats` floats on this backend's device.
+  /// @brief Allocates `numElements` elements of T on this backend's device.
   /// @return nullptr on allocation failure.
-  virtual float* Allocate(size_t numFloats) = 0;
+  virtual T* Allocate(size_t numElements) = 0;
   /// @brief Frees a buffer previously returned by Allocate(). No-op on nullptr.
-  virtual void Free(float* ptr) noexcept = 0;
-  /// @brief Zero-fills `numFloats` floats starting at `ptr`.
-  virtual void Zero(float* ptr, size_t numFloats) noexcept = 0;
-  /// @brief Copies `numFloats` floats from `src` to `dst`, both on this
-  /// backend's own device.
-  virtual void Copy(float* dst, const float* src, size_t numFloats) noexcept = 0;
-  /// @brief Copies `numFloats` floats from a host buffer into a device
-  /// buffer (a plain memcpy on CPUBackend).
-  virtual void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept = 0;
-  /// @brief Copies `numFloats` floats from a device buffer into a host
-  /// buffer (a plain memcpy on CPUBackend).
-  virtual void CopyToHost(float* hostDst, const float* deviceSrc, size_t numFloats) noexcept = 0;
-  /// @brief Fills `n` floats with samples from a normal distribution.
+  virtual void Free(T* ptr) noexcept = 0;
+  /// @brief Zero-fills `numElements` elements of T starting at `ptr`.
+  virtual void Zero(T* ptr, size_t numElements) noexcept = 0;
+  /// @brief Copies `numElements` elements of T from `src` to `dst`, both on
+  /// this backend's own device.
+  virtual void Copy(T* dst, const T* src, size_t numElements) noexcept = 0;
+  /// @brief Copies `numElements` elements of T from a host buffer into a
+  /// device buffer (a plain memcpy on CPUBackend).
+  virtual void CopyFromHost(T* deviceDst, const T* hostSrc, size_t numElements) noexcept = 0;
+  /// @brief Copies `numElements` elements of T from a device buffer into a
+  /// host buffer (a plain memcpy on CPUBackend).
+  virtual void CopyToHost(T* hostDst, const T* deviceSrc, size_t numElements) noexcept = 0;
+  /// @brief Fills `n` elements with samples from a normal distribution.
   /// @param buf Buffer to fill.
-  /// @param n Number of floats to fill.
+  /// @param n Number of elements to fill.
   /// @param mean Distribution mean.
   /// @param stddev Distribution standard deviation.
   /// @param seed RNG seed.
-  virtual void RandomizeNormal(float* buf, size_t n, float mean, float stddev,
+  virtual void RandomizeNormal(T* buf, size_t n, AccumT mean, AccumT stddev,
                                uint32_t seed) noexcept = 0;
-  /// @brief Fills `n` floats with samples from a uniform distribution
+  /// @brief Fills `n` elements with samples from a uniform distribution
   /// over [min, max).
   /// @param buf Buffer to fill.
-  /// @param n Number of floats to fill.
+  /// @param n Number of elements to fill.
   /// @param min Distribution lower bound (inclusive).
   /// @param max Distribution upper bound (exclusive).
   /// @param seed RNG seed.
-  virtual void RandomizeUniform(float* buf, size_t n, float min, float max,
+  virtual void RandomizeUniform(T* buf, size_t n, AccumT min, AccumT max,
                                 uint32_t seed) noexcept = 0;
 
   /// @brief Must be called once, before Compile()'s first
@@ -111,8 +128,23 @@ public:
   /// @param B Right operand.
   /// @param beta Scalar multiplied into the existing C before accumulating.
   /// @param C Output; also read if beta != 0.
-  virtual void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
-                      int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept = 0;
+  virtual void MatMul(bool transA, bool transB, int M, int N, int K, AccumT alpha, const T* A,
+                      int lda, const T* B, int ldb, AccumT beta, T* C, int ldc) noexcept = 0;
+
+  /// @brief Same operation as MatMul(), but writes into an AccumT*
+  /// buffer instead of T* -- for a layer's own Adam/AdamW gradient
+  /// computation (grad_W, grad_Psi, ...), which must land in the wider
+  /// AccumT accumulator, not get rounded down to storage precision T
+  /// mid-computation (exactly the gap this method closes: MatMul()
+  /// itself can only ever write a T* C, so it alone can't produce a
+  /// loss-free gradient when T is a lossy storage format with
+  /// AccumT != T, e.g. Fp4E2M1Value). For T == AccumT (every float/
+  /// double instantiation) this is numerically identical to MatMul()
+  /// with that same buffer, just spelled through the AccumT-typed
+  /// overload the optimizer path calls either way.
+  virtual void MatMulAccum(bool transA, bool transB, int M, int N, int K, AccumT alpha,
+                           const T* A, int lda, const T* B, int ldb, AccumT beta, AccumT* C,
+                           int ldc) noexcept = 0;
 
   /// @brief Whether MatMul() may use TF32 (10 mantissa bits, ~1e-3
   /// relative error per GEMM) instead of full FP32 on tensor cores --
@@ -132,26 +164,33 @@ public:
   /// cublasSgemv call against a cached all-ones vector, reinterpreting
   /// src's row-major [batchSize,width] layout as column-major
   /// [width,batchSize] with no data movement (verified numerically).
-  virtual void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept = 0;
+  virtual void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept = 0;
+
+  /// @brief Same operation as SumRows(), but writes into an AccumT*
+  /// buffer instead of T* -- see MatMulAccum()'s own doc comment for
+  /// why this exists (a layer's bias gradient, grad_b, needs the same
+  /// AccumT-accumulating treatment grad_W does).
+  virtual void SumRowsAccum(AccumT* dst, const T* src, size_t batchSize,
+                            size_t width) noexcept = 0;
 
   /// @brief Returns the plain (signed) sum of every element in buf.
   /// Synchronous on CUDABackend (reads the reduction back to a host
-  /// float before returning) -- same constraint as ComputeErrorAndEnergy
+  /// value before returning) -- same constraint as ComputeErrorAndEnergy
   /// and friends: never call this from inside a captured CUDA graph
   /// region, only from code that runs outside any
   /// BeginGraphCapture()/EndGraphCapture() pair.
-  virtual float Sum(const float* buf, size_t n) noexcept = 0;
+  virtual AccumT Sum(const T* buf, size_t n) noexcept = 0;
 
   // Elementwise scalar ops
 
   /// @brief buf[i] *= alpha for all i in [0, n).
-  virtual void Scale(float* buf, size_t n, float alpha) noexcept = 0;
+  virtual void Scale(T* buf, size_t n, AccumT alpha) noexcept = 0;
   /// @brief y[i] += alpha * x[i] for all i in [0, n), the standard AXPY.
-  virtual void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept = 0;
+  virtual void AxpyInto(T* y, const T* x, size_t n, AccumT alpha) noexcept = 0;
   /// @brief buf[row*width + col] += bias[col] for every row in
   /// [0,batchSize) and col in [0,width), broadcasts a per-column bias
   /// across every row (the dense-layer convention).
-  virtual void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
+  virtual void AddBiasBroadcast(T* buf, const T* bias, size_t batchSize,
                                 size_t width) noexcept = 0;
 
   /// @brief Attempts C = A @ B(^T) + bias in one fused kernel (CPU only,
@@ -178,8 +217,8 @@ public:
   /// pattern, not a general GEMM).
   /// @param bias Length-N vector, broadcast across all M rows of C
   /// (same convention as AddBiasBroadcast).
-  virtual bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A,
-                                  int lda, const float* B, int ldb, const float* bias, float* C,
+  virtual bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const T* A,
+                                  int lda, const T* B, int ldb, const T* bias, T* C,
                                   int ldc) noexcept = 0;
 
   /// @brief Attempts C = alpha * (A @ B(^T)) via oneDNN's matmul
@@ -195,8 +234,8 @@ public:
   /// @param transA/transB/M/N/K/A/lda/B/ldb/C/ldc Same meaning and
   /// shapes as MatMul(). @param alpha Scalar multiplier on the product,
   /// same convention as MatMul().
-  virtual bool TryFusedMatMul(bool transA, bool transB, int M, int N, int K, float alpha,
-                              const float* A, int lda, const float* B, int ldb, float* C,
+  virtual bool TryFusedMatMul(bool transA, bool transB, int M, int N, int K, AccumT alpha,
+                              const T* A, int lda, const T* B, int ldb, T* C,
                               int ldc) noexcept = 0;
 
   /// @brief Fuses SimplePCLayer::UpdateState()'s feedback GEMM directly
@@ -247,16 +286,16 @@ public:
   /// post-op chain directly, see CPUBackend.cpp's implementation) and
   /// bound as a post-op's runtime operand. Unused on the Halide path.
   virtual bool TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int size, int nextSize,
-                                      const float* eAbove, const float* W, float* z,
-                                      const float* e, float ir, float* scratch,
-                                      float* derivScratch) noexcept = 0;
+                                      const T* eAbove, const T* W, T* z,
+                                      const T* e, AccumT ir, T* scratch,
+                                      T* derivScratch) noexcept = 0;
 
   // Activation
 
   /// @brief Applies `type` to `buf` in place.
-  virtual void Activation(ActivationType type, float* buf, size_t n) noexcept = 0;
+  virtual void Activation(ActivationType type, T* buf, size_t n) noexcept = 0;
   /// @brief Two-buffer variant of Activation(): reads src, writes into dst.
-  virtual void ActivationInto(ActivationType type, float* dst, const float* src,
+  virtual void ActivationInto(ActivationType type, T* dst, const T* src,
                               size_t n) noexcept = 0;
   /// @brief Applies `type`'s derivative to `buf` in place.
   /// @param type Which activation's derivative to apply.
@@ -264,11 +303,11 @@ public:
   /// @param n Length of buf.
   /// @param activated If true, buf already holds the activated value;
   /// if false, buf holds the pre-activation value.
-  virtual void ActivationDerivative(ActivationType type, float* buf, size_t n,
+  virtual void ActivationDerivative(ActivationType type, T* buf, size_t n,
                                     bool activated) noexcept = 0;
   /// @brief Two-buffer variant of ActivationDerivative(): reads src
   /// (the pre-activation value), writes the derivative into dst.
-  virtual void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
+  virtual void ActivationDerivativeInto(ActivationType type, T* dst, const T* src,
                                         size_t n) noexcept = 0;
 
   // Fused PC-specific ops
@@ -284,9 +323,9 @@ public:
   /// @param dType Which activation's derivative to apply to z in
   /// place, deriv is computed inline from z, element by element,
   /// rather than read from a separate precomputed buffer.
-  virtual void FusedStateUpdateMomentum(float* z, float* v, const float* feedback,
-                                        ActivationType dType, const float* e, size_t n, float ir,
-                                        float beta) noexcept = 0;
+  virtual void FusedStateUpdateMomentum(T* z, T* v, const T* feedback,
+                                        ActivationType dType, const T* e, size_t n, AccumT ir,
+                                        AccumT beta) noexcept = 0;
 
   /// @brief One settling step's state update, fused into a single call:
   ///   z += ir * ((feedback * deriv) - e)
@@ -294,16 +333,16 @@ public:
   /// @param dType Which activation's derivative to apply to z in
   /// place, deriv is computed inline from z, element by element,
   /// rather than read from a separate precomputed buffer.
-  virtual void FusedStateUpdate(float* z, const float* feedback, ActivationType dType,
-                                const float* e, size_t n, float ir) noexcept = 0;
+  virtual void FusedStateUpdate(T* z, const T* feedback, ActivationType dType,
+                                const T* e, size_t n, AccumT ir) noexcept = 0;
   /// @brief Computes e = z - mu, then returns 0.5 * sum(e^2), the
   /// Gaussian error/energy used by every layer except a cross-entropy
   /// terminal.
-  virtual float ComputeErrorAndEnergy(float* e, const float* z, const float* mu,
-                                      size_t n) noexcept = 0;
+  virtual AccumT ComputeErrorAndEnergy(T* e, const T* z, const T* mu,
+                                       size_t n) noexcept = 0;
   /// @brief Same as ComputeErrorAndEnergy(), without computing (or
   /// returning) the energy, for callers that only need e.
-  virtual void ComputeError(float* e, const float* z, const float* mu, size_t n) noexcept = 0;
+  virtual void ComputeError(T* e, const T* z, const T* mu, size_t n) noexcept = 0;
 
   /// @brief Fuses ComputeError()'s e = z - mu with the forward
   /// activation zF = f(z) that SimplePCLayer::ComputeMuOnly() computes
@@ -327,8 +366,8 @@ public:
   /// @return false if this backend has no fused implementation, in
   /// which case the caller falls back to separate ComputeError()/
   /// ActivationInto() calls, same convention as TryFusedMatMul() above.
-  virtual bool TryComputeErrorAndActivation(ActivationType activationType, float* e, float* zF,
-                                            const float* z, const float* mu,
+  virtual bool TryComputeErrorAndActivation(ActivationType activationType, T* e, T* zF,
+                                            const T* z, const T* mu,
                                             size_t n) noexcept = 0;
 
   /// @brief Softmax cross-entropy variant of ComputeErrorAndEnergy, for
@@ -342,21 +381,21 @@ public:
   ///   energy = -sum(z * log(probs + eps))  (eps=1e-8, avoids log(0))
   /// mu holds the RAW LOGITS (unchanged from the Gaussian case, still
   /// a*W\@phi(z)+b), softmax is applied here, not baked into mu itself.
-  /// `rowEnergies` is caller-provided scratch, >= batchSize floats,
+  /// `rowEnergies` is caller-provided scratch, >= batchSize elements,
   /// NOT allocated internally (this runs inside CalculateState(), which
   /// runs inside TrainStep()'s CUDA-graph-captured region; dynamic
   /// allocation there is unsafe under capture, same reasoning as the
   /// CUTLASS workspace). CPUBackend's own override ignores this
   /// parameter entirely, kept in the shared interface so callers pass
   /// the same arguments to either backend.
-  virtual float ComputeSoftmaxCrossEntropyErrorAndEnergy(float* e, const float* z, const float* mu,
-                                                         size_t batchSize, size_t nextSize,
-                                                         float* rowEnergies) noexcept = 0;
+  virtual AccumT ComputeSoftmaxCrossEntropyErrorAndEnergy(T* e, const T* z, const T* mu,
+                                                          size_t batchSize, size_t nextSize,
+                                                          AccumT* rowEnergies) noexcept = 0;
 
   /// @brief Same as ComputeSoftmaxCrossEntropyErrorAndEnergy(), without
   /// computing (or requiring `rowEnergies` for) the energy, for
   /// callers that only need e.
-  virtual void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu,
+  virtual void ComputeSoftmaxCrossEntropyError(T* e, const T* z, const T* mu,
                                                size_t batchSize, size_t nextSize) noexcept = 0;
 
   /// @brief Attempts a fused forward pass (GEMM + bias + activation in
@@ -388,8 +427,8 @@ public:
   /// @param batchSize Number of rows in zF/mu.
   /// @param size Input width (columns of zF, columns of W).
   /// @param nextSize Output width (rows of W, columns of mu, length of bias).
-  virtual bool TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
-                                   const float* bias, float* mu, int batchSize, int size,
+  virtual bool TryFusedForwardPass(ActivationType actType, const T* zF, const T* W,
+                                   const T* bias, T* mu, int batchSize, int size,
                                    int nextSize) noexcept = 0;
 
   // Convolution (im2col-based, ConvPCLayer family)
@@ -408,9 +447,9 @@ public:
   /// single-image contract. Positions outside the input (due to
   /// padding) are written as zero. @p columns is fully overwritten,
   /// not accumulated into.
-  virtual void Im2Col(const float* input, int batchSize, int channels, int height, int width,
+  virtual void Im2Col(const T* input, int batchSize, int channels, int height, int width,
                       int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
-                      float* columns) noexcept = 0;
+                      T* columns) noexcept = 0;
 
   /// @brief The adjoint of Im2Col(): scatters a whole batch of
   /// (channels*kH*kW, outH*outW) column-gradient buffers back into
@@ -419,9 +458,9 @@ public:
   /// rationale as Im2Col() above. ACCUMULATES into @p outputImage
   /// (does not zero it first), caller must zero the destination if a
   /// fresh result is wanted, matching Deep::Col2Im's own contract.
-  virtual void Col2Im(const float* columns, int batchSize, int channels, int height, int width,
+  virtual void Col2Im(const T* columns, int batchSize, int channels, int height, int width,
                       int kernelH, int kernelW, int strideH, int strideW, int padH, int padW,
-                      float* outputImage) noexcept = 0;
+                      T* outputImage) noexcept = 0;
 
   /// @brief Batched 2D max pooling, no padding. @p input is [batchSize,
   /// channels, height, width], @p output and @p argmax are [batchSize,
@@ -431,18 +470,18 @@ public:
   /// within its channel plane -- MaxPool2DBackward()'s only input besides
   /// the incoming gradient, no pre-activation buffer needed (a hard max's
   /// backward is exact from the argmax alone).
-  virtual void MaxPool2DForward(const float* input, int batchSize, int channels, int height,
+  virtual void MaxPool2DForward(const T* input, int batchSize, int channels, int height,
                                 int width, int poolH, int poolW, int strideH, int strideW,
-                                float* output, int* argmax) noexcept = 0;
+                                T* output, int* argmax) noexcept = 0;
 
   /// @brief The adjoint of MaxPool2DForward(): scatters a batch of
   /// [batchSize, channels, outH, outW] gradients back into [batchSize,
   /// channels, height, width] using the recorded @p argmax. ACCUMULATES
   /// into @p inputGrad (does not zero it first), matching
   /// Deep::MaxPool2DBackward's own contract.
-  virtual void MaxPool2DBackward(const float* outputGrad, const int* argmax, int batchSize,
+  virtual void MaxPool2DBackward(const T* outputGrad, const int* argmax, int batchSize,
                                  int channels, int height, int width, int outH, int outW,
-                                 float* inputGrad) noexcept = 0;
+                                 T* inputGrad) noexcept = 0;
 
   /// @brief Repacks a [batchSize, rows, cols] tensor (batch-major)
   /// into [rows, batchSize, cols] (row-major, batch second),
@@ -456,7 +495,7 @@ public:
   /// AddBiasBroadcast/SumRows: a future strided-batched-GEMM path
   /// could remove the need for this entirely, but this matches
   /// the existing, verified CPU repacking loops exactly for now.
-  virtual void RepackForBatchedGemm(float* dst, const float* src, size_t batchSize, size_t rows,
+  virtual void RepackForBatchedGemm(T* dst, const T* src, size_t batchSize, size_t rows,
                                     size_t cols) noexcept = 0;
 
   /// @brief Attempts a single fused convolution forward pass, skipping
@@ -474,7 +513,7 @@ public:
   /// @param W [outChannels, inChannels, kernelH, kernelW], the exact
   /// same memory every ConvPCLayer-family layer already stores its flat
   /// [outChannels, inChannels*kernelH*kernelW] weights in.
-  virtual bool TryFusedConvForward(const float* input, const float* W, float* output, float alpha,
+  virtual bool TryFusedConvForward(const T* input, const T* W, T* output, AccumT alpha,
                                    int batchSize, int inChannels, int height, int width,
                                    int outChannels, int kernelH, int kernelW, int strideH,
                                    int strideW, int padH, int padW) noexcept = 0;
@@ -485,8 +524,8 @@ public:
   /// @p W) -- unlike Col2Im()'s own accumulate contract, every known
   /// caller here Zero()s its destination immediately beforehand anyway.
   /// Same false-means-unsupported contract as TryFusedConvForward().
-  virtual bool TryFusedConvBackwardData(const float* outputGrad, const float* W, float* inputGrad,
-                                        float alpha, int batchSize, int inChannels, int height,
+  virtual bool TryFusedConvBackwardData(const T* outputGrad, const T* W, T* inputGrad,
+                                        AccumT alpha, int batchSize, int inChannels, int height,
                                         int width, int outChannels, int kernelH, int kernelW,
                                         int strideH, int strideW, int padH, int padW) noexcept = 0;
 
@@ -498,8 +537,8 @@ public:
   /// W itself) and one that wants a fresh gradient buffer (Adam: beta=0
   /// into grad_W) both work unchanged. Same false-means-unsupported
   /// contract as TryFusedConvForward().
-  virtual bool TryFusedConvBackwardFilter(const float* input, const float* outputGrad, float* dW,
-                                          float alpha, float beta, int batchSize, int inChannels,
+  virtual bool TryFusedConvBackwardFilter(const T* input, const T* outputGrad, T* dW,
+                                          AccumT alpha, AccumT beta, int batchSize, int inChannels,
                                           int height, int width, int outChannels, int kernelH,
                                           int kernelW, int strideH, int strideW, int padH,
                                           int padW) noexcept = 0;
@@ -525,9 +564,14 @@ public:
   /// (e.g. Adam's step count `t`) without a host round-trip.
   virtual void IncrementCounter(int* counter) noexcept = 0;
 
-  /// @brief Adam update for `n` parameters in place.
-  /// @param param Parameters to update.
-  /// @param grad Gradient w.r.t. param.
+  /// @brief Adam update for `n` parameters in place. `param` stays in
+  /// this backend's storage type T; the optimizer's own accumulator
+  /// state (grad/m/v/lr) is always AccumT, regardless of T -- a
+  /// sub-8-bit T's weights are never Adam-stepped directly in their own
+  /// low-precision representation, only through this wider shadow
+  /// accumulator (see FullPCLayer<T, AccumT>'s own doc comment).
+  /// @param param Parameters to update, in storage type T.
+  /// @param grad Gradient w.r.t. param, in accumulator type AccumT.
   /// @param m Adam's first-moment (momentum) buffer, persistent across calls.
   /// @param v Adam's second-moment (variance) buffer, persistent across calls.
   /// @param n Number of parameters.
@@ -536,20 +580,21 @@ public:
   /// @param lr Device-resident learning rate.
   /// @param beta1,beta2 Momentum/variance EMA decay rates.
   /// @param eps Denominator stabilizer.
-  virtual void AdamStep(float* param, const float* grad, float* m, float* v, size_t n, const int* t,
-                        const float* lr, float beta1 = 0.9f, float beta2 = 0.999f,
-                        float eps = 1e-8f) noexcept = 0;
+  virtual void AdamStep(T* param, const AccumT* grad, AccumT* m, AccumT* v, size_t n, const int* t,
+                        const AccumT* lr, AccumT beta1 = AccumT(0.9), AccumT beta2 = AccumT(0.999),
+                        AccumT eps = AccumT(1e-8)) noexcept = 0;
   /// @brief Same as AdamStep(), plus decoupled weight decay (AdamW):
   /// param -= lr * weightDecay * param, applied before the Adam step itself.
-  virtual void AdamWStep(float* param, const float* grad, float* m, float* v, size_t n,
-                         const int* t, const float* lr, float weightDecay, float beta1 = 0.9f,
-                         float beta2 = 0.999f, float eps = 1e-8f) noexcept = 0;
+  virtual void AdamWStep(T* param, const AccumT* grad, AccumT* m, AccumT* v, size_t n,
+                         const int* t, const AccumT* lr, AccumT weightDecay,
+                         AccumT beta1 = AccumT(0.9), AccumT beta2 = AccumT(0.999),
+                         AccumT eps = AccumT(1e-8)) noexcept = 0;
 
   /// @brief Which device this backend instance runs on.
   virtual DeviceType GetDeviceType() const noexcept = 0;
 
   /// @brief dst[i] = a[i] * b[i] for all i in [0, n), elementwise product.
-  virtual void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept = 0;
+  virtual void MultiplyInto(T* dst, const T* a, const T* b, size_t n) noexcept = 0;
   /// @brief Fuses an in-place "derivative from activated value" step with
   /// the elementwise multiply that immediately follows it in every known
   /// caller: dst[i] = a[i] * f'(activatedInOut[i]), then
@@ -567,7 +612,7 @@ public:
   /// ActivationDerivative(..., activated=true) already silently gives
   /// today, rather than pretending to fix a deeper design issue.
   /// @param dType A derivative-flavored ActivationType.
-  virtual void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
+  virtual void FusedActivationDerivativeMultiply(T* dst, const T* a, T* activatedInOut,
                                                  ActivationType dType, size_t n) noexcept = 0;
   /// @brief Sibling of FusedActivationDerivativeMultiply() above, for
   /// callers that hold the PRE-activation value instead of the
@@ -583,11 +628,11 @@ public:
   /// FullConvPCLayer/SimpleConvPCLayer's UpdateWeights() already had to
   /// un-fuse their own call sites over.
   /// @param dType A derivative-flavored ActivationType.
-  virtual void FusedActivationDerivativeMultiplyFromPreact(float* dst, const float* a,
-                                                            const float* preact, ActivationType dType,
+  virtual void FusedActivationDerivativeMultiplyFromPreact(T* dst, const T* a,
+                                                            const T* preact, ActivationType dType,
                                                             size_t n) noexcept = 0;
   /// @brief buf[i] = value for all i in [0, n).
-  virtual void Fill(float* buf, size_t n, float value) noexcept = 0;
+  virtual void Fill(T* buf, size_t n, AccumT value) noexcept = 0;
   /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for
   /// all c in [0,channels), s in [0,spatialSize). Per-CHANNEL broadcast
   /// across spatial positions, the transpose relationship to
@@ -599,7 +644,7 @@ public:
   /// batch item (e.g. FullConvPCLayer::DirectFeedbackUpdate()'s
   /// per-image projChannel), which still has to call this once per item
   /// with @p buf offset to that item's slice.
-  virtual void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
+  virtual void AddBiasPerChannel(T* buf, const T* bias, size_t channels,
                                  size_t spatialSize) noexcept = 0;
 
   /// @brief Convolutional bias-add for the batch-MAJOR NCHW layout:
@@ -615,7 +660,7 @@ public:
   /// elements whenever batchSize > 1 (confirmed: every gradient-check
   /// test in this codebase uses batchSize=1, which collapses the two
   /// layouts into the same thing and could never have caught this).
-  virtual void AddBiasPerChannelNCHW(float* buf, const float* bias, size_t batchSize,
+  virtual void AddBiasPerChannelNCHW(T* buf, const T* bias, size_t batchSize,
                                      size_t channels, size_t spatialSize) noexcept = 0;
 
   // Precision-weighted PC ops (DiscriminativePCLayer/ConvPCLayer family,
@@ -630,19 +675,19 @@ public:
   /// existing CPU code already applies, guarding against log(0)). `p` has
   /// length `width`, one precision per own-position, broadcast across
   /// every batch item, NOT length batchSize*width like e/z/mu.
-  virtual float ComputePrecisionWeightedErrorAndEnergy(float* e, const float* z, const float* mu,
-                                                       const float* p, size_t batchSize,
-                                                       size_t width) noexcept = 0;
+  virtual AccumT ComputePrecisionWeightedErrorAndEnergy(T* e, const T* z, const T* mu,
+                                                        const T* p, size_t batchSize,
+                                                        size_t width) noexcept = 0;
   /// @brief Same as ComputePrecisionWeightedErrorAndEnergy(), without
   /// computing (or returning) the energy, for callers that only need e.
   /// On CUDABackend this additionally means: no blocking
   /// cudaStreamSynchronize() -- the ...AndEnergy() variant must
-  /// synchronously read the energy reduction back to a host float, which
+  /// synchronously read the energy reduction back to a host value, which
   /// is illegal while a CUDA graph is being captured, exactly why this
   /// counterpart exists (mirrors ComputeError() alongside
   /// ComputeErrorAndEnergy() above).
-  virtual void ComputePrecisionWeightedError(float* e, const float* z, const float* mu,
-                                             const float* p, size_t batchSize,
+  virtual void ComputePrecisionWeightedError(T* e, const T* z, const T* mu,
+                                             const T* p, size_t batchSize,
                                              size_t width) noexcept = 0;
 
   /// @brief y[b*width+i] += alpha * x[b*width+i] * factor[i], for every b
@@ -650,8 +695,8 @@ public:
   /// per-position factor broadcast across the batch dimension. Covers
   /// dz_dt[idx] -= p[i]*e[idx] (alpha=-1, factor=p) without a temporary
   /// buffer for the elementwise product.
-  virtual void AxpyBroadcastInto(float* y, const float* x, const float* factor, size_t batchSize,
-                                 size_t width, float alpha) noexcept = 0;
+  virtual void AxpyBroadcastInto(T* y, const T* x, const T* factor, size_t batchSize,
+                                 size_t width, AccumT alpha) noexcept = 0;
 
   /// @brief dst[b*width+i] = a[b*width+i] * factor[i] * b[b*width+i], for
   /// every batch item, a three-operand elementwise product with one
@@ -659,8 +704,8 @@ public:
   /// bottom_up_cols[idx] = e_above[idx] * p_above[i] * mu[idx], the same
   /// shape needed in both UpdateState() and UpdateWeights() for every
   /// precision-weighted layer.
-  virtual void MultiplyBroadcastInto(float* dst, const float* a, const float* factor,
-                                     const float* b, size_t batchSize, size_t width) noexcept = 0;
+  virtual void MultiplyBroadcastInto(T* dst, const T* a, const T* factor,
+                                     const T* b, size_t batchSize, size_t width) noexcept = 0;
 
   /// @brief Precision update from accumulated squared error, fused:
   /// for each i in [0,width), grad = mean_{b in [0,batchSize)} of
@@ -668,7 +713,17 @@ public:
   /// [-5,5]; p[i] = exp(log_p[i]). Matches
   /// DiscriminativePCLayer::UpdatePrecision()/ConvPCLayer::UpdatePrecision()'s
   /// existing CPU formula exactly, including the clamp bounds.
-  virtual void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
-                                        size_t width, float pr) noexcept = 0;
+  virtual void UpdatePrecisionFromError(T* p, T* log_p, const T* e, size_t batchSize,
+                                        size_t width, AccumT pr) noexcept = 0;
 };
+
+/// @brief Non-templated alias preserving every existing caller's
+/// behavior exactly: `IComputeBackend` is `IComputeBackendT<float,
+/// float>`, bit-for-bit identical to this interface before it was
+/// templated. CPUBackend/CUDABackend still implement this exact
+/// spelling; new templated code (FullPCLayer<T>/FullPCNetwork<T>) uses
+/// IComputeBackendT<T, AccumT> directly, implemented by the new
+/// CPUBackendT<T, AccumT>/CUDABackendT<T, AccumT>.
+using IComputeBackend = IComputeBackendT<float, float>;
+
 } // namespace Deep

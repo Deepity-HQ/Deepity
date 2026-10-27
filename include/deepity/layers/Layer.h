@@ -28,6 +28,18 @@ struct TensorDescriptor
   float* data;               ///< Pointer to the tensor's first element.
   std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
 };
+
+/// @brief Templated counterpart to TensorDescriptor, for the new
+/// templated FullPCLayer<T, AccumT>/FullPCNetwork<T, AccumT>'s own
+/// GetStateDict() (a plain method there, not a Layer override -- see
+/// FullPCLayer<T, AccumT>'s own doc comment on why it no longer derives
+/// from Layer).
+template <typename T>
+struct TensorDescriptorT
+{
+  T* data;                   ///< Pointer to the tensor's first element.
+  std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
+};
 /// @brief A deepity layer virtual class.
 class Layer
 {

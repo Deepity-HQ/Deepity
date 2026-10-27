@@ -36,43 +36,53 @@ namespace Deep
 {
 /// @brief A 64-byte-aligned bump-pointer allocator over a single
 /// contiguous block of device memory, obtained via a supplied
-/// IComputeBackend (expected to be a CUDABackend in practice, though
-/// this class itself doesn't hard-require that specific type).
-class DeviceMemoryArena
+/// IComputeBackendT<T, AccumT> (expected to be a CUDABackend/
+/// CUDABackendT in practice, though this class itself doesn't
+/// hard-require that specific type).
+///
+/// @tparam T Element type this arena allocates, matching the backend's
+/// own T. `DeviceMemoryArena` (see the alias below) is
+/// `DeviceMemoryArenaT<float, float>`, bit-for-bit identical to this
+/// class before it was templated.
+/// @tparam AccumT Matches the backend's own AccumT (only used here to
+/// name the exact IComputeBackendT<T, AccumT> this arena's backend
+/// pointer must be); defaults to T, as in IComputeBackendT itself.
+template <typename T, typename AccumT = T>
+class DeviceMemoryArenaT
 {
 private:
   /// @brief Backend used for the underlying allocation and its
   /// eventual release. Non-owning, must outlive this arena.
-  IComputeBackend* backend;
+  IComputeBackendT<T, AccumT>* backend;
   /// @brief Base address of the underlying backend-allocated buffer.
-  float* base_ptr;
+  T* base_ptr;
   /// @brief Total capacity of the arena, in bytes, rounded up to a
   /// multiple of 64.
   size_t capacity_bytes;
   /// @brief Current allocation offset from base_ptr, in bytes.
-  /// Advances monotonically with each AllocateFloats() call and is
+  /// Advances monotonically with each Allocate() call and is
   /// never reset or reclaimed.
   size_t offset_bytes;
 
 public:
   /// @brief Allocates a single 64-byte-aligned device buffer large
-  /// enough to hold `total_floats` floats, rounded up to the
+  /// enough to hold `total_elements` elements of T, rounded up to the
   /// nearest 64-byte boundary.
   /// @param backend The backend to allocate from (and later free
-  /// through). Must outlive this DeviceMemoryArena. Passing a
+  /// through). Must outlive this DeviceMemoryArenaT. Passing a
   /// CPUBackend here would allocate host memory under a class
   /// named "device", that's a caller contract, not something
   /// this class checks at runtime, mirroring Tensor's own
   /// backend/device pairing contract.
-  /// @param total_floats Total number of floats this arena can
-  /// hand out across all future AllocateFloats() calls combined.
+  /// @param total_elements Total number of elements this arena can
+  /// hand out across all future Allocate() calls combined.
   /// @throws std::bad_alloc if the underlying allocation fails.
-  DeviceMemoryArena(IComputeBackend* backend, size_t total_floats)
+  DeviceMemoryArenaT(IComputeBackendT<T, AccumT>* backend, size_t total_elements)
       : backend(backend)
   {
-    capacity_bytes = (total_floats * sizeof(float) + 63) & ~(size_t)63;
+    capacity_bytes = (total_elements * sizeof(T) + 63) & ~(size_t)63;
 
-    base_ptr = backend->Allocate(capacity_bytes / sizeof(float));
+    base_ptr = backend->Allocate(capacity_bytes / sizeof(T));
     if (!base_ptr)
     {
       throw std::bad_alloc();
@@ -82,7 +92,7 @@ public:
 
   /// @brief Frees the underlying device buffer via the same
   /// backend it was allocated from.
-  ~DeviceMemoryArena()
+  ~DeviceMemoryArenaT()
   {
     if (base_ptr)
     {
@@ -92,37 +102,46 @@ public:
 
   // Delete copy/move constructors to prevent double-free corruption.
 
-  /// @brief Deleted: DeviceMemoryArena owns a single device
+  /// @brief Deleted: DeviceMemoryArenaT owns a single device
   /// allocation, so copying would risk a double-free.
-  DeviceMemoryArena(const DeviceMemoryArena&) = delete;
-  /// @brief Deleted: DeviceMemoryArena owns a single device
+  DeviceMemoryArenaT(const DeviceMemoryArenaT&) = delete;
+  /// @brief Deleted: DeviceMemoryArenaT owns a single device
   /// allocation, so copy-assignment would risk a double-free.
-  DeviceMemoryArena& operator=(const DeviceMemoryArena&) = delete;
+  DeviceMemoryArenaT& operator=(const DeviceMemoryArenaT&) = delete;
 
-  /// @brief Allocates a 64-byte aligned chunk of floats from the
+  /// @brief Allocates a 64-byte aligned chunk of elements from the
   /// arena.
-  /// @param num_floats Number of floats to allocate from the
+  /// @param num_elements Number of elements to allocate from the
   /// arena. The actual reservation is rounded up to the nearest
-  /// 64-byte boundary, matching MemoryArena's own guarantee.
+  /// 64-byte boundary, matching MemoryArenaT's own guarantee.
   /// @return Pointer to the start of the allocated chunk, valid
-  /// for the lifetime of this DeviceMemoryArena. 64-byte aligned.
+  /// for the lifetime of this DeviceMemoryArenaT. 64-byte aligned.
   /// @throws std::runtime_error if the requested allocation would
   /// exceed the arena's total capacity.
   /// @warning Individual chunks are never freed independently; the
   /// entire arena is released at once in the destructor.
-  float* AllocateFloats(size_t num_floats)
+  T* Allocate(size_t num_elements)
   {
-    size_t allocation_size = (num_floats * sizeof(float) + 63) & ~(size_t)63;
+    size_t allocation_size = (num_elements * sizeof(T) + 63) & ~(size_t)63;
 
     if (offset_bytes + allocation_size > capacity_bytes)
     {
-      throw std::runtime_error("Fatal: DeviceMemoryArena capacity exceeded during allocation.");
+      throw std::runtime_error("Fatal: DeviceMemoryArenaT capacity exceeded during allocation.");
     }
 
-    float* chunk = reinterpret_cast<float*>(reinterpret_cast<char*>(base_ptr) + offset_bytes);
+    T* chunk = reinterpret_cast<T*>(reinterpret_cast<char*>(base_ptr) + offset_bytes);
 
     offset_bytes += allocation_size;
     return chunk;
+  }
+
+  /// @brief Back-compat alias for Allocate(), kept for every existing
+  /// (non-templated) caller written against the old AllocateFloats()
+  /// name. Only meaningful when T=float; new templated code should
+  /// call Allocate() directly.
+  T* AllocateFloats(size_t num_elements)
+  {
+    return Allocate(num_elements);
   }
 
   /// @brief Returns how many bytes have been allocated from the
@@ -137,5 +156,10 @@ public:
     return capacity_bytes;
   }
 };
+
+/// @brief Non-templated alias preserving every existing caller's
+/// behavior exactly: `DeviceMemoryArena` is `DeviceMemoryArenaT<float,
+/// float>`, bit-for-bit identical to this class before it was templated.
+using DeviceMemoryArena = DeviceMemoryArenaT<float, float>;
 } // namespace Deep
 #endif
