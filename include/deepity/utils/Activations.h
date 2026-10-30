@@ -163,4 +163,84 @@ static inline float ActivationDerivativeFromActivatedScalar(ActivationType dType
     return 1.0f;
   }
 }
+
+/// @brief Generic (non-SIMD) counterpart to ActivationScalar(), over any
+/// floating-point T -- std::tanh/std::exp instead of Sleef's float-only
+/// intrinsics, so this is genuinely correct (not truncated through
+/// float) for T=double. Used only by CPUBackendT<T, AccumT>'s non-float
+/// elementwise fallback path (see CPUBackendT.h); the original
+/// float-only ActivationScalar() above is untouched and still what
+/// CPUBackend's existing Highway-dispatched paths use for T=float.
+template <typename T>
+static inline T ActivationScalarT(ActivationType type, T z) noexcept
+{
+  switch (type)
+  {
+  case ActivationType::RELU:
+    return z > T(0) ? z : T(0);
+  case ActivationType::GELU:
+  {
+    constexpr T c1 = T(0.7978845608028654), c2 = T(0.044715);
+    T zsq = z * z;
+    T inner = c1 * z + (c2 * c1) * zsq * z;
+    T t = std::tanh(inner);
+    return T(0.5) * z * (T(1) + t);
+  }
+  case ActivationType::SIGMOID:
+    return T(1) / (T(1) + std::exp(-z));
+  case ActivationType::eSIGMOID:
+    return T(0.5) + T(0.5) * (z / (T(1) + std::fabs(z)));
+  case ActivationType::TANH:
+    return std::tanh(z);
+  case ActivationType::HARD_TANH:
+    return std::clamp(z, T(-1), T(1));
+  case ActivationType::LINEAR:
+  case ActivationType::NONE:
+  default:
+    return z;
+  }
+}
+
+/// @brief Generic (non-SIMD) counterpart to ActivationDerivativeScalar(),
+/// see ActivationScalarT()'s own doc comment for why this exists
+/// alongside (not instead of) the original float-only version.
+template <typename T>
+static inline T ActivationDerivativeScalarT(ActivationType dType, T z) noexcept
+{
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return (z > T(0)) ? T(1) : T(0);
+  case ActivationType::dGELU:
+  {
+    constexpr T c1 = T(0.7978845608028654), c2 = T(0.044715);
+    T zsq = z * z;
+    T inner = c1 * z + (c2 * c1) * zsq * z;
+    T t = std::tanh(inner);
+    T gprime = c1 + (T(3) * c2 * c1) * zsq;
+    return T(0.5) * (T(1) + t) + T(0.5) * z * gprime * (T(1) - t * t);
+  }
+  case ActivationType::dSIGMOID:
+  {
+    T sig = T(1) / (T(1) + std::exp(-z));
+    return sig * (T(1) - sig);
+  }
+  case ActivationType::d_eSIGMOID:
+  {
+    T a = T(1) + std::fabs(z);
+    return T(0.5) / (a * a);
+  }
+  case ActivationType::dTANH:
+  {
+    T t = std::tanh(z);
+    return T(1) - t * t;
+  }
+  case ActivationType::dHARD_TANH:
+    return (z > T(-1) && z < T(1)) ? T(1) : T(0);
+  case ActivationType::dLINEAR:
+  case ActivationType::NONE:
+  default:
+    return T(1);
+  }
+}
 } // namespace Deep

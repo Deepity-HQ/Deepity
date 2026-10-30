@@ -51,4 +51,33 @@ inline void RandomizeWithDistribution(IComputeBackend* backend, float* buf, size
   else
     backend->RandomizeNormal(buf, n, fallbackMean, fallbackStddev, seed);
 }
+
+/// @brief Templated counterpart to RandomizeWithDistribution(), for
+/// FullPCLayer<T, AccumT>: the "name(a,b)" literals are parsed as plain
+/// floats (parameter strings aren't expected to carry double-precision
+/// detail), then widened to AccumT for the RandomizeNormal/
+/// RandomizeUniform call, matching IComputeBackendT<T, AccumT>'s own
+/// AccumT-typed distribution parameters.
+template <typename T, typename AccumT>
+inline void RandomizeWithDistributionT(IComputeBackendT<T, AccumT>* backend, T* buf, size_t n,
+                                       const char* distribution, uint32_t seed,
+                                       AccumT fallbackMean, AccumT fallbackStddev) noexcept
+{
+  char name[16] = {0};
+  float a = 0.0f, b = 1.0f;
+
+  if (!distribution || DEEPITY_SCANF_DISTRIBUTION(distribution, name, a, b) != 3)
+  {
+    std::memcpy(name, "normal", sizeof("normal"));
+    backend->RandomizeNormal(buf, n, fallbackMean, fallbackStddev, seed);
+    return;
+  }
+
+  if (std::strcmp(name, "normal") == 0)
+    backend->RandomizeNormal(buf, n, AccumT(a), AccumT(b), seed);
+  else if (std::strcmp(name, "uniform") == 0)
+    backend->RandomizeUniform(buf, n, AccumT(a), AccumT(b), seed);
+  else
+    backend->RandomizeNormal(buf, n, fallbackMean, fallbackStddev, seed);
+}
 } // namespace Deep

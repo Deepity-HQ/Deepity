@@ -60,7 +60,7 @@ public:
   ///        on. Defaults to DEVICE_CPU, preserving existing
   ///        behavior exactly for anyone not explicitly requesting
   ///        DEVICE_GPU.
-  explicit DirectKPPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit DirectKPPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
   /// @brief Default destructor.
   ~DirectKPPCNetwork() = default;
 

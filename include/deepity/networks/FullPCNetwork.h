@@ -28,7 +28,7 @@ public:
   /// then Compile() before use.
   /// @param batchSize Fixed batch size for every layer.
   /// @param device Which device this network's layers run on.
-  explicit FullPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit FullPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
   ~FullPCNetwork() = default;
 
   FullPCNetwork(const FullPCNetwork&) = delete;

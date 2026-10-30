@@ -11,6 +11,7 @@
 
 #include "LayerBindings.h"
 #include "NetworkBindings.h"
+#include "QuantFormatBindings.h"
 #include "UtilityBindings.h"
 
 NB_MODULE(deepity, m)
@@ -20,4 +21,5 @@ NB_MODULE(deepity, m)
   bind_layers(m);
   bind_networks(m);
   bind_utilities(m);
+  bind_quant_formats(m);
 }

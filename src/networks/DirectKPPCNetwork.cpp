@@ -6,7 +6,7 @@
 
 namespace Deep
 {
-DirectKPPCNetwork::DirectKPPCNetwork(int batchSize, DeviceType device) noexcept
+DirectKPPCNetwork::DirectKPPCNetwork(int batchSize, DeviceType device)
     : device(device)
     , batchSize(batchSize)
 {

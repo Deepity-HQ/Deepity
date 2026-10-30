@@ -22,7 +22,7 @@ namespace Deep
 class FullConvPCNetwork
 {
 public:
-  explicit FullConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit FullConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
   ~FullConvPCNetwork() = default;
 
   FullConvPCNetwork(const FullConvPCNetwork&) = delete;

@@ -73,10 +73,36 @@ public:
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::MatMulAccum
+  /// CPUBackend's T and AccumT are always float, so this is MatMul()
+  /// itself -- added only because IComputeBackend (an alias for
+  /// IComputeBackendT<float, float>) now declares it for the templated
+  /// FullPCLayerT<T, AccumT> path's sake; no non-templated layer calls
+  /// this overload.
+  void MatMulAccum(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
+                   int lda, const float* B, int ldb, float beta, float* C,
+                   int ldc) noexcept override
+  {
+    MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  }
+  /// @copydoc Deep::IComputeBackendT::MatMulAccumMixed
+  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
+  void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, float alpha,
+                        const float* A, int lda, const float* B, int ldb, float beta, float* C,
+                        int ldc) noexcept override
+  {
+    MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  }
   /// @copydoc Deep::IComputeBackend::SetAllowTF32
   void SetAllowTF32(bool) noexcept override {}
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::SumRowsAccum
+  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
+  void SumRowsAccum(float* dst, const float* src, size_t batchSize, size_t width) noexcept override
+  {
+    SumRows(dst, src, batchSize, width);
+  }
   /// @copydoc Deep::IComputeBackend::Sum
   float Sum(const float* buf, size_t n) noexcept override;
 
@@ -84,6 +110,17 @@ public:
   void Scale(float* buf, size_t n, float alpha) noexcept override;
   /// @copydoc Deep::IComputeBackend::AxpyInto
   void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::AxpyIntoAccum
+  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
+  void AxpyIntoAccum(float* y, const float* x, size_t n, float alpha) noexcept override
+  {
+    AxpyInto(y, x, n, alpha);
+  }
+  /// @copydoc Deep::IComputeBackendT::AxpyIntoFromAccum
+  void AxpyIntoFromAccum(float* y, const float* x, size_t n, float alpha) noexcept override
+  {
+    AxpyInto(y, x, n, alpha);
+  }
   /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
@@ -121,6 +158,13 @@ public:
   /// @copydoc Deep::IComputeBackend::ActivationDerivativeInto
   void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                 size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::ActivationDerivativeIntoAccum
+  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
+  void ActivationDerivativeIntoAccum(ActivationType type, float* dst, const float* src,
+                                     size_t n) noexcept override
+  {
+    ActivationDerivativeInto(type, dst, src, n);
+  }
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
   void FusedStateUpdateMomentum(float* z, float* v, const float* feedback, ActivationType dType,
@@ -218,6 +262,12 @@ public:
 
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::MultiplyIntoAccum
+  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
+  void MultiplyIntoAccum(float* dst, const float* a, const float* b, size_t n) noexcept override
+  {
+    MultiplyInto(dst, a, b, n);
+  }
   /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
   void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                          ActivationType dType, size_t n) noexcept override;

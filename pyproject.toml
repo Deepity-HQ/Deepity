@@ -38,9 +38,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Ra4ster/Deepity"
-Repository = "https://github.com/Ra4ster/Deepity"
-Issues = "https://github.com/Ra4ster/Deepity/issues"
+Homepage = "https://github.com/Deepity-HQ/Deepity"
+Repository = "https://github.com/Deepity-HQ/Deepity"
+Issues = "https://github.com/Deepity-HQ/Deepity/issues"
 
 # Dev-only deps; install with `uv sync --group dev --no-install-project`
 # (use build.py to actually build the C++ extension, see README.md).

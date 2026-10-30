@@ -15,7 +15,10 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
+
+#include <deepity/utils/QuantFormat.h>
 
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/Optimize.h>
@@ -25,6 +28,7 @@
 #include <deepity/layers/DiscriminativePCLayer.h>
 #include <deepity/layers/FullConvPCLayer.h>
 #include <deepity/layers/FullPCLayer.h>
+#include <deepity/layers/FullPCLayerT.h>
 #include <deepity/layers/GaussSeidelPCLayer.h>
 #include <deepity/layers/Layer.h>
 #include <deepity/layers/SimpleConvPCLayer.h>
@@ -176,6 +180,231 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
                        return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
                    })
+      .def_prop_ro("batch_size", &LayerT::GetBatchSize)
+      .def_prop_ro("input_size", &LayerT::GetInputSize)
+      .def_prop_ro("output_size", &LayerT::GetOutputSize)
+      .def("__repr__",
+           [className](const LayerT& self)
+           {
+             return "<" + std::string(className) + " in=" + std::to_string(self.GetInputSize()) +
+                    ", out=" + std::to_string(self.GetOutputSize()) +
+                    ", batch=" + std::to_string(self.GetBatchSize()) + ">";
+           });
+}
+
+// Generic (T-templated) counterparts to ClampStateHelper/SetWeightsHelper/
+// SetBiasesHelper above, for BindFullPCLayerT<T, AccumT> -- those three
+// are hardcoded to FloatArray since every OTHER bound layer is float-only;
+// FullPCLayerT<T, AccumT> is the one type binding once per T.
+//
+// The Python-facing wire type here is AccumT, not T: for float/float and
+// double/double this is T itself (no behavior change), and for every
+// quantized T (Fp4E2M1Value, the posits, hwy::float16_t) Python always
+// speaks AccumT (float) -- quantization happens transparently at this
+// boundary via T's own explicit converting constructor, which
+// std::vector's range constructor below invokes per element
+// (direct-initialization, so it's allowed even though that constructor
+// is `explicit`).
+template <typename LayerT, typename T, typename AccumT>
+void ClampStateHelperT(LayerT& self, TArray<AccumT> input)
+{
+  std::vector<T> values(input.data(), input.data() + input.size());
+  self.ClampState(values);
+}
+
+template <typename LayerT, typename T, typename AccumT>
+void SetWeightsHelperT(LayerT& self, TArray<AccumT> values, size_t expectedCount)
+{
+  if ((size_t)values.size() != expectedCount)
+    throw std::invalid_argument("set_weights: expected " + std::to_string(expectedCount) +
+                                " values, got " + std::to_string(values.size()));
+  std::vector<T> encoded(values.data(), values.data() + values.size());
+  self.GetBackend()->CopyFromHost(self.GetWeights(), encoded.data(), expectedCount);
+}
+
+template <typename LayerT, typename T, typename AccumT>
+void SetBiasesHelperT(LayerT& self, TArray<AccumT> values, size_t expectedCount)
+{
+  if ((size_t)values.size() != expectedCount)
+    throw std::invalid_argument("set_biases: expected " + std::to_string(expectedCount) +
+                                " values, got " + std::to_string(values.size()));
+  std::vector<T> encoded(values.data(), values.data() + values.size());
+  self.GetBackend()->CopyFromHost(self.GetBiases(), encoded.data(), expectedCount);
+}
+
+/// @brief Templated counterpart to BindCommonPCLayer()+FullPCLayer's own
+/// extra .def() calls combined, for FullPCLayerT<T, AccumT>. Not built
+/// on top of BindCommonPCLayer() itself: that helper's signature requires
+/// `nb::class_<LayerT, Deep::Layer>&`, and FullPCLayerT<T, AccumT>
+/// deliberately doesn't derive from Deep::Layer (see FullPCLayerT's own
+/// class doc comment) -- so this takes a plain `nb::class_<LayerT>&`
+/// instead. Bound once per supported (T, AccumT) pair from bind_layers()
+/// below, each producing its own distinct Python class
+/// ("FullPCLayer_f32", "FullPCLayer_f64", ...).
+template <typename T, typename AccumT>
+void BindFullPCLayerT(nb::module_& m, const char* className)
+{
+  using LayerT = Deep::FullPCLayerT<T, AccumT>;
+
+  nb::class_<LayerT>(
+      m,
+      className,
+      "PC layer combining muPC scaling, optional residual connections, and DKP direct "
+      "feedback, templated over its storage type -- see FullPCLayer for the float32 default.")
+      .def(
+          "__init__",
+          [](LayerT* self, size_t size, size_t next_size, size_t terminal_size, size_t batch_size,
+             AccumT learning_rate, AccumT inference_rate, AccumT feedback_rate, AccumT lmbda,
+             const std::string& activation, const std::string& activation_deriv)
+          {
+            new (self) LayerT(size, next_size, terminal_size, batch_size, learning_rate,
+                             inference_rate, feedback_rate, lmbda, resolveActEnum(activation),
+                             resolveActEnum(activation_deriv));
+          },
+          nb::arg("size"), nb::arg("next_size"), nb::arg("terminal_size"),
+          nb::arg("batch_size") = 1, nb::arg("learning_rate") = AccumT(1e-6),
+          nb::arg("inference_rate") = AccumT(0.01), nb::arg("feedback_rate") = AccumT(1e-4),
+          nb::arg("lmbda") = AccumT(1e-2), nb::arg("activation") = "relu",
+          nb::arg("activation_deriv") = "drelu")
+      .def("calculate_state", static_cast<AccumT (LayerT::*)() noexcept>(&LayerT::CalculateState))
+      .def("update_state", &LayerT::UpdateState)
+      .def("update_weights", &LayerT::UpdateWeights)
+      .def("clamp_state", &ClampStateHelperT<LayerT, T, AccumT>, nb::arg("input"))
+      .def("unclamp_state", &LayerT::UnclampState)
+      .def("randomize_weights", &RandomizeWeightsHelper<LayerT>, nb::arg("seed") = nb::none(),
+           nb::arg("distribution") = "normal")
+      .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference)
+      .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference)
+      .def("set_terminal_layer", &LayerT::SetTerminalLayer, nb::arg("layer"))
+      .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
+      .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"))
+      .def("set_feedback_rate", &LayerT::SetFeedbackRate, nb::arg("fl"))
+      .def("set_lambda", &LayerT::SetLambda, nb::arg("l"))
+      .def("direct_feedback_update", &LayerT::DirectFeedbackUpdate,
+           "Perturbs W using the layer above's Psi and the terminal layer's error, "
+           "the DFA phase, run once per batch before settling begins.")
+      .def(
+          "set_optimizer",
+          [](LayerT& self, const std::string& opt)
+          {
+            if (opt == "ADAM")
+              self.SetOptimizer(Deep::OptimizerType::ADAM);
+            else if (opt == "ADAMW")
+              self.SetOptimizer(Deep::OptimizerType::ADAMW);
+            else
+              self.SetOptimizer(Deep::OptimizerType::SGD);
+          },
+          nb::arg("optimizer"))
+      .def(
+          "set_psi_optimizer",
+          [](LayerT& self, const std::string& opt)
+          {
+            if (opt == "ADAM")
+              self.SetPsiOptimizer(Deep::OptimizerType::ADAM);
+            else if (opt == "ADAMW")
+              self.SetPsiOptimizer(Deep::OptimizerType::ADAMW);
+            else
+              self.SetPsiOptimizer(Deep::OptimizerType::SGD);
+          },
+          nb::arg("optimizer"))
+      .def("set_mu_pc_scale", &LayerT::SetMuPCScale, nb::arg("a"),
+           "Set this layer's muPC forward-scaling factor directly. Usually set by "
+           "FullPCNetworkT::Compile() instead.")
+      .def("set_residual", &LayerT::SetResidual, nb::arg("enabled"),
+           "Enable/disable this layer's residual connection directly. Same caveat as "
+           "set_mu_pc_scale.")
+      .def(
+          "set_weights",
+          [](LayerT& self, TArray<AccumT> values)
+          {
+            SetWeightsHelperT<LayerT, T, AccumT>(
+                self, values, (size_t)self.GetOutputSize() * (size_t)self.GetInputSize());
+          },
+          nb::arg("values"))
+      .def(
+          "set_biases",
+          [](LayerT& self, TArray<AccumT> values)
+          { SetBiasesHelperT<LayerT, T, AccumT>(self, values, (size_t)self.GetOutputSize()); },
+          nb::arg("values"))
+      .def_prop_ro("beliefs",
+                   [](LayerT& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()};
+                     if constexpr (!std::is_same_v<T, AccumT>)
+                     {
+                       return nb::cast(DecodeCopyToNewArray<T, AccumT>(self.GetBeliefs(), shape));
+                     }
+                     else
+                     {
+                       if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                         return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
+                       return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
+                     }
+                   })
+      .def_prop_ro("errors",
+                   [](LayerT& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetBatchSize(), (size_t)self.GetInputSize()};
+                     if constexpr (!std::is_same_v<T, AccumT>)
+                     {
+                       return nb::cast(DecodeCopyToNewArray<T, AccumT>(self.GetErrors(), shape));
+                     }
+                     else
+                     {
+                       if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                         return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
+                       return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
+                     }
+                   })
+      .def_prop_ro("weights",
+                   [](LayerT& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutputSize(), (size_t)self.GetInputSize()};
+                     if constexpr (!std::is_same_v<T, AccumT>)
+                     {
+                       return nb::cast(DecodeCopyToNewArray<T, AccumT>(self.GetWeights(), shape));
+                     }
+                     else
+                     {
+                       if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                         return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
+                       return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
+                     }
+                   })
+      .def_prop_ro("biases",
+                   [](LayerT& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetOutputSize()};
+                     if constexpr (!std::is_same_v<T, AccumT>)
+                     {
+                       return nb::cast(DecodeCopyToNewArray<T, AccumT>(self.GetBiases(), shape));
+                     }
+                     else
+                     {
+                       if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                         return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
+                       return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
+                     }
+                   })
+      .def_prop_ro("psi",
+                   [](LayerT& self) -> nb::object
+                   {
+                     auto shape = {(size_t)self.GetInputSize(), (size_t)self.GetTerminalSize()};
+                     if constexpr (!std::is_same_v<T, AccumT>)
+                     {
+                       return nb::cast(
+                           DecodeCopyToNewArray<T, AccumT>(self.GetDirectFeedbackWeights(), shape));
+                     }
+                     else
+                     {
+                       if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
+                         return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
+                       return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
+                     }
+                   })
+      .def_prop_ro("mu_pc_scale", &LayerT::GetMuPCScale)
+      .def_prop_ro("residual", &LayerT::GetResidual)
+      .def_prop_ro("terminal_size", &LayerT::GetTerminalSize)
       .def_prop_ro("batch_size", &LayerT::GetBatchSize)
       .def_prop_ro("input_size", &LayerT::GetInputSize)
       .def_prop_ro("output_size", &LayerT::GetOutputSize)
@@ -1014,4 +1243,8 @@ void bind_layers(nb::module_& m)
                     " in=" + std::to_string(self.GetInHeight()) + "x" +
                     std::to_string(self.GetInWidth()) + ">";
            });
+
+  BindFullPCLayerT<float, float>(m, "FullPCLayer_f32");
+  BindFullPCLayerT<double, double>(m, "FullPCLayer_f64");
+  BindFullPCLayerT<Deep::Fp4E2M1Value, float>(m, "FullPCLayer_fp4_e2m1");
 }

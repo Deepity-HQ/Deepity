@@ -41,7 +41,7 @@ public:
   ///        on. Defaults to DEVICE_CPU, preserving existing
   ///        behavior exactly for anyone not explicitly requesting
   ///        DEVICE_GPU.
-  explicit SimplePCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit SimplePCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
 
   SimplePCNetwork(const SimplePCNetwork&) = delete;
   SimplePCNetwork& operator=(const SimplePCNetwork&) = delete;

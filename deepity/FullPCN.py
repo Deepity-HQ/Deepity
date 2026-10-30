@@ -10,7 +10,19 @@ from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
 
-class FullPCN(dy.FullPCNetwork):
+_IMPL_BY_DTYPE = {
+    "float32": (dy.FullPCNetwork_f32, np.float32),
+    "float64": (dy.FullPCNetwork_f64, np.float64),
+    # Quantized storage types: Python always speaks float32 here (the
+    # bound layer's wire type is its AccumT, not its lossy storage type
+    # T -- see BindFullPCLayerT/BindFullPCNetworkT's own comments in
+    # bindings/LayerBindings.cpp). The 4-bit encode/decode round trip
+    # happens transparently inside C++ on every array in/out.
+    "fp4_e2m1": (dy.FullPCNetwork_fp4_e2m1, np.float32),
+}
+
+
+class FullPCN:
     """
     The "everything" Predictive Coding Network: every PC mechanism this
     library implements, bolted onto one class as independently toggleable
@@ -63,6 +75,16 @@ class FullPCN(dy.FullPCNetwork):
     decisions: set them via configure(), not afterwards. The other four
     extras are read fresh every settling step and can be flipped at any
     point via their own set_use_*() method.
+
+    dtype selects which templated C++ backend (FullPCNetworkT<T>) this
+    instance wraps: "float32" (the default, every existing caller's
+    behavior unchanged) or "float64" for genuine double precision.
+    FullPCN itself no longer subclasses the bound C++ network type --
+    there's no longer one single bound type to subclass once there's a
+    distinct one per dtype -- so it holds the chosen instance as
+    self._impl and forwards to it, either through an explicit wrapper
+    method below or (for anything not explicitly wrapped) via
+    __getattr__.
     """
 
     def __init__(
@@ -70,6 +92,7 @@ class FullPCN(dy.FullPCNetwork):
         *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
         device: str = "cpu",
+        dtype: str = "float32",
     ) -> None:
         resolved_batch_size = (
             dy.auto_batch_size()
@@ -77,8 +100,15 @@ class FullPCN(dy.FullPCNetwork):
             else batch_size
         )
 
+        if dtype not in _IMPL_BY_DTYPE:
+            raise ValueError(
+                f"Unsupported dtype {dtype!r}, expected one of {sorted(_IMPL_BY_DTYPE)}."
+            )
+
         self.architecture = architecture
         self.device = device
+        self.dtype = dtype
+        self._np_dtype = _IMPL_BY_DTYPE[dtype][1]
 
         self._configured = False
         self._learning_rate: float = 1e-6
@@ -90,7 +120,15 @@ class FullPCN(dy.FullPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(resolved_batch_size, device)
+        impl_cls = _IMPL_BY_DTYPE[dtype][0]
+        self._impl = impl_cls(resolved_batch_size, device)
+
+    def __getattr__(self, name: str):
+        # Reached only for attributes not found on FullPCN itself (every
+        # explicitly wrapped method/property above takes precedence) --
+        # forwards anything else (e.g. batch_size) straight to the
+        # underlying bound network.
+        return getattr(self._impl, name)
 
     def _validate_architecture(self) -> None:
         if not self.architecture:
@@ -147,7 +185,7 @@ class FullPCN(dy.FullPCNetwork):
 
             activation_deriv = "d" + activation
 
-            super().add_layer(
+            self._impl.add_layer(
                 layer.in_n,
                 layer.out_n,
                 terminal_size,
@@ -159,7 +197,7 @@ class FullPCN(dy.FullPCNetwork):
                 activation_deriv=activation_deriv,
             )
 
-        super().add_layer(
+        self._impl.add_layer(
             terminal_size,
             0,
             terminal_size,
@@ -250,15 +288,15 @@ class FullPCN(dy.FullPCNetwork):
         # Calling super() directly (not self.set_use_*()): those wrappers
         # guard on _require_configured(), which isn't true yet this early
         # in configure() itself.
-        super().set_use_mu_pc_scaling(use_mu_pc_scaling)
-        super().set_use_residual_connections(use_residual_connections)
-        super().set_use_ipc(use_ipc)
-        super().set_use_epc(use_epc)
-        super().set_use_momentum(use_momentum, momentum_beta)
-        super().set_use_cross_entropy(use_cross_entropy)
+        self._impl.set_use_mu_pc_scaling(use_mu_pc_scaling)
+        self._impl.set_use_residual_connections(use_residual_connections)
+        self._impl.set_use_ipc(use_ipc)
+        self._impl.set_use_epc(use_epc)
+        self._impl.set_use_momentum(use_momentum, momentum_beta)
+        self._impl.set_use_cross_entropy(use_cross_entropy)
 
-        super().set_optimizer(optimizer)
-        super().set_psi_optimizer(psi_optimizer)
+        self._impl.set_optimizer(optimizer)
+        self._impl.set_psi_optimizer(psi_optimizer)
 
         self.compile()
         self.randomize_weights(seed=seed, dist=dist)
@@ -281,7 +319,7 @@ class FullPCN(dy.FullPCNetwork):
         before a manual compile() call); calling this after the network
         is already configured has no effect.
         """
-        super().set_use_mu_pc_scaling(enabled)
+        self._impl.set_use_mu_pc_scaling(enabled)
 
     def set_use_residual_connections(self, enabled: bool) -> None:
         """
@@ -289,22 +327,22 @@ class FullPCN(dy.FullPCNetwork):
         takes effect if set before compile(), same caveat as
         set_use_mu_pc_scaling().
         """
-        super().set_use_residual_connections(enabled)
+        self._impl.set_use_residual_connections(enabled)
 
     def set_use_ipc(self, enabled: bool) -> None:
         """Enable/disable incremental PC. Safe to call at any time."""
         self._require_configured()
-        super().set_use_ipc(enabled)
+        self._impl.set_use_ipc(enabled)
 
     def set_use_epc(self, enabled: bool) -> None:
         """Enable/disable ePC settling. Safe to call at any time."""
         self._require_configured()
-        super().set_use_epc(enabled)
+        self._impl.set_use_epc(enabled)
 
     def set_use_momentum(self, enabled: bool, beta: float = 0.9) -> None:
         """Enable/disable momentum settling. Safe to call at any time."""
         self._require_configured()
-        super().set_use_momentum(enabled, beta)
+        self._impl.set_use_momentum(enabled, beta)
 
     def set_use_cross_entropy(self, enabled: bool) -> None:
         """
@@ -312,26 +350,26 @@ class FullPCN(dy.FullPCNetwork):
         layer. Safe to call at any time.
         """
         self._require_configured()
-        super().set_use_cross_entropy(enabled)
+        self._impl.set_use_cross_entropy(enabled)
 
     def set_optimizer(self, optimizer: str) -> None:
         """Set the optimizer used for the forward weights W."""
-        super().set_optimizer(optimizer)
+        self._impl.set_optimizer(optimizer)
         self._optimizer = optimizer
 
     def set_psi_optimizer(self, optimizer: str) -> None:
         """Set the optimizer used for the feedback weights Psi."""
-        super().set_psi_optimizer(optimizer)
+        self._impl.set_psi_optimizer(optimizer)
         self._psi_optimizer = optimizer
 
     def set_learning_rate(self, learning_rate: float) -> None:
         """Set the learning rate for the forward weights W."""
-        super().set_learning_rate(learning_rate)
+        self._impl.set_learning_rate(learning_rate)
         self._learning_rate = learning_rate
 
     def set_feedback_rate(self, feedback_rate: float) -> None:
         """Set the learning rate for the feedback weights Psi."""
-        super().set_feedback_rate(feedback_rate)
+        self._impl.set_feedback_rate(feedback_rate)
         self._feedback_rate = feedback_rate
 
     def set_inference_rate(self, inference_rate: float) -> None:
@@ -344,14 +382,14 @@ class FullPCN(dy.FullPCNetwork):
         self._inference_rate = inference_rate
 
     def compile(self) -> None:
-        super().compile()
+        self._impl.compile()
 
     def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
         """Randomize all network weights. `seed` gives a reproducible run;
         `dist` e.g. "normal(0,1)" or "uniform(-0.3,0.3)" (the default
         "normal" has no "(a,b)" and so deliberately falls back to each
         layer's own existing init)."""
-        super().randomize_weights(seed, dist)
+        self._impl.randomize_weights(seed, dist)
 
     def train_step(
         self,
@@ -361,9 +399,9 @@ class FullPCN(dy.FullPCNetwork):
     ) -> float:
         self._require_configured()
 
-        return super().train_step(
-            X.flatten(),
-            Y.flatten(),
+        return self._impl.train_step(
+            X.astype(self._np_dtype, copy=False).flatten(),
+            Y.astype(self._np_dtype, copy=False).flatten(),
             inference_steps,
         )
 
@@ -375,8 +413,8 @@ class FullPCN(dy.FullPCNetwork):
         self._require_configured()
 
         return np.asarray(
-            super().predict(
-                X.flatten(),
+            self._impl.predict(
+                X.astype(self._np_dtype, copy=False).flatten(),
                 inference_steps,
             )
         )
