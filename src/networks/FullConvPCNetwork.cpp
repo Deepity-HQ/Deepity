@@ -8,7 +8,7 @@
 
 namespace Deep
 {
-FullConvPCNetwork::FullConvPCNetwork(int batchSize, DeviceType device) noexcept
+FullConvPCNetwork::FullConvPCNetwork(int batchSize, DeviceType device)
     : device(device)
     , batchSize(batchSize)
 {

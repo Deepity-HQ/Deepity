@@ -41,7 +41,7 @@ public:
   /// @brief Constructs an empty network with a predetermined batch size.
   /// @param batchSize Batch size
   /// @param device Which device this network's layers run on.
-  explicit GaussSeidelPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit GaussSeidelPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
   /// @brief Default destructor.
   ~GaussSeidelPCNetwork() = default;
 

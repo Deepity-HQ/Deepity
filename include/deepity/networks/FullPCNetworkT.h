@@ -43,7 +43,7 @@ public:
   /// then Compile() before use.
   /// @param batchSize Fixed batch size for every layer.
   /// @param device Which device this network's layers run on.
-  explicit FullPCNetworkT(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept
+  explicit FullPCNetworkT(int batchSize, DeviceType device = DeviceType::DEVICE_CPU)
       : device(device)
       , batchSize(batchSize)
   {

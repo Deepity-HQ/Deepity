@@ -193,6 +193,46 @@ void CPUBackendT<T, AccumT>::MatMulAccum(bool transA, bool transB, int M, int N,
 }
 
 template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::MatMulAccumMixed(bool transA, bool transB, int M, int N, int K,
+                                              AccumT alpha, const AccumT* A, int lda, const T* B,
+                                              int ldb, AccumT beta, AccumT* C, int ldc) noexcept
+{
+  if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+  {
+    // Bit-exact with MatMul()'s own float/float path: A, B, and C are
+    // all float* here too (AccumT==T==float).
+    cblas_sgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+                transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    return;
+  }
+  else if constexpr (std::is_same_v<T, double> && std::is_same_v<AccumT, double>)
+  {
+    cblas_dgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+                transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    return;
+  }
+
+  // A is already AccumT (a settling/gradient scratch, see this method's
+  // own doc comment) -- only B, the real stored T-typed parameter (W),
+  // needs decoding, for every other (T, AccumT) pair.
+  for (int i = 0; i < M; ++i)
+  {
+    for (int j = 0; j < N; ++j)
+    {
+      AccumT acc(0);
+      for (int k = 0; k < K; ++k)
+      {
+        AccumT a = transA ? A[k * lda + i] : A[i * lda + k];
+        AccumT b = transB ? hwy::ConvertScalarTo<AccumT>(B[j * ldb + k]) : hwy::ConvertScalarTo<AccumT>(B[k * ldb + j]);
+        acc += a * b;
+      }
+      AccumT& c = C[i * ldc + j];
+      c = alpha * acc + beta * c;
+    }
+  }
+}
+
+template <typename T, typename AccumT>
 void CPUBackendT<T, AccumT>::SumRowsAccum(AccumT* dst, const T* src, size_t batchSize,
                                           size_t width) noexcept
 {
@@ -297,6 +337,43 @@ void CPUBackendT<T, AccumT>::AxpyInto(T* y, const T* x, size_t n, AccumT alpha) 
 }
 
 template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::AxpyIntoAccum(AccumT* y, const T* x, size_t n, AccumT alpha) noexcept
+{
+  if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+  {
+    cblas_saxpy((int)n, alpha, x, 1, y, 1);
+    return;
+  }
+  else if constexpr (std::is_same_v<T, double> && std::is_same_v<AccumT, double>)
+  {
+    cblas_daxpy((int)n, alpha, x, 1, y, 1);
+    return;
+  }
+
+  for (size_t i = 0; i < n; ++i)
+    y[i] += alpha * hwy::ConvertScalarTo<AccumT>(x[i]);
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::AxpyIntoFromAccum(T* y, const AccumT* x, size_t n,
+                                               AccumT alpha) noexcept
+{
+  if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+  {
+    cblas_saxpy((int)n, alpha, x, 1, y, 1);
+    return;
+  }
+  else if constexpr (std::is_same_v<T, double> && std::is_same_v<AccumT, double>)
+  {
+    cblas_daxpy((int)n, alpha, x, 1, y, 1);
+    return;
+  }
+
+  for (size_t i = 0; i < n; ++i)
+    y[i] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(y[i]) + alpha * x[i]);
+}
+
+template <typename T, typename AccumT>
 void CPUBackendT<T, AccumT>::AddBiasBroadcast(T* buf, const T* bias, size_t batchSize,
                                               size_t width) noexcept
 {
@@ -390,6 +467,25 @@ void CPUBackendT<T, AccumT>::ActivationDerivativeInto(ActivationType type, T* ds
   {
     for (size_t i = 0; i < n; ++i)
       dst[i] = hwy::ConvertScalarTo<T>(ActivationDerivativeScalarT<AccumT>(type, hwy::ConvertScalarTo<AccumT>(src[i])));
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::ActivationDerivativeIntoAccum(ActivationType type, AccumT* dst,
+                                                           const T* src, size_t n) noexcept
+{
+  if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+  {
+    // Bit-exact with ActivationDerivativeInto()'s own float/float path:
+    // dst and src are both float* here too (AccumT==T==float), so
+    // there's no reason to fall back to the generic scalar formula and
+    // diverge from the SIMD kernel by a ULP or two.
+    To_dFn2(type)(dst, src, n);
+  }
+  else
+  {
+    for (size_t i = 0; i < n; ++i)
+      dst[i] = ActivationDerivativeScalarT<AccumT>(type, hwy::ConvertScalarTo<AccumT>(src[i]));
   }
 }
 
@@ -599,6 +695,22 @@ void CPUBackendT<T, AccumT>::MultiplyInto(T* dst, const T* a, const T* b, size_t
     for (size_t i = 0; i < n; ++i)
       dst[i] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(a[i]) * hwy::ConvertScalarTo<AccumT>(b[i]));
   }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::MultiplyIntoAccum(AccumT* dst, const T* a, const AccumT* b,
+                                               size_t n) noexcept
+{
+  if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+  {
+    // Bit-exact with MultiplyInto()'s own float path: dst, a, and b are
+    // all float* here too (AccumT==T==float).
+    MultiplyIntoDispatch(dst, a, b, n);
+    return;
+  }
+
+  for (size_t i = 0; i < n; ++i)
+    dst[i] = hwy::ConvertScalarTo<AccumT>(a[i]) * b[i];
 }
 
 // --- Explicit instantiation: the (T, AccumT) pairs this templating

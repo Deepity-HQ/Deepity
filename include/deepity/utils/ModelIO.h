@@ -24,6 +24,32 @@
 
 namespace Deep
 {
+namespace detail
+{
+// FullPCLayerT<T, AccumT> is free-standing (doesn't inherit Layer, see
+// FullPCLayerT.h's own doc comment on why), so it has no
+// SyncStateDictFromDevice/ToDevice at all -- only Layer declares those.
+// These two helpers let Save()/Load() call them where they exist
+// (every Layer-derived network) and skip them where they don't, instead
+// of forcing every NetworkType's layer to carry a method it has no use
+// for. NOTE: this means a FullPCLayerT running on a CUDA device has no
+// sync path here at all -- unlike FullConvPCLayer, it was never given
+// host-staging buffers in the first place, so a GetStateDict() call on
+// a device-resident FullPCLayerT is not proven safe. Not fixed here;
+// flagging it is the point of this comment.
+template <typename LayerPtr> void SyncFromDeviceIfSupported(LayerPtr& layerPtr)
+{
+  if constexpr (requires { layerPtr->SyncStateDictFromDevice(); })
+    layerPtr->SyncStateDictFromDevice();
+}
+
+template <typename LayerPtr> void SyncToDeviceIfSupported(LayerPtr& layerPtr)
+{
+  if constexpr (requires { layerPtr->SyncStateDictToDevice(); })
+    layerPtr->SyncStateDictToDevice();
+}
+} // namespace detail
+
 /// @brief Static save/load helpers for any network type exposing
 /// GetLayers(), templated so it works across every PC network
 /// variant without each one reimplementing serialization.
@@ -45,6 +71,11 @@ public:
 
     for (const auto& layerPtr : net.GetLayers())
     {
+      // A device-resident layer's GetStateDict() reads from host staging
+      // buffers it owns, not from the actual device memory -- those
+      // buffers only hold current data once this sync runs. No-op for a
+      // CPU layer, whose GetStateDict() already returns live pointers.
+      detail::SyncFromDeviceIfSupported(layerPtr);
       auto state_dict = layerPtr->GetStateDict();
 
       for (const auto& [name, tensor] : state_dict)
@@ -145,6 +176,11 @@ public:
           in.read(reinterpret_cast<char*>(tensor.data), byte_size);
         }
       }
+      // Mirror of Save()'s SyncStateDictFromDevice(): for a device-resident
+      // layer, the reads above only landed in its host staging buffers --
+      // this pushes them on to the actual device-resident parameters. No-op
+      // for a CPU layer, whose GetStateDict() pointers are the real buffers.
+      detail::SyncToDeviceIfSupported(layerPtr);
       layer_idx++;
     }
     return true;

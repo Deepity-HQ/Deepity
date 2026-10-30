@@ -146,6 +146,22 @@ public:
                            const T* A, int lda, const T* B, int ldb, AccumT beta, AccumT* C,
                            int ldc) noexcept = 0;
 
+  /// @brief Same operation as MatMulAccum(), but A is already AccumT* --
+  /// for a layer's transient settling/gradient scratch (e.g. the
+  /// activation-derivative-weighted error signal that feeds both
+  /// UpdateState()'s feedback GEMM and UpdateWeights()'s gradient GEMM),
+  /// which must never round-trip through storage precision T even
+  /// transiently: for a lossy T (e.g. Fp4E2M1Value), an activation
+  /// derivative's natural range commonly falls entirely below T's
+  /// coarsest resolution (sigmoid's derivative maxes out at 0.25, below
+  /// Fp4E2M1Value's smallest nonzero magnitude of 0.5), so writing it
+  /// into a T* buffer even once rounds it to exactly zero and kills the
+  /// gradient outright -- this is that fix. Only B (the real, stored
+  /// parameter, e.g. W) decodes from T; A is used as-is.
+  virtual void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, AccumT alpha,
+                                const AccumT* A, int lda, const T* B, int ldb, AccumT beta,
+                                AccumT* C, int ldc) noexcept = 0;
+
   /// @brief Whether MatMul() may use TF32 (10 mantissa bits, ~1e-3
   /// relative error per GEMM) instead of full FP32 on tensor cores --
   /// CUDABackend only; a no-op on CPUBackend, which has no such
@@ -187,6 +203,15 @@ public:
   virtual void Scale(T* buf, size_t n, AccumT alpha) noexcept = 0;
   /// @brief y[i] += alpha * x[i] for all i in [0, n), the standard AXPY.
   virtual void AxpyInto(T* y, const T* x, size_t n, AccumT alpha) noexcept = 0;
+  /// @brief Same operation as AxpyInto(), but y is AccumT* and x stays
+  /// T* -- see MatMulAccumMixed()'s own doc comment for why a settling/
+  /// gradient scratch accumulator must never round-trip through T.
+  virtual void AxpyIntoAccum(AccumT* y, const T* x, size_t n, AccumT alpha) noexcept = 0;
+  /// @brief Same operation as AxpyInto(), but x is AccumT* -- for
+  /// applying an AccumT-precision settling/gradient delta onto a real,
+  /// stored T-typed buffer (z, W, b, ...), which is the one place this
+  /// delta is *meant* to finally round-trip through storage precision.
+  virtual void AxpyIntoFromAccum(T* y, const AccumT* x, size_t n, AccumT alpha) noexcept = 0;
   /// @brief buf[row*width + col] += bias[col] for every row in
   /// [0,batchSize) and col in [0,width), broadcasts a per-column bias
   /// across every row (the dense-layer convention).
@@ -309,6 +334,14 @@ public:
   /// (the pre-activation value), writes the derivative into dst.
   virtual void ActivationDerivativeInto(ActivationType type, T* dst, const T* src,
                                         size_t n) noexcept = 0;
+  /// @brief Same operation as ActivationDerivativeInto(), but writes
+  /// into an AccumT* buffer instead of T* -- see MatMulAccumMixed()'s
+  /// own doc comment: an activation derivative's natural range commonly
+  /// undershoots a lossy T's coarsest resolution entirely, so this must
+  /// land in AccumT precision at the point of computation, never T, even
+  /// transiently.
+  virtual void ActivationDerivativeIntoAccum(ActivationType type, AccumT* dst, const T* src,
+                                             size_t n) noexcept = 0;
 
   // Fused PC-specific ops
 
@@ -595,6 +628,13 @@ public:
 
   /// @brief dst[i] = a[i] * b[i] for all i in [0, n), elementwise product.
   virtual void MultiplyInto(T* dst, const T* a, const T* b, size_t n) noexcept = 0;
+  /// @brief Same operation as MultiplyInto(), but dst and b are AccumT*
+  /// (a stays T*) -- see MatMulAccumMixed()'s own doc comment: b is
+  /// typically an activation derivative already computed in AccumT
+  /// precision via ActivationDerivativeIntoAccum(), and the product with
+  /// a (e.g. the layer-above error, still T*) must stay in that
+  /// precision too rather than round-trip through storage type T.
+  virtual void MultiplyIntoAccum(AccumT* dst, const T* a, const AccumT* b, size_t n) noexcept = 0;
   /// @brief Fuses an in-place "derivative from activated value" step with
   /// the elementwise multiply that immediately follows it in every known
   /// caller: dst[i] = a[i] * f'(activatedInOut[i]), then

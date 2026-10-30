@@ -85,10 +85,25 @@ protected:
   T* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
   T* preact = nullptr;   ///< Pre-activation snapshot of mu, see FullPCLayer's own doc comment.
   T* cachedPreact = nullptr; ///< Cached pre-activation, valid alongside cachedMu.
-  T* derivScratch = nullptr; ///< nextSize-shaped scratch holding f'(preact).
-  T* feedbackError = nullptr; ///< nextSize-shaped scratch, see FullPCLayer's own doc comment.
+  // derivScratch/feedbackError/proj/feedbackScratch below are AccumT*,
+  // not T*, unlike every buffer above -- a real, deliberate asymmetry,
+  // not an inconsistency with the rest of this class. They're pure
+  // transient compute (never read back by a caller, never persisted),
+  // and their natural magnitude -- an activation derivative, and
+  // everything downstream of multiplying it into an error signal -- can
+  // fall entirely below a lossy T's coarsest resolution (sigmoid's
+  // derivative maxes out at 0.25, under Fp4E2M1Value's smallest nonzero
+  // magnitude of 0.5). Routing them through T even transiently rounds
+  // them to exactly zero and silently breaks every gradient that flows
+  // through them, for every activation whose derivative range
+  // undershoots the grid -- found via this plan's own MNIST validation
+  // pass, not anticipated at design time. See
+  // IComputeBackendT::MatMulAccumMixed()'s own doc comment for the
+  // backend-side half of this fix.
+  std::vector<AccumT> derivScratch; ///< nextSize-shaped scratch holding f'(preact).
+  std::vector<AccumT> feedbackError; ///< nextSize-shaped scratch, see FullPCLayer's own doc comment.
   T* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
-  T* proj = nullptr; ///< Scratch buffer for DirectFeedbackUpdate()'s W update.
+  std::vector<AccumT> proj; ///< Scratch buffer for DirectFeedbackUpdate()'s W update.
 
   // grad_*/m_*/v_* and lr_device/fl_device/t_device/tPsi_device are all
   // AccumT-typed (or int, for the step counters) optimizer-accumulator
@@ -113,8 +128,20 @@ protected:
   int tPsi_device = 0;      ///< Adam/AdamW step count for Psi.
   AccumT fl_device = AccumT(0); ///< Mirror of `fl`, passed by address to the backend.
 
-  T* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
+  std::vector<AccumT> feedbackScratch; ///< Scratch buffer for the feedback GEMM's output.
 
+  // v (momentum) and adjoint (ePC) stay T*, unlike derivScratch/
+  // feedbackError/proj/feedbackScratch above -- a known, deliberately
+  // deferred gap, not an oversight: both are only reachable with
+  // useMomentum/useEPC explicitly enabled, which the plan's own
+  // verification pass already flagged as not separately validated at
+  // low precision ("note this as a known deferred-validation area ...
+  // not a silent gap" -- see the plan's FullPCLayer<T, AccumT> section).
+  // Converting them properly needs ComputeAdjoint()'s adjointAbove
+  // parameter templated on its own input type (the terminal layer's
+  // first hop is T* errors, every later hop is a previous layer's own
+  // adjoint), which is more machinery than this pass's actual
+  // (non-EPC, non-momentum) validation target needs.
   T* v = nullptr;        ///< Momentum buffer for the settling update, see SetMomentum().
   bool useMomentum = false;  ///< Whether momentum settling is enabled, see SetMomentum().
   AccumT momentumBeta = AccumT(0.9); ///< Momentum EMA decay rate, see SetMomentum().
@@ -133,8 +160,6 @@ protected:
 
   bool useEPC = false;  ///< Whether ePC settling is enabled, see SetUseEPC().
   T* adjoint = nullptr; ///< Chained backward-sweep signal, shape [batchSize, size].
-
-  T* biasGradScratch = nullptr; ///< nextSize-length scratch for SumRows' output.
 
   std::unique_ptr<MemoryArenaT<T>>
       localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.

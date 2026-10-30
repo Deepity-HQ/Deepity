@@ -1004,6 +1004,7 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         bindings/pybinding.cpp
         bindings/LayerBindings.cpp
         bindings/NetworkBindings.cpp
+        bindings/QuantFormatBindings.cpp
         bindings/UtilityBindings.cpp
     )
 

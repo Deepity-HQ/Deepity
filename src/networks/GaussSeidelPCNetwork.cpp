@@ -4,7 +4,7 @@
 
 namespace Deep
 {
-GaussSeidelPCNetwork::GaussSeidelPCNetwork(int batchSize, DeviceType device) noexcept
+GaussSeidelPCNetwork::GaussSeidelPCNetwork(int batchSize, DeviceType device)
     : device(device)
     , batchSize(batchSize)
 {

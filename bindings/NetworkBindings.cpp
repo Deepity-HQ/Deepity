@@ -14,7 +14,11 @@
 #include <optional>
 #include <random>
 #include <string>
+#include <type_traits>
 #include <vector>
+
+#include <deepity/utils/ModelIO.h>
+#include <deepity/utils/QuantFormat.h>
 
 #include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
@@ -76,6 +80,16 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
             return result;
           },
           "List of layer objects owned by the network.")
+      .def(
+          "save",
+          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -164,7 +178,7 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
       .def("reset_state", &NetT::ResetState)
       .def(
           "clamp_input",
-          [](NetT& self, TArray<T> input)
+          [](NetT& self, TArray<AccumT> input)
           {
             std::vector<T> values(input.data(), input.data() + input.size());
             self.Clamp(values);
@@ -203,7 +217,7 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
       .def("set_feedback_rate", &NetT::SetFeedbackRate, nb::arg("fl"))
       .def(
           "train_step",
-          [](NetT& self, TArray<T> x, TArray<T> y, int inference_steps)
+          [](NetT& self, TArray<AccumT> x, TArray<AccumT> y, int inference_steps)
           {
             std::vector<T> xvec(x.data(), x.data() + x.size());
             std::vector<T> yvec(y.data(), y.data() + y.size());
@@ -212,13 +226,16 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
           nb::arg("x"), nb::arg("y"), nb::arg("inference_steps") = 1)
       .def(
           "predict",
-          [](NetT& self, TArray<T> x, int inference_steps)
+          [](NetT& self, TArray<AccumT> x, int inference_steps) -> nb::object
           {
             std::vector<T> xvec(x.data(), x.data() + x.size());
             std::vector<T> result = self.Predict(xvec, inference_steps);
             LayerT* terminal = self.GetTerminalLayer();
-            return CopyToNewArray(
-                result.data(), {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
+            auto shape = {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()};
+            if constexpr (!std::is_same_v<T, AccumT>)
+              return nb::cast(DecodeCopyToNewArray<T, AccumT>(result.data(), shape));
+            else
+              return nb::cast(CopyToNewArray(result.data(), shape));
           },
           nb::arg("x"), nb::arg("inference_steps"))
       .def_prop_ro("batch_size", &NetT::GetBatchSize)
@@ -231,6 +248,16 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
                      return result;
                    })
       .def("get_terminal_layer", &NetT::GetTerminalLayer, nb::rv_policy::reference)
+      .def(
+          "save",
+          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -577,6 +604,18 @@ void bind_networks(nb::module_& m)
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
                    })
+      .def(
+          "save",
+          [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__",
            [](const Deep::GaussSeidelPCNetwork& self) { return self.GetLayers().size(); })
       .def(
@@ -729,6 +768,18 @@ void bind_networks(nb::module_& m)
       .def("get_terminal_layer",
            &Deep::DirectKPPCNetwork::GetTerminalLayer,
            nb::rv_policy::reference)
+      .def(
+          "save",
+          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](Deep::DirectKPPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const Deep::DirectKPPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -921,6 +972,18 @@ void bind_networks(nb::module_& m)
                      return result;
                    })
       .def("get_terminal_layer", &Deep::FullPCNetwork::GetTerminalLayer, nb::rv_policy::reference)
+      .def(
+          "save",
+          [](const Deep::FullPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](Deep::FullPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const Deep::FullPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -1155,6 +1218,20 @@ void bind_networks(nb::module_& m)
       .def("get_terminal_layer",
            &Deep::FullConvPCNetwork::GetTerminalLayer,
            nb::rv_policy::reference)
+      .def(
+          "save",
+          [](const Deep::FullConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"),
+          "Save this network's weights to filepath. Safe on a CUDA-device network -- syncs "
+          "device-resident parameters to host before writing.")
+      .def(
+          "load",
+          [](Deep::FullConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch. Safe on a CUDA-device network -- pushes loaded weights back to device.")
       .def("__len__", [](const Deep::FullConvPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -1302,6 +1379,18 @@ void bind_networks(nb::module_& m)
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
                    })
+      .def(
+          "save",
+          [](const Deep::ConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](Deep::ConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const Deep::ConvPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -1468,6 +1557,18 @@ void bind_networks(nb::module_& m)
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
                    })
+      .def(
+          "save",
+          [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Save(self, filepath); },
+          nb::arg("filepath"), "Save this network's weights to filepath.")
+      .def(
+          "load",
+          [](Deep::SimpleConvPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::Load(self, filepath); },
+          nb::arg("filepath"),
+          "Load weights from filepath into this already-compiled network; raises on a dtype "
+          "mismatch.")
       .def("__len__", [](const Deep::SimpleConvPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -1493,4 +1594,5 @@ void bind_networks(nb::module_& m)
 
   BindFullPCNetworkT<float, float>(m, "FullPCNetwork_f32");
   BindFullPCNetworkT<double, double>(m, "FullPCNetwork_f64");
+  BindFullPCNetworkT<Deep::Fp4E2M1Value, float>(m, "FullPCNetwork_fp4_e2m1");
 }

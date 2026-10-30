@@ -87,28 +87,22 @@ void FullPCLayerT<T, AccumT>::BindMemory(ArenaT& arena)
     cachedMu = arena.Allocate(out_state_size);
     preact = arena.Allocate(out_state_size);
     cachedPreact = arena.Allocate(out_state_size);
-    derivScratch = arena.Allocate(out_state_size);
-    feedbackError = arena.Allocate(out_state_size);
-    proj = arena.Allocate(out_state_size);
+    derivScratch.assign(out_state_size, AccumT(0));
+    feedbackError.assign(out_state_size, AccumT(0));
+    proj.assign(out_state_size, AccumT(0));
     Psi = arena.Allocate(direct_size);
-    feedbackScratch = arena.Allocate(own_state_size);
+    feedbackScratch.assign(own_state_size, AccumT(0));
     v = arena.Allocate(own_state_size);
     backend->Zero(v, own_state_size);
     adjoint = arena.Allocate(own_state_size);
     backend->Zero(adjoint, own_state_size);
-    biasGradScratch = arena.Allocate(nextSize);
 
     backend->Zero(b, nextSize);
     backend->Zero(mu, out_state_size);
     backend->Zero(cachedMu, out_state_size);
     backend->Zero(preact, out_state_size);
     backend->Zero(cachedPreact, out_state_size);
-    backend->Zero(derivScratch, out_state_size);
-    backend->Zero(feedbackError, out_state_size);
-    backend->Zero(proj, out_state_size);
     backend->Zero(Psi, direct_size);
-    backend->Zero(feedbackScratch, own_state_size);
-    backend->Zero(biasGradScratch, nextSize);
 
     BindAdamStateT(w_size, grad_W, m_W, v_W);
     BindAdamStateT(nextSize, grad_b, m_b, v_b);
@@ -147,12 +141,10 @@ size_t FullPCLayerT<T, AccumT>::GetRequiredElements() const noexcept
 
     total += pad16(w_size);
     total += pad16(nextSize);
-    total += pad16(out_state_size) * 3; // mu, cachedMu, proj
-    total += pad16(out_state_size) * 4; // preact, cachedPreact, derivScratch, feedbackError
-    total += pad16(own_state_size);     // feedbackScratch
+    total += pad16(out_state_size) * 2; // mu, cachedMu
+    total += pad16(out_state_size) * 2; // preact, cachedPreact
     total += pad16(own_state_size) * 2; // v, adjoint
     total += pad16(direct_size);
-    total += pad16(nextSize);
 
     total += pad16(w_size) * 3;
     total += pad16(nextSize) * 3;
@@ -303,35 +295,35 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateState
       size_t Nout = (size_t)batchSize * nextSize;
 
       ActivationType dType = ToDerivativeType(activationType);
-      backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
-      backend->MultiplyInto(feedbackError, e_above, derivScratch, Nout);
+      backend->ActivationDerivativeIntoAccum(dType, derivScratch.data(), preact, Nout);
+      backend->MultiplyIntoAccum(feedbackError.data(), e_above, derivScratch.data(), Nout);
 
-      backend->MatMul(
+      backend->MatMulAccumMixed(
           /*transA=*/false,
           /*transB=*/false,
           (int)batchSize,
           (int)size,
           (int)nextSize,
           a,
-          feedbackError,
+          feedbackError.data(),
           (int)nextSize,
           W,
           (int)size,
           AccumT(0),
-          feedbackScratch,
+          feedbackScratch.data(),
           (int)size);
 
       if (useMomentum)
       {
-        backend->AxpyInto(feedbackScratch, e, N, AccumT(-1));
+        backend->AxpyIntoAccum(feedbackScratch.data(), e, N, AccumT(-1));
         backend->Scale(v, N, momentumBeta);
-        backend->AxpyInto(v, feedbackScratch, N, AccumT(1) - momentumBeta);
+        backend->AxpyIntoFromAccum(v, feedbackScratch.data(), N, AccumT(1) - momentumBeta);
         backend->AxpyInto(z, v, N, ir);
       }
       else
       {
-        backend->AxpyInto(feedbackScratch, e, N, AccumT(-1));
-        backend->AxpyInto(z, feedbackScratch, N, ir);
+        backend->AxpyIntoAccum(feedbackScratch.data(), e, N, AccumT(-1));
+        backend->AxpyIntoFromAccum(z, feedbackScratch.data(), N, ir);
       }
 
       if (useResidual)
@@ -353,9 +345,21 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateWeigh
   const T* e_above = layerAbove->GetErrors();
 
   ActivationType dType = ToDerivativeType(activationType);
-  backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
-  backend->MultiplyInto(feedbackError, e_above, derivScratch, Nout);
-  const T* local_grad = feedbackError;
+  backend->ActivationDerivativeIntoAccum(dType, derivScratch.data(), preact, Nout);
+  backend->MultiplyIntoAccum(feedbackError.data(), e_above, derivScratch.data(), Nout);
+  const AccumT* local_grad = feedbackError.data();
+
+  // local_grad's own per-batch-element reduction into grad_b: pure
+  // AccumT->AccumT, no decode needed (unlike SumRows()/SumRowsAccum(),
+  // which both still expect a T* src for every other caller), so this
+  // is inlined here rather than adding a third backend method for it.
+  auto sumRowsIntoGradB = [&]()
+  {
+    std::fill(grad_b.begin(), grad_b.begin() + nextSize, AccumT(0));
+    for (size_t bi = 0; bi < batchSize; ++bi)
+      for (size_t i = 0; i < nextSize; ++i)
+        grad_b[i] += local_grad[bi * nextSize + i];
+  };
 
   switch (opt)
   {
@@ -364,24 +368,36 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateWeigh
     if (lmbda > AccumT(0))
       backend->Scale(W, (size_t)nextSize * size, AccumT(1) - lmbda);
 
-    backend->MatMul(
+    // Computed into grad_W/grad_b (this layer's own Adam accumulator
+    // buffers, unused by SGD otherwise and free as scratch here) and
+    // then applied via AxpyIntoFromAccum, rather than a single blended
+    // MatMul() straight into W: local_grad is AccumT now (see this
+    // method's own comment above on derivScratch/feedbackError), and a
+    // GEMM that blends an AccumT operand directly into an existing T*
+    // accumulator (beta != 0) is a shape MatMulAccumMixed() doesn't
+    // support -- see its own doc comment, it only ever writes a fresh
+    // AccumT* C. This costs nothing extra: the subsequent
+    // AxpyIntoFromAccum() is the one and only re-quantization into W/b,
+    // same as ADAM's AdamStep() below.
+    backend->MatMulAccumMixed(
         /*transA=*/true,
         /*transB=*/false,
         (int)nextSize,
         (int)size,
         (int)batchSize,
-        a * lr / AccumT(batchSize),
+        AccumT(1),
         local_grad,
         (int)nextSize,
         z,
         (int)size,
-        AccumT(1),
-        W,
+        AccumT(0),
+        grad_W.data(),
         (int)size);
+    backend->AxpyIntoFromAccum(W, grad_W.data(), (size_t)nextSize * size,
+                               a * lr / AccumT(batchSize));
 
-    AccumT lr_batch = lr / AccumT(batchSize);
-    backend->SumRows(biasGradScratch, local_grad, batchSize, nextSize);
-    backend->AxpyInto(b, biasGradScratch, nextSize, lr_batch);
+    sumRowsIntoGradB();
+    backend->AxpyIntoFromAccum(b, grad_b.data(), nextSize, lr / AccumT(batchSize));
 
     break;
   }
@@ -393,7 +409,7 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateWeigh
     size_t num_weights = (size_t)nextSize * size;
     AccumT adam_scale = AccumT(-1) * a;
 
-    backend->MatMulAccum(
+    backend->MatMulAccumMixed(
         /*transA=*/true,
         /*transB=*/false,
         (int)nextSize,
@@ -408,7 +424,7 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateWeigh
         grad_W.data(),
         (int)size);
 
-    backend->SumRowsAccum(grad_b.data(), local_grad, batchSize, nextSize);
+    sumRowsIntoGradB();
     // Direct negate, not backend->Scale(): grad_b is AccumT*, and
     // Scale() takes T* -- same host-resident-AccumT-scratch caveat as
     // SetLearningRate()'s own comment above.
@@ -487,7 +503,7 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::DirectFeedb
   if (layerAbove == nullptr || layerAbove->GetDirectFeedbackWeights() == nullptr)
     return;
 
-  backend->MatMul(
+  backend->MatMulAccum(
       /*transA=*/false,
       /*transB=*/true,
       (int)batchSize,
@@ -499,30 +515,39 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::DirectFeedb
       layerAbove->GetDirectFeedbackWeights(),
       (int)terminalSize,
       AccumT(0),
-      proj,
+      proj.data(),
       (int)nextSize);
 
   {
     size_t Nout = (size_t)batchSize * nextSize;
     ActivationType dType = ToDerivativeType(activationType);
-    backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
-    backend->MultiplyInto(proj, proj, derivScratch, Nout);
+    backend->ActivationDerivativeIntoAccum(dType, derivScratch.data(), preact, Nout);
+    // Pure AccumT*AccumT elementwise, both operands already decoded by
+    // the calls above -- inlined rather than adding a third backend
+    // method for a product that never touches storage type T.
+    for (size_t i = 0; i < Nout; ++i)
+      proj[i] *= derivScratch[i];
   }
 
-  backend->MatMul(
+  // Same grad_W-as-scratch + AxpyIntoFromAccum restructuring as
+  // UpdateWeights()'s SGD branch, and for the same reason: proj is
+  // AccumT now, and blending it directly into W via a single GEMM
+  // (beta != 0) isn't a shape MatMulAccumMixed() supports.
+  backend->MatMulAccumMixed(
       /*transA=*/true,
       /*transB=*/false,
       (int)nextSize,
       (int)size,
       (int)batchSize,
-      fl / AccumT(batchSize),
-      proj,
+      AccumT(1),
+      proj.data(),
       (int)nextSize,
       z,
       (int)size,
-      AccumT(1),
-      W,
+      AccumT(0),
+      grad_W.data(),
       (int)size);
+  backend->AxpyIntoFromAccum(W, grad_W.data(), (size_t)nextSize * size, fl / AccumT(batchSize));
 }
 
 template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::ReconstructBelief() noexcept
@@ -546,23 +571,31 @@ void FullPCLayerT<T, AccumT>::ComputeAdjoint(const T* adjointAbove,
   const size_t Nout = batchSize * nextSize;
 
   ActivationType dType = ToDerivativeType(activationType);
-  backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
-  backend->MultiplyInto(feedbackError, adjointAbove, derivScratch, Nout);
+  backend->ActivationDerivativeIntoAccum(dType, derivScratch.data(), preact, Nout);
+  backend->MultiplyIntoAccum(feedbackError.data(), adjointAbove, derivScratch.data(), Nout);
 
-  backend->MatMul(
+  // adjoint stays T* (ePC's own precision is a known, deliberately
+  // deferred gap -- see this class's own comment on the `v`/`adjoint`
+  // members), so the AccumT result lands in feedbackScratch (free here:
+  // ComputeAdjoint() only runs from EPCStep(), never alongside
+  // UpdateState()'s own use of this same buffer within one settle
+  // step) and is re-encoded into adjoint afterward.
+  backend->MatMulAccumMixed(
       /*transA=*/false,
       /*transB=*/false,
       (int)batchSize,
       (int)size,
       (int)nextSize,
       a * adjointAboveScale,
-      feedbackError,
+      feedbackError.data(),
       (int)nextSize,
       W,
       (int)size,
       AccumT(0),
-      adjoint,
+      feedbackScratch.data(),
       (int)size);
+  for (size_t i = 0; i < N; ++i)
+    adjoint[i] = hwy::ConvertScalarTo<T>(feedbackScratch[i]);
 
   if (useResidual)
     backend->AxpyInto(adjoint, adjointAbove, N, adjointAboveScale);

@@ -80,6 +80,9 @@ public:
   void MatMulAccum(bool transA, bool transB, int M, int N, int K, AccumT alpha, const T* A,
                    int lda, const T* B, int ldb, AccumT beta, AccumT* C,
                    int ldc) noexcept override;
+  void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, AccumT alpha,
+                        const AccumT* A, int lda, const T* B, int ldb, AccumT beta, AccumT* C,
+                        int ldc) noexcept override;
 
   void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept override;
   void SumRowsAccum(AccumT* dst, const T* src, size_t batchSize, size_t width) noexcept override;
@@ -87,6 +90,8 @@ public:
 
   void Scale(T* buf, size_t n, AccumT alpha) noexcept override;
   void AxpyInto(T* y, const T* x, size_t n, AccumT alpha) noexcept override;
+  void AxpyIntoAccum(AccumT* y, const T* x, size_t n, AccumT alpha) noexcept override;
+  void AxpyIntoFromAccum(T* y, const AccumT* x, size_t n, AccumT alpha) noexcept override;
   void AddBiasBroadcast(T* buf, const T* bias, size_t batchSize, size_t width) noexcept override;
 
   bool TryFusedMatMulBias(bool, bool, int, int, int, const T*, int, const T*, int, const T*, T*,
@@ -114,6 +119,8 @@ public:
   void ActivationInto(ActivationType type, T* dst, const T* src, size_t n) noexcept override;
   void ActivationDerivative(ActivationType type, T* buf, size_t n, bool activated) noexcept override;
   void ActivationDerivativeInto(ActivationType type, T* dst, const T* src, size_t n) noexcept override;
+  void ActivationDerivativeIntoAccum(ActivationType type, AccumT* dst, const T* src,
+                                     size_t n) noexcept override;
 
   void FusedStateUpdateMomentum(T*, T*, const T*, ActivationType, const T*, size_t, AccumT,
                                 AccumT) noexcept override
@@ -204,6 +211,7 @@ public:
   }
 
   void MultiplyInto(T* dst, const T* a, const T* b, size_t n) noexcept override;
+  void MultiplyIntoAccum(AccumT* dst, const T* a, const AccumT* b, size_t n) noexcept override;
 
   void FusedActivationDerivativeMultiply(T*, const T*, T*, ActivationType, size_t) noexcept override
   {

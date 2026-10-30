@@ -79,6 +79,14 @@ public:
   {
     MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
   }
+  /// @copydoc Deep::IComputeBackendT::MatMulAccumMixed
+  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
+  void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, float alpha,
+                        const float* A, int lda, const float* B, int ldb, float beta, float* C,
+                        int ldc) noexcept override
+  {
+    MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  }
   /// @copydoc Deep::IComputeBackend::SetAllowTF32
   void SetAllowTF32(bool allow) noexcept override;
 
@@ -86,6 +94,17 @@ public:
   void Scale(float* buf, size_t n, float alpha) noexcept override;
   /// @copydoc Deep::IComputeBackend::AxpyInto
   void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::AxpyIntoAccum
+  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
+  void AxpyIntoAccum(float* y, const float* x, size_t n, float alpha) noexcept override
+  {
+    AxpyInto(y, x, n, alpha);
+  }
+  /// @copydoc Deep::IComputeBackendT::AxpyIntoFromAccum
+  void AxpyIntoFromAccum(float* y, const float* x, size_t n, float alpha) noexcept override
+  {
+    AxpyInto(y, x, n, alpha);
+  }
   /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
@@ -139,6 +158,13 @@ public:
   /// @copydoc Deep::IComputeBackend::ActivationDerivativeInto
   void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                 size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::ActivationDerivativeIntoAccum
+  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
+  void ActivationDerivativeIntoAccum(ActivationType type, float* dst, const float* src,
+                                     size_t n) noexcept override
+  {
+    ActivationDerivativeInto(type, dst, src, n);
+  }
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdate
   void FusedStateUpdate(float* z, const float* feedback, ActivationType dType, const float* e,
@@ -186,6 +212,12 @@ public:
 
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
+  /// @copydoc Deep::IComputeBackendT::MultiplyIntoAccum
+  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
+  void MultiplyIntoAccum(float* dst, const float* a, const float* b, size_t n) noexcept override
+  {
+    MultiplyInto(dst, a, b, n);
+  }
   /// @copydoc Deep::IComputeBackend::FusedActivationDerivativeMultiply
   void FusedActivationDerivativeMultiply(float* dst, const float* a, float* activatedInOut,
                                          ActivationType dType, size_t n) noexcept override;

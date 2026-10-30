@@ -26,7 +26,7 @@ public:
   /// then Compile() before use.
   /// @param batchSize Fixed batch size for every layer.
   /// @param device Which device this network's layers run on.
-  explicit ConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU) noexcept;
+  explicit ConvPCNetwork(int batchSize, DeviceType device = DeviceType::DEVICE_CPU);
   ~ConvPCNetwork() = default;
 
   ConvPCNetwork(const ConvPCNetwork&) = delete;

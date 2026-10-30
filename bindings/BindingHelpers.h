@@ -50,6 +50,28 @@ nb::ndarray<nb::numpy, T> CopyToNewArray(const T* src, std::initializer_list<siz
   return nb::ndarray<nb::numpy, T>(data, shape, owner);
 }
 
+/// @brief Same as CopyToNewArray(), but for a layer/network whose
+/// storage type T is lossy (e.g. Fp4E2M1Value) and whose Python-facing
+/// wire type is AccumT instead: decodes each element via `AccumT(x)`
+/// while copying, rather than a raw memcpy -- used for a quantized
+/// FullPCLayerT<T, AccumT>/FullPCNetworkT<T, AccumT>'s .beliefs/.errors/
+/// .weights/predict() results, which can't be a zero-copy view over T
+/// (numpy has no dtype for these custom structs) and shouldn't expose
+/// T's raw bits to Python even if it did.
+template <typename T, typename AccumT>
+nb::ndarray<nb::numpy, AccumT> DecodeCopyToNewArray(const T* src,
+                                                    std::initializer_list<size_t> shape)
+{
+  size_t n = 1;
+  for (auto s : shape)
+    n *= s;
+  AccumT* data = new AccumT[n];
+  for (size_t i = 0; i < n; ++i)
+    data[i] = AccumT(src[i]);
+  nb::capsule owner(data, [](void* p) noexcept { delete[] static_cast<AccumT*>(p); });
+  return nb::ndarray<nb::numpy, AccumT>(data, shape, owner);
+}
+
 /// @brief Maps a Python-facing activation name (e.g. "relu", "dgelu") to
 /// its Deep::ActivationType enumerator, for layers/networks that
 /// dispatch on the enum rather than a raw function pointer.

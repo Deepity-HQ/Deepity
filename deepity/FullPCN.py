@@ -13,6 +13,12 @@ from .utils import _fit_with_progress
 _IMPL_BY_DTYPE = {
     "float32": (dy.FullPCNetwork_f32, np.float32),
     "float64": (dy.FullPCNetwork_f64, np.float64),
+    # Quantized storage types: Python always speaks float32 here (the
+    # bound layer's wire type is its AccumT, not its lossy storage type
+    # T -- see BindFullPCLayerT/BindFullPCNetworkT's own comments in
+    # bindings/LayerBindings.cpp). The 4-bit encode/decode round trip
+    # happens transparently inside C++ on every array in/out.
+    "fp4_e2m1": (dy.FullPCNetwork_fp4_e2m1, np.float32),
 }
 
 
