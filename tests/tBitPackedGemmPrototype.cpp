@@ -34,8 +34,7 @@
 // class. Get/Set address a group's packed integer and do mixed-radix
 // div/mod to reach one element inside it (the direct generalization of
 // bit-shift addressing to a non-power-of-2 RADIX).
-template <uint64_t RADIX>
-class PackedRadix
+template <uint64_t RADIX> class PackedRadix
 {
   static_assert(RADIX >= 2, "RADIX must be at least 2");
 
@@ -80,12 +79,19 @@ public:
   static constexpr int kGroupBytes = ComputeGroupBytes();
 
   explicit PackedRadix(size_t n)
-      : n_(n), bytes_(((n + kGroupSize - 1) / kGroupSize) * (size_t)kGroupBytes, 0)
+      : n_(n)
+      , bytes_(((n + kGroupSize - 1) / kGroupSize) * (size_t)kGroupBytes, 0)
   {
   }
 
-  size_t size() const noexcept { return n_; }
-  size_t byteSize() const noexcept { return bytes_.size(); }
+  size_t size() const noexcept
+  {
+    return n_;
+  }
+  size_t byteSize() const noexcept
+  {
+    return bytes_.size();
+  }
 
   uint64_t Get(size_t i) const noexcept
   {
@@ -146,8 +152,7 @@ private:
 // lookup table sized per bit width. Works for any RADIX >= 2; for even
 // RADIX one code goes unused (documented, not hidden) since codes split
 // evenly into a positive/negative mirror plus one zero.
-template <uint64_t RADIX>
-struct RadixGrid
+template <uint64_t RADIX> struct RadixGrid
 {
   static constexpr int kPosLevels = (int)((RADIX - 1) / 2);
 
@@ -189,14 +194,12 @@ struct RadixGrid
   }
 };
 
-template <uint64_t RADIX>
-float RadixDecodeAt(const PackedRadix<RADIX>& arr, size_t i) noexcept
+template <uint64_t RADIX> float RadixDecodeAt(const PackedRadix<RADIX>& arr, size_t i) noexcept
 {
   return RadixGrid<RADIX>::Decode(arr.Get(i));
 }
 
-template <uint64_t RADIX>
-void RadixEncodeInto(PackedRadix<RADIX>& arr, size_t i, float x) noexcept
+template <uint64_t RADIX> void RadixEncodeInto(PackedRadix<RADIX>& arr, size_t i, float x) noexcept
 {
   arr.Set(i, RadixGrid<RADIX>::Encode(x));
 }
@@ -205,8 +208,8 @@ void RadixEncodeInto(PackedRadix<RADIX>& arr, size_t i, float x) noexcept
 // packed storage, decoding via radix div/mod inside the inner loop --
 // the same function body regardless of RADIX, no per-width overload.
 template <uint64_t RADIX>
-void RadixGemm(int M, int N, int K, const PackedRadix<RADIX>& A,
-                const PackedRadix<RADIX>& B, float* C) noexcept
+void RadixGemm(int M, int N, int K, const PackedRadix<RADIX>& A, const PackedRadix<RADIX>& B,
+               float* C) noexcept
 {
   for (int i = 0; i < M; ++i)
     for (int j = 0; j < N; ++j)
@@ -218,8 +221,7 @@ void RadixGemm(int M, int N, int K, const PackedRadix<RADIX>& A,
     }
 }
 
-template <uint64_t RADIX>
-static void TestRoundTrip(const char* label)
+template <uint64_t RADIX> static void TestRoundTrip(const char* label)
 {
   printf("[RADIX=%llu, %s] round-trip + packing density\n", (unsigned long long)RADIX, label);
   const size_t n = 23; // deliberately not a multiple of any group size
@@ -244,14 +246,18 @@ static void TestRoundTrip(const char* label)
   double bitsPerElem = 8.0 * (double)arr.byteSize() / (double)n;
   double theoreticalBits = std::log2((double)RADIX);
   printf("  round-trip: %s | %zu elements -> %zu bytes -> %.2f bits/elem (ideal: %.2f)\n\n",
-         allRoundTrip ? "OK" : "MISMATCH", n, arr.byteSize(), bitsPerElem, theoreticalBits);
+         allRoundTrip ? "OK" : "MISMATCH",
+         n,
+         arr.byteSize(),
+         bitsPerElem,
+         theoreticalBits);
 }
 
-template <uint64_t RADIX>
-static void TestGemmCorrectness(const char* label)
+template <uint64_t RADIX> static void TestGemmCorrectness(const char* label)
 {
   printf("[RADIX=%llu, %s] GEMM read directly from packed storage vs. reference\n",
-         (unsigned long long)RADIX, label);
+         (unsigned long long)RADIX,
+         label);
   const int M = 4, K = 5, N = 3;
 
   PackedRadix<RADIX> A((size_t)(M * K)), B((size_t)(K * N));
@@ -291,8 +297,7 @@ static void TestGemmCorrectness(const char* label)
   printf("  %s\n\n", allMatch ? "ALL MATCH (bit-exact)" : "FAILED");
 }
 
-template <uint64_t RADIX>
-static double TimeDecodeNsPerElement(size_t n, int reps)
+template <uint64_t RADIX> static double TimeDecodeNsPerElement(size_t n, int reps)
 {
   PackedRadix<RADIX> arr(n);
   std::mt19937 rng(1);

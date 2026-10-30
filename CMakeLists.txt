@@ -592,6 +592,31 @@ if(DEEPITY_USE_ONEDNN)
         )
         FetchContent_MakeAvailable(onednn)
         set(DEEPITY_DNNL_TARGET dnnl)
+
+        # Silence warnings from oneDNN's own source -- it's a vendored
+        # dependency we don't maintain, its warnings aren't actionable
+        # here, and they'd otherwise show up next to this project's own
+        # in every build log. oneDNN's own CMakeLists.txt spreads its
+        # library across several targets (dnnl, dnnl_common, dnnl_cpu,
+        # dnnl_cpu_x64, ...) defined in nested subdirectories, so this
+        # walks every directory FetchContent pulled in rather than
+        # naming targets by hand -- new oneDNN versions can rename or
+        # add targets without silently losing this suppression.
+        function(deepity_silence_warnings_recursive dir)
+            get_property(targets DIRECTORY "${dir}" PROPERTY BUILDSYSTEM_TARGETS)
+            foreach(target ${targets})
+                if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+                    target_compile_options(${target} PRIVATE -w)
+                elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+                    target_compile_options(${target} PRIVATE /w)
+                endif()
+            endforeach()
+            get_property(subdirs DIRECTORY "${dir}" PROPERTY SUBDIRECTORIES)
+            foreach(subdir ${subdirs})
+                deepity_silence_warnings_recursive("${subdir}")
+            endforeach()
+        endfunction()
+        deepity_silence_warnings_recursive("${onednn_SOURCE_DIR}")
     endif()
 endif()
 

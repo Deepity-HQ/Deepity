@@ -163,7 +163,8 @@ public:
           const char* expectedDtype = DTypeTag<ElementType>::Name();
           if (!fileDtype.empty() && fileDtype != expectedDtype)
           {
-            throw std::runtime_error("ModelIO::Load: dtype mismatch for '" + key + "' -- file "
+            throw std::runtime_error("ModelIO::Load: dtype mismatch for '" + key +
+                                     "' -- file "
                                      "has " +
                                      fileDtype + ", network expects " + expectedDtype + ".");
           }
