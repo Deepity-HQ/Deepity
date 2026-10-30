@@ -1,6 +1,7 @@
 #pragma once
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/backend/Tensor.h>
+#include <deepity/utils/activations/ActivationMacros.h> // RESTRICT
 #include <stdexcept>
 
 namespace Deep
@@ -136,8 +137,10 @@ public:
         "SimplePCLayer stays on the non-templated CPUBackend in this templating pass.");
   }
 
-  AccumT ComputeErrorAndEnergy(T* e, const T* z, const T* mu, size_t n) noexcept override;
-  void ComputeError(T* e, const T* z, const T* mu, size_t n) noexcept override;
+  AccumT ComputeErrorAndEnergy(T* RESTRICT e, const T* RESTRICT z, const T* RESTRICT mu,
+                                size_t n) noexcept override;
+  void ComputeError(T* RESTRICT e, const T* RESTRICT z, const T* RESTRICT mu,
+                     size_t n) noexcept override;
 
   bool TryComputeErrorAndActivation(ActivationType, T*, T*, const T*, const T*,
                                     size_t) noexcept override

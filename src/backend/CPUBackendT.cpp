@@ -84,7 +84,7 @@ void CPUBackendT<T, AccumT>::RandomizeNormal(T* buf, size_t n, AccumT mean, Accu
 
 #pragma omp for
     for (ptrdiff_t i = 0; i < (ptrdiff_t)n; ++i)
-      buf[i] = static_cast<T>(dist(rng));
+      buf[i] = hwy::ConvertScalarTo<T>(dist(rng));
   }
 }
 
@@ -106,7 +106,7 @@ void CPUBackendT<T, AccumT>::RandomizeUniform(T* buf, size_t n, AccumT min, Accu
 
 #pragma omp for
     for (ptrdiff_t i = 0; i < (ptrdiff_t)n; ++i)
-      buf[i] = static_cast<T>(dist(rng));
+      buf[i] = hwy::ConvertScalarTo<T>(dist(rng));
   }
 }
 
@@ -490,8 +490,8 @@ void CPUBackendT<T, AccumT>::ActivationDerivativeIntoAccum(ActivationType type, 
 }
 
 template <typename T, typename AccumT>
-AccumT CPUBackendT<T, AccumT>::ComputeErrorAndEnergy(T* e, const T* z, const T* mu,
-                                                     size_t n) noexcept
+AccumT CPUBackendT<T, AccumT>::ComputeErrorAndEnergy(T* RESTRICT e, const T* RESTRICT z,
+                                                     const T* RESTRICT mu, size_t n) noexcept
 {
   AccumT energy(0);
 #pragma omp parallel for reduction(+ : energy) schedule(static) if (n > 100000 && !omp_in_parallel())
@@ -505,7 +505,8 @@ AccumT CPUBackendT<T, AccumT>::ComputeErrorAndEnergy(T* e, const T* z, const T* 
 }
 
 template <typename T, typename AccumT>
-void CPUBackendT<T, AccumT>::ComputeError(T* e, const T* z, const T* mu, size_t n) noexcept
+void CPUBackendT<T, AccumT>::ComputeError(T* RESTRICT e, const T* RESTRICT z, const T* RESTRICT mu,
+                                          size_t n) noexcept
 {
 #pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
   for (size_t i = 0; i < n; ++i)
