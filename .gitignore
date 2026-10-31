@@ -34,6 +34,7 @@ docs/latex/
 *.lib
 *.dll
 *.so
+*.sh
 *.pyd
 *.exe
 *.obj
