@@ -106,10 +106,46 @@ std::vector<float> SimplePCNetwork::Predict(const std::vector<float>& x, int inf
   ResetState();
   Clamp(x);
 
-  for (int t = 0; t < inferenceSteps; t++)
+  auto settle = [&]()
   {
-    CalculateState();
-    UpdateState();
+    for (int t = 0; t < inferenceSteps; t++)
+    {
+      CalculateState(false);
+      UpdateState();
+    }
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!plainPredictGraphCaptured || capturedPlainPredictInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPlainPredictGraphSlot);
+      settle();
+      bool captureOk = backend->EndGraphCapture(kPlainPredictGraphSlot);
+
+      if (captureOk)
+      {
+        plainPredictGraphCaptured = true;
+        capturedPlainPredictInferenceSteps = inferenceSteps;
+      }
+      else
+        std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
+                     "this call.\n";
+    }
+
+    if (plainPredictGraphCaptured)
+    {
+      backend->ReplayGraph(kPlainPredictGraphSlot);
+      backend->Synchronize();
+    }
+    else
+    {
+      settle();
+    }
+  }
+  else
+  {
+    settle();
   }
 
   SimplePCLayer* terminal = GetTerminalLayer();

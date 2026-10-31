@@ -249,12 +249,47 @@ std::vector<float> GaussSeidelPCNetwork::Predict(const std::vector<float>& x, in
   ResetState();
   Clamp(x);
 
-  // Seed the hidden states with the forward pass. Without this,
-  // inference starts from z=0 and fails to reach the target.
-  ProjectForward();
+  auto settleAndProject = [&]()
+  {
+    // Seed the hidden states with the forward pass. Without this,
+    // inference starts from z=0 and fails to reach the target.
+    ProjectForward();
+    for (int t = 0; t < inferenceSteps; ++t)
+      Step();
+  };
 
-  for (int t = 0; t < inferenceSteps; ++t)
-    Step();
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPredictGraphSlot);
+      settleAndProject();
+      bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCaptured = true;
+        capturedPredictInferenceSteps = inferenceSteps;
+      }
+      else
+        std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
+                     "this call.\n";
+    }
+
+    if (predictGraphCaptured)
+    {
+      backend->ReplayGraph(kPredictGraphSlot);
+      backend->Synchronize();
+    }
+    else
+    {
+      settleAndProject();
+    }
+  }
+  else
+  {
+    settleAndProject();
+  }
 
   GaussSeidelPCLayer* terminal = GetTerminalLayer();
   const float* beliefs = terminal->GetBeliefs();

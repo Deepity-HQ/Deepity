@@ -226,6 +226,13 @@ private:
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
 
+  /// @brief Predict()'s own graph slot (no forward-projection init,
+  /// unlike PredictWithProjection() above) -- separate again, same
+  /// reasoning as kPredictGraphSlot.
+  static constexpr size_t kPlainPredictGraphSlot = 2;
+  bool plainPredictGraphCaptured = false;
+  int capturedPlainPredictInferenceSteps = -1;
+
   /// @brief Used when device == DEVICE_CPU. Only one of
   /// cpuArena/gpuArena is ever actually constructed for a given
   /// network, they're kept as two separate members (rather than
