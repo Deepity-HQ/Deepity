@@ -217,12 +217,49 @@ std::vector<float> DiscriminativePCNetwork::PredictWithProjection(const std::vec
   ProtectFPU();
   ResetState();
   Clamp(x);
-  ProjectForward();
 
-  for (int t = 0; t < inferenceSteps; t++)
+  auto settleAndProject = [&]()
   {
-    CalculateState();
-    UpdateState();
+    ProjectForward();
+    for (int t = 0; t < inferenceSteps; t++)
+    {
+      CalculateState(false);
+      UpdateState();
+    }
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCapturedWithProjection ||
+        capturedPredictInferenceStepsWithProjection != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPredictWithProjectionGraphSlot);
+      settleAndProject();
+      bool captureOk = backend->EndGraphCapture(kPredictWithProjectionGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCapturedWithProjection = true;
+        capturedPredictInferenceStepsWithProjection = inferenceSteps;
+      }
+      else
+        std::cerr << "PredictWithProjection() graph capture failed, falling back to non-graph "
+                     "execution for this call.\n";
+    }
+
+    if (predictGraphCapturedWithProjection)
+    {
+      backend->ReplayGraph(kPredictWithProjectionGraphSlot);
+      backend->Synchronize();
+    }
+    else
+    {
+      settleAndProject();
+    }
+  }
+  else
+  {
+    settleAndProject();
   }
 
   DiscriminativePCLayer* terminal = GetTerminalLayer();
@@ -311,10 +348,46 @@ std::vector<float> DiscriminativePCNetwork::Predict(const std::vector<float>& x,
   ResetState();
   Clamp(x);
 
-  for (int t = 0; t < inferenceSteps; t++)
+  auto settle = [&]()
   {
-    CalculateState();
-    UpdateState();
+    for (int t = 0; t < inferenceSteps; t++)
+    {
+      CalculateState(false);
+      UpdateState();
+    }
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPredictGraphSlot);
+      settle();
+      bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCaptured = true;
+        capturedPredictInferenceSteps = inferenceSteps;
+      }
+      else
+        std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
+                     "this call.\n";
+    }
+
+    if (predictGraphCaptured)
+    {
+      backend->ReplayGraph(kPredictGraphSlot);
+      backend->Synchronize();
+    }
+    else
+    {
+      settle();
+    }
+  }
+  else
+  {
+    settle();
   }
 
   DiscriminativePCLayer* terminal = GetTerminalLayer();

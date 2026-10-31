@@ -190,5 +190,11 @@ private:
   int capturedInferenceSteps = -1;
   bool graphCapturedWithProjection = false;
   int capturedInferenceStepsWithProjection = -1;
+
+  /// @brief Predict()'s own graph slot, separate from the training
+  /// ones above.
+  static constexpr size_t kPredictGraphSlot = 2;
+  bool predictGraphCaptured = false;
+  int capturedPredictInferenceSteps = -1;
 };
 } // namespace Deep

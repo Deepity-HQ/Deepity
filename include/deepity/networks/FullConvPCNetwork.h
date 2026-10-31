@@ -194,6 +194,12 @@ private:
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 
+  /// @brief Predict()'s own graph slot, separate from TrainStep()'s
+  /// (different op sequence, no UpdateWeights()).
+  static constexpr size_t kPredictGraphSlot = 1;
+  bool predictGraphCaptured = false;
+  int capturedPredictInferenceSteps = -1;
+
   /// @brief Last energy TrainStep() actually computed; returned as-is
   /// when a call skips the readout via computeEnergy=false.
   float lastEnergy = 0.0f;

@@ -357,24 +357,59 @@ std::vector<float> FullConvPCNetwork::Predict(const std::vector<float>& x, int i
 {
   ResetState();
   Clamp(x);
-  ProjectForward();
-
-  for (int t = 0; t < inferenceSteps; t++)
-  {
-    if (useEPC)
-      EPCStep();
-    else
-      Step();
-  }
 
   FullConvPCLayer* terminal = GetTerminalLayer();
 
-  if (terminal->GetCrossEntropy())
+  auto settleAndProject = [&]()
   {
-    FullConvPCLayer* below = layers[layers.size() - 2].get();
-    below->ComputeMuOnly();
-    size_t n = below->GetBatchSize() * below->GetOutputSize();
-    backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+    ProjectForward();
+    for (int t = 0; t < inferenceSteps; t++)
+    {
+      if (useEPC)
+        EPCStep();
+      else
+        Step();
+    }
+    if (terminal->GetCrossEntropy())
+    {
+      FullConvPCLayer* below = layers[layers.size() - 2].get();
+      below->ComputeMuOnly();
+      size_t n = below->GetBatchSize() * below->GetOutputSize();
+      backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+    }
+  };
+
+  if (device == DeviceType::DEVICE_GPU)
+  {
+    if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+    {
+      backend->BeginGraphCapture(kPredictGraphSlot);
+      settleAndProject();
+      bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+      if (captureOk)
+      {
+        predictGraphCaptured = true;
+        capturedPredictInferenceSteps = inferenceSteps;
+      }
+      else
+        std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
+                     "this call.\n";
+    }
+
+    if (predictGraphCaptured)
+    {
+      backend->ReplayGraph(kPredictGraphSlot);
+      backend->Synchronize();
+    }
+    else
+    {
+      settleAndProject();
+    }
+  }
+  else
+  {
+    settleAndProject();
   }
 
   const float* beliefs = terminal->GetBeliefs();
