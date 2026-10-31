@@ -52,10 +52,20 @@ def main() -> None:
 
     BATCH_SIZE = 1000
     LR = 0.00373
+    # ir=0.4/fl=4e-3 was tried and diverged (energy climbed from ~200 to
+    # ~447, accuracy collapsed to 20.6%) -- these original values are
+    # already near the stable ceiling for the step size, not too small.
     IR = 0.15
     FL = 1e-3
     LMBDA = 1e-4
-    DECAY_RATE = 0.94
+    # Schedule shape from Casnici et al. 2602.15571 (DKP-PC), Table 4:
+    # warmup+cosine for the forward LR, a much gentler per-BATCH (not
+    # per-epoch) exponential decay for the feedback rate. Their exact
+    # constants are for a 2x128-unit net at batch_size=128, 25 epochs --
+    # not this net's 512-unit/batch_size=1000/50-epoch setup -- so only
+    # the schedule's shape is carried over, not its literal numbers.
+    WARMUP_FRACTION = 0.05
+    FL_DECAY_PER_BATCH = 0.9995
 
     print(f"\nBuilding network (784->512->10), seed={SEED}, device={DEVICE}...")
 
@@ -77,19 +87,16 @@ def main() -> None:
 
     print(f"\n*** FULL DKP-PC RUN ***")
     print(f"Training DKPPCN: {EPOCHS} epochs, inference_steps={INFERENCE_STEPS}, ")
-    print(f"lr={LR}, ir={IR}, lmbda={LMBDA}, decay_rate={DECAY_RATE}...\n")
+    print(f"lr={LR} (warmup+cosine), ir={IR}, fl={FL} (per-batch decay {FL_DECAY_PER_BATCH}), lmbda={LMBDA}...\n")
 
     rng = np.random.default_rng(SEED)
     n_batches = len(X_train) // BATCH_SIZE
+    total_steps = n_batches * EPOCHS
+    warmup_steps = max(1, int(total_steps * WARMUP_FRACTION))
     start_time = perf_counter()
+    global_step = 0
 
     for epoch in range(EPOCHS):
-        current_lr = LR * (DECAY_RATE ** epoch)
-        net.set_learning_rate(current_lr)
-
-        current_fl = FL * (DECAY_RATE ** epoch)
-        net.set_feedback_rate(current_fl)
-
         indices = rng.permutation(len(X_train))
         X_shuf, Y_shuf = X_train[indices], Y_train[indices]
 
@@ -98,11 +105,22 @@ def main() -> None:
         epoch_energy = 0.0
 
         for b in range(n_batches):
+            if global_step < warmup_steps:
+                current_lr = LR * (global_step + 1) / warmup_steps
+            else:
+                progress = (global_step - warmup_steps) / max(1, total_steps - warmup_steps)
+                current_lr = LR * 0.5 * (1.0 + np.cos(np.pi * progress))
+            net.set_learning_rate(float(current_lr))
+
+            current_fl = FL * (FL_DECAY_PER_BATCH ** global_step)
+            net.set_feedback_rate(float(current_fl))
+
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
             energy = net.train_step(X_batch, Y_batch, INFERENCE_STEPS)
             epoch_energy += energy
+            global_step += 1
 
         N_ACC_BATCHES = 10
         for b in range(min(N_ACC_BATCHES, n_batches)):

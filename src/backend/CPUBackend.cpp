@@ -1,11 +1,9 @@
-#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <deepity/backend/CPUBackend.h>
 #include <deepity/utils/Im2Col.h>
 #include <deepity/utils/MaxPool2D.h>
-#include <stdexcept>
 
 #include "CPUBackendHighway.h"
 
@@ -175,20 +173,9 @@ void CPUBackend::RandomizeUniform(float* buf, size_t n, float min, float max,
   }
 }
 
-namespace
-{
-// TEMPORARY profiling accumulator -- see DebugGetGemmSeconds()'s declaration.
-double g_debugGemmSeconds = 0.0;
-long g_debugGemmCalls = 0;
-} // namespace
-
-double DebugGetGemmSeconds() noexcept { return g_debugGemmSeconds; }
-long DebugGetGemmCalls() noexcept { return g_debugGemmCalls; }
-
 void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                         int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept
 { // Multithreading is the caller's job.
-  auto t0 = std::chrono::steady_clock::now();
   cblas_sgemm(CblasRowMajor,
               transA ? CblasTrans : CblasNoTrans,
               transB ? CblasTrans : CblasNoTrans,
@@ -203,9 +190,6 @@ void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K, float alp
               beta,
               C,
               ldc);
-  auto t1 = std::chrono::steady_clock::now();
-  g_debugGemmSeconds += std::chrono::duration<double>(t1 - t0).count();
-  ++g_debugGemmCalls;
 }
 
 void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept

@@ -5,13 +5,6 @@
 
 namespace Deep
 {
-// TEMPORARY profiling hooks (to isolate GEMM time from everything else in
-// TrainStepWithProjection's wall-clock breakdown) -- remove once that
-// investigation is done, along with the accumulation in MatMul() and the
-// call sites in SimplePCNetwork::TrainStepWithProjection().
-double DebugGetGemmSeconds() noexcept;
-long DebugGetGemmCalls() noexcept;
-
 /// @brief CPU implementation of IComputeBackend: SIMD (via Activations.h)
 /// for elementwise ops, BLAS for GEMM. Graph capture/replay are no-ops
 /// (there's no async device queue to record).

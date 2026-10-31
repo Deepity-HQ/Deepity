@@ -15,7 +15,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def __init__(
         self,
-        *architecture: Layer,
+        *architecture: Layer | Activation,
         input_shape: tuple[int, int, int],
         batch_size: int,
     ) -> None:

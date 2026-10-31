@@ -9,7 +9,6 @@
 #include <deepity/utils/MemoryArena.h>
 #include <memory>
 #include <random>
-#include <stdexcept>
 #include <vector>
 
 /**
@@ -50,16 +49,6 @@
 namespace Deep
 {
 class SimplePCNDiagnostics;
-
-// TEMPORARY profiling hooks, same lifetime/removal plan as
-// CPUBackend.h's DebugGetGemmSeconds(): isolates where SimplePCLayer's
-// own non-GEMM elementwise time goes within the settling loop.
-double DebugGetErrorSeconds() noexcept;
-double DebugGetMuOnlyElementwiseSeconds() noexcept;
-double DebugGetMuGemmSeconds() noexcept;
-double DebugGetFeedbackGemmSeconds() noexcept;
-double DebugGetWeightGradGemmSeconds() noexcept;
-double DebugGetUpdateStateElementwiseSeconds() noexcept;
 
 /// @brief Predictive Coding layer without precision weighting: the
 /// simpler, unweighted-energy counterpart to DiscriminativePCLayer.

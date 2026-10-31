@@ -82,6 +82,15 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
                 )
 
     def _build_backend(self) -> None:
+        """
+        Translate the declarative architecture into backend PC layers.
+
+        Each Linear layer becomes a backend layer. If an Activation follows
+        it, that activation is attached to the backend layer. A final
+        terminal (sink) layer is appended so that the network's last layer
+        holds the OUTPUT dimension's beliefs, not the last Linear's input
+        dimension -- same pattern as SimplePCN._build_backend().
+        """
         self._configured = False
 
         for i, layer in enumerate(self.architecture):
@@ -106,6 +115,29 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
                 activation=activation,
                 activation_deriv="d" + activation,
             )
+
+        # Without this, self.layers[-1] is the LAST LINEAR's own layer
+        # (its z holds that layer's INPUT dimension, e.g. the hidden
+        # width), not a layer whose z actually matches the output
+        # dimension -- clamp_state(Y) in train_step()/predict() would
+        # then be writing a Y shaped for the output onto a belief
+        # buffer sized for the last hidden layer instead.
+        terminal_size = next(
+            component.out_n
+            for component in reversed(self.architecture)
+            if isinstance(component, Linear)
+        )
+
+        super().add_layer(
+            terminal_size,
+            0,
+            lr=self._learning_rate,
+            ir=self._inference_rate,
+            pr=self._precision_rate,
+            lmbda=self._lambda,
+            activation="linear",
+            activation_deriv="dlinear",
+        )
 
         # Compile() must run before RandomizeWeights(): each layer uses its
         # own small, independently-sized arena pre-compile, so randomizing

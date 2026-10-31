@@ -90,6 +90,14 @@ float DirectKPPCNetwork::Step(bool needEnergy) noexcept
 
 void DirectKPPCNetwork::UpdateWeights() noexcept
 {
+  // Step()'s last CalculateState() call left preact one settling
+  // iteration behind the z that UpdateState() just produced from it --
+  // refresh it here so the gradient below is computed "from the settled
+  // state" (see the class doc comment's phase 3), not from the z/preact
+  // pairing one step before it.
+  for (size_t i = 0; i + 1 < layers.size(); ++i)
+    layers[i]->ComputeMuOnly();
+
   for (size_t i = 0; i + 1 < layers.size(); i++)
     layers[i]->UpdateWeights();
 }
