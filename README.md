@@ -159,15 +159,16 @@ MNIST is a standard dataset of handwritten digits (0–9); the task is to classi
 
 The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps/batch, batch size 250, 100 epochs, and AdamW lr=0.00373 with 0.94/epoch decay — identical across the first two columns so the comparison is apples-to-apples.
 
-| | Deepity `SimplePCN` | jpc (JAX) | ngc-learn `pc_discrim` | PyTorch backprop (control) |
-|---|---|---|---|---|
-| Test / dev accuracy | **98.21%** | 97.55% | 98% (best dev) | 97.51% |
-| Wall-clock, 100 epochs | **487.5s** | 531.4s | 1707.7s | 627.8s |
-| Command | `python examples/mnist.py 7 100 20` | `python experiments/benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
-| Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/jpc_mnist_run.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
+| | Deepity `SimplePCN` | Deepity `SimplePCN` (CUDA) | jpc (JAX) | ngc-learn `pc_discrim` | PyTorch backprop (control) |
+|---|---|---|---|---|---|
+| Test / dev accuracy | **98.21%** | 98.08% | 97.55% | 98% (best dev) | 97.51% |
+| Wall-clock, 100 epochs | 487.5s | **68.4s** | 531.4s | 1707.7s | 627.8s |
+| Command | `python examples/mnist.py 7 100 20` | `python examples/mnist_cuda.py 7 100 20` | `python experiments/benchmark_jpc_mnist.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` |
+| Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/mnist_cuda_run.txt` | `logs/jpc_mnist_run.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` |
 
 - **Deepity vs. jpc** is the closest comparison: both are predictive-coding implementations on the same architecture, settling-step count, batch size, epoch count and optimizer schedule. jpc is built on JAX/XLA; Deepity is hand-tuned C++. Deepity trains faster at matching accuracy.
 - **Deepity vs. ngc-learn:** identical architecture, settling-step count, batch size, epoch count, forward-projection init and optimizer schedule, run as two independent predictive-coding implementations on the same machine. Deepity reaches equal-or-better accuracy in less time.
+- **The CUDA column** is the same network/hyperparameters as the CPU column, run on a single A100 (OSC Ascend cluster) instead — **~7x faster wall-clock** at matching accuracy. The per-epoch energy trace climbs in the back half of training (still converges, accuracy stays 99.8-100%) once the batches become perfectly separable; this is the known softmax-cross-entropy-at-the-separable-optimum sensitivity `TERMINAL_FEED_WEIGHT_DECAY` is tuned against (see `examples/mnist_cuda.py`'s own comment), not a CUDA-specific issue -- the same stabilizer constant was carried over unretuned from the CPU run.
 - **The PyTorch column is a reference point, not a PC run.** It's single-pass backprop (one forward and one backward pass per batch) against the same targets via MSE loss. It does one pass per batch where PC does T=20 settling passes, so it isn't directly comparable to the PC columns.
 
 **The faster option:** `DKPPCN` (784&rarr;512&rarr;10, batch size 1000, only 2 inference steps/batch instead of 20) reaches 95.97% in 49.6s on the same CPU (`python examples/mnist_dkppcn.py 7 50 2 cpu`, `logs/DKPPCN_native_mkl.txt`). That's a different point on the speed/accuracy trade-off curve.
