@@ -1,0 +1,151 @@
+CUDA graph-capture investigation for Deepity SimplePCN (examples/mnist_cuda.py)
+================================================================================
+Branch: dev/CUDA/Optimize
+Hardware: single A100-PCIE-40GB, OSC Ascend cluster
+
+Context
+-------
+Deepity (CUDA) trained MNIST in 68.4s/100 epochs (98.08% acc), slightly
+SLOWER than PyTorch backprop's naive single-pass CUDA run (61.9s/97.70%),
+despite Deepity's hand-tuned CPU path clearly beating PyTorch's CPU path
+(487.5s vs 627.8s). Investigated with nsys to find out why the CUDA port
+wasn't carrying over the same relative advantage.
+
+
+Step 1: baseline profile (pre-fix)
+-----------------------------------
+Command: nsys profile -o mnist_cuda_profile --trace=cuda,nvtx,osrt -f true \
+          python examples/mnist_cuda.py 7 3 20   (3-epoch short profiling run)
+
+cuda_api_sum highlights:
+  cudaStreamSynchronize   5,043 calls   1,733,369,154 ns (64.6%)
+  cudaLaunchKernel       27,589 calls     151,519,151 ns (5.6%)
+  cudaGraphLaunch_v10000    720 calls     124,249,021 ns (4.6%)
+  cudaStreamBeginCapture_v10000   1 call      61,045 ns
+
+Only ONE cudaStreamBeginCapture call for the whole run: only
+SimplePCNetwork::TrainStepWithProjection() (the training step) was using
+CUDA graph capture/replay (720 calls = 3 epochs x 240 batches, confirming
+every training batch correctly replayed its graph). PredictWithProjection()
+-- used by the per-epoch accuracy check (10 batches x 20 steps x 100
+epochs) and the final 40-batch test eval -- had NO graph capture at all,
+running every settling step as individual ungraphed kernel launches.
+27,589 raw cudaLaunchKernel calls is far more than graph replay would ever
+need, consistent with this gap.
+
+Root cause: include/deepity/networks/SimplePCNetwork.h only declared one
+graph-state slot (graphCaptured/capturedInferenceSteps), used by
+TrainStepWithProjection. Sibling classes (FullPCNetwork, DirectKPPCNetwork)
+already have a SEPARATE slot (predictGraphCaptured/
+capturedPredictInferenceSteps, via a dedicated kPredictGraphSlot=1) so
+their own Predict() path gets its own independent captured graph, distinct
+from the training step's (which also bakes in UpdateWeights() -- sharing a
+slot between the two would replay a weight update during what should be a
+read-only prediction). SimplePCNetwork never got this second slot.
+
+
+Step 2: the fix
+----------------
+- include/deepity/networks/SimplePCNetwork.h: added kPredictGraphSlot=1,
+  predictGraphCaptured, capturedPredictInferenceSteps.
+- src/networks/SimplePCNetwork.cpp: PredictWithProjection() now captures/
+  replays its own graph on GPU, mirroring FullPCNetwork::Predict()'s
+  existing pattern.
+- examples/mnist_cuda.py: the per-epoch accuracy check was manually
+  reimplementing reset_state/clamp_input/project_forward/settling-loop in
+  Python instead of calling net.predict_with_projection(...), so it could
+  never have benefited from the C++ fix regardless. Switched it to call
+  predict_with_projection directly, and removed a redundant reset_state()/
+  clamp_input() pair before the final-eval's own predict_with_projection
+  call (dead work -- that function already does both internally).
+
+
+Step 3: re-profile (post-fix)
+-------------------------------
+Command: nsys profile -o mnist_cuda_profile_v2 --trace=cuda,nvtx,osrt -f true \
+          python examples/mnist_cuda.py 7 3 20
+
+cuda_api_sum highlights:
+  cudaStreamSynchronize   5,113 calls   1,824,062,834 ns (71.8%)
+  cudaGraphLaunch_v10000    790 calls     130,068,555 ns (5.1%)
+  cudaLaunchKernel       11,995 calls      76,665,451 ns (3.0%)
+  cudaStreamBeginCapture_v10000   2 calls   38,453 ns total
+
+Confirms the fix: cudaStreamBeginCapture went 1 -> 2 (one capture each for
+the training graph and the new predict graph). cudaGraphLaunch went
+720 -> 790 (+70 = 10 accuracy-check batches x 3 epochs (30) + 40 final-eval
+batches (40), exactly matching every PredictWithProjection call now hitting
+a graph). cudaLaunchKernel dropped 27,589 -> 11,995 calls, 151.5ms -> 76.7ms
+(~49% less CPU-side launch overhead).
+
+Full 100-epoch result: examples/mnist_cuda.py 7 100 20
+  Train time: 68.4s -> 66.8s (1.6s improvement, accuracy unchanged bit-for-
+  bit at 98.08%, same per-epoch curve -- confirms the fix changed overhead
+  only, not numerics).
+
+The remaining ~12k raw launches in cuda_api_sum are not a leftover bug:
+ResetState()/Clamp() deliberately run OUTSIDE both captured graphs on
+every call (720 train + 70 predict = 790 calls) -- a graph captures a
+fixed sequence of GPU operations, and feeding each new batch's data in
+means copying it into the same device buffer right before replay, not
+recapturing.
+
+
+Step 4: second hypothesis -- redundant per-batch energy computation
+----------------------------------------------------------------------
+cudaStreamSynchronize remained the dominant line even after the fix
+(71.8% of API time, 5,113 calls vs. an expected baseline of ~790 one-
+sync-per-batch calls). Root cause: src/networks/SimplePCNetwork.cpp:262,
+
+    float finalEnergy = CalculateState(computeEnergy);
+
+runs AFTER backend->ReplayGraph(); backend->Synchronize() -- i.e. outside
+the captured graph. mnist_cuda.py's training call (line 124) passes no
+computeEnergy argument, defaulting to true, so every training batch
+redundantly re-runs the whole forward/error pass a second time, ungraphed,
+purely to get a reportable energy scalar -- and each layer's
+ComputeErrorAndEnergy/ComputeSoftmaxCrossEntropyErrorAndEnergy call must
+synchronously block to return that float to the CPU. This is structural:
+a CUDA graph can't itself return a synchronous host-side scalar, so the
+energy computation was pushed outside the graph by necessity.
+
+Diagnostic (NOT a committed change -- reverted via git checkout immediately
+after, to preserve examples/mnist.py-comparable "avg energy" semantics):
+
+    sed -i 's/net.train_step_with_projection(X_batch, Y_batch, STEPS)/net.train_step_with_projection(X_batch, Y_batch, STEPS, False)/' examples/mnist_cuda.py
+    PYTHONPATH=. python examples/mnist_cuda.py 7 100 20
+    git checkout examples/mnist_cuda.py
+
+Result with computeEnergy=False for the whole run: 64.8s (vs. 66.8s with
+energy on). Confirms the redundant per-layer energy readback is real
+overhead, but only ~2s (~3% of total) -- not the dominant cost the raw
+sync-call count suggested; the per-layer syncs are individually cheap,
+there are just many of them.
+
+
+Conclusion
+----------
+Two real, confirmed, modest wins found and the first one kept:
+  1. PredictWithProjection graph capture (KEPT, committed): 68.4s -> 66.8s.
+  2. Per-batch energy computed outside the graph: ~2s of recoverable
+     overhead exists (64.8s if removed entirely), but removing it loses a
+     diagnostic that's had real value this session (e.g. spotting the
+     softmax-cross-entropy-at-the-separable-optimum sensitivity
+     TERMINAL_FEED_WEIGHT_DECAY is tuned against). NOT implemented as a
+     permanent change; the real fix would be to have the graph write the
+     energy scalar into a persistent device buffer during capture and read
+     that back with one cheap post-sync memcpy, instead of re-running the
+     whole forward/error pass -- bigger surgery across IComputeBackend /
+     CUDABackend / SimplePCLayer, deferred.
+
+With energy still on, the gap to PyTorch (CUDA)'s 61.9s is 66.8 - 61.9 =
+4.9s. Best-case with both the energy restructure AND current behavior,
+~2.9s. The remaining gap looks architecturally inherent rather than a bug:
+cudaGraphLaunch alone averaged ~172us/call; across the full 100-epoch run's
+24,000 training batches (100 x 240) that's ~4s of pure CPU-side dispatch
+overhead on top of actual GPU compute -- and a T=20-step PC settling loop
+replayed once per batch is simply issuing more sequential GPU work per
+batch than PyTorch's single backward pass, on a network (784-512-512-10,
+batch 250) small enough that an A100 is overprovisioned for it in the
+first place -- the same overhead-dominated-by-tiny-workload effect that
+hurt jpc far more severely (see logs/jpc_mnist_run_cuda.txt).
