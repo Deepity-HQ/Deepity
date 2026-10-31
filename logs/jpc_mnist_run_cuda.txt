@@ -1,0 +1,117 @@
+(.venv) (.venv) [rubaolee2008@a0341 Deepity]$ PYTHONPATH=. python experiments/benchmark_jpc_mnist_cuda.py 7 100
+jax backend: gpu, devices: [CudaDevice(id=0)]
+Fetching canonical MNIST dataset (idx-ubyte, matching Deepity's own loader)...
+Architecture: [784, 512, 512, 10], batch=250, seed=7
+Training (jpc, CUDA, matched to Deepity's own protocol): 100 epochs, 20 steps, lr=0.00373, decay_rate=0.94...
+
+2026-10-30 21:09:44.783706: W external/xla/xla/service/gpu/autotuning/gemm_fusion_autotuner.cc:1093] Compiling 325 configs for 11 fusions on a single thread.
+Epoch 1/100 | Time: 100.6s | Acc: 80.52%
+Epoch 2/100 | Time: 106.4s | Acc: 84.32%
+Epoch 3/100 | Time: 112.3s | Acc: 85.68%
+Epoch 4/100 | Time: 118.1s | Acc: 86.56%
+Epoch 5/100 | Time: 123.9s | Acc: 89.56%
+Epoch 6/100 | Time: 129.7s | Acc: 91.64%
+Epoch 7/100 | Time: 135.5s | Acc: 91.96%
+Epoch 8/100 | Time: 141.4s | Acc: 90.84%
+Epoch 9/100 | Time: 147.2s | Acc: 93.00%
+Epoch 10/100 | Time: 153.0s | Acc: 93.40%
+Epoch 11/100 | Time: 158.8s | Acc: 91.88%
+Epoch 12/100 | Time: 164.6s | Acc: 92.08%
+Epoch 13/100 | Time: 170.4s | Acc: 93.80%
+Epoch 14/100 | Time: 176.2s | Acc: 93.00%
+Epoch 15/100 | Time: 182.1s | Acc: 93.96%
+Epoch 16/100 | Time: 187.9s | Acc: 92.60%
+Epoch 17/100 | Time: 193.7s | Acc: 93.56%
+Epoch 18/100 | Time: 199.5s | Acc: 94.52%
+Epoch 19/100 | Time: 205.3s | Acc: 92.96%
+Epoch 20/100 | Time: 211.1s | Acc: 94.20%
+Epoch 21/100 | Time: 216.9s | Acc: 93.72%
+Epoch 22/100 | Time: 222.7s | Acc: 93.68%
+Epoch 23/100 | Time: 228.5s | Acc: 94.60%
+Epoch 24/100 | Time: 234.4s | Acc: 93.56%
+Epoch 25/100 | Time: 240.2s | Acc: 93.04%
+Epoch 26/100 | Time: 246.0s | Acc: 93.72%
+Epoch 27/100 | Time: 251.8s | Acc: 93.84%
+Epoch 28/100 | Time: 257.6s | Acc: 94.64%
+Epoch 29/100 | Time: 263.4s | Acc: 94.60%
+Epoch 30/100 | Time: 269.2s | Acc: 95.08%
+Epoch 31/100 | Time: 275.0s | Acc: 94.40%
+Epoch 32/100 | Time: 280.8s | Acc: 94.24%
+Epoch 33/100 | Time: 286.7s | Acc: 94.36%
+Epoch 34/100 | Time: 292.5s | Acc: 94.68%
+Epoch 35/100 | Time: 298.3s | Acc: 93.84%
+Epoch 36/100 | Time: 304.1s | Acc: 95.00%
+Epoch 37/100 | Time: 309.9s | Acc: 94.32%
+Epoch 38/100 | Time: 315.7s | Acc: 94.00%
+Epoch 39/100 | Time: 321.6s | Acc: 94.72%
+Epoch 40/100 | Time: 327.4s | Acc: 95.16%
+Epoch 41/100 | Time: 333.2s | Acc: 94.76%
+Epoch 42/100 | Time: 339.0s | Acc: 94.56%
+Epoch 43/100 | Time: 344.8s | Acc: 93.60%
+Epoch 44/100 | Time: 350.6s | Acc: 95.00%
+Epoch 45/100 | Time: 356.4s | Acc: 94.88%
+Epoch 46/100 | Time: 362.3s | Acc: 95.32%
+Epoch 47/100 | Time: 368.1s | Acc: 94.40%
+Epoch 48/100 | Time: 373.9s | Acc: 94.08%
+Epoch 49/100 | Time: 379.7s | Acc: 95.08%
+Epoch 50/100 | Time: 385.5s | Acc: 95.68%
+Epoch 51/100 | Time: 391.3s | Acc: 94.60%
+Epoch 52/100 | Time: 397.1s | Acc: 93.80%
+Epoch 53/100 | Time: 402.9s | Acc: 94.60%
+Epoch 54/100 | Time: 408.7s | Acc: 94.48%
+Epoch 55/100 | Time: 414.5s | Acc: 94.36%
+Epoch 56/100 | Time: 420.3s | Acc: 95.24%
+Epoch 57/100 | Time: 426.2s | Acc: 94.48%
+Epoch 58/100 | Time: 432.0s | Acc: 95.68%
+Epoch 59/100 | Time: 437.8s | Acc: 94.72%
+Epoch 60/100 | Time: 443.6s | Acc: 95.20%
+Epoch 61/100 | Time: 449.4s | Acc: 94.96%
+Epoch 62/100 | Time: 455.2s | Acc: 94.80%
+Epoch 63/100 | Time: 461.0s | Acc: 94.96%
+Epoch 64/100 | Time: 466.8s | Acc: 95.52%
+Epoch 65/100 | Time: 472.6s | Acc: 94.84%
+Epoch 66/100 | Time: 478.4s | Acc: 94.16%
+Epoch 67/100 | Time: 484.3s | Acc: 95.20%
+Epoch 68/100 | Time: 490.1s | Acc: 95.00%
+Epoch 69/100 | Time: 495.9s | Acc: 94.48%
+Epoch 70/100 | Time: 501.7s | Acc: 95.48%
+Epoch 71/100 | Time: 507.5s | Acc: 94.92%
+Epoch 72/100 | Time: 513.3s | Acc: 95.32%
+Epoch 73/100 | Time: 519.1s | Acc: 95.16%
+Epoch 74/100 | Time: 524.9s | Acc: 95.72%
+Epoch 75/100 | Time: 530.8s | Acc: 94.80%
+Epoch 76/100 | Time: 536.6s | Acc: 94.80%
+Epoch 77/100 | Time: 542.4s | Acc: 95.08%
+Epoch 78/100 | Time: 548.2s | Acc: 94.56%
+Epoch 79/100 | Time: 554.0s | Acc: 94.76%
+Epoch 80/100 | Time: 559.8s | Acc: 94.72%
+Epoch 81/100 | Time: 565.6s | Acc: 95.40%
+Epoch 82/100 | Time: 571.4s | Acc: 95.76%
+Epoch 83/100 | Time: 577.2s | Acc: 95.92%
+Epoch 84/100 | Time: 583.1s | Acc: 94.72%
+Epoch 85/100 | Time: 588.9s | Acc: 95.12%
+Epoch 86/100 | Time: 594.7s | Acc: 94.92%
+Epoch 87/100 | Time: 600.5s | Acc: 94.48%
+Epoch 88/100 | Time: 606.3s | Acc: 95.20%
+Epoch 89/100 | Time: 612.1s | Acc: 94.16%
+Epoch 90/100 | Time: 618.0s | Acc: 95.24%
+Epoch 91/100 | Time: 623.8s | Acc: 94.60%
+Epoch 92/100 | Time: 629.6s | Acc: 95.84%
+Epoch 93/100 | Time: 635.4s | Acc: 95.44%
+Epoch 94/100 | Time: 641.2s | Acc: 95.56%
+Epoch 95/100 | Time: 647.1s | Acc: 95.16%
+Epoch 96/100 | Time: 652.9s | Acc: 95.00%
+Epoch 97/100 | Time: 658.7s | Acc: 95.44%
+Epoch 98/100 | Time: 664.5s | Acc: 95.12%
+Epoch 99/100 | Time: 670.3s | Acc: 94.40%
+Epoch 100/100 | Time: 676.1s | Acc: 95.28%
+
+Training complete in 676.1s.
+
+Running final test evaluation (jpc feedforward readout)...
+
+=== Result ===
+jpc (CUDA) Peak Test Accuracy: 94.76%
+Train time: 676.1s
+
+jpc (CUDA) per-epoch: [80.52, 84.32, 85.68, 86.56, 89.56, 91.64, 91.96, 90.84, 93.0, 93.4, 91.88, 92.08, 93.8, 93.0, 93.96, 92.6, 93.56, 94.52, 92.96, 94.2, 93.72, 93.68, 94.6, 93.56, 93.04, 93.72, 93.84, 94.64, 94.6, 95.08, 94.4, 94.24, 94.36, 94.68, 93.84, 95.0, 94.32, 94.0, 94.72, 95.16, 94.76, 94.56, 93.6, 95.0, 94.88, 95.32, 94.4, 94.08, 95.08, 95.68, 94.6, 93.8, 94.6, 94.48, 94.36, 95.24, 94.48, 95.68, 94.72, 95.2, 94.96, 94.8, 94.96, 95.52, 94.84, 94.16, 95.2, 95.0, 94.48, 95.48, 94.92, 95.32, 95.16, 95.72, 94.8, 94.8, 95.08, 94.56, 94.76, 94.72, 95.4, 95.76, 95.92, 94.72, 95.12, 94.92, 94.48, 95.2, 94.16, 95.24, 94.6, 95.84, 95.44, 95.56, 95.16, 95.0, 95.44, 95.12, 94.4, 95.28]
