@@ -1,7 +1,7 @@
 # 3.28 is Halide's own declared floor (see DEEPITY_USE_HALIDE below);
 # CMake 4.x is what's actually installed on every machine this project
 # builds on today, so this costs nothing in practice.
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.26.5)
 
 # Must be set before project() -- CMake only reads this launcher var here.
 # No-op if ccache isn't installed.
