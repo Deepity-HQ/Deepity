@@ -674,5 +674,28 @@ template void FullPCLayerT<float, float>::BindMemory<DeviceMemoryArenaT<float, f
     DeviceMemoryArenaT<float, float>& arena);
 template void FullPCLayerT<double, double>::BindMemory<DeviceMemoryArenaT<double, double>>(
     DeviceMemoryArenaT<double, double>& arena);
+
+// FullPCNetworkT<T, AccumT>::Compile()'s GPU branch (see
+// FullPCNetworkT.h) calls BindMemory<DeviceMemoryArenaT<T, AccumT>>
+// unconditionally for every explicitly-instantiated T, including the
+// quantized types below -- even though CreateBackendT<T, AccumT>
+// (BackendT.h) throws std::runtime_error before any of these T's
+// Compile() ever reaches this call, since no CUDABackendT<T, AccumT>
+// exists yet for anything but float/double. These instantiations are
+// therefore genuinely dead code at runtime, but still need to LINK:
+// without them the quantized explicit instantiations below fail at
+// link time with "undefined symbol", not at the documented runtime
+// throw, the moment DEEPITY_USE_CUDA is turned on.
+template void FullPCLayerT<Fp4E2M1Value, float>::BindMemory<DeviceMemoryArenaT<Fp4E2M1Value, float>>(
+    DeviceMemoryArenaT<Fp4E2M1Value, float>& arena);
+template void
+FullPCLayerT<hwy::float16_t, float>::BindMemory<DeviceMemoryArenaT<hwy::float16_t, float>>(
+    DeviceMemoryArenaT<hwy::float16_t, float>& arena);
+template void FullPCLayerT<Posit4_0Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_0Value, float>>(
+    DeviceMemoryArenaT<Posit4_0Value, float>& arena);
+template void FullPCLayerT<Posit4_1Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_1Value, float>>(
+    DeviceMemoryArenaT<Posit4_1Value, float>& arena);
+template void FullPCLayerT<Posit4_2Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_2Value, float>>(
+    DeviceMemoryArenaT<Posit4_2Value, float>& arena);
 #endif
 } // namespace Deep
