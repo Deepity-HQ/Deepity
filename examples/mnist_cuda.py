@@ -138,14 +138,8 @@ def main() -> None:
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
             Y_batch = Y_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
 
-            net.reset_state()
-            net.clamp_input(X_batch)
-            net.project_forward()
-            for _ in range(STEPS):
-                net.calculate_state(False)
-                net.update_state()
-
-            terminal_beliefs = np.array(net[-1].beliefs).reshape(BATCH_SIZE, 10)
+            flat_beliefs = net.predict_with_projection(X_batch, STEPS)
+            terminal_beliefs = flat_beliefs.reshape(BATCH_SIZE, 10)
             pred = np.argmax(terminal_beliefs, axis=1)
             true = np.argmax(Y_batch, axis=1)
             correct += np.sum(pred == true)
@@ -169,8 +163,6 @@ def main() -> None:
         if len(X_batch) != BATCH_SIZE:
             continue
 
-        net.reset_state()
-        net.clamp_input(X_batch)
         flat_beliefs = net.predict_with_projection(X_batch, STEPS)
         terminal_beliefs = flat_beliefs.reshape(BATCH_SIZE, 10)
 
