@@ -1,0 +1,114 @@
+(.venv) [rubaolee2008@a0341 Deepity]$ PYTHONPATH=. python examples/test_ffnn_deep_cuda.py 7 100
+Fetching canonical MNIST dataset (idx-ubyte, matching ngc-learn exactly)...
+Using device: cuda (NVIDIA A100-PCIE-40GB)
+
+Training (backprop control, CUDA): 100 epochs, batch_size=250, architecture=784->512->512->10 (sigmoid, matches SimplePCN exactly), lr=0.00373, decay_rate=0.94, MSE loss vs one-hot...
+
+Epoch 1/100 | avg loss: 0.0600 | elapsed: 3.6s
+Epoch 2/100 | avg loss: 0.0122 | elapsed: 4.2s
+Epoch 3/100 | avg loss: 0.0089 | elapsed: 4.7s
+Epoch 4/100 | avg loss: 0.0076 | elapsed: 5.3s
+Epoch 5/100 | avg loss: 0.0067 | elapsed: 5.9s
+Epoch 6/100 | avg loss: 0.0060 | elapsed: 6.6s
+Epoch 7/100 | avg loss: 0.0053 | elapsed: 7.1s
+Epoch 8/100 | avg loss: 0.0048 | elapsed: 7.7s
+Epoch 9/100 | avg loss: 0.0044 | elapsed: 8.3s
+Epoch 10/100 | avg loss: 0.0040 | elapsed: 8.9s
+Epoch 11/100 | avg loss: 0.0036 | elapsed: 9.4s
+Epoch 12/100 | avg loss: 0.0033 | elapsed: 10.1s
+Epoch 13/100 | avg loss: 0.0030 | elapsed: 10.7s
+Epoch 14/100 | avg loss: 0.0028 | elapsed: 11.2s
+Epoch 15/100 | avg loss: 0.0025 | elapsed: 11.8s
+Epoch 16/100 | avg loss: 0.0022 | elapsed: 12.4s
+Epoch 17/100 | avg loss: 0.0020 | elapsed: 13.0s
+Epoch 18/100 | avg loss: 0.0018 | elapsed: 13.6s
+Epoch 19/100 | avg loss: 0.0016 | elapsed: 14.2s
+Epoch 20/100 | avg loss: 0.0015 | elapsed: 14.7s
+Epoch 21/100 | avg loss: 0.0013 | elapsed: 15.3s
+Epoch 22/100 | avg loss: 0.0011 | elapsed: 15.9s
+Epoch 23/100 | avg loss: 0.0010 | elapsed: 16.6s
+Epoch 24/100 | avg loss: 0.0009 | elapsed: 17.1s
+Epoch 25/100 | avg loss: 0.0008 | elapsed: 17.7s
+Epoch 26/100 | avg loss: 0.0008 | elapsed: 18.3s
+Epoch 27/100 | avg loss: 0.0007 | elapsed: 18.8s
+Epoch 28/100 | avg loss: 0.0007 | elapsed: 19.4s
+Epoch 29/100 | avg loss: 0.0006 | elapsed: 20.1s
+Epoch 30/100 | avg loss: 0.0006 | elapsed: 20.6s
+Epoch 31/100 | avg loss: 0.0006 | elapsed: 21.2s
+Epoch 32/100 | avg loss: 0.0005 | elapsed: 21.8s
+Epoch 33/100 | avg loss: 0.0005 | elapsed: 22.3s
+Epoch 34/100 | avg loss: 0.0005 | elapsed: 23.0s
+Epoch 35/100 | avg loss: 0.0005 | elapsed: 23.6s
+Epoch 36/100 | avg loss: 0.0004 | elapsed: 24.2s
+Epoch 37/100 | avg loss: 0.0004 | elapsed: 24.7s
+Epoch 38/100 | avg loss: 0.0004 | elapsed: 25.3s
+Epoch 39/100 | avg loss: 0.0004 | elapsed: 25.9s
+Epoch 40/100 | avg loss: 0.0004 | elapsed: 26.5s
+Epoch 41/100 | avg loss: 0.0004 | elapsed: 27.1s
+Epoch 42/100 | avg loss: 0.0004 | elapsed: 27.7s
+Epoch 43/100 | avg loss: 0.0004 | elapsed: 28.3s
+Epoch 44/100 | avg loss: 0.0003 | elapsed: 28.8s
+Epoch 45/100 | avg loss: 0.0003 | elapsed: 29.4s
+Epoch 46/100 | avg loss: 0.0003 | elapsed: 30.1s
+Epoch 47/100 | avg loss: 0.0003 | elapsed: 30.6s
+Epoch 48/100 | avg loss: 0.0003 | elapsed: 31.2s
+Epoch 49/100 | avg loss: 0.0003 | elapsed: 31.8s
+Epoch 50/100 | avg loss: 0.0003 | elapsed: 32.3s
+Epoch 51/100 | avg loss: 0.0003 | elapsed: 33.0s
+Epoch 52/100 | avg loss: 0.0003 | elapsed: 33.6s
+Epoch 53/100 | avg loss: 0.0003 | elapsed: 34.1s
+Epoch 54/100 | avg loss: 0.0003 | elapsed: 34.7s
+Epoch 55/100 | avg loss: 0.0003 | elapsed: 35.3s
+Epoch 56/100 | avg loss: 0.0003 | elapsed: 35.9s
+Epoch 57/100 | avg loss: 0.0003 | elapsed: 36.5s
+Epoch 58/100 | avg loss: 0.0003 | elapsed: 37.1s
+Epoch 59/100 | avg loss: 0.0003 | elapsed: 37.7s
+Epoch 60/100 | avg loss: 0.0003 | elapsed: 38.3s
+Epoch 61/100 | avg loss: 0.0003 | elapsed: 38.8s
+Epoch 62/100 | avg loss: 0.0003 | elapsed: 39.4s
+Epoch 63/100 | avg loss: 0.0002 | elapsed: 40.1s
+Epoch 64/100 | avg loss: 0.0002 | elapsed: 40.6s
+Epoch 65/100 | avg loss: 0.0002 | elapsed: 41.2s
+Epoch 66/100 | avg loss: 0.0002 | elapsed: 41.8s
+Epoch 67/100 | avg loss: 0.0002 | elapsed: 42.4s
+Epoch 68/100 | avg loss: 0.0002 | elapsed: 43.0s
+Epoch 69/100 | avg loss: 0.0002 | elapsed: 43.6s
+Epoch 70/100 | avg loss: 0.0002 | elapsed: 44.2s
+Epoch 71/100 | avg loss: 0.0002 | elapsed: 44.8s
+Epoch 72/100 | avg loss: 0.0002 | elapsed: 45.3s
+Epoch 73/100 | avg loss: 0.0002 | elapsed: 45.9s
+Epoch 74/100 | avg loss: 0.0002 | elapsed: 46.6s
+Epoch 75/100 | avg loss: 0.0002 | elapsed: 47.2s
+Epoch 76/100 | avg loss: 0.0002 | elapsed: 47.7s
+Epoch 77/100 | avg loss: 0.0002 | elapsed: 48.3s
+Epoch 78/100 | avg loss: 0.0002 | elapsed: 48.9s
+Epoch 79/100 | avg loss: 0.0002 | elapsed: 49.5s
+Epoch 80/100 | avg loss: 0.0002 | elapsed: 50.1s
+Epoch 81/100 | avg loss: 0.0002 | elapsed: 50.7s
+Epoch 82/100 | avg loss: 0.0002 | elapsed: 51.3s
+Epoch 83/100 | avg loss: 0.0002 | elapsed: 51.9s
+Epoch 84/100 | avg loss: 0.0002 | elapsed: 52.4s
+Epoch 85/100 | avg loss: 0.0002 | elapsed: 53.1s
+Epoch 86/100 | avg loss: 0.0002 | elapsed: 53.7s
+Epoch 87/100 | avg loss: 0.0002 | elapsed: 54.3s
+Epoch 88/100 | avg loss: 0.0002 | elapsed: 54.8s
+Epoch 89/100 | avg loss: 0.0002 | elapsed: 55.4s
+Epoch 90/100 | avg loss: 0.0002 | elapsed: 56.0s
+Epoch 91/100 | avg loss: 0.0002 | elapsed: 56.6s
+Epoch 92/100 | avg loss: 0.0002 | elapsed: 57.2s
+Epoch 93/100 | avg loss: 0.0002 | elapsed: 57.8s
+Epoch 94/100 | avg loss: 0.0002 | elapsed: 58.4s
+Epoch 95/100 | avg loss: 0.0002 | elapsed: 58.9s
+Epoch 96/100 | avg loss: 0.0002 | elapsed: 59.5s
+Epoch 97/100 | avg loss: 0.0002 | elapsed: 60.2s
+Epoch 98/100 | avg loss: 0.0002 | elapsed: 60.7s
+Epoch 99/100 | avg loss: 0.0002 | elapsed: 61.3s
+Epoch 100/100 | avg loss: 0.0002 | elapsed: 61.9s
+
+Training complete in 61.9s.
+
+Running final test evaluation...
+
+=== Result ===
+Backprop (PyTorch, CUDA) test accuracy: 97.70%
+Train time: 61.9s
