@@ -149,6 +149,22 @@ void FullConvPCNetwork::EPCStep() noexcept
 
 void FullConvPCNetwork::UpdateWeights() noexcept
 {
+  // preact (and the mu := phi'(preact) it feeds, via
+  // EnsureMuHoldsDerivative()) is only refreshed by ComputeMuOnly(),
+  // which Step()/EPCStep() call against last iteration's z, before this
+  // same iteration's UpdateState() advances z -- so without this
+  // refresh, the weight gradient's derivative term (read from mu below)
+  // would be one settling step stale relative to the activity (z) it
+  // multiplies against. Same bug, same fix as FullPCNetwork(T)'s own
+  // UpdateWeights() -- but mu must hold the DERIVATIVE here, not the
+  // activated value ComputeMuOnly() alone would leave it at, hence the
+  // extra EnsureMuHoldsDerivative() call UpdateState()'s own fused path
+  // would otherwise have applied.
+  for (size_t i = 0; i + 1 < layers.size(); ++i)
+  {
+    layers[i]->ComputeMuOnly();
+    layers[i]->EnsureMuHoldsDerivative();
+  }
   for (size_t i = 0; i + 1 < layers.size(); i++)
     layers[i]->UpdateWeights();
 }

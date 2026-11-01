@@ -121,6 +121,14 @@ void FullPCNetwork::EPCStep() noexcept
 
 void FullPCNetwork::UpdateWeights() noexcept
 {
+  // preact is only refreshed by ComputeMuOnly(), which Step()/EPCStep()
+  // call against last iteration's z, before this same iteration's
+  // UpdateState() advances z -- so without this refresh, the weight
+  // gradient's derivative term (read from preact below) would be one
+  // settling step stale relative to the activity (z) it multiplies
+  // against. Same bug, same fix as DirectKPPCNetwork::UpdateWeights().
+  for (size_t i = 0; i + 1 < layers.size(); ++i)
+    layers[i]->ComputeMuOnly();
   for (size_t i = 0; i + 1 < layers.size(); i++)
     layers[i]->UpdateWeights();
 }
