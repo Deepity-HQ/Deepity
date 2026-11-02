@@ -19,6 +19,9 @@ _IMPL_BY_DTYPE = {
     # bindings/LayerBindings.cpp). The 4-bit encode/decode round trip
     # happens transparently inside C++ on every array in/out.
     "fp4_e2m1": (dy.FullPCNetwork_fp4_e2m1, np.float32),
+    "posit4_0": (dy.FullPCNetwork_posit4_0, np.float32),
+    "posit4_1": (dy.FullPCNetwork_posit4_1, np.float32),
+    "posit4_2": (dy.FullPCNetwork_posit4_2, np.float32),
 }
 
 

@@ -1247,4 +1247,7 @@ void bind_layers(nb::module_& m)
   BindFullPCLayerT<float, float>(m, "FullPCLayer_f32");
   BindFullPCLayerT<double, double>(m, "FullPCLayer_f64");
   BindFullPCLayerT<Deep::Fp4E2M1Value, float>(m, "FullPCLayer_fp4_e2m1");
+  BindFullPCLayerT<Deep::Posit4_0Value, float>(m, "FullPCLayer_posit4_0");
+  BindFullPCLayerT<Deep::Posit4_1Value, float>(m, "FullPCLayer_posit4_1");
+  BindFullPCLayerT<Deep::Posit4_2Value, float>(m, "FullPCLayer_posit4_2");
 }
