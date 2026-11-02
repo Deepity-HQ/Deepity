@@ -694,6 +694,8 @@ endif()
 set(DEEPITY_SOURCES
     src/layers/FullPCLayer.cpp
     src/layers/FullConvPCLayer.cpp
+    src/layers/AttentionScoresLayer.cpp
+    src/layers/AttentionOutputLayer.cpp
     src/layers/DiscriminativePCLayer.cpp
     src/layers/ConvPCLayer.cpp
     src/layers/SimpleConvPCLayer.cpp
@@ -1027,6 +1029,7 @@ set_target_properties(Deepity PROPERTIES
 if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     nanobind_add_module(deepity_ext
         bindings/pybinding.cpp
+        bindings/AttentionBindings.cpp
         bindings/LayerBindings.cpp
         bindings/NetworkBindings.cpp
         bindings/QuantFormatBindings.cpp

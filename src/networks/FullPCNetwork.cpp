@@ -66,6 +66,12 @@ void FullPCNetwork::ProjectForward() noexcept
 
 void FullPCNetwork::DirectFeedbackUpdate() noexcept
 {
+  // Same staleness fix as UpdateWeights()'s own refresh, and for the
+  // same reason: now called after the settle loop (so its injection
+  // uses the converged terminal error, not the pre-settling one), its
+  // preact/derivative term needs refreshing against the final z too.
+  for (size_t i = 0; i + 1 < layers.size(); ++i)
+    layers[i]->ComputeMuOnly();
   for (size_t i = 0; i < layers.size() - 1; ++i)
     layers[i]->DirectFeedbackUpdate();
 }
@@ -161,9 +167,9 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
       backend->BeginGraphCapture();
       ProjectForward();
       CalculateTerminalError();
-      DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
+      DirectFeedbackUpdate();
       if (!useIPC)
         UpdateWeights();
       bool captureOk = backend->EndGraphCapture();
@@ -197,9 +203,9 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
     {
       ProjectForward();
       CalculateTerminalError();
-      DirectFeedbackUpdate();
       for (int t = 0; t < inferenceSteps; t++)
         settleStep();
+      DirectFeedbackUpdate();
       if (!useIPC)
         UpdateWeights();
     }
@@ -208,9 +214,9 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
   {
     ProjectForward();
     CalculateTerminalError();
-    DirectFeedbackUpdate();
     for (int t = 0; t < inferenceSteps; t++)
       settleStep();
+    DirectFeedbackUpdate();
     if (!useIPC)
       UpdateWeights();
   }
