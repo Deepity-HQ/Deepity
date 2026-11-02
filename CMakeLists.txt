@@ -716,6 +716,7 @@ set(DEEPITY_SOURCES
     src/backend/CPUBackendT.cpp
     src/backend/Tensor.cpp
     src/layers/FullPCLayerT.cpp
+    src/layers/SimplePCLayerT.cpp
 )
 
 if(DEEPITY_CUDA_ENABLED)
