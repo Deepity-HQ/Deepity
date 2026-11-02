@@ -81,13 +81,22 @@ class FullPCN:
 
     dtype selects which templated C++ backend (FullPCNetworkT<T>) this
     instance wraps: "float32" (the default, every existing caller's
-    behavior unchanged) or "float64" for genuine double precision.
-    FullPCN itself no longer subclasses the bound C++ network type --
-    there's no longer one single bound type to subclass once there's a
-    distinct one per dtype -- so it holds the chosen instance as
-    self._impl and forwards to it, either through an explicit wrapper
-    method below or (for anything not explicitly wrapped) via
-    __getattr__.
+    behavior unchanged), "float64" for genuine double precision, or one
+    of the quantized storage types ("fp4_e2m1", "posit4_0", "posit4_1",
+    "posit4_2"). FullPCN itself no longer subclasses the bound C++
+    network type -- there's no longer one single bound type to subclass
+    once there's a distinct one per dtype -- so it holds the chosen
+    instance as self._impl and forwards to it, either through an
+    explicit wrapper method below or (for anything not explicitly
+    wrapped) via __getattr__.
+
+    device="cuda" is the one exception to the dtype dispatch above:
+    FullPCNetworkT<T> has no CUDA backend yet for any T (see issue #55),
+    so device="cuda" instead constructs the legacy, non-templated
+    FullPCNetwork -- the only implementation with working CUDA graph
+    capture today -- and requires dtype="float32" (its only precision).
+    Retire this branch once #55 ships a real FullPCNetworkT CUDA
+    backend.
     """
 
     def __init__(
@@ -123,7 +132,17 @@ class FullPCN:
 
         self._validate_architecture()
 
-        impl_cls = _IMPL_BY_DTYPE[dtype][0]
+        if device == "cuda":
+            if dtype != "float32":
+                raise ValueError(
+                    f"device='cuda' only supports dtype='float32' right now -- "
+                    f"FullPCNetworkT<{dtype}> has no CUDA backend yet (see issue #55). "
+                    "Use dtype='float32' for CUDA training, or device='cpu' for other dtypes."
+                )
+            impl_cls = dy.FullPCNetwork
+        else:
+            impl_cls = _IMPL_BY_DTYPE[dtype][0]
+
         self._impl = impl_cls(resolved_batch_size, device)
 
     def __getattr__(self, name: str):
