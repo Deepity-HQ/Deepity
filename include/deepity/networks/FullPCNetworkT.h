@@ -124,9 +124,15 @@ public:
     }
   }
 
-  /// @brief Runs the DFA phase on every non-terminal layer.
+  /// @brief Runs the DFA phase on every non-terminal layer. Called
+  /// after the settle loop (see TrainStep()) so its injection uses the
+  /// converged terminal error, not the pre-settling one -- same
+  /// preact-staleness refresh as UpdateWeights()'s own, for the same
+  /// reason, now that this runs post-settle too.
   void DirectFeedbackUpdate() noexcept
   {
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+      layers[i]->ComputeMuOnly();
     for (size_t i = 0; i < layers.size() - 1; ++i)
       layers[i]->DirectFeedbackUpdate();
   }
@@ -257,9 +263,9 @@ public:
 
     ProjectForward();
     CalculateTerminalError();
-    DirectFeedbackUpdate();
     for (int t = 0; t < inferenceSteps; t++)
       settleStep();
+    DirectFeedbackUpdate();
     if (!useIPC)
       UpdateWeights();
 

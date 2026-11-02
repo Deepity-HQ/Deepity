@@ -256,11 +256,12 @@ public:
   }
 
   /// @brief Enables softmax cross-entropy energy for THIS layer's error
-  /// against layerBelow's mu (i.e. this only makes sense set on the
-  /// terminal layer, against the second-to-last layer's logits, NOT
-  /// looped over every layer the way SetMuPCScale/SetResidual/
-  /// SetMomentum's network-level setters are). OFF by default (plain
-  /// Gaussian energy, matching DirectKPPCLayer exactly).
+  /// against layerBelow's mu. Works whether this layer is clamped (the
+  /// usual terminal/classification use) or free-settling (e.g. a
+  /// softmax attention layer, where z settles toward softmax(mu) like
+  /// any other belief) -- NOT looped over every layer the way
+  /// SetMuPCScale/SetResidual/SetMomentum's network-level setters are.
+  /// OFF by default (plain Gaussian energy, matching DirectKPPCLayer).
   void SetCrossEntropy(bool enabled) noexcept
   {
     useCrossEntropy = enabled;

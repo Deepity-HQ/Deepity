@@ -59,7 +59,7 @@ template <typename T, typename AccumT>
 void FullPCLayerT<T, AccumT>::SetFeedbackRate(AccumT feedbackRate) noexcept
 {
   fl = feedbackRate;
-  fl_device = fl;
+  fl_device = fl * a;
 }
 
 template <typename T, typename AccumT>
@@ -453,7 +453,7 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::UpdateWeigh
         (int)size,
         (int)terminalSize,
         (int)batchSize,
-        fl / AccumT(batchSize),
+        fl * a / AccumT(batchSize),
         z,
         (int)size,
         terminalLayer->GetErrors(),
@@ -529,6 +529,16 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::DirectFeedb
       proj[i] *= derivScratch[i];
   }
 
+  // This injection has no optimizer of its own -- it's a raw accumulate
+  // into W, not a gradient AdamWStep() decays. Without its own
+  // lr-independent decay (same `1-lmbda` convention as UpdateWeights()'s
+  // SGD branch, not AdamWStep()'s `lr*lmbda`, far too weak at this
+  // `lr`'s scale to ever bound it), it drifts unboundedly over enough
+  // steps regardless of how small `fl` is -- only gated on fl!=0 so
+  // DKP-off behavior (fl=0) never changes.
+  if (lmbda > AccumT(0) && fl != AccumT(0))
+    backend->Scale(W, (size_t)nextSize * size, AccumT(1) - lmbda);
+
   // Same grad_W-as-scratch + AxpyIntoFromAccum restructuring as
   // UpdateWeights()'s SGD branch, and for the same reason: proj is
   // AccumT now, and blending it directly into W via a single GEMM
@@ -547,7 +557,7 @@ template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::DirectFeedb
       AccumT(0),
       grad_W.data(),
       (int)size);
-  backend->AxpyIntoFromAccum(W, grad_W.data(), (size_t)nextSize * size, fl / AccumT(batchSize));
+  backend->AxpyIntoFromAccum(W, grad_W.data(), (size_t)nextSize * size, fl * a / AccumT(batchSize));
 }
 
 template <typename T, typename AccumT> void FullPCLayerT<T, AccumT>::ReconstructBelief() noexcept

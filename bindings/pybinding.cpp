@@ -9,6 +9,7 @@
  */
 #include <nanobind/nanobind.h>
 
+#include "AttentionBindings.h"
 #include "LayerBindings.h"
 #include "NetworkBindings.h"
 #include "QuantFormatBindings.h"
@@ -22,4 +23,5 @@ NB_MODULE(deepity, m)
   bind_networks(m);
   bind_utilities(m);
   bind_quant_formats(m);
+  bind_attention_layers(m);
 }

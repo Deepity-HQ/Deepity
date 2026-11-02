@@ -288,9 +288,13 @@ void FullPCLayer::UpdateState() noexcept
   if (isClamped)
     return;
 
-  if (useCrossEntropy)
-    return;
-
+  // No separate branch needed: CalculateState() already wrote the
+  // cross-entropy-flavored e = z - softmax(layerBelow->mu) here when
+  // useCrossEntropy is on, and the settling logic below only ever reads
+  // e, never how it was computed. This used to early-return here
+  // because the only caller (the terminal layer) was always clamped
+  // anyway; a non-clamped cross-entropy layer (e.g. attention weights)
+  // needs this to actually settle instead of freezing.
   if (layerAbove != nullptr && nextSize > 0)
   {
     const float* e_above = layerAbove->GetErrors();
@@ -524,6 +528,16 @@ void FullPCLayer::DirectFeedbackUpdate() noexcept
     backend->ActivationDerivativeInto(dType, derivScratch, preact, Nout);
     backend->MultiplyInto(proj, proj, derivScratch, Nout);
   }
+
+  // This injection has no optimizer of its own -- it's a raw GEMM
+  // accumulate into W, not a gradient AdamWStep() decays. Without its
+  // own lr-independent decay (same `1-lmbda` convention as the SGD
+  // branch of UpdateWeights(), not AdamWStep()'s `lr*lmbda`, far too
+  // weak at this `lr`'s scale to ever bound it), it drifts unboundedly
+  // over enough steps regardless of how small `fl` is -- only gated on
+  // fl!=0 so DKP-off behavior (fl=0) never changes.
+  if (lmbda > 0.0f && fl != 0.0f)
+    backend->Scale(W, (size_t)nextSize * size, 1.0f - lmbda);
 
   backend->MatMul(
       /*transA=*/true,

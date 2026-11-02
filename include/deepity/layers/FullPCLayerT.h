@@ -205,9 +205,13 @@ public:
     terminalLayer = l;
   }
 
+  /// Also rescales DKP's feedback rate by the new `a` -- see
+  /// SetFeedbackRate()'s own comment and FullPCLayer::SetMuPCScale()'s
+  /// (the non-templated counterpart, fixed for the same reason).
   void SetMuPCScale(AccumT a) noexcept
   {
     this->a = a;
+    fl_device = fl * a;
   }
   AccumT GetMuPCScale() const noexcept
   {
