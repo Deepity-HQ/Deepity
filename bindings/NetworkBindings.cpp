@@ -1595,4 +1595,7 @@ void bind_networks(nb::module_& m)
   BindFullPCNetworkT<float, float>(m, "FullPCNetwork_f32");
   BindFullPCNetworkT<double, double>(m, "FullPCNetwork_f64");
   BindFullPCNetworkT<Deep::Fp4E2M1Value, float>(m, "FullPCNetwork_fp4_e2m1");
+  BindFullPCNetworkT<Deep::Posit4_0Value, float>(m, "FullPCNetwork_posit4_0");
+  BindFullPCNetworkT<Deep::Posit4_1Value, float>(m, "FullPCNetwork_posit4_1");
+  BindFullPCNetworkT<Deep::Posit4_2Value, float>(m, "FullPCNetwork_posit4_2");
 }
