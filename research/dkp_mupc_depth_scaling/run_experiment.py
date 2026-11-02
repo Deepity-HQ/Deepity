@@ -12,6 +12,7 @@ import gzip
 import os
 import sys
 import time
+from typing import Any
 
 import numpy as np
 
@@ -69,7 +70,7 @@ def run(psi_mode: str, depth: int, hidden: int, steps: int, lr: float, ir: float
 
 def main():
     X_train, Y_train, X_test, y_test = load_mnist(n_train=10000, n_test=2000)
-    common = dict(hidden=128, lr=0.02, ir=0.1, fl0=1e-2, batch_size=200, epochs=3, seed=7)
+    common: dict[str, Any] = dict(hidden=128, lr=0.02, ir=0.1, fl0=1e-2, batch_size=200, epochs=3, seed=7)
 
     print("=== Sweep 1: depth x psi_mode, fixed settle steps=10 ===")
     print(f"{'mode':<14}{'depth':>6}{'steps':>7}{'acc':>8}{'blew_up':>9}{'sec':>8}")
