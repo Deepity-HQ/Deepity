@@ -8,35 +8,38 @@ namespace Deep
 {
 
 /// @brief Templated CPU implementation of IComputeBackendT<T, AccumT>,
-/// used exclusively by the new templated FullPCLayer<T>/FullPCNetwork<T>
-/// path (see QuantFormat.h and the "Templating Deepity's layers/networks
-/// over a numeric type" plan). Deliberately NOT used by, and NOT a
-/// replacement for, the existing non-templated CPUBackend -- every
-/// other layer (SimplePCLayer, DirectKPPCLayer, GaussSeidelPCLayer, the
-/// conv family) keeps using CPUBackend exactly as before.
+/// used by the templated FullPCLayer<T>/FullPCNetwork<T> and
+/// SimplePCLayer<T>/SimplePCNetwork<T> paths (see QuantFormat.h and the
+/// "Templating Deepity's layers/networks over a numeric type" plan).
+/// Deliberately NOT used by, and NOT a replacement for, the existing
+/// non-templated CPUBackend -- every other, not-yet-templated layer
+/// (DirectKPPCLayer, GaussSeidelPCLayer, the conv family) keeps using
+/// CPUBackend exactly as before.
 ///
-/// Only implements the ~20 IComputeBackendT methods FullPCLayer<T>/
-/// FullPCNetwork<T> actually call (MatMul, the elementwise/activation
-/// ops, Adam, graph-capture no-ops, ...) with real per-T behavior: for
-/// T=float, every one of those reuses the EXACT SAME dispatch this
-/// project's existing CPUBackend uses (cblas_sgemm, the Highway-
-/// dispatched kernels in CPUBackendHighway.*), so FullPCLayer<float>'s
-/// output is bit-exact against the pre-templating FullPCLayer -- see
-/// this project's quantization plan's verification gate #1. For any
-/// other T (double, and eventually the quantized formats), those same
-/// methods fall back to a plain, correct, non-Highway-vectorized scalar
-/// loop; genuinely vectorizing them (via Highway's own T-generic
-/// `hn::ScalableTag<T>` kernels) is flagged as a deliberate, documented
-/// follow-up, not attempted in this pass.
+/// Only implements the IComputeBackendT methods the templated layers
+/// actually call (MatMul, the elementwise/activation ops, Adam,
+/// graph-capture no-ops, ...) with real per-T behavior: for T=float,
+/// every one of those reuses the EXACT SAME dispatch this project's
+/// existing CPUBackend uses (cblas_sgemm, the Highway-dispatched
+/// kernels in CPUBackendHighway.*), so FullPCLayer<float>'s output is
+/// bit-exact against the pre-templating FullPCLayer -- see this
+/// project's quantization plan's verification gate #1. For any other T
+/// (double, and the quantized formats), those same methods fall back to
+/// a plain, correct, non-Highway-vectorized scalar loop; genuinely
+/// vectorizing them (via Highway's own T-generic `hn::ScalableTag<T>`
+/// kernels) is flagged as a deliberate, documented follow-up, not
+/// attempted in this pass.
 ///
-/// Every OTHER IComputeBackendT method -- the "Try*" fused paths
-/// (oneDNN/libxsmm/Halide/cuDNN-flavored; FullPCLayer never calls any
-/// of them, only SimplePCLayer/the conv family do) and the conv/
+/// Every OTHER IComputeBackendT method -- the "Try*" oneDNN/libxsmm/
+/// Halide/cuDNN-flavored fused paths (neither FullPCLayer nor
+/// SimplePCLayer's templated counterparts call any of them; see
+/// SimplePCLayerT.h's own class comment on why it doesn't route through
+/// them the way the non-templated SimplePCLayer does) and the conv/
 /// precision-weighted-layer-only ops (Im2Col, Col2Im, MaxPool2D*,
 /// RepackForBatchedGemm, AddBiasPerChannel*, ComputePrecisionWeighted*,
 /// AxpyBroadcastInto, MultiplyBroadcastInto, UpdatePrecisionFromError)
-/// -- is unreachable from FullPCLayer<T>/FullPCNetwork<T>. The "Try*"
-/// ones return false, their own interface's well-defined "no fused path
+/// -- is unreachable from the templated layers above. The "Try*" ones
+/// return false, their own interface's well-defined "no fused path
 /// here" contract; the conv/precision-weighted ones throw
 /// std::logic_error naming this class's scope, rather than shipping an
 /// unexercised, unverified implementation of logic nothing in this pass
@@ -127,14 +130,15 @@ public:
                                 AccumT) noexcept override
   {
     throw std::logic_error(
-        "CPUBackendT::FusedStateUpdateMomentum: out of scope -- only SimplePCLayer uses this, "
-        "and SimplePCLayer stays on the non-templated CPUBackend in this templating pass.");
+        "CPUBackendT::FusedStateUpdateMomentum: out of scope -- SimplePCLayer has no momentum "
+        "option, so SimplePCLayerT never calls this either.");
   }
   void FusedStateUpdate(T*, const T*, ActivationType, const T*, size_t, AccumT) noexcept override
   {
     throw std::logic_error(
-        "CPUBackendT::FusedStateUpdate: out of scope -- only SimplePCLayer uses this, and "
-        "SimplePCLayer stays on the non-templated CPUBackend in this templating pass.");
+        "CPUBackendT::FusedStateUpdate: out of scope -- SimplePCLayerT computes this update "
+        "manually (AccumT-precision feedback/derivative, see SimplePCLayerT.h's own class "
+        "comment), never through this T*-typed fused entry point.");
   }
 
   AccumT ComputeErrorAndEnergy(T* RESTRICT e, const T* RESTRICT z, const T* RESTRICT mu,
