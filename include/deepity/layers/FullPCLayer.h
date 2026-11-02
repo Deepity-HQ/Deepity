@@ -212,11 +212,12 @@ public:
 
   /// @brief Set by the owning network at Compile() time, once the
   /// full layer_sizes list (and therefore d_in/N/L) is known.
-  /// 1.0 (the default) reproduces plain, unscaled PC.
-  void SetMuPCScale(float a) noexcept
-  {
-    this->a = a;
-  }
+  /// 1.0 (the default) reproduces plain, unscaled PC. Also rescales
+  /// DKP's feedback rate by the new `a` (see SetFeedbackRate()) --
+  /// unlike the local path's gradient, DKP's one-hop injection never
+  /// otherwise shrinks with depth, which destabilizes training once
+  /// residual connections let that mismatch propagate unchecked.
+  void SetMuPCScale(float a) noexcept;
   /// @brief Returns the current muPC forward-scaling factor, see
   /// SetMuPCScale().
   float GetMuPCScale() const noexcept
@@ -411,7 +412,8 @@ public:
   {
     ir = inferenceRate;
   }
-  /// @brief Sets the feedback rate, propagating it to the optimizer state.
+  /// @brief Sets the feedback rate, propagating it to the optimizer
+  /// state as `feedbackRate * a` -- see SetMuPCScale()'s own comment.
   void SetFeedbackRate(float feedbackRate) noexcept;
   /// @brief Sets the weight decay coefficient.
   void SetLambda(float lmbda) noexcept

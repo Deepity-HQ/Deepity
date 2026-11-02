@@ -47,7 +47,20 @@ void FullPCLayer::SetFeedbackRate(float feedbackRate) noexcept
 {
   fl = feedbackRate;
   if (fl_device)
-    backend->CopyFromHost(fl_device, &fl, 1);
+  {
+    float flScaled = fl * a;
+    backend->CopyFromHost(fl_device, &flScaled, 1);
+  }
+}
+
+void FullPCLayer::SetMuPCScale(float muPCScale) noexcept
+{
+  a = muPCScale;
+  if (fl_device)
+  {
+    float flScaled = fl * a;
+    backend->CopyFromHost(fl_device, &flScaled, 1);
+  }
 }
 
 template <typename ArenaT> void FullPCLayer::BindMemory(ArenaT& arena)
@@ -436,7 +449,7 @@ void FullPCLayer::UpdateWeights() noexcept
         (int)size,
         (int)terminalSize,
         (int)batchSize,
-        fl / batchSize,
+        fl * a / batchSize,
         z,
         (int)size,
         terminalLayer->GetErrors(),
@@ -518,7 +531,7 @@ void FullPCLayer::DirectFeedbackUpdate() noexcept
       (int)nextSize,
       (int)size,
       (int)batchSize,
-      fl / batchSize,
+      fl * a / batchSize,
       proj,
       (int)nextSize,
       z,
