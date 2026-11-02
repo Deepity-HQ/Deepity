@@ -202,6 +202,7 @@ public:
   void SetUseIPC(bool enabled) noexcept
   {
     useIPC = enabled;
+    InvalidateCapturedGraphs();
   }
 
   /// @brief Enables momentum (inertial) settling on every layer.
@@ -211,6 +212,7 @@ public:
   {
     for (auto& layer : layers)
       layer->SetMomentum(enabled, beta);
+    InvalidateCapturedGraphs();
   }
 
   /// @brief Enables softmax cross-entropy energy on the TERMINAL layer
@@ -221,6 +223,7 @@ public:
   void SetUseCrossEntropy(bool enabled) noexcept
   {
     GetTerminalLayer()->SetCrossEntropy(enabled);
+    InvalidateCapturedGraphs();
   }
 
   /// @brief Enables ePC settling: each settling step becomes a full
@@ -239,9 +242,21 @@ public:
     useEPC = enabled;
     for (size_t i = 1; i + 1 < layers.size(); ++i)
       layers[i]->SetUseEPC(enabled);
+    InvalidateCapturedGraphs();
   }
 
 private:
+  /// @brief Forces TrainStep()/Predict() to recapture their CUDA graphs
+  /// on their next call. Needed after any toggle that changes behavior
+  /// inside the captured region (useIPC/useEPC/momentum/cross-entropy) --
+  /// otherwise the stale pre-toggle graph keeps replaying silently. A
+  /// no-op on CPU, since graphCaptured/predictGraphCaptured are only
+  /// ever read inside TrainStep()/Predict()'s DEVICE_GPU branch.
+  void InvalidateCapturedGraphs() noexcept
+  {
+    graphCaptured = false;
+    predictGraphCaptured = false;
+  }
   std::vector<std::unique_ptr<FullPCLayer>> layers;
 
   std::unique_ptr<IComputeBackend> backend;
