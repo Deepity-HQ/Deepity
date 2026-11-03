@@ -985,6 +985,13 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS MatMulLargeAsymmetricVerify)
+
+        add_executable(FullPCNetworkTCudaVerify tests/tFullPCNetworkTCudaVerify.cpp)
+        target_link_libraries(FullPCNetworkTCudaVerify PRIVATE Deepity)
+        set_target_properties(FullPCNetworkTCudaVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTCudaVerify)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -
