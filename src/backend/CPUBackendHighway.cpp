@@ -189,7 +189,16 @@ void MultiplyIntoHwy(float* dst, const float* a, const float* b, size_t n)
 // ActivationDerivativeScalar (Activations.h) exactly for those cases.
 // dGELU/dSIGMOID/dTANH are never passed in here -- see
 // CPUBackendHighway.h's note on the caller-side routing.
-template <class D, class V> V DerivFromRawZHwy(D d, V z, ActivationType dType)
+// HWY_API (not just "template <...> V Foo(...)"): forces inlining at
+// every call site via always_inline. Originally had exactly one
+// caller in this file so GCC inlined it anyway at -O3 without being
+// asked; adding the f16 kernels below gave each of these three
+// helpers 2-3 more call sites, past whatever threshold made GCC's own
+// inlining heuristic start leaving a real CALL instruction inside the
+// per-lane-group hot loop instead -- measured ~3x slower than the
+// scalar fallback it's supposed to beat, confirmed via objdump showing
+// the un-inlined `call` between the vcvtph2ps/vcvtps2ph pair.
+template <class D, class V> HWY_API V DerivFromRawZHwy(D d, V z, ActivationType dType)
 {
   const auto one = hn::Set(d, 1.0f);
   switch (dType)
@@ -279,7 +288,9 @@ void FusedStateUpdateMomentumHwy(float* z, float* v, const float* feedback, Acti
 // ReferenceDerivFromRawZ precedent -- Gelu.h pulls in <immintrin.h> and
 // raw AVX intrinsics unconditionally, which has no business being dragged
 // into a file foreach_target.h already compiles once per ISA target.
-template <class D, class V> V ActivationDerivFromPreactHwy(D d, V z, ActivationType dType)
+// See DerivFromRawZHwy's own comment above on why this needs HWY_API
+// (forced inlining) now, not just "template <...> V Foo(...)".
+template <class D, class V> HWY_API V ActivationDerivFromPreactHwy(D d, V z, ActivationType dType)
 {
   constexpr float kGeluAlpha = 0.7978845608028654f; // sqrt(2/pi)
   constexpr float kGeluBeta = 0.044715f;
@@ -449,7 +460,9 @@ void ComputeSoftmaxCrossEntropyErrorRowHwy(float* eRow, const float* zRow, const
 // same tanh-identity approach for every transcendental case (GELU,
 // SIGMOID, TANH), mirroring Deep::ActivationScalar (Activations.h)
 // exactly, for the same reason that function's own doc comment gives.
-template <class D, class V> V ActivationForwardHwy(D d, V z, ActivationType type)
+// See DerivFromRawZHwy's own comment above on why this needs HWY_API
+// (forced inlining) now, not just "template <...> V Foo(...)".
+template <class D, class V> HWY_API V ActivationForwardHwy(D d, V z, ActivationType type)
 {
   switch (type)
   {
@@ -536,6 +549,159 @@ void ComputeErrorAndActivationChunkHwy(float* e, float* zF, const float* z, cons
   }
 }
 
+// Plain-scalar counterparts of ActivationForwardHwy/ActivationDerivFromPreactHwy
+// above, used only by the f16 kernels' own scalar tails below (shared
+// across all four rather than duplicated per-kernel, since there are
+// four call sites here instead of each tail's usual one).
+float ActivationForwardScalarF32(ActivationType type, float z)
+{
+  switch (type)
+  {
+  case ActivationType::RELU:
+    return z > 0.0f ? z : 0.0f;
+  case ActivationType::GELU:
+  {
+    constexpr float kGeluAlpha = 0.7978845608028654f;
+    constexpr float kGeluBeta = 0.044715f;
+    float zsq = z * z;
+    float inner = kGeluAlpha * z + (kGeluBeta * kGeluAlpha) * zsq * z;
+    return 0.5f * z * (1.0f + std::tanh(inner));
+  }
+  case ActivationType::SIGMOID:
+    return 0.5f + 0.5f * std::tanh(0.5f * z);
+  case ActivationType::eSIGMOID:
+    return 0.5f + 0.5f * (z / (1.0f + std::fabs(z)));
+  case ActivationType::TANH:
+    return std::tanh(z);
+  case ActivationType::HARD_TANH:
+    return std::max(-1.0f, std::min(1.0f, z));
+  default: // LINEAR, NONE
+    return z;
+  }
+}
+
+float ActivationDerivFromPreactScalarF32(ActivationType dType, float z)
+{
+  constexpr float kGeluAlpha = 0.7978845608028654f;
+  constexpr float kGeluBeta = 0.044715f;
+  switch (dType)
+  {
+  case ActivationType::dRELU:
+    return z > 0.0f ? 1.0f : 0.0f;
+  case ActivationType::dGELU:
+  {
+    float zsq = z * z;
+    float inner = kGeluAlpha * z + (kGeluBeta * kGeluAlpha) * zsq * z;
+    float t = std::tanh(inner);
+    float gprime = kGeluAlpha + (3.0f * kGeluBeta * kGeluAlpha) * zsq;
+    return 0.5f * (1.0f + t) + 0.5f * z * gprime * (1.0f - t * t);
+  }
+  case ActivationType::dSIGMOID:
+  {
+    float t = std::tanh(0.5f * z);
+    return 0.25f * (1.0f - t * t);
+  }
+  case ActivationType::d_eSIGMOID:
+  {
+    float a = 1.0f + std::fabs(z);
+    return 0.5f / (a * a);
+  }
+  case ActivationType::dTANH:
+  {
+    float t = std::tanh(z);
+    return 1.0f - t * t;
+  }
+  case ActivationType::dHARD_TANH:
+    return (z > -1.0f && z < 1.0f) ? 1.0f : 0.0f;
+  default: // dLINEAR, NONE
+    return 1.0f;
+  }
+}
+
+// The four kernels below are issue #50's own deliverable: genuine
+// Highway lane-level compute for hwy::float16_t, the one quantized
+// format meant to get real vectorized arithmetic rather than a
+// decode/compute/encode wrapper (see CPUBackendHighway.h's own top
+// comment). Each promotes a same-lane-count float16->float group
+// (hardware VCVTPH2PS on this machine's f16c-capable AVX2 target),
+// reuses ActivationForwardHwy/ActivationDerivFromPreactHwy ABOVE
+// bit-for-bit -- the exact same vectorized math already proven
+// correct for T=float -- and demotes back (VCVTPS2PH) only where the
+// destination is actually f16, not AccumT=float.
+void ActivationF16Hwy(ActivationType type, hwy::float16_t* buf, size_t n)
+{
+  const hn::ScalableTag<float> d32;
+  const hn::Rebind<hwy::float16_t, decltype(d32)> d16;
+  const size_t lanes = hn::Lanes(d32);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto v32 = hn::PromoteTo(d32, hn::LoadU(d16, buf + i));
+    auto r32 = ActivationForwardHwy(d32, v32, type);
+    hn::StoreU(hn::DemoteTo(d16, r32), d16, buf + i);
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formula exactly
+    buf[i] = hwy::ConvertScalarTo<hwy::float16_t>(
+        ActivationForwardScalarF32(type, hwy::ConvertScalarTo<float>(buf[i])));
+}
+
+void ActivationIntoF16Hwy(ActivationType type, hwy::float16_t* dst, const hwy::float16_t* src,
+                           size_t n)
+{
+  const hn::ScalableTag<float> d32;
+  const hn::Rebind<hwy::float16_t, decltype(d32)> d16;
+  const size_t lanes = hn::Lanes(d32);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto v32 = hn::PromoteTo(d32, hn::LoadU(d16, src + i));
+    auto r32 = ActivationForwardHwy(d32, v32, type);
+    hn::StoreU(hn::DemoteTo(d16, r32), d16, dst + i);
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formula exactly
+    dst[i] = hwy::ConvertScalarTo<hwy::float16_t>(
+        ActivationForwardScalarF32(type, hwy::ConvertScalarTo<float>(src[i])));
+}
+
+void ActivationDerivativeIntoF16Hwy(ActivationType dType, hwy::float16_t* dst,
+                                     const hwy::float16_t* src, size_t n)
+{
+  const hn::ScalableTag<float> d32;
+  const hn::Rebind<hwy::float16_t, decltype(d32)> d16;
+  const size_t lanes = hn::Lanes(d32);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto zv = hn::PromoteTo(d32, hn::LoadU(d16, src + i));
+    auto deriv = ActivationDerivFromPreactHwy(d32, zv, dType);
+    hn::StoreU(hn::DemoteTo(d16, deriv), d16, dst + i);
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formula exactly
+    dst[i] = hwy::ConvertScalarTo<hwy::float16_t>(
+        ActivationDerivFromPreactScalarF32(dType, hwy::ConvertScalarTo<float>(src[i])));
+}
+
+void ActivationDerivativeIntoAccumF16Hwy(ActivationType dType, float* dst,
+                                          const hwy::float16_t* src, size_t n)
+{
+  const hn::ScalableTag<float> d32;
+  const hn::Rebind<hwy::float16_t, decltype(d32)> d16;
+  const size_t lanes = hn::Lanes(d32);
+
+  size_t i = 0;
+  for (; i + lanes <= n; i += lanes)
+  {
+    auto zv = hn::PromoteTo(d32, hn::LoadU(d16, src + i));
+    auto deriv = ActivationDerivFromPreactHwy(d32, zv, dType);
+    hn::StoreU(deriv, d32, dst + i); // dst is AccumT=float, no demote needed
+  }
+  for (; i < n; ++i) // scalar tail, must match the vector formula exactly
+    dst[i] = ActivationDerivFromPreactScalarF32(dType, hwy::ConvertScalarTo<float>(src[i]));
+}
+
 void AdamStepChunkHwy(float* param, const float* grad, float* m, float* v, size_t start,
                        size_t end, float stepSize, float beta1, float beta2, float eps)
 {
@@ -616,6 +782,10 @@ HWY_EXPORT(ComputeSoftmaxCrossEntropyErrorRowHwy);
 HWY_EXPORT(ComputeErrorAndActivationChunkHwy);
 HWY_EXPORT(AdamStepChunkHwy);
 HWY_EXPORT(AdamWStepChunkHwy);
+HWY_EXPORT(ActivationF16Hwy);
+HWY_EXPORT(ActivationIntoF16Hwy);
+HWY_EXPORT(ActivationDerivativeIntoF16Hwy);
+HWY_EXPORT(ActivationDerivativeIntoAccumF16Hwy);
 
 void AddBiasPerChannelDispatch(float* buf, const float* bias, size_t channels,
                                size_t spatialSize) noexcept
@@ -685,6 +855,29 @@ void AdamWStepChunkDispatch(float* param, const float* grad, float* m, float* v,
 {
   HWY_DYNAMIC_DISPATCH(AdamWStepChunkHwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps,
                                           lrWeightDecay);
+}
+
+void ActivationF16Dispatch(ActivationType type, hwy::float16_t* buf, size_t n) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ActivationF16Hwy)(type, buf, n);
+}
+
+void ActivationIntoF16Dispatch(ActivationType type, hwy::float16_t* dst,
+                               const hwy::float16_t* src, size_t n) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ActivationIntoF16Hwy)(type, dst, src, n);
+}
+
+void ActivationDerivativeIntoF16Dispatch(ActivationType dType, hwy::float16_t* dst,
+                                         const hwy::float16_t* src, size_t n) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ActivationDerivativeIntoF16Hwy)(dType, dst, src, n);
+}
+
+void ActivationDerivativeIntoAccumF16Dispatch(ActivationType dType, float* dst,
+                                              const hwy::float16_t* src, size_t n) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(ActivationDerivativeIntoAccumF16Hwy)(dType, dst, src, n);
 }
 } // namespace Deep
 #endif // HWY_ONCE

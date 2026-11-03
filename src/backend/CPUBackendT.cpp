@@ -406,6 +406,12 @@ void CPUBackendT<T, AccumT>::Activation(ActivationType type, T* buf, size_t n) n
   {
     To_Fn(type)(buf, n);
   }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    // Genuine Highway lane-level compute (issue #50), not the generic
+    // scalar wrap below -- see CPUBackendHighway.h's own top comment.
+    ActivationF16Dispatch(type, buf, n);
+  }
   else
   {
     // Decode each T to AccumT, run the existing generic scalar kernel
@@ -428,6 +434,10 @@ void CPUBackendT<T, AccumT>::ActivationInto(ActivationType type, T* dst, const T
   {
     cblas_scopy((int)n, src, 1, dst, 1);
     To_Fn(type)(dst, n);
+  }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    ActivationIntoF16Dispatch(type, dst, src, n);
   }
   else
   {
@@ -464,6 +474,10 @@ void CPUBackendT<T, AccumT>::ActivationDerivativeInto(ActivationType type, T* ds
   {
     To_dFn2(type)(dst, src, n);
   }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    ActivationDerivativeIntoF16Dispatch(type, dst, src, n);
+  }
   else
   {
     for (size_t i = 0; i < n; ++i)
@@ -482,6 +496,10 @@ void CPUBackendT<T, AccumT>::ActivationDerivativeIntoAccum(ActivationType type, 
     // there's no reason to fall back to the generic scalar formula and
     // diverge from the SIMD kernel by a ULP or two.
     To_dFn2(type)(dst, src, n);
+  }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    ActivationDerivativeIntoAccumF16Dispatch(type, dst, src, n);
   }
   else
   {
