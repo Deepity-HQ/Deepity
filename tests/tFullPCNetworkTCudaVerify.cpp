@@ -12,6 +12,13 @@
  * tMatMulLargeAsymmetricVerify.cpp's own tolerance-based CPU-vs-GPU
  * comparison instead (CPU already trusted, GPU compared against it).
  *
+ * Both networks' W/Psi are pushed from one set of host-generated values via
+ * CopyFromHost() (see InitIdenticalWeights() below), not RandomizeWeights()
+ * with "the same seed" -- CPUBackend::RandomizeNormal seeds a std::mt19937,
+ * CUDABackend::RandomizeNormal seeds a curandState, and those produce
+ * unrelated sequences from an identical seed value, so that would silently
+ * start the two networks from different weights.
+ *
  * Only runs when DEEPITY_CUDA_ENABLED (see CMakeLists.txt) -- requires
  * an actual GPU at runtime, not just the CUDA toolkit at build time,
  * so this is deliberately NOT registered with add_test()/ctest, same
@@ -42,7 +49,7 @@ bool CloseEnough(float a, float b, const char* label)
 }
 
 void BuildNetwork(FullPCNetworkT<float, float>& net, size_t inSize, size_t hidSize,
-                  size_t outSize, float lr, float ir, float fl, float lmbda, std::mt19937& rng)
+                  size_t outSize, float lr, float ir, float fl, float lmbda)
 {
   net.AddLayer(inSize, hidSize, outSize, lr, ir, fl, lmbda, ActivationType::LINEAR,
               ActivationType::dLINEAR);
@@ -52,7 +59,44 @@ void BuildNetwork(FullPCNetworkT<float, float>& net, size_t inSize, size_t hidSi
               ActivationType::dLINEAR);
   net.SetUseMuPCScaling(true);
   net.Compile();
-  net.RandomizeWeights(rng);
+}
+
+/**
+ * CPUBackend::RandomizeNormal seeds a std::mt19937, CUDABackend::RandomizeNormal
+ * seeds a curandState -- same seed VALUE, two unrelated PRNG algorithms, so
+ * calling RandomizeWeights(sameSeed) on each network independently does NOT
+ * give them the same actual weights. Generate the values once on the host
+ * instead and push the identical bytes into both via CopyFromHost(), which
+ * is the one primitive guaranteed to behave the same on every backend.
+ */
+void InitIdenticalWeights(FullPCNetworkT<float, float>& cpuNet,
+                          FullPCNetworkT<float, float>& gpuNet, std::mt19937& rng)
+{
+  std::normal_distribution<float> dist(0.0f, 0.1f);
+  auto& cpuLayers = cpuNet.GetLayers();
+  auto& gpuLayers = gpuNet.GetLayers();
+  for (size_t i = 0; i < cpuLayers.size(); ++i)
+  {
+    auto cpuDict = cpuLayers[i]->GetStateDict();
+    auto gpuDict = gpuLayers[i]->GetStateDict();
+    for (const char* name : {"W", "Psi"})
+    {
+      auto& cpuTensor = cpuDict.at(name);
+      size_t n = 1;
+      for (size_t d : cpuTensor.shape)
+        n *= d;
+      if (n == 0)
+        continue;
+
+      std::vector<float> hostVals(n);
+      for (auto& v : hostVals)
+        v = dist(rng);
+
+      cpuLayers[i]->GetBackend()->CopyFromHost(cpuTensor.data, hostVals.data(), n);
+      auto& gpuTensor = gpuDict.at(name);
+      gpuLayers[i]->GetBackend()->CopyFromHost(gpuTensor.data, hostVals.data(), n);
+    }
+  }
 }
 } // namespace
 
@@ -72,12 +116,13 @@ int main()
     v = dist(dataRng);
 
   FullPCNetworkT<float, float> cpuNet(batchSize, DeviceType::DEVICE_CPU);
-  std::mt19937 cpuSeed(99);
-  BuildNetwork(cpuNet, inSize, hidSize, outSize, lr, ir, fl, lmbda, cpuSeed);
+  BuildNetwork(cpuNet, inSize, hidSize, outSize, lr, ir, fl, lmbda);
 
   FullPCNetworkT<float, float> gpuNet(batchSize, DeviceType::DEVICE_GPU);
-  std::mt19937 gpuSeed(99);
-  BuildNetwork(gpuNet, inSize, hidSize, outSize, lr, ir, fl, lmbda, gpuSeed);
+  BuildNetwork(gpuNet, inSize, hidSize, outSize, lr, ir, fl, lmbda);
+
+  std::mt19937 weightRng(99);
+  InitIdenticalWeights(cpuNet, gpuNet, weightRng);
 
   bool ok = true;
   float firstCpuEnergy = std::numeric_limits<float>::infinity();
