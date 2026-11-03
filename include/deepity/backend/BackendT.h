@@ -1,5 +1,6 @@
 #pragma once
 #include <deepity/backend/CPUBackendT.h>
+#include <deepity/backend/CUDABackendT.h>
 #include <deepity/backend/IComputeBackend.h>
 #include <memory>
 #include <stdexcept>
@@ -18,11 +19,11 @@
 namespace Deep
 {
 /// @brief Factory function to create the appropriate backend for a
-/// given T/AccumT. No CUDABackendT<T, AccumT> exists yet (CUDA support
-/// is still only on the non-templated CUDABackend) -- DEVICE_GPU always
-/// throws here, not gated behind DEEPITY_USE_CUDA like CreateBackend()'s
-/// own GPU branch, since the real gap is "not implemented yet," not
-/// "not compiled in this build."
+/// given T/AccumT. DEVICE_GPU only has a real backend for T=AccumT=
+/// float so far (issue #55; see CUDABackendT.h) -- every other T/AccumT
+/// still throws, since no CUDA compute path (fp16 GEMM, sub-8-bit
+/// decode/encode kernels) exists for them yet, on this path or the
+/// non-templated one.
 template <typename T, typename AccumT = T>
 std::unique_ptr<IComputeBackendT<T, AccumT>> CreateBackendT(DeviceType device)
 {
@@ -30,8 +31,15 @@ std::unique_ptr<IComputeBackendT<T, AccumT>> CreateBackendT(DeviceType device)
     return std::make_unique<CPUBackendT<T, AccumT>>();
 
   if (device == DeviceType::DEVICE_GPU)
-    throw std::runtime_error("CreateBackendT: no CUDABackendT<T, AccumT> exists yet -- the "
-                             "templated layer/network pass only has a CPU backend so far.");
+  {
+#ifdef DEEPITY_USE_CUDA
+    if constexpr (std::is_same_v<T, float> && std::is_same_v<AccumT, float>)
+      return std::make_unique<CUDABackendT<float, float>>();
+#endif
+    throw std::runtime_error("CreateBackendT: CUDABackendT<T, AccumT> only supports T=AccumT="
+                             "float so far (issue #55); no CUDA backend exists yet for this "
+                             "T/AccumT, or CUDA support wasn't compiled into this build.");
+  }
 
   throw std::invalid_argument("Unknown DeviceType requested from CreateBackendT.");
 }
