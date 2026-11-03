@@ -1,0 +1,268 @@
+#pragma once
+
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/layers/Layer.h>
+#include <deepity/utils/Activations.h>
+#include <deepity/utils/AdamOptimizer.h>
+#include <deepity/utils/DeviceMemoryArena.h>
+#include <deepity/utils/MemoryArena.h>
+#include <map>
+#include <memory>
+#include <random>
+#include <vector>
+
+/**
+ * @file DirectKPPCLayerT.h
+ * @brief Templated counterpart to DirectKPPCLayer, over a storage type
+ * `T` and an accumulator type `AccumT` -- see FullPCLayerT's own doc
+ * comment for the T/AccumT split's full rationale. Produced by
+ * mechanically retyping DirectKPPCLayer's own `float` members/
+ * parameters to `T`/`AccumT`, NOT a reimplementation. DirectKPPCLayer
+ * is structurally a subset of FullPCLayer (same Psi/DFA machinery, no
+ * momentum/residual/cross-entropy/ePC/muPC-scale), so this port reuses
+ * FullPCLayerT's own established restructuring verbatim wherever the
+ * two overlap.
+ *
+ * Deliberate departures from a pure mechanical port, all following
+ * FullPCLayerT's own established precedent:
+ *  - derivScratch/feedbackError/proj/feedbackScratch are AccumT, not T,
+ *    to avoid rounding a small activation derivative to exactly zero
+ *    at low precision -- see FullPCLayerT.h's own identical comment.
+ *  - biasGradScratch does not exist here: grad_b (AccumT, already
+ *    needed for Adam/AdamW) doubles as the SGD path's row-sum scratch
+ *    too, same restructuring FullPCLayerT::UpdateWeights() uses to
+ *    avoid blending an AccumT operand directly into a T* accumulator
+ *    via a single GEMM (MatMulAccumMixed() only ever writes a fresh
+ *    AccumT* C; see its own doc comment). Psi's SGD update needs no
+ *    such restructuring: both of its GEMM operands (z, terminal error)
+ *    are already T, so it stays a single blended plain MatMul() call,
+ *    unchanged from the original.
+ *
+ * Deliberately does NOT inherit from Layer, same reasoning as
+ * FullPCLayerT.
+ */
+
+namespace Deep
+{
+/// @brief Templated counterpart to DirectKPPCLayer, see this file's
+/// own comment for the full rationale.
+template <typename T, typename AccumT = T> class DirectKPPCLayerT
+{
+protected:
+  size_t size;         ///< This layer's own belief (z) size.
+  size_t nextSize;     ///< Size of the layer above (0 marks a terminal layer).
+  size_t terminalSize; ///< Size of the network's final output layer.
+  size_t batchSize;    ///< Batch size.
+
+  AccumT lr;    ///< Learning rate for W.
+  AccumT ir;    ///< Inference rate (Euler integration step size).
+  AccumT fl;    ///< Feedback rate for Psi.
+  AccumT lmbda; ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
+
+  bool isClamped = false;    ///< Whether ClampState() is currently active.
+  bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
+
+  DirectKPPCLayerT* layerAbove = nullptr; ///< The next layer up, or nullptr if this is terminal.
+  DirectKPPCLayerT* layerBelow = nullptr; ///< The next layer down, or nullptr if the input layer.
+  DirectKPPCLayerT* terminalLayer = nullptr; ///< The network's terminal layer, for DirectFeedbackUpdate().
+
+  ActivationType activationType; ///< This layer's activation type.
+
+  OptimizerType opt = OptimizerType::SGD;    ///< Optimizer for W/b.
+  OptimizerType optPsi = OptimizerType::SGD; ///< Optimizer for Psi.
+
+  using BackendDeleter = void (*)(IComputeBackendT<T, AccumT>*);
+  std::unique_ptr<IComputeBackendT<T, AccumT>, BackendDeleter> backend; ///< This layer's compute backend.
+
+  T* z = nullptr; ///< This layer's belief buffer, shape [batchSize, size].
+  T* e = nullptr; ///< This layer's error buffer, shape [batchSize, size].
+
+  T* W = nullptr;        ///< Weight matrix, shape [nextSize, size].
+  T* b = nullptr;        ///< Bias vector, length nextSize.
+  T* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
+  T* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
+  T* preact = nullptr;   ///< Pre-activation snapshot of mu, see DirectKPPCLayer's own doc comment.
+  T* cachedPreact = nullptr; ///< Cached pre-activation, valid alongside cachedMu.
+
+  // derivScratch/feedbackError/proj/feedbackScratch are AccumT, not T --
+  // see this file's own class comment on why.
+  std::vector<AccumT> derivScratch;  ///< nextSize-shaped scratch holding f'(preact).
+  std::vector<AccumT> feedbackError; ///< nextSize-shaped scratch, see DirectKPPCLayer's own doc comment.
+  T* Psi = nullptr; ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
+  std::vector<AccumT> proj; ///< Scratch buffer for DirectFeedbackUpdate()'s W update.
+
+  // grad_*/m_*/v_* and t_device/lr_device/tPsi_device/fl_device are
+  // AccumT-typed (or int, for the step counters) optimizer-accumulator
+  // state, owned directly rather than arena-allocated -- same
+  // reasoning as FullPCLayerT's identical members.
+  std::vector<AccumT> grad_W; ///< W's gradient scratch buffer; also SGD's row-sum scratch for grad_b.
+  std::vector<AccumT> grad_b; ///< b's gradient scratch buffer; also SGD's row-sum scratch.
+  std::vector<AccumT> m_W;    ///< Adam/AdamW first-moment buffer for W.
+  std::vector<AccumT> v_W;    ///< Adam/AdamW second-moment buffer for W.
+  std::vector<AccumT> m_b;    ///< Adam/AdamW first-moment buffer for b.
+  std::vector<AccumT> v_b;    ///< Adam/AdamW second-moment buffer for b.
+
+  std::vector<AccumT> grad_Psi; ///< Psi's gradient scratch buffer (Adam/AdamW only).
+  std::vector<AccumT> m_Psi;    ///< Adam/AdamW first-moment buffer for Psi.
+  std::vector<AccumT> v_Psi;    ///< Adam/AdamW second-moment buffer for Psi.
+
+  int t_device = 0;             ///< Adam/AdamW step count for W/b.
+  AccumT lr_device = AccumT(0); ///< Mirror of `lr`, passed by address to the backend.
+  int tPsi_device = 0;          ///< Adam/AdamW step count for Psi.
+  AccumT fl_device = AccumT(0); ///< Mirror of `fl`, passed by address to the backend.
+
+  std::vector<AccumT> feedbackScratch; ///< Scratch buffer for the feedback GEMM's output.
+
+  std::unique_ptr<MemoryArenaT<T>>
+      localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
+
+public:
+  /// @param size input size
+  /// @param nextSize output size (0 marks a terminal layer)
+  /// @param terminalSize the size of the network's final output layer
+  /// @param batchSize batch size
+  /// @param learningRate learning rate for W
+  /// @param inferenceRate inference rate (Euler integration step size)
+  /// @param feedback feedback rate for Psi
+  /// @param lmbda weight decay (L2 regularization) coefficient
+  /// @param aType activation type
+  /// @param dType activation-derivative type (unused, kept for
+  /// call-site parity with DirectKPPCLayer's own constructor;
+  /// derivative type is always derived from aType via
+  /// ToDerivativeType() at each use site)
+  /// @param backend Compute backend to run on; defaults to a new
+  /// CPUBackendT<T, AccumT> if nullptr.
+  DirectKPPCLayerT(size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
+                   AccumT learningRate, AccumT inferenceRate, AccumT feedback, AccumT lmbda,
+                   ActivationType aType, ActivationType dType,
+                   IComputeBackendT<T, AccumT>* backend = nullptr);
+
+  ~DirectKPPCLayerT() = default;
+
+  template <typename ArenaT> void BindMemory(ArenaT& arena);
+  size_t GetRequiredElements() const noexcept;
+  /// @brief Randomizes W and Psi. See DirectKPPCLayer::RandomizeWeights()'s
+  /// own doc comment: Psi keeps its own fixed fan-scaled init
+  /// regardless of `distribution`.
+  void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
+
+  std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+
+  void SetLayerAbove(DirectKPPCLayerT* l) noexcept
+  {
+    layerAbove = l;
+  }
+  void SetLayerBelow(DirectKPPCLayerT* l) noexcept
+  {
+    layerBelow = l;
+  }
+  void SetTerminalLayer(DirectKPPCLayerT* l) noexcept
+  {
+    terminalLayer = l;
+  }
+
+  /// @brief Always computes real energy; not a Layer:: override (see
+  /// this file's own class comment on why DirectKPPCLayerT no longer
+  /// derives from Layer).
+  AccumT CalculateState() noexcept
+  {
+    return CalculateState(true);
+  }
+  AccumT CalculateState(bool needEnergy) noexcept;
+
+  void ComputeMuOnly() noexcept;
+  void UpdateState() noexcept;
+  void UpdateWeights() noexcept;
+  /// @brief Perturbs W using the layer above's Psi and the terminal
+  /// layer's error, the DFA phase, run once per batch before settling
+  /// begins.
+  void DirectFeedbackUpdate() noexcept;
+
+  void ClampState(const std::vector<T>& inputData) noexcept;
+  void UnclampState() noexcept;
+  void ResetState() noexcept;
+
+  bool IsClamped() const noexcept
+  {
+    return isClamped;
+  }
+
+  void InvalidateMuCache() noexcept
+  {
+    muCacheValid = false;
+  }
+
+  void SetOptimizer(OptimizerType o) noexcept
+  {
+    opt = o;
+  }
+  void SetPsiOptimizer(OptimizerType o) noexcept
+  {
+    optPsi = o;
+  }
+  void SetLearningRate(AccumT learningRate) noexcept;
+  void SetInferenceRate(AccumT inferenceRate) noexcept
+  {
+    ir = inferenceRate;
+  }
+  void SetFeedbackRate(AccumT feedbackRate) noexcept;
+  void SetLambda(AccumT l) noexcept
+  {
+    lmbda = l;
+  }
+
+  T* GetBeliefs() noexcept
+  {
+    return z;
+  }
+  const T* GetErrors() const noexcept
+  {
+    return e;
+  }
+  const T* GetMu() const noexcept
+  {
+    return mu;
+  }
+  const T* GetWeights() const noexcept
+  {
+    return W;
+  }
+  T* GetWeights() noexcept
+  {
+    return W;
+  }
+  const T* GetDirectFeedbackWeights() const noexcept
+  {
+    return Psi;
+  }
+  const T* GetBiases() const noexcept
+  {
+    return b;
+  }
+  T* GetBiases() noexcept
+  {
+    return b;
+  }
+  IComputeBackendT<T, AccumT>* GetBackend() const noexcept
+  {
+    return backend.get();
+  }
+
+  size_t GetBatchSize() const noexcept
+  {
+    return batchSize;
+  }
+  size_t GetInputSize() const noexcept
+  {
+    return size;
+  }
+  size_t GetOutputSize() const noexcept
+  {
+    return nextSize;
+  }
+  size_t GetTerminalSize() const noexcept
+  {
+    return terminalSize;
+  }
+};
+} // namespace Deep
