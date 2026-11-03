@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <limits>
+#include <vector>
 #include <deepity/backend/CPUBackendT.h>
 #include <deepity/utils/MemoryArena.h> // Deep::detail::Aligned{Alloc,Free}Portable
 #include <deepity/utils/QuantFormat.h>
@@ -27,6 +28,23 @@ namespace
 // exist; FusedStateUpdate{,Momentum} themselves are out of scope for
 // CPUBackendT (see its header's own doc comment on why), so there's no
 // NeedsTranscendentalDerivative counterpart needed here.
+
+// Shared by the MatMul family's hwy::float16_t branches below: no
+// native half-GEMM in OpenBLAS/MKL, so every f16 GEMM operand is
+// decoded into a float scratch, run through the existing sgemm path,
+// and (only where the destination is T itself, not AccumT) encoded
+// back.
+void DecodeF16Rows(const hwy::float16_t* src, float* dst, size_t count) noexcept
+{
+  for (size_t i = 0; i < count; ++i)
+    dst[i] = hwy::ConvertScalarTo<float>(src[i]);
+}
+
+void EncodeF16Rows(const float* src, hwy::float16_t* dst, size_t count) noexcept
+{
+  for (size_t i = 0; i < count; ++i)
+    dst[i] = hwy::ConvertScalarTo<hwy::float16_t>(src[i]);
+}
 } // namespace
 
 template <typename T, typename AccumT>
@@ -128,6 +146,22 @@ void CPUBackendT<T, AccumT>::MatMul(bool transA, bool transB, int M, int N, int 
                 transB ? CblasTrans : CblasNoTrans, M, N, K, (double)alpha, A, lda, B, ldb,
                 (double)beta, C, ldc);
   }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    // No native half-GEMM in OpenBLAS/MKL: decode A, B, and (for the
+    // beta term) C into float scratch, reuse cblas_sgemm, encode the
+    // result back.
+    size_t rowsA = static_cast<size_t>(transA ? K : M);
+    size_t rowsB = static_cast<size_t>(transB ? N : K);
+    std::vector<float> Af(rowsA * lda), Bf(rowsB * ldb), Cf(static_cast<size_t>(M) * ldc);
+    DecodeF16Rows(A, Af.data(), Af.size());
+    DecodeF16Rows(B, Bf.data(), Bf.size());
+    DecodeF16Rows(C, Cf.data(), Cf.size());
+    cblas_sgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+                transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, Af.data(), lda, Bf.data(),
+                ldb, beta, Cf.data(), ldc);
+    EncodeF16Rows(Cf.data(), C, Cf.size());
+  }
   else
   {
     // No native BLAS for this T (sub-8-bit storage formats): a plain,
@@ -167,6 +201,19 @@ void CPUBackendT<T, AccumT>::MatMulAccum(bool transA, bool transB, int M, int N,
   {
     cblas_dgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
                 transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+  }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    // C is already AccumT=float, so unlike MatMul() above there's no
+    // encode-back step: only A and B need decoding.
+    size_t rowsA = static_cast<size_t>(transA ? K : M);
+    size_t rowsB = static_cast<size_t>(transB ? N : K);
+    std::vector<float> Af(rowsA * lda), Bf(rowsB * ldb);
+    DecodeF16Rows(A, Af.data(), Af.size());
+    DecodeF16Rows(B, Bf.data(), Bf.size());
+    cblas_sgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+                transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, Af.data(), lda, Bf.data(),
+                ldb, beta, C, ldc);
   }
   else
   {
@@ -210,6 +257,19 @@ void CPUBackendT<T, AccumT>::MatMulAccumMixed(bool transA, bool transB, int M, i
   {
     cblas_dgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
                 transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+    return;
+  }
+
+  if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    // A and C are already AccumT=float; only B (the stored T-typed
+    // parameter W) needs the decode-to-scratch/sgemm round trip.
+    size_t rowsB = static_cast<size_t>(transB ? N : K);
+    std::vector<float> Bf(rowsB * ldb);
+    DecodeF16Rows(B, Bf.data(), Bf.size());
+    cblas_sgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+                transB ? CblasTrans : CblasNoTrans, M, N, K, alpha, A, lda, Bf.data(), ldb, beta,
+                C, ldc);
     return;
   }
 
