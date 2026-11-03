@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <deepity/utils/ActivationType.h>
+#include <hwy/base.h>
 
 /**
  * @file CPUBackendHighway.h
@@ -11,6 +12,22 @@
  * flag -- Highway's own foreach_target.h mechanism compiles multiple
  * per-ISA-target variants of CPUBackendHighway.cpp and picks the best one
  * at runtime; a project-wide fixed ISA would defeat that entirely.
+ *
+ * The `*F16Dispatch` functions below are the exception: they're the
+ * ONLY genuinely Highway-lane-vectorized path for `hwy::float16_t`
+ * anywhere in CPUBackendT (issue #50) -- every other CPUBackendT<T,
+ * AccumT> elementwise kernel, for every T other than `float`/`double`,
+ * falls back to a plain scalar `hwy::ConvertScalarTo<AccumT>(...)`
+ * loop (see CPUBackendT.cpp's own comments on that generic "Bucket C"
+ * wrap). These four promote each f16 lane group to a same-width
+ * `float` lane group (via Highway's `PromoteTo`, backed by the
+ * hardware VCVTPH2PS instruction on this machine's f16c-capable AVX2
+ * target), reuse the EXISTING `ActivationForwardHwy`/
+ * `ActivationDerivFromPreactHwy` templates below bit-for-bit (same
+ * vectorized math already proven correct for the float/float path),
+ * and demote back (VCVTPS2PH) only where the destination is actually
+ * `T=hwy::float16_t` -- the AccumT-output variant skips that step
+ * entirely, since AccumT=float needs no demotion.
  */
 
 namespace Deep
@@ -112,4 +129,42 @@ void ComputeErrorAndActivationChunkDispatch(float* e, float* zF, const float* z,
 void AdamWStepChunkDispatch(float* param, const float* grad, float* m, float* v, size_t start,
                             size_t end, float stepSize, float beta1, float beta2, float eps,
                             float lrWeightDecay) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::AdamStep
+/// @note f16-specific, see this file's own top comment. `grad`/`m`/`v`
+/// are already AccumT=float (the usual wider-accumulator convention),
+/// so only `param` itself needs the promote/demote wrap.
+void AdamStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                         size_t start, size_t end, float stepSize, float beta1, float beta2,
+                         float eps) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::AdamWStep
+/// @note f16-specific, see AdamStepF16Dispatch's own note above.
+void AdamWStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                          size_t start, size_t end, float stepSize, float beta1, float beta2,
+                          float eps, float lrWeightDecay) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::Activation
+/// @note f16-specific, see this file's own top comment.
+void ActivationF16Dispatch(ActivationType type, hwy::float16_t* buf, size_t n) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::ActivationInto
+/// @note f16-specific, see this file's own top comment.
+void ActivationIntoF16Dispatch(ActivationType type, hwy::float16_t* dst,
+                               const hwy::float16_t* src, size_t n) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::ActivationDerivativeInto
+/// @note f16-specific, see this file's own top comment. `src` holds
+/// the pre-activation value (matches every templated layer's own
+/// calling convention, confirmed by grep -- none of them call the
+/// "from an already-activated value" variant).
+void ActivationDerivativeIntoF16Dispatch(ActivationType dType, hwy::float16_t* dst,
+                                         const hwy::float16_t* src, size_t n) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::ActivationDerivativeIntoAccum
+/// @note f16-specific, see this file's own top comment. `dst` is
+/// `float` (AccumT), so this skips the demote-back-to-f16 step the
+/// other three need.
+void ActivationDerivativeIntoAccumF16Dispatch(ActivationType dType, float* dst,
+                                              const hwy::float16_t* src, size_t n) noexcept;
 } // namespace Deep

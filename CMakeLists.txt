@@ -546,6 +546,18 @@ target_include_directories(DeepityHighwayKernels PUBLIC ${CMAKE_CURRENT_SOURCE_D
 # HWY_TARGET_INCLUDE ("backend/CPUBackendHighway.cpp") must resolve via
 # an include search path -- add src/ so it does.
 target_include_directories(DeepityHighwayKernels PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+# AVX3_SPR (Sapphire Rapids' AVX512-FP16/AMX target) crashes clang's
+# "Early Machine Loop Invariant Code Motion" pass with a SIGSEGV when
+# compiling the new f16 promote/demote kernels here, confirmed in CI
+# (clang 18.1.3) but not reproducible locally with gcc -- a clang
+# codegen bug, not a bug in this file's own code. Highway's own
+# "known broken" list only excludes AVX3_SPR for clang < 14, which
+# doesn't cover this. Disabling it costs nothing real: every one of
+# this file's f16 kernels promotes to float lanes regardless of
+# target (no native half-precision ops used anywhere), so the
+# fallback to plain AVX3/AVX2 is identical code, just without the
+# AVX3_SPR-specific dispatch entry.
+target_compile_definitions(DeepityHighwayKernels PRIVATE HWY_DISABLED_TARGETS=HWY_AVX3_SPR)
 target_link_libraries(DeepityHighwayKernels PUBLIC hwy)
 
 if(DEEPITY_USE_ONEDNN)
