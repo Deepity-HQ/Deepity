@@ -34,8 +34,8 @@ Delete this section if not applicable.
 
 ## Checklist
 
-- [ ] I've read [CONTRIBUTING.md](../CONTRIBUTING.md), including the portability rules and numerical gotchas relevant to this change.
-- [ ] I've added a [CHANGELOG.md](../CHANGELOG.md) entry under `[Unreleased]` (for any user-facing change).
+- [ ] I've read [CONTRIBUTING.md](https://github.com/Deepity-HQ/Deepity/blob/main/CONTRIBUTING.md), including the portability rules and numerical gotchas relevant to this change.
+- [ ] I've added a [CHANGELOG.md](https://github.com/Deepity-HQ/Deepity/blob/main/CHANGELOG.md) entry under `[Unreleased]` (for any user-facing change).
 - [ ] I've updated relevant docs (README, Doxygen comments) if behavior or the public API changed.
 - [ ] New/changed code follows the project's `.clang-format` style.
 
