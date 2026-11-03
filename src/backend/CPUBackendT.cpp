@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <deepity/backend/CPUBackendT.h>
 #include <deepity/utils/MemoryArena.h> // Deep::detail::Aligned{Alloc,Free}Portable
 #include <deepity/utils/QuantFormat.h>
@@ -712,6 +713,362 @@ void CPUBackendT<T, AccumT>::MultiplyIntoAccum(AccumT* dst, const T* a, const Ac
 
   for (size_t i = 0; i < n; ++i)
     dst[i] = hwy::ConvertScalarTo<AccumT>(a[i]) * b[i];
+}
+
+// --- Conv-family primitives: Im2Col/Col2Im/RepackForBatchedGemm are
+// pure data movement (a copy, or a scatter-accumulate of copies), with
+// no existing BLAS/Highway-dispatched equivalent to call into for any
+// T -- so unlike every method above, there's no float/float fast path
+// vs. generic-T split here, just one scalar loop whose per-element
+// op order exactly matches the original float/AVX-intrinsic version's
+// own order, which is what makes it bit-exact for T=float too (an
+// elementwise copy or add can't be reordered into a different result,
+// vectorized or not). Fill/AddBiasPerChannel(NCHW) are genuine
+// arithmetic (an assign, or an add), done through the usual decode-to-
+// AccumT/encode-to-T idiom. ---
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::Im2Col(const T* input, int batchSize, int channels, int height,
+                                    int width, int kernelH, int kernelW, int strideH, int strideW,
+                                    int padH, int padW, T* columns) noexcept
+{
+  const int outH = (height + 2 * padH - kernelH) / strideH + 1;
+  const int outW = (width + 2 * padW - kernelW) / strideW + 1;
+  const size_t imageSize = (size_t)channels * height * width;
+  const size_t colSize = (size_t)channels * kernelH * kernelW * outH * outW;
+
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    const T* in = input + (size_t)batch * imageSize;
+    T* col = columns + (size_t)batch * colSize;
+
+    for (int c = 0; c < channels; ++c)
+    {
+      for (int kh = 0; kh < kernelH; ++kh)
+      {
+        for (int kw = 0; kw < kernelW; ++kw)
+        {
+          const int rowIdx = (c * kernelH + kh) * kernelW + kw;
+          T* destRow = col + (size_t)rowIdx * outH * outW;
+
+          for (int oh = 0; oh < outH; ++oh)
+          {
+            const int inRow = oh * strideH - padH + kh;
+            T* dst = destRow + (size_t)oh * outW;
+
+            if (inRow < 0 || inRow >= height)
+            {
+              for (int ow = 0; ow < outW; ++ow)
+                dst[ow] = hwy::ConvertScalarTo<T>(AccumT(0));
+              continue;
+            }
+
+            const T* src = in + ((size_t)c * height + inRow) * width;
+
+            for (int ow = 0; ow < outW; ++ow)
+            {
+              const int inCol = ow * strideW - padW + kw;
+              dst[ow] = (inCol < 0 || inCol >= width) ? hwy::ConvertScalarTo<T>(AccumT(0))
+                                                      : src[inCol];
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::Col2Im(const T* columns, int batchSize, int channels, int height,
+                                    int width, int kernelH, int kernelW, int strideH, int strideW,
+                                    int padH, int padW, T* outputImage) noexcept
+{
+  const int outH = (height + 2 * padH - kernelH) / strideH + 1;
+  const int outW = (width + 2 * padW - kernelW) / strideW + 1;
+  const size_t imageSize = (size_t)channels * height * width;
+  const size_t colSize = (size_t)channels * kernelH * kernelW * outH * outW;
+
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    const T* col = columns + (size_t)batch * colSize;
+    T* out = outputImage + (size_t)batch * imageSize;
+
+    for (int c = 0; c < channels; ++c)
+    {
+      for (int kh = 0; kh < kernelH; ++kh)
+      {
+        for (int kw = 0; kw < kernelW; ++kw)
+        {
+          const int rowIdx = (c * kernelH + kh) * kernelW + kw;
+          const T* srcRow = col + (size_t)rowIdx * outH * outW;
+
+          for (int oh = 0; oh < outH; ++oh)
+          {
+            const int inRow = oh * strideH - padH + kh;
+            if (inRow < 0 || inRow >= height)
+              continue;
+
+            T* dst = out + ((size_t)c * height + inRow) * width;
+            const T* src = srcRow + (size_t)oh * outW;
+
+            for (int ow = 0; ow < outW; ++ow)
+            {
+              const int inCol = ow * strideW - padW + kw;
+              if (inCol < 0 || inCol >= width)
+                continue;
+              dst[inCol] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(dst[inCol]) +
+                                                   hwy::ConvertScalarTo<AccumT>(src[ow]));
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::MaxPool2DForward(const T* input, int batchSize, int channels,
+                                              int height, int width, int poolH, int poolW,
+                                              int strideH, int strideW, T* output,
+                                              int* argmax) noexcept
+{
+  const int outH = (height - poolH) / strideH + 1;
+  const int outW = (width - poolW) / strideW + 1;
+  const size_t imageSize = (size_t)channels * height * width;
+  const size_t outSize = (size_t)channels * outH * outW;
+
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    const T* in = input + (size_t)batch * imageSize;
+    T* out = output + (size_t)batch * outSize;
+    int* arg = argmax + (size_t)batch * outSize;
+
+    for (int c = 0; c < channels; ++c)
+    {
+      const T* inPlane = in + (size_t)c * height * width;
+      T* outPlane = out + (size_t)c * outH * outW;
+      int* argPlane = arg + (size_t)c * outH * outW;
+
+      for (int oh = 0; oh < outH; ++oh)
+      {
+        for (int ow = 0; ow < outW; ++ow)
+        {
+          AccumT bestVal = -std::numeric_limits<AccumT>::infinity();
+          int bestIdx = 0;
+
+          for (int ph = 0; ph < poolH; ++ph)
+          {
+            const int ih = oh * strideH + ph;
+            for (int pw = 0; pw < poolW; ++pw)
+            {
+              const int iw = ow * strideW + pw;
+              const int idx = ih * width + iw;
+              AccumT v = hwy::ConvertScalarTo<AccumT>(inPlane[idx]);
+              if (v > bestVal)
+              {
+                bestVal = v;
+                bestIdx = idx;
+              }
+            }
+          }
+
+          outPlane[oh * outW + ow] = hwy::ConvertScalarTo<T>(bestVal);
+          argPlane[oh * outW + ow] = bestIdx;
+        }
+      }
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::MaxPool2DBackward(const T* outputGrad, const int* argmax,
+                                               int batchSize, int channels, int height, int width,
+                                               int outH, int outW, T* inputGrad) noexcept
+{
+  const size_t imageSize = (size_t)channels * height * width;
+  const size_t outSize = (size_t)channels * outH * outW;
+
+#pragma omp parallel for schedule(static) if (batchSize > 4 && !omp_in_parallel())
+  for (int batch = 0; batch < batchSize; ++batch)
+  {
+    const T* grad = outputGrad + (size_t)batch * outSize;
+    const int* arg = argmax + (size_t)batch * outSize;
+    T* inGrad = inputGrad + (size_t)batch * imageSize;
+
+    for (int c = 0; c < channels; ++c)
+    {
+      const T* gradPlane = grad + (size_t)c * outH * outW;
+      const int* argPlane = arg + (size_t)c * outH * outW;
+      T* inPlane = inGrad + (size_t)c * height * width;
+
+      for (int i = 0; i < outH * outW; ++i)
+      {
+        int idx = argPlane[i];
+        inPlane[idx] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(inPlane[idx]) +
+                                               hwy::ConvertScalarTo<AccumT>(gradPlane[i]));
+      }
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::RepackForBatchedGemm(T* dst, const T* src, size_t batchSize,
+                                                  size_t rows, size_t cols) noexcept
+{
+  const int maxRows = static_cast<int>(rows);
+  const int maxBatch = static_cast<int>(batchSize);
+
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (rows * batchSize * cols > 65536 && !omp_in_parallel())
+  for (int row = 0; row < maxRows; ++row)
+  {
+    for (int batch = 0; batch < maxBatch; ++batch)
+    {
+      size_t u_row = static_cast<size_t>(row);
+      size_t u_batch = static_cast<size_t>(batch);
+
+      const T* s = src + u_batch * rows * cols + u_row * cols;
+      T* d = dst + u_row * batchSize * cols + u_batch * cols;
+      std::memcpy(d, s, cols * sizeof(T));
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::Fill(T* buf, size_t n, AccumT value) noexcept
+{
+  T encoded = hwy::ConvertScalarTo<T>(value);
+  for (size_t i = 0; i < n; ++i)
+    buf[i] = encoded;
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::AddBiasPerChannel(T* buf, const T* bias, size_t channels,
+                                               size_t spatialSize) noexcept
+{
+#pragma omp parallel for schedule(static) if (channels * spatialSize > 65536 && !omp_in_parallel())
+  for (size_t c = 0; c < channels; ++c)
+  {
+    AccumT biasVal = hwy::ConvertScalarTo<AccumT>(bias[c]);
+    T* row = buf + c * spatialSize;
+    for (size_t i = 0; i < spatialSize; ++i)
+      row[i] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(row[i]) + biasVal);
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::AddBiasPerChannelNCHW(T* buf, const T* bias, size_t batchSize,
+                                                   size_t channels, size_t spatialSize) noexcept
+{
+  for (size_t b = 0; b < batchSize; ++b)
+    AddBiasPerChannel(buf + b * channels * spatialSize, bias, channels, spatialSize);
+}
+
+template <typename T, typename AccumT>
+AccumT CPUBackendT<T, AccumT>::ComputePrecisionWeightedErrorAndEnergy(T* e, const T* z, const T* mu,
+                                                                      const T* p, size_t batchSize,
+                                                                      size_t width) noexcept
+{
+  AccumT energy(0);
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) reduction(+ : energy)                                    \
+    collapse(2) if (batchSize * width > 256 && !omp_in_parallel())
+  for (ptrdiff_t b = 0; b < maxBatch; ++b)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)b * width + (size_t)i;
+      AccumT err = hwy::ConvertScalarTo<AccumT>(z[idx]) - hwy::ConvertScalarTo<AccumT>(mu[idx]);
+      e[idx] = hwy::ConvertScalarTo<T>(err);
+      AccumT precision = (std::max)(hwy::ConvertScalarTo<AccumT>(p[i]), AccumT(1e-8));
+      energy += AccumT(0.5) * precision * err * err - AccumT(0.5) * std::log(precision);
+    }
+  }
+  return energy;
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::ComputePrecisionWeightedError(T* e, const T* z, const T* mu,
+                                                           const T* /*p*/, size_t batchSize,
+                                                           size_t width) noexcept
+{
+  const size_t n = batchSize * width;
+#pragma omp parallel for schedule(static) if (n > 100000 && !omp_in_parallel())
+  for (size_t idx = 0; idx < n; ++idx)
+    e[idx] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(z[idx]) -
+                                     hwy::ConvertScalarTo<AccumT>(mu[idx]));
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::AxpyBroadcastInto(T* y, const T* x, const T* factor, size_t batchSize,
+                                               size_t width, AccumT alpha) noexcept
+{
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+  for (ptrdiff_t b = 0; b < maxBatch; ++b)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)b * width + (size_t)i;
+      AccumT v = hwy::ConvertScalarTo<AccumT>(y[idx]) +
+                alpha * hwy::ConvertScalarTo<AccumT>(x[idx]) * hwy::ConvertScalarTo<AccumT>(factor[i]);
+      y[idx] = hwy::ConvertScalarTo<T>(v);
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::MultiplyBroadcastInto(T* dst, const T* a, const T* factor, const T* b,
+                                                    size_t batchSize, size_t width) noexcept
+{
+  const ptrdiff_t maxBatch = static_cast<ptrdiff_t>(batchSize);
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static)                                                          \
+    collapse(2) if (batchSize * width > 65536 && !omp_in_parallel())
+  for (ptrdiff_t batch = 0; batch < maxBatch; ++batch)
+  {
+    for (ptrdiff_t i = 0; i < maxWidth; ++i)
+    {
+      size_t idx = (size_t)batch * width + (size_t)i;
+      AccumT v = hwy::ConvertScalarTo<AccumT>(a[idx]) * hwy::ConvertScalarTo<AccumT>(factor[i]) *
+                hwy::ConvertScalarTo<AccumT>(b[idx]);
+      dst[idx] = hwy::ConvertScalarTo<T>(v);
+    }
+  }
+}
+
+template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::UpdatePrecisionFromError(T* p, T* log_p, const T* e, size_t batchSize,
+                                                      size_t width, AccumT pr) noexcept
+{
+  const ptrdiff_t maxWidth = static_cast<ptrdiff_t>(width);
+
+#pragma omp parallel for schedule(static) if (width > 4096 && !omp_in_parallel())
+  for (ptrdiff_t i = 0; i < maxWidth; ++i)
+  {
+    AccumT grad(0);
+    AccumT pi = hwy::ConvertScalarTo<AccumT>(p[i]);
+    for (size_t b = 0; b < batchSize; ++b)
+    {
+      AccumT err = hwy::ConvertScalarTo<AccumT>(e[b * width + (size_t)i]);
+      grad += AccumT(0.5) * (pi * err * err - AccumT(1));
+    }
+    grad /= AccumT(batchSize);
+
+    AccumT logPi = hwy::ConvertScalarTo<AccumT>(log_p[i]) - pr * grad;
+    logPi = (std::max)(AccumT(-5), (std::min)(logPi, AccumT(5)));
+    log_p[i] = hwy::ConvertScalarTo<T>(logPi);
+    p[i] = hwy::ConvertScalarTo<T>(std::exp(logPi));
+  }
 }
 
 // --- Explicit instantiation: the (T, AccumT) pairs this templating

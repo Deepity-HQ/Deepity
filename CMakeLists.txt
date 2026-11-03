@@ -717,6 +717,11 @@ set(DEEPITY_SOURCES
     src/backend/Tensor.cpp
     src/layers/FullPCLayerT.cpp
     src/layers/SimplePCLayerT.cpp
+    src/layers/GaussSeidelPCLayerT.cpp
+    src/layers/DirectKPPCLayerT.cpp
+    src/layers/SimpleConvPCLayerT.cpp
+    src/layers/ConvPCLayerT.cpp
+    src/layers/FullConvPCLayerT.cpp
 )
 
 if(DEEPITY_CUDA_ENABLED)

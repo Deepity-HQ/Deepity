@@ -8,21 +8,25 @@ namespace Deep
 {
 
 /// @brief Templated CPU implementation of IComputeBackendT<T, AccumT>,
-/// used by the templated FullPCLayer<T>/FullPCNetwork<T> and
-/// SimplePCLayer<T>/SimplePCNetwork<T> paths (see QuantFormat.h and the
-/// "Templating Deepity's layers/networks over a numeric type" plan).
-/// Deliberately NOT used by, and NOT a replacement for, the existing
-/// non-templated CPUBackend -- every other, not-yet-templated layer
-/// (DirectKPPCLayer, GaussSeidelPCLayer, the conv family) keeps using
-/// CPUBackend exactly as before.
+/// used by every templated layer/network in the "Templating Deepity's
+/// layers/networks over a numeric type" plan: FullPCLayerT,
+/// SimplePCLayerT, GaussSeidelPCLayerT, DirectKPPCLayerT, and the conv
+/// family (SimpleConvPCLayerT/ConvPCLayerT/FullConvPCLayerT). Not used
+/// by, and not a replacement for, the existing non-templated
+/// CPUBackend -- DiscriminativePCLayer (not part of this plan) and the
+/// non-templated originals of every layer above keep using CPUBackend
+/// exactly as before.
 ///
-/// Only implements the IComputeBackendT methods the templated layers
-/// actually call (MatMul, the elementwise/activation ops, Adam,
-/// graph-capture no-ops, ...) with real per-T behavior: for T=float,
-/// every one of those reuses the EXACT SAME dispatch this project's
-/// existing CPUBackend uses (cblas_sgemm, the Highway-dispatched
-/// kernels in CPUBackendHighway.*), so FullPCLayer<float>'s output is
-/// bit-exact against the pre-templating FullPCLayer -- see this
+/// Implements every IComputeBackendT method an actual templated layer
+/// calls, with real per-T behavior: for T=float, every one of those
+/// reuses the EXACT SAME dispatch this project's existing CPUBackend
+/// uses (cblas_sgemm, the Highway-dispatched kernels in
+/// CPUBackendHighway.*, or -- for the conv-only data-movement/broadcast
+/// primitives below, which have no existing BLAS/Highway-dispatched
+/// equivalent to call into -- a scalar loop whose per-element op order
+/// matches the original's own scalar/AVX-intrinsic version exactly), so
+/// e.g. FullPCLayer<float>'s and SimpleConvPCLayer<float>'s output is
+/// bit-exact against their pre-templating originals -- see this
 /// project's quantization plan's verification gate #1. For any other T
 /// (double, and the quantized formats), those same methods fall back to
 /// a plain, correct, non-Highway-vectorized scalar loop; genuinely
@@ -30,22 +34,16 @@ namespace Deep
 /// kernels) is flagged as a deliberate, documented follow-up, not
 /// attempted in this pass.
 ///
-/// Every OTHER IComputeBackendT method -- the "Try*" oneDNN/libxsmm/
-/// Halide/cuDNN-flavored fused paths (neither FullPCLayer nor
-/// SimplePCLayer's templated counterparts call any of them; see
-/// SimplePCLayerT.h's own class comment on why it doesn't route through
-/// them the way the non-templated SimplePCLayer does) and the conv/
-/// precision-weighted-layer-only ops (Im2Col, Col2Im, MaxPool2D*,
-/// RepackForBatchedGemm, AddBiasPerChannel*, ComputePrecisionWeighted*,
-/// AxpyBroadcastInto, MultiplyBroadcastInto, UpdatePrecisionFromError)
-/// -- is unreachable from the templated layers above. The "Try*" ones
-/// return false, their own interface's well-defined "no fused path
-/// here" contract; the conv/precision-weighted ones throw
-/// std::logic_error naming this class's scope, rather than shipping an
-/// unexercised, unverified implementation of logic nothing in this pass
-/// actually calls or tests (the conv family and DiscriminativePCLayer/
-/// ConvPCLayer stay on the non-templated CPUBackend, matching the
-/// plan's explicit non-goals).
+/// The "Try*" oneDNN/libxsmm/Halide/cuDNN-flavored fused paths are
+/// unreachable from every templated layer above (none of them call
+/// any Try* method; see SimplePCLayerT.h's own class comment on why,
+/// and note the non-templated CPUBackend's own TryFusedConv*() always
+/// return false too -- there never was a CPU-side fused conv path to
+/// match in the first place). They return false, their own
+/// interface's well-defined "no fused path here" contract.
+/// FusedActivationDerivativeMultiply[FromPreact] remain throw-stubs:
+/// no current layer, templated or not, calls either method anymore
+/// (see their own stub message).
 template <typename T, typename AccumT = T>
 class CPUBackendT : public IComputeBackendT<T, AccumT>
 {
@@ -158,32 +156,20 @@ public:
   void ComputeSoftmaxCrossEntropyError(T* e, const T* z, const T* mu, size_t batchSize,
                                        size_t nextSize) noexcept override;
 
-  void Im2Col(const T*, int, int, int, int, int, int, int, int, int, int, T*) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::Im2Col: out of scope -- the conv layer family stays on the "
-        "non-templated CPUBackend in this templating pass.");
-  }
-  void Col2Im(const T*, int, int, int, int, int, int, int, int, int, int, T*) noexcept override
-  {
-    throw std::logic_error("CPUBackendT::Col2Im: out of scope, see Im2Col()'s own message.");
-  }
-  void MaxPool2DForward(const T*, int, int, int, int, int, int, int, int, T*,
-                        int*) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::MaxPool2DForward: out of scope, see Im2Col()'s own message.");
-  }
-  void MaxPool2DBackward(const T*, const int*, int, int, int, int, int, int, T*) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::MaxPool2DBackward: out of scope, see Im2Col()'s own message.");
-  }
-  void RepackForBatchedGemm(T*, const T*, size_t, size_t, size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::RepackForBatchedGemm: out of scope, see Im2Col()'s own message.");
-  }
+  void Im2Col(const T* input, int batchSize, int channels, int height, int width, int kernelH,
+             int kernelW, int strideH, int strideW, int padH, int padW,
+             T* columns) noexcept override;
+  void Col2Im(const T* columns, int batchSize, int channels, int height, int width, int kernelH,
+             int kernelW, int strideH, int strideW, int padH, int padW,
+             T* outputImage) noexcept override;
+  void MaxPool2DForward(const T* input, int batchSize, int channels, int height, int width,
+                        int poolH, int poolW, int strideH, int strideW, T* output,
+                        int* argmax) noexcept override;
+  void MaxPool2DBackward(const T* outputGrad, const int* argmax, int batchSize, int channels,
+                         int height, int width, int outH, int outW,
+                         T* inputGrad) noexcept override;
+  void RepackForBatchedGemm(T* dst, const T* src, size_t batchSize, size_t rows,
+                           size_t cols) noexcept override;
 
   bool TryFusedConvForward(const T*, const T*, T*, AccumT, int, int, int, int, int, int, int, int,
                            int, int, int) noexcept override
@@ -223,9 +209,9 @@ public:
   void FusedActivationDerivativeMultiply(T*, const T*, T*, ActivationType, size_t) noexcept override
   {
     throw std::logic_error(
-        "CPUBackendT::FusedActivationDerivativeMultiply: out of scope -- only "
-        "SimpleConvPCLayer/FullConvPCLayer use this, and the conv family stays on the "
-        "non-templated CPUBackend in this templating pass.");
+        "CPUBackendT::FusedActivationDerivativeMultiply: out of scope -- no current layer "
+        "(templated or not) calls this method anymore; SimpleConvPCLayer/FullConvPCLayer each "
+        "moved to an unfused ActivationDerivativeInto()+MultiplyInto() pair instead.");
   }
   void FusedActivationDerivativeMultiplyFromPreact(T*, const T*, const T*, ActivationType,
                                                     size_t) noexcept override
@@ -234,56 +220,23 @@ public:
         "CPUBackendT::FusedActivationDerivativeMultiplyFromPreact: out of scope, see "
         "FusedActivationDerivativeMultiply()'s own message.");
   }
-  void Fill(T*, size_t, AccumT) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::Fill: out of scope -- FullPCLayer<T>/FullPCNetwork<T> never call this "
-        "in this templating pass.");
-  }
-  void AddBiasPerChannel(T*, const T*, size_t, size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::AddBiasPerChannel: out of scope, see Im2Col()'s own message.");
-  }
-  void AddBiasPerChannelNCHW(T*, const T*, size_t, size_t, size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::AddBiasPerChannelNCHW: out of scope, see Im2Col()'s own message.");
-  }
+  void Fill(T* buf, size_t n, AccumT value) noexcept override;
+  void AddBiasPerChannel(T* buf, const T* bias, size_t channels,
+                        size_t spatialSize) noexcept override;
+  void AddBiasPerChannelNCHW(T* buf, const T* bias, size_t batchSize, size_t channels,
+                             size_t spatialSize) noexcept override;
 
-  AccumT ComputePrecisionWeightedErrorAndEnergy(T*, const T*, const T*, const T*, size_t,
-                                                size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::ComputePrecisionWeightedErrorAndEnergy: out of scope -- only "
-        "DiscriminativePCLayer/ConvPCLayer use this, and they stay on the non-templated "
-        "CPUBackend in this templating pass.");
-  }
-  void ComputePrecisionWeightedError(T*, const T*, const T*, const T*, size_t,
-                                     size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::ComputePrecisionWeightedError: out of scope, see "
-        "ComputePrecisionWeightedErrorAndEnergy()'s own message.");
-  }
-  void AxpyBroadcastInto(T*, const T*, const T*, size_t, size_t, AccumT) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::AxpyBroadcastInto: out of scope, see "
-        "ComputePrecisionWeightedErrorAndEnergy()'s own message.");
-  }
-  void MultiplyBroadcastInto(T*, const T*, const T*, const T*, size_t, size_t) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::MultiplyBroadcastInto: out of scope, see "
-        "ComputePrecisionWeightedErrorAndEnergy()'s own message.");
-  }
-  void UpdatePrecisionFromError(T*, T*, const T*, size_t, size_t, AccumT) noexcept override
-  {
-    throw std::logic_error(
-        "CPUBackendT::UpdatePrecisionFromError: out of scope, see "
-        "ComputePrecisionWeightedErrorAndEnergy()'s own message.");
-  }
+  AccumT ComputePrecisionWeightedErrorAndEnergy(T* e, const T* z, const T* mu, const T* p,
+                                                size_t batchSize,
+                                                size_t width) noexcept override;
+  void ComputePrecisionWeightedError(T* e, const T* z, const T* mu, const T* p, size_t batchSize,
+                                     size_t width) noexcept override;
+  void AxpyBroadcastInto(T* y, const T* x, const T* factor, size_t batchSize, size_t width,
+                        AccumT alpha) noexcept override;
+  void MultiplyBroadcastInto(T* dst, const T* a, const T* factor, const T* b, size_t batchSize,
+                             size_t width) noexcept override;
+  void UpdatePrecisionFromError(T* p, T* log_p, const T* e, size_t batchSize, size_t width,
+                                AccumT pr) noexcept override;
 };
 
 } // namespace Deep
