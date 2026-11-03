@@ -628,6 +628,80 @@ float ActivationDerivFromPreactScalarF32(ActivationType dType, float z)
 // bit-for-bit -- the exact same vectorized math already proven
 // correct for T=float -- and demotes back (VCVTPS2PH) only where the
 // destination is actually f16, not AccumT=float.
+// AdamStep/AdamWStep's f16 gap is real (unlike Fill/MultiplyInto/
+// AddBiasPerChannel, measured already-fine via GCC auto-vectorizing
+// the generic scalar fallback for those -- see the memory note this
+// session left on that). grad/m/v are already AccumT=float here, so
+// only `param` itself needs the promote/demote wrap.
+void AdamStepF16Hwy(hwy::float16_t* param, const float* grad, float* m, float* v, size_t start,
+                     size_t end, float stepSize, float beta1, float beta2, float eps)
+{
+  const hn::ScalableTag<float> d;
+  const hn::Rebind<hwy::float16_t, decltype(d)> d16;
+  const size_t lanes = hn::Lanes(d);
+  const auto vb1 = hn::Set(d, beta1), vb1c = hn::Set(d, 1.0f - beta1);
+  const auto vb2 = hn::Set(d, beta2), vb2c = hn::Set(d, 1.0f - beta2);
+  const auto vstep = hn::Set(d, stepSize), veps = hn::Set(d, eps);
+
+  size_t i = start;
+  for (; i + lanes <= end; i += lanes)
+  {
+    auto g = hn::LoadU(d, grad + i);
+    auto mv = hn::MulAdd(vb1, hn::LoadU(d, m + i), hn::Mul(vb1c, g));
+    auto vv = hn::MulAdd(vb2, hn::LoadU(d, v + i), hn::Mul(vb2c, hn::Mul(g, g)));
+    hn::StoreU(mv, d, m + i);
+    hn::StoreU(vv, d, v + i);
+    auto pOld = hn::PromoteTo(d, hn::LoadU(d16, param + i));
+    auto p = hn::Sub(pOld, hn::Div(hn::Mul(vstep, mv), hn::Add(hn::Sqrt(vv), veps)));
+    hn::StoreU(hn::DemoteTo(d16, p), d16, param + i);
+  }
+  for (; i < end; ++i) // scalar tail, must match the vector formula exactly
+  {
+    float g = grad[i];
+    m[i] = beta1 * m[i] + (1.0f - beta1) * g;
+    v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
+    float p = hwy::ConvertScalarTo<float>(param[i]) - stepSize * m[i] / (std::sqrt(v[i]) + eps);
+    param[i] = hwy::ConvertScalarTo<hwy::float16_t>(p);
+  }
+}
+
+void AdamWStepF16Hwy(hwy::float16_t* param, const float* grad, float* m, float* v, size_t start,
+                      size_t end, float stepSize, float beta1, float beta2, float eps,
+                      float lrWeightDecay)
+{
+  const hn::ScalableTag<float> d;
+  const hn::Rebind<hwy::float16_t, decltype(d)> d16;
+  const size_t lanes = hn::Lanes(d);
+  const auto vb1 = hn::Set(d, beta1), vb1c = hn::Set(d, 1.0f - beta1);
+  const auto vb2 = hn::Set(d, beta2), vb2c = hn::Set(d, 1.0f - beta2);
+  const auto vlrwd = hn::Set(d, lrWeightDecay);
+  const auto vstep = hn::Set(d, stepSize), veps = hn::Set(d, eps);
+
+  size_t i = start;
+  for (; i + lanes <= end; i += lanes)
+  {
+    auto g = hn::LoadU(d, grad + i);
+    auto mv = hn::MulAdd(vb1, hn::LoadU(d, m + i), hn::Mul(vb1c, g));
+    auto vv = hn::MulAdd(vb2, hn::LoadU(d, v + i), hn::Mul(vb2c, hn::Mul(g, g)));
+    hn::StoreU(mv, d, m + i);
+    hn::StoreU(vv, d, v + i);
+    auto p = hn::PromoteTo(d, hn::LoadU(d16, param + i));
+    p = hn::Sub(p, hn::Mul(vlrwd, p));
+    p = hn::Sub(p, hn::Div(hn::Mul(vstep, mv), hn::Add(hn::Sqrt(vv), veps)));
+    hn::StoreU(hn::DemoteTo(d16, p), d16, param + i);
+  }
+  for (; i < end; ++i) // scalar tail, must match the vector formula exactly
+  {
+    float g = grad[i];
+    m[i] = beta1 * m[i] + (1.0f - beta1) * g;
+    v[i] = beta2 * v[i] + (1.0f - beta2) * (g * g);
+    float p = hwy::ConvertScalarTo<float>(param[i]);
+    p -= lrWeightDecay * p;
+    p -= stepSize * m[i] / (std::sqrt(v[i]) + eps);
+    param[i] = hwy::ConvertScalarTo<hwy::float16_t>(p);
+  }
+}
+
 void ActivationF16Hwy(ActivationType type, hwy::float16_t* buf, size_t n)
 {
   const hn::ScalableTag<float> d32;
@@ -782,6 +856,8 @@ HWY_EXPORT(ComputeSoftmaxCrossEntropyErrorRowHwy);
 HWY_EXPORT(ComputeErrorAndActivationChunkHwy);
 HWY_EXPORT(AdamStepChunkHwy);
 HWY_EXPORT(AdamWStepChunkHwy);
+HWY_EXPORT(AdamStepF16Hwy);
+HWY_EXPORT(AdamWStepF16Hwy);
 HWY_EXPORT(ActivationF16Hwy);
 HWY_EXPORT(ActivationIntoF16Hwy);
 HWY_EXPORT(ActivationDerivativeIntoF16Hwy);
@@ -855,6 +931,21 @@ void AdamWStepChunkDispatch(float* param, const float* grad, float* m, float* v,
 {
   HWY_DYNAMIC_DISPATCH(AdamWStepChunkHwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps,
                                           lrWeightDecay);
+}
+
+void AdamStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                         size_t start, size_t end, float stepSize, float beta1, float beta2,
+                         float eps) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(AdamStepF16Hwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps);
+}
+
+void AdamWStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                          size_t start, size_t end, float stepSize, float beta1, float beta2,
+                          float eps, float lrWeightDecay) noexcept
+{
+  HWY_DYNAMIC_DISPATCH(AdamWStepF16Hwy)(param, grad, m, v, start, end, stepSize, beta1, beta2, eps,
+                                       lrWeightDecay);
 }
 
 void ActivationF16Dispatch(ActivationType type, hwy::float16_t* buf, size_t n) noexcept

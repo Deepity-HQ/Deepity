@@ -130,6 +130,20 @@ void AdamWStepChunkDispatch(float* param, const float* grad, float* m, float* v,
                             size_t end, float stepSize, float beta1, float beta2, float eps,
                             float lrWeightDecay) noexcept;
 
+/// @copydoc Deep::IComputeBackendT::AdamStep
+/// @note f16-specific, see this file's own top comment. `grad`/`m`/`v`
+/// are already AccumT=float (the usual wider-accumulator convention),
+/// so only `param` itself needs the promote/demote wrap.
+void AdamStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                         size_t start, size_t end, float stepSize, float beta1, float beta2,
+                         float eps) noexcept;
+
+/// @copydoc Deep::IComputeBackendT::AdamWStep
+/// @note f16-specific, see AdamStepF16Dispatch's own note above.
+void AdamWStepF16Dispatch(hwy::float16_t* param, const float* grad, float* m, float* v,
+                          size_t start, size_t end, float stepSize, float beta1, float beta2,
+                          float eps, float lrWeightDecay) noexcept;
+
 /// @copydoc Deep::IComputeBackendT::Activation
 /// @note f16-specific, see this file's own top comment.
 void ActivationF16Dispatch(ActivationType type, hwy::float16_t* buf, size_t n) noexcept;

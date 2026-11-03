@@ -646,6 +646,27 @@ void CPUBackendT<T, AccumT>::AdamStep(T* param, const AccumT* grad, AccumT* m, A
     }
     return;
   }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    float beta1_t = 1.0f - std::pow(beta1, static_cast<float>(*t));
+    float beta2_t = 1.0f - std::pow(beta2, static_cast<float>(*t));
+    float step_size = *lr * std::sqrt(beta2_t) / beta1_t;
+
+    if (n > 100000 && !omp_in_parallel())
+    {
+#pragma omp parallel
+      {
+        int nt = omp_get_num_threads(), tid = omp_get_thread_num();
+        size_t start = n * (size_t)tid / nt, end = n * (size_t)(tid + 1) / nt;
+        AdamStepF16Dispatch(param, grad, m, v, start, end, step_size, beta1, beta2, eps);
+      }
+    }
+    else
+    {
+      AdamStepF16Dispatch(param, grad, m, v, 0, n, step_size, beta1, beta2, eps);
+    }
+    return;
+  }
 
   AccumT beta1_t = hwy::ConvertScalarTo<AccumT>(1) - std::pow(beta1, hwy::ConvertScalarTo<AccumT>(*t));
   AccumT beta2_t = hwy::ConvertScalarTo<AccumT>(1) - std::pow(beta2, hwy::ConvertScalarTo<AccumT>(*t));
@@ -685,6 +706,29 @@ void CPUBackendT<T, AccumT>::AdamWStep(T* param, const AccumT* grad, AccumT* m, 
     else
     {
       AdamWStepChunkDispatch(param, grad, m, v, 0, n, step_size, beta1, beta2, eps, lrWeightDecay);
+    }
+    return;
+  }
+  else if constexpr (std::is_same_v<T, hwy::float16_t> && std::is_same_v<AccumT, float>)
+  {
+    float beta1_t = 1.0f - std::pow(beta1, static_cast<float>(*t));
+    float beta2_t = 1.0f - std::pow(beta2, static_cast<float>(*t));
+    float step_size = *lr * std::sqrt(beta2_t) / beta1_t;
+    float lrWeightDecay = *lr * weightDecay;
+
+    if (n > 100000 && !omp_in_parallel())
+    {
+#pragma omp parallel
+      {
+        int nt = omp_get_num_threads(), tid = omp_get_thread_num();
+        size_t start = n * (size_t)tid / nt, end = n * (size_t)(tid + 1) / nt;
+        AdamWStepF16Dispatch(param, grad, m, v, start, end, step_size, beta1, beta2, eps,
+                             lrWeightDecay);
+      }
+    }
+    else
+    {
+      AdamWStepF16Dispatch(param, grad, m, v, 0, n, step_size, beta1, beta2, eps, lrWeightDecay);
     }
     return;
   }
