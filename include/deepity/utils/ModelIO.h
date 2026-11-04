@@ -27,16 +27,13 @@ namespace Deep
 namespace detail
 {
 // FullPCLayerT<T, AccumT> is free-standing (doesn't inherit Layer, see
-// FullPCLayerT.h's own doc comment on why), so it has no
-// SyncStateDictFromDevice/ToDevice at all -- only Layer declares those.
-// These two helpers let Save()/Load() call them where they exist
-// (every Layer-derived network) and skip them where they don't, instead
-// of forcing every NetworkType's layer to carry a method it has no use
-// for. NOTE: this means a FullPCLayerT running on a CUDA device has no
-// sync path here at all -- unlike FullConvPCLayer, it was never given
-// host-staging buffers in the first place, so a GetStateDict() call on
-// a device-resident FullPCLayerT is not proven safe. Not fixed here;
-// flagging it is the point of this comment.
+// FullPCLayerT.h's own doc comment on why), so it can't override
+// Layer's virtual SyncStateDictFromDevice/ToDevice -- it just defines
+// plain methods of the same name/signature instead, which these two
+// if-constexpr-guarded helpers detect structurally. Lets Save()/Load()
+// call them where they exist (every Layer-derived network, and now
+// FullPCLayerT too) and skip them where they don't (a layer type with
+// neither a virtual override nor a plain method of this name).
 template <typename LayerPtr> void SyncFromDeviceIfSupported(LayerPtr& layerPtr)
 {
   if constexpr (requires { layerPtr->SyncStateDictFromDevice(); })

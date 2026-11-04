@@ -992,6 +992,13 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTCudaVerify)
+
+        add_executable(FullPCNetworkTModelIOCudaVerify tests/tFullPCNetworkTModelIOCudaVerify.cpp)
+        target_link_libraries(FullPCNetworkTModelIOCudaVerify PRIVATE Deepity)
+        set_target_properties(FullPCNetworkTModelIOCudaVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTModelIOCudaVerify)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -

@@ -96,6 +96,12 @@ void InitIdenticalWeights(FullPCNetworkT<float, float>& cpuNet,
       auto& gpuTensor = gpuDict.at(name);
       gpuLayers[i]->GetBackend()->CopyFromHost(gpuTensor.data, hostVals.data(), n);
     }
+    // GetStateDict() now returns pointers into each layer's host staging
+    // buffers (see FullPCLayerT's own GetStateDict()), not the live W/Psi
+    // arena buffers directly -- this pushes what was just written above
+    // on to the actual (possibly device-resident) weights.
+    cpuLayers[i]->SyncStateDictToDevice();
+    gpuLayers[i]->SyncStateDictToDevice();
   }
 }
 } // namespace
