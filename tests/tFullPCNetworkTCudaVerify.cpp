@@ -136,6 +136,29 @@ int main()
   std::mt19937 weightRng(99);
   InitIdenticalWeights(cpuNet, gpuNet, weightRng);
 
+  // TEMPORARY DEBUG: confirm GPU's real device W actually received the
+  // same values as CPU's, independent of training/graph capture.
+  {
+    auto& cpuLayers = cpuNet.GetLayers();
+    auto& gpuLayers = gpuNet.GetLayers();
+    for (size_t i = 0; i < cpuLayers.size(); ++i)
+    {
+      cpuLayers[i]->SyncStateDictFromDevice();
+      gpuLayers[i]->SyncStateDictFromDevice();
+      auto cpuDict = cpuLayers[i]->GetStateDict();
+      auto gpuDict = gpuLayers[i]->GetStateDict();
+      auto& cpuW = cpuDict.at("W");
+      auto& gpuW = gpuDict.at("W");
+      size_t n = 1;
+      for (size_t d : cpuW.shape)
+        n *= d;
+      printf("DEBUG layer %zu W[0..2]: cpu=%.6f,%.6f,%.6f gpu=%.6f,%.6f,%.6f (n=%zu)\n", i,
+             n > 0 ? cpuW.data[0] : 0.0f, n > 1 ? cpuW.data[1] : 0.0f,
+             n > 2 ? cpuW.data[2] : 0.0f, n > 0 ? gpuW.data[0] : 0.0f,
+             n > 1 ? gpuW.data[1] : 0.0f, n > 2 ? gpuW.data[2] : 0.0f, n);
+    }
+  }
+
   bool ok = true;
   float firstCpuEnergy = std::numeric_limits<float>::infinity();
   float firstGpuEnergy = std::numeric_limits<float>::infinity();
