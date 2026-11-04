@@ -239,7 +239,10 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
     if (useEPC)
       EPCStep();
     else
-      Step();
+      // false: needEnergy's ComputeErrorAndEnergy() does a synchronous
+      // cudaStreamSynchronize() on CUDA, illegal during graph capture
+      // -- see TrainStep()'s own settleStep for the same fix.
+      Step(false);
   };
 
   FullPCLayer* terminal = GetTerminalLayer();
@@ -284,13 +287,19 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
         std::cerr << "Predict() graph capture failed, falling back to non-graph execution for "
                      "this call.\n";
     }
-    else
+
+    // Not an else of the block above: on the call that just captured,
+    // this replays it immediately so THIS call's output is real, not
+    // stale -- see TrainStep()'s identical two-separate-checks pattern.
+    if (predictGraphCaptured)
     {
       backend->ReplayGraph(kPredictGraphSlot);
       // cudaGraphLaunch() only enqueues the replay -- the CopyToHost()
       // below needs it to have actually finished.
       backend->Synchronize();
     }
+    else
+      settleAndProject();
   }
   else
   {
