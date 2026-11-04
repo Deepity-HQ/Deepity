@@ -19,6 +19,7 @@
  * CUDA-only verify test in this suite. Run the built binary directly:
  * ./bin/FullPCNetworkTModelIOCudaVerify
  */
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <deepity/networks/FullPCNetworkT.h>
@@ -64,7 +65,11 @@ void InitIdenticalWeights(FullPCNetworkT<float, float>& net, std::mt19937& rng)
       for (auto& v : hostVals)
         v = dist(rng);
 
-      layerPtr->GetBackend()->CopyFromHost(tensor.data, hostVals.data(), n);
+      // tensor.data is a host staging pointer (see FullPCLayerT's own
+      // GetStateDict()), even for a GPU layer -- a plain host-side copy,
+      // not backend->CopyFromHost(), which would treat it as a device
+      // pointer on CUDABackendT and corrupt the stream.
+      std::copy(hostVals.begin(), hostVals.end(), tensor.data);
     }
     layerPtr->SyncStateDictToDevice();
   }
