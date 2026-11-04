@@ -5,6 +5,7 @@
 #include <deepity/layers/FullPCLayerT.h>
 #include <deepity/utils/DeviceMemoryArena.h>
 #include <deepity/utils/MemoryArena.h>
+#include <iostream>
 #include <memory>
 #include <pmmintrin.h>
 #include <random>
@@ -237,10 +238,9 @@ public:
 
   /// @brief Full train step: reset, clamp input+target, run all four
   /// DKP-PC phases in order, unclamp. See FullPCNetwork::TrainStep()'s
-  /// own doc comment. CUDA graph capture/replay is not reachable here:
-  /// device==DEVICE_GPU already throws inside CreateBackendT() at
-  /// construction (no CUDABackendT yet), so this just runs the
-  /// non-graph path unconditionally.
+  /// own doc comment, including its CUDA graph capture/replay --
+  /// mirrored here exactly now that CreateBackendT() can actually
+  /// return a real CUDABackendT (issue #55), not just throw.
   AccumT TrainStep(const std::vector<T>& x, const std::vector<T>& y, int inferenceSteps = 1)
   {
     ResetState();
@@ -261,13 +261,67 @@ public:
       }
     };
 
-    ProjectForward();
-    CalculateTerminalError();
-    for (int t = 0; t < inferenceSteps; t++)
-      settleStep();
-    DirectFeedbackUpdate();
-    if (!useIPC)
-      UpdateWeights();
+    if (device == DeviceType::DEVICE_GPU)
+    {
+      if (!graphCaptured || capturedInferenceSteps != inferenceSteps)
+      {
+        backend->BeginGraphCapture();
+        ProjectForward();
+        CalculateTerminalError();
+        for (int t = 0; t < inferenceSteps; t++)
+          settleStep();
+        DirectFeedbackUpdate();
+        if (!useIPC)
+          UpdateWeights();
+        bool captureOk = backend->EndGraphCapture();
+
+        if (captureOk)
+        {
+          graphCaptured = true;
+          capturedInferenceSteps = inferenceSteps;
+
+          // settleStep()'s own InvalidateMuCache() calls above only run
+          // under useIPC; without it, nothing clears a clamped layer's
+          // mu-cache after this recording pass, so the fresh CalculateState()
+          // read below would wrongly reuse mu from before this call's own
+          // weight update (see FullPCNetwork::TrainStep()'s identical fix).
+          for (auto& l : layers)
+            l->InvalidateMuCache();
+        }
+        else
+          std::cerr << "Graph capture failed, falling back to non-graph execution for this "
+                       "call.\n";
+      }
+
+      if (graphCaptured)
+      {
+        backend->ReplayGraph();
+        // cudaGraphLaunch() only enqueues the replay; see
+        // FullPCNetwork::TrainStep()'s identical comment for why this
+        // matters even though same-stream ordering should already cover it.
+        backend->Synchronize();
+      }
+      else
+      {
+        ProjectForward();
+        CalculateTerminalError();
+        for (int t = 0; t < inferenceSteps; t++)
+          settleStep();
+        DirectFeedbackUpdate();
+        if (!useIPC)
+          UpdateWeights();
+      }
+    }
+    else
+    {
+      ProjectForward();
+      CalculateTerminalError();
+      for (int t = 0; t < inferenceSteps; t++)
+        settleStep();
+      DirectFeedbackUpdate();
+      if (!useIPC)
+        UpdateWeights();
+    }
 
     AccumT finalEnergy(0);
     for (auto& l : layers)
@@ -279,8 +333,8 @@ public:
 
   /// @brief Forward prediction: clamp input, settle with no DFA
   /// perturbation and no target clamped, read the terminal's beliefs.
-  /// See FullPCNetwork::Predict()'s own doc comment; same CUDA-graph
-  /// caveat as TrainStep() above.
+  /// See FullPCNetwork::Predict()'s own doc comment, including its own
+  /// separate graph slot (kPredictGraphSlot) -- mirrored here exactly.
   std::vector<T> Predict(const std::vector<T>& x, int inferenceSteps)
   {
     ResetState();
@@ -296,15 +350,48 @@ public:
 
     FullPCLayerT<T, AccumT>* terminal = GetTerminalLayer();
 
-    ProjectForward();
-    for (int t = 0; t < inferenceSteps; t++)
-      settleStep();
-    if (terminal->GetCrossEntropy())
+    auto settleAndProject = [&]()
     {
-      FullPCLayerT<T, AccumT>* below = layers[layers.size() - 2].get();
-      below->ComputeMuOnly();
-      size_t n = below->GetBatchSize() * below->GetOutputSize();
-      backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+      ProjectForward();
+      for (int t = 0; t < inferenceSteps; t++)
+        settleStep();
+      if (terminal->GetCrossEntropy())
+      {
+        FullPCLayerT<T, AccumT>* below = layers[layers.size() - 2].get();
+        below->ComputeMuOnly();
+        size_t n = below->GetBatchSize() * below->GetOutputSize();
+        backend->Copy(terminal->GetBeliefs(), below->GetMu(), n);
+      }
+    };
+
+    if (device == DeviceType::DEVICE_GPU)
+    {
+      if (!predictGraphCaptured || capturedPredictInferenceSteps != inferenceSteps)
+      {
+        backend->BeginGraphCapture(kPredictGraphSlot);
+        settleAndProject();
+        bool captureOk = backend->EndGraphCapture(kPredictGraphSlot);
+
+        if (captureOk)
+        {
+          predictGraphCaptured = true;
+          capturedPredictInferenceSteps = inferenceSteps;
+        }
+        else
+          std::cerr << "Predict() graph capture failed, falling back to non-graph execution "
+                       "for this call.\n";
+      }
+      else
+      {
+        backend->ReplayGraph(kPredictGraphSlot);
+        // cudaGraphLaunch() only enqueues the replay -- the CopyToHost()
+        // below needs it to have actually finished.
+        backend->Synchronize();
+      }
+    }
+    else
+    {
+      settleAndProject();
     }
 
     const T* beliefs = terminal->GetBeliefs();
@@ -421,17 +508,20 @@ public:
   void SetUseIPC(bool enabled) noexcept
   {
     useIPC = enabled;
+    InvalidateCapturedGraphs();
   }
 
   void SetUseMomentum(bool enabled, AccumT beta = AccumT(0.9)) noexcept
   {
     for (auto& layer : layers)
       layer->SetMomentum(enabled, beta);
+    InvalidateCapturedGraphs();
   }
 
   void SetUseCrossEntropy(bool enabled) noexcept
   {
     GetTerminalLayer()->SetCrossEntropy(enabled);
+    InvalidateCapturedGraphs();
   }
 
   void SetUseEPC(bool enabled) noexcept
@@ -439,9 +529,21 @@ public:
     useEPC = enabled;
     for (size_t i = 1; i + 1 < layers.size(); ++i)
       layers[i]->SetUseEPC(enabled);
+    InvalidateCapturedGraphs();
   }
 
 private:
+  /// @brief Forces TrainStep()/Predict() to recapture their CUDA graphs
+  /// on their next call. See FullPCNetwork::InvalidateCapturedGraphs()'s
+  /// own doc comment -- a no-op on CPU, since graphCaptured/
+  /// predictGraphCaptured are only ever read inside the DEVICE_GPU
+  /// branches above.
+  void InvalidateCapturedGraphs() noexcept
+  {
+    graphCaptured = false;
+    predictGraphCaptured = false;
+  }
+
   std::vector<std::unique_ptr<FullPCLayerT<T, AccumT>>> layers;
 
   std::unique_ptr<IComputeBackendT<T, AccumT>> backend;
@@ -458,5 +560,14 @@ private:
 
   bool useMuPCScaling = false;
   bool useResidualConnections = false;
+
+  bool graphCaptured = false;
+  int capturedInferenceSteps = -1;
+
+  // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
+  // above -- see FullPCNetwork::kPredictGraphSlot's own doc comment.
+  bool predictGraphCaptured = false;
+  int capturedPredictInferenceSteps = -1;
+  static constexpr size_t kPredictGraphSlot = 1;
 };
 } // namespace Deep
