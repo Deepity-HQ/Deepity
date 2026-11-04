@@ -164,6 +164,24 @@ protected:
   std::unique_ptr<MemoryArenaT<T>>
       localArena; ///< This layer's own arena, used when it isn't bound into a network-wide one.
 
+  /// @name GetStateDict() host staging
+  /// Host-side mirrors of W/b/Psi, for SyncStateDictFromDevice()/
+  /// SyncStateDictToDevice() to copy into/out of when `backend` keeps
+  /// the real buffers in device memory -- see FullConvPCLayer's own
+  /// precedent. Sized lazily by GetStateDict() itself. Adam moments
+  /// (m_W/v_W/m_b/v_b/m_Psi/v_Psi) need no staging of their own: they're
+  /// already host-resident std::vector<AccumT>s regardless of backend
+  /// (see those members' own comment above).
+  ///@{
+  mutable std::vector<T> hostW, hostB, hostPsi;
+  ///@}
+
+  /// @brief Resizes the host staging buffers above to match W/b/Psi's
+  /// current shapes. Idempotent, so GetStateDict(),
+  /// SyncStateDictFromDevice(), and SyncStateDictToDevice() can all
+  /// call it unconditionally.
+  void EnsureStateDictStaging() const noexcept;
+
 public:
   /// @param size input size
   /// @param nextSize output size (0 marks a terminal layer)
@@ -191,6 +209,14 @@ public:
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Copies W/b/Psi from device memory into the host staging
+  /// buffers GetStateDict() exposes, so a save can read them directly.
+  /// A plain memcpy on CPUBackendT, so free to call unconditionally.
+  void SyncStateDictFromDevice() const;
+  /// @brief The reverse of SyncStateDictFromDevice(): pushes the host
+  /// staging buffers (just overwritten by a load) back on to the
+  /// actual device-resident W/b/Psi.
+  void SyncStateDictToDevice();
 
   void SetLayerAbove(FullPCLayerT* l) noexcept
   {

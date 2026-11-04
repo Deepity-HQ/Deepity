@@ -12,9 +12,9 @@
  * tMatMulLargeAsymmetricVerify.cpp's own tolerance-based CPU-vs-GPU
  * comparison instead (CPU already trusted, GPU compared against it).
  *
- * Both networks' W/Psi are pushed from one set of host-generated values via
- * CopyFromHost() (see InitIdenticalWeights() below), not RandomizeWeights()
- * with "the same seed" -- CPUBackend::RandomizeNormal seeds a std::mt19937,
+ * Both networks' W/Psi are pushed from one set of host-generated values
+ * (see InitIdenticalWeights() below), not RandomizeWeights() with "the
+ * same seed" -- CPUBackend::RandomizeNormal seeds a std::mt19937,
  * CUDABackend::RandomizeNormal seeds a curandState, and those produce
  * unrelated sequences from an identical seed value, so that would silently
  * start the two networks from different weights.
@@ -25,6 +25,7 @@
  * as every other CUDA-only verify test in this suite. Run the built
  * binary directly: ./bin/FullPCNetworkTCudaVerify
  */
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <deepity/networks/FullPCNetworkT.h>
@@ -66,8 +67,11 @@ void BuildNetwork(FullPCNetworkT<float, float>& net, size_t inSize, size_t hidSi
  * seeds a curandState -- same seed VALUE, two unrelated PRNG algorithms, so
  * calling RandomizeWeights(sameSeed) on each network independently does NOT
  * give them the same actual weights. Generate the values once on the host
- * instead and push the identical bytes into both via CopyFromHost(), which
- * is the one primitive guaranteed to behave the same on every backend.
+ * instead and write the identical bytes into each layer's GetStateDict()
+ * staging buffers directly (a plain host-side copy -- those pointers are
+ * always host-resident now, see FullPCLayerT's own GetStateDict()), then
+ * SyncStateDictToDevice() pushes them on to the real (possibly
+ * device-resident) W/Psi.
  */
 void InitIdenticalWeights(FullPCNetworkT<float, float>& cpuNet,
                           FullPCNetworkT<float, float>& gpuNet, std::mt19937& rng)
@@ -92,10 +96,18 @@ void InitIdenticalWeights(FullPCNetworkT<float, float>& cpuNet,
       for (auto& v : hostVals)
         v = dist(rng);
 
-      cpuLayers[i]->GetBackend()->CopyFromHost(cpuTensor.data, hostVals.data(), n);
+      // tensor.data is always a host staging pointer now (see FullPCLayerT's
+      // own GetStateDict()), even for a GPU layer -- a plain host-side copy,
+      // not backend->CopyFromHost(), which would treat it as a device
+      // pointer on CUDABackendT and corrupt the stream.
       auto& gpuTensor = gpuDict.at(name);
-      gpuLayers[i]->GetBackend()->CopyFromHost(gpuTensor.data, hostVals.data(), n);
+      std::copy(hostVals.begin(), hostVals.end(), cpuTensor.data);
+      std::copy(hostVals.begin(), hostVals.end(), gpuTensor.data);
     }
+    // Pushes what was just written above on to the actual (possibly
+    // device-resident) weights.
+    cpuLayers[i]->SyncStateDictToDevice();
+    gpuLayers[i]->SyncStateDictToDevice();
   }
 }
 } // namespace

@@ -180,11 +180,41 @@ void FullPCLayerT<T, AccumT>::RandomizeWeights(std::mt19937& seedGenerator,
 }
 
 template <typename T, typename AccumT>
+void FullPCLayerT<T, AccumT>::EnsureStateDictStaging() const noexcept
+{
+  hostW.resize(nextSize * size);
+  hostB.resize(nextSize);
+  hostPsi.resize(nextSize * terminalSize);
+}
+
+template <typename T, typename AccumT>
 std::map<std::string, TensorDescriptorT<T>> FullPCLayerT<T, AccumT>::GetStateDict() const
 {
-  return {{"W", {W, std::vector<size_t>{nextSize, size}}},
-          {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+  EnsureStateDictStaging();
+  return {{"W", {hostW.data(), std::vector<size_t>{nextSize, size}}},
+          {"b", {hostB.data(), std::vector<size_t>{nextSize}}},
+          {"Psi", {hostPsi.data(), std::vector<size_t>{nextSize, terminalSize}}}};
+}
+
+template <typename T, typename AccumT>
+void FullPCLayerT<T, AccumT>::SyncStateDictFromDevice() const
+{
+  if (nextSize == 0)
+    return;
+  EnsureStateDictStaging();
+  backend->CopyToHost(hostW.data(), W, hostW.size());
+  backend->CopyToHost(hostB.data(), b, hostB.size());
+  backend->CopyToHost(hostPsi.data(), Psi, hostPsi.size());
+}
+
+template <typename T, typename AccumT>
+void FullPCLayerT<T, AccumT>::SyncStateDictToDevice()
+{
+  if (nextSize == 0)
+    return;
+  backend->CopyFromHost(W, hostW.data(), hostW.size());
+  backend->CopyFromHost(b, hostB.data(), hostB.size());
+  backend->CopyFromHost(Psi, hostPsi.data(), hostPsi.size());
 }
 
 template <typename T, typename AccumT>
