@@ -227,10 +227,12 @@ namespace
 /// @brief Below this many elements, curand's fixed per-call overhead
 /// (cudaMalloc of one curandState per element, a kernel launch, a
 /// stream sync) outweighs generating on the host and doing a single
-/// cudaMemcpy -- see issue #67. A starting guess, not measured: there's
-/// no GPU on the dev machine this was written on, so the real crossover
-/// point needs confirming on OSC before this is trusted at the margins.
-constexpr size_t kGPURandomizeThreshold = 1 << 16;
+/// cudaMemcpy -- see issue #67. Measured on OSC (A100) with
+/// CUDARandomizeBenchmark: host still wins at n=65536 (806 vs 878 us
+/// warm mean), gpu wins from n=81920 (1000 vs 886 us). No data point
+/// between those, so this is set at the first confirmed gpu win rather
+/// than interpolated -- rerun the benchmark if that gap ever matters.
+constexpr size_t kGPURandomizeThreshold = 81920;
 
 void HostRandomizeNormal(float* hostBuf, size_t n, float mean, float stddev, uint32_t seed)
 {
