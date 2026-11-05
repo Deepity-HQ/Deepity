@@ -10,26 +10,17 @@
 /**
  * @file SimpleConvPCNetworkT.h
  * @brief Templated counterpart to SimpleConvPCNetwork, over the same
- * `T`/`AccumT` pair as SimpleConvPCLayerT -- see FullPCNetworkT's own
- * doc comment for the full rationale. Produced by mechanically
- * retyping SimpleConvPCNetwork's own `float` members/parameters to
- * `T`/`AccumT`.
- *
- * CUDA graph capture is dropped entirely, same reasoning as every
- * other templated network: device==DEVICE_GPU already throws inside
- * CreateBackendT() at construction (no CUDABackendT yet), so there's
- * no graph path to reach here.
+ * `T`/`AccumT` pair as SimpleConvPCLayerT. Has no CUDA graph capture
+ * path.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to SimpleConvPCNetwork, see this
-/// file's own comment for the full rationale.
+/// @brief Templated counterpart to SimpleConvPCNetwork.
 template <typename T, typename AccumT = T> class SimpleConvPCNetworkT
 {
 public:
-  /// @brief This network's storage element type, see
-  /// FullPCNetworkT::ElementType's own doc comment.
+  /// @brief This network's storage element type.
   using ElementType = T;
 
   /// @brief Constructs an empty network; add layers via AddLayer(),

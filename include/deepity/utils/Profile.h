@@ -9,11 +9,8 @@
 /**
  * @file Profile.h
  * @brief Per-layer, phase-level timing accumulator, keyed by layer
- * pointer so each layer's phase breakdown (forward GEMM, feedback GEMM,
- * etc.) is reported separately. calculateStateTotal/updateStateTotal are
- * independent top-level timers wrapping the whole call, used to
- * cross-check the sub-phase timers against each other and against an
- * externally-measured wall-clock duration (see PrintAllProfiles()).
+ * pointer so each layer's phase breakdown (forward GEMM, feedback
+ * GEMM, etc.) is reported separately.
  *
  * Gated behind PCN_PROFILE; a no-op in normal builds.
  */

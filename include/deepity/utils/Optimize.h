@@ -56,11 +56,6 @@ inline size_t GetL2CacheBytes()
   DWORD bufSize = 0;
   GetLogicalProcessorInformation(nullptr, &bufSize);
 
-  // Computed once, by name, instead of repeating `bufSize /
-  // sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION)` inline at both the
-  // allocation site and the loop condition, and std::vector instead
-  // of make_unique<T[]>(count), since that's the far more common,
-  // heavily-exercised pattern for a runtime-sized buffer like this.
   const size_t count = static_cast<size_t>(bufSize) / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION);
   std::vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> buf(count);
   GetLogicalProcessorInformation(buf.data(), &bufSize);
@@ -107,10 +102,8 @@ inline size_t AutoBatchSize(size_t inSize, size_t outSize)
 
 /// @brief Sets OpenMP's (and the BLAS library's) thread count for the
 /// given batch size, memoized so it's a no-op if the target hasn't
-/// changed since the last call. Small batches get 1 thread (avoids
-/// parallelization overhead dominating tiny work); larger batches
-/// scale up to a measured, capped optimum, see the inline note on
-/// why 16 threads, not the full core count, is the ceiling.
+/// changed since the last call. Small batches get 1 thread; larger
+/// batches scale up to a capped optimum of 16.
 /// @param batchSize The batch size about to be processed.
 static inline void DynamicThread(int batchSize) noexcept
 {
@@ -119,31 +112,9 @@ static inline void DynamicThread(int batchSize) noexcept
   const int THRESHOLD = 32;
   int maxProcs = omp_get_num_procs();
 
-  // Confirmed via extended sweep (batch=1024/2048/4096, threads up to
-  // 48): the optimum drifts mildly upward with batch size (8 -> ~12 ->
-  // ~16) but the difference is small and noisy at this scale (~7%
-  // between 8/12/16 at batch=4096), NOT worth a hard per-batch-size
-  // table. What IS solid and unambiguous: 48 threads is always the
-  // worst choice tested, by 1.8-2.9x, at every batch size, likely
-  // cross-CCD/Infinity Fabric synchronization cost on this many-core
-  // part. A smooth, capped scaling curve fits the real trend better
-  // than another single hardcoded number.
-  //
-  // Below batch=1024, a separate sweep (batch=64 conv, batch=128
-  // dense; both elementwise/im2col-heavy, not pure GEMM) found the 8
-  // this bucket used to return is a local *pessimum*, not an optimum:
-  // wall time at 8 threads was 1.6-1.8x worse than at 4-6 threads, at
-  // both sizes (likely an SMT/cache-domain boundary at this core
-  // count). After also parallelizing Im2Col/Col2Im's per-batch loop
-  // (previously serial, leaving idle threads spinning through it)
-  // conv's own optimum moved from 4 to 6 threads, matching dense's
-  // already-measured optimum of 6 -- so 6 is the single choice for
-  // this smaller bucket, not 4.
   int scaled =
       (batchSize < 1024) ? 6 : 8 + (batchSize / 1024) * 4; // 6 @ <1024, ~12 @ 2048, ~16 @ 4096
-  const int MAX_USEFUL_THREADS =
-      std::min(scaled, 16); // cap, 48 was confirmed worse
-                            // every time, no reason to extrapolate past 16
+  const int MAX_USEFUL_THREADS = std::min(scaled, 16);
 
   int targetThreads = (batchSize < THRESHOLD) ? 1 : std::min(maxProcs, MAX_USEFUL_THREADS);
 

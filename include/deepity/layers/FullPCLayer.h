@@ -13,22 +13,18 @@
 
 /**
  * @file FullPCLayer.h
- * @brief PC layer combining DKP direct feedback (DirectKPPCLayer's
- * structure) with muPC scaling (`a`) and optional residual connections
- * (`useResidual`), each off by default so plain defaults reproduce
- * DirectKPPCLayer exactly.
+ * @brief PC layer with DKP direct feedback, optional muPC scaling (`a`),
+ * and optional residual connections (`useResidual`), each off by default.
  *
- * `a` and `useResidual` are set by the owning network at Compile() time
- * (via SetMuPCScale/SetResidual), not computed here, this layer, at
- * construction time, doesn't know the full network's shape (width N,
- * depth L, input dim) that muPC's own aL formula needs.
+ * `a` and `useResidual` are normally set by the owning network at
+ * Compile() time via SetMuPCScale()/SetResidual(), not by calling code
+ * directly.
  */
 
 namespace Deep
 {
-/// @brief PC layer combining muPC scaling, optional residual
-/// connections, and DKP direct feedback, every extra off by default,
-/// so plain defaults reproduce DirectKPPCLayer exactly.
+/// @brief PC layer with muPC scaling, optional residual connections,
+/// and DKP direct feedback, each off by default.
 class FullPCLayer : public Layer
 {
 protected:
@@ -42,17 +38,10 @@ protected:
   float fl;    ///< Feedback rate for Psi.
   float lmbda; ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
 
-  // muPC scaling: mu = a * (W @ phi(z)) + b [+ z if useResidual].
-  // a=1.0, useResidual=false reproduces plain PC exactly.
+  // mu = a * (W @ phi(z)) + b [+ z if useResidual].
   float a = 1.0f;           ///< muPC forward-scaling factor, see SetMuPCScale().
   bool useResidual = false; ///< Whether the residual/skip connection is enabled, see SetResidual().
 
-  // muPC's OTHER table-1 change, alongside `a`: standard PC initializes
-  // W with fan-in/fan-out-scaled variance (RandomizeWeights()'s default,
-  // b_l = N_{l-1}^-1 in the paper's notation); muPC instead uses UNIT
-  // variance for W, letting `a` alone carry the width/depth scaling.
-  // false (the default) keeps RandomizeWeights()'s existing fan-scaled
-  // behavior, matching plain PC exactly.
   bool useMuPCInit = false; ///< Whether unit-variance W init is enabled, see SetMuPCInit().
 
   bool isClamped = false;    ///< Whether ClampState() is currently active.
@@ -81,29 +70,20 @@ protected:
   float* b = nullptr;        ///< Bias vector, length nextSize.
   float* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
   float* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
-  /// @brief Pre-activation snapshot of mu (mu=phi(a*W@z+b)'s raw
-  /// a*W@z+b, before Activation() is applied in place; the residual
-  /// add, when enabled, happens AFTER activation and is NOT part of
-  /// this), shape [batchSize, nextSize]. f'(preact) -- not f'(z) and
-  /// not a shortcut from the activated mu -- is what UpdateState(),
-  /// UpdateWeights(), DirectFeedbackUpdate() and ComputeAdjoint() all
-  /// apply to the feedback signal.
+  /// @brief Pre-activation value of mu (a*W@z+b, before Activation() is
+  /// applied in place and before the residual add), shape
+  /// [batchSize, nextSize]. f'(preact), not f'(z) or a shortcut from mu
+  /// itself, is what UpdateState(), UpdateWeights(),
+  /// DirectFeedbackUpdate(), and ComputeAdjoint() apply to the feedback
+  /// signal.
   float* preact = nullptr;
   /// @brief Cached pre-activation, valid alongside cachedMu when this
-  /// layer is clamped (same reasoning as cachedMu itself).
+  /// layer is clamped.
   float* cachedPreact = nullptr;
-  /// @brief nextSize-shaped scratch holding f'(preact), recomputed
-  /// fresh from preact wherever needed. Deliberately never stashed in
-  /// mu itself (mu must stay the clean, activated value --
-  /// ComputeMuOnly() is publicly callable between settling calls and
-  /// UpdateWeights() and would silently clobber a derivative stashed
-  /// in mu back into the plain activated value).
+  /// @brief nextSize-shaped scratch holding f'(preact).
   float* derivScratch = nullptr;
   /// @brief nextSize-shaped scratch holding the top-down signal
-  /// (e_above, adjointAbove, or proj) pre-multiplied by f'(preact),
-  /// i.e. the quantity that then gets projected through W/Psi -- the
-  /// derivative applies at the source of the nonlinearity, before
-  /// projecting down, not after.
+  /// (e_above, adjointAbove, or proj) pre-multiplied by f'(preact).
   float* feedbackError = nullptr;
   float* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
   float* proj = nullptr; ///< Scratch buffer: terminal error projected back through layerAbove's
@@ -137,18 +117,11 @@ protected:
   float* rowEnergies =
       nullptr; ///< Per-row energy scratch for the cross-entropy path, length batchSize.
 
-  // ePC (Goemaere/Innocenti et al., see SetUseEPC()): `e` itself becomes
-  // the settled variable instead of `z`, via a full top-to-bottom
-  // backward sweep each settling step rather than a one-hop message.
-  // `adjoint` holds this layer's chained backprop sensitivity so the
-  // layer below can read it as ITS incoming signal, see ComputeAdjoint().
   bool useEPC = false;      ///< Whether ePC settling is enabled, see SetUseEPC().
   float* adjoint = nullptr; ///< Chained backward-sweep signal, shape [batchSize, size].
 
   /// @brief nextSize-length scratch for SumRows' output in
-  /// UpdateWeights()'s SGD branch (accumulate, which SumRows
-  /// alone can't express). Same reasoning as DirectKPPCLayer's
-  /// identical buffer.
+  /// UpdateWeights()'s SGD branch.
   float* biasGradScratch = nullptr;
 
   std::unique_ptr<MemoryArena>
@@ -185,11 +158,9 @@ public:
   size_t GetRequiredFloats() const noexcept;
   /// @brief Randomizes W and Psi.
   /// @param distribution Distribution for W only, e.g. "normal(0,1)" or
-  /// "uniform(-0.3,0.3)"; Psi keeps its own fixed fan-scaled init
-  /// regardless (see the comment on `fl`'s DirectFeedbackUpdate() use --
-  /// Psi is outside muPC's scope, same reasoning applies here). The
-  /// default "normal" has no "(a,b)" and so deliberately fails to
-  /// parse, falling back to this class's own existing muPC-aware default.
+  /// "uniform(-0.3,0.3)"; Psi always uses its own fixed fan-scaled init.
+  /// The default "normal" (with no "(a,b)") falls back to this class's
+  /// own muPC-aware default init for W.
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
@@ -210,13 +181,10 @@ public:
     terminalLayer = l;
   }
 
-  /// @brief Set by the owning network at Compile() time, once the
-  /// full layer_sizes list (and therefore d_in/N/L) is known.
-  /// 1.0 (the default) reproduces plain, unscaled PC. Also rescales
-  /// DKP's feedback rate by the new `a` (see SetFeedbackRate()) --
-  /// unlike the local path's gradient, DKP's one-hop injection never
-  /// otherwise shrinks with depth, which destabilizes training once
-  /// residual connections let that mismatch propagate unchecked.
+  /// @brief Sets the muPC forward-scaling factor `a` (see the member's
+  /// own doc). Also rescales DKP's feedback rate by the new `a` (see
+  /// SetFeedbackRate()). 1.0 (the default) reproduces plain, unscaled
+  /// PC. Normally called by the owning network at Compile() time.
   void SetMuPCScale(float a) noexcept;
   /// @brief Returns the current muPC forward-scaling factor, see
   /// SetMuPCScale().
@@ -225,10 +193,9 @@ public:
     return a;
   }
 
-  /// @brief Set by the owning network at Compile() time, alongside
-  /// SetMuPCScale() (both are Table 1 of the muPC paper). Only affects
-  /// the NEXT RandomizeWeights() call; false (the default) reproduces
-  /// plain PC's fan-scaled init exactly.
+  /// @brief Enables unit-variance W init on the next RandomizeWeights()
+  /// call, instead of the default fan-scaled init. Normally called by
+  /// the owning network at Compile() time, alongside SetMuPCScale().
   void SetMuPCInit(bool enabled) noexcept
   {
     useMuPCInit = enabled;
@@ -240,10 +207,9 @@ public:
     return useMuPCInit;
   }
 
-  /// @brief Set by the owning network at Compile() time. Requires
-  /// size == nextSize (checked at the point it's actually used,
-  /// not here, since nextSize may not be finalized yet when this
-  /// is called). false (the default) reproduces plain PC.
+  /// @brief Enables the residual/skip connection. Requires
+  /// size == nextSize. Normally called by the owning network at
+  /// Compile() time.
   void SetResidual(bool enabled) noexcept
   {
     useResidual = enabled;
@@ -255,13 +221,11 @@ public:
     return useResidual;
   }
 
-  /// @brief Enables softmax cross-entropy energy for THIS layer's error
-  /// against layerBelow's mu. Works whether this layer is clamped (the
-  /// usual terminal/classification use) or free-settling (e.g. a
-  /// softmax attention layer, where z settles toward softmax(mu) like
-  /// any other belief) -- NOT looped over every layer the way
-  /// SetMuPCScale/SetResidual/SetMomentum's network-level setters are.
-  /// OFF by default (plain Gaussian energy, matching DirectKPPCLayer).
+  /// @brief Enables softmax cross-entropy energy for this layer's error
+  /// against layerBelow's mu, instead of the default Gaussian energy.
+  /// Works whether this layer is clamped (the usual terminal/
+  /// classification use) or free-settling. Must be set per layer, not
+  /// network-wide.
   void SetCrossEntropy(bool enabled) noexcept
   {
     useCrossEntropy = enabled;
@@ -294,33 +258,20 @@ public:
   void DirectFeedbackUpdate() noexcept;
 
   /// @brief ePC forward-sweep step: reconstructs this layer's belief as
-  /// z := layerBelow->GetMu() + e (the paper's s_i := ŝ_i + ε_i), rather
-  /// than integrating z locally. Requires layerBelow != nullptr (the
-  /// input layer's z is the clamped input, never reconstructed this
-  /// way). See SetUseEPC().
+  /// z := layerBelow->GetMu() + e. Requires layerBelow != nullptr. See
+  /// SetUseEPC().
   void ReconstructBelief() noexcept;
   /// @brief ePC backward-sweep step: computes this layer's chained
   /// backprop sensitivity (`adjoint`) from the sensitivity passed down
-  /// from the layer above, via the same feedback GEMM UpdateState()
-  /// uses, but materialized into `adjoint` instead of applied inline,
-  /// so the layer below can read it as ITS `adjointAbove`. See
-  /// SetUseEPC().
+  /// from the layer above, for the layer below to read as its
+  /// `adjointAbove`. See SetUseEPC().
   /// @param adjointAbove The layer above's `adjoint` (or, for the
   /// topmost hidden layer, the terminal's own error buffer).
   /// @param adjointAboveScale Extra scale folded into the GEMM alongside
-  /// `a` (default 1.0). The topmost hidden layer needs -1.0: the true
-  /// backprop seed is dLoss/dmu_terminal, but Deepity's own error
-  /// convention stores e_terminal = -dLoss/dmu_terminal (see
-  /// IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy's docs,
-  /// same sign relationship holds for the Gaussian terminal too), so the
-  /// terminal's raw error needs negating before it's a valid seed. Every
-  /// other layer already receives a correctly-signed `adjoint` from the
-  /// layer above and uses the default. Also correctly includes the
-  /// residual connection's identity-Jacobian term when useResidual is
-  /// set on this layer (see ComputeMuOnly()'s own residual handling).
+  /// `a` (default 1.0). Pass -1.0 for the topmost hidden layer; every
+  /// other layer uses the default.
   void ComputeAdjoint(const float* adjointAbove, float adjointAboveScale = 1.0f) noexcept;
-  /// @brief ePC's error-update step: e := (1-ir)*e - ir*adjoint, the
-  /// paper's `ε -= λ*(ε+adjoint)` gradient-descent rule. Call
+  /// @brief ePC's error-update step: e := (1-ir)*e - ir*adjoint. Call
   /// ComputeAdjoint() first. See SetUseEPC().
   void UpdateErrorEPC() noexcept;
   /// @brief Returns this layer's chained backward-sweep signal, see
@@ -345,10 +296,8 @@ public:
   }
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu from
-  /// scratch, even if this layer is clamped. Needed under iPC: weights
-  /// change every settling step, so a clamped layer's cached mu (valid
-  /// under the standard, two-phase assumption that W is fixed throughout
-  /// settling) goes stale the moment UpdateWeights() runs mid-loop.
+  /// scratch, even if this layer is clamped. Call after any
+  /// mid-settling weight update (e.g. under iPC).
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;
@@ -356,10 +305,7 @@ public:
 
   /// @brief Enables momentum (inertial) settling: the update direction
   /// is EMA-smoothed (decay `beta`) before being applied to z, instead
-  /// of applied directly each step. OFF by default. `v` is allocated
-  /// unconditionally in BindMemory() regardless of this flag's value at
-  /// that time (same reasoning as biasGradScratch, cheap, and avoids
-  /// an ordering hazard if this is called after Compile()). Reset to
+  /// of applied directly each step. OFF by default. `v` is reset to
   /// zero at the start of every TrainStep()/Predict() call, same as z.
   void SetMomentum(bool enabled, float beta = 0.9f) noexcept
   {
@@ -378,12 +324,10 @@ public:
   }
 
   /// @brief Enables ePC settling: `e` (not `z`) becomes the primary
-  /// variable, updated each settling step from a full top-to-bottom
-  /// backward sweep (ReconstructBelief()/ComputeAdjoint()/
-  /// UpdateErrorEPC(), orchestrated by FullPCNetwork) instead of a
-  /// one-hop local message. Only meaningful on hidden layers (input has
-  /// no free error; the terminal's error IS the loss, computed by
-  /// CalculateState() unchanged). OFF by default.
+  /// variable, updated each settling step via ReconstructBelief()/
+  /// ComputeAdjoint()/UpdateErrorEPC() (orchestrated by FullPCNetwork)
+  /// instead of a one-hop local message. Only meaningful on hidden
+  /// layers. OFF by default.
   /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
   /// Digital Simulation", https://arxiv.org/abs/2505.20137
   void SetUseEPC(bool enabled) noexcept
@@ -413,8 +357,8 @@ public:
   {
     ir = inferenceRate;
   }
-  /// @brief Sets the feedback rate, propagating it to the optimizer
-  /// state as `feedbackRate * a` -- see SetMuPCScale()'s own comment.
+  /// @brief Sets the feedback rate, propagating `feedbackRate * a` to
+  /// the optimizer state.
   void SetFeedbackRate(float feedbackRate) noexcept;
   /// @brief Sets the weight decay coefficient.
   void SetLambda(float lmbda) noexcept

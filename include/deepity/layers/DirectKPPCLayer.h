@@ -68,27 +68,18 @@ protected:
   float* b = nullptr;        ///< Bias vector, length nextSize.
   float* mu = nullptr;       ///< Forward prediction buffer, shape [batchSize, nextSize].
   float* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
-  /// @brief Pre-activation snapshot of mu (mu=phi(W@z+b)'s raw
-  /// W@z+b, before Activation() is applied in place), shape
-  /// [batchSize, nextSize]. Needed because f'(preact) (not f'(z) and
-  /// not a shortcut from the activated mu) is what both UpdateState()
-  /// and UpdateWeights() apply to the feedback signal.
+  /// @brief Pre-activation value of mu (W@z+b, before Activation() is
+  /// applied in place), shape [batchSize, nextSize]. f'(preact), not
+  /// f'(z) or a shortcut from mu itself, is what UpdateState() and
+  /// UpdateWeights() apply to the feedback signal.
   float* preact = nullptr;
   /// @brief Cached pre-activation, valid alongside cachedMu when this
-  /// layer is clamped (same reasoning as cachedMu itself).
+  /// layer is clamped.
   float* cachedPreact = nullptr;
-  /// @brief nextSize-shaped scratch holding f'(preact), recomputed
-  /// fresh from preact wherever needed. Deliberately never stashed in
-  /// mu itself (mu must stay the clean, activated value --
-  /// ComputeMuOnly() is publicly callable between UpdateState() and
-  /// UpdateWeights() and would silently clobber a derivative stashed
-  /// in mu back into the plain activated value).
+  /// @brief nextSize-shaped scratch holding f'(preact).
   float* derivScratch = nullptr;
   /// @brief nextSize-shaped scratch holding e_above (or, in
-  /// DirectFeedbackUpdate(), proj) pre-multiplied by f'(preact), i.e.
-  /// the quantity that then gets projected through W/Psi -- the
-  /// derivative applies at the source of the nonlinearity, before
-  /// projecting down, not after.
+  /// DirectFeedbackUpdate(), proj) pre-multiplied by f'(preact).
   float* feedbackError = nullptr;
   float* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
   float* proj = nullptr; ///< Scratch buffer: terminal error projected back through layerAbove's
@@ -112,13 +103,8 @@ protected:
 
   float* feedbackScratch = nullptr; ///< Scratch buffer for the feedback GEMM's output.
 
-  /// @brief nextSize-length scratch buffer for SumRows' output in
-  /// UpdateWeights()'s SGD branch, SGD needs `b += lr_batch *
-  /// sum(local_grad)`, an accumulate, which SumRows alone can't
-  /// express (it only overwrites). Allocated unconditionally
-  /// (regardless of which optimizer is selected) since it's cheap
-  ///, at most `nextSize` floats, and simpler than branching
-  /// allocation on optimizer choice for this one small buffer.
+  /// @brief nextSize-length scratch for SumRows' output in
+  /// UpdateWeights()'s SGD branch.
   float* biasGradScratch = nullptr;
 
   std::unique_ptr<MemoryArena>
@@ -154,10 +140,10 @@ public:
   /// @brief Total floats this layer needs from its MemoryArena.
   size_t GetRequiredFloats() const noexcept;
   /// @brief Randomizes W and Psi.
-  /// @param distribution Distribution for W only; Psi keeps its own
-  /// fixed fan-scaled init regardless. The default "normal" has no
-  /// "(a,b)" and so deliberately fails to parse, falling back to this
-  /// class's own existing default.
+  /// @param distribution Distribution for W only, e.g. "normal(0,1)" or
+  /// "uniform(-0.3,0.3)"; Psi always uses its own fixed fan-scaled init.
+  /// The default "normal" (with no "(a,b)") falls back to this class's
+  /// own default init for W.
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
@@ -184,10 +170,8 @@ public:
   {
     return CalculateState(true);
   }
-  /// @brief NOT a virtual override, see SimplePCLayer's
-  /// identical pattern. Lets the settling loop skip the
-  /// cublasSdot-based energy reduction (and its capture-time
-  /// sync) when the caller doesn't need the value.
+  /// @brief Lets the settling loop skip the energy reduction when the
+  /// caller doesn't need the value.
   float CalculateState(bool needEnergy) noexcept;
 
   /// @brief Computes only mu (forward prediction), skipping error/energy.
@@ -207,12 +191,7 @@ public:
   /// @brief Resets this layer's beliefs (z) without touching learned weights.
   void ResetState() noexcept;
 
-  /// @brief Whether this layer is currently clamped, needed so
-  /// DirectKPPCNetwork::ProjectForward() can skip overwriting an
-  /// already-clamped layer's z with a forward-projected guess.
-  /// Same real bug SimplePCNetwork::ProjectForward() had; fixed
-  /// here for the same reason, before it gets exercised for the
-  /// first time by moving ProjectForward() inside graph capture.
+  /// @brief Whether ClampState() is currently active on this layer.
   bool IsClamped() const noexcept
   {
     return isClamped;
@@ -220,10 +199,7 @@ public:
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu instead
   /// of reusing a cached value, without otherwise touching clamp state.
-  /// Needed after a CUDA-graph (re)capture: the recording pass runs the
-  /// settling loop as real C++, leaving muCacheValid=true as a side
-  /// effect, which would otherwise make the following fresh, uncaptured
-  /// energy read reuse mu from before this call's own weight update.
+  /// Call after a CUDA-graph (re)capture.
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;

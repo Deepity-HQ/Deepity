@@ -57,9 +57,8 @@ public:
     return CalculateState(true);
   }
   /// @brief Same as CalculateState(), but can skip computing (and
-  /// returning) the energy. On CUDABackend, needEnergy=false also
-  /// means no blocking host sync, required for any settling-loop
-  /// caller that runs this inside a captured CUDA graph region.
+  /// returning) the energy. Pass false inside a captured CUDA graph
+  /// region.
   /// @param needEnergy Whether to compute and return the energy.
   float CalculateState(bool needEnergy) noexcept;
   void UpdateState() noexcept override;
@@ -165,11 +164,7 @@ public:
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu
   /// instead of reusing a cached value, without otherwise touching
-  /// clamp state. Needed after a CUDA-graph (re)capture: the
-  /// recording pass runs the settling loop as real C++, leaving
-  /// muCacheValid=true as a side effect, which would otherwise make
-  /// the following fresh, uncaptured energy read reuse mu from
-  /// before this call's own weight update.
+  /// clamp state. Call after a CUDA-graph (re)capture.
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;
@@ -191,17 +186,15 @@ public:
 
   /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this
   /// layer's convolution shape. Must run before the network's first
-  /// CUDA graph capture -- see IComputeBackend::PrepareConvWorkspace()'s
-  /// own doc comment for why growing it lazily, on first use inside a
-  /// captured settling step, corrupts the whole capture. No-op on CPU.
+  /// CUDA graph capture. No-op on CPU.
   void PrepareConvWorkspace() noexcept;
 
   /// @brief Resets this layer's beliefs (z) without touching learned weights.
   void ResetState() noexcept;
   /// @brief Randomizes W/b.
   /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
-  /// default "normal" has no "(a,b)" and so deliberately fails to parse,
-  /// falling back to this class's own existing fan-scaled default.
+  /// default "normal" (with no "(a,b)") falls back to this class's own
+  /// fan-scaled default.
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   /// @brief Returns this layer's activation type.
@@ -295,22 +288,14 @@ private:
   float* lgRepacked = nullptr;
   float* muRepacked = nullptr;
 
-  // All-ones vector for the bias-gradient GEMM trick (grad_b =
-  // lgRepacked @ ones), see UpdateWeights()'s implementation
-  // comment for why this replaces the original per-row scalar
-  // sum loop.
+  // All-ones vector for the bias-gradient GEMM trick (grad_b = lgRepacked @ ones).
   float* onesVector = nullptr;
 
   float* cachedMu = nullptr;
   bool muCacheValid = false;
 
   // mu's pre-activation value, snapshotted in ComputeMuOnly() right
-  // before Activation() overwrites mu in place. GELU has no closed
-  // form from its ACTIVATED value alone (unlike every other
-  // activation this codebase supports), so any later derivative
-  // computation needs this, not mu itself -- see
-  // ActivationDerivativeFromActivatedDevice's own @warning.
-  // cachedPreact mirrors cachedMu's clamped-layer reuse path.
+  // before Activation() overwrites mu in place.
   float* preact = nullptr;
   float* cachedPreact = nullptr;
 
@@ -321,10 +306,7 @@ private:
   float* m_b = nullptr;
   float* v_b = nullptr;
 
-  // Device-resident t/lr, same reasoning as SimplePCLayer's own
-  // port: graph capture (once this reaches GPU) can't re-record
-  // for every changed learning rate or Adam step count, so both
-  // must live in device memory the graph reads from directly.
+  // Device-resident Adam step count and learning rate.
   int* t_device = nullptr;
   float* lr_device = nullptr;
 

@@ -156,35 +156,18 @@ public:
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
 
   /// @brief Runs a single, non-iterative forward pass through current
-  /// weights, seeding each hidden layer's z from the PREVIOUS layer's
-  /// mu, giving the settling loop a genuine, current-weights-based
-  /// starting point instead of zero-init.
-  ///
-  /// Reuses each layer's EXISTING CalculateState() (already-verified
-  /// forward computation, mu = f(W\@z+b)) as a side effect, no new
-  /// math, just a new sequence of existing calls. Assumes the input
-  /// layer (layers[0]) is ALREADY clamped before this is called.
-  ///
+  /// weights, seeding each hidden layer's z from the previous layer's
+  /// mu, instead of zero-init. Assumes the input layer (layers[0]) is
+  /// already clamped before this is called.
   /// @warning Layer 0's error (e) and this call's energy return value
-  /// are meaningless here, CalculateState() computes both mu (what
-  /// we want) and e/energy (a side effect we're discarding, since the
-  /// NEXT layer's z hasn't been set to a meaningful value yet at the
-  /// point each layer's CalculateState() runs). Only mu is used.
+  /// are meaningless here; only mu is used.
   void ProjectForward() noexcept;
 
-  /// @brief Full train step WITH forward-projection initialization,
-  /// all in ONE call, reset, clamp, project, settle, update weights,
-  /// unclamp. Matches TrainStep()'s signature/return convention exactly,
-  /// just with ProjectForward() inserted between clamping the input and
-  /// clamping the target.
-  ///
-  /// Exists specifically to eliminate the Python/pybind boundary-
-  /// crossing overhead of doing this same sequence via many separate
-  /// calls from Python (reset_state, clamp_input, project_forward,
-  /// clamp_state, then STEPS*2 individual calculate_state/update_state
-  /// calls, update_weights, unclamp_state, over 40 individual
-  /// crossings per batch at STEPS=20). This does the whole sequence in
-  /// ONE crossing instead.
+  /// @brief Full train step with forward-projection initialization,
+  /// all in one call: reset, clamp, project, settle, update weights,
+  /// unclamp. Matches TrainStep()'s signature/return convention, with
+  /// ProjectForward() inserted between clamping the input and the
+  /// target.
   float TrainStepWithProjection(const std::vector<float>& x, const std::vector<float>& y,
                                 int inferenceSteps, bool computeEnergy = true);
 
@@ -219,30 +202,19 @@ private:
   int capturedInferenceSteps = -1;
 
   /// @brief PredictWithProjection()'s own graph slot, separate from
-  /// TrainStepWithProjection()'s (slot 0): the two capture different
-  /// op sequences (no UpdateWeights() here), so sharing a slot would
-  /// evict one graph every time the other ran.
+  /// TrainStepWithProjection()'s (slot 0).
   static constexpr size_t kPredictGraphSlot = 1;
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
 
-  /// @brief Predict()'s own graph slot (no forward-projection init,
-  /// unlike PredictWithProjection() above) -- separate again, same
-  /// reasoning as kPredictGraphSlot.
+  /// @brief Predict()'s own graph slot (no forward-projection init).
   static constexpr size_t kPlainPredictGraphSlot = 2;
   bool plainPredictGraphCaptured = false;
   int capturedPlainPredictInferenceSteps = -1;
 
-  /// @brief Used when device == DEVICE_CPU. Only one of
-  /// cpuArena/gpuArena is ever actually constructed for a given
-  /// network, they're kept as two separate members (rather than
-  /// one unified type) because MemoryArena and DeviceMemoryArena
-  /// share no common base, matching the same reasoning already
-  /// applied when DeviceMemoryArena was designed.
+  /// @brief Used when device == DEVICE_CPU.
   std::unique_ptr<MemoryArena> cpuArena;
-  /// @brief Used when device == DEVICE_GPU. Only compiled at all
-  /// when DEEPITY_USE_CUDA is defined, matching
-  /// DeviceMemoryArena.h's own guard.
+  /// @brief Used when device == DEVICE_GPU.
 #if defined(DEEPITY_USE_CUDA)
   std::unique_ptr<DeviceMemoryArena> gpuArena;
 #endif

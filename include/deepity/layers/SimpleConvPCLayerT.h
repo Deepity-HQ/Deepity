@@ -15,36 +15,20 @@
 /**
  * @file SimpleConvPCLayerT.h
  * @brief Templated counterpart to SimpleConvPCLayer, over a storage
- * type `T` and an accumulator type `AccumT` -- see FullPCLayerT's own
- * doc comment for the T/AccumT split's full rationale. Produced by
- * mechanically retyping SimpleConvPCLayer's own `float` members/
- * parameters to `T`, NOT a reimplementation.
+ * type `T` and an accumulator type `AccumT`.
  *
  * Unlike FullPCLayerT/SimplePCLayerT/GaussSeidelPCLayerT/DirectKPPCLayerT,
- * this port keeps every scratch buffer (colBuffer, feedbackScratch,
- * bottom_up_cols, colsRepacked, lgRepacked, muRepacked) as T*, not
- * AccumT* -- a deliberate, documented scope reduction, not an
- * oversight. Properly widening the conv family's derivative-carrying
- * buffers to AccumT needs new AccumT-typed Im2Col/Col2Im/
- * RepackForBatchedGemm backend entry points (mirroring
- * MatMulAccumMixed's own precedent), which is a larger, separate
- * backend-interface change than this pass's goal of getting the conv
- * family itself building, device-portable, and bit-exact at `float`.
- * This means the known "an activation derivative can round to exactly
- * zero at low precision" failure mode FullPCLayerT's own class comment
- * documents is NOT fixed here for sub-8-bit T -- flagged as a known,
- * deferred gap for this layer, same spirit as FullPCLayerT's own
- * Psi/ePC deferred-validation note, not a silent one. float/double
- * (where T IS the accumulator already) are entirely unaffected.
+ * every scratch buffer here (colBuffer, feedbackScratch, bottom_up_cols,
+ * colsRepacked, lgRepacked, muRepacked) stays T*, not AccumT*. At
+ * sub-8-bit T, an activation derivative can round to exactly zero in
+ * these buffers; float/double are unaffected.
  *
- * Deliberately does NOT inherit from Layer, same reasoning as
- * FullPCLayerT.
+ * Does not inherit from Layer.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to SimpleConvPCLayer, see this file's
-/// own comment for the full rationale.
+/// @brief Templated counterpart to SimpleConvPCLayer.
 template <typename T, typename AccumT = T> class SimpleConvPCLayerT
 {
 public:
@@ -173,9 +157,9 @@ public:
 
   void ComputeMuOnly() noexcept;
 
-  /// @brief No-op on CPU, see SimpleConvPCLayer::PrepareConvWorkspace()'s
-  /// own doc comment (kept for call-site parity with the network's
-  /// Compile(), which calls this unconditionally).
+  /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this
+  /// layer's convolution shape. Must run before the network's first
+  /// CUDA graph capture. No-op on CPU.
   void PrepareConvWorkspace() noexcept
   {
     if (outChannels == 0)
@@ -270,10 +254,6 @@ private:
   T* preact = nullptr;
   T* cachedPreact = nullptr;
 
-  // grad_*/m_*/v_* and t_device/lr_device are AccumT-typed (or int,
-  // for the step counter) optimizer-accumulator state, owned directly
-  // rather than arena-allocated -- same reasoning as every other
-  // ported layer's identical members.
   std::vector<AccumT> grad_W;
   std::vector<AccumT> grad_b;
   std::vector<AccumT> m_W;

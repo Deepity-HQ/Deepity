@@ -15,25 +15,16 @@
 /**
  * @file ConvPCLayerT.h
  * @brief Templated counterpart to ConvPCLayer, over a storage type `T`
- * and an accumulator type `AccumT` -- see FullPCLayerT's own doc
- * comment for the T/AccumT split's full rationale, and
- * SimpleConvPCLayerT.h's own class comment for why every scratch
- * buffer here (colBuffer, feedbackScratch, bottom_up_cols,
- * colsRepacked, lgRepacked) stays T*, not AccumT* -- same deliberate,
- * documented scope reduction, same deferred-validation caveat for
- * sub-8-bit T. float/double are entirely unaffected.
+ * and an accumulator type `AccumT`. Every scratch buffer here
+ * (colBuffer, feedbackScratch, bottom_up_cols, colsRepacked,
+ * lgRepacked) stays T*, not AccumT*, same as SimpleConvPCLayerT.
  *
- * Deliberately does NOT inherit from Layer, same reasoning as
- * FullPCLayerT/SimpleConvPCLayerT. GetStateDict()/checkpointing is
- * NOT ported here -- ModelIO<T> is explicitly a separate, later step
- * in the templating plan's own verification section, not part of
- * this layer's own scope.
+ * Does not inherit from Layer. Does not implement GetStateDict()/checkpointing.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to ConvPCLayer, see this file's own
-/// comment for the full rationale.
+/// @brief Templated counterpart to ConvPCLayer.
 template <typename T, typename AccumT = T> class ConvPCLayerT
 {
 public:
@@ -176,8 +167,9 @@ public:
 
   void ComputeMuOnly() noexcept;
 
-  /// @brief No-op on CPU, see SimpleConvPCLayerT::PrepareConvWorkspace()'s
-  /// own doc comment.
+  /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this
+  /// layer's convolution shape. Must run before the network's first
+  /// CUDA graph capture. No-op on CPU.
   void PrepareConvWorkspace() noexcept
   {
     if (outChannels == 0)
@@ -189,9 +181,8 @@ public:
   void ResetState() noexcept;
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
-  /// @brief Rebuilds log_p from p, required after a checkpoint load
-  /// that only persists p -- see ConvPCLayer::ResyncLogPrecision()'s
-  /// own doc comment.
+  /// @brief Rebuilds log_p from p. Call after a checkpoint load that
+  /// only restores p.
   void ResyncLogPrecision() noexcept;
 
   ActivationType GetActivationType() const noexcept

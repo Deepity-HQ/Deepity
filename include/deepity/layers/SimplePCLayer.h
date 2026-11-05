@@ -13,11 +13,8 @@
 
 /**
  * @file SimplePCLayer.h
- * @brief DiscriminativePCLayer with precision weighting removed: energy
- * reduces to plain E = 0.5*sum(e^2), and UpdateState()'s own term reduces
- * to dz_dt = -e. Mirrors DiscriminativePCLayer's public interface
- * (construction pattern, ActivationType constructor, accessors) as a
- * drop-in for callers that don't need precision.
+ * @brief Predictive coding layer with plain Gaussian energy (no
+ * precision weighting): E = 0.5*sum(e^2), dz_dt = -e.
  *
  * Routed through an IComputeBackend, so it runs on either CPUBackend or
  * CUDABackend. `backend` defaults to nullptr, in which case the layer
@@ -26,21 +23,14 @@
  * @note Optionally uses Adam instead of plain SGD, selected via
  * SetOptimizer().
  *
- * @note Optionally caches a CLAMPED layer's outgoing prediction (mu)
- * across settling steps via SetMuCaching(). While clamped, z is fixed
- * and W/b don't change until UpdateWeights() runs, so mu=W\@phi(z)+b is
- * exactly identical every step. Default off.
+ * @note Optionally caches a clamped layer's outgoing prediction (mu)
+ * across settling steps via SetMuCacheThreshold(). Default off.
  *
  * @note Activation convention: mu = W\@phi(z) + b -- the nonlinearity
- * applies to THIS layer's own belief before projecting up, not to the
- * projection's result. This is the same composition an ordinary
- * feedforward layer already uses (consuming the previous layer's
- * activated output), and the convention jpc (github.com/thebuckleylab/jpc)
- * uses for its own PC reference implementation. mu itself carries no
- * final activation, so a terminal layer's mu is unbounded logits, not a
- * bounded value -- pair with SetCrossEntropy() when the terminal
- * comparison needs to stay bounded (e.g. classification against a
- * one-hot target), rather than reaching for a bounding activation on mu.
+ * applies to this layer's own belief before projecting up. mu itself
+ * carries no final activation, so a terminal layer's mu is unbounded
+ * logits; pair with SetCrossEntropy() when the terminal comparison
+ * needs to stay bounded (e.g. classification against a one-hot target).
  * @version 1.1
  * @date 2026-09-05
  * @author Jack Rose
@@ -100,11 +90,8 @@ public:
   /// \f[
   /// E = \sum_l 1/2 ||z^{(l)} - \mu^{(l)}||^2
   /// \f]
-  /// mu = W @ phi(z) + b: activation applied to z before the linear
-  /// transform (see this class's file comment on this convention).
-  /// When SetCrossEntropy() is enabled, this layer's own term in E
-  /// uses softmax cross-entropy against layerBelow's mu instead of the
-  /// plain Gaussian form above -- see ComputeSoftmaxCrossEntropyErrorAndEnergy.
+  /// When SetCrossEntropy() is enabled, this layer's own term in E uses
+  /// softmax cross-entropy against layerBelow's mu instead.
   /// @param needEnergy Asks for energy
   /// @return This layer's energy contribution at the current state, if asked for.
   float CalculateState(bool needEnergy = true) noexcept;
@@ -119,10 +106,6 @@ public:
   /// \f[
   /// \frac{dz^{(l)}}{dt} = -e^{(l)} + \sigma'(z^{(l)}) \odot (W^{(l-1)})^T e^{(l-1)}
   /// \f]
-  /// The derivative multiply applies AFTER the W transform, using
-  /// f'(z) (this layer's own state derivative) -- not before
-  /// projecting, and not f'(mu): under mu=W\@phi(z)+b, the nonlinearity
-  /// lives on z, so that's where its derivative applies too.
   void UpdateState() noexcept override;
 
   /// @brief Computes weight updates via gradient descent, with L2 weight decay.
@@ -147,11 +130,7 @@ public:
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu
   /// instead of reusing a cached value, without otherwise touching
-  /// clamp state. Needed after a CUDA-graph (re)capture: the
-  /// recording pass runs the settling loop as real C++, leaving
-  /// muCacheValid=true as a side effect, which would otherwise make
-  /// the following fresh, uncaptured energy read reuse mu from
-  /// before this call's own weight update.
+  /// clamp state. Call after a CUDA-graph (re)capture.
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;
@@ -164,10 +143,8 @@ public:
     return z;
   }
 
-  /// @brief Returns a prediction buffer
-  /// exposed specifically for forward-projection initialization (seeding
-  /// the next layer's z from a genuine, current-weights forward pass,
-  /// rather than zero-init). nullptr for a terminal layer (nextSize=0).
+  /// @brief Returns this layer's outgoing prediction buffer (mu).
+  /// nullptr for a terminal layer (nextSize=0).
   /// @return Outgoing prediction buffer
   const float* GetMu() const noexcept
   {
@@ -283,25 +260,14 @@ public:
     return muCacheThreshold;
   }
 
-  /// @brief Computes only mu (forward prediction), skipping error/energy
-  /// entirely. Extracted from CalculateState() for callers (like
-  /// ProjectForward()) that don't need the discarded error/energy values.
-  /// Computes zF=phi(z) internally and uses it for the GEMM
-  /// (mu=W\@phi(z)+b). mu itself is never activated.
-  /// @param zFAlreadyComputed CalculateState() may have just computed
-  /// zF itself, fused with its own error pass (see
-  /// TryComputeErrorAndActivation()) -- true skips recomputing it here.
-  /// Callers other than CalculateState() always pass false.
+  /// @brief Computes only mu (forward prediction), skipping error/energy.
+  /// @param zFAlreadyComputed Pass true if phi(z) was already computed
+  /// by the caller this step; false recomputes it here.
   void ComputeMuOnly(bool zFAlreadyComputed = false) noexcept;
 
-  /// @brief Enables softmax cross-entropy energy for THIS layer's
-  /// error against layerBelow's mu (i.e. only makes sense on the
-  /// terminal layer, against the second-to-last layer's logits) --
-  /// mu=W\@phi(z)+b carries no final activation, so a terminal layer's
-  /// mu is unbounded logits; this is how the comparison against a
-  /// bounded target (e.g. a one-hot label) stays bounded without
-  /// reintroducing a per-step activation on mu. OFF by default (plain
-  /// Gaussian energy).
+  /// @brief Enables softmax cross-entropy energy for this layer's error
+  /// against layerBelow's mu, instead of the default Gaussian energy.
+  /// Only meaningful on the terminal layer.
   void SetCrossEntropy(bool enabled) noexcept
   {
     useCrossEntropy = enabled;
@@ -380,14 +346,7 @@ public:
 private:
   std::unique_ptr<MemoryArena> localArena;
 
-  /// @brief The compute backend this layer routes all math
-  /// through. A unique_ptr with a swappable deleter, rather than
-  /// two separate owning/non-owning members: when constructed with
-  /// an explicit external backend (network-owned, GPU case), the
-  /// deleter is a no-op; when this layer had to construct its own
-  /// fallback CPUBackend (backend=nullptr was passed in), the
-  /// deleter actually frees it. Every call site still just uses
-  /// backend->Something(), identical to a raw pointer.
+  /// @brief The compute backend this layer routes all math through.
   using BackendDeleter = void (*)(IComputeBackend*);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 
@@ -399,34 +358,15 @@ private:
   int batchSize;
 
   float* mu;
-  float* cachedMu;        // Separate from mu: ComputeMuOnly() always
-                          // writes it fresh (never mutated in place by
-                          // anything else), so caching just means
-                          // skipping that recompute and copying this
-                          // preserved value back into mu instead.
-  float* zF;              // This layer's own activated belief, phi(z),
-                          // needed both for the forward GEMM
-                          // (mu=zF@W+b) and the weight gradient (dW
-                          // uses zF, not raw z): mu_l = W_l . phi(z_{l-1}).
-  float* feedbackScratch; // own_state_size scratch for the raw
-                          // feedback GEMM's output (e_above projected
-                          // through W, before f'(z) is applied -- see
-                          // UpdateState()). The f'(z) multiply applies
-                          // only to this term, not the -e term already
-                          // in dz_dt, so it can't accumulate directly
-                          // into dz_dt via the GEMM itself.
-  float* feedbackDerivScratch; // own_state_size scratch holding f'(z),
-                               // precomputed by TryFusedFeedbackUpdate()'s
-                               // oneDNN path and bound as a post-op's
-                               // runtime operand -- see IComputeBackend.h.
+  float* cachedMu;        // Cached mu, valid when muCacheValid is true.
+  float* zF;              // phi(z): this layer's activated belief.
+  float* feedbackScratch; // own_state_size scratch for the feedback
+                          // GEMM's output, before f'(z) is applied.
+  float* feedbackDerivScratch; // own_state_size scratch holding f'(z).
 
-  bool useCrossEntropy = false; // Whether softmax cross-entropy energy
-                                // is enabled, see SetCrossEntropy().
+  bool useCrossEntropy = false; // See SetCrossEntropy().
   float* rowEnergies = nullptr; // Per-row energy scratch for the
                                 // cross-entropy path, length batchSize.
-                                // Always allocated (cheap, batchSize
-                                // floats) regardless of whether this
-                                // layer ever uses it.
 
   float lr;
   float ir;
@@ -436,24 +376,17 @@ private:
   int* t_device = nullptr;
   float* lr_device = nullptr;
 
-  float muCacheThreshold = -1.0f; // -1 = disabled. 0 = exact clamped-only
-                                  // (today's validated behavior). >0 =
-                                  // approximate, extends to unclamped
-                                  // layers too.
-  bool muCacheValid = false;      // true once mu computed at least once
-                                  // since the most recent ClampState()
+  float muCacheThreshold = -1.0f; // See SetMuCacheThreshold().
+  bool muCacheValid = false;      // Whether cachedMu is up to date.
 
   SimplePCLayer* layerAbove;
   SimplePCLayer* layerBelow;
   ActivationFn activation;
   DerivativeFn activationDerivative;
-  DerivativeFn2 activationDerivativeInto; // fused two-buffer derivative
-                                          // (dst, src, n), resolved once
-                                          // at construction alongside
-                                          // activation/activationDerivative
+  DerivativeFn2 activationDerivativeInto; // Fused two-buffer derivative (dst, src, n).
   ActivationType activationType;
   OptimizerType opt = OptimizerType::SGD;
-  // @private Optional Adam weights
+  // Optional Adam state.
   float* grad_W = nullptr;
   float* grad_b = nullptr;
   float* m_W = nullptr;

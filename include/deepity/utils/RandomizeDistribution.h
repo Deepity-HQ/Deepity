@@ -6,11 +6,8 @@
 
 /**
  * @file RandomizeDistribution.h
- * @brief Shared "name(a,b)" distribution-string parser for every PC layer's
- * RandomizeWeights(rng, distribution) overload, generalizing the parsing
- * SimplePCLayer::RandomizeWeights() originally did inline. One copy
- * instead of one per layer file, so e.g. "normal"/"uniform" spelling and
- * the malformed-string fallback behavior can't drift between layers.
+ * @brief Shared "name(a,b)" distribution-string parser for every PC
+ * layer's RandomizeWeights(rng, distribution) overload.
  */
 
 #ifdef _MSC_VER
@@ -24,12 +21,9 @@
 namespace Deep
 {
 /// @brief Randomizes `buf` from a "name(a,b)" distribution string, e.g.
-/// "normal(0,1)" or "uniform(-0.3,0.3)". `distribution` not parsing as
-/// one of those two names (including every layer's own default argument,
-/// the bare word "normal" with no "(a,b)" -- deliberately unparseable)
-/// falls back to normal(fallbackMean, fallbackStddev): each layer's own
-/// pre-existing, shape-aware init formula, unchanged for every caller
-/// that doesn't pass an explicit distribution.
+/// "normal(0,1)" or "uniform(-0.3,0.3)". A `distribution` that doesn't
+/// parse as one of those two names (including the bare word "normal"
+/// with no "(a,b)") falls back to normal(fallbackMean, fallbackStddev).
 inline void RandomizeWithDistribution(IComputeBackend* backend, float* buf, size_t n,
                                       const char* distribution, uint32_t seed, float fallbackMean,
                                       float fallbackStddev) noexcept
@@ -52,12 +46,9 @@ inline void RandomizeWithDistribution(IComputeBackend* backend, float* buf, size
     backend->RandomizeNormal(buf, n, fallbackMean, fallbackStddev, seed);
 }
 
-/// @brief Templated counterpart to RandomizeWithDistribution(), for
-/// FullPCLayer<T, AccumT>: the "name(a,b)" literals are parsed as plain
-/// floats (parameter strings aren't expected to carry double-precision
-/// detail), then widened to AccumT for the RandomizeNormal/
-/// RandomizeUniform call, matching IComputeBackendT<T, AccumT>'s own
-/// AccumT-typed distribution parameters.
+/// @brief Templated counterpart to RandomizeWithDistribution(). The
+/// "name(a,b)" literals are parsed as plain floats, then widened to
+/// AccumT for the RandomizeNormal/RandomizeUniform call.
 template <typename T, typename AccumT>
 inline void RandomizeWithDistributionT(IComputeBackendT<T, AccumT>* backend, T* buf, size_t n,
                                        const char* distribution, uint32_t seed,

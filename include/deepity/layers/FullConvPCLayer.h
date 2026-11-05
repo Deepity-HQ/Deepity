@@ -14,19 +14,15 @@
 
 /**
  * @file FullConvPCLayer.h
- * @brief Convolutional analog of FullPCLayer: every PC variant this
- * codebase knows about, each independently toggleable, off by default so
- * plain defaults reproduce SimpleConvPCLayer exactly (NOT the
- * precision-weighted ConvPCLayer -- FullPCLayer's own dense lineage is
- * DirectKPPCLayer, which has no precision-weighting either).
+ * @brief Convolutional analog of FullPCLayer: muPC scaling, residual
+ * connections, DKP direct feedback, momentum settling, cross-entropy
+ * terminal loss, and ePC settling, each independently toggleable, off
+ * by default so plain defaults reproduce SimpleConvPCLayer exactly.
  *
- * Conv layers use a DIFFERENT activation-placement convention than
- * FullPCLayer: dense keeps `mu` raw/linear and activates `z` into a
- * separate `zF` used as the GEMM input; here (matching
- * ConvPCLayer/SimpleConvPCLayer exactly) the activation is applied
- * directly to `mu` in ComputeMuOnly(). This means UpdateWeights() and
- * ComputeAdjoint() both rely on `mu` holding phi'(mu) (not phi(raw_mu))
- * by the time they run -- see UpdateState()/ComputeAdjoint()'s own docs.
+ * Activation is applied directly to `mu` in place (in ComputeMuOnly()),
+ * unlike FullPCLayer's dense convention of activating a separate `zF`.
+ * UpdateWeights() and ComputeAdjoint() both require `mu` to hold
+ * phi'(mu), not phi(raw_mu), by the time they run.
  */
 
 namespace Deep
@@ -46,16 +42,10 @@ protected:
   int batchSize;
   int terminalSize; ///< Size of the network's final output layer (flat).
 
-  // outHeight/outWidth above stay what they've always meant: mu's own
-  // (conv-native) resolution, used by every existing im2col/colBuffer/
-  // matmul computation unchanged. poolOutHeight/poolOutWidth are what
-  // this layer actually EXPOSES to the layer above (GetOutHeight/Width(),
-  // GetMu()) -- equal to outHeight/outWidth when pooling is off (the
-  // HasPooling() check below), smaller when it's on. Keeping the pooled
-  // resolution as a separate pair of members, rather than repurposing
-  // outHeight/outWidth directly, means pooling touches only the few call
-  // sites that actually read a neighboring layer's output/error, not
-  // every outHeight/outWidth use in this file.
+  // outHeight/outWidth are mu's own conv-native resolution.
+  // poolOutHeight/poolOutWidth are what this layer exposes to the layer
+  // above (GetOutHeight/Width(), GetMu()): equal to outHeight/outWidth
+  // when pooling is off, smaller when HasPooling() is true.
   int poolH = 1, poolW = 1, poolStrideH = 1, poolStrideW = 1;
   int poolOutHeight, poolOutWidth;
 
@@ -63,24 +53,12 @@ protected:
   float adamEpsilon = 1e-8f;
   bool isClamped = false;
 
-  // ir (unlike lr/fl) has no device-resident buffer: it's consumed BY
-  // VALUE inside UpdateState()/ComputeAdjoint()'s AxpyInto()/Scale() calls,
-  // which CUDA graph capture bakes into the captured kernel launch
-  // parameters. A later SetInferenceRate() call updates this host member
-  // but has zero effect on an already-captured graph's replays -- unlike
-  // lr/fl, which read through lr_device/fl_device each replay. This flag
-  // lets FullConvPCNetwork::TrainStep() force a recapture whenever ir
-  // actually changes, instead of silently replaying a stale value.
+  // Set whenever SetInferenceRate() changes ir after a CUDA graph
+  // capture; see IsIrDirty()/ClearIrDirty().
   bool irDirty = false;
 
-  // DirectFeedbackUpdate() is skipped ENTIRELY when fl==0.0f (its own
-  // contribution is exactly zero then -- see that function's own
-  // comment), which is a structural decision about what's even IN the
-  // captured graph, not a value read through a pointer each replay like
-  // fl itself. If fl later crossed the zero/nonzero boundary without
-  // forcing a recapture, a graph captured on one side of that boundary
-  // would keep replaying its own (include/skip) decision forever,
-  // silently dropping real DFA contributions. Same fix as irDirty.
+  // Set whenever fl crosses the zero/nonzero boundary after a CUDA
+  // graph capture; see IsFlZeroDirty()/ClearFlZeroDirty().
   bool flZeroDirty = false;
 
   // muPC scaling: mu = Activation(a * conv(z,W) + b) [+ z if useResidual].
@@ -119,11 +97,7 @@ protected:
   bool muCacheValid = false;
 
   // mu's pre-activation value, snapshotted in ComputeMuOnly() right
-  // before Activation() overwrites mu in place. GELU has no closed form
-  // from its ACTIVATED value alone (unlike every other activation this
-  // codebase supports), so any later derivative computation needs this,
-  // not mu itself -- see ActivationDerivativeFromActivatedDevice's own
-  // @warning. cachedPreact mirrors cachedMu's clamped-layer reuse path.
+  // before Activation() overwrites mu in place.
   float* preact = nullptr;
   float* cachedPreact = nullptr;
 
@@ -148,9 +122,8 @@ protected:
   float* adjoint = nullptr; ///< ePC's chained backward-sweep signal, shape matches dz_dt.
 
   /// Direct feedback (DFA): per-channel random projection from the
-  /// terminal's error, shape [outChannels, terminalSize] -- NOT
-  /// per-pixel (that would tie its size to a specific spatial
-  /// resolution). See DirectFeedbackUpdate().
+  /// terminal's error, shape [outChannels, terminalSize]. See
+  /// DirectFeedbackUpdate().
   float* Psi = nullptr;
   float* projChannel = nullptr; ///< [batch, outChannels], Psi's raw projection.
   float* proj = nullptr; ///< [batch, outChannels, outHeight, outWidth], broadcast of projChannel.
@@ -203,11 +176,10 @@ public:
 
   template <typename ArenaT> void BindMemory(ArenaT& arena);
   size_t GetRequiredFloats() const noexcept;
-  /// @param distribution Distribution for W only (overridden entirely by
-  /// usePCXInit when that's set -- see the .cpp); Psi keeps its own
-  /// fixed fan-scaled init regardless. The default "normal" has no
-  /// "(a,b)" and so deliberately fails to parse, falling back to this
-  /// class's own existing default.
+  /// @param distribution Distribution for W only (ignored if usePCXInit
+  /// is set); Psi always uses its own fixed fan-scaled init. The
+  /// default "normal" (with no "(a,b)") falls back to this class's own
+  /// default.
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   void SetLayerAbove(FullConvPCLayer* l) noexcept
@@ -239,11 +211,8 @@ public:
   {
     return useMuPCInit;
   }
-  /// @brief PCX's own init (Equinox default): weights uniform in
-  /// +-1/sqrt(fan_in), not Kaiming-normal. Takes priority over
-  /// useMuPCInit if both are somehow set; biases are already zero by
-  /// default regardless (see ResetState()/BindMemory()), matching PCX's
-  /// own zero-bias convention with no separate change needed.
+  /// @brief Enables PCX-style init: weights uniform in +-1/sqrt(fan_in),
+  /// not Kaiming-normal. Takes priority over useMuPCInit if both are set.
   void SetPCXInit(bool enabled) noexcept
   {
     usePCXInit = enabled;
@@ -311,18 +280,14 @@ public:
   {
     this->lmbda = lmbda;
   }
-  /// @brief Adam/AdamW's denominator stabilizer (default 1e-8). Raising
-  /// this caps how much a near-zero-gradient parameter's update gets
-  /// amplified by Adam's per-parameter normalization -- a mitigation
-  /// worth testing when a weak or noisy settling error signal is
-  /// suspected of getting Adam-amplified into a large, coherent step.
+  /// @brief Sets Adam/AdamW's denominator stabilizer (default 1e-8).
   void SetAdamEpsilon(float eps) noexcept
   {
     adamEpsilon = eps;
   }
 
   /// @brief Whether ir has changed since the last successful graph
-  /// capture (see irDirty's own comment for why this exists).
+  /// capture.
   bool IsIrDirty() const noexcept
   {
     return irDirty;
@@ -335,7 +300,7 @@ public:
   }
 
   /// @brief Whether fl crossed the zero/nonzero boundary since the last
-  /// successful graph capture (see flZeroDirty's own comment for why).
+  /// successful graph capture.
   bool IsFlZeroDirty() const noexcept
   {
     return flZeroDirty;
@@ -347,10 +312,7 @@ public:
     flZeroDirty = false;
   }
   /// @brief Whether this layer's DirectFeedbackUpdate() is currently a
-  /// no-op (see its own early-return). FullConvPCNetwork::TrainStep()
-  /// uses this, aggregated across every layer, to decide whether
-  /// ProjectForward()/CalculateTerminalError() are redundant with what
-  /// EPCStep()'s own first iteration already does.
+  /// no-op (fl == 0).
   bool IsFlZero() const noexcept
   {
     return fl == 0.0f;
@@ -367,11 +329,9 @@ public:
   void DirectFeedbackUpdate() noexcept;
 
   /// @brief Pre-grows the backend's cuDNN conv workspace for this
-  /// layer's own shape. MUST be called once per layer, after Compile()
-  /// binds its memory but BEFORE the network's first BeginGraphCapture()
-  /// -- see IComputeBackend::PrepareConvWorkspace()'s own doc comment
-  /// for why growing it lazily, on first use inside ComputeMuOnly() et
-  /// al., is unsafe. No-op when outChannels==0 (the terminal layer).
+  /// layer's own shape. Must be called once per layer, after Compile()
+  /// binds its memory but before the network's first
+  /// BeginGraphCapture(). No-op when outChannels==0 (the terminal layer).
   void PrepareConvWorkspace() noexcept;
 
   /// @brief ePC forward-sweep step: z := layerBelow->GetMu() + e.
@@ -382,9 +342,8 @@ public:
   /// satisfying the same invariant UpdateState() relies on for
   /// UpdateWeights() -- do NOT call ComputeMuOnly() again before
   /// UpdateWeights() runs.
-  /// @param adjointAboveScale -1.0 for the topmost hidden layer (the
-  /// true backprop seed is dLoss/dmu_terminal = -e_terminal under this
-  /// codebase's error convention), 1.0 (default) otherwise.
+  /// @param adjointAboveScale -1.0 for the topmost hidden layer, 1.0
+  /// (default) otherwise.
   void ComputeAdjoint(const float* adjointAbove, float adjointAboveScale = 1.0f) noexcept;
   /// @brief e := (1-ir)*e - ir*adjoint. Call ComputeAdjoint() first.
   void UpdateErrorEPC() noexcept;
@@ -392,13 +351,10 @@ public:
   {
     return adjoint;
   }
-  /// @brief Converts `mu` from its activated value to phi'(mu) in place,
-  /// matching UpdateState()'s own fallback branch for a clamped layer.
-  /// Needed under ePC for any clamped weight-bearing layer (i.e. the
-  /// input layer) that ComputeAdjoint() never touches -- its own
-  /// UpdateWeights() still needs mu holding the derivative. Do NOT call
-  /// this on a layer ComputeAdjoint() already ran on this step (it would
-  /// take the derivative of an already-differentiated value).
+  /// @brief Converts `mu` from its activated value to phi'(mu) in
+  /// place. Call under ePC for a clamped weight-bearing layer that
+  /// ComputeAdjoint() never touches, before UpdateWeights(). Do not
+  /// call on a layer ComputeAdjoint() already ran this step.
   void EnsureMuHoldsDerivative() noexcept;
 
   void ClampState(const std::vector<float>& inputData) noexcept;
@@ -459,23 +415,18 @@ public:
     return backend.get();
   }
 
-  /// @brief {error mean, error RMS, weight L2 norm, fraction of mu
-  /// elements exactly 0} for this layer's CURRENT state (whatever e/W/mu
-  /// hold right now -- call right after TrainStep() for diagnostics on
-  /// the state that just drove a real weight update, not a fresh
-  /// settling pass). Device-agnostic: copies to host and computes in
-  /// plain C++, no new backend primitive. Error mean specifically is
-  /// what separates "weak but unbiased" from "systematically biased"
-  /// error signal, the distinction at stake in the VGG-7 PC-collapse
-  /// investigation.
+  /// @brief Returns {error mean, error RMS, weight L2 norm, fraction of
+  /// mu elements exactly 0} for this layer's current state. Call right
+  /// after TrainStep() for diagnostics on the state that drove the last
+  /// weight update.
   std::vector<float> GetDiagnosticStats() const noexcept;
 
   /// @copydoc Deep::Layer::GetStateDict
   /// @return {} if outChannels == 0 (this layer owns no W/b/Psi).
   /// Otherwise W, b, Psi, and each of their Adam moments (m_W, v_W, m_b,
   /// v_b, m_Psi, v_Psi), pointing at this layer's host staging buffers
-  /// (see EnsureStateDictStaging()) -- always safe for ModelIO to read
-  /// or write directly, regardless of backend.
+  /// -- always safe for ModelIO to read or write directly, regardless
+  /// of backend.
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
   /// @copydoc Deep::Layer::SyncStateDictFromDevice
   void SyncStateDictFromDevice() const override;
@@ -538,12 +489,9 @@ public:
 
 protected:
   /// @brief When HasPooling(), scatters @p pooledError (sized
-  /// poolOutHeight*poolOutWidth, this layer's own output resolution)
-  /// into unpoolScratch at conv-native resolution and returns that;
-  /// otherwise returns @p pooledError unchanged. Every call site that
-  /// reads a neighboring layer's error/adjoint needs this before
-  /// combining it with mu, which stays at conv-native resolution
-  /// regardless of pooling.
+  /// poolOutHeight*poolOutWidth) into unpoolScratch at conv-native
+  /// resolution and returns that; otherwise returns @p pooledError
+  /// unchanged.
   const float* UnpoolError(const float* pooledError) noexcept;
 };
 } // namespace Deep

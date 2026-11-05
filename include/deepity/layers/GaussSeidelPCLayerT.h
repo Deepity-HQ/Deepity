@@ -14,35 +14,15 @@
 /**
  * @file GaussSeidelPCLayerT.h
  * @brief Templated counterpart to GaussSeidelPCLayer, over a storage
- * type `T` and an accumulator type `AccumT` -- see FullPCLayerT's own
- * doc comment for the T/AccumT split's full rationale. Produced by
- * mechanically retyping GaussSeidelPCLayer's own `float` members/
- * parameters to `T`/`AccumT`, NOT a reimplementation. See
- * GaussSeidelPCLayer.h's own class comment for the required
- * three-sweep (UpdateState/ComputePrediction/ComputeError) calling
- * order -- unchanged here.
- *
- * Deliberate departures from a pure mechanical port, all following
- * FullPCLayerT/SimplePCLayerT's own established precedent:
- *  - feedbackError (e_above premultiplied by f'(preact)) and dz_dt
- *    (that feedback projected through E) are both AccumT, not T, to
- *    avoid rounding a small activation derivative to exactly zero at
- *    low precision before AxpyIntoFromAccum folds the result into z.
- *  - biasGradScratch does not exist here: grad_b (AccumT, already
- *    needed for Adam/AdamW) doubles as the SGD path's row-sum scratch
- *    too, same restructuring FullPCLayerT::UpdateWeights() uses to
- *    avoid blending an AccumT operand directly into a T* accumulator
- *    via a single GEMM (MatMulAccumMixed() only ever writes a fresh
- *    AccumT* C; see its own doc comment).
- *
- * Deliberately does NOT inherit from Layer, same reasoning as
- * FullPCLayerT/SimplePCLayerT.
+ * type `T` and an accumulator type `AccumT`. See GaussSeidelPCLayer.h's
+ * own class comment for the required three-sweep (UpdateState/
+ * ComputePrediction/ComputeError) calling order, unchanged here. Does
+ * not inherit from Layer.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to GaussSeidelPCLayer, see this
-/// file's own comment for the full rationale.
+/// @brief Templated counterpart to GaussSeidelPCLayer.
 template <typename T, typename AccumT = T> class GaussSeidelPCLayerT
 {
 protected:
@@ -72,8 +52,7 @@ protected:
   T* z = nullptr; ///< Internal state (belief).
 
   /// @brief This layer's own outgoing prediction. Stays clean and
-  /// activated at all times, never mutated into a derivative -- see
-  /// GaussSeidelPCLayer.h's own class comment.
+  /// activated at all times, never mutated into a derivative.
   T* mu = nullptr;
   /// @brief mu's pre-activation value, held over across timesteps the
   /// same way mu itself is.
@@ -82,16 +61,10 @@ protected:
   /// randomly initialized once, never updated again.
   T* E = nullptr;
 
-  // derivScratch/feedbackError/dz_dt are AccumT, not T -- see this
-  // file's own class comment on why.
   std::vector<AccumT> derivScratch;  ///< out_state_size scratch: f'(preact), see UpdateState().
   std::vector<AccumT> feedbackError; ///< out_state_size scratch: e_above * f'(preact).
   std::vector<AccumT> dz_dt;         ///< own_state_size scratch: feedbackError projected through E.
 
-  // grad_*/m_*/v_* and t_device/lr_device are AccumT-typed (or int, for
-  // the step counter) optimizer-accumulator state, owned directly
-  // rather than arena-allocated -- same reasoning as FullPCLayerT's/
-  // SimplePCLayerT's identical members.
   std::vector<AccumT> grad_W; ///< W's gradient scratch buffer; also SGD's row-sum scratch for grad_b.
   std::vector<AccumT> grad_b; ///< b's gradient scratch buffer; also SGD's row-sum scratch.
   std::vector<AccumT> m_W;    ///< Adam/AdamW first-moment buffer for W.
@@ -124,8 +97,7 @@ public:
 
   /// @brief Step 1 of a Gauss-Seidel timestep: updates z using
   /// mu/e_above held over from the end of the previous timestep.
-  /// Does NOT mutate mu. See GaussSeidelPCLayer::UpdateState()'s own
-  /// doc comment for the required calling order.
+  /// Does NOT mutate mu.
   void UpdateState() noexcept;
 
   /// @brief Step 2: recomputes mu fresh from the z just updated by
@@ -252,11 +224,8 @@ public:
     return *layerBelow;
   }
 
-  /// @brief Randomizes this layer's weights (and the E
-  /// feedback-alignment matrix) in place. See
-  /// GaussSeidelPCLayer::RandomizeWeights()'s own doc comment: E
-  /// keeps its own fixed uniform(-0.3,0.3) init regardless of
-  /// `distribution`.
+  /// @brief Randomizes this layer's weights. @p distribution applies
+  /// to W only; E always uses its own fixed uniform(-0.3,0.3) init.
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   ActivationType GetActivationType() const noexcept

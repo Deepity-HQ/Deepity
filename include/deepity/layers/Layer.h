@@ -29,11 +29,9 @@ struct TensorDescriptor
   std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
 };
 
-/// @brief Templated counterpart to TensorDescriptor, for the new
-/// templated FullPCLayer<T, AccumT>/FullPCNetwork<T, AccumT>'s own
-/// GetStateDict() (a plain method there, not a Layer override -- see
-/// FullPCLayer<T, AccumT>'s own doc comment on why it no longer derives
-/// from Layer).
+/// @brief Templated counterpart to TensorDescriptor, used by templated
+/// layers/networks (e.g. FullPCLayerT, FullPCNetworkT) that don't
+/// inherit from Layer.
 template <typename T>
 struct TensorDescriptorT
 {

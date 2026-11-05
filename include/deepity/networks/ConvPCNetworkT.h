@@ -10,19 +10,12 @@
 /**
  * @file ConvPCNetworkT.h
  * @brief Templated counterpart to ConvPCNetwork, over the same
- * `T`/`AccumT` pair as ConvPCLayerT -- see FullPCNetworkT's own doc
- * comment for the full rationale. Produced by mechanically retyping
- * ConvPCNetwork's own `float` members/parameters to `T`/`AccumT`.
- *
- * CUDA graph capture is dropped entirely, same reasoning as every
- * other templated network: device==DEVICE_GPU already throws inside
- * CreateBackendT() at construction (no CUDABackendT yet).
+ * `T`/`AccumT` pair as ConvPCLayerT. Has no CUDA graph capture path.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to ConvPCNetwork, see this file's own
-/// comment for the full rationale.
+/// @brief Templated counterpart to ConvPCNetwork.
 template <typename T, typename AccumT = T> class ConvPCNetworkT
 {
 public:
@@ -126,10 +119,9 @@ public:
     for (size_t i = 0; i + 1 < layers.size(); ++i)
       layers[i]->UpdateWeights();
   }
-  /// @brief Applies precision updates to every non-terminal layer.
-  /// Not called automatically by TrainStep(), same as
-  /// ConvPCNetwork::UpdatePrecision()'s own convention -- the caller
-  /// invokes this explicitly when desired.
+  /// @brief Applies precision updates to every non-terminal layer. Not
+  /// called automatically by TrainStep(); the caller invokes this
+  /// explicitly when desired.
   void UpdatePrecision() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)

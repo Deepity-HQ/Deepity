@@ -9,12 +9,9 @@
 
 /**
  * @file FullPCNetwork.h
- * @brief Orchestrates FullPCLayer's phases, matching DirectKPPCNetwork's
- * four-phase DKP-PC structure (see that class's docs for the phase
- * breakdown and citation), plus network-level toggles for muPC scaling
- * and residual connections, both OFF by default, so a plain
- * FullPCNetwork reproduces DirectKPPCNetwork exactly (FullPCLayer with
- * a=1.0, useResidual=false is bit-identical to DirectKPPCLayer).
+ * @brief Orchestrates FullPCLayer's phases (the same four-phase DKP-PC
+ * structure as DirectKPPCNetwork), plus network-level toggles for muPC
+ * scaling and residual connections, both off by default.
  */
 
 namespace Deep
@@ -52,17 +49,12 @@ public:
   void AddLayer(size_t size, size_t nextSize, size_t terminalSize, float lr, float ir, float fl,
                 float lmbda, ActivationType aType, ActivationType dType);
 
-  /// @brief Enables muPC's full Table 1 parameterization: each layer's
-  /// forward-scaling factor `a` (width/depth-dependent) AND unit-variance
-  /// weight init, in place of plain PC's fan-scaled init. Does NOT add
-  /// Depth-muP's learning-rate scaling; the paper found that made
-  /// training unstable and tunes the weight/activity learning rates as
-  /// independent hyperparameters instead, same as plain PC.
-  /// OFF by default. Must be called before Compile() and before
-  /// RandomizeWeights(): Compile() is what actually computes and applies
-  /// each layer's `a`, once the full architecture (every AddLayer call)
-  /// is known, and the init-variance change only takes effect on the
-  /// NEXT RandomizeWeights() call.
+  /// @brief Enables each layer's forward-scaling factor `a`
+  /// (width/depth-dependent) and unit-variance weight init, in place of
+  /// plain PC's fan-scaled init. Off by default. Must be called before
+  /// Compile() (which computes and applies `a` once the full
+  /// architecture is known) and before RandomizeWeights() (the
+  /// init-variance change only takes effect on the next call).
   /// @see Innocenti et al., "muPC: Scaling Predictive Coding to 100+ Layer
   /// Networks", https://arxiv.org/abs/2505.13124
   void SetUseMuPCScaling(bool enabled) noexcept
@@ -70,13 +62,10 @@ public:
     useMuPCScaling = enabled;
   }
 
-  /// @brief Enables residual/skip connections on middle hidden
-  /// layers (muPC's "1-skip" ResNet formulation, see that
-  /// paper's A.2.4). OFF by default. Requires every middle hidden
-  /// layer to have the SAME width as its neighbor; Compile()
-  /// throws std::invalid_argument if that's violated, rather than
-  /// silently skipping the mismatched connection (a silent skip
-  /// risks masking a real configuration mistake).
+  /// @brief Enables residual/skip connections on middle hidden layers.
+  /// Off by default. Requires every middle hidden layer to have the
+  /// same width as its neighbor; Compile() throws
+  /// std::invalid_argument if that's violated.
   void SetUseResidualConnections(bool enabled) noexcept
   {
     useResidualConnections = enabled;
@@ -183,21 +172,16 @@ public:
   /// perturbation and no target clamped, read the terminal's beliefs.
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
 
-  /// @brief Loads all layers into one contiguous block of memory,
-  /// wires layerAbove/layerBelow/terminalLayer across every
-  /// layer, same as DirectKPPCNetwork::Compile(), PLUS: if
-  /// useMuPCScaling, computes and applies each layer's `a` AND enables
-  /// unit-variance init (Table 1) from the full, now-known architecture;
-  /// if
-  /// useResidualConnections, applies SetResidual(true) to every
-  /// middle hidden layer after checking width match (throws
-  /// std::invalid_argument on mismatch).
+  /// @brief Loads all layers into one contiguous block of memory and
+  /// wires layerAbove/layerBelow/terminalLayer across every layer.
+  /// If useMuPCScaling, computes and applies each layer's `a` and
+  /// enables unit-variance init. If useResidualConnections, applies
+  /// SetResidual(true) to every middle hidden layer after checking
+  /// width match (throws std::invalid_argument on mismatch).
   void Compile();
 
-  /// @brief Enables iPC: UpdateWeights() runs every settling
-  /// step instead of once after settling completes. OFF by default,
-  /// TrainStep() matches DirectKPPCNetwork's standard, two-phase
-  /// behavior exactly when this is false.
+  /// @brief Enables iPC: UpdateWeights() runs every settling step
+  /// instead of once after settling completes. Off by default.
   /// @see Salvatori et al., "Incremental Predictive Coding", https://arxiv.org/abs/2212.00720
   void SetUseIPC(bool enabled) noexcept
   {
@@ -205,9 +189,8 @@ public:
     InvalidateCapturedGraphs();
   }
 
-  /// @brief Enables momentum (inertial) settling on every layer.
-  /// Loops over layers and calls each one's own SetMomentum(),
-  /// same pattern as SetLearningRate/SetFeedbackRate. OFF by default.
+  /// @brief Enables momentum (inertial) settling on every layer. Off
+  /// by default.
   void SetUseMomentum(bool enabled, float beta = 0.9f) noexcept
   {
     for (auto& layer : layers)
@@ -215,11 +198,8 @@ public:
     InvalidateCapturedGraphs();
   }
 
-  /// @brief Enables softmax cross-entropy energy on the TERMINAL layer
-  /// only (unlike the other Set* toggles, this does NOT loop over every
-  /// layer, cross-entropy only ever makes sense on the final output,
-  /// against a one-hot/class-probability target). OFF by default
-  /// (plain Gaussian energy everywhere, matching DirectKPPCNetwork).
+  /// @brief Enables softmax cross-entropy energy on the terminal layer
+  /// only. Off by default.
   void SetUseCrossEntropy(bool enabled) noexcept
   {
     GetTerminalLayer()->SetCrossEntropy(enabled);
@@ -229,12 +209,9 @@ public:
   /// @brief Enables ePC settling: each settling step becomes a full
   /// forward sweep (recompute every hidden layer's belief/prediction
   /// bottom-to-top) followed by a full backward sweep (chain the
-  /// terminal's error all the way down through every hidden layer,
-  /// updating each one's error in place), instead of TrainStep()'s
+  /// terminal's error down through every hidden layer), instead of the
   /// usual per-layer local CalculateState()/UpdateState() loop. Only
-  /// affects HIDDEN layers (loops over layers[1..size-2]; the input
-  /// layer has no free error and the terminal's error is already the
-  /// loss, unchanged either way). OFF by default.
+  /// affects hidden layers. Off by default.
   /// @see Goemaere et al., "ePC: Fast and Deep Predictive Coding in
   /// Digital Simulation", https://arxiv.org/abs/2505.20137
   void SetUseEPC(bool enabled) noexcept
@@ -247,11 +224,8 @@ public:
 
 private:
   /// @brief Forces TrainStep()/Predict() to recapture their CUDA graphs
-  /// on their next call. Needed after any toggle that changes behavior
-  /// inside the captured region (useIPC/useEPC/momentum/cross-entropy) --
-  /// otherwise the stale pre-toggle graph keeps replaying silently. A
-  /// no-op on CPU, since graphCaptured/predictGraphCaptured are only
-  /// ever read inside TrainStep()/Predict()'s DEVICE_GPU branch.
+  /// on their next call. Call after any toggle that changes behavior
+  /// inside the captured region. No-op on CPU.
   void InvalidateCapturedGraphs() noexcept
   {
     graphCaptured = false;
@@ -277,12 +251,8 @@ private:
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 
-  // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
-  // above -- Sphota-style online usage calls predict() and train_step()
-  // interleaved every single step, and they capture genuinely different
-  // operations (no DirectFeedbackUpdate()/UpdateWeights(), no terminal
-  // clamp), so sharing one slot would force a full recapture on every
-  // call instead of each settling into its own steady-state replay.
+  // Predict()'s own graph, kept in a separate slot from TrainStep()'s
+  // above since they capture different operations.
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
   static constexpr size_t kPredictGraphSlot = 1;

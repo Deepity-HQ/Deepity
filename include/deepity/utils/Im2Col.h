@@ -6,15 +6,12 @@
 
 /**
  * @file Im2Col.h
- * @brief Standalone im2col / col2im utilities: convolution expressed as
- * matrix multiplication, so ConvPCLayer can reuse cblas_sgemm rather than
- * needing hand-written conv kernels.
+ * @brief Standalone im2col / col2im utilities: convolution expressed
+ * as matrix multiplication, so ConvPCLayer can reuse cblas_sgemm
+ * rather than needing hand-written conv kernels.
  *
- * Col2Im is the true mathematical adjoint of Im2Col (<Wx,y> == <x,W^Ty>),
- * not just an inverse-shaped operation. This matters because ConvPCLayer's
- * UpdateState() feedback term relies on that adjoint property the same
- * way DiscriminativePCLayer's feedback term relies on W^T being the
- * genuine transpose.
+ * Col2Im is the true mathematical adjoint of Im2Col
+ * (<Wx,y> == <x,W^Ty>), not just an inverse-shaped operation.
  *
  * Layout convention: NCHW. A single batch item's input is
  * (channels, height, width), row-major, contiguous per channel.
@@ -26,16 +23,12 @@
  *
  * col2im is the adjoint operation: scatters a
  * (channels*kH*kW, outH*outW) gradient buffer back into a
- * (channels, height, width) image, ACCUMULATING
- * (does not zero the destination first, caller must memset if needed).
+ * (channels, height, width) image, accumulating (does not zero the
+ * destination first, caller must memset if needed).
  *
  * Neither function knows anything about batching, call once per batch
  * item, with pointers offset to that item's slice.
  *
- * @note Each SIMD width (AVX-512/AVX2+AVX/SSE) is handled as a separate
- * preprocessor branch with its own scalar-tail fallback along the
- * stride-1 fast path; the strided (strideW != 1) path is always scalar,
- * since a fixed vector width can't align with an arbitrary stride.
  * @version 1.0
  * @date 2026-06-30
  * @author Jack Rose
@@ -161,10 +154,6 @@ inline void Im2Col(const float* input, int channels, int height, int width, int 
 /// @brief The adjoint of Im2Col(): scatters a
 /// (channels*kH*kW, outH*outW) column-gradient buffer back into a
 /// (channels, height, width) image.
-///
-/// The true mathematical adjoint of Im2Col(), not just an
-/// inverse-shaped operation (see the file-level note), which is what
-/// makes it safe to use for ConvPCLayer's feedback term.
 ///
 /// @param columns Input buffer of shape
 /// (channels*kH*kW, outH*outW), typically a gradient produced by a
