@@ -157,6 +157,13 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
     ) -> None:
         """
         Configure network hyperparameters and initialize the backend.
+        Must be called once, before train_step()/predict().
+
+        @param learning_rate Learning rate for the forward weights.
+        @param inference_rate Inference/settling rate.
+        @param precision_rate Learning rate for precision weighting.
+        @param lmbda Regularization parameter.
+        @param optimizer Optimizer used for the forward weights.
         """
 
         self._learning_rate = learning_rate
@@ -176,26 +183,31 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
             )
 
     def set_learning_rate(self, lr: float) -> None:
+        """Set the learning rate for the forward weights."""
         self._require_configured()
         super().set_learning_rate(lr)
         self._learning_rate = lr
 
     def set_inference_rate(self, ir: float) -> None:
+        """Set the inference/settling rate on every layer."""
         self._require_configured()
         super().set_inference_rate(ir)
         self._inference_rate = ir
 
     def set_precision_rate(self, pr: float) -> None:
+        """Set the precision-weighting learning rate on every layer."""
         self._require_configured()
         super().set_precision_rate(pr)
         self._precision_rate = pr
 
     def set_lambda(self, lmbda: float) -> None:
+        """Set the regularization parameter on every layer."""
         self._require_configured()
         super().set_lambda(lmbda)
         self._lambda = lmbda
 
     def set_optimizer(self, optimizer: str) -> None:
+        """Set the optimizer used for the forward weights."""
         self._require_configured()
         super().set_optimizer(optimizer)
         self._optimizer = optimizer
@@ -206,6 +218,9 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Run one training step on a single batch, settling for
+        `steps` iterations before updating weights.
+        @return Total settling energy accumulated over `steps`."""
         self._require_configured()
 
         self.reset_state()
@@ -229,6 +244,8 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
 
         self.reset_state()
@@ -250,6 +267,8 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         decay_rate: float = 1.0,
         shuffle: bool = True,
     ) -> "SequentialPCN":
+        """Train for multiple epochs over (X, Y), batching by
+        `self.batch_size` and printing a progress bar."""
         self._require_configured()
 
         if initial_lr is None:
@@ -284,6 +303,18 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         decay_rate: float = 1.0,
         reset_cache_per_epoch: bool = True,
     ) -> "SequentialPCN":
+        """Train using I_avg initialization: each requested layer's
+        beliefs are seeded from that layer's per-class running mean
+        from the previous batch where that class appeared, instead of
+        zero-init every batch.
+
+        @param labels Integer class label per sample, same row order as X/Y.
+        @param per_class Examples per class per batch; see StreamAlignedBatcher.
+        @param num_classes Total number of distinct classes in labels.
+        @param cache_layers List of (layer_index, layer_size) pairs to
+        seed from their per-class cache.
+        @param reset_cache_per_epoch If True, clear every cache at the
+        start of each epoch; if False, caches persist across epochs."""
         self._require_configured()
 
         if initial_lr is None:
@@ -444,9 +475,11 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         return self
 
     def save(self, dir_path: str) -> bool:
+        """Save the network's weights to `dir_path`."""
         self._require_configured()
         return super().save(dir_path)
 
     def load(self, dir_path: str) -> bool:
+        """Load the network's weights from `dir_path`."""
         self._require_configured()
         return super().load(dir_path)

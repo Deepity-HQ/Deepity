@@ -216,6 +216,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self._inference_rate = inference_rate
 
     def compile(self) -> None:
+        """Allocate backend buffers for the network built by
+        _build_backend(). Called automatically by configure()."""
         super().compile()
 
     def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
@@ -231,6 +233,10 @@ class DKPPCN(dy.DirectKPPCNetwork):
         Y: npt.NDArray[np.float32],
         inference_steps: int = 1,
     ) -> float:
+        """Run one training step on a single batch: a direct feedback
+        alignment update, then settling for `inference_steps`
+        iterations before updating weights.
+        @return Total settling energy accumulated over `inference_steps`."""
         self._require_configured()
 
         return super().train_step(
@@ -244,6 +250,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
         X: npt.NDArray[np.float32],
         inference_steps: int = 1,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `inference_steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
 
         return np.asarray(
