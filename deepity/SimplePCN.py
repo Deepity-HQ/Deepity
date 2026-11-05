@@ -216,6 +216,7 @@ class SimplePCN(dy.SimplePCNetwork):
             )
 
     def set_learning_rate(self, lr: float) -> None:
+        """Set the learning rate on every layer."""
         self._require_configured()
 
         self._learning_rate = lr
@@ -224,6 +225,7 @@ class SimplePCN(dy.SimplePCNetwork):
             layer.set_learning_rate(lr)
 
     def set_inference_rate(self, ir: float) -> None:
+        """Set the inference/settling rate on every layer."""
         self._require_configured()
 
         self._inference_rate = ir
@@ -232,12 +234,15 @@ class SimplePCN(dy.SimplePCNetwork):
             layer.set_inference_rate(ir)
 
     def set_optimizer(self, optimizer: str) -> None:
+        """Set the optimizer used for the forward weights: SGD, ADAM, or ADAMW."""
         self._require_configured()
 
         self._optimizer = optimizer.upper()
         super().set_optimizer(self._optimizer)
 
     def compile(self) -> None:
+        """Allocate backend buffers for the network built by
+        _build_backend(). Called automatically by configure()."""
         self._require_configured()
         super().compile()
 
@@ -255,6 +260,9 @@ class SimplePCN(dy.SimplePCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Run one training step on a single batch, settling for
+        `steps` iterations before updating weights.
+        @return Total settling energy accumulated over `steps`."""
         self._require_configured()
 
         self.reset_state()
@@ -277,6 +285,8 @@ class SimplePCN(dy.SimplePCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
 
         self.reset_state()
@@ -329,10 +339,6 @@ class SimplePCN(dy.SimplePCNetwork):
         -1 disables caching.
          0 enables exact clamped-only caching.
         >0 extends caching to unclamped layers as an approximation.
-
-        Thresholds around 0.05-0.1 previously showed substantial settling
-        speedups, but their effect on multi-epoch training accuracy still
-        requires independent validation.
         """
         self._require_configured()
 

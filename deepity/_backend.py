@@ -1,3 +1,4 @@
+"""Loads the compiled `deepity` nanobind extension as `dy`."""
 try:
         from . import deepity as dy
 except ImportError as e:

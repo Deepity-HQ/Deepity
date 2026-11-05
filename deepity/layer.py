@@ -1,3 +1,7 @@
+"""Architecture building blocks: pass these positionally to a network's
+constructor to describe its layer stack (see each network class's own
+docs for exact ordering rules)."""
+
 from abc import ABC, abstractmethod
 
 
@@ -10,6 +14,8 @@ class Layer(ABC):
 
 
 class Linear(Layer):
+    """A weighted layer of shape (in_n, out_n)."""
+
     def __init__(self, in_n: int, out_n: int):
         self.in_n = in_n
         self.out_n = out_n
@@ -18,6 +24,8 @@ class Linear(Layer):
         return "linear"
 
 class Convolution(Layer):
+    """A 2D convolutional layer."""
+
     def __init__(
         self,
         out_channels: int,
@@ -40,7 +48,8 @@ class Convolution(Layer):
         return "convolution"
 
 class Activation(ABC):
-    """Base class for activation functions."""
+    """Base class for activation functions. Placed after a Linear/
+    Convolution layer to describe which activation it uses."""
 
     @abstractmethod
     def to_string(self) -> str:
@@ -48,20 +57,28 @@ class Activation(ABC):
 
 
 class Sigmoid(Activation):
+    """Logistic sigmoid activation."""
+
     def to_string(self) -> str:
         return "sigmoid"
 
 
 class TanH(Activation):
+    """Hyperbolic tangent activation."""
+
     def to_string(self) -> str:
         return "tanh"
 
 
 class ReLU(Activation):
+    """Rectified linear unit activation."""
+
     def to_string(self) -> str:
         return "relu"
 
 
 class GeLU(Activation):
+    """Gaussian error linear unit activation (tanh approximation)."""
+
     def to_string(self) -> str:
         return "gelu"

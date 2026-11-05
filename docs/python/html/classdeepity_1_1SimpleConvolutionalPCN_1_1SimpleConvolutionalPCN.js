@@ -1,0 +1,25 @@
+var classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN =
+[
+    [ "__init__", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a38b42e5fd95b149fb6b13d98c098a607", null ],
+    [ "_build_backend", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#aad88dd81f9ba90c8bb69cea3fd806230", null ],
+    [ "_require_configured", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#adad8cca7d7fa5dd71f584fb83fe06f8a", null ],
+    [ "_validate_architecture", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a6cf07bdf343587b06e860bfcb474468a", null ],
+    [ "configure", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#ac1d41f2604aab970d0260cc969e4a8fa", null ],
+    [ "fit", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a7523902e8f5e6f1eee97562b0a02e083", null ],
+    [ "predict", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a93ea7c85402a50eb2ba1d405f63564ac", null ],
+    [ "predict_with_projection", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#adb06e06ab0d088598f897c3969093a0f", null ],
+    [ "set_inference_rate", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a5476efd0d09137d4d49c987bea5ca292", null ],
+    [ "set_lambda", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a473b145b356403fd206a4d4a67630194", null ],
+    [ "set_learning_rate", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#af184bb11d9e7ba56e3e1880b3ff0983a", null ],
+    [ "set_optimizer", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a20f896a3cefa951de6ee871f85c5ec85", null ],
+    [ "train_step", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#aac48c85affb0ece6beaafaab4ac0e514", null ],
+    [ "train_step_with_projection", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a397e8648291905f05339b010cc9fbea1", null ],
+    [ "_configured", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#ac3fd4fa4de7b2794fb49db2c9a66a789", null ],
+    [ "_inference_rate", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#ad29133f6d469e404223dabea73729110", null ],
+    [ "_lambda", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#ab073c2ca65758277c1cb7548e84ee05a", null ],
+    [ "_learning_rate", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a01ea2a851f94f0d4a8cbda17d2f924b5", null ],
+    [ "_optimizer", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#aff9af0dcf80203d87e2766061534aaa1", null ],
+    [ "architecture", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a2c7b8522fed92b51fc5d8ad74bff497f", null ],
+    [ "input_shape", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a06a713f3ed382ad510605226ad56e9d7", null ],
+    [ "layers", "classdeepity_1_1SimpleConvolutionalPCN_1_1SimpleConvolutionalPCN.html#a6a6361878968fa5604830f66b03a29df", null ]
+];

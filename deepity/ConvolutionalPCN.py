@@ -10,7 +10,12 @@ from .utils import _fit_with_progress
 
 class ConvolutionalPCN(dy.ConvPCNetwork):
     """
-    Standard precision-weighted Convolutional Predictive Coding Network.
+    Precision-weighted Convolutional Predictive Coding Network.
+
+    The architecture is declared using Convolution and Activation
+    objects (passed positionally, beginning with a Convolution), while
+    `input_shape` and optimization/inference hyperparameters are
+    supplied separately, see __init__() and configure().
     """
 
     def __init__(
@@ -19,6 +24,11 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         input_shape: tuple[int, int, int],
         batch_size: int,
     ) -> None:
+        """
+        @param architecture Convolution/Activation objects describing the layer stack.
+        @param input_shape (channels, height, width) of a single input image.
+        @param batch_size Number of samples processed per train_step()/predict() call.
+        """
         self.architecture = architecture
         self.input_shape = input_shape
         # NOTE: batch_size is NOT stored as a plain attribute here,
@@ -108,7 +118,13 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         lmbda: float = 1e-2,
     ) -> "ConvolutionalPCN":
         """
-        Configure and build the convolutional network.
+        Configure and build the convolutional network. Must be called
+        once, before train_step()/predict().
+
+        @param learning_rate Learning rate for the forward weights.
+        @param inference_rate Inference/settling rate.
+        @param precision_rate Learning rate for precision weighting.
+        @param lmbda Regularization parameter.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -133,6 +149,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
             )
 
     def set_learning_rate(self, learning_rate: float) -> None:
+        """Set the learning rate on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -141,6 +158,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._learning_rate = learning_rate
 
     def set_inference_rate(self, inference_rate: float) -> None:
+        """Set the inference/settling rate on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -149,6 +167,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._inference_rate = inference_rate
 
     def set_precision_rate(self, precision_rate: float) -> None:
+        """Set the precision-weighting learning rate on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -157,6 +176,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._precision_rate = precision_rate
 
     def set_lambda(self, lmbda: float) -> None:
+        """Set the regularization parameter on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -192,6 +212,9 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Run one training step on a single batch, settling for
+        `steps` iterations before updating weights.
+        @return Total settling energy accumulated over `steps`."""
         self._require_configured()
 
         return super().train_step(
@@ -206,6 +229,9 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Same as train_step(), but initializes every layer's
+        beliefs via a forward projection pass first instead of
+        whatever state they held from the previous call."""
         self._require_configured()
 
         return super().train_step_with_projection(
@@ -219,6 +245,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
 
         return np.asarray(
@@ -233,6 +261,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Same as predict(), but initializes every layer's beliefs
+        via a forward projection pass first."""
         self._require_configured()
 
         return np.asarray(
@@ -252,6 +282,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         decay_rate: float = 1.0,
         shuffle: bool = True,
     ) -> "ConvolutionalPCN":
+        """Train for multiple epochs over (X, Y), batching by
+        `self.batch_size` and printing a progress bar."""
         self._require_configured()
 
         if initial_lr is None:

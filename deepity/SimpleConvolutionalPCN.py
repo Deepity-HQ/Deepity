@@ -111,6 +111,12 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
     ) -> None:
         """
         Configure network hyperparameters and initialize the backend.
+        Must be called once, before train_step()/predict().
+
+        @param learning_rate Learning rate for the forward weights.
+        @param inference_rate Inference/settling rate.
+        @param lmbda Regularization parameter.
+        @param optimizer Optimizer used for the forward weights.
         """
 
         self._learning_rate = learning_rate
@@ -138,6 +144,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
             )
 
     def set_learning_rate(self, lr: float) -> None:
+        """Set the learning rate on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -146,6 +153,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self._learning_rate = lr
 
     def set_inference_rate(self, ir: float) -> None:
+        """Set the inference/settling rate on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -154,6 +162,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self._inference_rate = ir
 
     def set_lambda(self, lmbda: float) -> None:
+        """Set the regularization parameter on every layer."""
         self._require_configured()
 
         for layer in self.layers:
@@ -162,6 +171,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self._lambda = lmbda
 
     def set_optimizer(self, optimizer: str) -> None:
+        """Set the optimizer used for the forward weights."""
         self._require_configured()
         super().set_optimizer(optimizer)
         self._optimizer = optimizer
@@ -172,6 +182,9 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Run one training step on a single batch, settling for
+        `steps` iterations before updating weights.
+        @return Total settling energy accumulated over `steps`."""
         self._require_configured()
         return super().train_step(X.flatten(), Y.flatten(), steps)
 
@@ -180,6 +193,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
         return super().predict(X.flatten(), steps)
 
@@ -189,6 +204,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         Y: npt.NDArray[np.float32],
         steps: int,
     ) -> float:
+        """Same as train_step(), but initializes every layer's
+        beliefs via a forward projection pass first."""
         self._require_configured()
         return super().train_step_with_projection(
             X.flatten(),
@@ -201,6 +218,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         X: npt.NDArray[np.float32],
         steps: int,
     ) -> npt.NDArray[np.float32]:
+        """Same as predict(), but initializes every layer's beliefs
+        via a forward projection pass first."""
         self._require_configured()
         return super().predict_with_projection(
             X.flatten(),
@@ -217,6 +236,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         decay_rate: float = 1.0,
         shuffle: bool = True,
     ) -> "SimpleConvolutionalPCN":
+        """Train for multiple epochs over (X, Y), batching by
+        `self.batch_size` and printing a progress bar."""
         self._require_configured()
 
         if initial_lr is None:

@@ -91,12 +91,9 @@ class FullPCN:
     wrapped) via __getattr__.
 
     device="cuda" is the one exception to the dtype dispatch above:
-    FullPCNetworkT<T> has no CUDA backend yet for any T (see issue #55),
-    so device="cuda" instead constructs the legacy, non-templated
-    FullPCNetwork -- the only implementation with working CUDA graph
-    capture today -- and requires dtype="float32" (its only precision).
-    Retire this branch once #55 ships a real FullPCNetworkT CUDA
-    backend.
+    it constructs the legacy, non-templated FullPCNetwork instead of
+    FullPCNetworkT<float>, and requires dtype="float32" (its only
+    precision).
     """
 
     def __init__(
@@ -135,8 +132,7 @@ class FullPCN:
         if device == "cuda":
             if dtype != "float32":
                 raise ValueError(
-                    f"device='cuda' only supports dtype='float32' right now -- "
-                    f"FullPCNetworkT<{dtype}> has no CUDA backend yet (see issue #55). "
+                    f"device='cuda' only supports dtype='float32', got dtype={dtype!r}. "
                     "Use dtype='float32' for CUDA training, or device='cpu' for other dtypes."
                 )
             impl_cls = dy.FullPCNetwork
@@ -404,6 +400,8 @@ class FullPCN:
         self._inference_rate = inference_rate
 
     def compile(self) -> None:
+        """Allocate backend buffers for the network built by
+        _build_backend(). Called automatically by configure()."""
         self._impl.compile()
 
     def randomize_weights(self, seed: Optional[int] = None, dist: str = "normal") -> None:
@@ -419,6 +417,9 @@ class FullPCN:
         Y: npt.NDArray[np.float32],
         inference_steps: int = 1,
     ) -> float:
+        """Run one training step on a single batch, settling for
+        `inference_steps` iterations before updating weights.
+        @return Total settling energy accumulated over the settling steps."""
         self._require_configured()
 
         return self._impl.train_step(
@@ -432,6 +433,8 @@ class FullPCN:
         X: npt.NDArray[np.float32],
         inference_steps: int = 1,
     ) -> npt.NDArray[np.float32]:
+        """Run inference on `X`, settling for `inference_steps` iterations.
+        @return The terminal layer's beliefs."""
         self._require_configured()
 
         return np.asarray(

@@ -1,3 +1,6 @@
+"""Internal helpers shared across the PCN wrapper classes; not part of
+the public API."""
+
 import numpy as np
 import numpy.typing as npt
 

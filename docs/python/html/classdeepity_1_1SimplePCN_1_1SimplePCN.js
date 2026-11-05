@@ -1,0 +1,26 @@
+var classdeepity_1_1SimplePCN_1_1SimplePCN =
+[
+    [ "__init__", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a76fb1f0a16ffb39ae15c9b0d4a7a60ca", null ],
+    [ "_build_backend", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#ac52f033dd907c264c1e9a97623e38c4a", null ],
+    [ "_require_configured", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#af586f8f2991179cfe2bec8c121912543", null ],
+    [ "_validate_architecture", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a22cd492af3c01ae30f051ac396488ce6", null ],
+    [ "compile", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a2db2e4813c602f781745da83825a0e3c", null ],
+    [ "configure", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a311d8f743ac5f5a9fa6720ca45717ad2", null ],
+    [ "fit", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a319bc13121a40c7d4f24364e0f607260", null ],
+    [ "fit_iavg", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#af9abf2e05ac9fca2f649c682498f172b", null ],
+    [ "predict", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#ad2ede438c7124ee393ceb554cdb7ac20", null ],
+    [ "randomize_weights", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a3020ff960036d1e80fe14bc2e134bdec", null ],
+    [ "set_inference_rate", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a6fd705f0cfc0b34d5aec28ceae792f05", null ],
+    [ "set_learning_rate", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a9ac7f4cf16aeca79d2bc3c8c4932d85a", null ],
+    [ "set_mu_cache_threshold", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a9e4932c2bcc7cd487fabb7f1eea5d752", null ],
+    [ "set_optimizer", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a091fa5cada6f3b1dd83d95c98fbc4c00", null ],
+    [ "train_step", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a75e5e8fdb03f684125384dd5e0bb3148", null ],
+    [ "_configured", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#ac6dee9668795bd849c6948aeddff0d24", null ],
+    [ "_inference_rate", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a3cf60329d3aef81a1ad3396a8cda515a", null ],
+    [ "_lambda", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a9d6dd77cf055ceba8a52e4d4e41b7a47", null ],
+    [ "_learning_rate", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#ad762192bad61b1ef235907429ea84421", null ],
+    [ "_optimizer", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#afd24e9a77840abb4a0658e85fb501286", null ],
+    [ "architecture", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a16606093ca7682cbf161a942a5647642", null ],
+    [ "device", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#a0064ebb6f7b2fe7c9c26fbf4ec9313a1", null ],
+    [ "layers", "classdeepity_1_1SimplePCN_1_1SimplePCN.html#ac6c18e69ddfd5a9a888d192ad2342d4d", null ]
+];

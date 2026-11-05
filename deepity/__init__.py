@@ -1,3 +1,8 @@
+"""pydeepity: Python bindings for Deepity, a predictive-coding neural
+network library. Import network classes (e.g. `FullPCN`, `SimplePCN`)
+and architecture building blocks (`Linear`, `ReLU`, `Convolution`, ...)
+directly from `deepity`."""
+
 from importlib.metadata import PackageNotFoundError, version
 
 try:

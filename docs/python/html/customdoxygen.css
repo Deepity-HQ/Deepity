@@ -1,0 +1,591 @@
+/* ==========================================================================
+   customdoxygen.css
+   Dark theme for the Doxygen HTML output, matched to the Deepity website
+   (near-black surfaces, violet accents, Michroma headings, Jura body text,
+   JetBrains Mono code). Doxyfile points HTML_EXTRA_STYLESHEET here and sets
+   HTML_COLORSTYLE = DARK; GENERATE_TREEVIEW = YES is assumed.
+
+   Doxygen themes its output through CSS custom properties on :root; this
+   file redeclares the full set after doxygen.css loads, then adds a few
+   hand-written rules for the parts that have no variables (the outline
+   panel, the smartmenus main menu and its dropdowns, the title bar).
+
+   The font files are loaded from /fonts/ and /fonts/JetBrainsMono.woff2,
+   which exist when the docs are served from the Deepity site. Opened on
+   their own, the docs fall back to system fonts.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Michroma";
+  src: url("/fonts/Michroma-Regular.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jura";
+  src: url("/fonts/Jura-VariableFont_wght.ttf") format("truetype");
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  /* --------------------------------------------------------------------
+     Deepity brand tokens. --dx-purple/-violet/-blue are the three-stop
+     gradient defined in the main site's src/index.css (used there for
+     .magic-text headings and the active-tab treatment below); the
+     background/text tones come from the site's own light sections
+     (HomePage.jsx's bg-white / bg-[#e4e6e7] / bg-[#e6e8e9], and
+     Navbar.jsx's border-[#202d3b]).
+     -------------------------------------------------------------------- */
+  color-scheme: dark;
+
+  --dx-bg: #020205;
+  --dx-panel: #0c0c0d;
+  --dx-panel-raised: #141415;
+  --dx-border: rgba(255, 255, 255, 0.1);
+  --dx-border-strong: rgba(255, 255, 255, 0.18);
+  --dx-accent: var(--dx-violet);
+
+  --dx-purple: #c4b5fd;
+  --dx-violet: #a99bff;
+  --dx-blue: #7dd3fc;
+
+  --dx-text: #ffffff;
+  --dx-text-dim: rgba(255, 255, 255, 0.75);
+  --dx-text-muted: rgba(255, 255, 255, 0.5);
+
+  /* Matches the site's code blocks */
+  --dx-code-bg: #0c0c0d;
+  --dx-code-fg: #f2f2f2;
+
+  --dx-red: #ff7b72;
+}
+
+/* --------------------------------------------------------------------
+   Native Doxygen theme variables -- the primary mechanism this file
+   uses to re-theme the generated output. Grouped to match doxygen.css's
+   own section comments, so a future diff against a new Doxygen version
+   is easy to follow.
+   -------------------------------------------------------------------- */
+
+:root {
+  /* page base colors */
+  --page-background-color: var(--dx-bg);
+  --page-foreground-color: var(--dx-text-dim);
+  --page-link-color: var(--dx-violet);
+  --page-visited-link-color: var(--dx-violet);
+  --page-external-link-color: var(--dx-purple);
+
+  /* index (class/file/namespace listing tables) */
+  --index-odd-item-bg-color: var(--dx-panel);
+  --index-even-item-bg-color: var(--dx-bg);
+  --index-header-color: var(--dx-text);
+  --index-separator-color: var(--dx-border);
+
+  /* header / footer / group headers */
+  --header-background-color: var(--dx-panel);
+  --header-separator-color: var(--dx-border);
+  --group-header-separator-color: var(--dx-border);
+  --group-header-color: var(--dx-text);
+  --footer-foreground-color: var(--dx-text-muted);
+  --citation-label-color: var(--dx-violet);
+  --glow-color: var(--dx-violet);
+
+  --title-background-color: var(--dx-bg);
+  --title-separator-color: var(--dx-border);
+
+  --blockquote-background-color: var(--dx-panel);
+  --blockquote-border-color: var(--dx-border);
+
+  --scrollbar-thumb-color: var(--dx-border);
+  --scrollbar-background-color: var(--dx-panel);
+
+  --icon-background-color: var(--dx-violet);
+  --icon-foreground-color: #020205;
+  --icon-folder-open-fill-color: var(--dx-border);
+  --icon-folder-fill-color: var(--dx-panel);
+  --icon-folder-border-color: var(--dx-violet);
+  --icon-doc-fill-color: var(--dx-panel);
+  --icon-doc-border-color: var(--dx-violet);
+
+  /* brief member declaration list (the summary tables atop class/file pages) */
+  --memdecl-background-color: var(--dx-panel);
+  --memdecl-foreground-color: var(--dx-text-dim);
+  --memdecl-template-color: var(--dx-purple);
+  --memdecl-border-color: var(--dx-border);
+
+  /* detailed member list (the expanded per-function doc boxes) */
+  --memdef-border-color: var(--dx-border);
+  --memdef-title-background-color: var(--dx-panel-raised);
+  --memdef-proto-background-color: var(--dx-panel);
+  --memdef-proto-text-color: var(--dx-text);
+  --memdef-param-name-color: var(--dx-violet);
+  --memdef-template-color: var(--dx-purple);
+
+  /* tables */
+  --table-cell-border-color: var(--dx-border);
+  --table-header-background-color: var(--dx-panel-raised);
+  --table-header-foreground-color: var(--dx-text);
+
+  /* labels (e.g. "deprecated", "static" badges) */
+  --label-background-color: var(--dx-panel-raised);
+  --label-left-top-border-color: var(--dx-violet);
+  --label-right-bottom-border-color: var(--dx-border);
+  --label-foreground-color: var(--dx-text-dim);
+
+  /* navigation bar / tree / menu */
+  --nav-background-color: var(--dx-panel);
+  --nav-foreground-color: var(--dx-text-dim);
+  --nav-border-color: var(--dx-border);
+  --nav-breadcrumb-separator-color: var(--dx-border);
+  --nav-breadcrumb-active-bg: var(--dx-panel-raised);
+  --nav-breadcrumb-color: var(--dx-violet);
+  --nav-splitbar-bg-color: var(--dx-border);
+  --nav-splitbar-handle-color: var(--dx-violet);
+  --nav-text-normal-color: var(--dx-text-dim);
+  --nav-menu-button-color: var(--dx-text-dim);
+  --nav-menu-background-color: var(--dx-bg);
+  --nav-menu-foreground-color: var(--dx-text-dim);
+  --nav-menu-active-bg: var(--dx-panel);
+  --nav-menu-active-color: var(--dx-text);
+  --nav-arrow-color: var(--dx-text-muted);
+  --nav-arrow-selected-color: var(--dx-violet);
+
+  /* sync icon (the "keep source/docs in sync" toggle in the nav tree) */
+  --sync-icon-border-color: var(--dx-border);
+  --sync-icon-background-color: var(--dx-panel);
+  --sync-icon-selected-background-color: var(--dx-panel-raised);
+  --sync-icon-color: var(--dx-text-muted);
+  --sync-icon-selected-color: var(--dx-violet);
+
+  /* table of contents */
+  --toc-background-color: var(--dx-panel);
+  --toc-border-color: var(--dx-border);
+  --toc-header-color: var(--dx-text);
+
+  /* search field / results */
+  --search-background-color: var(--dx-bg);
+  --search-foreground-color: var(--dx-text-dim);
+  --search-active-color: var(--dx-text);
+  --search-box-border-color: var(--dx-border);
+  --search-close-icon-bg-color: var(--dx-text-muted);
+  --search-close-icon-fg-color: #020205;
+  --search-filter-background-color: rgba(12, 12, 13, 0.92);
+  --search-filter-foreground-color: var(--dx-text-dim);
+  --search-filter-backdrop-filter: blur(4px);
+  --search-filter-border-color: var(--dx-border);
+  --search-filter-highlight-text-color: #020205;
+  --search-filter-highlight-bg-color: var(--dx-violet);
+  --search-results-background-color: rgba(12, 12, 13, 0.96);
+  --search-results-foreground-color: var(--dx-text-dim);
+  --search-results-backdrop-filter: blur(4px);
+  --search-results-border-color: var(--dx-border);
+
+  /* code fragments: syntax colors (kept close to a standard light
+     syntax palette -- readability matters more than brand color here,
+     same reasoning `oneLight`/`docco` on the site's own code blocks use
+     an independent palette rather than the brand accent trio) */
+  --code-keyword-color: #569cd6;
+  --code-type-keyword-color: #4ec9b0;
+  --code-flow-keyword-color: #c586c0;
+  --code-comment-color: #6a9955;
+  --code-preprocessor-color: #c586c0;
+  --code-string-literal-color: #ce9178;
+  --code-char-literal-color: #b5cea8;
+  --code-xml-cdata-color: var(--dx-code-fg);
+  --code-vhdl-digit-color: #e91e63;
+  --code-vhdl-char-color: var(--dx-text-muted);
+  --code-vhdl-keyword-color: var(--dx-violet);
+  --code-vhdl-logic-color: var(--dx-red);
+
+  /* code fragments: chrome (background, line numbers, fold markers) */
+  --fragment-foreground-color: var(--dx-code-fg);
+  --fragment-background-color: var(--dx-code-bg);
+  --fragment-border-color: var(--dx-border);
+  --fragment-lineno-border-color: var(--dx-border);
+  --fragment-lineno-background-color: var(--dx-panel);
+  --fragment-lineno-foreground-color: var(--dx-text-muted);
+  --fragment-lineno-link-fg-color: var(--dx-violet);
+  --fragment-lineno-link-bg-color: var(--dx-border);
+  --fragment-lineno-link-hover-fg-color: var(--dx-violet);
+  --fragment-lineno-link-hover-bg-color: var(--dx-panel-raised);
+  --fragment-copy-ok-color: #7ee787;
+  --fold-line-color: var(--dx-text-muted);
+
+  /* tooltips (the hover preview popups over symbol links) */
+  --tooltip-foreground-color: var(--dx-text-dim);
+  --tooltip-background-color: rgba(20, 20, 21, 0.96);
+  --tooltip-arrow-background-color: #141415;
+  --tooltip-backdrop-filter: blur(3px);
+  --tooltip-border-color: var(--dx-border);
+  --tooltip-doc-color: var(--dx-text-muted);
+  --tooltip-declaration-color: #7ee787;
+  --tooltip-link-color: var(--dx-violet);
+  --tooltip-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+
+  /* fonts -- Inter/Roboto match the main site's body copy; Fira Code
+     matches the monospace font used in the site's own homepage code
+     samples (see HomePage.jsx's syntaxCustomStyle) */
+  --font-family-normal: "Jura", "Segoe UI", sans-serif;
+  --font-family-title: "Michroma", "Jura", sans-serif;
+  --font-family-monospace: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
+  --font-family-nav: "Michroma", "Jura", sans-serif;
+  --font-family-toc: "Jura", sans-serif;
+  --font-family-search: "Jura", sans-serif;
+  --font-family-tooltip: "Jura", sans-serif;
+
+  /* special sections (@note/@warning/@deprecated/etc admonitions) --
+     kept close to Doxygen's own light values, which already read
+     clearly as their intended severity; only bug/deprecated nudged
+     toward the site's purple/muted-slate family instead of doxygen's
+     stock hues */
+  --warning-color-bg: #2a1214;
+  --warning-color-hl: var(--dx-red);
+  --warning-color-text: #ffb4ab;
+  --note-color-bg: #261e0a;
+  --note-color-hl: #f5c542;
+  --note-color-text: #f5d77f;
+  --todo-color-bg: #0f1a2e;
+  --todo-color-hl: var(--dx-blue);
+  --todo-color-text: #a9c7ff;
+  --test-color-bg: #1a1530;
+  --test-color-hl: var(--dx-violet);
+  --test-color-text: #cfc6ff;
+  --deprecated-color-bg: var(--dx-panel);
+  --deprecated-color-hl: var(--dx-text-muted);
+  --deprecated-color-text: var(--dx-text-dim);
+  --bug-color-bg: #22142e;
+  --bug-color-hl: var(--dx-purple);
+  --bug-color-text: #e0c2f5;
+  --invariant-color-bg: #0f2316;
+  --invariant-color-hl: #7ee787;
+  --invariant-color-text: #a6e9b4;
+  --satisfies-color-hl: var(--dx-red);
+  --satisfies-color-bg: #2a1214;
+  --verifies-color-hl: var(--dx-red);
+  --verifies-color-bg: #2a1214;
+}
+
+/* --------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------- */
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dx-border) var(--dx-panel);
+}
+
+/* Link hover/focus state and transition -- color itself comes from
+   --page-link-color above, which doxygen.css already applies to
+   a/a.el/a.code/a.line. */
+a:hover,
+a:focus {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+a {
+  transition: color 0.15s ease-in-out;
+}
+
+/* Inline single-backtick markdown code, rendered as <tt>/<code class="tt">
+   depending on Doxygen version -- not covered by the fragment variables
+   above, since those target multi-line @code blocks specifically. */
+tt, .tt, code.tt, span.tt, code {
+  color: #d7bafd;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+a tt, a .tt, a code.tt {
+  color: var(--dx-blue);
+}
+
+/* The site's own Navbar renders this exact mark at 32px; give it a
+   little more presence here to match the title bar's larger scale, but
+   nowhere near the source image's native 100px. */
+#projectlogo img {
+  height: 40px;
+  width: auto;
+}
+
+/* doxygen.css bottom-aligns #projectlogo against the whole #projectalign
+   cell -- which holds BOTH the large "Deepity" heading and the smaller
+   tagline below it -- so the mark sinks to the tagline's baseline
+   instead of sitting level with "Deepity" itself. Top-align it instead:
+   the ~40px-tall heading line (200% font-size) is close enough to the
+   logo's own 40px that aligning both cells to their top edge lines the
+   two up directly. */
+#projectlogo {
+  vertical-align: top;
+  padding-top: 2px;
+}
+
+/* --------------------------------------------------------------------
+   Per-page outline / quick-nav side panel (GENERATE_TREEVIEW extra, no
+   corresponding Doxygen CSS variables): the resizable panel rendered as
+     #page-nav.page-nav-panel > #page-nav-tree > #page-nav-contents > ul.page-outline
+   with li items (some being section headers like "Public Member Functions")
+   each holding .item > .arrow > .arrowhead, then an <a>.
+   -------------------------------------------------------------------- */
+
+#page-nav.page-nav-panel {
+  background: var(--dx-bg) !important;
+  border-left: 1px solid var(--dx-border);
+}
+
+#page-nav-resize-handle {
+  background: var(--dx-border);
+}
+
+#page-nav-tree,
+#page-nav-contents {
+  background: transparent !important;
+}
+
+ul.page-outline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+ul.page-outline li {
+  background: transparent !important;
+}
+
+ul.page-outline li .item {
+  color: var(--dx-text-dim);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+ul.page-outline li .item a {
+  color: var(--dx-text-dim) !important;
+  text-decoration: none;
+}
+
+ul.page-outline li .item a:hover,
+ul.page-outline li .item:hover {
+  background: var(--dx-panel);
+}
+
+ul.page-outline li .item a:hover {
+  color: var(--dx-blue) !important;
+}
+
+/* Section headers, e.g. "Public Member Functions" / "Member Function
+   Documentation" — these li's have an id starting nav-header- */
+ul.page-outline li[id^="nav-header-"] > .item {
+  font-weight: 600;
+  color: var(--dx-text);
+}
+
+ul.page-outline li[id^="nav-header-"] > .item a {
+  color: var(--dx-text) !important;
+}
+
+/* Expand/collapse triangle icons, drawn via CSS border-triangle trick */
+ul.page-outline .arrowhead {
+  border-color: transparent transparent transparent var(--dx-text-muted) !important;
+}
+
+ul.page-outline .arrowhead.opened {
+  border-color: var(--dx-text-muted) transparent transparent transparent !important;
+}
+
+/* --------------------------------------------------------------------
+   Top bar -- echoes the site's own Navbar.jsx (border-[#202d3b],
+   backdrop-blur, white/translucent background) so the handoff from the
+   site's fixed nav into the docs' own top chrome reads as one continuous
+   header rather than a hard cut.
+   -------------------------------------------------------------------- */
+
+#top,
+#titlearea {
+  background: rgba(2, 2, 5, 0.9) !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--dx-border);
+}
+
+#projectname {
+  color: var(--dx-text);
+  font-family: "Michroma", "Jura", sans-serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+#projectbrief {
+  color: var(--dx-text-muted);
+}
+
+/* Page title bars, headings and body background */
+html,
+body {
+  background: var(--dx-bg);
+  color: var(--dx-text-dim);
+}
+
+h1,
+h2,
+h3,
+div.title,
+.contents h1,
+.contents h2,
+.contents h3 {
+  font-family: "Michroma", "Jura", sans-serif;
+  font-weight: 400;
+  color: var(--dx-text);
+}
+
+/* Top tabs (.tabs/.tabs2/.tabs3) -- the current-tab treatment reuses the
+   site's own .magic-text gradient-clip trick from src/index.css. */
+.tablist li.current a,
+.tablist a:hover {
+  color: var(--dx-violet);
+}
+
+/* --------------------------------------------------------------------
+   Smartmenus-rendered horizontal main menu (#main-menu / ul.sm-dox) --
+   smartmenus ships its own inline styles that only a !important cascade
+   can override.
+   -------------------------------------------------------------------- */
+
+#main-menu,
+.sm-dox {
+  background: var(--dx-panel) !important;
+  background-image: none !important;
+  border-bottom: 1px solid var(--dx-border);
+}
+
+.sm-dox a,
+.sm-dox a:visited {
+  background: transparent !important;
+  background-image: none !important;
+  color: var(--dx-text-dim) !important;
+  text-shadow: none !important;
+}
+
+.sm-dox a:hover,
+.sm-dox a:active,
+.sm-dox a:focus,
+.sm-dox a.highlighted {
+  background: var(--dx-panel-raised) !important;
+  background-image: none !important;
+  color: var(--dx-text) !important;
+}
+
+.sm-dox a span.sub-arrow {
+  border-color: var(--dx-text-dim) transparent transparent transparent !important;
+}
+
+.sm-dox ul,
+.sm-dox ul ul {
+  background: var(--dx-panel) !important;
+  background-image: none !important;
+  border: 1px solid var(--dx-border) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+}
+
+.sm-dox ul li,
+.sm-dox ul a,
+.sm-dox ul a:visited {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.sm-dox ul a {
+  color: var(--dx-text-dim) !important;
+  border-color: var(--dx-border) !important;
+}
+
+.sm-dox ul a:hover,
+.sm-dox ul a.highlighted {
+  background: var(--dx-panel-raised) !important;
+  color: var(--dx-text) !important;
+}
+
+/* --------------------------------------------------------------------
+   Directory / file listing tables -- mostly covered by the index-* and
+   icon-* variables above; row hover isn't variable-driven.
+   -------------------------------------------------------------------- */
+
+.directory tr:hover {
+  background: var(--dx-panel);
+}
+
+/* Search box and its dropdown */
+#MSearchBox,
+#MSearchBox .left,
+#MSearchBox .right,
+#MSearchField {
+  background: var(--dx-bg) !important;
+  color: var(--dx-text) !important;
+}
+
+#MSearchBox {
+  border: 1px solid var(--dx-border);
+  border-radius: 8px;
+}
+
+#MSearchSelectWindow,
+#MSearchResultsWindow,
+iframe#MSearchResults {
+  background: var(--dx-panel) !important;
+  border: 1px solid var(--dx-border) !important;
+}
+
+#MSearchSelectWindow a,
+.SelectItem {
+  color: var(--dx-text-dim) !important;
+}
+
+/* The navigation tree, footer and any left-over light surfaces */
+#nav-tree,
+#side-nav,
+#nav-tree-contents,
+div.header,
+div.contents,
+#doc-content,
+.footer,
+address.footer {
+  background: var(--dx-bg) !important;
+}
+
+#nav-tree .label a,
+#nav-tree a {
+  color: var(--dx-text-dim);
+}
+
+#nav-tree .selected {
+  background-image: none;
+  background: var(--dx-panel-raised);
+  text-shadow: none;
+}
+
+#nav-tree .selected a {
+  color: var(--dx-text);
+}
+
+/* Doxygen draws diagrams and the logo on transparent backgrounds */
+img.formulaInl,
+img.formulaDsp {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Graphviz diagrams (inheritance, collaboration, call graphs) are drawn on
+   white; invert them to sit on the dark page. */
+div.center img,
+div.dyncontent img,
+div.image img,
+.dynheader + .dyncontent img {
+  filter: invert(0.9) hue-rotate(180deg);
+}
