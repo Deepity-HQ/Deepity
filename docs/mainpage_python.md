@@ -1,12 +1,12 @@
 @mainpage pydeepity
 
-Python bindings for [Deepity](../../html/index.html), a Predictive Coding (PC)
+Python bindings for [Deepity](../index.html), a Predictive Coding (PC)
 neural network library. This page documents the `deepity` package (the
 pure-Python layer users actually import — distributed on PyPI as
 `pydeepity`), which wraps the compiled `deepity` extension module built from
 Deepity's C++ engine.
 
-For the underlying C++ API, see the [main Deepity documentation](../../html/index.html).
+For the underlying C++ API, see the [main Deepity documentation](../index.html).
 For install/build instructions, see the
 [GitHub README](https://github.com/ra4ster/deepity#readme).
 
@@ -69,5 +69,5 @@ activation functions (`relu`/`drelu`/`tanh`/`dtanh`/`sigmoid`/`dsigmoid`).
 
 @section py_elsewhere Elsewhere
 
-- [Deepity C++ API reference](../../html/index.html)
+- [Deepity C++ API reference](../index.html)
 - [GitHub README](https://github.com/ra4ster/deepity#readme)

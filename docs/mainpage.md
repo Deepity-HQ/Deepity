@@ -62,7 +62,7 @@ Deep::DiscriminativePCNetwork net(4);
 @subsection quickstart_py Python
 
 The same engine is available from Python via the compiled `deepity`
-extension module. See the [pydeepity API reference](../../python/html/index.html)
+extension module. See the [pydeepity API reference](python/index.html)
 for the Python-facing class docs. Runnable examples live in `examples/`,
 including `examples/xor.py` (minimal training loop) and
 `examples/train_mnist_deep.py` (end-to-end MNIST training).
@@ -135,7 +135,7 @@ the exact commands and FLOP accounting.
 
 @section elsewhere Elsewhere
 
-- [pydeepity API reference](../../python/html/index.html) — the Python
+- [pydeepity API reference](python/index.html) — the Python
   package's own class docs
 - [GitHub README](https://github.com/ra4ster/deepity#readme) — install,
   build (`build.py`), and benchmark details
