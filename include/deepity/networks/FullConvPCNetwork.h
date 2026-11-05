@@ -133,11 +133,9 @@ public:
   /// @return false if `filepath` couldn't be opened for reading.
   bool Load(const std::string& filepath) noexcept;
 
-  /// @brief Runs one training step. @p computeEnergy=false skips the
-  /// per-layer energy readout (a cublasSdot + cudaStreamSynchronize EACH,
-  /// on GPU -- a real cost even though the computation itself is cheap)
-  /// and returns the last value that WAS computed instead, for callers
-  /// that only log/check energy every few steps.
+  /// @brief Runs one training step.
+  /// @param computeEnergy If false, skips the per-layer energy readout
+  /// and returns the last value that was computed instead.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y, int inferenceSteps = 1,
                   bool computeEnergy = true);
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);

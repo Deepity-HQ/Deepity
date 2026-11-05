@@ -10,37 +10,24 @@
 /**
  * @file GaussSeidelPCNetworkT.h
  * @brief Templated counterpart to GaussSeidelPCNetwork, over the same
- * `T`/`AccumT` pair as GaussSeidelPCLayerT -- see FullPCNetworkT's own
- * doc comment for the full rationale. Produced by mechanically
- * retyping GaussSeidelPCNetwork's own `float` members/parameters to
- * `T`/`AccumT`. Orchestrates GaussSeidelPCLayerT's three-phase
- * settling step in the same fixed order as GaussSeidelPCNetwork's own
- * class comment requires:
+ * `T`/`AccumT` pair as GaussSeidelPCLayerT. Orchestrates
+ * GaussSeidelPCLayerT's three-phase settling step, in order:
  *
- *   1. UpdateState() on EVERY layer       (uses PREVIOUS timestep's mu/e)
- *   2. ComputePrediction() on EVERY layer (uses THIS timestep's fresh z)
- *   3. ComputeError() on EVERY layer      (uses THIS timestep's fresh
+ *   1. UpdateState() on every layer       (uses previous timestep's mu/e)
+ *   2. ComputePrediction() on every layer (uses this timestep's fresh z)
+ *   3. ComputeError() on every layer      (uses this timestep's fresh
  *                                          z and layerBelow's fresh mu)
  *
- * CUDA graph capture (BeginGraphCapture/ReplayGraph and the
- * graphCaptured-style flags GaussSeidelPCNetwork carries) is dropped
- * entirely, same reasoning as FullPCNetworkT/SimplePCNetworkT:
- * device==DEVICE_GPU already throws inside CreateBackendT() at
- * construction (no CUDABackendT yet), so there's no graph path to
- * reach here, and no runtime toggle that could leave a stale captured
- * graph behind in the first place -- switching precision means
- * constructing a brand-new GaussSeidelPCNetworkT<OtherT>.
+ * Has no CUDA graph capture path.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to GaussSeidelPCNetwork, see this
-/// file's own comment for the full rationale.
+/// @brief Templated counterpart to GaussSeidelPCNetwork.
 template <typename T, typename AccumT = T> class GaussSeidelPCNetworkT
 {
 public:
-  /// @brief This network's storage element type, see
-  /// FullPCNetworkT::ElementType's own doc comment.
+  /// @brief This network's storage element type.
   using ElementType = T;
 
   /// @brief Constructs an empty network; add layers via AddLayer(),
@@ -95,9 +82,8 @@ public:
     layers.front()->ClampState(input);
   }
 
-  /// @brief Runs ONE full Gauss-Seidel settling step (all three
-  /// sweeps, in order) across every layer. See this file's own class
-  /// comment for the required order.
+  /// @brief Runs one full Gauss-Seidel settling step (all three
+  /// sweeps, in order) across every layer.
   /// @return Total energy, summed from every layer's
   /// ComputeError(), or AccumT(0) if needEnergy is false.
   AccumT Step(bool needEnergy = true) noexcept
@@ -122,8 +108,7 @@ public:
   }
 
   /// @brief Seeds every hidden layer's z from a genuine forward pass
-  /// through current weights. See GaussSeidelPCNetwork::ProjectForward()'s
-  /// own doc comment.
+  /// through current weights, instead of zero-init.
   void ProjectForward() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -169,9 +154,7 @@ public:
   }
 
   /// @brief Full train step: reset, clamp input+target, settle for
-  /// inferenceSteps, update weights once, unclamp. See
-  /// GaussSeidelPCNetwork::TrainStep()'s own doc comment; no
-  /// CUDA-graph path here, see this file's own class comment.
+  /// inferenceSteps, update weights once, unclamp.
   AccumT TrainStep(const std::vector<T>& x, const std::vector<T>& y, int inferenceSteps)
   {
     ResetState();
@@ -182,12 +165,8 @@ public:
       Step(false);
     UpdateWeights();
 
-    // Fresh, uncaptured energy readout: sweeps 2+3 only (recompute
-    // predictions/errors from the CURRENT z), deliberately without
-    // sweep 1's UpdateState() -- calling the full Step() again here
-    // would apply an extra, unintended settling step beyond
-    // inferenceSteps, same reasoning as GaussSeidelPCNetwork's own
-    // identical comment.
+    // Energy readout: sweeps 2+3 only, from the current z, without an
+    // extra sweep-1 UpdateState() beyond inferenceSteps.
     AccumT finalEnergy(0);
     for (auto& l : layers)
       l->ComputePrediction();

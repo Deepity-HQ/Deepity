@@ -8,26 +8,13 @@
 /**
  * @file DeviceMemoryArena.h
  * @brief A 64-byte-aligned bump-pointer allocator over a single device
- * buffer, mirroring this codebase's host-side MemoryArena, but backed by
- * IComputeBackend::Allocate()/Free() rather than raw cudaMalloc/cudaFree
- * directly, the same allocation path Tensor already uses and
- * CUDAFunctionsVerify already exercises, rather than a second, separate,
- * unverified call site.
- *
- * Deliberately NOT routed through IComputeBackend on the CPU side
- * (MemoryArena stays exactly as it is): CPUBackend::Allocate() has no
- * huge-pages parameter, so wiring MemoryArena through it would mean
- * either silently losing that real, measured feature, or bolting a
- * CPU-only concept onto IComputeBackend's interface for no benefit,
- * since nothing ever needs to swap MemoryArena's allocator
- * polymorphically at runtime. The GPU side has no such feature to lose,
- * and the virtual call only happens once per arena (construction and
- * destruction), not per AllocateFloats() call, a clean win with no
- * real cost.
+ * buffer, mirroring this codebase's host-side MemoryArena, but backed
+ * by IComputeBackend::Allocate()/Free() rather than raw
+ * cudaMalloc/cudaFree directly.
  *
  * @warning Individual chunks handed out by AllocateFloats() cannot be
- * freed independently, the entire arena is released at once in the
- * destructor, matching MemoryArena's bump-pointer/no-reclaim design.
+ * freed independently; the entire arena is released at once in the
+ * destructor.
  * @version 1.1
  * @date 2026-09-05
  */
@@ -42,11 +29,9 @@ namespace Deep
 ///
 /// @tparam T Element type this arena allocates, matching the backend's
 /// own T. `DeviceMemoryArena` (see the alias below) is
-/// `DeviceMemoryArenaT<float, float>`, bit-for-bit identical to this
-/// class before it was templated.
-/// @tparam AccumT Matches the backend's own AccumT (only used here to
-/// name the exact IComputeBackendT<T, AccumT> this arena's backend
-/// pointer must be); defaults to T, as in IComputeBackendT itself.
+/// `DeviceMemoryArenaT<float, float>`.
+/// @tparam AccumT Matches the backend's own AccumT; defaults to T, as
+/// in IComputeBackendT itself.
 template <typename T, typename AccumT = T>
 class DeviceMemoryArenaT
 {
@@ -69,11 +54,7 @@ public:
   /// enough to hold `total_elements` elements of T, rounded up to the
   /// nearest 64-byte boundary.
   /// @param backend The backend to allocate from (and later free
-  /// through). Must outlive this DeviceMemoryArenaT. Passing a
-  /// CPUBackend here would allocate host memory under a class
-  /// named "device", that's a caller contract, not something
-  /// this class checks at runtime, mirroring Tensor's own
-  /// backend/device pairing contract.
+  /// through). Must outlive this DeviceMemoryArenaT.
   /// @param total_elements Total number of elements this arena can
   /// hand out across all future Allocate() calls combined.
   /// @throws std::bad_alloc if the underlying allocation fails.
@@ -135,10 +116,7 @@ public:
     return chunk;
   }
 
-  /// @brief Back-compat alias for Allocate(), kept for every existing
-  /// (non-templated) caller written against the old AllocateFloats()
-  /// name. Only meaningful when T=float; new templated code should
-  /// call Allocate() directly.
+  /// @brief Alias for Allocate(). Only meaningful when T=float.
   T* AllocateFloats(size_t num_elements)
   {
     return Allocate(num_elements);
@@ -157,9 +135,8 @@ public:
   }
 };
 
-/// @brief Non-templated alias preserving every existing caller's
-/// behavior exactly: `DeviceMemoryArena` is `DeviceMemoryArenaT<float,
-/// float>`, bit-for-bit identical to this class before it was templated.
+/// @brief Non-templated alias: `DeviceMemoryArena` is
+/// `DeviceMemoryArenaT<float, float>`.
 using DeviceMemoryArena = DeviceMemoryArenaT<float, float>;
 } // namespace Deep
 #endif

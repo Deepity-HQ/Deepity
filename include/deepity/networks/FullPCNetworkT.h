@@ -17,27 +17,17 @@
 /**
  * @file FullPCNetworkT.h
  * @brief Templated counterpart to FullPCNetwork, over the same `T`
- * (storage) / `AccumT` (optimizer accumulator) pair as FullPCLayerT --
- * see that class's own doc comment. Produced by mechanically retyping
- * FullPCNetwork's own `float` members/parameters to `T`/`AccumT`, NOT a
- * reimplementation: every method here must stay line-for-line
- * equivalent to FullPCNetwork's own method bodies, so that
- * FullPCNetworkT<float, float> reproduces FullPCNetwork bit-exactly.
+ * (storage) / `AccumT` (optimizer accumulator) pair as FullPCLayerT.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to FullPCNetwork, see this file's own
-/// comment for the full rationale.
+/// @brief Templated counterpart to FullPCNetwork.
 template <typename T, typename AccumT = T>
 class FullPCNetworkT
 {
 public:
-  /// @brief This network's storage element type, for ModelIO's dtype
-  /// derivation/checking (see DTypeTag<T>). ModelIO itself actually
-  /// reads the type off each tensor's own GetStateDict() pointer
-  /// rather than this typedef, but it documents the network's own
-  /// element type at the type level, for anyone reading this class.
+  /// @brief This network's storage element type.
   using ElementType = T;
 
   /// @brief Constructs an empty network; add layers via AddLayer(),
@@ -72,15 +62,17 @@ public:
     layers.push_back(std::move(l));
   }
 
-  /// @brief Enables muPC's full Table 1 parameterization, see
-  /// FullPCNetwork::SetUseMuPCScaling()'s own doc comment.
+  /// @brief Enables each layer's forward-scaling factor `a` and
+  /// unit-variance weight init. Must be called before Compile() and
+  /// RandomizeWeights().
   void SetUseMuPCScaling(bool enabled) noexcept
   {
     useMuPCScaling = enabled;
   }
 
-  /// @brief Enables residual/skip connections, see
-  /// FullPCNetwork::SetUseResidualConnections()'s own doc comment.
+  /// @brief Enables residual/skip connections on middle hidden layers.
+  /// Requires every middle hidden layer to have the same width as its
+  /// neighbor; Compile() throws std::invalid_argument otherwise.
   void SetUseResidualConnections(bool enabled) noexcept
   {
     useResidualConnections = enabled;
@@ -107,7 +99,8 @@ public:
   }
 
   /// @brief Seeds hidden layers from a genuine forward pass through
-  /// current weights, see FullPCNetwork::ProjectForward()'s own doc comment.
+  /// current weights, instead of zero-init. Call after Clamp(), before
+  /// the settling loop.
   void ProjectForward() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -125,11 +118,9 @@ public:
     }
   }
 
-  /// @brief Runs the DFA phase on every non-terminal layer. Called
-  /// after the settle loop (see TrainStep()) so its injection uses the
-  /// converged terminal error, not the pre-settling one -- same
-  /// preact-staleness refresh as UpdateWeights()'s own, for the same
-  /// reason, now that this runs post-settle too.
+  /// @brief Runs the DFA phase on every non-terminal layer. Call after
+  /// the settle loop, so its injection uses the converged terminal
+  /// error.
   void DirectFeedbackUpdate() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -156,7 +147,9 @@ public:
     return needEnergy ? e : AccumT(0);
   }
 
-  /// @brief ePC's settling step, see FullPCNetwork::EPCStep()'s own doc comment.
+  /// @brief ePC's settling step: a full forward sweep followed by a
+  /// full backward sweep chaining the terminal's error down through
+  /// every hidden layer.
   void EPCStep() noexcept
   {
     layers[0]->ComputeMuOnly();
@@ -181,13 +174,7 @@ public:
   /// @brief Applies weight updates to every layer.
   void UpdateWeights() noexcept
   {
-    // preact is only refreshed by ComputeMuOnly(), which Step()/EPCStep()
-    // call against last iteration's z, before this same iteration's
-    // UpdateState() advances z -- so without this refresh, the weight
-    // gradient's derivative term (read from preact) would be one
-    // settling step stale relative to the activity (z) it multiplies
-    // against. Same bug, same fix as FullPCNetwork::UpdateWeights()
-    // (the non-templated sibling) and DirectKPPCNetwork::UpdateWeights().
+    // Refreshes preact against the current z before computing gradients.
     for (size_t i = 0; i + 1 < layers.size(); ++i)
       layers[i]->ComputeMuOnly();
     for (size_t i = 0; i + 1 < layers.size(); i++)
@@ -237,10 +224,11 @@ public:
   }
 
   /// @brief Full train step: reset, clamp input+target, run all four
-  /// DKP-PC phases in order, unclamp. See FullPCNetwork::TrainStep()'s
-  /// own doc comment, including its CUDA graph capture/replay --
-  /// mirrored here exactly now that CreateBackendT() can actually
-  /// return a real CUDABackendT (issue #55), not just throw.
+  /// DKP-PC phases in order, unclamp.
+  /// @param x Flattened input batch, clamped to the input layer.
+  /// @param y Flattened target batch, clamped to the terminal layer.
+  /// @param inferenceSteps Number of settling steps for phase 2.
+  /// @return The final settling step's total energy, before weight updates.
   AccumT TrainStep(const std::vector<T>& x, const std::vector<T>& y, int inferenceSteps = 1)
   {
     ResetState();
@@ -280,11 +268,8 @@ public:
           graphCaptured = true;
           capturedInferenceSteps = inferenceSteps;
 
-          // settleStep()'s own InvalidateMuCache() calls above only run
-          // under useIPC; without it, nothing clears a clamped layer's
-          // mu-cache after this recording pass, so the fresh CalculateState()
-          // read below would wrongly reuse mu from before this call's own
-          // weight update (see FullPCNetwork::TrainStep()'s identical fix).
+          // Clears every layer's mu-cache after this recording pass, so
+          // the fresh CalculateState() read below doesn't reuse stale mu.
           for (auto& l : layers)
             l->InvalidateMuCache();
         }
@@ -296,9 +281,7 @@ public:
       if (graphCaptured)
       {
         backend->ReplayGraph();
-        // cudaGraphLaunch() only enqueues the replay; see
-        // FullPCNetwork::TrainStep()'s identical comment for why this
-        // matters even though same-stream ordering should already cover it.
+        // cudaGraphLaunch() only enqueues the replay.
         backend->Synchronize();
       }
       else
@@ -333,8 +316,6 @@ public:
 
   /// @brief Forward prediction: clamp input, settle with no DFA
   /// perturbation and no target clamped, read the terminal's beliefs.
-  /// See FullPCNetwork::Predict()'s own doc comment, including its own
-  /// separate graph slot (kPredictGraphSlot) -- mirrored here exactly.
   std::vector<T> Predict(const std::vector<T>& x, int inferenceSteps)
   {
     ResetState();
@@ -345,9 +326,6 @@ public:
       if (useEPC)
         EPCStep();
       else
-        // false: needEnergy's ComputeErrorAndEnergy() does a synchronous
-        // cudaStreamSynchronize() on CUDA, illegal during graph capture
-        // -- see TrainStep()'s own settleStep for the same fix.
         Step(false);
     };
 
@@ -385,14 +363,10 @@ public:
                        "for this call.\n";
       }
 
-      // Not an else of the block above: on the call that just captured,
-      // this replays it immediately so THIS call's output is real, not
-      // stale -- see TrainStep()'s identical two-separate-checks pattern.
       if (predictGraphCaptured)
       {
         backend->ReplayGraph(kPredictGraphSlot);
-        // cudaGraphLaunch() only enqueues the replay -- the CopyToHost()
-        // below needs it to have actually finished.
+        // cudaGraphLaunch() only enqueues the replay.
         backend->Synchronize();
       }
       else
@@ -411,8 +385,12 @@ public:
     return result;
   }
 
-  /// @brief Loads all layers into one contiguous block of memory,
-  /// see FullPCNetwork::Compile()'s own doc comment.
+  /// @brief Loads all layers into one contiguous block of memory and
+  /// wires layerAbove/layerBelow/terminalLayer across every layer. If
+  /// useMuPCScaling, computes and applies each layer's `a` and enables
+  /// unit-variance init. If useResidualConnections, applies
+  /// SetResidual(true) to every middle hidden layer after checking
+  /// width match (throws std::invalid_argument on mismatch).
   void Compile()
   {
     if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())
@@ -543,10 +521,7 @@ public:
 
 private:
   /// @brief Forces TrainStep()/Predict() to recapture their CUDA graphs
-  /// on their next call. See FullPCNetwork::InvalidateCapturedGraphs()'s
-  /// own doc comment -- a no-op on CPU, since graphCaptured/
-  /// predictGraphCaptured are only ever read inside the DEVICE_GPU
-  /// branches above.
+  /// on their next call. No-op on CPU.
   void InvalidateCapturedGraphs() noexcept
   {
     graphCaptured = false;
@@ -573,8 +548,8 @@ private:
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 
-  // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
-  // above -- see FullPCNetwork::kPredictGraphSlot's own doc comment.
+  // Predict()'s own graph, kept in a separate slot from TrainStep()'s
+  // above since they capture different operations.
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
   static constexpr size_t kPredictGraphSlot = 1;

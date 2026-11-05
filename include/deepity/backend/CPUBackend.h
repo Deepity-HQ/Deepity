@@ -12,13 +12,8 @@ class CPUBackend : public IComputeBackend
 {
 public:
   CPUBackend();
-  // Defined in CPUBackend.cpp, not defaulted here: m_oneDnnCache's
-  // unique_ptr<OneDnnMatMulCache> needs that type complete to destroy
-  // it, and OneDnnMatMulCache is only defined in the .cpp (see its
-  // forward declaration below).
   ~CPUBackend() override;
 
-  // @remark these are no-ops for backend purposes
   /// @copydoc Deep::IComputeBackend::BeginGraphCapture
   void BeginGraphCapture(size_t slot = 0) noexcept override
   {
@@ -29,7 +24,7 @@ public:
   {
     (void)slot;
     return true;
-  } // nothing to fail on CPU
+  }
   /// @copydoc Deep::IComputeBackend::ReplayGraph
   void ReplayGraph(size_t slot = 0) noexcept override
   {
@@ -57,21 +52,13 @@ public:
   void RandomizeUniform(float* buf, size_t n, float min, float max,
                         uint32_t seed) noexcept override;
 
-  /// @brief Must be called once, before Compile()'s first
-  /// BeginGraphCapture(), for any backend that needs to prepare
-  /// batch-size-dependent state (e.g. CUDABackend's cached all-ones
-  /// vector for SumRows' GEMV). No-op on CPUBackend.
+  /// @copydoc Deep::IComputeBackend::PrepareForBatchSize
   void PrepareForBatchSize(size_t batchSize) noexcept override {}
 
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
   /// @copydoc Deep::IComputeBackendT::MatMulAccum
-  /// CPUBackend's T and AccumT are always float, so this is MatMul()
-  /// itself -- added only because IComputeBackend (an alias for
-  /// IComputeBackendT<float, float>) now declares it for the templated
-  /// FullPCLayerT<T, AccumT> path's sake; no non-templated layer calls
-  /// this overload.
   void MatMulAccum(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                    int lda, const float* B, int ldb, float beta, float* C,
                    int ldc) noexcept override
@@ -79,7 +66,6 @@ public:
     MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
   }
   /// @copydoc Deep::IComputeBackendT::MatMulAccumMixed
-  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
   void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, float alpha,
                         const float* A, int lda, const float* B, int ldb, float beta, float* C,
                         int ldc) noexcept override
@@ -91,7 +77,6 @@ public:
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackendT::SumRowsAccum
-  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
   void SumRowsAccum(float* dst, const float* src, size_t batchSize, size_t width) noexcept override
   {
     SumRows(dst, src, batchSize, width);
@@ -104,7 +89,6 @@ public:
   /// @copydoc Deep::IComputeBackend::AxpyInto
   void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
   /// @copydoc Deep::IComputeBackendT::AxpyIntoAccum
-  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
   void AxpyIntoAccum(float* y, const float* x, size_t n, float alpha) noexcept override
   {
     AxpyInto(y, x, n, alpha);
@@ -135,9 +119,7 @@ public:
                            const float* bias, float* mu, int batchSize, int size,
                            int nextSize) noexcept override
   {
-    return false; // no fused path on CPU, caller always falls back
-                  // to the existing, separate MatMul+AddBiasBroadcast+
-                  // ActivationInto sequence
+    return false;
   }
 
   /// @copydoc Deep::IComputeBackend::Activation
@@ -152,7 +134,6 @@ public:
   void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                 size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackendT::ActivationDerivativeIntoAccum
-  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
   void ActivationDerivativeIntoAccum(ActivationType type, float* dst, const float* src,
                                      size_t n) noexcept override
   {
@@ -186,10 +167,7 @@ public:
   void ComputeSoftmaxCrossEntropyError(float* e, const float* z, const float* mu, size_t batchSize,
                                        size_t nextSize) noexcept override;
 
-  // Convolution (im2col-based, ConvPCLayer family): loops over
-  // Deep::Im2Col/Deep::Col2Im (Im2Col.h), which only know how to do one
-  // image at a time -- this is just the batch loop IComputeBackend's
-  // doc comment mentions, moved here from every call site.
+  // Convolution (im2col-based, ConvPCLayer family)
   /// @copydoc Deep::IComputeBackend::Im2Col
   void Im2Col(const float* input, int batchSize, int channels, int height, int width, int kernelH,
               int kernelW, int strideH, int strideW, int padH, int padW,
@@ -214,25 +192,23 @@ public:
   bool TryFusedConvForward(const float*, const float*, float*, float, int, int, int, int, int, int,
                            int, int, int, int, int) noexcept override
   {
-    return false; // no fused path on CPU, caller always falls back to
-                  // Im2Col()+RepackForBatchedGemm()+MatMul()
+    return false;
   }
   /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardData
   bool TryFusedConvBackwardData(const float*, const float*, float*, float, int, int, int, int, int,
                                 int, int, int, int, int, int) noexcept override
   {
-    return false; // ditto, falls back to MatMul()+RepackForBatchedGemm()+Col2Im()
+    return false;
   }
   /// @copydoc Deep::IComputeBackend::TryFusedConvBackwardFilter
   bool TryFusedConvBackwardFilter(const float*, const float*, float*, float, float, int, int, int,
                                   int, int, int, int, int, int, int, int) noexcept override
   {
-    return false; // ditto, falls back to RepackForBatchedGemm()+MatMul()
+    return false;
   }
   /// @copydoc Deep::IComputeBackend::PrepareConvWorkspace
   void PrepareConvWorkspace(int, int, int, int, int, int, int, int, int, int, int) noexcept override
   {
-    // no workspace to grow on CPU
   }
 
   /// @copydoc Deep::IComputeBackend::IncrementCounter
@@ -256,7 +232,6 @@ public:
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackendT::MultiplyIntoAccum
-  /// Same "T==AccumT==float always" reasoning as MatMulAccum() above.
   void MultiplyIntoAccum(float* dst, const float* a, const float* b, size_t n) noexcept override
   {
     MultiplyInto(dst, a, b, n);
@@ -295,14 +270,8 @@ public:
 
 private:
 #ifdef DEEPITY_USE_ONEDNN
-  // Opaque: TryFusedMatMulBias() and TryFusedMatMul() cache oneDNN
-  // engine/primitive objects here, keyed by shape, since building a
-  // matmul primitive JIT-compiles
-  // a kernel (expensive) while executing one is cheap -- every layer
-  // calls this with the same fixed shape on every settling step, every
-  // training iteration, so the cache amortizes that cost to once per
-  // distinct (M,N,K) a network actually uses. Defined in CPUBackend.cpp
-  // so this header doesn't need oneDNN's own headers in its include path.
+  // Cache of oneDNN matmul primitives, keyed by shape; defined in
+  // CPUBackend.cpp.
   struct OneDnnMatMulCache;
   std::unique_ptr<OneDnnMatMulCache> m_oneDnnCache;
 #endif

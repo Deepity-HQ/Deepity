@@ -6,11 +6,8 @@
  *
  * This is an umbrella header: the actual implementations live in
  * deepity/utils/activations/ (ActivationDispatch.h for the ActivationType
- * dispatch tables, then one header per activation family, Relu.h, Gelu.h,
- * Tanh.h, Sigmoid.h, Linear.h, plus the currently-unused VectorMath.h).
- * Split out so each activation's SIMD implementation is easier to find and
- * review in isolation; existing `#include <deepity/utils/Activations.h>`
- * call sites are unaffected.
+ * dispatch tables, then one header per activation family: Relu.h, Gelu.h,
+ * Tanh.h, Sigmoid.h, Linear.h, HardTanh.h, VectorMath.h).
  *
  * @code{.cpp}
  * #include <deepity/utils/Activations.h>
@@ -37,12 +34,10 @@
 
 namespace Deep
 {
-/// @brief Single-element forward activation, for hot loops (e.g. a
-/// fused error+activation pass) that need f(z) inline, one element at
-/// a time, rather than through a whole-buffer ActivationFn/
-/// ActivationInto call. Mirrors each family's own vectorized forward
-/// formula exactly, not a separate approximation -- see
-/// ActivationDerivativeScalar's matching comment.
+/// @brief Single-element forward activation, for hot loops that need
+/// f(z) inline, one element at a time, rather than through a
+/// whole-buffer ActivationFn/ActivationInto call. Mirrors each
+/// family's own vectorized forward formula exactly.
 /// @param type A forward-flavored ActivationType (e.g. TANH, not
 /// dTANH). Anything else (including NONE) falls back to the identity.
 /// @param z The pre-activation value.
@@ -74,11 +69,10 @@ static inline float ActivationScalar(ActivationType type, float z) noexcept
   }
 }
 
-/// @brief Single-element activation derivative, for hot loops (e.g. a
-/// fused settling-state update) that need f'(z) inline, one element at
-/// a time, rather than through a whole-buffer DerivativeFn/DerivativeFn2
-/// call. Mirrors the scalar tail of each family's own vectorized
-/// derivative exactly, not a separate approximation.
+/// @brief Single-element activation derivative, for hot loops that
+/// need f'(z) inline, one element at a time, rather than through a
+/// whole-buffer DerivativeFn/DerivativeFn2 call. Mirrors the scalar
+/// tail of each family's own vectorized derivative exactly.
 /// @param dType A derivative-flavored ActivationType (e.g. dTANH, not
 /// TANH). Anything else (including NONE) falls back to 1.0.
 /// @param z The pre-activation value.
@@ -120,22 +114,14 @@ static inline float ActivationDerivativeScalar(ActivationType dType, float z) no
   }
 }
 
-/// @brief Single-element activation derivative computed FROM AN
-/// ALREADY-ACTIVATED value (e.g. sig*(1-sig) given sig, not given the
+/// @brief Single-element activation derivative computed from an
+/// already-activated value (e.g. sig*(1-sig) given sig, not given the
 /// pre-activation z), the closed-form shortcut every family except
 /// GELU supports. Mirrors each family's own dXxx(buf, n,
 /// activated=true) in-place formula.
-/// @warning GELU has no such closed form (its derivative can't be
-/// recovered from gelu(z) alone), dGelu's own contract ignores
-/// `activated` and always re-derives from a true pre-activation
-/// input. To keep this dispatcher a drop-in for existing
-/// activated=true call sites (which already silently produce a wrong
-/// answer for GELU today), the dGELU case here reproduces that same
-/// existing behavior, treating `activated` as if it were raw z,
-/// rather than silently changing it. Any layer wanting a correct
-/// GELU derivative here needs to be restructured to keep the
-/// pre-activation value around separately; that's a real, separate
-/// piece of work, not something this dispatcher can paper over.
+/// @warning GELU has no such closed form; its derivative can't be
+/// recovered from gelu(z) alone. The dGELU case treats `activated` as
+/// if it were the raw pre-activation z instead.
 /// @param dType A derivative-flavored ActivationType. Anything else
 /// (including NONE) falls back to 1.0.
 /// @param activated The already-activated value (or, for dGELU only,
@@ -164,13 +150,10 @@ static inline float ActivationDerivativeFromActivatedScalar(ActivationType dType
   }
 }
 
-/// @brief Generic (non-SIMD) counterpart to ActivationScalar(), over any
-/// floating-point T -- std::tanh/std::exp instead of Sleef's float-only
-/// intrinsics, so this is genuinely correct (not truncated through
-/// float) for T=double. Used only by CPUBackendT<T, AccumT>'s non-float
-/// elementwise fallback path (see CPUBackendT.h); the original
-/// float-only ActivationScalar() above is untouched and still what
-/// CPUBackend's existing Highway-dispatched paths use for T=float.
+/// @brief Generic (non-SIMD) counterpart to ActivationScalar(), over
+/// any floating-point T, using std::tanh/std::exp instead of Sleef's
+/// float-only intrinsics, so this is correct for T=double. Used by
+/// CPUBackendT<T, AccumT>'s non-float elementwise fallback path.
 template <typename T>
 static inline T ActivationScalarT(ActivationType type, T z) noexcept
 {
@@ -201,9 +184,7 @@ static inline T ActivationScalarT(ActivationType type, T z) noexcept
   }
 }
 
-/// @brief Generic (non-SIMD) counterpart to ActivationDerivativeScalar(),
-/// see ActivationScalarT()'s own doc comment for why this exists
-/// alongside (not instead of) the original float-only version.
+/// @brief Generic (non-SIMD) counterpart to ActivationDerivativeScalar().
 template <typename T>
 static inline T ActivationDerivativeScalarT(ActivationType dType, T z) noexcept
 {

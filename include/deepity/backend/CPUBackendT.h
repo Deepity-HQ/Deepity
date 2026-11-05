@@ -8,42 +8,24 @@ namespace Deep
 {
 
 /// @brief Templated CPU implementation of IComputeBackendT<T, AccumT>,
-/// used by every templated layer/network in the "Templating Deepity's
-/// layers/networks over a numeric type" plan: FullPCLayerT,
-/// SimplePCLayerT, GaussSeidelPCLayerT, DirectKPPCLayerT, and the conv
-/// family (SimpleConvPCLayerT/ConvPCLayerT/FullConvPCLayerT). Not used
-/// by, and not a replacement for, the existing non-templated
-/// CPUBackend -- DiscriminativePCLayer (not part of this plan) and the
-/// non-templated originals of every layer above keep using CPUBackend
-/// exactly as before.
+/// used by templated layers/networks (FullPCLayerT, SimplePCLayerT,
+/// GaussSeidelPCLayerT, DirectKPPCLayerT, and the conv family).
+/// Separate from, and not a drop-in replacement for, the non-templated
+/// CPUBackend, which DiscriminativePCLayer and non-templated layers
+/// still use.
 ///
-/// Implements every IComputeBackendT method an actual templated layer
-/// calls, with real per-T behavior: for T=float, every one of those
-/// reuses the EXACT SAME dispatch this project's existing CPUBackend
-/// uses (cblas_sgemm, the Highway-dispatched kernels in
-/// CPUBackendHighway.*, or -- for the conv-only data-movement/broadcast
-/// primitives below, which have no existing BLAS/Highway-dispatched
-/// equivalent to call into -- a scalar loop whose per-element op order
-/// matches the original's own scalar/AVX-intrinsic version exactly), so
-/// e.g. FullPCLayer<float>'s and SimpleConvPCLayer<float>'s output is
-/// bit-exact against their pre-templating originals -- see this
-/// project's quantization plan's verification gate #1. For any other T
-/// (double, and the quantized formats), those same methods fall back to
-/// a plain, correct, non-Highway-vectorized scalar loop; genuinely
-/// vectorizing them (via Highway's own T-generic `hn::ScalableTag<T>`
-/// kernels) is flagged as a deliberate, documented follow-up, not
-/// attempted in this pass.
+/// For T=float, GEMM/activation/elementwise methods dispatch through
+/// the same BLAS/Highway kernels as CPUBackend. For other T (double,
+/// quantized formats), the same methods fall back to a plain scalar
+/// loop.
 ///
-/// The "Try*" oneDNN/libxsmm/Halide/cuDNN-flavored fused paths are
-/// unreachable from every templated layer above (none of them call
-/// any Try* method; see SimplePCLayerT.h's own class comment on why,
-/// and note the non-templated CPUBackend's own TryFusedConv*() always
-/// return false too -- there never was a CPU-side fused conv path to
-/// match in the first place). They return false, their own
-/// interface's well-defined "no fused path here" contract.
-/// FusedActivationDerivativeMultiply[FromPreact] remain throw-stubs:
-/// no current layer, templated or not, calls either method anymore
-/// (see their own stub message).
+/// Every "Try*" fused-path method (TryFusedMatMul, TryFusedConv*, ...)
+/// always returns false: no fused CPU implementation is available
+/// through this backend, so callers must use the corresponding
+/// unfused sequence. FusedStateUpdate(), FusedStateUpdateMomentum(),
+/// FusedActivationDerivativeMultiply(), and
+/// FusedActivationDerivativeMultiplyFromPreact() are not implemented
+/// and throw if called; see each method's own exception message.
 template <typename T, typename AccumT = T>
 class CPUBackendT : public IComputeBackendT<T, AccumT>
 {

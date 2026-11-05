@@ -284,12 +284,7 @@ static inline void dTanh(float* RESTRICT x, const size_t n, const bool activated
 }
 
 /// @brief Two-buffer, single-pass tanh derivative: reads src, writes
-/// 1-tanh(src)^2 directly into dst. Unlike dTanh(x, n, false), which
-/// needs two full passes internally (activate in place, then derive
-/// in place) plus a separate copy beforehand if src can't be
-/// mutated, this computes tanh(src[i]) into a register and derives
-/// from that same register immediately, with only one read of src
-/// and one write to dst, no intermediate array pass at all.
+/// 1-tanh(src)^2 directly into dst, leaving src untouched.
 static inline void dTanhInto(float* RESTRICT dst, const float* RESTRICT src,
                              const size_t n) noexcept
 {

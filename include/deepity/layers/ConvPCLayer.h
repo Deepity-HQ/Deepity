@@ -17,15 +17,8 @@
  * @brief Convolutional counterpart to DiscriminativePCLayer, precision-
  * weighted, routed through IComputeBackend for GPU portability.
  *
- * @note CalculateState/UpdateState/UpdateWeights math, including the
- * Col2Im-based feedback term, is finite-difference verified on CPU
- * (tConvPCLayerStateVerify.cpp, tConvDiagnose.cpp). The GPU path is
- * structurally reviewed only, not compiled or run.
- *
  * Layout convention: NCHW, row-major, contiguous per channel per batch item.
- *
- * @note Single-instance layer; scratch/column buffers are bound into a
- * MemoryArena rather than stored in a container.
+ * @see @ref ConvPCLayer_math for the derivation.
  * @version 2.0
  * @date 2026-09-27
  * @author Jack Rose
@@ -74,10 +67,8 @@ public:
     return CalculateState(true);
   }
   /// @brief Same as CalculateState(), but can skip computing (and
-  /// returning) the energy. On CUDABackend, needEnergy=false also means
-  /// no blocking host sync, required for any settling-loop caller that
-  /// runs this inside a captured CUDA graph region (see
-  /// ConvPCNetwork::TrainStep()'s GPU branch).
+  /// returning) the energy. Pass false inside a captured CUDA graph
+  /// region.
   /// @param needEnergy Whether to compute and return the energy.
   float CalculateState(bool needEnergy) noexcept;
   /// @brief Update latent beliefs (z/r) via inference gradient.
@@ -240,19 +231,8 @@ public:
   }
 
   /// @brief Forces the next ComputeMuOnly() call to recompute instead of
-  /// reusing cachedMu, without otherwise touching clamp state.
-  ///
-  /// ClampState() normally does this (muCacheValid = false), and runs
-  /// fresh at the top of every TrainStep() call. But a CUDA-graph (re)capture
-  /// replays ClampState() only implicitly, by re-executing the whole
-  /// settling loop's C++ as part of recording the graph: that loop's last
-  /// ComputeMuOnly() call leaves muCacheValid = true as a side effect, and
-  /// nothing clears it again before the graph is replayed. The following
-  /// uncaptured, fresh CalculateState() read (used for the returned/printed
-  /// energy) then wrongly takes the cached branch, returning mu from
-  /// BEFORE this call's weight update instead of after it. Callers that
-  /// just finished a capture should invalidate the cache here before that
-  /// read, exactly like a fresh ClampState() call would have.
+  /// reusing cachedMu, without otherwise touching clamp state. Call
+  /// after a CUDA-graph (re)capture, before reading the energy.
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;
@@ -280,15 +260,14 @@ public:
   /// @brief Randomizes this layer's weights (and biases) in place.
   /// @param twister The classic Mersenne Twister
   /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
-  /// default "normal" has no "(a,b)" and so deliberately fails to parse,
-  /// falling back to this class's own existing fan-scaled default.
+  /// default "normal" (with no "(a,b)") falls back to this class's own
+  /// fan-scaled default.
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
 
-  /// @brief Rebuilds log_p from p, required after a checkpoint load
-  /// that only persists p (mirrors DiscriminativePCLayer's fix for the
-  /// same p/log_p desync issue found in ModelIO::Load()).
+  /// @brief Rebuilds log_p from p. Call after a checkpoint load that
+  /// only restores p.
   void ResyncLogPrecision() noexcept;
 
   /// @brief Fast-path forward projection that skips state initialization
@@ -296,9 +275,7 @@ public:
 
   /// @brief Pre-sizes the CUDA backend's cuDNN workspace for this layer's
   /// convolution shape. Must run before the network's first CUDA graph
-  /// capture -- see IComputeBackend::PrepareConvWorkspace()'s own doc
-  /// comment for why growing it lazily, on first use inside a captured
-  /// settling step, corrupts the whole capture. No-op on CPU.
+  /// capture. No-op on CPU.
   void PrepareConvWorkspace() noexcept;
 
   /// @brief Returns this layer's configured activation type.
@@ -387,9 +364,7 @@ private:
                           ///< inWidth) per batch item
   float* e = nullptr;     ///< Prediction errors: same shape as z.
   float* dz_dt = nullptr; ///< State derivatives: same shape as z.
-  float* p = nullptr;     ///< Precisions: (inChannels*inHeight*inWidth,),
-                          ///< see GetPrecisions()'s doc for why this is
-                          ///< input-shaped, not outChannels-shaped.
+  float* p = nullptr;     ///< Precisions: (inChannels*inHeight*inWidth,), input-shaped.
   float* log_p = nullptr; ///< Log-precisions: same shape as p.
   /// @}
 
@@ -405,13 +380,11 @@ private:
   float* colBuffer = nullptr;
 
   /// Feedback term scratch: holds transposed-GEMM result before Col2Im scatter
-  /// into dz_dt. Separate from colBuffer to avoid ordering dependencies between
-  /// UpdateState() and UpdateWeights().
+  /// into dz_dt.
   float* feedbackScratch = nullptr;
 
   /// Bottom-up error modulation: (outChannels, outHeight*outWidth) per batch
-  /// item. Holds (e_above * p_above * mu(f')). Recomputed independently in both
-  /// UpdateState() and UpdateWeights() (cheap elementwise, not cached).
+  /// item. Holds (e_above * p_above * mu(f')).
   float* bottom_up_cols = nullptr;
 
   /// Repacked column buffer: row-major layout (row, batch, col) for
@@ -421,9 +394,7 @@ private:
   /// operations.
   float* lgRepacked = nullptr;
 
-  /// All-ones vector for the bias-gradient GEMM trick (grad_b =
-  /// lgRepacked @ ones), matching SimpleConvPCLayer::UpdateWeights()'s
-  /// own use of the same trick.
+  /// All-ones vector for the bias-gradient GEMM trick (grad_b = lgRepacked @ ones).
   float* onesVector = nullptr;
   /// @}
 
@@ -433,13 +404,9 @@ private:
   bool muCacheValid = false;
 
   /// @brief mu's pre-activation value, snapshotted in ComputeMuOnly()
-  /// right before Activation() overwrites mu in place. GELU has no
-  /// closed form from its ACTIVATED value alone (unlike every other
-  /// activation this codebase supports), so any later derivative
-  /// computation needs this, not mu itself -- see
-  /// ActivationDerivativeFromActivatedDevice's own @warning.
+  /// right before Activation() overwrites mu in place.
   float* preact = nullptr;
-  /// @brief cachedMu's counterpart for preact, same clamped-layer reuse.
+  /// @brief Cached pre-activation, valid alongside cachedMu.
   float* cachedPreact = nullptr;
 
   float* grad_W = nullptr;
@@ -449,8 +416,7 @@ private:
   float* m_b = nullptr;
   float* v_b = nullptr;
 
-  /// @brief Device-resident Adam step count and learning rate, same
-  /// reasoning as SimpleConvPCLayer/SimplePCLayer's own ports.
+  /// @brief Device-resident Adam step count and learning rate.
   int* t_device = nullptr;
   float* lr_device = nullptr;
 
@@ -471,11 +437,6 @@ private:
 
 /**
  * @page ConvPCLayer_math ConvPCLayer Mathematical Derivation
- *
- * @section design_notes Design Notes
- *
- * Conv energy/state/weight derivation, adapted from DiscriminativePCLayer's
- * already-verified formulas:
  *
  * @subsection dense_formulas DiscriminativePCLayer (dense)
  * \f[
@@ -506,7 +467,6 @@ private:
  * \end{align}
  * \f]
  *
- * The forward GEMM and the feedback GEMM are transposes of the SAME weight
- * matrix, mirroring how DiscriminativePCLayer's forward and feedback GEMMs
- * both use W with CblasTrans flipped between them.
+ * The forward GEMM and the feedback GEMM use the SAME weight matrix,
+ * with CblasTrans flipped between them.
  */

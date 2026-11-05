@@ -12,29 +12,16 @@
 /**
  * @file SimplePCNetworkT.h
  * @brief Templated counterpart to SimplePCNetwork, over the same `T`/
- * `AccumT` pair as SimplePCLayerT -- see FullPCNetworkT's own doc
- * comment for the full rationale. Produced by mechanically retyping
- * SimplePCNetwork's own `float` members/parameters to `T`/`AccumT`.
- *
- * CUDA graph capture (BeginGraphCapture/ReplayGraph and the three
- * graphCaptured-style flags SimplePCNetwork carries) is dropped
- * entirely, same reasoning as FullPCNetworkT: device==DEVICE_GPU
- * already throws inside CreateBackendT() at construction (no
- * CUDABackendT yet), so there's no graph path to reach here, and no
- * runtime toggle that could leave a stale captured graph behind in the
- * first place -- switching precision means constructing a brand-new
- * SimplePCNetworkT<OtherT>.
+ * `AccumT` pair as SimplePCLayerT. Has no CUDA graph capture path.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to SimplePCNetwork, see this file's
-/// own comment for the full rationale.
+/// @brief Templated counterpart to SimplePCNetwork.
 template <typename T, typename AccumT = T> class SimplePCNetworkT
 {
 public:
-  /// @brief This network's storage element type, see
-  /// FullPCNetworkT::ElementType's own doc comment.
+  /// @brief This network's storage element type.
   using ElementType = T;
 
   /// @brief Constructs an empty network; add layers via AddLayer(),
@@ -130,9 +117,7 @@ public:
       layer->SetOptimizer(o);
   }
 
-  /// @brief Runs a complete training step (clamp, settle, update,
-  /// unclamp). See SimplePCNetwork::TrainStep()'s own doc comment; no
-  /// CUDA-graph path here, see this file's own class comment.
+  /// @brief Runs a complete training step (clamp, settle, update, unclamp).
   AccumT TrainStep(const std::vector<T>& x, const std::vector<T>& y, int inferenceSteps)
   {
     ResetState();
@@ -175,7 +160,7 @@ public:
   }
 
   /// @brief Seeds hidden layers from a genuine forward pass through
-  /// current weights. See SimplePCNetwork::ProjectForward()'s own doc comment.
+  /// current weights, instead of zero-init.
   void ProjectForward() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -193,9 +178,7 @@ public:
     }
   }
 
-  /// @brief Full train step WITH forward-projection initialization.
-  /// See SimplePCNetwork::TrainStepWithProjection()'s own doc comment;
-  /// no CUDA-graph path here, see this file's own class comment.
+  /// @brief Full train step with forward-projection initialization.
   AccumT TrainStepWithProjection(const std::vector<T>& x, const std::vector<T>& y,
                                 int inferenceSteps, bool computeEnergy = true)
   {

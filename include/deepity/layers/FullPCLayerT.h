@@ -16,28 +16,17 @@
  * @brief Templated counterpart to FullPCLayer, over a storage type `T`
  * (the layer's own beliefs/errors/weights/activations) and an
  * accumulator type `AccumT` (the Adam/AdamW optimizer's gradient/
- * moment state, always at least as wide as T -- see
- * IComputeBackendT<T, AccumT>'s own doc comment). Produced by
- * mechanically retyping FullPCLayer's own `float` members/parameters to
- * `T`/`AccumT`, NOT a reimplementation -- every method here must stay
- * line-for-line equivalent to FullPCLayer's own method bodies, so that
- * FullPCLayerT<float, float> reproduces FullPCLayer's output bit-exactly
- * (the quantization plan's verification gate #1).
+ * moment state).
  *
- * Deliberately does NOT inherit from Layer: Layer's virtual interface
- * (GetBeliefs() etc.) is fixed at `float*`, which only FullPCLayerT<float,
- * ...> could ever satisfy. Nothing in this pass needs a FullPCLayerT<T>
- * to be used polymorphically as a Layer*, so this is a free-standing
- * class template instead (the same position FullPCNetwork already has).
- * Every OTHER layer (SimplePCLayer, DirectKPPCLayer, GaussSeidelPCLayer,
- * the conv family) is unaffected and keeps deriving from Layer exactly
- * as before.
+ * Does not inherit from Layer, so a FullPCLayerT<T> cannot be used
+ * polymorphically as a Layer*. Every other layer (SimplePCLayer,
+ * DirectKPPCLayer, GaussSeidelPCLayer, the conv family) still derives
+ * from Layer as usual.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to FullPCLayer, see this file's own
-/// comment for the full rationale.
+/// @brief Templated counterpart to FullPCLayer.
 template <typename T, typename AccumT = T>
 class FullPCLayerT
 {
@@ -85,33 +74,14 @@ protected:
   T* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
   T* preact = nullptr;   ///< Pre-activation snapshot of mu, see FullPCLayer's own doc comment.
   T* cachedPreact = nullptr; ///< Cached pre-activation, valid alongside cachedMu.
-  // derivScratch/feedbackError/proj/feedbackScratch below are AccumT*,
-  // not T*, unlike every buffer above -- a real, deliberate asymmetry,
-  // not an inconsistency with the rest of this class. They're pure
-  // transient compute (never read back by a caller, never persisted),
-  // and their natural magnitude -- an activation derivative, and
-  // everything downstream of multiplying it into an error signal -- can
-  // fall entirely below a lossy T's coarsest resolution (sigmoid's
-  // derivative maxes out at 0.25, under Fp4E2M1Value's smallest nonzero
-  // magnitude of 0.5). Routing them through T even transiently rounds
-  // them to exactly zero and silently breaks every gradient that flows
-  // through them, for every activation whose derivative range
-  // undershoots the grid -- found via this plan's own MNIST validation
-  // pass, not anticipated at design time. See
-  // IComputeBackendT::MatMulAccumMixed()'s own doc comment for the
-  // backend-side half of this fix.
-  std::vector<AccumT> derivScratch; ///< nextSize-shaped scratch holding f'(preact).
-  std::vector<AccumT> feedbackError; ///< nextSize-shaped scratch, see FullPCLayer's own doc comment.
+  /// @brief nextSize-shaped scratch holding f'(preact), kept at AccumT
+  /// precision (not T) since the raw derivative can underflow to zero
+  /// at low-precision T.
+  std::vector<AccumT> derivScratch;
+  std::vector<AccumT> feedbackError; ///< nextSize-shaped scratch, see FullPCLayer's own doc comment, kept at AccumT precision.
   T* Psi = nullptr;  ///< Direct feedback (DFA) weight matrix, shape [size, terminalSize].
   std::vector<AccumT> proj; ///< Scratch buffer for DirectFeedbackUpdate()'s W update.
 
-  // grad_*/m_*/v_* and lr_device/fl_device/t_device/tPsi_device are all
-  // AccumT-typed (or int, for the step counters) optimizer-accumulator
-  // state, owned directly rather than arena-allocated like every T-typed
-  // buffer above -- see BindAdamStateT()/BindLearningRateStateT()'s own
-  // doc comments in LayerBindHelpers.h for why (in short: a layer's
-  // MemoryArenaT<T>::Allocate() returns T*, which isn't AccumT* unless
-  // T==AccumT).
   std::vector<AccumT> grad_W; ///< W's gradient scratch buffer.
   std::vector<AccumT> grad_b; ///< b's gradient scratch buffer.
   std::vector<AccumT> m_W;    ///< Adam/AdamW first-moment buffer for W.
@@ -130,32 +100,13 @@ protected:
 
   std::vector<AccumT> feedbackScratch; ///< Scratch buffer for the feedback GEMM's output.
 
-  // v (momentum) and adjoint (ePC) stay T*, unlike derivScratch/
-  // feedbackError/proj/feedbackScratch above -- a known, deliberately
-  // deferred gap, not an oversight: both are only reachable with
-  // useMomentum/useEPC explicitly enabled, which the plan's own
-  // verification pass already flagged as not separately validated at
-  // low precision ("note this as a known deferred-validation area ...
-  // not a silent gap" -- see the plan's FullPCLayer<T, AccumT> section).
-  // Converting them properly needs ComputeAdjoint()'s adjointAbove
-  // parameter templated on its own input type (the terminal layer's
-  // first hop is T* errors, every later hop is a previous layer's own
-  // adjoint), which is more machinery than this pass's actual
-  // (non-EPC, non-momentum) validation target needs.
   T* v = nullptr;        ///< Momentum buffer for the settling update, see SetMomentum().
   bool useMomentum = false;  ///< Whether momentum settling is enabled, see SetMomentum().
   AccumT momentumBeta = AccumT(0.9); ///< Momentum EMA decay rate, see SetMomentum().
 
   bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled.
-  /// @brief Per-row energy scratch for the cross-entropy path. Owned
-  /// directly (not arena-allocated like every other buffer here):
-  /// it's AccumT-typed, and CPUBackendT has no AccumT-typed Zero()/
-  /// allocation primitive of its own to hand it a slot in the T-typed
-  /// arena when T != AccumT (see IComputeBackendT's own doc comment on
-  /// why AccumT buffers are the optimizer's domain, not the backend's).
-  /// Harmless: it's unused on CPU (CPUBackendT's own
-  /// ComputeSoftmaxCrossEntropyErrorAndEnergy() ignores it, matching
-  /// the non-templated CPUBackend), kept only for CUDA-path parity.
+  /// @brief Per-row energy scratch for the cross-entropy path. Unused
+  /// on CPU, kept for CUDA-path parity.
   std::vector<AccumT> rowEnergies;
 
   bool useEPC = false;  ///< Whether ePC settling is enabled, see SetUseEPC().
@@ -166,12 +117,8 @@ protected:
 
   /// @name GetStateDict() host staging
   /// Host-side mirrors of W/b/Psi, for SyncStateDictFromDevice()/
-  /// SyncStateDictToDevice() to copy into/out of when `backend` keeps
-  /// the real buffers in device memory -- see FullConvPCLayer's own
-  /// precedent. Sized lazily by GetStateDict() itself. Adam moments
-  /// (m_W/v_W/m_b/v_b/m_Psi/v_Psi) need no staging of their own: they're
-  /// already host-resident std::vector<AccumT>s regardless of backend
-  /// (see those members' own comment above).
+  /// SyncStateDictToDevice() to copy into/out of. GetStateDict() always
+  /// returns pointers into these buffers, never a live device pointer.
   ///@{
   mutable std::vector<T> hostW, hostB, hostPsi;
   ///@}
@@ -192,9 +139,8 @@ public:
   /// @param feedback feedback rate for Psi
   /// @param lmbda weight decay (L2 regularization) coefficient
   /// @param aType activation type
-  /// @param dType activation derivative type (unused, kept for call-site
-  /// parity with FullPCLayer's own constructor; derivative type is
-  /// always derived from aType via ToDerivativeType() at each use site)
+  /// @param dType Unused; the derivative type is derived from @p aType
+  /// internally. Kept for call-site parity with FullPCLayer.
   /// @param backend Compute backend to run on; defaults to a new
   /// CPUBackendT<T, AccumT> if nullptr.
   FullPCLayerT(size_t size, size_t nextSize, size_t terminalSize, size_t batchSize,
@@ -209,13 +155,11 @@ public:
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
-  /// @brief Copies W/b/Psi from device memory into the host staging
-  /// buffers GetStateDict() exposes, so a save can read them directly.
-  /// A plain memcpy on CPUBackendT, so free to call unconditionally.
+  /// @brief Copies W/b/Psi into the host staging buffers GetStateDict()
+  /// exposes. Call before reading a GetStateDict() pointer.
   void SyncStateDictFromDevice() const;
-  /// @brief The reverse of SyncStateDictFromDevice(): pushes the host
-  /// staging buffers (just overwritten by a load) back on to the
-  /// actual device-resident W/b/Psi.
+  /// @brief Copies the host staging buffers (after writing into a
+  /// GetStateDict() pointer) back onto the real W/b/Psi.
   void SyncStateDictToDevice();
 
   void SetLayerAbove(FullPCLayerT* l) noexcept
@@ -231,9 +175,8 @@ public:
     terminalLayer = l;
   }
 
-  /// Also rescales DKP's feedback rate by the new `a` -- see
-  /// SetFeedbackRate()'s own comment and FullPCLayer::SetMuPCScale()'s
-  /// (the non-templated counterpart, fixed for the same reason).
+  /// @brief Sets the muPC forward-scaling factor and rescales DKP's
+  /// feedback rate to match.
   void SetMuPCScale(AccumT a) noexcept
   {
     this->a = a;
@@ -271,9 +214,7 @@ public:
     return useCrossEntropy;
   }
 
-  /// @brief Always computes real energy; not a Layer:: override (see
-  /// this file's own class comment on why FullPCLayerT no longer
-  /// derives from Layer).
+  /// @brief Always computes real energy.
   AccumT CalculateState() noexcept
   {
     return CalculateState(true);

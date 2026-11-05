@@ -10,47 +10,39 @@
 /**
  * @file DirectKPPCNetwork.h
  * @brief Orchestrates DirectKPPCLayer's Direct Kolen-Pollack predictive
- * coding (DKP-PC) phases in the correct order, the ORDER of the phases
- * across layers is what makes this DKP-PC rather than plain PC.
+ * coding (DKP-PC) phases, in order:
  *
- * Per Casnici, Lefebvre, Dauwels & Frenkel, "Accelerated Predictive
- * Coding Networks via Direct Kolen-Pollack Feedback Alignment" (2026),
- * Algorithm 1, a full DKP-PC train step is four phases, in order:
- *
- *   0. Forward initialization, clamp input, forward-project every
+ *   0. Forward initialization: clamp input, forward-project every
  *      hidden layer's z from current weights, clamp the target, then
  *      CalculateState() on the terminal layer alone to produce a real,
  *      non-zero epsilon_L. Every other layer's error stays zero here.
  *
- *   1. Direct feedback alignment update, DirectFeedbackUpdate() on
+ *   1. Direct feedback alignment update: DirectFeedbackUpdate() on
  *      every non-terminal layer, perturbing W using epsilon_L (via
- *      terminalLayer) and the layer above's Psi, before settling begins.
- *      Order among layers doesn't matter: each layer only reads Psi and
- *      epsilon_L, both already available.
+ *      terminalLayer) and the layer above's Psi, before settling
+ *      begins.
  *
- *   2. Inference phase, ordinary PC settling (CalculateState() +
- *      UpdateState() across every layer) for inferenceSteps steps. Phase
- *      1 already perturbed every layer's W, so inferenceSteps=1 is
- *      sufficient per the paper; larger values trade that speed
- *      advantage for potentially higher accuracy.
+ *   2. Inference phase: ordinary PC settling (CalculateState() +
+ *      UpdateState() across every layer) for inferenceSteps steps.
  *
- *   3. Learning phase, UpdateWeights() on every non-terminal layer,
+ *   3. Learning phase: UpdateWeights() on every non-terminal layer,
  *      updating both W (from the settled state) and Psi (from the
  *      settled state and epsilon_L).
  *
  * Routed through IComputeBackend; `device` defaults to DEVICE_CPU.
  *
+ * @see Casnici, Lefebvre, Dauwels & Frenkel, "Accelerated Predictive
+ * Coding Networks via Direct Kolen-Pollack Feedback Alignment" (2026)
+ *
  * @warning Not yet gradient-checked at the network level, and not yet
- * tested on GPU. Verify the individual layer's math independently before
- * trusting accuracy conclusions from training with this class.
+ * tested on GPU.
  */
 
 namespace Deep
 {
 /// @brief Predictive Coding network built from DirectKPPCLayer, using
 /// Direct Kolen-Pollack feedback alignment (DFA) instead of symmetric
-/// weight transport. See the file-level warning above on its current
-/// verification status.
+/// weight transport.
 class DirectKPPCNetwork
 {
 public:
@@ -112,10 +104,7 @@ public:
   float CalculateTerminalError() noexcept;
 
   /// @brief Phase 1: runs DirectFeedbackUpdate() on every
-  /// non-terminal layer. Order among layers does not matter (see
-  /// class-level docs), unlike GaussSeidelPCNetwork, no sweep
-  /// ordering is required here. Still sequential in this
-  /// revision; see class-level warning.
+  /// non-terminal layer. Order among layers does not matter.
   void DirectFeedbackUpdate() noexcept;
 
   /// @brief Phase 2: runs one ordinary PC settling step
@@ -185,11 +174,7 @@ public:
   /// @param x Flattened input batch, clamped to the input layer.
   /// @param y Flattened target batch, clamped to the terminal layer.
   /// @param inferenceSteps Number of settling steps for phase 2.
-  /// Defaults to 1, matching the paper's own headline result,
-  /// unlike this codebase's other PC variants, DKP-PC's entire
-  /// point is that a single step is enough BECAUSE of the DFA
-  /// phase, so defaulting to a larger value here would silently
-  /// waste most of the intended speed advantage.
+  /// Defaults to 1.
   /// @return The final settling step's total energy, before
   /// weight updates.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y, int inferenceSteps = 1);
@@ -225,15 +210,11 @@ private:
   /// @brief The batch size shared by every layer in the network.
   int batchSize;
 
-  // @brief CUDA Graph:
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 
-  // Predict()'s own graph, kept in a SEPARATE slot from TrainStep()'s
-  // above -- see FullPCNetwork.h's identical kPredictGraphSlot
-  // comment: an online caller that interleaves predict()/train_step()
-  // every step needs each captured independently, or one evicts the
-  // other's graph and forces a recapture on every single call.
+  // Predict()'s own graph, kept in a separate slot from TrainStep()'s
+  // above since they capture different operations.
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
   static constexpr size_t kPredictGraphSlot = 1;

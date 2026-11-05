@@ -34,30 +34,17 @@
  *      (step 2) as the prediction. Order among layers doesn't matter
  *      here either.
  *
- * This differs from SimplePCLayer's single-call CalculateState(), which
- * computes error and prediction together, and whose settling loop is
- * simply (CalculateState(); UpdateState();) x N: fully synchronous
- * (Jacobi), where every layer only ever reads values from the end of the
- * previous full step, never a value updated earlier in the same step.
- *
  * A GaussSeidelPCNetwork class is required to actually orchestrate the
  * three sweeps above in the correct order across all layers. Calling
  * these methods directly, out of order, or on a single layer in
  * isolation will not reproduce the intended dynamics.
  *
- * IMPORTANT BUFFER-LIFETIME NOTE (the same class of bug mu-caching hit
- * elsewhere): mu must not be mutated in place into its own derivative
- * the way SimplePCLayer's UpdateState() does. It needs to stay in its
- * clean, activated form, since the layer above's ComputeError() reads it
- * later in this same timestep. Neither UpdateState() nor UpdateWeights()
- * ever writes to mu; they derive the needed f'(preact) into the
- * dedicated feedbackError scratch instead, never into mu itself.
+ * mu stays in its clean, activated form at all times (the layer above's
+ * ComputeError() reads it later in the same timestep); neither
+ * UpdateState() nor UpdateWeights() ever writes to mu.
  *
  * mu = phi(W\@z+b): activation applied to the linear transform's
- * result (preact), not to z beforehand -- preact is snapshotted in
- * ComputePrediction() before Activation() overwrites mu in place, and
- * held over across timesteps exactly like mu/e_above are (UpdateState()
- * reads the previous timestep's preact, not yet fresh for this one).
+ * result, not to z beforehand.
  *
  * Does not implement mu-caching or activateBeforeTransform.
  *
@@ -120,11 +107,9 @@ public:
   /// the prediction.
   /// @return This layer's energy contribution at the current state,
   /// or 0.0f if needEnergy is false.
-  /// @param needEnergy Whether to compute and return the energy. On
-  /// CUDABackend, false also means no blocking host sync, required
-  /// for any settling-loop caller that runs this inside a captured
-  /// CUDA graph region (see GaussSeidelPCNetwork::TrainStep()'s GPU
-  /// branch). `e` itself is always correctly updated either way.
+  /// @param needEnergy Whether to compute and return the energy. Pass
+  /// false inside a captured CUDA graph region. `e` itself is always
+  /// correctly updated either way.
   float ComputeError(bool needEnergy = true) noexcept;
 
   /// @brief Computes weight updates via gradient descent, with L2
@@ -306,10 +291,7 @@ public:
   /// feedback-alignment matrix) in place.
   /// @param twister The classic Mersenne Twister
   /// @param distribution Distribution for W only; E (the feedback-
-  /// alignment matrix) keeps its own fixed uniform(-0.3,0.3) init
-  /// regardless. The default "normal" has no "(a,b)" and so
-  /// deliberately fails to parse, falling back to this class's own
-  /// existing default.
+  /// alignment matrix) always uses its own fixed uniform(-0.3,0.3) init.
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   /// @brief Returns this layer's configured activation type.
@@ -358,23 +340,17 @@ private:
   /// activated at all times, never mutated into a derivative.
   float* mu = nullptr;
   /// @brief mu's pre-activation value (W@z+b, before Activation()
-  /// overwrites mu in place with f(preact)), held over across
-  /// timesteps the same way mu itself is -- UpdateState() reads the
-  /// PREVIOUS timestep's preact (set by the previous ComputePrediction()
-  /// call), same staleness pattern as mu/e_above.
+  /// overwrites mu in place with f(preact)).
   float* preact = nullptr;
   /// @brief out_state_size scratch holding layerAbove's error
   /// pre-multiplied by f'(preact), used by both UpdateState() and
-  /// UpdateWeights(). The derivative applies at the source (mu's own
-  /// nonlinearity) before projecting through E or W, not after.
+  /// UpdateWeights().
   float* feedbackError = nullptr;
   /// @brief own_state_size scratch for the feedback GEMM's output in
   /// UpdateState() (feedbackError projected through E).
   float* dz_dt = nullptr;
-  /// @brief Feedback-alignment matrix. Separate from W, same
-  /// shape, randomly initialized once, never updated again. This
-  /// is feedback alignment (Lillicrap et al.), not backprop-style
-  /// transposed-weight feedback, so it is not W transposed.
+  /// @brief Feedback-alignment matrix (Lillicrap et al.). Separate from
+  /// W, same shape, randomly initialized once, never updated again.
   float* E = nullptr;
 
   /// @brief Learning rate for weights.
@@ -398,8 +374,7 @@ private:
   /// @brief The optimizer currently selected for weight updates.
   OptimizerType opt = OptimizerType::SGD;
 
-  /// @brief Device-resident Adam step count and learning rate,
-  /// same reasoning as every other ported layer.
+  /// @brief Device-resident Adam step count and learning rate.
   int* t_device = nullptr;
   float* lr_device = nullptr;
   /// @brief Scratch buffer for the weight gradient (Adam/AdamW only).
@@ -414,8 +389,7 @@ private:
   float* m_b = nullptr;
   /// @brief Adam/AdamW second-moment estimate for the biases.
   float* v_b = nullptr;
-  /// @brief Row-summed bias gradient scratch (SGD path only,
-  /// matches FullPCLayer::biasGradScratch).
+  /// @brief Row-summed bias gradient scratch (SGD path only).
   float* biasGradScratch = nullptr;
 
   friend class GaussSeidelPCNDiagnostics;

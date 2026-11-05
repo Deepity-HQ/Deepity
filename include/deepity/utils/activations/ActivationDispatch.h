@@ -18,20 +18,13 @@ namespace Deep
 using ActivationFn = void (*)(float*, size_t);
 /// @brief Pointer to an in-place activation derivative: f(buf, n, activated).
 using DerivativeFn = void (*)(float*, size_t, bool);
-// Two-buffer variant: reads from src, writes the derivative directly
-// into dst, in one pass. Eliminates the copy-then-derive pattern
-// (cblas_scopy + DerivativeFn) callers currently need when they can't
-// afford to mutate src in place, src stays untouched throughout.
 /// @brief Pointer to a two-buffer activation derivative: reads src,
 /// writes the derivative into dst, leaving src untouched.
 using DerivativeFn2 = void (*)(float* RESTRICT, const float* RESTRICT, size_t);
 
-// Forward declarations only, the real definitions (and their full
-// docs) live in the sibling Relu.h/Gelu.h/Tanh.h/Sigmoid.h/Linear.h,
-// one activation family per header. @copydoc isn't usable here: with
-// both this declaration and the real one in the same Deep namespace,
-// Doxygen resolves "Deep::relu" back to whichever declaration it's
-// attached to, so it self-references instead of finding the other one.
+// Forward declarations only; the real definitions live in the sibling
+// Relu.h/Gelu.h/Tanh.h/Sigmoid.h/Linear.h, one activation family per
+// header.
 
 /// @brief See Relu.h.
 static inline void relu(float*, size_t) noexcept;
@@ -207,9 +200,8 @@ static inline ActivationType To_AType(DerivativeFn dfn)
 /// this mapping; every layer should use this rather than maintaining
 /// its own copy.
 /// @return ActivationType::NONE for LINEAR, NONE, or an unrecognized
-/// value (LINEAR's derivative is the constant-1 dLINEAR handler,
-/// which every ActivationDerivativeScalar/Device dispatch already
-/// maps NONE to as well, so returning NONE here is not a gap).
+/// value (LINEAR's own derivative, the constant-1 dLINEAR handler, is
+/// what every dispatch already maps NONE to as well).
 static inline ActivationType ToDerivativeType(ActivationType fwd)
 {
   switch (fwd)

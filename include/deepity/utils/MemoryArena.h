@@ -14,14 +14,13 @@
  * @file MemoryArena.h
  * @brief A 64-byte-aligned bump-pointer allocator over a single
  * heap-allocated block, used to pack every layer's beliefs/errors/
- * weights/scratch buffers into one contiguous region for cache locality
- * (see the "Contiguous Arena Allocator" design note in the project
- * README). Host-side counterpart to DeviceMemoryArena.h's CUDA version.
+ * weights/scratch buffers into one contiguous region for cache
+ * locality. Host-side counterpart to DeviceMemoryArena.h's CUDA
+ * version.
  *
  * @note Individual chunks handed out by Allocate() cannot be freed
- * independently, the entire arena is released at once in the
- * destructor, matching the bump-pointer/no-reclaim design used
- * throughout this codebase's memory arenas.
+ * independently; the entire arena is released at once in the
+ * destructor.
  * @version 1.1
  * @date 2026-10-26
  * @author Jack Rose
@@ -31,16 +30,9 @@ namespace Deep
 {
 namespace detail
 {
-// std::aligned_alloc isn't reliably available on Windows/MinGW: the
-// standard requires memory from it be freed with plain free(), but
-// Windows' native aligned allocator needs the opposite pairing
-// (_aligned_malloc / _aligned_free), so many MinGW toolchains simply
-// omit std::aligned_alloc rather than violate the standard's contract.
-
 /// @brief Allocates a block of memory aligned to @p alignment bytes,
-/// using whichever aligned-allocation API is actually reliable on the
-/// current platform (see the comment above for why this can't just be
-/// std::aligned_alloc everywhere).
+/// using whichever aligned-allocation API is reliable on the current
+/// platform.
 /// @param alignment Required alignment, in bytes. Must be a valid
 /// alignment for the platform's underlying allocator (e.g. a power of
 /// two).
@@ -73,16 +65,11 @@ inline void AlignedFreePortable(void* ptr)
 }
 
 /// @brief Attempts to allocate @p size bytes backed by huge pages.
-/// This is genuinely opt-in and best-effort: on Linux, requests
-/// Transparent Huge Pages via madvise(MADV_HUGEPAGE) on a normal
-/// anonymous mmap, this is a HINT to the kernel, not a
-/// guarantee, and requires zero system-level configuration
-/// (unlike explicit hugetlbfs, which needs pages pre-reserved via
-/// /proc/sys/vm/nr_hugepages). On Windows, requests
-/// MEM_LARGE_PAGES via VirtualAlloc, which requires the process
-/// to hold SeLockMemoryPrivilege, NOT granted by default, so
-/// this will typically fail unless explicitly configured by an
-/// administrator.
+/// Opt-in and best-effort: on Linux, requests Transparent Huge Pages
+/// via madvise(MADV_HUGEPAGE) on a normal anonymous mmap, a hint to
+/// the kernel, not a guarantee. On Windows, requests MEM_LARGE_PAGES
+/// via VirtualAlloc, which requires the process to hold
+/// SeLockMemoryPrivilege (not granted by default).
 /// @param size Number of bytes to allocate.
 /// @param[out] succeeded Set to true if huge-page-backed memory
 /// was actually obtained, false otherwise. Never throws on
@@ -108,9 +95,6 @@ inline void* HugePageAllocPortable(size_t size, bool& succeeded)
   if (ptr == MAP_FAILED)
     return nullptr;
 
-  // Best-effort hint, if this fails, we still have valid,
-  // page-aligned (though not huge-page-backed) memory from the
-  // mmap itself, so this isn't treated as a hard failure.
   madvise(ptr, size, MADV_HUGEPAGE);
   succeeded = true;
   return ptr;
@@ -140,9 +124,7 @@ inline void HugePageFreePortable(void* ptr, size_t size)
 /// requirement for AVX2/AVX-512 loads.
 ///
 /// @tparam T Element type this arena allocates. `MemoryArena` (see the
-/// alias below) is `MemoryArenaT<float>`, preserving every existing
-/// non-templated caller's behavior exactly; new templated code
-/// (FullPCLayer<T>/FullPCNetwork<T>) uses MemoryArenaT<T> directly.
+/// alias below) is `MemoryArenaT<float>`.
 template <typename T>
 class MemoryArenaT
 {
@@ -170,12 +152,8 @@ public:
   /// @param total_elements Total number of elements this arena can
   /// hand out across all future Allocate() calls combined.
   /// @param use_huge_pages Opt-in, best-effort request for
-  /// huge-page-backed memory (see HugePageAllocPortable() for the
-  /// platform-specific caveats). Defaults to false, preserving
-  /// existing behavior exactly for anyone not explicitly opting
-  /// in. Falls back safely to the standard aligned allocator if
-  /// the request isn't honored, this never causes a hard
-  /// failure on its own.
+  /// huge-page-backed memory. Defaults to false. Falls back safely
+  /// to the standard aligned allocator if the request isn't honored.
   /// @throws std::bad_alloc if the underlying allocation fails
   /// (including the fallback path, if huge pages were requested
   /// but unavailable).
@@ -194,11 +172,6 @@ public:
 
     if (!used_huge_pages)
     {
-      // Either huge pages weren't requested, or the request
-      // wasn't honored (mmap/VirtualAlloc failed, or the
-      // system lacks the required configuration/privilege),
-      // fall back to the standard aligned allocator rather
-      // than treating this as a hard failure.
       base_ptr = static_cast<T*>(detail::AlignedAllocPortable(64, capacity_bytes));
     }
 
@@ -260,10 +233,7 @@ public:
     return chunk;
   }
 
-  /// @brief Back-compat alias for Allocate(), kept for every existing
-  /// (non-templated) caller written against the old AllocateFloats()
-  /// name. Only meaningful when T=float; new templated code should
-  /// call Allocate() directly.
+  /// @brief Alias for Allocate(). Only meaningful when T=float.
   T* AllocateFloats(size_t num_elements)
   {
     return Allocate(num_elements);
@@ -283,20 +253,14 @@ public:
     return capacity_bytes;
   }
   /// @brief Returns whether this arena's memory is actually
-  /// huge-page-backed. Since huge pages are requested on a
-  /// best-effort basis, this can be false even if use_huge_pages
-  /// was passed to the constructor, if the request wasn't honored
-  /// (system lacks configuration/privilege), or the allocation
-  /// call failed) and the arena silently fell back to the
-  /// standard aligned allocator instead.
+  /// huge-page-backed. Can be false even if use_huge_pages was
+  /// passed to the constructor, if the request wasn't honored.
   bool UsedHugePages() const
   {
     return used_huge_pages;
   }
 };
 
-/// @brief Non-templated alias preserving every existing caller's
-/// behavior exactly: `MemoryArena` is `MemoryArenaT<float>`, bit-for-bit
-/// identical to this class before it was templated.
+/// @brief Non-templated alias: `MemoryArena` is `MemoryArenaT<float>`.
 using MemoryArena = MemoryArenaT<float>;
 } // namespace Deep

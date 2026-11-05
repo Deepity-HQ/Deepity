@@ -16,22 +16,14 @@
 /**
  * @file FullConvPCNetworkT.h
  * @brief Templated counterpart to FullConvPCNetwork, over the same
- * `T`/`AccumT` pair as FullConvPCLayerT -- see FullPCNetworkT's own doc
- * comment for the full rationale. Produced by mechanically retyping
- * FullConvPCNetwork's own `float` members/parameters to `T`/`AccumT`.
- *
- * CUDA graph capture is dropped entirely, same reasoning as every
- * other templated network: device==DEVICE_GPU already throws inside
- * CreateBackendT() at construction (no CUDABackendT yet). Save()/Load()
- * (ModelIO<T>) and GetAllLayerDiagnostics() (GetDiagnosticStats()) are
- * NOT ported, same precedent as FullPCNetworkT/ConvPCNetworkT --
- * checkpointing is a separate, later step in the templating plan.
+ * `T`/`AccumT` pair as FullConvPCLayerT. Has no CUDA graph capture
+ * path, and does not implement Save()/Load() or
+ * GetAllLayerDiagnostics().
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to FullConvPCNetwork, see this file's
-/// own comment for the full rationale.
+/// @brief Templated counterpart to FullConvPCNetwork.
 template <typename T, typename AccumT = T> class FullConvPCNetworkT
 {
 public:
@@ -135,9 +127,7 @@ public:
   }
 
   /// @brief ePC's settling step: full forward sweep (bottom to top)
-  /// then full backward sweep (top to bottom), see
-  /// FullConvPCNetwork::EPCStep()'s own doc comment for the identical
-  /// structure this mirrors.
+  /// then full backward sweep (top to bottom).
   void EPCStep() noexcept
   {
     layers[0]->ComputeMuOnly();

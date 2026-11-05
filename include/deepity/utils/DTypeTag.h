@@ -4,13 +4,9 @@
 
 /**
  * @file DTypeTag.h
- * @brief Maps a C++ storage type to its safetensors-style dtype string,
- * for ModelIO's save/load -- see that class's own doc comment on why
- * the dtype now gets authentically derived instead of hardcoded "F32".
- * Add a new specialization here as each new templated T lands (half,
- * the FP4/posit formats, ...); ModelIO itself needs no changes to pick
- * it up, since it reads this trait off the type it already has in hand
- * (a layer's GetStateDict() tensor's own element type).
+ * @brief Maps a C++ storage type to its safetensors-style dtype
+ * string, for ModelIO's save/load. Add a new specialization here as
+ * each new templated T lands.
  */
 
 namespace Deep
