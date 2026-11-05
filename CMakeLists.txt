@@ -1006,6 +1006,15 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS CUDARandomizeVerify)
+
+        # Manual profiling tool, not a pass/fail test -- see its own doc
+        # comment. Still CUDA-gated since it calls CreateBackend(DEVICE_GPU).
+        add_executable(CUDARandomizeBenchmark tests/tCUDARandomizeBenchmark.cpp)
+        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity)
+        set_target_properties(CUDARandomizeBenchmark PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS CUDARandomizeBenchmark)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -

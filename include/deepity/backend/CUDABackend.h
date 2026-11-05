@@ -49,6 +49,25 @@ public:
   void RandomizeUniform(float* buf, size_t n, float min, float max,
                         uint32_t seed) noexcept override;
 
+  /// @brief Benchmark-only: runs RandomizeNormal()'s host-generate +
+  /// cudaMemcpy path unconditionally, bypassing the size threshold that
+  /// picks between it and the curand-kernel path. Exists so
+  /// tCUDARandomizeBenchmark.cpp can time both paths at the same n and
+  /// find the real crossover point for issue #67. Not part of
+  /// IComputeBackend; not meant for production call sites.
+  void RandomizeNormalForceHostPath(float* buf, size_t n, float mean, float stddev,
+                                    uint32_t seed) noexcept;
+  /// @brief Benchmark-only counterpart of RandomizeNormalForceHostPath()
+  /// that always runs the curand-kernel path.
+  void RandomizeNormalForceGPUPath(float* buf, size_t n, float mean, float stddev,
+                                   uint32_t seed) noexcept;
+  /// @copydoc RandomizeNormalForceHostPath
+  void RandomizeUniformForceHostPath(float* buf, size_t n, float min, float max,
+                                     uint32_t seed) noexcept;
+  /// @copydoc RandomizeNormalForceGPUPath
+  void RandomizeUniformForceGPUPath(float* buf, size_t n, float min, float max,
+                                    uint32_t seed) noexcept;
+
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackendT::SumRowsAccum

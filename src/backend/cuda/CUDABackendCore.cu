@@ -249,19 +249,22 @@ void HostRandomizeUniform(float* hostBuf, size_t n, float min, float max, uint32
 }
 } // namespace
 
-void CUDABackend::RandomizeNormal(float* buf, size_t n, float mean, float stddev,
-                                  uint32_t seed) noexcept
+void CUDABackend::RandomizeNormalForceHostPath(float* buf, size_t n, float mean, float stddev,
+                                               uint32_t seed) noexcept
 {
   if (!buf || n == 0)
     return;
 
-  if (n < kGPURandomizeThreshold)
-  {
-    std::vector<float> hostBuf(n);
-    HostRandomizeNormal(hostBuf.data(), n, mean, stddev, seed);
-    cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+  std::vector<float> hostBuf(n);
+  HostRandomizeNormal(hostBuf.data(), n, mean, stddev, seed);
+  cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+}
+
+void CUDABackend::RandomizeNormalForceGPUPath(float* buf, size_t n, float mean, float stddev,
+                                              uint32_t seed) noexcept
+{
+  if (!buf || n == 0)
     return;
-  }
 
   curandState* state = nullptr;
   if (cudaMalloc(&state, n * sizeof(curandState)) != cudaSuccess)
@@ -275,19 +278,31 @@ void CUDABackend::RandomizeNormal(float* buf, size_t n, float mean, float stddev
   cudaFree(state);
 }
 
-void CUDABackend::RandomizeUniform(float* buf, size_t n, float min, float max,
-                                   uint32_t seed) noexcept
+void CUDABackend::RandomizeNormal(float* buf, size_t n, float mean, float stddev,
+                                  uint32_t seed) noexcept
+{
+  if (n < kGPURandomizeThreshold)
+    RandomizeNormalForceHostPath(buf, n, mean, stddev, seed);
+  else
+    RandomizeNormalForceGPUPath(buf, n, mean, stddev, seed);
+}
+
+void CUDABackend::RandomizeUniformForceHostPath(float* buf, size_t n, float min, float max,
+                                                uint32_t seed) noexcept
 {
   if (!buf || n == 0)
     return;
 
-  if (n < kGPURandomizeThreshold)
-  {
-    std::vector<float> hostBuf(n);
-    HostRandomizeUniform(hostBuf.data(), n, min, max, seed);
-    cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+  std::vector<float> hostBuf(n);
+  HostRandomizeUniform(hostBuf.data(), n, min, max, seed);
+  cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+}
+
+void CUDABackend::RandomizeUniformForceGPUPath(float* buf, size_t n, float min, float max,
+                                               uint32_t seed) noexcept
+{
+  if (!buf || n == 0)
     return;
-  }
 
   curandState* state = nullptr;
   if (cudaMalloc(&state, n * sizeof(curandState)) != cudaSuccess)
@@ -299,6 +314,15 @@ void CUDABackend::RandomizeUniform(float* buf, size_t n, float min, float max,
   CHECK_CUDA_LAUNCH();
   cudaStreamSynchronize(stream);
   cudaFree(state);
+}
+
+void CUDABackend::RandomizeUniform(float* buf, size_t n, float min, float max,
+                                   uint32_t seed) noexcept
+{
+  if (n < kGPURandomizeThreshold)
+    RandomizeUniformForceHostPath(buf, n, min, max, seed);
+  else
+    RandomizeUniformForceGPUPath(buf, n, min, max, seed);
 }
 
 __global__ void FillOnesKernel(float* buf, size_t n)
