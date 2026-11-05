@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <deepity/backend/CUDABackend.h>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 #include <string>
 
@@ -221,11 +222,46 @@ __global__ void uniform_generation(curandState* state, float* random_numbers, si
   }
 }
 
+namespace
+{
+/// @brief Below this many elements, curand's fixed per-call overhead
+/// (cudaMalloc of one curandState per element, a kernel launch, a
+/// stream sync) outweighs generating on the host and doing a single
+/// cudaMemcpy -- see issue #67. A starting guess, not measured: there's
+/// no GPU on the dev machine this was written on, so the real crossover
+/// point needs confirming on OSC before this is trusted at the margins.
+constexpr size_t kGPURandomizeThreshold = 1 << 16;
+
+void HostRandomizeNormal(float* hostBuf, size_t n, float mean, float stddev, uint32_t seed)
+{
+  std::mt19937 rng(seed);
+  std::normal_distribution<float> dist(mean, stddev);
+  for (size_t i = 0; i < n; ++i)
+    hostBuf[i] = dist(rng);
+}
+
+void HostRandomizeUniform(float* hostBuf, size_t n, float min, float max, uint32_t seed)
+{
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<float> dist(min, max);
+  for (size_t i = 0; i < n; ++i)
+    hostBuf[i] = dist(rng);
+}
+} // namespace
+
 void CUDABackend::RandomizeNormal(float* buf, size_t n, float mean, float stddev,
                                   uint32_t seed) noexcept
 {
   if (!buf || n == 0)
     return;
+
+  if (n < kGPURandomizeThreshold)
+  {
+    std::vector<float> hostBuf(n);
+    HostRandomizeNormal(hostBuf.data(), n, mean, stddev, seed);
+    cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+    return;
+  }
 
   curandState* state = nullptr;
   if (cudaMalloc(&state, n * sizeof(curandState)) != cudaSuccess)
@@ -244,6 +280,14 @@ void CUDABackend::RandomizeUniform(float* buf, size_t n, float min, float max,
 {
   if (!buf || n == 0)
     return;
+
+  if (n < kGPURandomizeThreshold)
+  {
+    std::vector<float> hostBuf(n);
+    HostRandomizeUniform(hostBuf.data(), n, min, max, seed);
+    cudaMemcpy(buf, hostBuf.data(), n * sizeof(float), cudaMemcpyHostToDevice);
+    return;
+  }
 
   curandState* state = nullptr;
   if (cudaMalloc(&state, n * sizeof(curandState)) != cudaSuccess)

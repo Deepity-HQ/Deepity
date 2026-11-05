@@ -999,6 +999,13 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTModelIOCudaVerify)
+
+        add_executable(CUDARandomizeVerify tests/tCUDARandomizeVerify.cpp)
+        target_link_libraries(CUDARandomizeVerify PRIVATE Deepity)
+        set_target_properties(CUDARandomizeVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS CUDARandomizeVerify)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -
