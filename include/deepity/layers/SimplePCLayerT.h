@@ -13,37 +13,15 @@
 /**
  * @file SimplePCLayerT.h
  * @brief Templated counterpart to SimplePCLayer, over a storage type
- * `T` and an accumulator type `AccumT` -- see FullPCLayerT's own doc
- * comment for the T/AccumT split's full rationale. Produced by
- * mechanically retyping SimplePCLayer's own `float` members/parameters
- * to `T`/`AccumT`, NOT a reimplementation.
+ * `T` and an accumulator type `AccumT`.
  *
- * Two real, deliberate departures from a pure mechanical port, both
- * following FullPCLayerT's own established precedent:
- *  - The raw function-pointer constructor (`void(*)(float*, size_t)`)
- *    isn't carried over -- it can't be expressed for a generic T, and
- *    every real caller (the Python bindings) already uses the
- *    ActivationType constructor instead.
- *  - UpdateState()'s feedback path no longer routes through
- *    TryFusedMatMul()/TryFusedFeedbackUpdate(): those take T*-typed
- *    scratch buffers, which would round an activation derivative to
- *    exactly zero for a sub-8-bit T (see FullPCLayerT.h's own
- *    derivScratch/feedbackError comment) -- feedbackScratch/
- *    feedbackDerivScratch are AccumT here instead, and
- *    CPUBackendT<T, AccumT>'s Try* overloads are unconditional-false
- *    stubs anyway (see CPUBackendT.h's own class comment), so this
- *    changes nothing for the one T (float) that could have taken that
- *    path for real.
- *
- * Deliberately does NOT inherit from Layer, same reasoning as
- * FullPCLayerT. Every OTHER layer keeps deriving from Layer exactly as
- * before.
+ * Unlike SimplePCLayer, has no raw function-pointer constructor; use
+ * the ActivationType constructor instead. Does not inherit from Layer.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to SimplePCLayer, see this file's own
-/// comment for the full rationale.
+/// @brief Templated counterpart to SimplePCLayer.
 template <typename T, typename AccumT = T> class SimplePCLayerT
 {
 protected:
@@ -75,20 +53,12 @@ protected:
   T* cachedMu = nullptr; ///< Cached mu, valid when muCacheValid is true.
   T* zF = nullptr;       ///< This layer's own activated belief, phi(z).
 
-  // feedbackScratch/feedbackDerivScratch are AccumT, not T, unlike
-  // every buffer above -- see this file's own class comment on why
-  // (the sub-8-bit-rounds-a-derivative-to-zero trap FullPCLayerT's own
-  // derivScratch/feedbackError already hit).
   std::vector<AccumT> feedbackScratch;      ///< UpdateState()'s feedback GEMM output, e_above@W.
   std::vector<AccumT> feedbackDerivScratch; ///< UpdateState()'s f'(z), see UpdateState()'s own body.
 
   bool useCrossEntropy = false; ///< Whether softmax cross-entropy energy is enabled, see SetCrossEntropy().
   std::vector<AccumT> rowEnergies; ///< Per-row energy scratch for the cross-entropy path.
 
-  // grad_*/m_*/v_* and t_device/lr_device are AccumT-typed (or int, for
-  // the step counter) optimizer-accumulator state, owned directly
-  // rather than arena-allocated -- same reasoning as FullPCLayerT's
-  // identical members, see LayerBindHelpers.h's BindAdamStateT().
   std::vector<AccumT> grad_W; ///< W's gradient scratch buffer.
   std::vector<AccumT> grad_b; ///< b's gradient scratch buffer.
   std::vector<AccumT> m_W;    ///< Adam/AdamW first-moment buffer for W.
@@ -99,9 +69,7 @@ protected:
   int t_device = 0;             ///< Adam/AdamW step count for W/b.
   AccumT lr_device = AccumT(0); ///< Mirror of `lr`, passed by address to the backend.
 
-  AccumT muCacheThreshold = AccumT(-1); ///< -1 = disabled; see SetMuCacheThreshold(). Currently
-                                        ///< unused by ComputeMuOnly() -- carried over unchanged
-                                        ///< from SimplePCLayer, where it's equally dead today.
+  AccumT muCacheThreshold = AccumT(-1); ///< -1 = disabled; see SetMuCacheThreshold().
   bool muCacheValid = false;           ///< true once mu computed at least once since ClampState().
 
   std::unique_ptr<MemoryArenaT<T>>
@@ -115,9 +83,8 @@ public:
   /// @param inferenceRate Inference rate (Euler integration step size)
   /// @param lmbda Weight decay (L2 regularization) coefficient
   /// @param aType Activation type
-  /// @param dType Activation derivative type (unused, kept for call-site
-  /// parity with SimplePCLayer's own constructor; derivative type is
-  /// always derived from aType via ToDerivativeType() at each use site)
+  /// @param dType Unused; the derivative type is derived from @p aType
+  /// internally. Kept for call-site parity with SimplePCLayer.
   /// @param backend Compute backend to run on; defaults to a new
   /// CPUBackendT<T, AccumT> if nullptr.
   SimplePCLayerT(size_t size, size_t nextSize, size_t batchSize, AccumT learningRate,

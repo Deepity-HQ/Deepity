@@ -11,23 +11,17 @@
 
 /**
  * @file GaussSeidelPCNetwork.h
- * @brief Orchestrates GaussSeidelPCLayer's three-phase settling step in
- * the correct order. The layer class alone cannot produce genuine
- * Gauss-Seidel dynamics; the sweep order across layers is what makes it
- * Gauss-Seidel rather than Jacobi, and that only exists at this level.
- * Device-aware (DeviceType constructor parameter, backend member,
- * cpuArena/gpuArena split in Compile()).
+ * @brief Orchestrates GaussSeidelPCLayer's three-phase settling step,
+ * in order, across every layer. Device-aware.
  *
  * Per settling step, in order:
- *   1. UpdateState() on EVERY layer       (uses PREVIOUS timestep's mu/e)
- *   2. ComputePrediction() on EVERY layer (uses THIS timestep's fresh z)
- *   3. ComputeError() on EVERY layer      (uses THIS timestep's fresh
+ *   1. UpdateState() on every layer       (uses previous timestep's mu/e)
+ *   2. ComputePrediction() on every layer (uses this timestep's fresh z)
+ *   3. ComputeError() on every layer      (uses this timestep's fresh
  *                                          z and layerBelow's fresh mu)
  *
- * Order among layers within a single sweep does not matter: each
- * layer's step-1/2/3 only depends on its own state plus a neighbor's
- * value from a sweep that has already fully completed. Only the order
- * of the three sweeps themselves is load-bearing.
+ * Order among layers within a single sweep does not matter; only the
+ * order of the three sweeps themselves is load-bearing.
  */
 
 namespace Deep
@@ -183,9 +177,8 @@ private:
   /// @brief The batch size shared by every layer in the network.
   int batchSize;
 
-  // CUDA graph capture state, GPU-only: TrainStep() and
-  // TrainStepWithProjection() capture different op sequences, so
-  // each needs its own capture-validity tracking.
+  // CUDA graph capture state, GPU-only. TrainStep() and
+  // TrainStepWithProjection() each track their own capture validity.
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
   bool graphCapturedWithProjection = false;

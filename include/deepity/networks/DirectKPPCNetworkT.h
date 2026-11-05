@@ -12,12 +12,8 @@
 /**
  * @file DirectKPPCNetworkT.h
  * @brief Templated counterpart to DirectKPPCNetwork, over the same
- * `T`/`AccumT` pair as DirectKPPCLayerT -- see FullPCNetworkT's own
- * doc comment for the full rationale. Produced by mechanically
- * retyping DirectKPPCNetwork's own `float` members/parameters to
- * `T`/`AccumT`. Orchestrates DirectKPPCLayerT's four DKP-PC phases in
- * the same fixed order DirectKPPCNetwork's own class comment
- * requires:
+ * `T`/`AccumT` pair as DirectKPPCLayerT. Orchestrates DirectKPPCLayerT's
+ * four DKP-PC phases in order:
  *
  *   0. Forward initialization: clamp input, ProjectForward(), clamp
  *      target, CalculateTerminalError().
@@ -25,25 +21,18 @@
  *   2. Ordinary PC settling (Step()) for inferenceSteps steps.
  *   3. UpdateWeights() on every non-terminal layer.
  *
- * CUDA graph capture is dropped entirely, same reasoning as
- * FullPCNetworkT/SimplePCNetworkT/GaussSeidelPCNetworkT:
- * device==DEVICE_GPU already throws inside CreateBackendT() at
- * construction (no CUDABackendT yet), so there's no graph path to
- * reach here.
+ * Has no CUDA graph capture path.
  *
- * @warning Not yet gradient-checked at the network level, same
- * caveat as DirectKPPCNetwork's own class comment.
+ * @warning Not yet gradient-checked at the network level.
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to DirectKPPCNetwork, see this file's
-/// own comment for the full rationale.
+/// @brief Templated counterpart to DirectKPPCNetwork.
 template <typename T, typename AccumT = T> class DirectKPPCNetworkT
 {
 public:
-  /// @brief This network's storage element type, see
-  /// FullPCNetworkT::ElementType's own doc comment.
+  /// @brief This network's storage element type.
   using ElementType = T;
 
   /// @brief Constructs an empty network; add layers via AddLayer(),
@@ -95,8 +84,7 @@ public:
   }
 
   /// @brief Seeds every hidden layer's z from a genuine forward pass
-  /// through current weights. See DirectKPPCNetwork::ProjectForward()'s
-  /// own doc comment.
+  /// through current weights.
   void ProjectForward() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -144,11 +132,7 @@ public:
   /// @brief Phase 3: updates every non-terminal layer's W and Psi.
   void UpdateWeights() noexcept
   {
-    // Step()'s last CalculateState() call left preact one settling
-    // iteration behind the z that UpdateState() just produced from it
-    // -- refresh it here so the gradient below is computed from the
-    // settled state, same reasoning as DirectKPPCNetwork's own
-    // identical comment.
+    // Refreshes preact against the current z before computing gradients.
     for (size_t i = 0; i + 1 < layers.size(); ++i)
       layers[i]->ComputeMuOnly();
 
@@ -199,12 +183,9 @@ public:
   }
 
   /// @brief Full train step: reset, clamp input+target, run all four
-  /// DKP-PC phases in order, unclamp. See
-  /// DirectKPPCNetwork::TrainStep()'s own doc comment; no CUDA-graph
-  /// path here, see this file's own class comment.
-  /// @param inferenceSteps Defaults to 1, matching the paper's own
-  /// headline result -- see DirectKPPCNetwork::TrainStep()'s identical
-  /// comment on why.
+  /// DKP-PC phases in order, unclamp.
+  /// @param inferenceSteps Number of settling steps for phase 2.
+  /// Defaults to 1.
   AccumT TrainStep(const std::vector<T>& x, const std::vector<T>& y, int inferenceSteps = 1)
   {
     ResetState();
@@ -248,8 +229,7 @@ public:
 
   /// @brief Loads all layers into one contiguous block of memory,
   /// and wires layerAbove/layerBelow/terminalLayer across every
-  /// layer. See DirectKPPCNetwork::Compile()'s own doc comment for
-  /// the terminalSize sanity check.
+  /// layer.
   void Compile()
   {
     if (!layers.empty() && layers.back()->GetInputSize() != layers.back()->GetTerminalSize())

@@ -5,12 +5,10 @@
 
 /**
  * @file MaxPool2D.h
- * @brief Standalone 2D max-pooling forward/backward, single-image contract
- * (see Im2Col.h for the same convention). Backward sends each output
- * position's gradient to the single input position that produced it (the
- * argmax Deep::MaxPool2DForward recorded), the exact adjoint of a hard max,
- * not an approximation -- no pre-activation buffer needed, unlike an
- * activation function's derivative.
+ * @brief Standalone 2D max-pooling forward/backward, single-image
+ * contract (see Im2Col.h for the same convention). Backward sends
+ * each output position's gradient to the single input position that
+ * produced it (the argmax Deep::MaxPool2DForward recorded).
  *
  * Layout convention: NCHW, matching Im2Col.h.
  */
@@ -76,10 +74,7 @@ inline void MaxPool2DForward(const float* input, int channels, int height, int w
 /// @brief The adjoint of MaxPool2DForward(): scatters a
 /// (channels, outH, outW) gradient back into a (channels, height,
 /// width) image at the positions @p argmax recorded.
-/// @param inputGrad ACCUMULATED into (does not zero first, matching
-/// Deep::Col2Im's own contract -- overlapping pooling windows, i.e.
-/// stride < pool, can make the same input position the argmax for
-/// more than one output position).
+/// @param inputGrad Accumulated into, does not zero first.
 /// @warning Not batch-aware, call once per batch item.
 inline void MaxPool2DBackward(const float* outputGrad, const int* argmax, int channels, int height,
                               int width, int outH, int outW, float* inputGrad) noexcept

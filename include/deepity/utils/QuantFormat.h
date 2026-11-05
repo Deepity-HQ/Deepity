@@ -5,21 +5,11 @@
 
 /**
  * @file QuantFormat.h
- * @brief Sub-8-bit storage types for the quantization plan's Phase 2+:
- * each format is its own 1-byte struct (no bit-packing yet, see the
- * plan's own "Known, accepted catch" section), with a free Decode/Encode
- * pair using the paper's grid table. No native CPU/GPU ALU exists for
- * these, so every use goes through a decode-to-AccumT/compute/encode-
- * back-to-T wrap -- CPUBackendT's own generic (non-float/double) code
- * paths already do exactly that (every op decodes via `AccumT(x)`
- * before computing and re-encodes via `T(result)` afterward), so these
- * structs only need to support that round-trip conversion themselves,
- * not any arithmetic of their own.
- *
- * Four separate structs are planned here (Fp4E2M1Value first, then the
- * three posit variants), not a `template<int nbits, int es>` -- each
- * format needs its own hand-tuned grid, and with only four callers a
- * shared abstraction isn't worth it (see the plan's own reasoning).
+ * @brief Sub-8-bit storage types. Each format is its own 1-byte
+ * struct (no bit-packing), with a free Decode/Encode pair using its
+ * grid table. These structs only support round-trip conversion, not
+ * arithmetic of their own: every op decodes via `AccumT(x)` before
+ * computing and re-encodes via `T(result)` afterward.
  */
 
 namespace Deep
@@ -88,16 +78,11 @@ inline uint8_t EncodeFp4E2M1(float value) noexcept
   return (negative && bestIdx != 0) ? uint8_t(bestIdx | 0x8) : bestIdx;
 }
 
-/// @brief Storage type for the FP4 E2M1 format (see arXiv:2610.15933's
-/// W4A4E4 QAT setup). Converts to/from any arithmetic AccumT via
-/// Decode/EncodeFp4E2M1 (always through a `float` intermediate -- the
-/// grid itself is only ever specified to float precision, so routing a
-/// double AccumT through it loses nothing beyond what the 4-bit grid
-/// already discards). The conversion constructor is explicit, since an
-/// implicit float/double -> 4-bit-grid narrowing happening by accident
-/// (rather than at a deliberate CPUBackendT decode/encode point) would
-/// be exactly the kind of silent precision bug this whole templating
-/// pass exists to make impossible to miss.
+/// @brief Storage type for the FP4 E2M1 format.
+/// @see arXiv:2610.15933's W4A4E4 QAT setup.
+/// Converts to/from any arithmetic AccumT via Decode/EncodeFp4E2M1,
+/// always through a `float` intermediate. The conversion constructor
+/// is explicit.
 struct Fp4E2M1Value
 {
   uint8_t bits = 0;

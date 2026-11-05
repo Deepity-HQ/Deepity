@@ -15,30 +15,20 @@
 /**
  * @file FullConvPCLayerT.h
  * @brief Templated counterpart to FullConvPCLayer, over a storage
- * type `T` and an accumulator type `AccumT` -- see FullPCLayerT.h's
- * own doc comment for the T/AccumT split's full rationale, and
- * SimpleConvPCLayerT.h's own class comment for why every conv-specific
+ * type `T` and an accumulator type `AccumT`. Every conv-specific
  * scratch buffer here (colBuffer, feedbackScratch, bottom_up_cols,
  * colsRepacked, lgRepacked, proj, projChannel, unpoolScratch, pooledMu,
- * v, adjoint) stays T*, not AccumT* -- same deliberate, documented
- * scope reduction (and the same deferred-validation caveat for
- * sub-8-bit T) as SimpleConvPCLayerT/ConvPCLayerT, NOT FullPCLayerT's
- * own fully AccumT-widened derivative-chain treatment. The Adam/AdamW
- * optimizer state (grad_W/m_W/v_W/..., grad_Psi/m_Psi/v_Psi) still
- * follows the usual AccumT-accumulator convention regardless.
- * float/double are entirely unaffected either way.
+ * v, adjoint) stays T*, not AccumT*; the Adam/AdamW optimizer state
+ * (grad_W/m_W/v_W/..., grad_Psi/m_Psi/v_Psi) still follows the usual
+ * AccumT-accumulator convention.
  *
- * Deliberately does NOT inherit from Layer, same reasoning as
- * FullPCLayerT/SimpleConvPCLayerT. GetStateDict()/SyncStateDict*()/
- * GetDiagnosticStats() are NOT ported here, same as FullPCLayerT's
- * own precedent -- ModelIO<T>/checkpointing is a separate, later step
- * in the templating plan.
+ * Does not inherit from Layer. Does not implement GetStateDict()/
+ * SyncStateDict*()/GetDiagnosticStats().
  */
 
 namespace Deep
 {
-/// @brief Templated counterpart to FullConvPCLayer, see this file's
-/// own comment for the full rationale.
+/// @brief Templated counterpart to FullConvPCLayer.
 template <typename T, typename AccumT = T> class FullConvPCLayerT
 {
 public:
@@ -368,12 +358,6 @@ protected:
   T* cachedPreact = nullptr;
 
   T* pooledMu = nullptr;
-  // Owned directly, not arena-allocated: the original's "allocate as
-  // T, reinterpret_cast to int*" trick only happens to work when
-  // sizeof(T)==sizeof(int) (i.e. T=float); for any other T (double,
-  // or a 1-byte quantized struct) it either wastes space or writes
-  // int32 argmax data across fewer bytes than were actually
-  // allocated, corrupting whatever the arena placed right after it.
   std::vector<int> poolArgmax;
   T* unpoolScratch = nullptr;
 

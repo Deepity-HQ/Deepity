@@ -45,10 +45,8 @@ public:
                 ActivationType aType = ActivationType::RELU,
                 ActivationType dType = ActivationType::dRELU);
 
-  /// @brief Sets the optimizer for EVERY layer added so far. Safe to
-  /// call any time before Compile(), unlike using SimpleConvPCLayer
-  /// standalone, memory allocation is deferred to Compile(), not the
-  /// constructor, so this doesn't require a manual rebind.
+  /// @brief Sets the optimizer for every layer added so far. Safe to
+  /// call any time before Compile().
   void SetOptimizer(OptimizerType opt) noexcept;
 
   /// @brief Sums every layer's required float count into a single

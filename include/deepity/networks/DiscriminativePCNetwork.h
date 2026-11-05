@@ -46,9 +46,7 @@ class DiscriminativePCNetwork
 
 public:
   /// @brief Default constructor; initializes the network with
-  /// auto-batch-size detection (see AddLayer()'s fn-pointer
-  /// overload's implementation for how the first layer's size
-  /// triggers this).
+  /// auto-batch-size detection.
   /// @param device Which device this network's layers run on.
   explicit DiscriminativePCNetwork(DeviceType device = DeviceType::DEVICE_CPU);
   /// @brief Batched constructor; initializes the network with a
@@ -95,9 +93,8 @@ public:
   void AddLayer(int size, int nextSize, float lr, float ir, float pr, float lmbda,
                 Deep::ActivationType aType, Deep::ActivationType dType);
 
-  /// @brief Sets the optimizer for EVERY layer added so far. Safe to
-  /// call any time before Compile(), memory allocation is
-  /// deferred to Compile(), not AddLayer().
+  /// @brief Sets the optimizer for every layer added so far. Safe to
+  /// call any time before Compile().
   void SetOptimizer(OptimizerType opt) noexcept
   {
     for (auto& layer : layers)
@@ -247,9 +244,8 @@ private:
 #endif
   friend class PCNDiagnostics;
 
-  // CUDA graph capture state, GPU-only: TrainStep() and
-  // TrainStepWithProjection() capture different op sequences, so
-  // each needs its own capture-validity tracking.
+  // CUDA graph capture state, GPU-only. TrainStep() and
+  // TrainStepWithProjection() each track their own capture validity.
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
   bool graphCapturedWithProjection = false;

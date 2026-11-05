@@ -9,31 +9,23 @@
 
 /**
  * @file ModelIO.h
- * @brief Saves/loads a network's compiled weight arena to/from disk, as a
- * JSON header (per-layer shapes/offsets/dtypes) plus a raw binary data
- * blob. Templated on NetworkType the same as before (works across every
- * PC network variant that exposes GetLayers()), but the element type
- * backing each tensor is no longer assumed to be `float`: Save() derives
- * it from each tensor's own `.data` pointer (via DTypeTag<T>), so a
- * FullPCNetworkT<double, ...> writes real "F64" tensors at their real
- * 8-byte stride, not truncated through float. Load() checks that
- * dtype against what the CALLING network's own tensors expect and
- * throws std::runtime_error on a mismatch -- strictly new behavior:
- * the previous version never checked "dtype" on read at all.
+ * @brief Saves/loads a network's compiled weight arena to/from disk,
+ * as a JSON header (per-layer shapes/offsets/dtypes) plus a raw
+ * binary data blob. Templated on NetworkType, so it works across
+ * every PC network variant that exposes GetLayers(). The element
+ * type backing each tensor is derived from each tensor's own `.data`
+ * pointer (via DTypeTag<T>), not assumed to be `float`. Load() checks
+ * the file's dtype against what the calling network's own tensors
+ * expect and throws std::runtime_error on a mismatch.
  */
 
 namespace Deep
 {
 namespace detail
 {
-// FullPCLayerT<T, AccumT> is free-standing (doesn't inherit Layer, see
-// FullPCLayerT.h's own doc comment on why), so it can't override
-// Layer's virtual SyncStateDictFromDevice/ToDevice -- it just defines
-// plain methods of the same name/signature instead, which these two
-// if-constexpr-guarded helpers detect structurally. Lets Save()/Load()
-// call them where they exist (every Layer-derived network, and now
-// FullPCLayerT too) and skip them where they don't (a layer type with
-// neither a virtual override nor a plain method of this name).
+// Detects structurally whether LayerPtr has a SyncStateDictFromDevice/
+// ToDevice method (virtual override or plain method of that name),
+// and calls it if so. No-op for a layer type with neither.
 template <typename LayerPtr> void SyncFromDeviceIfSupported(LayerPtr& layerPtr)
 {
   if constexpr (requires { layerPtr->SyncStateDictFromDevice(); })
@@ -68,10 +60,9 @@ public:
 
     for (const auto& layerPtr : net.GetLayers())
     {
-      // A device-resident layer's GetStateDict() reads from host staging
-      // buffers it owns, not from the actual device memory -- those
-      // buffers only hold current data once this sync runs. No-op for a
-      // CPU layer, whose GetStateDict() already returns live pointers.
+      // Pushes a device-resident layer's current state into its host
+      // staging buffers before GetStateDict() reads them. No-op for a
+      // CPU layer.
       detail::SyncFromDeviceIfSupported(layerPtr);
       auto state_dict = layerPtr->GetStateDict();
 
@@ -174,10 +165,8 @@ public:
           in.read(reinterpret_cast<char*>(tensor.data), byte_size);
         }
       }
-      // Mirror of Save()'s SyncStateDictFromDevice(): for a device-resident
-      // layer, the reads above only landed in its host staging buffers --
-      // this pushes them on to the actual device-resident parameters. No-op
-      // for a CPU layer, whose GetStateDict() pointers are the real buffers.
+      // Pushes the reads above from host staging buffers on to the
+      // actual device-resident parameters. No-op for a CPU layer.
       detail::SyncToDeviceIfSupported(layerPtr);
       layer_idx++;
     }

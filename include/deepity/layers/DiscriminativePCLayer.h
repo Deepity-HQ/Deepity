@@ -13,11 +13,8 @@
 
 /**
  * @file DiscriminativePCLayer.h
- * @brief The original, precision-weighted dense Predictive Coding layer,
- * now routed through IComputeBackend for GPU portability, mirroring
- * ConvPCLayer's own port (this layer's dense formulas are in fact the
- * ones ConvPCLayer's derivation was adapted from, see
- * @ref ConvPCLayer_math).
+ * @brief Precision-weighted dense Predictive Coding layer, routed
+ * through IComputeBackend for GPU portability.
  *
  * @code{.cpp}
  * #include <deepity/layers/DiscriminativePCLayer.h>
@@ -87,10 +84,8 @@ public:
     return CalculateState(true);
   }
   /// @brief Same as CalculateState(), but can skip computing (and
-  /// returning) the energy. On CUDABackend, needEnergy=false also
-  /// means no blocking host sync, required for any settling-loop
-  /// caller that runs this inside a captured CUDA graph region
-  /// (see DiscriminativePCNetwork::TrainStep()'s GPU branch).
+  /// returning) the energy. Pass false inside a captured CUDA graph
+  /// region.
   /// @param needEnergy Whether to compute and return the energy.
   float CalculateState(bool needEnergy) noexcept;
 
@@ -133,11 +128,7 @@ public:
 
   /// @brief Forces the next ComputeMuOnly() call to recompute mu
   /// instead of reusing a cached value, without otherwise touching
-  /// clamp state. Needed after a CUDA-graph (re)capture: the
-  /// recording pass runs the settling loop as real C++, leaving
-  /// muCacheValid=true as a side effect, which would otherwise make
-  /// the following fresh, uncaptured energy read reuse mu from
-  /// before this call's own weight update.
+  /// clamp state. Call after a CUDA-graph (re)capture.
   void InvalidateMuCache() noexcept
   {
     muCacheValid = false;
@@ -304,12 +295,11 @@ public:
     return *layerBelow;
   }
 
-  /// @brief Randomizes the weights W using a normal distribution
-  /// scaled by fan-in/fan-out (see RandomizeWeights()'s .cpp).
+  /// @brief Randomizes the weights W in place.
   /// @param twister The classic Mersenne Twister
   /// @param distribution e.g. "normal(0,1)" or "uniform(-0.3,0.3)". The
-  /// default "normal" has no "(a,b)" and so deliberately fails to parse,
-  /// falling back to this class's own existing fan-scaled default.
+  /// default "normal" (with no "(a,b)") falls back to this class's own
+  /// fan-scaled default.
   void RandomizeWeights(std::mt19937& twister, const char* distribution = "normal") noexcept;
 
   /// @brief Returns this layer's configured activation type.
@@ -345,8 +335,7 @@ public:
 private:
   std::unique_ptr<MemoryArena> localArena;
 
-  /// @brief The compute backend this layer routes all math through
-  ///, see SimplePCLayer::backend's doc for the deleter reasoning.
+  /// @brief The compute backend this layer routes all math through.
   using BackendDeleter = void (*)(IComputeBackend*);
   std::unique_ptr<IComputeBackend, BackendDeleter> backend;
 
@@ -366,24 +355,16 @@ private:
   /// @brief Cached copy of this layer's most recently computed
   /// outgoing prediction, used to skip recomputation while clamped.
   float* cachedMu = nullptr;
-  /// @brief preact's counterpart to cachedMu, same clamped-caching
-  /// reasoning.
+  /// @brief Cached pre-activation, valid alongside cachedMu.
   float* cachedPreact = nullptr;
   /// @brief True once cachedMu/cachedPreact hold a valid, up-to-date
   /// value.
   bool muCacheValid = false;
 
   /// @brief mu's pre-activation value (W@z+b, before Activation()
-  /// overwrites mu in place with f(preact)). Snapshotted because the
-  /// derivative needed by both UpdateState() and UpdateWeights()
-  /// isn't closed-form from the activated value alone for every
-  /// activation type (e.g. GELU); see SimpleConvPCLayer's own preact.
+  /// overwrites mu in place with f(preact)).
   float* preact = nullptr;
-  /// @brief out_state_size scratch holding f'(preact), kept separate
-  /// from mu itself: mu must stay the clean, activated value, since
-  /// ComputeMuOnly() is publicly callable between UpdateState() and
-  /// UpdateWeights() and would silently clobber a derivative stashed
-  /// in mu back into the plain activated value.
+  /// @brief out_state_size scratch holding f'(preact).
   float* derivScratch = nullptr;
   /// @brief Scratch buffer for the feedback term's raw GEMM output.
   float* feedbackScratch = nullptr;
@@ -398,8 +379,7 @@ private:
   /// feedback term (e_above * p_above); reused as the weight-update
   /// local gradient in UpdateWeights().
   float* bottom_up = nullptr;
-  /// @brief Row-summed bias gradient scratch (SGD path only,
-  /// matches FullPCLayer::biasGradScratch).
+  /// @brief Row-summed bias gradient scratch (SGD path only).
   float* biasGradScratch = nullptr;
 
   /// @brief Learning rate for weights.
@@ -415,8 +395,7 @@ private:
 
   /// @brief The optimizer currently selected for weight updates.
   OptimizerType opt = OptimizerType::SGD;
-  /// @brief Device-resident Adam step count and learning rate,
-  /// same reasoning as ConvPCLayer/SimplePCLayer's own ports.
+  /// @brief Device-resident Adam step count and learning rate.
   int* t_device = nullptr;
   float* lr_device = nullptr;
   /// @brief Scratch buffer for the weight gradient (Adam/AdamW only).
@@ -447,17 +426,3 @@ private:
 };
 
 } // namespace Deep
-
-/*
- * MHSA USING PCNs:
- * In a standard Transformer, Multi-Head Self-Attention (MHSA) computes Queries, Keys,
- * and Values in a rigid, one-shot forward pass to route token context. If implemented
- * using a PCN, the attention scores and context vectors would become dynamic latent
- * states (z). When a sequence is input, the attention routing wouldn't be calculated
- * instantly; instead, it would iteratively settle over artificial time. The network
- * would adjust its attention states to minimize the prediction error between the
- * bottom-up token data and the top-down expectations from higher layers. The Q, K,
- * and V projection matrices would serve as the local weights (W) for this mechanism,
- * and would be updated entirely in parallel via local Hebbian rules once the attention
- * routing reached its minimum-energy equilibrium.
- */

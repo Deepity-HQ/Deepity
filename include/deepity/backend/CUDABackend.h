@@ -52,9 +52,6 @@ public:
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackendT::SumRowsAccum
-  /// CUDABackend's T and AccumT are always float, same as CPUBackend's
-  /// own identical-override reasoning -- see CPUBackend.h's own comment
-  /// on MatMulAccum/SumRowsAccum for why these exist at all.
   void SumRowsAccum(float* dst, const float* src, size_t batchSize, size_t width) noexcept override
   {
     SumRows(dst, src, batchSize, width);
@@ -62,17 +59,13 @@ public:
   /// @copydoc Deep::IComputeBackend::Sum
   float Sum(const float* buf, size_t n) noexcept override;
 
-  /// @brief Must be called once, before Compile()'s first
-  /// BeginGraphCapture(), for any backend that needs to prepare
-  /// batch-size-dependent state (e.g. CUDABackend's cached all-ones
-  /// vector for SumRows' GEMV). No-op on CPUBackend.
+  /// @copydoc Deep::IComputeBackend::PrepareForBatchSize
   void PrepareForBatchSize(size_t batchSize) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
   /// @copydoc Deep::IComputeBackendT::MatMulAccum
-  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
   void MatMulAccum(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                    int lda, const float* B, int ldb, float beta, float* C,
                    int ldc) noexcept override
@@ -80,7 +73,6 @@ public:
     MatMul(transA, transB, M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
   }
   /// @copydoc Deep::IComputeBackendT::MatMulAccumMixed
-  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
   void MatMulAccumMixed(bool transA, bool transB, int M, int N, int K, float alpha,
                         const float* A, int lda, const float* B, int ldb, float beta, float* C,
                         int ldc) noexcept override
@@ -95,7 +87,6 @@ public:
   /// @copydoc Deep::IComputeBackend::AxpyInto
   void AxpyInto(float* y, const float* x, size_t n, float alpha) noexcept override;
   /// @copydoc Deep::IComputeBackendT::AxpyIntoAccum
-  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
   void AxpyIntoAccum(float* y, const float* x, size_t n, float alpha) noexcept override
   {
     AxpyInto(y, x, n, alpha);
@@ -115,7 +106,7 @@ public:
   {
     (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)A, (void)lda, (void)B, (void)ldb,
         (void)bias, (void)C, (void)ldc;
-    return false; // CUDA's own fused path is TryFusedForwardPass instead
+    return false;
   }
 
   /// @copydoc Deep::IComputeBackend::TryFusedMatMul
@@ -124,7 +115,7 @@ public:
   {
     (void)transA, (void)transB, (void)M, (void)N, (void)K, (void)alpha, (void)A, (void)lda,
         (void)B, (void)ldb, (void)C, (void)ldc;
-    return false; // CUDA's own fused path is TryFusedForwardPass instead
+    return false;
   }
 
   /// @copydoc Deep::IComputeBackend::TryFusedFeedbackUpdate
@@ -134,8 +125,7 @@ public:
   {
     (void)dType, (void)batchSize, (void)size, (void)nextSize, (void)eAbove, (void)W, (void)z,
         (void)e, (void)ir, (void)scratch, (void)derivScratch;
-    return false; // no CUDA kernel for this fusion yet -- caller falls
-                  // back to TryFusedMatMul() + FusedStateUpdate()
+    return false;
   }
 
   /// @copydoc Deep::IComputeBackend::FusedStateUpdateMomentum
@@ -159,7 +149,6 @@ public:
   void ActivationDerivativeInto(ActivationType type, float* dst, const float* src,
                                 size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackendT::ActivationDerivativeIntoAccum
-  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
   void ActivationDerivativeIntoAccum(ActivationType type, float* dst, const float* src,
                                      size_t n) noexcept override
   {
@@ -180,7 +169,7 @@ public:
                                     const float* z, const float* mu, size_t n) noexcept override
   {
     (void)activationType, (void)e, (void)zF, (void)z, (void)mu, (void)n;
-    return false; // caller falls back to separate ComputeError()/ActivationInto() calls
+    return false;
   }
 
   /// @copydoc Deep::IComputeBackend::ComputeSoftmaxCrossEntropyErrorAndEnergy
@@ -213,7 +202,6 @@ public:
   /// @copydoc Deep::IComputeBackend::MultiplyInto
   void MultiplyInto(float* dst, const float* a, const float* b, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackendT::MultiplyIntoAccum
-  /// Same "T==AccumT==float always" reasoning as SumRowsAccum() above.
   void MultiplyIntoAccum(float* dst, const float* a, const float* b, size_t n) noexcept override
   {
     MultiplyInto(dst, a, b, n);
@@ -293,11 +281,8 @@ private:
 #ifdef DEEPITY_USE_CUDA
   cublasHandle_t handle;
   cudaStream_t stream;
-  /// @brief Independent captured-graph slots, indexed by BeginGraphCapture()/
-  /// EndGraphCapture()/ReplayGraph()'s own @p slot (see their doc
-  /// comments). Grows on demand in EndGraphCapture(); a slot that's
-  /// never been captured into has graph=graphExec=nullptr and
-  /// hasGraph=false, same as every slot used to be before this existed.
+  /// @brief One entry per graph slot, indexed by BeginGraphCapture()/
+  /// EndGraphCapture()/ReplayGraph()'s @p slot.
   struct GraphSlot
   {
     cudaGraph_t graph = nullptr;
@@ -312,24 +297,13 @@ private:
   float* onesVector = nullptr;
   size_t onesCapacity = 0;
   float* workspace = nullptr;
-  /// @brief Current byte capacity of @p workspace, the shared scratch
-  /// buffer TryFusedConvForward()/TryFusedConvBackwardData()/
-  /// TryFusedConvBackwardFilter() grow (never shrink) on demand for
-  /// cuDNN's algorithm workspace requirement -- same lazy-grow pattern
-  /// as PrepareForBatchSize()'s onesVector.
+  /// @brief Current byte capacity of @p workspace.
   size_t workspaceBytes = 0;
-  /// @brief Mirrors the last value passed to SetAllowTF32(), so the
-  /// cuDNN conv path (which sets its own per-call math type, separate
-  /// from cublasSetMathMode()) stays in sync with it.
+  /// @brief Last value passed to SetAllowTF32().
   bool allowTF32 = true;
 
   /// @brief Single-float device scratch buffer for scalar reductions
-  /// (ComputePrecisionWeightedErrorAndEnergy(), Sum()). Allocated once in
-  /// the constructor instead of per-call: cudaMalloc/cudaFree are
-  /// synchronizing driver calls that stall the whole pipeline, and both
-  /// callers already block on cudaStreamSynchronize() before returning,
-  /// so reusing one persistent buffer across calls is safe -- no two
-  /// reductions on this backend instance can ever be in flight at once.
+  /// (ComputePrecisionWeightedErrorAndEnergy(), Sum()).
   float* scalarScratch = nullptr;
 };
 } // namespace Deep

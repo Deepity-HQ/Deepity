@@ -6,15 +6,13 @@
 
 /**
  * @file AttentionOutputLayer.h
- * @brief Attention's weighted-sum-with-V step as a free-standing PC node
- * -- see AttentionScoresLayer.h's doc comment for why this isn't a
- * FullPCLayer toggle: mu here also depends on TWO upstream beliefs (the
- * settled attention weights and V), not one.
+ * @brief Attention's weighted-sum-with-V step as a free-standing PC
+ * node: mu depends on two upstream beliefs (the settled attention
+ * weights and V), which a FullPCLayer toggle can't express.
  *
- * Unlike AttentionScoresLayer, this node has no softmax and no learnable
- * weights at all -- mu is a fixed bilinear combination of its two
- * inputs, so it uses the ordinary Gaussian PC energy, same as a plain
- * FullPCLayer with no W/b of its own to update.
+ * Has no softmax and no learnable weights; mu is a fixed bilinear
+ * combination of its two inputs, settled via the ordinary Gaussian PC
+ * energy.
  */
 
 namespace Deep
@@ -29,7 +27,7 @@ public:
   /// @param headDim Per-head feature dimension of V (and of this
   /// layer's own belief).
   /// @param backend Compute backend to use; nullptr constructs an owned
-  /// CPUBackend (CPU-only for v1, see AttentionScoresLayer.h).
+  /// CPUBackend.
   AttentionOutputLayer(size_t batchSize, size_t seqLen, size_t headDim,
                        IComputeBackend* backend = nullptr);
 
@@ -47,10 +45,7 @@ public:
   float CalculateState(bool needEnergy) noexcept;
 
   /// @brief Settles z one Euler step: z += ir * (eAbove - e) if there's
-  /// a real layer above (eAbove non-null), else plain z += -ir * e --
-  /// same shape as FullPCLayer::UpdateState()'s two branches. v1 has no
-  /// layer above this one (it's the top of the attention block), so
-  /// eAbove is always nullptr for now.
+  /// a real layer above (eAbove non-null), else plain z += -ir * e.
   void UpdateState(float ir, const float* eAbove = nullptr) noexcept;
 
   float* GetBeliefs() noexcept
