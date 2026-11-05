@@ -8,11 +8,53 @@
 #include "UtilityBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/string.h>
+
 #include <omp.h>
 
+#include <optional>
+#include <random>
+#include <string>
+
+#include <deepity/backend/Backend.h>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/Optimize.h>
+#include <deepity/utils/RandomizeDistribution.h>
 #include <deepity/utils/StreamAlignedBatcher.h>
+
+namespace
+{
+/// @brief Fills `x` in place via Deep::RandomizeWithDistribution(), picking
+/// the backend (and therefore the RNG: OpenMP-parallel Mersenne Twister on
+/// CPU, curand/host-fallback on GPU -- see CUDABackendT's
+/// RandomizeNormal/RandomizeUniform) from `device`. `x` is always a host
+/// numpy array regardless of `device`; the GPU path randomizes into a
+/// throwaway device buffer and copies it back, so the caller gets the same
+/// fast RNG either way without having to manage a device tensor themselves.
+void RandomizeHelper(FloatArray x, std::optional<uint32_t> seed, const std::string& distribution,
+                     const std::string& device)
+{
+  uint32_t backendSeed = seed.has_value() ? seed.value() : std::random_device{}();
+  Deep::DeviceType dt = (device == "cuda" || device == "gpu") ? Deep::DeviceType::DEVICE_GPU
+                                                               : Deep::DeviceType::DEVICE_CPU;
+  auto backend = Deep::CreateBackend(dt);
+  size_t n = x.size();
+
+  if (dt == Deep::DeviceType::DEVICE_CPU)
+  {
+    Deep::RandomizeWithDistribution(backend.get(), x.data(), n, distribution.c_str(), backendSeed,
+                                    0.0f, 1.0f);
+    return;
+  }
+
+  float* deviceBuf = backend->Allocate(n);
+  Deep::RandomizeWithDistribution(backend.get(), deviceBuf, n, distribution.c_str(), backendSeed,
+                                  0.0f, 1.0f);
+  backend->CopyToHost(x.data(), deviceBuf, n);
+  backend->Free(deviceBuf);
+}
+} // namespace
 
 // ============================================================================
 // Utilities Bindings
@@ -88,6 +130,19 @@ void bind_utilities(nb::module_& m)
            "Returns the next batch as (X, Y, labels), each row-major with "
            "rows grouped by class: rows [0, per_class) are class 0, "
            "[per_class, 2*per_class) are class 1, etc.");
+
+  m.def("randomize", &RandomizeHelper, nb::arg("x"), nb::arg("seed") = nb::none(),
+        nb::arg("distribution") = "normal", nb::arg("device") = "cpu",
+        "Fills a numpy float32 array `x` in place with random values, using "
+        "Deepity's own fast RNG (the same one every layer's randomize_weights() "
+        "uses) instead of numpy's -- so this module can seed weights/data "
+        "without a separate randomization dependency. `seed` gives a "
+        "reproducible run (None uses a nondeterministic seed). `distribution` "
+        "is \"normal(mean,stddev)\" or \"uniform(min,max)\"; anything else, "
+        "including the bare words \"normal\"/\"uniform\" with no parentheses, "
+        "falls back to a standard normal(0,1). `device` is \"cpu\" or \"cuda\" "
+        "(GPU randomizes into a device buffer and copies the result back; "
+        "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
   m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes,
         "Queries the size of this CPU's L2 cache (per-core, level 2), "
