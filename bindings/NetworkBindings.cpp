@@ -69,7 +69,7 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
            &NetT::GetTerminalLayer,
            nb::rv_policy::reference,
            "Return the last layer.")
-      .def_prop_ro("batch_size", &NetT::GetBatchSize)
+      .def_prop_ro("batch_size", &NetT::GetBatchSize, "Number of samples processed per call.")
       .def_prop_ro(
           "layers",
           [](NetT& self)
@@ -144,7 +144,9 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
                                       : Deep::DeviceType::DEVICE_CPU;
             new (self) NetT(batch_size, dt);
           },
-          nb::arg("batch_size"), nb::arg("device") = "cpu")
+          nb::arg("batch_size"), nb::arg("device") = "cpu",
+          "Constructs an empty network; call add_layer() for each layer, "
+          "then compile().")
       .def(
           "add_layer",
           [](NetT& self, size_t size, size_t next_size, size_t terminal_size, AccumT lr,
@@ -158,14 +160,32 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
           nb::arg("lr") = AccumT(1e-6), nb::arg("ir") = AccumT(0.1), nb::arg("fl") = AccumT(1e-4),
           nb::arg("lmbda") = AccumT(1e-2), nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
-      .def("set_use_mu_pc_scaling", &NetT::SetUseMuPCScaling, nb::arg("enabled"))
-      .def("set_use_residual_connections", &NetT::SetUseResidualConnections, nb::arg("enabled"))
-      .def("set_use_ipc", &NetT::SetUseIPC, nb::arg("enabled"))
-      .def("set_use_epc", &NetT::SetUseEPC, nb::arg("enabled"))
+      .def("set_use_mu_pc_scaling", &NetT::SetUseMuPCScaling, nb::arg("enabled"),
+           "Enables muPC's full Table 1 parameterization (per-layer forward "
+           "scale `a` plus unit-variance weight init). Only takes effect if "
+           "set before compile(). OFF by default.")
+      .def("set_use_residual_connections", &NetT::SetUseResidualConnections, nb::arg("enabled"),
+           "Enables a skip connection (mu += z, after activation) on every "
+           "middle hidden layer. Requires matching width between a layer's "
+           "input and output; compile() raises otherwise. Only takes effect "
+           "if set before compile(). OFF by default.")
+      .def("set_use_ipc", &NetT::SetUseIPC, nb::arg("enabled"),
+           "Enables incremental PC: update_weights() runs every settling "
+           "step instead of once after settling completes. OFF by default.")
+      .def("set_use_epc", &NetT::SetUseEPC, nb::arg("enabled"),
+           "Enables error-based PC: each settling step becomes one full "
+           "forward+backward sweep through every hidden layer, instead of "
+           "the usual one-hop local message. OFF by default.")
       .def("set_use_momentum", &NetT::SetUseMomentum, nb::arg("enabled"),
-           nb::arg("beta") = AccumT(0.9))
-      .def("set_use_cross_entropy", &NetT::SetUseCrossEntropy, nb::arg("enabled"))
-      .def("compile", &NetT::Compile)
+           nb::arg("beta") = AccumT(0.9),
+           "Enables momentum (inertial) settling on every layer. OFF by default.")
+      .def("set_use_cross_entropy", &NetT::SetUseCrossEntropy, nb::arg("enabled"),
+           "Enables softmax cross-entropy energy on the terminal layer only "
+           "(plain Gaussian energy everywhere else). OFF by default.")
+      .def("compile", &NetT::Compile,
+           "Loads all layers into one contiguous block of memory. Also "
+           "applies set_use_mu_pc_scaling()/set_use_residual_connections()'s "
+           "effects, if either was enabled beforehand.")
       .def(
           "randomize_weights",
           [](NetT& self, std::optional<uint32_t> seed, const std::string& distribution)
@@ -174,8 +194,11 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
                                                 : std::mt19937(std::random_device{}());
             self.RandomizeWeights(rng, distribution.c_str());
           },
-          nb::arg("seed") = nb::none(), nb::arg("distribution") = "normal")
-      .def("reset_state", &NetT::ResetState)
+          nb::arg("seed") = nb::none(), nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
+      .def("reset_state", &NetT::ResetState, "Resets the beliefs z on every layer.")
       .def(
           "clamp_input",
           [](NetT& self, TArray<AccumT> input)
@@ -183,12 +206,20 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
             std::vector<T> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("project_forward", &NetT::ProjectForward)
-      .def("calculate_terminal_error", &NetT::CalculateTerminalError)
-      .def("direct_feedback_update", &NetT::DirectFeedbackUpdate)
-      .def("step", &NetT::Step)
-      .def("update_weights", &NetT::UpdateWeights)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("project_forward", &NetT::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
+      .def("calculate_terminal_error", &NetT::CalculateTerminalError,
+           "Computes the terminal layer's error/energy against its clamped target.")
+      .def("direct_feedback_update", &NetT::DirectFeedbackUpdate,
+           "Perturbs every layer's W using the layer above's Psi and the "
+           "terminal layer's error, the DFA phase, run once per batch "
+           "before settling begins.")
+      .def("step", &NetT::Step, "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("update_weights", &NetT::UpdateWeights, "Applies weight updates to every layer.")
       .def(
           "set_optimizer",
           [](NetT& self, const std::string& opt)
@@ -200,7 +231,8 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_psi_optimizer",
           [](NetT& self, const std::string& opt)
@@ -212,9 +244,12 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_learning_rate", &NetT::SetLearningRate, nb::arg("lr"))
-      .def("set_feedback_rate", &NetT::SetFeedbackRate, nb::arg("fl"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_learning_rate", &NetT::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate for the forward weights W, on every layer.")
+      .def("set_feedback_rate", &NetT::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the feedback weights Psi, on every layer.")
       .def(
           "train_step",
           [](NetT& self, TArray<AccumT> x, TArray<AccumT> y, int inference_steps)
@@ -223,7 +258,11 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
             std::vector<T> yvec(y.data(), y.data() + y.size());
             return self.TrainStep(xvec, yvec, inference_steps);
           },
-          nb::arg("x"), nb::arg("y"), nb::arg("inference_steps") = 1)
+          nb::arg("x"), nb::arg("y"), nb::arg("inference_steps") = 1,
+          "Runs one training step on a single batch: a direct feedback "
+          "alignment update, then settling for `inference_steps` "
+          "iterations before updating weights.\n"
+          "@return The final settling step's total energy, before weight updates.")
       .def(
           "predict",
           [](NetT& self, TArray<AccumT> x, int inference_steps) -> nb::object
@@ -237,8 +276,11 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
             else
               return nb::cast(CopyToNewArray(result.data(), shape));
           },
-          nb::arg("x"), nb::arg("inference_steps"))
-      .def_prop_ro("batch_size", &NetT::GetBatchSize)
+          nb::arg("x"), nb::arg("inference_steps"),
+          "Forward prediction: clamp input, settle for `inference_steps` "
+          "iterations with no DFA perturbation and no target clamped.\n"
+          "@return The terminal layer's beliefs.")
+      .def_prop_ro("batch_size", &NetT::GetBatchSize, "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](NetT& self)
                    {
@@ -246,8 +288,10 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
-      .def("get_terminal_layer", &NetT::GetTerminalLayer, nb::rv_policy::reference)
+                   },
+                   "List of layer objects owned by the network.")
+      .def("get_terminal_layer", &NetT::GetTerminalLayer, nb::rv_policy::reference,
+           "Returns the last layer.")
       .def(
           "save",
           [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
@@ -359,7 +403,8 @@ void bind_networks(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for weight updates: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def("save",
            &Deep::DiscriminativePCNetwork::Save,
            "Saves the network architecture and weights to a structured directory.",
@@ -371,7 +416,10 @@ void bind_networks(nb::module_& m)
       .def("update_precision",
            &Deep::DiscriminativePCNetwork::UpdatePrecision,
            "Apply precision updates to every layer.")
-      .def("project_forward", &Deep::DiscriminativePCNetwork::ProjectForward)
+      .def("project_forward", &Deep::DiscriminativePCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
       .def(
           "train_step_with_projection",
           [](Deep::DiscriminativePCNetwork& self, FloatArray x, FloatArray y, int steps)
@@ -382,7 +430,9 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Same as train_step(), but initializes every layer's beliefs via "
+          "a forward projection pass first.")
       .def(
           "predict_with_projection",
           [](Deep::DiscriminativePCNetwork& self, FloatArray x, int steps)
@@ -395,7 +445,9 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("steps"));
+          nb::arg("steps"),
+          "Same as predict(), but initializes every layer's beliefs via a "
+          "forward projection pass first.");
 
   auto simpleNetCls = nb::class_<Deep::SimplePCNetwork>(
       m, "SimplePCNetwork", "Predictive Coding Network built from SimplePCLayers.");
@@ -468,7 +520,11 @@ void bind_networks(nb::module_& m)
           nb::arg("x"),
           nb::arg("y"),
           nb::arg("steps"),
-          nb::arg("computeEnergy") = true)
+          nb::arg("computeEnergy") = true,
+          "Same as train_step(), but initializes every layer's beliefs via "
+          "a forward projection pass first. Skipping energy computation "
+          "(computeEnergy=False) saves a little time when the caller "
+          "doesn't need the returned value.")
       .def(
           "predict_with_projection",
           [](Deep::SimplePCNetwork& self, FloatArray x, int steps)
@@ -494,7 +550,8 @@ void bind_networks(nb::module_& m)
             new (self) Deep::GaussSeidelPCNetwork(batch_size, dt);
           },
           nb::arg("batch_size"),
-          nb::arg("device") = "cpu")
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").")
       .def(
           "add_layer",
           [](Deep::GaussSeidelPCNetwork& self,
@@ -520,8 +577,10 @@ void bind_networks(nb::module_& m)
           nb::arg("ir") = 0.1f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
-      .def("compile", &Deep::GaussSeidelPCNetwork::Compile)
+          nb::arg("activation_deriv") = "drelu",
+          "Add a layer to the network.")
+      .def("compile", &Deep::GaussSeidelPCNetwork::Compile,
+           "Compiles all layers into a contiguous block.")
       .def(
           "randomize_weights",
           [](Deep::GaussSeidelPCNetwork& self,
@@ -534,8 +593,12 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("reset_state", &Deep::GaussSeidelPCNetwork::ResetState)
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
+      .def("reset_state", &Deep::GaussSeidelPCNetwork::ResetState,
+           "Resets the beliefs z on every layer.")
       .def(
           "clamp_input",
           [](Deep::GaussSeidelPCNetwork& self, FloatArray input)
@@ -543,10 +606,16 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("step", &Deep::GaussSeidelPCNetwork::Step)
-      .def("update_weights", &Deep::GaussSeidelPCNetwork::UpdateWeights)
-      .def("project_forward", &Deep::GaussSeidelPCNetwork::ProjectForward)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("step", &Deep::GaussSeidelPCNetwork::Step,
+           "Runs one Gauss-Seidel settling step (calculate_state + update_state) on every layer.")
+      .def("update_weights", &Deep::GaussSeidelPCNetwork::UpdateWeights,
+           "Applies weight updates to every layer.")
+      .def("project_forward", &Deep::GaussSeidelPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
       .def(
           "set_optimizer",
           [](Deep::GaussSeidelPCNetwork& self, const std::string& opt)
@@ -558,8 +627,10 @@ void bind_networks(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_learning_rate", &Deep::GaussSeidelPCNetwork::SetLearningRate)
+          nb::arg("optimizer"),
+          "Sets the optimizer used for weight updates: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_learning_rate", &Deep::GaussSeidelPCNetwork::SetLearningRate,
+           "Sets the learning rate used for weight updates, on every layer.")
       .def(
           "train_step",
           [](Deep::GaussSeidelPCNetwork& self, FloatArray x, FloatArray y, int steps)
@@ -570,7 +641,10 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Runs one training step on a single batch, settling for `steps` "
+          "Gauss-Seidel iterations before updating weights.\n"
+          "@return Total settling energy accumulated over `steps`.")
       .def(
           "train_step_with_projection",
           [](Deep::GaussSeidelPCNetwork& self, FloatArray x, FloatArray y, int steps)
@@ -581,7 +655,9 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Same as train_step(), but initializes every layer's beliefs via "
+          "a forward projection pass first.")
       .def(
           "predict",
           [](Deep::GaussSeidelPCNetwork& self, FloatArray x, int steps)
@@ -594,8 +670,11 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("steps"))
-      .def_prop_ro("batch_size", &Deep::GaussSeidelPCNetwork::GetBatchSize)
+          nb::arg("steps"),
+          "Run inference on `x`, settling for `steps` Gauss-Seidel iterations.\n"
+          "@return The terminal layer's beliefs.")
+      .def_prop_ro("batch_size", &Deep::GaussSeidelPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::GaussSeidelPCNetwork& self)
                    {
@@ -603,7 +682,8 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
+                   },
+                   "List of layer objects owned by the network.")
       .def(
           "save",
           [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
@@ -645,7 +725,8 @@ void bind_networks(nb::module_& m)
             new (self) Deep::DirectKPPCNetwork(batch_size, dt);
           },
           nb::arg("batch_size"),
-          nb::arg("device") = "cpu")
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").")
       .def(
           "add_layer",
           [](Deep::DirectKPPCNetwork& self,
@@ -677,8 +758,10 @@ void bind_networks(nb::module_& m)
           nb::arg("fl") = 1e-4f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
-      .def("compile", &Deep::DirectKPPCNetwork::Compile)
+          nb::arg("activation_deriv") = "drelu",
+          "Add a layer to the network.")
+      .def("compile", &Deep::DirectKPPCNetwork::Compile,
+           "Compiles all layers into a contiguous block.")
       .def(
           "randomize_weights",
           [](Deep::DirectKPPCNetwork& self,
@@ -691,8 +774,12 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("reset_state", &Deep::DirectKPPCNetwork::ResetState)
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
+      .def("reset_state", &Deep::DirectKPPCNetwork::ResetState,
+           "Resets the beliefs z on every layer.")
       .def(
           "clamp_input",
           [](Deep::DirectKPPCNetwork& self, FloatArray input)
@@ -700,12 +787,22 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("project_forward", &Deep::DirectKPPCNetwork::ProjectForward)
-      .def("calculate_terminal_error", &Deep::DirectKPPCNetwork::CalculateTerminalError)
-      .def("direct_feedback_update", &Deep::DirectKPPCNetwork::DirectFeedbackUpdate)
-      .def("step", &Deep::DirectKPPCNetwork::Step)
-      .def("update_weights", &Deep::DirectKPPCNetwork::UpdateWeights)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("project_forward", &Deep::DirectKPPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
+      .def("calculate_terminal_error", &Deep::DirectKPPCNetwork::CalculateTerminalError,
+           "Computes the terminal layer's error/energy against its clamped target.")
+      .def("direct_feedback_update", &Deep::DirectKPPCNetwork::DirectFeedbackUpdate,
+           "Perturbs every layer's W using the layer above's Psi and the "
+           "terminal layer's error, the DFA phase, run once per batch "
+           "before settling begins.")
+      .def("step", &Deep::DirectKPPCNetwork::Step,
+           "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("update_weights", &Deep::DirectKPPCNetwork::UpdateWeights,
+           "Applies weight updates to every layer.")
       .def(
           "set_optimizer",
           [](Deep::DirectKPPCNetwork& self, const std::string& opt)
@@ -717,7 +814,8 @@ void bind_networks(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_psi_optimizer",
           [](Deep::DirectKPPCNetwork& self, const std::string& opt)
@@ -729,9 +827,12 @@ void bind_networks(nb::module_& m)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_learning_rate", &Deep::DirectKPPCNetwork::SetLearningRate, nb::arg("lr"))
-      .def("set_feedback_rate", &Deep::DirectKPPCNetwork::SetFeedbackRate, nb::arg("fl"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_learning_rate", &Deep::DirectKPPCNetwork::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate for the forward weights W, on every layer.")
+      .def("set_feedback_rate", &Deep::DirectKPPCNetwork::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the feedback weights Psi, on every layer.")
       .def(
           "train_step",
           [](Deep::DirectKPPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
@@ -742,7 +843,11 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("inference_steps") = 1)
+          nb::arg("inference_steps") = 1,
+          "Runs one training step on a single batch: a direct feedback "
+          "alignment update, then settling for `inference_steps` "
+          "iterations before updating weights.\n"
+          "@return The final settling step's total energy, before weight updates.")
       .def(
           "predict",
           [](Deep::DirectKPPCNetwork& self, FloatArray x, int inference_steps)
@@ -755,8 +860,12 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("inference_steps"))
-      .def_prop_ro("batch_size", &Deep::DirectKPPCNetwork::GetBatchSize)
+          nb::arg("inference_steps"),
+          "Forward prediction: clamp input, settle for `inference_steps` "
+          "iterations with no DFA perturbation and no target clamped.\n"
+          "@return The terminal layer's beliefs.")
+      .def_prop_ro("batch_size", &Deep::DirectKPPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::DirectKPPCNetwork& self)
                    {
@@ -764,10 +873,12 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
+                   },
+                   "List of layer objects owned by the network.")
       .def("get_terminal_layer",
            &Deep::DirectKPPCNetwork::GetTerminalLayer,
-           nb::rv_policy::reference)
+           nb::rv_policy::reference,
+           "Returns the last layer.")
       .def(
           "save",
           [](const Deep::DirectKPPCNetwork& self, const std::string& filepath)
@@ -815,7 +926,8 @@ void bind_networks(nb::module_& m)
             new (self) Deep::FullPCNetwork(batch_size, dt);
           },
           nb::arg("batch_size"),
-          nb::arg("device") = "cpu")
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").")
       .def(
           "add_layer",
           [](Deep::FullPCNetwork& self,
@@ -847,7 +959,8 @@ void bind_networks(nb::module_& m)
           nb::arg("fl") = 1e-4f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
+          nb::arg("activation_deriv") = "drelu",
+          "Add a layer to the network.")
       .def("set_use_mu_pc_scaling",
            &Deep::FullPCNetwork::SetUseMuPCScaling,
            nb::arg("enabled"),
@@ -884,7 +997,10 @@ void bind_networks(nb::module_& m)
            nb::arg("enabled"),
            "Enable/disable softmax cross-entropy energy on the terminal layer "
            "only (not every layer). OFF by default (plain Gaussian energy).")
-      .def("compile", &Deep::FullPCNetwork::Compile)
+      .def("compile", &Deep::FullPCNetwork::Compile,
+           "Loads all layers into one contiguous block of memory. Also "
+           "applies set_use_mu_pc_scaling()/set_use_residual_connections()'s "
+           "effects, if either was enabled beforehand.")
       .def(
           "randomize_weights",
           [](Deep::FullPCNetwork& self,
@@ -897,8 +1013,12 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("reset_state", &Deep::FullPCNetwork::ResetState)
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
+      .def("reset_state", &Deep::FullPCNetwork::ResetState,
+           "Resets the beliefs z on every layer.")
       .def(
           "clamp_input",
           [](Deep::FullPCNetwork& self, FloatArray input)
@@ -906,12 +1026,22 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("project_forward", &Deep::FullPCNetwork::ProjectForward)
-      .def("calculate_terminal_error", &Deep::FullPCNetwork::CalculateTerminalError)
-      .def("direct_feedback_update", &Deep::FullPCNetwork::DirectFeedbackUpdate)
-      .def("step", &Deep::FullPCNetwork::Step)
-      .def("update_weights", &Deep::FullPCNetwork::UpdateWeights)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("project_forward", &Deep::FullPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
+      .def("calculate_terminal_error", &Deep::FullPCNetwork::CalculateTerminalError,
+           "Computes the terminal layer's error/energy against its clamped target.")
+      .def("direct_feedback_update", &Deep::FullPCNetwork::DirectFeedbackUpdate,
+           "Perturbs every layer's W using the layer above's Psi and the "
+           "terminal layer's error, the DFA phase, run once per batch "
+           "before settling begins.")
+      .def("step", &Deep::FullPCNetwork::Step,
+           "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("update_weights", &Deep::FullPCNetwork::UpdateWeights,
+           "Applies weight updates to every layer.")
       .def(
           "set_optimizer",
           [](Deep::FullPCNetwork& self, const std::string& opt)
@@ -923,7 +1053,8 @@ void bind_networks(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_psi_optimizer",
           [](Deep::FullPCNetwork& self, const std::string& opt)
@@ -935,9 +1066,12 @@ void bind_networks(nb::module_& m)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_learning_rate", &Deep::FullPCNetwork::SetLearningRate, nb::arg("lr"))
-      .def("set_feedback_rate", &Deep::FullPCNetwork::SetFeedbackRate, nb::arg("fl"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_learning_rate", &Deep::FullPCNetwork::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate for the forward weights W, on every layer.")
+      .def("set_feedback_rate", &Deep::FullPCNetwork::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the feedback weights Psi, on every layer.")
       .def(
           "train_step",
           [](Deep::FullPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)
@@ -948,7 +1082,11 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("inference_steps") = 1)
+          nb::arg("inference_steps") = 1,
+          "Runs one training step on a single batch: a direct feedback "
+          "alignment update, then settling for `inference_steps` "
+          "iterations before updating weights.\n"
+          "@return The final settling step's total energy, before weight updates.")
       .def(
           "predict",
           [](Deep::FullPCNetwork& self, FloatArray x, int inference_steps)
@@ -961,8 +1099,12 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("inference_steps"))
-      .def_prop_ro("batch_size", &Deep::FullPCNetwork::GetBatchSize)
+          nb::arg("inference_steps"),
+          "Forward prediction: clamp input, settle for `inference_steps` "
+          "iterations with no DFA perturbation and no target clamped.\n"
+          "@return The terminal layer's beliefs.")
+      .def_prop_ro("batch_size", &Deep::FullPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::FullPCNetwork& self)
                    {
@@ -970,8 +1112,10 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
-      .def("get_terminal_layer", &Deep::FullPCNetwork::GetTerminalLayer, nb::rv_policy::reference)
+                   },
+                   "List of layer objects owned by the network.")
+      .def("get_terminal_layer", &Deep::FullPCNetwork::GetTerminalLayer, nb::rv_policy::reference,
+           "Returns the last layer.")
       .def(
           "save",
           [](const Deep::FullPCNetwork& self, const std::string& filepath)
@@ -1019,7 +1163,8 @@ void bind_networks(nb::module_& m)
             new (self) Deep::FullConvPCNetwork(batch_size, dt);
           },
           nb::arg("batch_size"),
-          nb::arg("device") = "cpu")
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").")
       .def(
           "add_layer",
           [](Deep::FullConvPCNetwork& self,
@@ -1087,9 +1232,14 @@ void bind_networks(nb::module_& m)
           nb::arg("pool_h") = 1,
           nb::arg("pool_w") = 1,
           nb::arg("pool_stride_h") = 1,
-          nb::arg("pool_stride_w") = 1)
-      .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"))
-      .def("set_use_pcx_init", &Deep::FullConvPCNetwork::SetUsePCXInit, nb::arg("enabled"))
+          nb::arg("pool_stride_w") = 1,
+          "Add a convolutional layer to the network.")
+      .def("set_use_mu_pc_scaling", &Deep::FullConvPCNetwork::SetUseMuPCScaling, nb::arg("enabled"),
+           "Enables muPC's full Table 1 parameterization. Must be called "
+           "before compile() and before randomize_weights(). OFF by default.")
+      .def("set_use_pcx_init", &Deep::FullConvPCNetwork::SetUsePCXInit, nb::arg("enabled"),
+           "Enables PCX's own init (uniform +-1/sqrt(fan_in)), in place of "
+           "Kaiming-normal. Call before randomize_weights(). OFF by default.")
       .def("save",
            &Deep::FullConvPCNetwork::Save,
            "Saves every layer's weights and Adam moments to a single safetensors-format "
@@ -1102,16 +1252,29 @@ void bind_networks(nb::module_& m)
            nb::arg("filepath"))
       .def("set_use_residual_connections",
            &Deep::FullConvPCNetwork::SetUseResidualConnections,
-           nb::arg("enabled"))
-      .def("set_use_ipc", &Deep::FullConvPCNetwork::SetUseIPC, nb::arg("enabled"))
-      .def("set_use_epc", &Deep::FullConvPCNetwork::SetUseEPC, nb::arg("enabled"))
+           nb::arg("enabled"),
+           "Enables a skip connection on every middle hidden layer. Must be "
+           "called before compile(). OFF by default.")
+      .def("set_use_ipc", &Deep::FullConvPCNetwork::SetUseIPC, nb::arg("enabled"),
+           "Enables incremental PC: update_weights() runs every settling "
+           "step instead of once after settling completes. OFF by default.")
+      .def("set_use_epc", &Deep::FullConvPCNetwork::SetUseEPC, nb::arg("enabled"),
+           "Enables error-based PC: each settling step becomes one full "
+           "forward+backward sweep through every hidden layer, instead of "
+           "the usual one-hop local message. OFF by default.")
       .def("set_use_momentum",
            &Deep::FullConvPCNetwork::SetUseMomentum,
            nb::arg("enabled"),
-           nb::arg("beta") = 0.9f)
+           nb::arg("beta") = 0.9f,
+           "Enables momentum (inertial) settling on every layer. OFF by default.")
       .def(
-          "set_use_cross_entropy", &Deep::FullConvPCNetwork::SetUseCrossEntropy, nb::arg("enabled"))
-      .def("compile", &Deep::FullConvPCNetwork::Compile)
+          "set_use_cross_entropy", &Deep::FullConvPCNetwork::SetUseCrossEntropy, nb::arg("enabled"),
+          "Enables softmax cross-entropy energy on the terminal layer only "
+          "(plain Gaussian energy everywhere else). OFF by default.")
+      .def("compile", &Deep::FullConvPCNetwork::Compile,
+           "Loads all layers into one contiguous block of memory. Also "
+           "applies set_use_mu_pc_scaling()/set_use_residual_connections()'s "
+           "effects, if either was enabled beforehand.")
       .def(
           "randomize_weights",
           [](Deep::FullConvPCNetwork& self,
@@ -1124,8 +1287,12 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("reset_state", &Deep::FullConvPCNetwork::ResetState)
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
+      .def("reset_state", &Deep::FullConvPCNetwork::ResetState,
+           "Resets the beliefs z on every layer.")
       .def(
           "clamp_input",
           [](Deep::FullConvPCNetwork& self, FloatArray input)
@@ -1133,12 +1300,22 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("project_forward", &Deep::FullConvPCNetwork::ProjectForward)
-      .def("calculate_terminal_error", &Deep::FullConvPCNetwork::CalculateTerminalError)
-      .def("direct_feedback_update", &Deep::FullConvPCNetwork::DirectFeedbackUpdate)
-      .def("step", &Deep::FullConvPCNetwork::Step)
-      .def("update_weights", &Deep::FullConvPCNetwork::UpdateWeights)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("project_forward", &Deep::FullConvPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.")
+      .def("calculate_terminal_error", &Deep::FullConvPCNetwork::CalculateTerminalError,
+           "Computes the terminal layer's error/energy against its clamped target.")
+      .def("direct_feedback_update", &Deep::FullConvPCNetwork::DirectFeedbackUpdate,
+           "Perturbs every layer's W using the layer above's Psi and the "
+           "terminal layer's error, the DFA phase, run once per batch "
+           "before settling begins.")
+      .def("step", &Deep::FullConvPCNetwork::Step,
+           "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("update_weights", &Deep::FullConvPCNetwork::UpdateWeights,
+           "Applies weight updates to every layer.")
       .def(
           "set_optimizer",
           [](Deep::FullConvPCNetwork& self, const std::string& opt)
@@ -1150,7 +1327,8 @@ void bind_networks(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_psi_optimizer",
           [](Deep::FullConvPCNetwork& self, const std::string& opt)
@@ -1162,11 +1340,16 @@ void bind_networks(nb::module_& m)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_learning_rate", &Deep::FullConvPCNetwork::SetLearningRate, nb::arg("lr"))
-      .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"))
-      .def("set_inference_rate", &Deep::FullConvPCNetwork::SetInferenceRate, nb::arg("ir"))
-      .def("set_adam_epsilon", &Deep::FullConvPCNetwork::SetAdamEpsilon, nb::arg("eps"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_learning_rate", &Deep::FullConvPCNetwork::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate for the forward weights W, on every layer.")
+      .def("set_feedback_rate", &Deep::FullConvPCNetwork::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the feedback weights Psi, on every layer.")
+      .def("set_inference_rate", &Deep::FullConvPCNetwork::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size), on every layer.")
+      .def("set_adam_epsilon", &Deep::FullConvPCNetwork::SetAdamEpsilon, nb::arg("eps"),
+           "Sets the Adam optimizer's numerical-stability epsilon, on every layer.")
       .def(
           "train_step",
           [](Deep::FullConvPCNetwork& self,
@@ -1182,7 +1365,14 @@ void bind_networks(nb::module_& m)
           nb::arg("x"),
           nb::arg("y"),
           nb::arg("inference_steps") = 1,
-          nb::arg("computeEnergy") = true)
+          nb::arg("computeEnergy") = true,
+          "Runs one training step on a single batch: a direct feedback "
+          "alignment update, then settling for `inference_steps` "
+          "iterations before updating weights. Skipping energy computation "
+          "(computeEnergy=False) saves a little time when the caller "
+          "doesn't need the returned value.\n"
+          "@return The final settling step's total energy, before weight "
+          "updates (0 if computeEnergy is False).")
       .def(
           "get_all_layer_diagnostics",
           [](Deep::FullConvPCNetwork& self)
@@ -1205,8 +1395,12 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("inference_steps"))
-      .def_prop_ro("batch_size", &Deep::FullConvPCNetwork::GetBatchSize)
+          nb::arg("inference_steps"),
+          "Forward prediction: clamp input, settle for `inference_steps` "
+          "iterations with no DFA perturbation and no target clamped.\n"
+          "@return The terminal layer's beliefs.")
+      .def_prop_ro("batch_size", &Deep::FullConvPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::FullConvPCNetwork& self)
                    {
@@ -1214,10 +1408,12 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
+                   },
+                   "List of layer objects owned by the network.")
       .def("get_terminal_layer",
            &Deep::FullConvPCNetwork::GetTerminalLayer,
-           nb::rv_policy::reference)
+           nb::rv_policy::reference,
+           "Returns the last layer.")
       .def(
           "save",
           [](const Deep::FullConvPCNetwork& self, const std::string& filepath)
@@ -1317,7 +1513,8 @@ void bind_networks(nb::module_& m)
           nb::arg("pr") = 0.0f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
+          nb::arg("activation_deriv") = "drelu",
+          "Add a convolutional layer to the network.")
       .def("compile", &Deep::ConvPCNetwork::Compile, "Compiles all layers into a contiguous block.")
       .def(
           "randomize_weights",
@@ -1331,7 +1528,10 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
       .def(
           "clamp_input",
           [](Deep::ConvPCNetwork& self, FloatArray input)
@@ -1339,12 +1539,14 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("calculate_state", &Deep::ConvPCNetwork::CalculateState)
-      .def("update_state", &Deep::ConvPCNetwork::UpdateState)
-      .def("update_weights", &Deep::ConvPCNetwork::UpdateWeights)
-      .def("update_precision", &Deep::ConvPCNetwork::UpdatePrecision)
-      .def("reset_state", &Deep::ConvPCNetwork::ResetState)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("calculate_state", &Deep::ConvPCNetwork::CalculateState, "Compute the total network energy.")
+      .def("update_state", &Deep::ConvPCNetwork::UpdateState, "Run one inference step.")
+      .def("update_weights", &Deep::ConvPCNetwork::UpdateWeights, "Apply weight updates to every layer.")
+      .def("update_precision", &Deep::ConvPCNetwork::UpdatePrecision,
+           "Apply precision updates to every layer.")
+      .def("reset_state", &Deep::ConvPCNetwork::ResetState, "Resets the beliefs z on every layer.")
       .def(
           "train_step",
           [](Deep::ConvPCNetwork& self, FloatArray x, FloatArray y, int steps)
@@ -1355,7 +1557,10 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Runs one training step on a single batch, settling for `steps` "
+          "iterations before updating weights.\n"
+          "@return Total settling energy accumulated over `steps`.")
       .def(
           "predict",
           [](Deep::ConvPCNetwork& self, FloatArray x, int steps)
@@ -1368,9 +1573,13 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("steps"))
-      .def("get_terminal_layer", &Deep::ConvPCNetwork::GetTerminalLayer, nb::rv_policy::reference)
-      .def_prop_ro("batch_size", &Deep::ConvPCNetwork::GetBatchSize)
+          nb::arg("steps"),
+          "Run inference on `x`, settling for `steps` iterations.\n"
+          "@return The terminal layer's beliefs.")
+      .def("get_terminal_layer", &Deep::ConvPCNetwork::GetTerminalLayer, nb::rv_policy::reference,
+           "Returns the last layer.")
+      .def_prop_ro("batch_size", &Deep::ConvPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::ConvPCNetwork& self)
                    {
@@ -1378,7 +1587,8 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
+                   },
+                   "List of layer objects owned by the network.")
       .def(
           "save",
           [](const Deep::ConvPCNetwork& self, const std::string& filepath)
@@ -1410,9 +1620,16 @@ void bind_networks(nb::module_& m)
              return "<ConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) +
                     " batch_size=" + std::to_string(self.GetBatchSize()) + ">";
            })
-      .def("train_step_with_projection", &Deep::ConvPCNetwork::TrainStepWithProjection)
-      .def("predict_with_projection", &Deep::ConvPCNetwork::PredictWithProjection)
-      .def("project_forward", &Deep::ConvPCNetwork::ProjectForward);
+      .def("train_step_with_projection", &Deep::ConvPCNetwork::TrainStepWithProjection,
+           "Same as train_step(), but initializes every layer's beliefs via "
+           "a forward projection pass first.")
+      .def("predict_with_projection", &Deep::ConvPCNetwork::PredictWithProjection,
+           "Same as predict(), but initializes every layer's beliefs via a "
+           "forward projection pass first.")
+      .def("project_forward", &Deep::ConvPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.");
 
   nb::class_<Deep::SimpleConvPCNetwork>(m,
                                         "SimpleConvPCNetwork",
@@ -1479,7 +1696,8 @@ void bind_networks(nb::module_& m)
           nb::arg("ir") = 0.1f,
           nb::arg("lmbda") = 1e-2f,
           nb::arg("activation") = "relu",
-          nb::arg("activation_deriv") = "drelu")
+          nb::arg("activation_deriv") = "drelu",
+          "Add a convolutional layer to the network.")
       .def(
           "set_optimizer",
           [](Deep::SimpleConvPCNetwork& self, const std::string& opt)
@@ -1508,7 +1726,10 @@ void bind_networks(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
+          nb::arg("distribution") = "normal",
+          "Randomizes every layer's weights (and biases) in place. `seed` "
+          "gives a reproducible run (None uses a nondeterministic seed); "
+          "`distribution` is \"normal\" or \"uniform\".")
       .def(
           "clamp_input",
           [](Deep::SimpleConvPCNetwork& self, FloatArray input)
@@ -1516,11 +1737,15 @@ void bind_networks(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.Clamp(values);
           },
-          nb::arg("input"))
-      .def("calculate_state", &Deep::SimpleConvPCNetwork::CalculateState)
-      .def("update_state", &Deep::SimpleConvPCNetwork::UpdateState)
-      .def("update_weights", &Deep::SimpleConvPCNetwork::UpdateWeights)
-      .def("reset_state", &Deep::SimpleConvPCNetwork::ResetState)
+          nb::arg("input"),
+          "Clamp the first (input) layer to the supplied, flattened batch.")
+      .def("calculate_state", &Deep::SimpleConvPCNetwork::CalculateState,
+           "Compute the total network energy.")
+      .def("update_state", &Deep::SimpleConvPCNetwork::UpdateState, "Run one inference step.")
+      .def("update_weights", &Deep::SimpleConvPCNetwork::UpdateWeights,
+           "Apply weight updates to every layer.")
+      .def("reset_state", &Deep::SimpleConvPCNetwork::ResetState,
+           "Resets the beliefs z on every layer.")
       .def(
           "train_step",
           [](Deep::SimpleConvPCNetwork& self, FloatArray x, FloatArray y, int steps)
@@ -1531,7 +1756,10 @@ void bind_networks(nb::module_& m)
           },
           nb::arg("x"),
           nb::arg("y"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Runs one training step on a single batch, settling for `steps` "
+          "iterations before updating weights.\n"
+          "@return Total settling energy accumulated over `steps`.")
       .def(
           "predict",
           [](Deep::SimpleConvPCNetwork& self, FloatArray x, int steps)
@@ -1544,11 +1772,15 @@ void bind_networks(nb::module_& m)
                 {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
           },
           nb::arg("x"),
-          nb::arg("steps"))
+          nb::arg("steps"),
+          "Run inference on `x`, settling for `steps` iterations.\n"
+          "@return The terminal layer's beliefs.")
       .def("get_terminal_layer",
            &Deep::SimpleConvPCNetwork::GetTerminalLayer,
-           nb::rv_policy::reference)
-      .def_prop_ro("batch_size", &Deep::SimpleConvPCNetwork::GetBatchSize)
+           nb::rv_policy::reference,
+           "Returns the last layer.")
+      .def_prop_ro("batch_size", &Deep::SimpleConvPCNetwork::GetBatchSize,
+                   "Number of samples processed per call.")
       .def_prop_ro("layers",
                    [](Deep::SimpleConvPCNetwork& self)
                    {
@@ -1556,7 +1788,8 @@ void bind_networks(nb::module_& m)
                      for (auto& layer : self.GetLayers())
                        result.append(nb::cast(layer.get(), nb::rv_policy::reference));
                      return result;
-                   })
+                   },
+                   "List of layer objects owned by the network.")
       .def(
           "save",
           [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath)
@@ -1588,9 +1821,16 @@ void bind_networks(nb::module_& m)
              return "<SimpleConvPCNetwork layers=" + std::to_string(self.GetLayers().size()) +
                     " batch_size=" + std::to_string(self.GetBatchSize()) + ">";
            })
-      .def("train_step_with_projection", &Deep::SimpleConvPCNetwork::TrainStepWithProjection)
-      .def("predict_with_projection", &Deep::SimpleConvPCNetwork::PredictWithProjection)
-      .def("project_forward", &Deep::SimpleConvPCNetwork::ProjectForward);
+      .def("train_step_with_projection", &Deep::SimpleConvPCNetwork::TrainStepWithProjection,
+           "Same as train_step(), but initializes every layer's beliefs via "
+           "a forward projection pass first.")
+      .def("predict_with_projection", &Deep::SimpleConvPCNetwork::PredictWithProjection,
+           "Same as predict(), but initializes every layer's beliefs via a "
+           "forward projection pass first.")
+      .def("project_forward", &Deep::SimpleConvPCNetwork::ProjectForward,
+           "Seeds hidden layers from a genuine forward pass through current "
+           "weights, instead of zero-init. Call after clamp_input(), before "
+           "the settling loop.");
 
   BindFullPCNetworkT<float, float>(m, "FullPCNetwork_f32");
   BindFullPCNetworkT<double, double>(m, "FullPCNetwork_f64");

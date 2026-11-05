@@ -42,7 +42,8 @@ void bind_attention_layers(nb::module_& m)
       .def(nb::init<size_t, size_t, size_t>(),
            nb::arg("batch_size"),
            nb::arg("seq_len"),
-           nb::arg("head_dim"))
+           nb::arg("head_dim"),
+           "Constructs an uninitialized attention-scores node for the given shape.")
       .def(
           "compute_mu_only",
           [](Deep::AttentionScoresLayer& self, FloatArray q, FloatArray k)
@@ -57,7 +58,9 @@ void bind_attention_layers(nb::module_& m)
           "q_beliefs/k_beliefs: shape [batch_size, seq_len, head_dim], flattened.")
       .def("calculate_state",
            &Deep::AttentionScoresLayer::CalculateState,
-           nb::arg("need_energy"))
+           nb::arg("need_energy"),
+           "Calculates this node's internal state (prediction error against mu). "
+           "@return Settling energy for this step if need_energy, else 0.")
       .def(
           "update_state",
           [](Deep::AttentionScoresLayer& self, float ir, std::optional<FloatArray> eAbove,
@@ -92,10 +95,13 @@ void bind_attention_layers(nb::module_& m)
           {
             return ViewOwnedBy(const_cast<float*>(self.GetErrors()),
                                {self.GetBatchSize(), self.GetSeqLen(), self.GetSeqLen()}, self);
-          })
-      .def_prop_ro("batch_size", &Deep::AttentionScoresLayer::GetBatchSize)
-      .def_prop_ro("seq_len", &Deep::AttentionScoresLayer::GetSeqLen)
-      .def_prop_ro("head_dim", &Deep::AttentionScoresLayer::GetHeadDim);
+          },
+          "Prediction error e, shape [batch_size, seq_len, seq_len].")
+      .def_prop_ro("batch_size", &Deep::AttentionScoresLayer::GetBatchSize,
+                   "Number of samples processed per call.")
+      .def_prop_ro("seq_len", &Deep::AttentionScoresLayer::GetSeqLen, "Sequence length.")
+      .def_prop_ro("head_dim", &Deep::AttentionScoresLayer::GetHeadDim,
+                   "Attention head dimension.");
 
   nb::class_<Deep::AttentionOutputLayer>(
       m,
@@ -105,7 +111,8 @@ void bind_attention_layers(nb::module_& m)
       .def(nb::init<size_t, size_t, size_t>(),
            nb::arg("batch_size"),
            nb::arg("seq_len"),
-           nb::arg("head_dim"))
+           nb::arg("head_dim"),
+           "Constructs an uninitialized attention-output node for the given shape.")
       .def(
           "compute_mu_only",
           [](Deep::AttentionOutputLayer& self, FloatArray attnBeliefs, FloatArray vBeliefs)
@@ -121,7 +128,9 @@ void bind_attention_layers(nb::module_& m)
           "seq_len]. v_beliefs: shape [batch_size, seq_len, head_dim].")
       .def("calculate_state",
            &Deep::AttentionOutputLayer::CalculateState,
-           nb::arg("need_energy"))
+           nb::arg("need_energy"),
+           "Calculates this node's internal state (prediction error against mu). "
+           "@return Settling energy for this step if need_energy, else 0.")
       .def(
           "update_state",
           [](Deep::AttentionOutputLayer& self, float ir, std::optional<FloatArray> eAbove)
@@ -132,7 +141,10 @@ void bind_attention_layers(nb::module_& m)
             self.UpdateState(ir, eAbove.has_value() ? eAbove->data() : nullptr);
           },
           nb::arg("ir"),
-          nb::arg("e_above") = nb::none())
+          nb::arg("e_above") = nb::none(),
+          "Updates this node's beliefs. e_above: the layer above's error "
+          "buffer, shape [batch_size, seq_len, head_dim]; omit when there's "
+          "no layer above.")
       .def(
           "beliefs",
           [](Deep::AttentionOutputLayer& self)
@@ -147,8 +159,11 @@ void bind_attention_layers(nb::module_& m)
           {
             return ViewOwnedBy(const_cast<float*>(self.GetErrors()),
                                {self.GetBatchSize(), self.GetSeqLen(), self.GetHeadDim()}, self);
-          })
-      .def_prop_ro("batch_size", &Deep::AttentionOutputLayer::GetBatchSize)
-      .def_prop_ro("seq_len", &Deep::AttentionOutputLayer::GetSeqLen)
-      .def_prop_ro("head_dim", &Deep::AttentionOutputLayer::GetHeadDim);
+          },
+          "Prediction error e, shape [batch_size, seq_len, head_dim].")
+      .def_prop_ro("batch_size", &Deep::AttentionOutputLayer::GetBatchSize,
+                   "Number of samples processed per call.")
+      .def_prop_ro("seq_len", &Deep::AttentionOutputLayer::GetSeqLen, "Sequence length.")
+      .def_prop_ro("head_dim", &Deep::AttentionOutputLayer::GetHeadDim,
+                   "Attention head dimension.");
 }

@@ -132,21 +132,39 @@ void SetBiasesHelper(LayerT& self, FloatArray values, size_t expectedCount)
 template <typename LayerT>
 void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* className)
 {
-  cls.def("calculate_state", static_cast<float (LayerT::*)() noexcept>(&LayerT::CalculateState))
-      .def("update_state", &LayerT::UpdateState)
-      .def("update_weights", &LayerT::UpdateWeights)
-      .def("flush", &LayerT::Flush)
-      .def("clamp_state", &ClampStateHelper<LayerT>, nb::arg("input"))
-      .def("unclamp_state", &LayerT::UnclampState)
+  cls.def("calculate_state", static_cast<float (LayerT::*)() noexcept>(&LayerT::CalculateState),
+          "Calculates this layer's internal state (prediction error against "
+          "the layer above's mu). @return Settling energy for this step.")
+      .def("update_state", &LayerT::UpdateState,
+           "Updates this layer's beliefs from the error computed by calculate_state().")
+      .def("update_weights", &LayerT::UpdateWeights,
+           "Updates this layer's weights from the state computed during settling.")
+      .def("flush", &LayerT::Flush, "Flushes remaining batches.")
+      .def("clamp_state", &ClampStateHelper<LayerT>, nb::arg("input"),
+           "Clamps this layer's beliefs to externally-provided data, "
+           "preventing them from being updated by update_state().")
+      .def("unclamp_state", &LayerT::UnclampState,
+           "Releases a previous clamp_state() call, allowing this layer's "
+           "beliefs to update normally again.")
       .def("randomize_weights",
            &RandomizeWeightsHelper<LayerT>,
            nb::arg("seed") = nb::none(),
-           nb::arg("distribution") = "normal")
-      .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference)
-      .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference)
-      .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
-      .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"))
-      .def("set_lambda", &LayerT::SetLambda, nb::arg("l"))
+           nb::arg("distribution") = "normal",
+           "Randomizes this layer's weights (and biases) in place. `seed` gives "
+           "a reproducible run (None uses a nondeterministic seed); `distribution` "
+           "is \"normal\" or \"uniform\".")
+      .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference,
+           "Sets the layer immediately above this one in the network; may be "
+           "None for a terminal layer.")
+      .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference,
+           "Sets the layer immediately below this one in the network; may be "
+           "None for the input layer.")
+      .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate used for weight updates.")
+      .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size).")
+      .def("set_lambda", &LayerT::SetLambda, nb::arg("l"),
+           "Sets the weight-decay (L2 regularization) coefficient.")
       .def(
           "set_weights",
           [](LayerT& self, FloatArray values)
@@ -163,7 +181,8 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
-                   })
+                   },
+                   "This layer's belief state z, shape (batch_size, input_size).")
       .def_prop_ro("errors",
                    [](LayerT& self) -> nb::object
                    {
@@ -171,7 +190,8 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
-                   })
+                   },
+                   "This layer's prediction error e, shape (batch_size, input_size).")
       .def_prop_ro("weights",
                    [](LayerT& self) -> nb::object
                    {
@@ -179,10 +199,11 @@ void BindCommonPCLayer(nb::class_<LayerT, Deep::Layer>& cls, const char* classNa
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
-                   })
-      .def_prop_ro("batch_size", &LayerT::GetBatchSize)
-      .def_prop_ro("input_size", &LayerT::GetInputSize)
-      .def_prop_ro("output_size", &LayerT::GetOutputSize)
+                   },
+                   "This layer's forward weights W, shape (output_size, input_size).")
+      .def_prop_ro("batch_size", &LayerT::GetBatchSize, "Number of samples processed per call.")
+      .def_prop_ro("input_size", &LayerT::GetInputSize, "This layer's input width.")
+      .def_prop_ro("output_size", &LayerT::GetOutputSize, "This layer's output width.")
       .def("__repr__",
            [className](const LayerT& self)
            {
@@ -266,20 +287,41 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
           nb::arg("inference_rate") = AccumT(0.01), nb::arg("feedback_rate") = AccumT(1e-4),
           nb::arg("lmbda") = AccumT(1e-2), nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
-      .def("calculate_state", static_cast<AccumT (LayerT::*)() noexcept>(&LayerT::CalculateState))
-      .def("update_state", &LayerT::UpdateState)
-      .def("update_weights", &LayerT::UpdateWeights)
-      .def("clamp_state", &ClampStateHelperT<LayerT, T, AccumT>, nb::arg("input"))
-      .def("unclamp_state", &LayerT::UnclampState)
+      .def("calculate_state", static_cast<AccumT (LayerT::*)() noexcept>(&LayerT::CalculateState),
+           "Calculates this layer's internal state (prediction error against "
+           "the layer above's mu). @return Settling energy for this step.")
+      .def("update_state", &LayerT::UpdateState,
+           "Updates this layer's beliefs from the error computed by calculate_state().")
+      .def("update_weights", &LayerT::UpdateWeights,
+           "Updates this layer's weights from the state computed during settling.")
+      .def("clamp_state", &ClampStateHelperT<LayerT, T, AccumT>, nb::arg("input"),
+           "Clamps this layer's beliefs to externally-provided data, "
+           "preventing them from being updated by update_state().")
+      .def("unclamp_state", &LayerT::UnclampState,
+           "Releases a previous clamp_state() call, allowing this layer's "
+           "beliefs to update normally again.")
       .def("randomize_weights", &RandomizeWeightsHelper<LayerT>, nb::arg("seed") = nb::none(),
-           nb::arg("distribution") = "normal")
-      .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference)
-      .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference)
-      .def("set_terminal_layer", &LayerT::SetTerminalLayer, nb::arg("layer"))
-      .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"))
-      .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"))
-      .def("set_feedback_rate", &LayerT::SetFeedbackRate, nb::arg("fl"))
-      .def("set_lambda", &LayerT::SetLambda, nb::arg("l"))
+           nb::arg("distribution") = "normal",
+           "Randomizes this layer's weights (and biases) in place. `seed` gives "
+           "a reproducible run (None uses a nondeterministic seed); `distribution` "
+           "is \"normal\" or \"uniform\".")
+      .def("set_layer_above", &LayerT::SetLayerAbove, nb::rv_policy::reference,
+           "Sets the layer immediately above this one in the network; may be "
+           "None for a terminal layer.")
+      .def("set_layer_below", &LayerT::SetLayerBelow, nb::rv_policy::reference,
+           "Sets the layer immediately below this one in the network; may be "
+           "None for the input layer.")
+      .def("set_terminal_layer", &LayerT::SetTerminalLayer, nb::arg("layer"),
+           "Sets the terminal (output) layer this layer's DKP feedback reads "
+           "its error from.")
+      .def("set_learning_rate", &LayerT::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate used for weight updates.")
+      .def("set_inference_rate", &LayerT::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size).")
+      .def("set_feedback_rate", &LayerT::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the direct feedback weights Psi.")
+      .def("set_lambda", &LayerT::SetLambda, nb::arg("l"),
+           "Sets the weight-decay (L2 regularization) coefficient.")
       .def("direct_feedback_update", &LayerT::DirectFeedbackUpdate,
            "Perturbs W using the layer above's Psi and the terminal layer's error, "
            "the DFA phase, run once per batch before settling begins.")
@@ -294,7 +336,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_psi_optimizer",
           [](LayerT& self, const std::string& opt)
@@ -306,7 +349,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def("set_mu_pc_scale", &LayerT::SetMuPCScale, nb::arg("a"),
            "Set this layer's muPC forward-scaling factor directly. Usually set by "
            "FullPCNetworkT::Compile() instead.")
@@ -320,12 +364,14 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
             SetWeightsHelperT<LayerT, T, AccumT>(
                 self, values, (size_t)self.GetOutputSize() * (size_t)self.GetInputSize());
           },
-          nb::arg("values"))
+          nb::arg("values"),
+          "Device-safe replacement for `layer.weights[:] = ...`; works on both CPU and GPU.")
       .def(
           "set_biases",
           [](LayerT& self, TArray<AccumT> values)
           { SetBiasesHelperT<LayerT, T, AccumT>(self, values, (size_t)self.GetOutputSize()); },
-          nb::arg("values"))
+          nb::arg("values"),
+          "Device-safe replacement for `layer.biases[:] = ...`; works on both CPU and GPU.")
       .def_prop_ro("beliefs",
                    [](LayerT& self) -> nb::object
                    {
@@ -340,7 +386,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
                          return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
                        return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
                      }
-                   })
+                   },
+                   "This layer's belief state z, shape (batch_size, input_size).")
       .def_prop_ro("errors",
                    [](LayerT& self) -> nb::object
                    {
@@ -355,7 +402,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
                          return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
                        return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
                      }
-                   })
+                   },
+                   "This layer's prediction error e, shape (batch_size, input_size).")
       .def_prop_ro("weights",
                    [](LayerT& self) -> nb::object
                    {
@@ -370,7 +418,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
                          return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                        return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
                      }
-                   })
+                   },
+                   "This layer's forward weights W, shape (output_size, input_size).")
       .def_prop_ro("biases",
                    [](LayerT& self) -> nb::object
                    {
@@ -385,7 +434,8 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
                          return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                        return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
                      }
-                   })
+                   },
+                   "This layer's biases, shape (output_size,).")
       .def_prop_ro("psi",
                    [](LayerT& self) -> nb::object
                    {
@@ -401,13 +451,17 @@ void BindFullPCLayerT(nb::module_& m, const char* className)
                          return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
                        return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
                      }
-                   })
-      .def_prop_ro("mu_pc_scale", &LayerT::GetMuPCScale)
-      .def_prop_ro("residual", &LayerT::GetResidual)
-      .def_prop_ro("terminal_size", &LayerT::GetTerminalSize)
-      .def_prop_ro("batch_size", &LayerT::GetBatchSize)
-      .def_prop_ro("input_size", &LayerT::GetInputSize)
-      .def_prop_ro("output_size", &LayerT::GetOutputSize)
+                   },
+                   "This layer's direct feedback weights Psi, shape (input_size, terminal_size).")
+      .def_prop_ro("mu_pc_scale", &LayerT::GetMuPCScale,
+                   "This layer's muPC forward-scaling factor `a`. See set_mu_pc_scale().")
+      .def_prop_ro("residual", &LayerT::GetResidual,
+                   "Whether this layer's residual connection is enabled.")
+      .def_prop_ro("terminal_size", &LayerT::GetTerminalSize,
+                   "Size of the terminal (output) layer this layer's DKP feedback targets.")
+      .def_prop_ro("batch_size", &LayerT::GetBatchSize, "Number of samples processed per call.")
+      .def_prop_ro("input_size", &LayerT::GetInputSize, "This layer's input width.")
+      .def_prop_ro("output_size", &LayerT::GetOutputSize, "This layer's output width.")
       .def("__repr__",
            [className](const LayerT& self)
            {
@@ -462,8 +516,12 @@ void bind_layers(nb::module_& m)
               nb::arg("activation") = "relu",
               nb::arg("activation_deriv") = "drelu");
   BindCommonPCLayer<Deep::DiscriminativePCLayer>(discLayerCls, "DiscriminativePCLayer");
-  discLayerCls.def("update_precision", &Deep::DiscriminativePCLayer::UpdatePrecision)
-      .def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, nb::arg("pr"));
+  discLayerCls
+      .def("update_precision", &Deep::DiscriminativePCLayer::UpdatePrecision,
+           "Updates this layer's precision weighting from the error computed "
+           "during settling.")
+      .def("set_precision_rate", &Deep::DiscriminativePCLayer::SetPrecisionRate, nb::arg("pr"),
+           "Sets the learning rate for precision weighting.");
 
   auto simpleLayerCls =
       nb::class_<Deep::SimplePCLayer, Deep::Layer>(
@@ -506,7 +564,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
+                   },
+                   "This layer's biases, shape (output_size,).")
       .def(
           "set_biases",
           [](Deep::SimplePCLayer& self, FloatArray values)
@@ -519,14 +578,16 @@ void bind_layers(nb::module_& m)
            "Sets the mu-cache staleness threshold: -1 disables caching (default), "
            "0 reproduces the exact clamped-only behavior, >0 extends caching to "
            "unclamped layers as a genuine approximation.")
-      .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold)
+      .def("get_mu_cache_threshold", &Deep::SimplePCLayer::GetMuCacheThreshold,
+           "Returns the current mu-cache staleness threshold. See set_mu_cache_threshold().")
       .def("set_cross_entropy",
            &Deep::SimplePCLayer::SetCrossEntropy,
            nb::arg("enabled"),
            "Enables softmax cross-entropy energy for this layer's error against "
            "layerBelow's mu (only makes sense on the terminal layer). OFF by "
            "default (plain Gaussian energy).")
-      .def("get_cross_entropy", &Deep::SimplePCLayer::GetCrossEntropy);
+      .def("get_cross_entropy", &Deep::SimplePCLayer::GetCrossEntropy,
+           "Returns whether softmax cross-entropy energy is enabled. See set_cross_entropy().");
 
   auto gsLayerCls = nb::class_<Deep::GaussSeidelPCLayer, Deep::Layer>(
                         m,
@@ -561,12 +622,21 @@ void bind_layers(nb::module_& m)
                             nb::arg("lmbda") = 1e-2f,
                             nb::arg("activation") = "relu",
                             nb::arg("activation_deriv") = "drelu");
-  gsLayerCls.def("update_state", &Deep::GaussSeidelPCLayer::UpdateState)
-      .def("compute_prediction", &Deep::GaussSeidelPCLayer::ComputePrediction)
+  gsLayerCls
+      .def("update_state", &Deep::GaussSeidelPCLayer::UpdateState,
+           "Sweep 1: updates this layer's beliefs z. See the class docs for "
+           "the required three-sweep calling order.")
+      .def("compute_prediction", &Deep::GaussSeidelPCLayer::ComputePrediction,
+           "Sweep 2: recomputes this layer's outgoing prediction (mu) using "
+           "the z just updated by update_state() in this same timestep. Call "
+           "on every layer before any layer's compute_error().")
       .def("compute_error",
            static_cast<float (Deep::GaussSeidelPCLayer::*)(bool) noexcept>(
                &Deep::GaussSeidelPCLayer::ComputeError),
-           nb::arg("need_energy") = true)
+           nb::arg("need_energy") = true,
+           "Sweep 3: recomputes this layer's prediction error e using the "
+           "fresh predictions from compute_prediction().\n"
+           "@return Settling energy for this step if need_energy, else 0.")
       .def_prop_ro("mu",
                    [](Deep::GaussSeidelPCLayer& self) -> nb::object
                    {
@@ -574,7 +644,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetMu(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetMu(), shape));
-                   });
+                   },
+                   "This layer's outgoing prediction buffer.");
   BindCommonPCLayer<Deep::GaussSeidelPCLayer>(gsLayerCls, "GaussSeidelPCLayer");
 
   auto dkpLayerCls = nb::class_<Deep::DirectKPPCLayer, Deep::Layer>(
@@ -620,7 +691,9 @@ void bind_layers(nb::module_& m)
            &Deep::DirectKPPCLayer::DirectFeedbackUpdate,
            "Perturbs W using the layer above's Psi and the terminal layer's error, "
            "the DFA phase, run once per batch before settling begins.")
-      .def("set_terminal_layer", &Deep::DirectKPPCLayer::SetTerminalLayer, nb::arg("layer"))
+      .def("set_terminal_layer", &Deep::DirectKPPCLayer::SetTerminalLayer, nb::arg("layer"),
+           "Sets the terminal (output) layer this layer's DKP feedback reads "
+           "its error from.")
       .def(
           "set_psi_optimizer",
           [](Deep::DirectKPPCLayer& self, const std::string& opt)
@@ -632,7 +705,8 @@ void bind_layers(nb::module_& m)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_optimizer",
           [](Deep::DirectKPPCLayer& self, const std::string& opt)
@@ -644,9 +718,12 @@ void bind_layers(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_feedback_rate", &Deep::DirectKPPCLayer::SetFeedbackRate, nb::arg("fl"))
-      .def_prop_ro("terminal_size", &Deep::DirectKPPCLayer::GetTerminalSize)
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_feedback_rate", &Deep::DirectKPPCLayer::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the direct feedback weights Psi.")
+      .def_prop_ro("terminal_size", &Deep::DirectKPPCLayer::GetTerminalSize,
+                   "Size of the terminal (output) layer this layer's DKP feedback targets.")
       .def_prop_ro("psi",
                    [](Deep::DirectKPPCLayer& self) -> nb::object
                    {
@@ -654,7 +731,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
-                   })
+                   },
+                   "This layer's direct feedback weights Psi, shape (input_size, terminal_size).")
       .def_prop_ro("biases",
                    [](Deep::DirectKPPCLayer& self) -> nb::object
                    {
@@ -662,7 +740,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
+                   },
+                   "This layer's biases, shape (output_size,).")
       .def(
           "set_biases",
           [](Deep::DirectKPPCLayer& self, FloatArray values)
@@ -717,7 +796,9 @@ void bind_layers(nb::module_& m)
            &Deep::FullPCLayer::DirectFeedbackUpdate,
            "Perturbs W using the layer above's Psi and the terminal layer's error, "
            "the DFA phase, run once per batch before settling begins.")
-      .def("set_terminal_layer", &Deep::FullPCLayer::SetTerminalLayer, nb::arg("layer"))
+      .def("set_terminal_layer", &Deep::FullPCLayer::SetTerminalLayer, nb::arg("layer"),
+           "Sets the terminal (output) layer this layer's DKP feedback reads "
+           "its error from.")
       .def(
           "set_psi_optimizer",
           [](Deep::FullPCLayer& self, const std::string& opt)
@@ -729,7 +810,8 @@ void bind_layers(nb::module_& m)
             else
               self.SetPsiOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the feedback weights Psi: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "set_optimizer",
           [](Deep::FullPCLayer& self, const std::string& opt)
@@ -741,8 +823,10 @@ void bind_layers(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
-      .def("set_feedback_rate", &Deep::FullPCLayer::SetFeedbackRate, nb::arg("fl"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
+      .def("set_feedback_rate", &Deep::FullPCLayer::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the direct feedback weights Psi.")
       .def("set_mu_pc_scale",
            &Deep::FullPCLayer::SetMuPCScale,
            nb::arg("a"),
@@ -756,9 +840,12 @@ void bind_layers(nb::module_& m)
            "Enable/disable this layer's residual connection directly. "
            "Same caveat as set_mu_pc_scale, usually set by "
            "FullPCNetwork::Compile() instead.")
-      .def_prop_ro("mu_pc_scale", &Deep::FullPCLayer::GetMuPCScale)
-      .def_prop_ro("residual", &Deep::FullPCLayer::GetResidual)
-      .def_prop_ro("terminal_size", &Deep::FullPCLayer::GetTerminalSize)
+      .def_prop_ro("mu_pc_scale", &Deep::FullPCLayer::GetMuPCScale,
+                   "This layer's muPC forward-scaling factor `a`. See set_mu_pc_scale().")
+      .def_prop_ro("residual", &Deep::FullPCLayer::GetResidual,
+                   "Whether this layer's residual connection is enabled.")
+      .def_prop_ro("terminal_size", &Deep::FullPCLayer::GetTerminalSize,
+                   "Size of the terminal (output) layer this layer's DKP feedback targets.")
       .def_prop_ro("psi",
                    [](Deep::FullPCLayer& self) -> nb::object
                    {
@@ -766,7 +853,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetDirectFeedbackWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetDirectFeedbackWeights(), shape));
-                   })
+                   },
+                   "This layer's direct feedback weights Psi, shape (input_size, terminal_size).")
       .def_prop_ro("biases",
                    [](Deep::FullPCLayer& self) -> nb::object
                    {
@@ -774,7 +862,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
+                   },
+                   "This layer's biases, shape (output_size,).")
       .def(
           "set_biases",
           [](Deep::FullPCLayer& self, FloatArray values)
@@ -847,11 +936,18 @@ void bind_layers(nb::module_& m)
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
       .def("calculate_state",
-           static_cast<float (Deep::FullConvPCLayer::*)()>(&Deep::FullConvPCLayer::CalculateState))
-      .def("update_state", &Deep::FullConvPCLayer::UpdateState)
-      .def("update_weights", &Deep::FullConvPCLayer::UpdateWeights)
-      .def("direct_feedback_update", &Deep::FullConvPCLayer::DirectFeedbackUpdate)
-      .def("reset_state", &Deep::FullConvPCLayer::ResetState)
+           static_cast<float (Deep::FullConvPCLayer::*)()>(&Deep::FullConvPCLayer::CalculateState),
+           "Calculates this layer's internal state (prediction error against "
+           "the layer above's mu). @return Settling energy for this step.")
+      .def("update_state", &Deep::FullConvPCLayer::UpdateState,
+           "Updates this layer's beliefs from the error computed by calculate_state().")
+      .def("update_weights", &Deep::FullConvPCLayer::UpdateWeights,
+           "Updates this layer's weights from the state computed during settling.")
+      .def("direct_feedback_update", &Deep::FullConvPCLayer::DirectFeedbackUpdate,
+           "Perturbs W using the layer above's Psi and the terminal layer's error, "
+           "the DFA phase, run once per batch before settling begins.")
+      .def("reset_state", &Deep::FullConvPCLayer::ResetState,
+           "Resets this layer's beliefs to zero, discarding any clamp.")
       .def(
           "clamp_state",
           [](Deep::FullConvPCLayer& self, FloatArray input)
@@ -859,8 +955,12 @@ void bind_layers(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.ClampState(values);
           },
-          nb::arg("input"))
-      .def("unclamp_state", &Deep::FullConvPCLayer::UnclampState)
+          nb::arg("input"),
+          "Clamps this layer's beliefs to externally-provided data, "
+          "preventing them from being updated by update_state().")
+      .def("unclamp_state", &Deep::FullConvPCLayer::UnclampState,
+           "Releases a previous clamp_state() call, allowing this layer's "
+           "beliefs to update normally again.")
       .def(
           "randomize_weights",
           [](Deep::FullConvPCLayer& self,
@@ -873,16 +973,33 @@ void bind_layers(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("set_layer_above", &Deep::FullConvPCLayer::SetLayerAbove, nb::rv_policy::reference)
-      .def("set_layer_below", &Deep::FullConvPCLayer::SetLayerBelow, nb::rv_policy::reference)
-      .def("set_terminal_layer", &Deep::FullConvPCLayer::SetTerminalLayer, nb::arg("layer"))
-      .def("set_learning_rate", &Deep::FullConvPCLayer::SetLearningRate, nb::arg("lr"))
-      .def("set_inference_rate", &Deep::FullConvPCLayer::SetInferenceRate, nb::arg("ir"))
-      .def("set_feedback_rate", &Deep::FullConvPCLayer::SetFeedbackRate, nb::arg("fl"))
-      .def("set_lambda", &Deep::FullConvPCLayer::SetLambda, nb::arg("l"))
-      .def("set_mu_pc_scale", &Deep::FullConvPCLayer::SetMuPCScale, nb::arg("a"))
-      .def("set_residual", &Deep::FullConvPCLayer::SetResidual, nb::arg("enabled"))
+          nb::arg("distribution") = "normal",
+          "Randomizes this layer's weights (and biases) in place. `seed` gives "
+          "a reproducible run (None uses a nondeterministic seed); `distribution` "
+          "is \"normal\" or \"uniform\".")
+      .def("set_layer_above", &Deep::FullConvPCLayer::SetLayerAbove, nb::rv_policy::reference,
+           "Sets the layer immediately above this one in the network; may be "
+           "None for a terminal layer.")
+      .def("set_layer_below", &Deep::FullConvPCLayer::SetLayerBelow, nb::rv_policy::reference,
+           "Sets the layer immediately below this one in the network; may be "
+           "None for the input layer.")
+      .def("set_terminal_layer", &Deep::FullConvPCLayer::SetTerminalLayer, nb::arg("layer"),
+           "Sets the terminal (output) layer this layer's DKP feedback reads "
+           "its error from.")
+      .def("set_learning_rate", &Deep::FullConvPCLayer::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate used for weight updates.")
+      .def("set_inference_rate", &Deep::FullConvPCLayer::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size).")
+      .def("set_feedback_rate", &Deep::FullConvPCLayer::SetFeedbackRate, nb::arg("fl"),
+           "Sets the learning rate for the direct feedback weights Psi.")
+      .def("set_lambda", &Deep::FullConvPCLayer::SetLambda, nb::arg("l"),
+           "Sets the weight-decay (L2 regularization) coefficient.")
+      .def("set_mu_pc_scale", &Deep::FullConvPCLayer::SetMuPCScale, nb::arg("a"),
+           "Set this layer's muPC forward-scaling factor directly. Usually set "
+           "by FullConvPCNetwork::Compile() instead.")
+      .def("set_residual", &Deep::FullConvPCLayer::SetResidual, nb::arg("enabled"),
+           "Enable/disable this layer's residual connection directly. Same "
+           "caveat as set_mu_pc_scale.")
       .def(
           "set_weights",
           [](Deep::FullConvPCLayer& self, FloatArray values)
@@ -910,7 +1027,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
-                   })
+                   },
+                   "This layer's belief state z, shape (batch_size, in_channels, in_height, in_width).")
       .def_prop_ro("errors",
                    [](Deep::FullConvPCLayer& self) -> nb::object
                    {
@@ -921,7 +1039,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
-                   })
+                   },
+                   "This layer's prediction error e, shape (batch_size, in_channels, in_height, in_width).")
       .def_prop_ro("weights",
                    [](Deep::FullConvPCLayer& self) -> nb::object
                    {
@@ -932,7 +1051,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
-                   })
+                   },
+                   "This layer's convolution kernels, shape (out_channels, in_channels, kernel_h, kernel_w).")
       .def_prop_ro("biases",
                    [](Deep::FullConvPCLayer& self) -> nb::object
                    {
@@ -940,21 +1060,25 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
-      .def_prop_ro("batch_size", &Deep::FullConvPCLayer::GetBatchSize)
-      .def_prop_ro("in_channels", &Deep::FullConvPCLayer::GetInChannels)
-      .def_prop_ro("out_channels", &Deep::FullConvPCLayer::GetOutChannels)
-      .def_prop_ro("in_height", &Deep::FullConvPCLayer::GetInHeight)
-      .def_prop_ro("in_width", &Deep::FullConvPCLayer::GetInWidth)
-      .def_prop_ro("out_height", &Deep::FullConvPCLayer::GetOutHeight)
-      .def_prop_ro("out_width", &Deep::FullConvPCLayer::GetOutWidth)
-      .def_prop_ro("kernel_h", &Deep::FullConvPCLayer::GetKernelH)
-      .def_prop_ro("kernel_w", &Deep::FullConvPCLayer::GetKernelW)
-      .def_prop_ro("input_size", &Deep::FullConvPCLayer::GetInputSize)
-      .def_prop_ro("output_size", &Deep::FullConvPCLayer::GetOutputSize)
-      .def_prop_ro("terminal_size", &Deep::FullConvPCLayer::GetTerminalSize)
-      .def_prop_ro("mu_pc_scale", &Deep::FullConvPCLayer::GetMuPCScale)
-      .def_prop_ro("residual", &Deep::FullConvPCLayer::GetResidual)
+                   },
+                   "This layer's biases, shape (out_channels,).")
+      .def_prop_ro("batch_size", &Deep::FullConvPCLayer::GetBatchSize, "Number of samples processed per call.")
+      .def_prop_ro("in_channels", &Deep::FullConvPCLayer::GetInChannels, "Number of input channels.")
+      .def_prop_ro("out_channels", &Deep::FullConvPCLayer::GetOutChannels, "Number of output channels.")
+      .def_prop_ro("in_height", &Deep::FullConvPCLayer::GetInHeight, "Input image height.")
+      .def_prop_ro("in_width", &Deep::FullConvPCLayer::GetInWidth, "Input image width.")
+      .def_prop_ro("out_height", &Deep::FullConvPCLayer::GetOutHeight, "Output image height.")
+      .def_prop_ro("out_width", &Deep::FullConvPCLayer::GetOutWidth, "Output image width.")
+      .def_prop_ro("kernel_h", &Deep::FullConvPCLayer::GetKernelH, "Convolution kernel height.")
+      .def_prop_ro("kernel_w", &Deep::FullConvPCLayer::GetKernelW, "Convolution kernel width.")
+      .def_prop_ro("input_size", &Deep::FullConvPCLayer::GetInputSize, "Flattened input size.")
+      .def_prop_ro("output_size", &Deep::FullConvPCLayer::GetOutputSize, "Flattened output size.")
+      .def_prop_ro("terminal_size", &Deep::FullConvPCLayer::GetTerminalSize,
+                   "Size of the terminal (output) layer this layer's DKP feedback targets.")
+      .def_prop_ro("mu_pc_scale", &Deep::FullConvPCLayer::GetMuPCScale,
+                   "This layer's muPC forward-scaling factor `a`. See set_mu_pc_scale().")
+      .def_prop_ro("residual", &Deep::FullConvPCLayer::GetResidual,
+                   "Whether this layer's residual connection is enabled.")
       .def("__repr__",
            [](const Deep::FullConvPCLayer& self)
            {
@@ -1023,13 +1147,24 @@ void bind_layers(nb::module_& m)
           nb::arg("activation") = "relu",
           nb::arg("activation_deriv") = "drelu")
       .def("calculate_state",
-           static_cast<float (Deep::ConvPCLayer::*)() noexcept>(&Deep::ConvPCLayer::CalculateState))
-      .def("update_state", &Deep::ConvPCLayer::UpdateState)
-      .def("update_weights", &Deep::ConvPCLayer::UpdateWeights)
-      .def("update_precision", &Deep::ConvPCLayer::UpdatePrecision)
-      .def("flush", &Deep::ConvPCLayer::Flush)
-      .def("reset_state", &Deep::ConvPCLayer::ResetState)
-      .def("resync_log_precision", &Deep::ConvPCLayer::ResyncLogPrecision)
+           static_cast<float (Deep::ConvPCLayer::*)() noexcept>(&Deep::ConvPCLayer::CalculateState),
+           "Calculates this layer's internal state (prediction error against "
+           "the layer above's mu). @return Settling energy for this step.")
+      .def("update_state", &Deep::ConvPCLayer::UpdateState,
+           "Updates this layer's beliefs from the error computed by calculate_state().")
+      .def("update_weights", &Deep::ConvPCLayer::UpdateWeights,
+           "Updates this layer's weights from the state computed during settling.")
+      .def("update_precision", &Deep::ConvPCLayer::UpdatePrecision,
+           "Updates this layer's precision estimate from current prediction "
+           "errors, using the configured precision rate.")
+      .def("flush", &Deep::ConvPCLayer::Flush, "Flushes remaining batches.")
+      .def("reset_state", &Deep::ConvPCLayer::ResetState,
+           "Resets this layer's beliefs/errors back to their initial values, "
+           "without touching learned weights.")
+      .def("resync_log_precision", &Deep::ConvPCLayer::ResyncLogPrecision,
+           "Resynchronizes the cached log-precision from the current precision "
+           "value; needed after directly overwriting precision outside the "
+           "normal update_precision() path.")
       .def(
           "clamp_state",
           [](Deep::ConvPCLayer& self, FloatArray input)
@@ -1037,8 +1172,12 @@ void bind_layers(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.ClampState(values);
           },
-          nb::arg("input"))
-      .def("unclamp_state", &Deep::ConvPCLayer::UnclampState)
+          nb::arg("input"),
+          "Clamps this layer's beliefs to externally-provided data, "
+          "preventing them from being updated by update_state().")
+      .def("unclamp_state", &Deep::ConvPCLayer::UnclampState,
+           "Releases a previous clamp_state() call, allowing this layer's "
+           "beliefs to update normally again.")
       .def(
           "randomize_weights",
           [](Deep::ConvPCLayer& self, std::optional<uint32_t> seed, const std::string& distribution)
@@ -1048,13 +1187,24 @@ void bind_layers(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
-      .def("set_layer_above", &Deep::ConvPCLayer::SetLayerAbove, nb::rv_policy::reference)
-      .def("set_layer_below", &Deep::ConvPCLayer::SetLayerBelow, nb::rv_policy::reference)
-      .def("set_learning_rate", &Deep::ConvPCLayer::SetLearningRate, nb::arg("lr"))
-      .def("set_inference_rate", &Deep::ConvPCLayer::SetInferenceRate, nb::arg("ir"))
-      .def("set_precision_rate", &Deep::ConvPCLayer::SetPrecisionRate, nb::arg("pr"))
-      .def("set_lambda", &Deep::ConvPCLayer::SetLambda, nb::arg("l"))
+          nb::arg("distribution") = "normal",
+          "Randomizes this layer's weights (and biases) in place. `seed` gives "
+          "a reproducible run (None uses a nondeterministic seed); `distribution` "
+          "is \"normal\" or \"uniform\".")
+      .def("set_layer_above", &Deep::ConvPCLayer::SetLayerAbove, nb::rv_policy::reference,
+           "Sets the layer immediately above this one in the network; may be "
+           "None for a terminal layer.")
+      .def("set_layer_below", &Deep::ConvPCLayer::SetLayerBelow, nb::rv_policy::reference,
+           "Sets the layer immediately below this one in the network; may be "
+           "None for the input layer.")
+      .def("set_learning_rate", &Deep::ConvPCLayer::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate used for weight updates.")
+      .def("set_inference_rate", &Deep::ConvPCLayer::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size).")
+      .def("set_precision_rate", &Deep::ConvPCLayer::SetPrecisionRate, nb::arg("pr"),
+           "Sets the learning rate used for precision updates.")
+      .def("set_lambda", &Deep::ConvPCLayer::SetLambda, nb::arg("l"),
+           "Sets the weight-decay (L2 regularization) coefficient.")
       .def(
           "set_weights",
           [](Deep::ConvPCLayer& self, FloatArray values)
@@ -1082,7 +1232,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBeliefs(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBeliefs(), shape));
-                   })
+                   },
+                   "This layer's belief state z, shape (batch_size, in_channels, in_height, in_width).")
       .def_prop_ro("errors",
                    [](Deep::ConvPCLayer& self) -> nb::object
                    {
@@ -1093,7 +1244,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetErrors(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetErrors(), shape));
-                   })
+                   },
+                   "This layer's prediction error e, shape (batch_size, in_channels, in_height, in_width).")
       .def_prop_ro("weights",
                    [](Deep::ConvPCLayer& self) -> nb::object
                    {
@@ -1104,7 +1256,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
-                   })
+                   },
+                   "This layer's convolution kernels, shape (out_channels, in_channels, kernel_h, kernel_w).")
       .def_prop_ro("biases",
                    [](Deep::ConvPCLayer& self) -> nb::object
                    {
@@ -1112,18 +1265,19 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
-      .def_prop_ro("batch_size", &Deep::ConvPCLayer::GetBatchSize)
-      .def_prop_ro("in_channels", &Deep::ConvPCLayer::GetInChannels)
-      .def_prop_ro("out_channels", &Deep::ConvPCLayer::GetOutChannels)
-      .def_prop_ro("in_height", &Deep::ConvPCLayer::GetInHeight)
-      .def_prop_ro("in_width", &Deep::ConvPCLayer::GetInWidth)
-      .def_prop_ro("out_height", &Deep::ConvPCLayer::GetOutHeight)
-      .def_prop_ro("out_width", &Deep::ConvPCLayer::GetOutWidth)
-      .def_prop_ro("kernel_h", &Deep::ConvPCLayer::GetKernelH)
-      .def_prop_ro("kernel_w", &Deep::ConvPCLayer::GetKernelW)
-      .def_prop_ro("input_size", &Deep::ConvPCLayer::GetInputSize)
-      .def_prop_ro("output_size", &Deep::ConvPCLayer::GetOutputSize)
+                   },
+                   "This layer's biases, shape (out_channels,).")
+      .def_prop_ro("batch_size", &Deep::ConvPCLayer::GetBatchSize, "Number of samples processed per call.")
+      .def_prop_ro("in_channels", &Deep::ConvPCLayer::GetInChannels, "Number of input channels.")
+      .def_prop_ro("out_channels", &Deep::ConvPCLayer::GetOutChannels, "Number of output channels.")
+      .def_prop_ro("in_height", &Deep::ConvPCLayer::GetInHeight, "Input image height.")
+      .def_prop_ro("in_width", &Deep::ConvPCLayer::GetInWidth, "Input image width.")
+      .def_prop_ro("out_height", &Deep::ConvPCLayer::GetOutHeight, "Output image height.")
+      .def_prop_ro("out_width", &Deep::ConvPCLayer::GetOutWidth, "Output image width.")
+      .def_prop_ro("kernel_h", &Deep::ConvPCLayer::GetKernelH, "Convolution kernel height.")
+      .def_prop_ro("kernel_w", &Deep::ConvPCLayer::GetKernelW, "Convolution kernel width.")
+      .def_prop_ro("input_size", &Deep::ConvPCLayer::GetInputSize, "Flattened input size.")
+      .def_prop_ro("output_size", &Deep::ConvPCLayer::GetOutputSize, "Flattened output size.")
       .def("__repr__",
            [](const Deep::ConvPCLayer& self)
            {
@@ -1143,7 +1297,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(CopyToNewArray(self.GetBeliefs(), {n}));
                      return nb::cast(CopyFromBackend(self, self.GetBeliefs(), {n}));
-                   })
+                   },
+                   "This layer's flattened belief state z.")
       .def_prop_ro("errors",
                    [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
@@ -1151,7 +1306,8 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(CopyToNewArray(self.GetErrors(), {n}));
                      return nb::cast(CopyFromBackend(self, self.GetErrors(), {n}));
-                   })
+                   },
+                   "This layer's flattened prediction error e.")
       .def(
           "set_weights",
           [](Deep::SimpleConvPCLayer& self, FloatArray values)
@@ -1178,7 +1334,9 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetWeights(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetWeights(), shape));
-                   })
+                   },
+                   "This layer's convolution kernels, shape (out_channels, "
+                   "in_channels * kernel_h * kernel_w).")
       .def_prop_ro("biases",
                    [](Deep::SimpleConvPCLayer& self) -> nb::object
                    {
@@ -1188,19 +1346,23 @@ void bind_layers(nb::module_& m)
                      if (self.GetBackend()->GetDeviceType() == Deep::DeviceType::DEVICE_CPU)
                        return nb::cast(ViewOwnedBy(self.GetBiases(), shape, self));
                      return nb::cast(CopyFromBackend(self, self.GetBiases(), shape));
-                   })
-      .def_prop_ro("in_channels", &Deep::SimpleConvPCLayer::GetInChannels)
-      .def_prop_ro("out_channels", &Deep::SimpleConvPCLayer::GetOutChannels)
-      .def_prop_ro("in_height", &Deep::SimpleConvPCLayer::GetInHeight)
-      .def_prop_ro("in_width", &Deep::SimpleConvPCLayer::GetInWidth)
-      .def_prop_ro("out_height", &Deep::SimpleConvPCLayer::GetOutHeight)
-      .def_prop_ro("out_width", &Deep::SimpleConvPCLayer::GetOutWidth)
-      .def_prop_ro("kernel_h", &Deep::SimpleConvPCLayer::GetKernelH)
-      .def_prop_ro("kernel_w", &Deep::SimpleConvPCLayer::GetKernelW)
-      .def_prop_ro("batch_size", &Deep::SimpleConvPCLayer::GetBatchSize)
-      .def("set_learning_rate", &Deep::SimpleConvPCLayer::SetLearningRate, nb::arg("lr"))
-      .def("set_inference_rate", &Deep::SimpleConvPCLayer::SetInferenceRate, nb::arg("ir"))
-      .def("set_lambda", &Deep::SimpleConvPCLayer::SetLambda, nb::arg("l"))
+                   },
+                   "This layer's biases, shape (out_channels,).")
+      .def_prop_ro("in_channels", &Deep::SimpleConvPCLayer::GetInChannels, "Number of input channels.")
+      .def_prop_ro("out_channels", &Deep::SimpleConvPCLayer::GetOutChannels, "Number of output channels.")
+      .def_prop_ro("in_height", &Deep::SimpleConvPCLayer::GetInHeight, "Input image height.")
+      .def_prop_ro("in_width", &Deep::SimpleConvPCLayer::GetInWidth, "Input image width.")
+      .def_prop_ro("out_height", &Deep::SimpleConvPCLayer::GetOutHeight, "Output image height.")
+      .def_prop_ro("out_width", &Deep::SimpleConvPCLayer::GetOutWidth, "Output image width.")
+      .def_prop_ro("kernel_h", &Deep::SimpleConvPCLayer::GetKernelH, "Convolution kernel height.")
+      .def_prop_ro("kernel_w", &Deep::SimpleConvPCLayer::GetKernelW, "Convolution kernel width.")
+      .def_prop_ro("batch_size", &Deep::SimpleConvPCLayer::GetBatchSize, "Number of samples processed per call.")
+      .def("set_learning_rate", &Deep::SimpleConvPCLayer::SetLearningRate, nb::arg("lr"),
+           "Sets the learning rate used for weight updates.")
+      .def("set_inference_rate", &Deep::SimpleConvPCLayer::SetInferenceRate, nb::arg("ir"),
+           "Sets the inference rate (Euler integration step size).")
+      .def("set_lambda", &Deep::SimpleConvPCLayer::SetLambda, nb::arg("l"),
+           "Sets the weight-decay (L2 regularization) coefficient.")
       .def(
           "set_optimizer",
           [](Deep::SimpleConvPCLayer& self, const std::string& opt)
@@ -1212,7 +1374,8 @@ void bind_layers(nb::module_& m)
             else
               self.SetOptimizer(Deep::OptimizerType::SGD);
           },
-          nb::arg("optimizer"))
+          nb::arg("optimizer"),
+          "Sets the optimizer used for weight updates: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def(
           "randomize_weights",
           [](Deep::SimpleConvPCLayer& self,
@@ -1225,7 +1388,10 @@ void bind_layers(nb::module_& m)
             self.RandomizeWeights(rng, distribution.c_str());
           },
           nb::arg("seed") = nb::none(),
-          nb::arg("distribution") = "normal")
+          nb::arg("distribution") = "normal",
+          "Randomizes this layer's weights (and biases) in place. `seed` gives "
+          "a reproducible run (None uses a nondeterministic seed); `distribution` "
+          "is \"normal\" or \"uniform\".")
       .def(
           "clamp_state",
           [](Deep::SimpleConvPCLayer& self, FloatArray input)
@@ -1233,8 +1399,12 @@ void bind_layers(nb::module_& m)
             std::vector<float> values(input.data(), input.data() + input.size());
             self.ClampState(values);
           },
-          nb::arg("input"))
-      .def("unclamp_state", &Deep::SimpleConvPCLayer::UnclampState)
+          nb::arg("input"),
+          "Clamps this layer's beliefs to externally-provided data, "
+          "preventing them from being updated by update_state().")
+      .def("unclamp_state", &Deep::SimpleConvPCLayer::UnclampState,
+           "Releases a previous clamp_state() call, allowing this layer's "
+           "beliefs to update normally again.")
       .def("__repr__",
            [](Deep::SimpleConvPCLayer& self)
            {
