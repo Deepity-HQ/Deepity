@@ -344,5 +344,18 @@ private:
   void StepBatchedRunCalculateState() noexcept;
   void StepBatchedRunUpdateState() noexcept;
   void UpdateWeightsBatchedRun() noexcept;
+  /// @brief Batched counterpart to TrainStep()'s own trailing
+  /// `for (auto& l : layers) finalEnergy += l->CalculateState(true);`
+  /// loop, covering run-layers [batchedRunStart+1 ..
+  /// batchedRunStart+batchedRunCount) -- the run's first layer still
+  /// needs layers.front()'s mu (outside the run) and is left to the
+  /// caller's own per-layer CalculateState(true) call, same split as
+  /// every other batched-run method here. z is already final by this
+  /// point (CalculateState() never writes z), so every run layer's mu
+  /// depends only on its own already-fixed z -- safe to recompute all
+  /// at once via ComputeMuBatchedRun(), same reasoning as
+  /// ProjectForwardBatchedRun()'s own shift-and-copy.
+  /// @return The summed energy contribution of every covered layer.
+  float FinalEnergyBatchedRun() noexcept;
 };
 } // namespace Deep

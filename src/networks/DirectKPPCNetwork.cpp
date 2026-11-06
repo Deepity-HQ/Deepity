@@ -276,6 +276,30 @@ void DirectKPPCNetwork::UpdateWeightsBatchedRun() noexcept
                          (int)TS, (int)L);
 }
 
+float DirectKPPCNetwork::FinalEnergyBatchedRun() noexcept
+{
+  const size_t L = batchedRunCount;
+  const size_t own = (size_t)batchSize * batchedRunWidth;
+
+  if (L < 2)
+    return 0.0f; // the run's own single layer is handled by the caller's own unchanged call
+
+  // mu[l] = Activation(z[l]@W[l]+b[l]) for every run layer, from z's
+  // already-final value (CalculateState() never writes z) -- safe to
+  // batch for the same reason ProjectForwardBatchedRun() is: nothing
+  // computed in this call depends on another layer's freshly-written
+  // value from within the SAME call.
+  ComputeMuBatchedRun();
+
+  // Run layer (run-local index) l's error needs run layer (l-1)'s mu,
+  // for l=1..L-1 -- one shifted ComputeErrorAndEnergy() call covers
+  // all L-1 of them at once (z shifted forward by one layer against
+  // mu, exactly matching ComputeErrorAndEnergy's own e=z-mu, summed
+  // into one scalar). The run's first layer needs layers.front()'s mu
+  // (outside the run) and is left to the caller's own per-layer call.
+  return backend->ComputeErrorAndEnergy(flatE + own, flatZ + own, flatMu, own * (L - 1));
+}
+
 void DirectKPPCNetwork::ProjectForward() noexcept
 {
   auto pair = [&](size_t i)
@@ -495,8 +519,22 @@ float DirectKPPCNetwork::TrainStep(const std::vector<float>& x, const std::vecto
   }
 
   float finalEnergy = 0.0f;
-  for (auto& l : layers)
-    finalEnergy += l->CalculateState(true);
+  if (!UseBatchedPath())
+  {
+    for (auto& l : layers)
+      finalEnergy += l->CalculateState(true);
+  }
+  else
+  {
+    finalEnergy += layers.front()->CalculateState(true);
+    // The run's first layer needs layers.front()'s mu (outside the
+    // run), so it's left to its own per-layer call; the rest of the
+    // run is covered by FinalEnergyBatchedRun() below.
+    finalEnergy += layers[batchedRunStart]->CalculateState(true);
+    finalEnergy += FinalEnergyBatchedRun();
+    for (size_t i = batchedRunStart + batchedRunCount; i < layers.size(); ++i)
+      finalEnergy += layers[i]->CalculateState(true);
+  }
 
   GetTerminalLayer()->UnclampState();
   return finalEnergy;
