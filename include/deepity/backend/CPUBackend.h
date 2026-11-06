@@ -55,6 +55,9 @@ public:
   /// @copydoc Deep::IComputeBackend::PrepareForBatchSize
   void PrepareForBatchSize(size_t batchSize) noexcept override {}
 
+  /// @copydoc Deep::IComputeBackend::PrewarmBatchedGemmScratch
+  bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept override { return true; }
+
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;

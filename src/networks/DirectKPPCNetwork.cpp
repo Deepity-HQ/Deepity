@@ -681,6 +681,13 @@ void DirectKPPCNetwork::Compile()
 
     if (L > 0)
     {
+      // Must happen before the first TrainStep()/Predict() ever runs,
+      // never lazily inside one: MatMulBatched()'s own scratch growth
+      // (cudaMalloc/cudaMallocHost) isn't a capturable operation, and
+      // the first real batched GEMM call always happens inside that
+      // call's graph capture.
+      backend->PrewarmBatchedGemmScratch(L);
+
       flatZ = gpuArena->AllocateFloats(own * L);
       flatE = gpuArena->AllocateFloats(own * L);
       flatW = gpuArena->AllocateFloats(w * L);

@@ -233,6 +233,11 @@ bool CUDABackend::GrowBatchedGemmArrays(size_t batchCount) noexcept
   return true;
 }
 
+bool CUDABackend::PrewarmBatchedGemmScratch(size_t batchCount) noexcept
+{
+  return GrowBatchedGemmArrays(batchCount);
+}
+
 void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
                                 const float* const* A_array, int lda, const float* const* B_array,
                                 int ldb, float beta, float* const* C_array, int ldc,
