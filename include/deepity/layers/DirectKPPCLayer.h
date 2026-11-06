@@ -139,6 +139,58 @@ public:
   template <typename ArenaT> void BindMemory(ArenaT& arena);
   /// @brief Total floats this layer needs from its MemoryArena.
   size_t GetRequiredFloats() const noexcept;
+
+  /// @brief Every pointer BindMemory() would normally carve out of this
+  /// layer's own arena slice, supplied instead from the caller's own
+  /// storage. Used by DirectKPPCNetwork's batched-GPU fast path: a run
+  /// of uniform-width layers gets ITS buffers aliased into one flat,
+  /// per-quantity buffer spanning the whole run (so the fast path's
+  /// batched GEMMs/elementwise calls can address all of them in one
+  /// dispatch), while every method below (CalculateState, UpdateState,
+  /// UpdateWeights, DirectFeedbackUpdate, ...) keeps running completely
+  /// unchanged -- they only ever read `this->z`/`this->W`/etc., never
+  /// caring where the memory actually lives. Every field must be
+  /// supplied (same invariant GetRequiredFloats() documents: Adam state
+  /// is always allocated regardless of the optimizer actually selected,
+  /// so switching to Adam/AdamW after Compile() stays safe even for an
+  /// externally-bound layer).
+  /// @warning Does not Zero() anything -- the caller zeroed the whole
+  /// flat buffer once, up front; redoing it per layer here would be
+  /// `batchedRunCount` separate calls instead of one.
+  struct ExternalMemory
+  {
+    float* z;
+    float* e;
+    float* W;
+    float* b;
+    float* mu;
+    float* cachedMu;
+    float* preact;
+    float* cachedPreact;
+    float* derivScratch;
+    float* feedbackError;
+    float* proj;
+    float* Psi;
+    float* feedbackScratch;
+    float* biasGradScratch;
+    float* grad_W;
+    float* m_W;
+    float* v_W;
+    float* grad_b;
+    float* m_b;
+    float* v_b;
+    float* grad_Psi;
+    float* m_Psi;
+    float* v_Psi;
+    int* t_device;
+    float* lr_device;
+    int* tPsi_device;
+    float* fl_device;
+  };
+  /// @brief Binds this layer's buffers directly to externally-supplied
+  /// pointers instead of carving them out of an arena. See
+  /// ExternalMemory's own doc comment above.
+  void BindExternalMemory(const ExternalMemory& mem) noexcept;
   /// @brief Randomizes W and Psi.
   /// @param distribution Distribution for W only, e.g. "normal(0,1)" or
   /// "uniform(-0.3,0.3)"; Psi always uses its own fixed fan-scaled init.
@@ -210,13 +262,28 @@ public:
   {
     opt = o;
   }
+  /// @brief Returns the optimizer currently selected for W.
+  OptimizerType GetOptimizer() const noexcept
+  {
+    return opt;
+  }
   /// @brief Sets the optimizer for Psi. Call before Compile().
   void SetPsiOptimizer(OptimizerType o) noexcept
   {
     optPsi = o;
   }
+  /// @brief Returns the optimizer currently selected for Psi.
+  OptimizerType GetPsiOptimizer() const noexcept
+  {
+    return optPsi;
+  }
   /// @brief Sets the learning rate, propagating it to the optimizer state.
   void SetLearningRate(float learningRate) noexcept;
+  /// @brief Returns the current learning rate for W.
+  float GetLearningRate() const noexcept
+  {
+    return lr;
+  }
   /// @brief Sets the inference rate.
   void SetInferenceRate(float inferenceRate) noexcept
   {
@@ -224,10 +291,25 @@ public:
   }
   /// @brief Sets the feedback rate, propagating it to the optimizer state.
   void SetFeedbackRate(float feedbackRate) noexcept;
+  /// @brief Returns the current feedback rate for Psi.
+  float GetFeedbackRate() const noexcept
+  {
+    return fl;
+  }
   /// @brief Sets the weight decay coefficient.
   void SetLambda(float lmbda) noexcept
   {
     this->lmbda = lmbda;
+  }
+  /// @brief Returns the current weight decay coefficient.
+  float GetLambda() const noexcept
+  {
+    return lmbda;
+  }
+  /// @brief Returns the current inference rate.
+  float GetInferenceRate() const noexcept
+  {
+    return ir;
   }
 
   float* GetBeliefs() noexcept override
@@ -256,6 +338,12 @@ public:
   }
   /// @brief Returns the direct feedback (DFA) weight matrix Psi, shape [size, terminalSize].
   const float* GetDirectFeedbackWeights() const noexcept
+  {
+    return Psi;
+  }
+  /// @brief Mutable overload of GetDirectFeedbackWeights() above, same
+  /// reason as GetWeights()'s/GetBiases()'s own mutable overloads.
+  float* GetDirectFeedbackWeights() noexcept
   {
     return Psi;
   }
@@ -296,6 +384,11 @@ public:
   size_t GetTerminalSize() const noexcept
   {
     return terminalSize;
+  }
+  /// @brief Returns this layer's activation type.
+  ActivationType GetActivationType() const noexcept
+  {
+    return activationType;
   }
 };
 } // namespace Deep

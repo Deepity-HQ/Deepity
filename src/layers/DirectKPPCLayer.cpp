@@ -107,6 +107,43 @@ template <typename ArenaT> void DirectKPPCLayer::BindMemory(ArenaT& arena)
   ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
+void DirectKPPCLayer::BindExternalMemory(const ExternalMemory& mem) noexcept
+{
+  z = mem.z;
+  e = mem.e;
+  W = mem.W;
+  b = mem.b;
+  mu = mem.mu;
+  cachedMu = mem.cachedMu;
+  preact = mem.preact;
+  cachedPreact = mem.cachedPreact;
+  derivScratch = mem.derivScratch;
+  feedbackError = mem.feedbackError;
+  proj = mem.proj;
+  Psi = mem.Psi;
+  feedbackScratch = mem.feedbackScratch;
+  biasGradScratch = mem.biasGradScratch;
+  grad_W = mem.grad_W;
+  m_W = mem.m_W;
+  v_W = mem.v_W;
+  grad_b = mem.grad_b;
+  m_b = mem.m_b;
+  v_b = mem.v_b;
+  grad_Psi = mem.grad_Psi;
+  m_Psi = mem.m_Psi;
+  v_Psi = mem.v_Psi;
+  t_device = mem.t_device;
+  lr_device = mem.lr_device;
+  tPsi_device = mem.tPsi_device;
+  fl_device = mem.fl_device;
+
+  // This layer's own private fallback arena (eagerly created and bound
+  // in the constructor, before Compile() ever runs) is now entirely
+  // unused -- same cleanup BindMemory() does via
+  // ReleaseLocalArenaIfForeign() for the ordinary arena-bound case.
+  localArena.reset();
+}
+
 size_t DirectKPPCLayer::GetRequiredFloats() const noexcept
 {
   auto pad16 = [](size_t n) { return (n + 15) & ~(size_t)15; };
