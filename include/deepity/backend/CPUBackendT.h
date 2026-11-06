@@ -2,6 +2,8 @@
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/backend/Tensor.h>
 #include <deepity/utils/activations/ActivationMacros.h> // RESTRICT
+#include <cstdio>
+#include <cstdlib>
 #include <stdexcept>
 
 namespace Deep
@@ -109,16 +111,18 @@ public:
   void FusedStateUpdateMomentum(T*, T*, const T*, ActivationType, const T*, size_t, AccumT,
                                 AccumT) noexcept override
   {
-    throw std::logic_error(
-        "CPUBackendT::FusedStateUpdateMomentum: out of scope -- SimplePCLayer has no momentum "
-        "option, so SimplePCLayerT never calls this either.");
+    std::fprintf(stderr,
+                 "CPUBackendT::FusedStateUpdateMomentum: out of scope -- SimplePCLayer has no "
+                 "momentum option, so SimplePCLayerT never calls this either.\n");
+    std::abort();
   }
   void FusedStateUpdate(T*, const T*, ActivationType, const T*, size_t, AccumT) noexcept override
   {
-    throw std::logic_error(
-        "CPUBackendT::FusedStateUpdate: out of scope -- SimplePCLayerT computes this update "
-        "manually (AccumT-precision feedback/derivative, see SimplePCLayerT.h's own class "
-        "comment), never through this T*-typed fused entry point.");
+    std::fprintf(stderr,
+                 "CPUBackendT::FusedStateUpdate: out of scope -- SimplePCLayerT computes this "
+                 "update manually (AccumT-precision feedback/derivative, see SimplePCLayerT.h's "
+                 "own class comment), never through this T*-typed fused entry point.\n");
+    std::abort();
   }
 
   AccumT ComputeErrorAndEnergy(T* RESTRICT e, const T* RESTRICT z, const T* RESTRICT mu,
@@ -190,17 +194,20 @@ public:
 
   void FusedActivationDerivativeMultiply(T*, const T*, T*, ActivationType, size_t) noexcept override
   {
-    throw std::logic_error(
-        "CPUBackendT::FusedActivationDerivativeMultiply: out of scope -- no current layer "
-        "(templated or not) calls this method anymore; SimpleConvPCLayer/FullConvPCLayer each "
-        "moved to an unfused ActivationDerivativeInto()+MultiplyInto() pair instead.");
+    std::fprintf(stderr,
+                 "CPUBackendT::FusedActivationDerivativeMultiply: out of scope -- no current "
+                 "layer (templated or not) calls this method anymore; "
+                 "SimpleConvPCLayer/FullConvPCLayer each moved to an unfused "
+                 "ActivationDerivativeInto()+MultiplyInto() pair instead.\n");
+    std::abort();
   }
   void FusedActivationDerivativeMultiplyFromPreact(T*, const T*, const T*, ActivationType,
                                                     size_t) noexcept override
   {
-    throw std::logic_error(
-        "CPUBackendT::FusedActivationDerivativeMultiplyFromPreact: out of scope, see "
-        "FusedActivationDerivativeMultiply()'s own message.");
+    std::fprintf(stderr,
+                 "CPUBackendT::FusedActivationDerivativeMultiplyFromPreact: out of scope, see "
+                 "FusedActivationDerivativeMultiply()'s own message.\n");
+    std::abort();
   }
   void Fill(T* buf, size_t n, AccumT value) noexcept override;
   void AddBiasPerChannel(T* buf, const T* bias, size_t channels,
