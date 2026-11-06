@@ -748,6 +748,8 @@ void DirectKPPCNetwork::Compile()
     total_floats_needed += pad16(H * L) * 5;      // b, biasGradScratch, grad_b, m_b, v_b
     total_floats_needed += pad16(direct * L) * 4; // Psi, grad_Psi, m_Psi, v_Psi
     total_floats_needed += pad16(L) * 4;          // t_device, lr_device, tPsi_device, fl_device
+    if (psiStride != TS)
+      total_floats_needed += pad16(B * psiStride); // flatTerminalEPadded
   }
 
   if (device == DeviceType::DEVICE_CPU)
