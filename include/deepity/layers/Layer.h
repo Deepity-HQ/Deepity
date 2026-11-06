@@ -43,6 +43,9 @@ struct TensorDescriptorT
 {
   T* data;                   ///< Pointer to the tensor's first element.
   std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
+  /// @brief See TensorDescriptor::rowStride's own comment -- 0 means
+  /// tight packing (ModelIO treats it as shape.back()).
+  size_t rowStride = 0;
 };
 /// @brief A deepity layer virtual class.
 class Layer
