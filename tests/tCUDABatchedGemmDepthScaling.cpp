@@ -41,9 +41,9 @@ constexpr int IN_DIM = 64;
 constexpr int HIDDEN = 128;
 constexpr int OUT_DIM = 10;
 constexpr int BATCH = 128;
-constexpr int WARMUP = 3;
-constexpr int TIMED = 10;
-constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 192, 256};
+constexpr int WARMUP = 5;
+constexpr int TIMED = 30;
+constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048};
 
 std::vector<float> RandomVec(size_t n, std::mt19937& rng)
 {
