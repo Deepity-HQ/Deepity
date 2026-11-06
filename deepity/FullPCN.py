@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._interop import to_numpy
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -423,8 +424,8 @@ class FullPCN:
         self._require_configured()
 
         return self._impl.train_step(
-            X.astype(self._np_dtype, copy=False).flatten(),
-            Y.astype(self._np_dtype, copy=False).flatten(),
+            to_numpy(X, self._np_dtype).flatten(),
+            to_numpy(Y, self._np_dtype).flatten(),
             inference_steps,
         )
 
@@ -439,7 +440,7 @@ class FullPCN:
 
         return np.asarray(
             self._impl.predict(
-                X.astype(self._np_dtype, copy=False).flatten(),
+                to_numpy(X, self._np_dtype).flatten(),
                 inference_steps,
             )
         )
@@ -462,8 +463,8 @@ class FullPCN:
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, self._np_dtype),
+            to_numpy(Y, self._np_dtype),
             epochs,
             inference_steps,
             initial_lr,  # type: ignore

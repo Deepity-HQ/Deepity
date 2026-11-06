@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
+from ._interop import to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 from typing import Optional
@@ -224,8 +225,8 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         self._require_configured()
 
         self.reset_state()
-        self.clamp_input(X)
-        self[-1].clamp_state(Y)
+        self.clamp_input(to_numpy(X, np.float32))
+        self[-1].clamp_state(to_numpy(Y, np.float32))
 
         total_energy = 0.0
 
@@ -249,7 +250,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         self._require_configured()
 
         self.reset_state()
-        self.clamp_input(X.flatten())
+        self.clamp_input(to_numpy(X, np.float32).flatten())
 
         for _ in range(steps):
             self.calculate_state(False)
@@ -278,8 +279,8 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,
@@ -316,6 +317,9 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         @param reset_cache_per_epoch If True, clear every cache at the
         start of each epoch; if False, caches persist across epochs."""
         self._require_configured()
+        X = to_numpy(X, np.float32)
+        Y = to_numpy(Y, np.float32)
+        labels = to_numpy(labels, np.int32)
 
         if initial_lr is None:
             if self._learning_rate is None:

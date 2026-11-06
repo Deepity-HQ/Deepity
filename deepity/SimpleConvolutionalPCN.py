@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
+from ._interop import to_numpy
 from .layer import Layer, Convolution, Activation
 from .utils import _fit_with_progress
 from typing import Optional
@@ -186,7 +187,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         `steps` iterations before updating weights.
         @return Total settling energy accumulated over `steps`."""
         self._require_configured()
-        return super().train_step(X.flatten(), Y.flatten(), steps)
+        return super().train_step(to_numpy(X, np.float32).flatten(), to_numpy(Y, np.float32).flatten(), steps)
 
     def predict(
         self,
@@ -196,7 +197,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         """Run inference on `X`, settling for `steps` iterations.
         @return The terminal layer's beliefs."""
         self._require_configured()
-        return super().predict(X.flatten(), steps)
+        return super().predict(to_numpy(X, np.float32).flatten(), steps)
 
     def train_step_with_projection(
         self,
@@ -208,8 +209,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         beliefs via a forward projection pass first."""
         self._require_configured()
         return super().train_step_with_projection(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
@@ -222,7 +223,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         via a forward projection pass first."""
         self._require_configured()
         return super().predict_with_projection(
-            X.flatten(),
+            to_numpy(X, np.float32).flatten(),
             steps,
         )
 
@@ -247,8 +248,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,

@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._interop import to_numpy
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -240,8 +241,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self._require_configured()
 
         return super().train_step(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             inference_steps,
         )
 
@@ -256,7 +257,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
         return np.asarray(
             super().predict(
-                X.flatten(),
+                to_numpy(X, np.float32).flatten(),
                 inference_steps,
             )
         )
@@ -285,8 +286,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             inference_steps,
             initial_lr, # type: ignore

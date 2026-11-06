@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._interop import to_numpy
 from .layer import Activation, Convolution, Layer
 from .utils import _fit_with_progress
 
@@ -198,7 +199,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self,
         X: npt.NDArray[np.float32],
     ) -> None:
-        super().clamp_input(X.flatten())
+        super().clamp_input(to_numpy(X, np.float32).flatten())
 
     def project_forward(self) -> None:
         super().project_forward()
@@ -218,8 +219,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._require_configured()
 
         return super().train_step(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
@@ -235,8 +236,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._require_configured()
 
         return super().train_step_with_projection(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
@@ -251,7 +252,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         return np.asarray(
             super().predict(
-                X.flatten(),
+                to_numpy(X, np.float32).flatten(),
                 steps,
             )
         )
@@ -267,7 +268,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         return np.asarray(
             super().predict_with_projection(
-                X.flatten(),
+                to_numpy(X, np.float32).flatten(),
                 steps,
             )
         )
@@ -293,8 +294,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,
