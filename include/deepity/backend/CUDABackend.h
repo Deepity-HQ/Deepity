@@ -81,6 +81,9 @@ public:
   /// @copydoc Deep::IComputeBackend::PrepareForBatchSize
   void PrepareForBatchSize(size_t batchSize) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::PrewarmBatchedGemmScratch
+  bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept override;
+
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
@@ -100,6 +103,21 @@ public:
   }
   /// @copydoc Deep::IComputeBackend::SetAllowTF32
   void SetAllowTF32(bool allow) noexcept override;
+
+  /// @copydoc Deep::IComputeBackendT::MatMulBatched
+  /// @note Requires identical M/N/K across the whole batch (classic
+  /// cublasSgemmBatched's own requirement) -- true for every caller
+  /// today, since each passes the same M/N/K for every layer by
+  /// construction, but NOT yet exploiting a network with genuinely
+  /// ragged per-layer widths (would need cublasGemmGroupedBatchedEx).
+  /// @note Falls back to a plain per-layer MatMul() loop whenever any of
+  /// M/N/K is below 128 -- cuBLASLt's heuristic picks a 128x128-tile
+  /// kernel that writes past the output buffer for small dimensions
+  /// (confirmed via compute-sanitizer), same class of bug as
+  /// CPUBackend::MatMulBatched's own small-matrix guard.
+  void MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
+                     const float* const* A_array, int lda, const float* const* B_array, int ldb,
+                     float beta, float* const* C_array, int ldc, int batchCount) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::Scale
   void Scale(float* buf, size_t n, float alpha) noexcept override;
@@ -326,5 +344,34 @@ private:
   /// @brief Single-float device scratch buffer for scalar reductions
   /// (ComputePrecisionWeightedErrorAndEnergy(), Sum()).
   float* scalarScratch = nullptr;
+
+  /// @brief Device-resident pointer arrays for cublasSgemmBatched()'s
+  /// Aarray/Barray/Carray parameters: cuBLAS requires these arrays
+  /// THEMSELVES, not just what they point to, to live in device memory
+  /// -- unlike CPUBackend's cblas_sgemm_batch (a host array of host
+  /// pointers). Grown lazily, reused across calls, freed in the
+  /// destructor, the same pattern onesVector/workspace already use.
+  const float** batchedGemmDeviceA = nullptr;
+  const float** batchedGemmDeviceB = nullptr;
+  float** batchedGemmDeviceC = nullptr;
+  /// @brief Pinned (cudaMallocHost) host staging buffers paired with
+  /// the three device arrays above: MatMulBatched() copies the caller's
+  /// host pointer arrays in here, then cudaMemcpyAsync()s to device on
+  /// `stream`. Needed because a plain synchronous cudaMemcpy() (as
+  /// CopyFromHost() uses) isn't safely capturable inside
+  /// BeginGraphCapture()/EndGraphCapture(), and ordinary pageable host
+  /// memory isn't a valid cudaMemcpyAsync() source during capture either.
+  const float** batchedGemmHostA = nullptr;
+  const float** batchedGemmHostB = nullptr;
+  float** batchedGemmHostC = nullptr;
+  /// @brief Current capacity, in pointer slots, of EACH of the six
+  /// arrays above (they always grow together, all-or-nothing).
+  size_t batchedGemmArrayCapacity = 0;
+
+  /// @brief Grows (if needed) the six batched-GEMM pointer-array
+  /// buffers above to hold at least @p batchCount pointers each.
+  /// All-or-nothing: on any allocation failure, frees everything and
+  /// returns false rather than leave a partially-grown, mismatched set.
+  bool GrowBatchedGemmArrays(size_t batchCount) noexcept;
 };
 } // namespace Deep

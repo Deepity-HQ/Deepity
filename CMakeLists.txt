@@ -1026,6 +1026,20 @@ if(DEEPITY_BUILD_TESTS)
         )
         list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTModelIOCudaVerify)
 
+        add_executable(DirectKPBatchedGPUVerify tests/tDirectKPBatchedGPUVerify.cpp)
+        target_link_libraries(DirectKPBatchedGPUVerify PRIVATE Deepity)
+        set_target_properties(DirectKPBatchedGPUVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS DirectKPBatchedGPUVerify)
+
+        add_executable(DirectKPPCNetworkDepthScalingVsBP tests/tDirectKPPCNetworkDepthScalingVsBP.cpp)
+        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity)
+        set_target_properties(DirectKPPCNetworkDepthScalingVsBP PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS DirectKPPCNetworkDepthScalingVsBP)
+
         add_executable(CUDARandomizeVerify tests/tCUDARandomizeVerify.cpp)
         target_link_libraries(CUDARandomizeVerify PRIVATE Deepity)
         set_target_properties(CUDARandomizeVerify PROPERTIES
@@ -1041,6 +1055,15 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS CUDARandomizeBenchmark)
+
+        # Manual profiling tool, not a pass/fail test -- GPU counterpart of
+        # the CPU tBatchedGemmDepthScaling benchmark (issue #74).
+        add_executable(CUDABatchedGemmDepthScaling tests/tCUDABatchedGemmDepthScaling.cpp)
+        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity)
+        set_target_properties(CUDABatchedGemmDepthScaling PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS CUDABatchedGemmDepthScaling)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -

@@ -169,6 +169,23 @@ public:
     return device;
   }
 
+  /// @brief Returns the length of Compile()'s detected batched-GPU
+  /// fast-path run (0 if none eligible, see the "Batched-GPU fast
+  /// path" member comments below). Benchmark/debug use only.
+  size_t GetBatchedRunCount() const noexcept
+  {
+    return batchedRunCount;
+  }
+  /// @brief Benchmark/debug-only override: forces UseBatchedPath() to
+  /// report false regardless of Compile()'s own detection, by zeroing
+  /// batchedRunCount, so a benchmark can isolate batching's effect on
+  /// timing from "GPU is just fast." Pass GetBatchedRunCount()'s own
+  /// earlier return value to restore the natural batched run.
+  void SetBatchedRunCountForBenchmark(size_t count) noexcept
+  {
+    batchedRunCount = count;
+  }
+
   /// @brief Full train step: reset, clamp input+target, run all
   /// four DKP-PC phases in order, unclamp.
   /// @param x Flattened input batch, clamped to the input layer.
@@ -218,5 +235,142 @@ private:
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
   static constexpr size_t kPredictGraphSlot = 1;
+
+  // --- Batched-GPU fast path (issue #74's DKP-PC depth-scaling result)
+  // -------------------------------------------------------------------
+  //
+  // layers[batchedRunStart .. batchedRunStart+batchedRunCount) is the
+  // maximal contiguous run of uniform-width (size==nextSize==
+  // batchedRunWidth), uniform-activation, uniform-terminalSize middle
+  // layers, always starting at index 1 (just past layers.front(), which
+  // is never part of it, see Clamp()'s own call -- only it and the
+  // terminal layer are ever clamped). The run does NOT necessarily
+  // reach layers.back(): when the run's own width differs from
+  // terminalSize (the common case -- a hidden width like 128 next to a
+  // 10-wide classifier head), the one middle layer feeding directly
+  // into the terminal has nextSize==terminalSize, not the run's width,
+  // so Compile()'s detection stops one (or more, for a network with
+  // several different widths stacked in its last few layers) layer
+  // short of the terminal. Every method below treats that "suffix" of
+  // zero or more trailing non-run layers, up to and including the
+  // terminal, as ordinary per-layer work -- see each method's own
+  // comment. Detected once in Compile(); batchedRunCount==0 means no
+  // eligible run exists (non-uniform network, or fewer than 2 eligible
+  // layers) or device != DEVICE_GPU, and every method below behaves
+  // exactly as it always has.
+  //
+  // When the run exists, EVERY run layer's buffers are aliased (via
+  // DirectKPPCLayer::BindExternalMemory()) into these flat, per-quantity
+  // buffers spanning the whole run, instead of each layer's own
+  // self-contained arena slice -- see BindExternalMemory()'s own doc
+  // comment for why this is safe: every existing per-layer method
+  // keeps working completely unchanged against them, run layers included,
+  // since none of those methods know or care where their buffers live.
+  // ProjectForward()/DirectFeedbackUpdate()/Step()/UpdateWeights() below
+  // use that aliasing to additionally dispatch MatMulBatched()/flattened
+  // elementwise calls across the whole run in place of their ordinary
+  // per-layer loop, when UseBatchedPath() says it's safe to for this call.
+  size_t batchedRunStart = 0;
+  size_t batchedRunCount = 0;
+  size_t batchedRunWidth = 0;
+
+  float* flatZ = nullptr;
+  float* flatE = nullptr;
+  float* flatW = nullptr;
+  float* flatB = nullptr;
+  float* flatMu = nullptr;
+  float* flatCachedMu = nullptr;
+  float* flatPreact = nullptr;
+  float* flatCachedPreact = nullptr;
+  float* flatDerivScratch = nullptr;
+  float* flatFeedbackError = nullptr;
+  float* flatProj = nullptr;
+  float* flatPsi = nullptr;
+  float* flatFeedbackScratch = nullptr;
+  float* flatBiasGradScratch = nullptr;
+  float* flatGradW = nullptr;
+  float* flatMW = nullptr;
+  float* flatVW = nullptr;
+  float* flatGradB = nullptr;
+  float* flatMB = nullptr;
+  float* flatVB = nullptr;
+  float* flatGradPsi = nullptr;
+  float* flatMPsi = nullptr;
+  float* flatVPsi = nullptr;
+  /// @brief [batchSize, psiStride] scratch holding the terminal layer's
+  /// current error, zero-padded past terminalSize columns -- only
+  /// allocated/used when Compile() actually padded Psi (see that
+  /// function's own comment). Refreshed by RefreshPaddedTerminalE()
+  /// right before each of the two batched GEMMs that read it; its
+  /// padding columns are zeroed once in Compile() and never written
+  /// again, since RefreshPaddedTerminalE() only ever touches the real
+  /// terminalSize-wide prefix of each row.
+  float* flatTerminalEPadded = nullptr;
+  int* flatTDevice = nullptr;
+  float* flatLrDevice = nullptr;
+  int* flatTPsiDevice = nullptr;
+  float* flatFlDevice = nullptr;
+
+  // MatMulBatched()'s per-call pointer-array scratch, reused across
+  // every batched GEMM dispatch (sized batchedRunCount, resized once in
+  // Compile()).
+  std::vector<const float*> batchedA, batchedB;
+  std::vector<float*> batchedC;
+
+  /// @brief Whether this call can use the batched run at all: a run
+  /// exists AND every layer in it currently uses SGD for both W and
+  /// Psi (checked fresh, not cached, since SetOptimizer()/
+  /// SetPsiOptimizer() can be called after Compile()). Adam/AdamW's
+  /// math isn't batched -- those calls fall back to the ordinary
+  /// per-layer loop below, which still works correctly against the
+  /// same aliased buffers either way.
+  bool UseBatchedPath() const noexcept;
+
+  // Batched counterparts to ProjectForward()/DirectFeedbackUpdate()/
+  // Step()/UpdateWeights(), covering ONLY layers[batchedRunStart ..
+  // batchedRunStart+batchedRunCount), whenever UseBatchedPath() is
+  // true. layers.front() and the "suffix" (layers[batchedRunStart+
+  // batchedRunCount ..], zero or more trailing non-run layers up to and
+  // including the terminal, see the member comments above) are never
+  // part of the run and keep calling their own ordinary per-layer
+  // methods directly, at the call sites below, in the same relative
+  // order the original all-sequential loops always used -- the couple
+  // of layer-sized bits of redundant recomputation that fall out of
+  // this (e.g. the run's own last layer's mu, computed once by the
+  // batched call and once more by the ordinary per-layer call right
+  // after it, for correct read/write ordering at that seam) are O(1)
+  // extra work, not O(layers.size()).
+  //
+  // ComputeMuBatchedRun() batches ComputeMuOnly()'s math (GEMM + bias +
+  // preact snapshot + activation) across every run layer; it underlies
+  // ProjectForwardBatchedRun(), StepBatchedRunCalculateState(), and
+  // UpdateWeights()'s own mu refresh, exactly like the ordinary
+  // ComputeMuOnly() underlies ProjectForward(), CalculateState(), and
+  // UpdateWeights() today.
+  void ComputeMuBatchedRun() noexcept;
+  void ProjectForwardBatchedRun() noexcept;
+  void DirectFeedbackUpdateBatchedRun() noexcept;
+  void StepBatchedRunCalculateState() noexcept;
+  void StepBatchedRunUpdateState() noexcept;
+  void UpdateWeightsBatchedRun() noexcept;
+  /// @brief Batched counterpart to TrainStep()'s own trailing
+  /// `for (auto& l : layers) finalEnergy += l->CalculateState(true);`
+  /// loop, covering run-layers [batchedRunStart+1 ..
+  /// batchedRunStart+batchedRunCount) -- the run's first layer still
+  /// needs layers.front()'s mu (outside the run) and is left to the
+  /// caller's own per-layer CalculateState(true) call, same split as
+  /// every other batched-run method here. z is already final by this
+  /// point (CalculateState() never writes z), so every run layer's mu
+  /// depends only on its own already-fixed z -- safe to recompute all
+  /// at once via ComputeMuBatchedRun(), same reasoning as
+  /// ProjectForwardBatchedRun()'s own shift-and-copy.
+  /// @return The summed energy contribution of every covered layer.
+  float FinalEnergyBatchedRun() noexcept;
+  /// @brief Copies the terminal layer's current error into
+  /// flatTerminalEPadded's real (terminalSize-wide) prefix of every
+  /// row, one row at a time (batchSize dispatches -- fixed cost,
+  /// independent of depth). No-op when Compile() didn't pad Psi. See
+  /// flatTerminalEPadded's own comment.
+  void RefreshPaddedTerminalE() noexcept;
 };
 } // namespace Deep

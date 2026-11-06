@@ -87,6 +87,18 @@ public:
   /// backend that needs to prepare batch-size-dependent state.
   virtual void PrepareForBatchSize(size_t batchSize) noexcept = 0;
 
+  /// @brief Call once, before the first BeginGraphCapture(), for any
+  /// backend whose MatMulBatched() needs device/pinned scratch sized to
+  /// @p batchCount layers. Device and pinned-host allocation (cudaMalloc/
+  /// cudaMallocHost) aren't capturable operations; without this, a
+  /// backend that grows its scratch lazily on first use would try to do
+  /// so mid-capture, on whichever call happens to need it first, and
+  /// fail. No-op (returns true) on a backend with no such scratch.
+  /// @return false if the backend needed to grow and couldn't -- the
+  /// caller's first real MatMulBatched() call will then itself fail or
+  /// fall back, same as if this were never called.
+  virtual bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept = 0;
+
   // GEMM
 
   /// @brief C = alpha * op(A) * op(B) + beta * C, the standard BLAS

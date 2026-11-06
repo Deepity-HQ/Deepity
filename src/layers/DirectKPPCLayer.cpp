@@ -24,6 +24,7 @@ DirectKPPCLayer::DirectKPPCLayer(size_t size, size_t nextSize, size_t terminalSi
     , nextSize(nextSize)
     , terminalSize(terminalSize)
     , batchSize(batchSize)
+    , psiStride(terminalSize)
     , lr(learningRate)
     , ir(inferenceRate)
     , fl(feedback)
@@ -107,6 +108,44 @@ template <typename ArenaT> void DirectKPPCLayer::BindMemory(ArenaT& arena)
   ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
+void DirectKPPCLayer::BindExternalMemory(const ExternalMemory& mem) noexcept
+{
+  z = mem.z;
+  e = mem.e;
+  W = mem.W;
+  b = mem.b;
+  mu = mem.mu;
+  cachedMu = mem.cachedMu;
+  preact = mem.preact;
+  cachedPreact = mem.cachedPreact;
+  derivScratch = mem.derivScratch;
+  feedbackError = mem.feedbackError;
+  proj = mem.proj;
+  Psi = mem.Psi;
+  psiStride = mem.psiStride;
+  feedbackScratch = mem.feedbackScratch;
+  biasGradScratch = mem.biasGradScratch;
+  grad_W = mem.grad_W;
+  m_W = mem.m_W;
+  v_W = mem.v_W;
+  grad_b = mem.grad_b;
+  m_b = mem.m_b;
+  v_b = mem.v_b;
+  grad_Psi = mem.grad_Psi;
+  m_Psi = mem.m_Psi;
+  v_Psi = mem.v_Psi;
+  t_device = mem.t_device;
+  lr_device = mem.lr_device;
+  tPsi_device = mem.tPsi_device;
+  fl_device = mem.fl_device;
+
+  // This layer's own private fallback arena (eagerly created and bound
+  // in the constructor, before Compile() ever runs) is now entirely
+  // unused -- same cleanup BindMemory() does via
+  // ReleaseLocalArenaIfForeign() for the ordinary arena-bound case.
+  localArena.reset();
+}
+
 size_t DirectKPPCLayer::GetRequiredFloats() const noexcept
 {
   auto pad16 = [](size_t n) { return (n + 15) & ~(size_t)15; };
@@ -150,22 +189,36 @@ void DirectKPPCLayer::RandomizeWeights(std::mt19937& seedGenerator,
 
   std::uniform_int_distribution<uint32_t> seedDist;
   size_t Wsz = size * nextSize;
-  size_t Psisz = terminalSize * size;
   float limit = std::sqrt(2.0f / (size + nextSize));
   float limPsi = std::sqrt(2.0f / (size + terminalSize));
 
   uint32_t seedW = seedDist(seedGenerator);
-  uint32_t seedPsi = seedDist(seedGenerator);
 
   RandomizeWithDistribution(backend.get(), W, Wsz, distribution, seedW, 0.0f, limit);
-  backend->RandomizeNormal(Psi, Psisz, 0.0f, limPsi, seedPsi);
+
+  if (psiStride == terminalSize)
+  {
+    uint32_t seedPsi = seedDist(seedGenerator);
+    backend->RandomizeNormal(Psi, terminalSize * size, 0.0f, limPsi, seedPsi);
+  }
+  else
+  {
+    // Psi's row width was padded wider than terminalSize (see
+    // GetPsiStride()'s own comment) -- randomize only the real,
+    // logical TS columns of each row, one row at a time, so the
+    // padding columns stay exactly zero (as Compile() zeroed the
+    // whole flat buffer). One-time setup cost, not a hot path.
+    for (size_t row = 0; row < size; ++row)
+      backend->RandomizeNormal(Psi + row * psiStride, terminalSize, 0.0f, limPsi,
+                               seedDist(seedGenerator));
+  }
 }
 
 std::map<std::string, Deep::TensorDescriptor> Deep::DirectKPPCLayer::GetStateDict() const
 {
   return {{"W", {W, std::vector<size_t>{nextSize, size}}},
           {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}, psiStride}}};
 }
 
 float DirectKPPCLayer::CalculateState(bool needEnergy) noexcept
@@ -376,7 +429,7 @@ void DirectKPPCLayer::UpdateWeights() noexcept
         (int)terminalSize,
         1.0f,
         Psi,
-        (int)terminalSize);
+        (int)psiStride);
     break;
   }
   case OptimizerType::ADAMW:
@@ -384,7 +437,13 @@ void DirectKPPCLayer::UpdateWeights() noexcept
   {
     backend->IncrementCounter(tPsi_device);
 
-    size_t num_weights_psi = size * terminalSize;
+    // num_weights_psi spans psiStride (not just terminalSize) so Adam's
+    // per-element state stays aligned with Psi's own possibly-padded
+    // layout; the padding columns' gradient is always exactly zero (the
+    // GEMM below only ever writes the real terminalSize columns of
+    // each row), so Adam's moment estimates for them settle at zero
+    // too and never move those columns off zero.
+    size_t num_weights_psi = size * psiStride;
     float adam_scale = -1.0f;
 
     backend->MatMul(
@@ -400,7 +459,7 @@ void DirectKPPCLayer::UpdateWeights() noexcept
         (int)terminalSize,
         0.0f,
         grad_Psi,
-        (int)terminalSize);
+        (int)psiStride);
 
     if (optPsi == OptimizerType::ADAMW)
       backend->AdamWStep(
@@ -429,7 +488,7 @@ void DirectKPPCLayer::DirectFeedbackUpdate() noexcept
       terminalLayer->GetErrors(),
       (int)terminalSize,
       layerAbove->GetDirectFeedbackWeights(),
-      (int)terminalSize,
+      (int)layerAbove->GetPsiStride(),
       0.0f,
       proj,
       (int)nextSize);
