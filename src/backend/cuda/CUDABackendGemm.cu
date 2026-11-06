@@ -23,6 +23,9 @@
 #include <deepity/backend/CUDABackend.h>
 
 #ifdef DEEPITY_USE_CUDA
+#include <cstring>
+#include <iostream>
+
 #include <cutlass/epilogue/thread/linear_combination.h>
 #include <cutlass/epilogue/thread/linear_combination_relu.h>
 // Must be defined before activation.h (pulled in by
@@ -168,6 +171,111 @@ void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K, float al
   cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
   cublasSgemm(this->handle, opB, opA, N, M, K, &alpha, B, ldb, A, lda, &beta, C, ldc);
+}
+
+bool CUDABackend::GrowBatchedGemmArrays(size_t batchCount) noexcept
+{
+  if (batchedGemmArrayCapacity >= batchCount)
+    return true;
+
+  if (batchedGemmDeviceA)
+    cudaFree(batchedGemmDeviceA);
+  if (batchedGemmDeviceB)
+    cudaFree(batchedGemmDeviceB);
+  if (batchedGemmDeviceC)
+    cudaFree(batchedGemmDeviceC);
+  if (batchedGemmHostA)
+    cudaFreeHost(batchedGemmHostA);
+  if (batchedGemmHostB)
+    cudaFreeHost(batchedGemmHostB);
+  if (batchedGemmHostC)
+    cudaFreeHost(batchedGemmHostC);
+  batchedGemmDeviceA = nullptr;
+  batchedGemmDeviceB = nullptr;
+  batchedGemmDeviceC = nullptr;
+  batchedGemmHostA = nullptr;
+  batchedGemmHostB = nullptr;
+  batchedGemmHostC = nullptr;
+  batchedGemmArrayCapacity = 0;
+
+  const size_t ptrBytes = batchCount * sizeof(const float*);
+  bool ok = cudaMalloc(&batchedGemmDeviceA, ptrBytes) == cudaSuccess;
+  ok = ok && cudaMalloc(&batchedGemmDeviceB, ptrBytes) == cudaSuccess;
+  ok = ok && cudaMalloc(&batchedGemmDeviceC, ptrBytes) == cudaSuccess;
+  ok = ok && cudaMallocHost(&batchedGemmHostA, ptrBytes) == cudaSuccess;
+  ok = ok && cudaMallocHost(&batchedGemmHostB, ptrBytes) == cudaSuccess;
+  ok = ok && cudaMallocHost(&batchedGemmHostC, ptrBytes) == cudaSuccess;
+
+  if (!ok)
+  {
+    if (batchedGemmDeviceA)
+      cudaFree(batchedGemmDeviceA);
+    if (batchedGemmDeviceB)
+      cudaFree(batchedGemmDeviceB);
+    if (batchedGemmDeviceC)
+      cudaFree(batchedGemmDeviceC);
+    if (batchedGemmHostA)
+      cudaFreeHost(batchedGemmHostA);
+    if (batchedGemmHostB)
+      cudaFreeHost(batchedGemmHostB);
+    if (batchedGemmHostC)
+      cudaFreeHost(batchedGemmHostC);
+    batchedGemmDeviceA = nullptr;
+    batchedGemmDeviceB = nullptr;
+    batchedGemmDeviceC = nullptr;
+    batchedGemmHostA = nullptr;
+    batchedGemmHostB = nullptr;
+    batchedGemmHostC = nullptr;
+    return false;
+  }
+
+  batchedGemmArrayCapacity = batchCount;
+  return true;
+}
+
+void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
+                                const float* const* A_array, int lda, const float* const* B_array,
+                                int ldb, float beta, float* const* C_array, int ldc,
+                                int batchCount) noexcept
+{
+  if (batchCount <= 0)
+    return;
+  if (batchCount == 1)
+  {
+    MatMul(transA, transB, M, N, K, alpha, A_array[0], lda, B_array[0], ldb, beta, C_array[0], ldc);
+    return;
+  }
+
+  if (!GrowBatchedGemmArrays(static_cast<size_t>(batchCount)))
+  {
+    std::cerr << "CUDABackend::MatMulBatched: pointer-array scratch allocation failed, "
+                 "falling back to per-layer MatMul().\n";
+    IComputeBackend::MatMulBatched(transA, transB, M, N, K, alpha, A_array, lda, B_array, ldb,
+                                   beta, C_array, ldc, batchCount);
+    return;
+  }
+
+  // cuBLAS needs Aarray/Barray/Carray THEMSELVES in device memory, unlike
+  // CPUBackend's cblas_sgemm_batch (a host array of host pointers). Stage
+  // into pinned host memory first, then cudaMemcpyAsync() on `stream` --
+  // plain synchronous cudaMemcpy() (as CopyFromHost() uses) isn't safely
+  // capturable inside BeginGraphCapture()/EndGraphCapture().
+  std::memcpy(batchedGemmHostA, A_array, batchCount * sizeof(const float*));
+  std::memcpy(batchedGemmHostB, B_array, batchCount * sizeof(const float*));
+  std::memcpy(batchedGemmHostC, C_array, batchCount * sizeof(float*));
+  cudaMemcpyAsync(batchedGemmDeviceA, batchedGemmHostA, batchCount * sizeof(const float*),
+                 cudaMemcpyHostToDevice, stream);
+  cudaMemcpyAsync(batchedGemmDeviceB, batchedGemmHostB, batchCount * sizeof(const float*),
+                 cudaMemcpyHostToDevice, stream);
+  cudaMemcpyAsync(batchedGemmDeviceC, batchedGemmHostC, batchCount * sizeof(float*),
+                 cudaMemcpyHostToDevice, stream);
+
+  // Same row-major -> column-major swap as the plain MatMul() above.
+  cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  cublasSgemmBatched(handle, opB, opA, N, M, K, &alpha, batchedGemmDeviceB, ldb, batchedGemmDeviceA,
+                     lda, &beta, batchedGemmDeviceC, ldc, batchCount);
 }
 
 void CUDABackend::SetAllowTF32(bool allow) noexcept

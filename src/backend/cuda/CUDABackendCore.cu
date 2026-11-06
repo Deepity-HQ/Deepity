@@ -88,6 +88,18 @@ CUDABackend::~CUDABackend()
     cudaFree(workspace);
   if (scalarScratch)
     cudaFree(scalarScratch);
+  if (batchedGemmDeviceA)
+    cudaFree(batchedGemmDeviceA);
+  if (batchedGemmDeviceB)
+    cudaFree(batchedGemmDeviceB);
+  if (batchedGemmDeviceC)
+    cudaFree(batchedGemmDeviceC);
+  if (batchedGemmHostA)
+    cudaFreeHost(batchedGemmHostA);
+  if (batchedGemmHostB)
+    cudaFreeHost(batchedGemmHostB);
+  if (batchedGemmHostC)
+    cudaFreeHost(batchedGemmHostC);
 #ifdef DEEPITY_USE_CUDNN
   cudnnDestroy(this->cudnnHandle);
 #endif
