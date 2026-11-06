@@ -64,6 +64,12 @@ constexpr int BATCH = 128;
 constexpr int WARMUP = 3;
 constexpr int TIMED = 10;
 constexpr int SETTLING_STEPS = 5;
+// Isolates how much of DKP-PC's gap against BP is just "5 settling
+// iterations' worth of GEMMs" vs. remaining per-dispatch overhead --
+// see this file's own header comment on why DKP-PC's per-TrainStep()
+// cost already includes work (ProjectForward/DFA/5x settling/
+// UpdateWeights) BP has no equivalent of.
+constexpr int SETTLING_STEPS_ABLATION = 1;
 constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128};
 constexpr int N_DEPTHS = sizeof(DEPTHS) / sizeof(DEPTHS[0]);
 
@@ -237,12 +243,12 @@ int main()
       v = dataDist(rng);
   }
 
-  printf("IN_DIM=%d HIDDEN=%d OUT_DIM=%d BATCH=%d settlingSteps=%d\n\n", IN_DIM, HIDDEN, OUT_DIM,
-         BATCH, SETTLING_STEPS);
-  printf("%6s%16s%18s%12s%14s%12s\n", "depth", "dkp_batched_ms", "dkp_unbatched_ms", "bp_ms",
-         "batch_speedup", "dkp/bp");
+  printf("IN_DIM=%d HIDDEN=%d OUT_DIM=%d BATCH=%d settlingSteps=%d (ablation column: %d)\n\n",
+         IN_DIM, HIDDEN, OUT_DIM, BATCH, SETTLING_STEPS, SETTLING_STEPS_ABLATION);
+  printf("%6s%12s%12s%14s%10s%10s%10s\n", "depth", "dkp5_ms", "dkp1_ms", "dkp_unb_ms", "bp_ms",
+         "dkp5/bp", "dkp1/bp");
 
-  std::vector<double> dkpBatchedMs, dkpUnbatchedMs, bpMs;
+  std::vector<double> dkp5Ms, dkp1Ms, dkpUnbatchedMs, bpMs;
   for (int depth : DEPTHS)
   {
     DirectKPPCNetwork netBatched((int)BATCH, DeviceType::DEVICE_GPU);
@@ -258,7 +264,12 @@ int main()
       continue;
     }
 
-    double batched = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS); });
+    double dkp5 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS); });
+    // Reuses netBatched: TrainStep() recaptures its graph whenever
+    // inferenceSteps changes from what's currently captured (see its
+    // own capturedInferenceSteps check), so this is a real, fresh
+    // 1-settling-step graph, not a stale 5-step one.
+    double dkp1 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS_ABLATION); });
 
     // A SEPARATE network, not netBatched with the flag flipped -- see
     // this file's header comment for why that would silently replay
@@ -279,20 +290,23 @@ int main()
           backend->Synchronize();
         });
 
-    dkpBatchedMs.push_back(batched);
+    dkp5Ms.push_back(dkp5);
+    dkp1Ms.push_back(dkp1);
     dkpUnbatchedMs.push_back(unbatched);
     bpMs.push_back(bp);
-    printf("%6d%16.4f%18.4f%12.4f%14.3f%12.3f\n", depth, batched, unbatched, bp,
-           unbatched / batched, batched / bp);
+    printf("%6d%12.4f%12.4f%14.4f%10.4f%10.3f%10.3f\n", depth, dkp5, dkp1, unbatched, bp, dkp5 / bp,
+           dkp1 / bp);
   }
 
-  size_t n = dkpBatchedMs.size();
+  size_t n = dkp5Ms.size();
   if (n >= 2)
   {
     printf("\nGrowth from depth=%d to depth=%d (%.1fx more layers):\n", DEPTHS[0],
            DEPTHS[N_DEPTHS - 1], (double)DEPTHS[N_DEPTHS - 1] / DEPTHS[0]);
-    printf("  DKP-PC, batched fast path:             %.2fx slower\n",
-           dkpBatchedMs[n - 1] / dkpBatchedMs[0]);
+    printf("  DKP-PC, batched, %d settling steps:     %.2fx slower\n", SETTLING_STEPS,
+           dkp5Ms[n - 1] / dkp5Ms[0]);
+    printf("  DKP-PC, batched, %d settling step:      %.2fx slower\n", SETTLING_STEPS_ABLATION,
+           dkp1Ms[n - 1] / dkp1Ms[0]);
     printf("  DKP-PC, batched path forced off:       %.2fx slower\n",
            dkpUnbatchedMs[n - 1] / dkpUnbatchedMs[0]);
     printf("  BP (hand-rolled, same forward shape):  %.2fx slower\n", bpMs[n - 1] / bpMs[0]);
