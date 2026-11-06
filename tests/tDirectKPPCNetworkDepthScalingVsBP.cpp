@@ -165,38 +165,6 @@ struct BPState
   }
 };
 
-// Diagnostic: isolates whether DFA's proj computation (K=terminalSize)
-// and UpdateWeights' Psi update (N=terminalSize), both below
-// kMinSafeDim=128 and hence falling back to
-// IComputeBackend::MatMulBatched()'s plain per-layer loop (see
-// CUDABackend::MatMulBatched()'s own doc comment on kMinSafeDim),
-// dominate TrainStep()'s wall-clock time at large depth. Issues
-// `depth` fully sequential small cublasSgemm_v2 dispatches of each
-// shape, matching exactly what DirectFeedbackUpdate()/UpdateWeights()
-// issue once per TrainStep() call (not once per settling step).
-double TimeSmallGemmFallback(CUDABackend* backend, int depth, std::mt19937& rng)
-{
-  Tensor zBuf(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)BATCH * HIDDEN, rng));
-  Tensor errBuf(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)BATCH * OUT_DIM, rng));
-  Tensor psiBuf(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)HIDDEN * OUT_DIM, rng));
-  Tensor projOut(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
-  Tensor psiOut(backend, DeviceType::DEVICE_GPU, (size_t)HIDDEN * OUT_DIM);
-
-  return TimeMsFn(
-      [&]
-      {
-        for (int l = 0; l < depth; ++l)
-          // proj = err @ Psi^T -- M=BATCH, N=HIDDEN, K=OUT_DIM (K<128).
-          backend->MatMul(false, true, BATCH, HIDDEN, OUT_DIM, 1.0f, errBuf.Data(), OUT_DIM,
-                           psiBuf.Data(), OUT_DIM, 0.0f, projOut.Data(), HIDDEN);
-        for (int l = 0; l < depth; ++l)
-          // grad_Psi = z^T @ err -- M=HIDDEN, N=OUT_DIM, K=BATCH (N<128).
-          backend->MatMul(true, false, HIDDEN, OUT_DIM, BATCH, 1.0f, zBuf.Data(), HIDDEN,
-                           errBuf.Data(), OUT_DIM, 0.0f, psiOut.Data(), OUT_DIM);
-        backend->Synchronize();
-      });
-}
-
 void ForwardSequential(CUDABackend* backend, BPState& s, float* out)
 {
   backend->MatMul(false, false, BATCH, HIDDEN, IN_DIM, 1.0f, s.x.Data(), IN_DIM, s.W_in.Data(),
@@ -342,13 +310,6 @@ int main()
     printf("  DKP-PC, batched path forced off:       %.2fx slower\n",
            dkpUnbatchedMs[n - 1] / dkpUnbatchedMs[0]);
     printf("  BP (hand-rolled, same forward shape):  %.2fx slower\n", bpMs[n - 1] / bpMs[0]);
-
-    int maxDepth = DEPTHS[N_DEPTHS - 1];
-    double fallbackMs = TimeSmallGemmFallback(backend, maxDepth, rng);
-    printf("\nSmall-dim GEMM fallback in isolation at depth=%d (%d sequential dispatches of "
-           "each shape, matching DFA's proj + UpdateWeights' Psi, both < kMinSafeDim): "
-           "%.4f ms (%.1f%% of dkp5's own %.4f ms at that depth)\n",
-           maxDepth, maxDepth, fallbackMs, 100.0 * fallbackMs / dkp5Ms[n - 1], dkp5Ms[n - 1]);
   }
   return 0;
 }
