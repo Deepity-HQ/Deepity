@@ -197,10 +197,14 @@ void CPUBackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, fl
                                int ldb, float beta, float* const* C_array, int ldc,
                                int batchCount) noexcept
 {
-#ifdef DEEPITY_USE_MKL
-  // No cblas_sgemm_batch() verified against this build's MKL version --
-  // fall back to the interface's own default (a plain MatMul() loop)
-  // rather than risk a mismatched batch-API signature.
+#ifndef DEEPITY_HAVE_CBLAS_SGEMM_BATCH
+  // Either DEEPITY_USE_MKL (no cblas_sgemm_batch() verified against
+  // MKL's own batch-GEMM entry point, so we don't risk a mismatched
+  // signature), or an OpenBLAS build old enough not to declare
+  // cblas_sgemm_batch() at all (checked at configure time via
+  // check_symbol_exists() in CMakeLists.txt, not assumed from "not
+  // MKL") -- either way, fall back to the interface's own safe
+  // sequential-loop default.
   IComputeBackend::MatMulBatched(transA, transB, M, N, K, alpha, A_array, lda, B_array, ldb, beta,
                                  C_array, ldc, batchCount);
 #else

@@ -789,6 +789,22 @@ if(DEEPITY_USE_MKL AND DEEPITY_BLAS_RESOLVED)
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_MKL)
 endif()
 
+# cblas_sgemm_batch() is a relatively recent OpenBLAS extension (and not
+# verified at all against MKL's own batch-GEMM entry point) -- some
+# distros/manylinux images still ship an OpenBLAS without it. Probe for
+# the actual declaration rather than assuming it from "not MKL", so
+# CPUBackend::MatMulBatched() can fall back to its safe sequential-loop
+# default on any BLAS that lacks it, instead of a link/compile error.
+if(DEEPITY_BLAS_RESOLVED)
+    include(CheckSymbolExists)
+    set(CMAKE_REQUIRED_INCLUDES ${BLAS_INCLUDE_DIR})
+    check_symbol_exists(cblas_sgemm_batch "cblas.h" DEEPITY_HAVE_CBLAS_SGEMM_BATCH)
+    unset(CMAKE_REQUIRED_INCLUDES)
+    if(DEEPITY_HAVE_CBLAS_SGEMM_BATCH)
+        target_compile_definitions(Deepity PRIVATE DEEPITY_HAVE_CBLAS_SGEMM_BATCH)
+    endif()
+endif()
+
 target_include_directories(Deepity PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${BLAS_INCLUDE_DIR}
