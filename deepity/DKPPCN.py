@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
-from ._interop import to_numpy
+from ._interop import InputArray, to_numpy
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -230,8 +230,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         inference_steps: int = 1,
     ) -> float:
         """Run one training step on a single batch: a direct feedback
@@ -248,7 +248,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         inference_steps: int = 1,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `inference_steps` iterations.
@@ -264,8 +264,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         inference_steps: int = 1,
         initial_lr: Optional[float] = None,

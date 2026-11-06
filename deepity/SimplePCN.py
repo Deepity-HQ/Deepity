@@ -16,7 +16,7 @@ from rich.progress import (
 )
 
 from ._backend import dy
-from ._interop import to_numpy
+from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 
@@ -257,8 +257,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
@@ -283,7 +283,7 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
@@ -301,8 +301,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
@@ -348,8 +348,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def fit_iavg(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         labels: npt.NDArray[np.int32],
         epochs: int,
         steps: int,

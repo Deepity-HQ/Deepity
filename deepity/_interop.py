@@ -9,7 +9,29 @@ detection logic, and torch/numpy inputs stay exactly as zero-copy as they
 are today (np.from_dlpack() shares the buffer; .astype(copy=False) only
 copies on an actual dtype mismatch, same as it always has for numpy)."""
 
+from __future__ import annotations
+
+from typing import Protocol, Union, runtime_checkable
+
 import numpy as np
+import numpy.typing as npt
+
+
+@runtime_checkable
+class _SupportsDLPack(Protocol):
+    """Structural type for anything to_numpy()/is_cuda_array() actually
+    accept beyond a plain numpy array -- torch.Tensor and jax.Array both
+    satisfy this without either needing to be imported here."""
+
+    def __dlpack__(self, *, stream: int | None = ...) -> object: ...
+    def __dlpack_device__(self) -> tuple[int, int]: ...
+
+
+# train_step()/predict()/fit()'s real input type, across every network
+# class this module's helpers are used from: not just npt.NDArray, since
+# that's what used to leave type checkers flagging a bare torch.Tensor
+# argument as an error despite it being a genuinely supported input.
+InputArray = Union[npt.NDArray[np.float32], _SupportsDLPack]
 
 
 def to_numpy(x, dtype) -> np.ndarray:

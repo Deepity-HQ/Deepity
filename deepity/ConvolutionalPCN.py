@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
-from ._interop import to_numpy
+from ._interop import InputArray, to_numpy
 from .layer import Activation, Convolution, Layer
 from .utils import _fit_with_progress
 
@@ -197,7 +197,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def clamp_input(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
     ) -> None:
         super().clamp_input(to_numpy(X, np.float32).flatten())
 
@@ -209,8 +209,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
@@ -226,8 +226,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def train_step_with_projection(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Same as train_step(), but initializes every layer's
@@ -243,7 +243,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
@@ -259,7 +259,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def predict_with_projection(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Same as predict(), but initializes every layer's beliefs
@@ -275,8 +275,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,

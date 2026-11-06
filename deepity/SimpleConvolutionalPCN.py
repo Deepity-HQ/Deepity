@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
-from ._interop import to_numpy
+from ._interop import InputArray, to_numpy
 from .layer import Layer, Convolution, Activation
 from .utils import _fit_with_progress
 from typing import Optional
@@ -179,8 +179,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
@@ -191,7 +191,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
@@ -201,8 +201,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def train_step_with_projection(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Same as train_step(), but initializes every layer's
@@ -216,7 +216,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def predict_with_projection(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Same as predict(), but initializes every layer's beliefs
@@ -229,8 +229,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
