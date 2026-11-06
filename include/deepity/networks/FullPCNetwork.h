@@ -81,6 +81,10 @@ public:
   /// @brief Clamps the input to the first layer.
   /// @param input Reference to the input vector.
   void Clamp(const std::vector<float>& input);
+  /// @brief Same as Clamp(), but `deviceSrc` is already a pointer on
+  /// this network's own backend device. For GPU interop only -- see
+  /// FullPCLayer::ClampStateDevice().
+  void ClampDevice(const float* deviceSrc, size_t n);
 
   /// @brief Seeds hidden layers from a genuine forward pass through
   /// current weights, instead of zero-init. Call after Clamp(), before
@@ -160,6 +164,15 @@ public:
     return device;
   }
 
+  /// @brief Returns this network's backend compute stream as an opaque
+  /// integer handle (0 on a backend with no stream concept, e.g. CPU).
+  /// For cross-framework GPU interop only -- see
+  /// IComputeBackend::GetStreamHandle().
+  std::uintptr_t GetStreamHandle() const noexcept
+  {
+    return backend->GetStreamHandle();
+  }
+
   /// @brief Full train step: reset, clamp input+target, run all four
   /// DKP-PC phases in order, unclamp.
   /// @param x Flattened input batch, clamped to the input layer.
@@ -167,10 +180,21 @@ public:
   /// @param inferenceSteps Number of settling steps for phase 2.
   /// @return The final settling step's total energy, before weight updates.
   float TrainStep(const std::vector<float>& x, const std::vector<float>& y, int inferenceSteps = 1);
+  /// @brief Same as TrainStep(), but x/y are already pointers on this
+  /// network's own backend device. For GPU interop only: the caller is
+  /// responsible for both being safe to read on this backend's stream
+  /// (see GetStreamHandle()).
+  float TrainStepDevice(const float* xDevice, size_t xN, const float* yDevice, size_t yN,
+                        int inferenceSteps = 1);
 
   /// @brief Forward prediction: clamp input, settle with no DFA
   /// perturbation and no target clamped, read the terminal's beliefs.
   std::vector<float> Predict(const std::vector<float>& x, int inferenceSteps);
+  /// @brief Same as Predict(), but xDevice is already a pointer on this
+  /// network's own backend device. For GPU interop only -- see
+  /// TrainStepDevice(). Still returns a host vector: this is the input
+  /// side of GPU interop only, not the output side.
+  std::vector<float> PredictDevice(const float* xDevice, size_t xN, int inferenceSteps);
 
   /// @brief Loads all layers into one contiguous block of memory and
   /// wires layerAbove/layerBelow/terminalLayer across every layer.
@@ -231,6 +255,13 @@ private:
     graphCaptured = false;
     predictGraphCaptured = false;
   }
+  /// @brief TrainStep()/TrainStepDevice()'s shared body, run after
+  /// whichever Clamp variant the caller used: the settle loop, graph
+  /// capture/replay, weight update, and final energy readout.
+  float TrainStepSettle(int inferenceSteps);
+  /// @brief Predict()/PredictDevice()'s shared body, run after whichever
+  /// Clamp variant the caller used.
+  std::vector<float> PredictSettle(int inferenceSteps);
   std::vector<std::unique_ptr<FullPCLayer>> layers;
 
   std::unique_ptr<IComputeBackend> backend;

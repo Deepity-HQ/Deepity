@@ -8,6 +8,7 @@
  * CUDABackendFusedOps.cu, CUDABackendOptimizer.cu, CUDABackendConv.cu for
  * the rest.
  */
+#include <cstdint>
 #include <cstdlib>
 #include <deepity/backend/CUDABackend.h>
 #include <iostream>
@@ -157,6 +158,11 @@ void CUDABackend::Synchronize() noexcept
   cudaError_t err = cudaStreamSynchronize(stream);
   if (err != cudaSuccess)
     std::cerr << "cudaStreamSynchronize failed: " << cudaGetErrorString(err) << "\n";
+}
+
+std::uintptr_t CUDABackend::GetStreamHandle() const noexcept
+{
+  return reinterpret_cast<std::uintptr_t>(stream);
 }
 
 float* CUDABackend::Allocate(size_t numFloats)

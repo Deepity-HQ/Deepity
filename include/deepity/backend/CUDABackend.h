@@ -295,6 +295,8 @@ public:
   /// @copydoc Deep::IComputeBackend::UpdatePrecisionFromError
   void UpdatePrecisionFromError(float* p, float* log_p, const float* e, size_t batchSize,
                                 size_t width, float pr) noexcept override;
+  /// @copydoc Deep::IComputeBackend::GetStreamHandle
+  std::uintptr_t GetStreamHandle() const noexcept override;
 
 private:
 #ifdef DEEPITY_USE_CUDA

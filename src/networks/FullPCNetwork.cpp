@@ -47,6 +47,11 @@ void FullPCNetwork::Clamp(const std::vector<float>& input)
   layers.front()->ClampState(input);
 }
 
+void FullPCNetwork::ClampDevice(const float* deviceSrc, size_t n)
+{
+  layers.front()->ClampStateDevice(deviceSrc, n);
+}
+
 void FullPCNetwork::ProjectForward() noexcept
 {
   for (size_t i = 0; i + 1 < layers.size(); ++i)
@@ -145,7 +150,20 @@ float FullPCNetwork::TrainStep(const std::vector<float>& x, const std::vector<fl
   ResetState();
   Clamp(x);
   GetTerminalLayer()->ClampState(y);
+  return TrainStepSettle(inferenceSteps);
+}
 
+float FullPCNetwork::TrainStepDevice(const float* xDevice, size_t xN, const float* yDevice,
+                                     size_t yN, int inferenceSteps)
+{
+  ResetState();
+  ClampDevice(xDevice, xN);
+  GetTerminalLayer()->ClampStateDevice(yDevice, yN);
+  return TrainStepSettle(inferenceSteps);
+}
+
+float FullPCNetwork::TrainStepSettle(int inferenceSteps)
+{
   auto settleStep = [this]()
   {
     if (useEPC)
@@ -233,7 +251,19 @@ std::vector<float> FullPCNetwork::Predict(const std::vector<float>& x, int infer
 {
   ResetState();
   Clamp(x);
+  return PredictSettle(inferenceSteps);
+}
 
+std::vector<float> FullPCNetwork::PredictDevice(const float* xDevice, size_t xN,
+                                                int inferenceSteps)
+{
+  ResetState();
+  ClampDevice(xDevice, xN);
+  return PredictSettle(inferenceSteps);
+}
+
+std::vector<float> FullPCNetwork::PredictSettle(int inferenceSteps)
+{
   auto settleStep = [this]()
   {
     if (useEPC)

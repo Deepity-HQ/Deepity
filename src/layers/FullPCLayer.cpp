@@ -630,6 +630,14 @@ void FullPCLayer::ClampState(const std::vector<float>& inputData) noexcept
   muCacheValid = false;
 }
 
+void FullPCLayer::ClampStateDevice(const float* deviceSrc, size_t n) noexcept
+{
+  size_t copyFloats = (std::min)(n, (size_t)(batchSize * size));
+  backend->Copy(z, deviceSrc, copyFloats);
+  isClamped = true;
+  muCacheValid = false;
+}
+
 void FullPCLayer::UnclampState() noexcept
 {
   isClamped = false;

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
+from ._interop import InputArray, to_numpy
 from .layer import Layer, Convolution, Activation
 from .utils import _fit_with_progress
 from typing import Optional
@@ -178,58 +179,58 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
         `steps` iterations before updating weights.
         @return Total settling energy accumulated over `steps`."""
         self._require_configured()
-        return super().train_step(X.flatten(), Y.flatten(), steps)
+        return super().train_step(to_numpy(X, np.float32).flatten(), to_numpy(Y, np.float32).flatten(), steps)
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
         @return The terminal layer's beliefs."""
         self._require_configured()
-        return super().predict(X.flatten(), steps)
+        return super().predict(to_numpy(X, np.float32).flatten(), steps)
 
     def train_step_with_projection(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Same as train_step(), but initializes every layer's
         beliefs via a forward projection pass first."""
         self._require_configured()
         return super().train_step_with_projection(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
     def predict_with_projection(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Same as predict(), but initializes every layer's beliefs
         via a forward projection pass first."""
         self._require_configured()
         return super().predict_with_projection(
-            X.flatten(),
+            to_numpy(X, np.float32).flatten(),
             steps,
         )
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
@@ -247,8 +248,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,
