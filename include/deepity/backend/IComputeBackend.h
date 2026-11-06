@@ -122,6 +122,32 @@ public:
   /// reduced precision can mask or fail the check.
   virtual void SetAllowTF32(bool allow) noexcept = 0;
 
+  /// @brief Same operation as MatMul(), but performs `batchCount`
+  /// independent GEMMs in one call, all sharing transA/transB/M/N/K/
+  /// alpha/beta/lda/ldb/ldc, each with its own A/B/C pointer. Exists so
+  /// a caller with many same-shaped, cross-layer-independent GEMMs (one
+  /// per layer in a network, say) can dispatch them as a single batched
+  /// call instead of issuing `batchCount` separate MatMul() calls --
+  /// which matters because, unlike MatMul() itself, nothing above this
+  /// promises those calls are safe to simply parallelize with an outer
+  /// thread loop (see DirectKPPCNetwork.cpp's ForceSingleThreadedBlas()
+  /// for why: this backend's own BLAS build can share a thread pool with
+  /// such a loop and deadlock).
+  /// @param A_array,B_array,C_array `batchCount` pointers, one GEMM's
+  /// worth of A/B/C each -- same per-item shapes/strides as MatMul()'s
+  /// own A/lda, B/ldb, C/ldc.
+  /// @param batchCount Number of independent GEMMs to perform.
+  /// Default implementation is a plain loop over MatMul(); CPUBackend
+  /// overrides this with a real cblas_sgemm_batch() call.
+  virtual void MatMulBatched(bool transA, bool transB, int M, int N, int K, AccumT alpha,
+                             const T* const* A_array, int lda, const T* const* B_array, int ldb,
+                             AccumT beta, T* const* C_array, int ldc, int batchCount) noexcept
+  {
+    for (int i = 0; i < batchCount; ++i)
+      MatMul(transA, transB, M, N, K, alpha, A_array[i], lda, B_array[i], ldb, beta, C_array[i],
+             ldc);
+  }
+
   /// @brief dst[j] = sum over b in [0,batchSize) of src[b*width + j], for
   /// all j in [0,width).
   virtual void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept = 0;

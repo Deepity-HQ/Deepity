@@ -192,6 +192,63 @@ void CPUBackend::MatMul(bool transA, bool transB, int M, int N, int K, float alp
               ldc);
 }
 
+void CPUBackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
+                               const float* const* A_array, int lda, const float* const* B_array,
+                               int ldb, float beta, float* const* C_array, int ldc,
+                               int batchCount) noexcept
+{
+#ifdef DEEPITY_USE_MKL
+  // No cblas_sgemm_batch() verified against this build's MKL version --
+  // fall back to the interface's own default (a plain MatMul() loop)
+  // rather than risk a mismatched batch-API signature.
+  IComputeBackend::MatMulBatched(transA, transB, M, N, K, alpha, A_array, lda, B_array, ldb, beta,
+                                 C_array, ldc, batchCount);
+#else
+  // OpenBLAS 0.3.34 (this build: libopenblaso.so.0) has a confirmed
+  // SIGSEGV in cblas_sgemm_batch()'s small-matrix fast path
+  // (inner_small_matrix_thread, jumps through a bad function pointer)
+  // whenever ANY of M, N, K is below kMinSafeDim -- reproduced in a
+  // standalone C program with zero Deepity involvement, independently
+  // for small M (with transA), small K (with transB), and plain small
+  // N/K with no transpose at all. Small terminal/output dimensions
+  // (10-way classification, say) are completely ordinary for a PC
+  // network, so this isn't an edge case to document and move past --
+  // it's a real crash risk on entirely normal shapes. Fall back to the
+  // interface's own default (a plain MatMul() loop) below this
+  // threshold rather than ship a landmine.
+  constexpr int kMinSafeDim = 128;
+  if (M < kMinSafeDim || N < kMinSafeDim || K < kMinSafeDim)
+  {
+    IComputeBackend::MatMulBatched(transA, transB, M, N, K, alpha, A_array, lda, B_array, ldb,
+                                   beta, C_array, ldc, batchCount);
+    return;
+  }
+
+  {
+    const CBLAS_TRANSPOSE ta = transA ? CblasTrans : CblasNoTrans;
+    const CBLAS_TRANSPOSE tb = transB ? CblasTrans : CblasNoTrans;
+    const blasint group_size = batchCount;
+
+    cblas_sgemm_batch(CblasRowMajor,
+                       &ta,
+                       &tb,
+                       &M,
+                       &N,
+                       &K,
+                       &alpha,
+                       const_cast<const float**>(A_array),
+                       &lda,
+                       const_cast<const float**>(B_array),
+                       &ldb,
+                       &beta,
+                       const_cast<float**>(C_array),
+                       &ldc,
+                       /*group_count=*/1,
+                       &group_size);
+  }
+#endif
+}
+
 void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept
 {
   memset(dst, 0, width * sizeof(float));
