@@ -37,6 +37,50 @@ template <typename LayerPtr> void SyncToDeviceIfSupported(LayerPtr& layerPtr)
   if constexpr (requires { layerPtr->SyncStateDictToDevice(); })
     layerPtr->SyncStateDictToDevice();
 }
+
+/// @brief Row count implied by `shape` (product of every dimension but
+/// the last) and that last dimension's own width, for a tensor whose
+/// `rowStride` differs from it (see TensorDescriptor's own comment).
+inline std::pair<size_t, size_t> RowsAndWidth(const std::vector<size_t>& shape)
+{
+  size_t width = shape.empty() ? 0 : shape.back();
+  size_t rows = 1;
+  for (size_t i = 0; i + 1 < shape.size(); ++i)
+    rows *= shape[i];
+  return {rows, width};
+}
+
+/// @brief Writes a tensor's real (unpadded) elements to `out`, one row
+/// at a time when rowStride requires it, so a padded buffer like a
+/// DirectKPPCLayer run's Psi never has its padding columns serialized.
+template <typename ElementType>
+void WriteTensorData(std::ofstream& out, const ElementType* data, const std::vector<size_t>& shape,
+                     size_t rowStride)
+{
+  auto [rows, width] = RowsAndWidth(shape);
+  if (rowStride == 0 || rowStride == width)
+  {
+    out.write(reinterpret_cast<const char*>(data), rows * width * sizeof(ElementType));
+    return;
+  }
+  for (size_t r = 0; r < rows; ++r)
+    out.write(reinterpret_cast<const char*>(data + r * rowStride), width * sizeof(ElementType));
+}
+
+/// @brief Counterpart to WriteTensorData() for Load().
+template <typename ElementType>
+void ReadTensorData(std::ifstream& in, ElementType* data, const std::vector<size_t>& shape,
+                    size_t rowStride)
+{
+  auto [rows, width] = RowsAndWidth(shape);
+  if (rowStride == 0 || rowStride == width)
+  {
+    in.read(reinterpret_cast<char*>(data), rows * width * sizeof(ElementType));
+    return;
+  }
+  for (size_t r = 0; r < rows; ++r)
+    in.read(reinterpret_cast<char*>(data + r * rowStride), width * sizeof(ElementType));
+}
 } // namespace detail
 
 /// @brief Static save/load helpers for any network type exposing
@@ -105,12 +149,7 @@ public:
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
       {
         using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
-        size_t num_elements = 1;
-        for (size_t dim : tensor.shape)
-        {
-          num_elements *= dim;
-        }
-        out.write(reinterpret_cast<const char*>(tensor.data), num_elements * sizeof(ElementType));
+        detail::WriteTensorData(out, tensor.data, tensor.shape, tensor.rowStride);
       }
     }
     return true;
@@ -158,11 +197,9 @@ public:
           }
 
           size_t start_offset = header[key]["data_offsets"][0];
-          size_t end_offset = header[key]["data_offsets"][1];
-          size_t byte_size = end_offset - start_offset;
 
           in.seekg(base_offset + start_offset, std::ios::beg);
-          in.read(reinterpret_cast<char*>(tensor.data), byte_size);
+          detail::ReadTensorData(in, tensor.data, tensor.shape, tensor.rowStride);
         }
       }
       // Pushes the reads above from host staging buffers on to the

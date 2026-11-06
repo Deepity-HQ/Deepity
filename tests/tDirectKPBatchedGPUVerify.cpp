@@ -99,13 +99,27 @@ void InitIdenticalWeights(DirectKPPCNetwork& cpuNet, DirectKPPCNetwork& gpuNet, 
 
     cpuLayers[i]->GetBackend()->CopyFromHost(cpuLayers[i]->GetWeights(), hostW.data(), hostW.size());
     cpuLayers[i]->GetBackend()->CopyFromHost(cpuLayers[i]->GetBiases(), hostB.data(), hostB.size());
-    cpuLayers[i]->GetBackend()->CopyFromHost(cpuLayers[i]->GetDirectFeedbackWeights(), hostPsi.data(),
-                                             hostPsi.size());
+
+    // Psi's real row width is GetPsiStride(), which Compile() may have
+    // padded past terminalSize on GPU (see that function's own
+    // comment) -- a single flat CopyFromHost() of hostPsi's tightly
+    // packed size*terminalSize floats would land at the wrong offsets
+    // whenever stride != terminalSize, so seed one row at a time
+    // instead. A no-op difference from a single flat copy when
+    // stride==terminalSize (CPU always, GPU whenever Compile() didn't
+    // pad), so this covers both layers uniformly.
+    auto seedPsi = [&](DirectKPPCLayer* layer)
+    {
+      size_t stride = layer->GetPsiStride();
+      for (size_t row = 0; row < size; ++row)
+        layer->GetBackend()->CopyFromHost(layer->GetDirectFeedbackWeights() + row * stride,
+                                          hostPsi.data() + row * terminalSize, terminalSize);
+    };
+    seedPsi(cpuLayers[i].get());
 
     gpuLayers[i]->GetBackend()->CopyFromHost(gpuLayers[i]->GetWeights(), hostW.data(), hostW.size());
     gpuLayers[i]->GetBackend()->CopyFromHost(gpuLayers[i]->GetBiases(), hostB.data(), hostB.size());
-    gpuLayers[i]->GetBackend()->CopyFromHost(gpuLayers[i]->GetDirectFeedbackWeights(), hostPsi.data(),
-                                             hostPsi.size());
+    seedPsi(gpuLayers[i].get());
   }
 }
 } // namespace
@@ -216,6 +230,31 @@ int main()
         char label[80];
         snprintf(label, sizeof(label), "layer %zu W[%zu]", i, j);
         ok &= CloseEnough(cpuW[j], gpuW[j], label);
+      }
+
+      // Psi agreement, read back row by row via GetPsiStride() -- the
+      // exact GEMM path Compile()'s padding (see its own comment)
+      // changes, so this is the check most likely to catch a padding
+      // offset/correctness bug that energy/Predict()/W alone would
+      // miss.
+      size_t terminalSize = cpuLayers[i]->GetTerminalSize();
+      size_t cpuStride = cpuLayers[i]->GetPsiStride();
+      size_t gpuStride = gpuLayers[i]->GetPsiStride();
+      for (size_t row = 0; row < size && ok; ++row)
+      {
+        std::vector<float> cpuPsiRow(terminalSize), gpuPsiRow(terminalSize);
+        cpuLayers[i]->GetBackend()->CopyToHost(
+            cpuPsiRow.data(), cpuLayers[i]->GetDirectFeedbackWeights() + row * cpuStride,
+            terminalSize);
+        gpuLayers[i]->GetBackend()->CopyToHost(
+            gpuPsiRow.data(), gpuLayers[i]->GetDirectFeedbackWeights() + row * gpuStride,
+            terminalSize);
+        for (size_t j = 0; j < terminalSize && ok; ++j)
+        {
+          char label[80];
+          snprintf(label, sizeof(label), "layer %zu Psi[%zu,%zu]", i, row, j);
+          ok &= CloseEnough(cpuPsiRow[j], gpuPsiRow[j], label);
+        }
       }
     }
   }

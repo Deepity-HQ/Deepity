@@ -297,6 +297,15 @@ private:
   float* flatGradPsi = nullptr;
   float* flatMPsi = nullptr;
   float* flatVPsi = nullptr;
+  /// @brief [batchSize, psiStride] scratch holding the terminal layer's
+  /// current error, zero-padded past terminalSize columns -- only
+  /// allocated/used when Compile() actually padded Psi (see that
+  /// function's own comment). Refreshed by RefreshPaddedTerminalE()
+  /// right before each of the two batched GEMMs that read it; its
+  /// padding columns are zeroed once in Compile() and never written
+  /// again, since RefreshPaddedTerminalE() only ever touches the real
+  /// terminalSize-wide prefix of each row.
+  float* flatTerminalEPadded = nullptr;
   int* flatTDevice = nullptr;
   float* flatLrDevice = nullptr;
   int* flatTPsiDevice = nullptr;
@@ -357,5 +366,11 @@ private:
   /// ProjectForwardBatchedRun()'s own shift-and-copy.
   /// @return The summed energy contribution of every covered layer.
   float FinalEnergyBatchedRun() noexcept;
+  /// @brief Copies the terminal layer's current error into
+  /// flatTerminalEPadded's real (terminalSize-wide) prefix of every
+  /// row, one row at a time (batchSize dispatches -- fixed cost,
+  /// independent of depth). No-op when Compile() didn't pad Psi. See
+  /// flatTerminalEPadded's own comment.
+  void RefreshPaddedTerminalE() noexcept;
 };
 } // namespace Deep

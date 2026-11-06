@@ -33,6 +33,10 @@ protected:
   size_t nextSize;     ///< Size of the layer above (0 marks a terminal layer).
   size_t terminalSize; ///< Size of the network's final output layer.
   size_t batchSize;    ///< Batch size.
+  /// @brief Psi's actual row width; defaults to terminalSize (tight
+  /// packing), overridden only via BindExternalMemory() for a batched
+  /// run's layers. See GetPsiStride()'s own comment.
+  size_t psiStride;
 
   float lr;    ///< Learning rate for W.
   float ir;    ///< Inference rate (Euler integration step size).
@@ -171,6 +175,7 @@ public:
     float* feedbackError;
     float* proj;
     float* Psi;
+    size_t psiStride; ///< See DirectKPPCLayer::GetPsiStride()'s own comment.
     float* feedbackScratch;
     float* biasGradScratch;
     float* grad_W;
@@ -384,6 +389,15 @@ public:
   size_t GetTerminalSize() const noexcept
   {
     return terminalSize;
+  }
+  /// @brief Returns Psi's actual row width -- equal to terminalSize
+  /// unless DirectKPPCNetwork::Compile() widened it (padded with
+  /// permanently-zero columns) so a batched run's Psi GEMM clears
+  /// CUDABackend::MatMulBatched()'s kMinSafeDim safely. See
+  /// BindExternalMemory()'s own comment.
+  size_t GetPsiStride() const noexcept
+  {
+    return psiStride;
   }
   /// @brief Returns this layer's activation type.
   ActivationType GetActivationType() const noexcept

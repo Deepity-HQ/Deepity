@@ -27,6 +27,12 @@ struct TensorDescriptor
 {
   float* data;               ///< Pointer to the tensor's first element.
   std::vector<size_t> shape; ///< Tensor's dimensions, e.g. {out, in}.
+  /// @brief Element stride between consecutive rows (product of every
+  /// dimension but the last), when it differs from shape.back() --
+  /// e.g. a DirectKPPCLayer Psi padded wider than its logical
+  /// terminalSize for a batched GEMM's sake. 0 (the default) means
+  /// tight packing: ModelIO treats it as shape.back().
+  size_t rowStride = 0;
 };
 
 /// @brief Templated counterpart to TensorDescriptor, used by templated

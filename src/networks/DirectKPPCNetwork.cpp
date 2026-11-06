@@ -126,8 +126,8 @@ void DirectKPPCNetwork::DirectFeedbackUpdateBatchedRun() noexcept
   const size_t H = batchedRunWidth;
   const size_t own = (size_t)batchSize * H;
   const size_t w = H * H;
-  const size_t TS = layers[batchedRunStart]->GetTerminalSize();
-  const size_t direct = H * TS;
+  const size_t PS = layers[batchedRunStart]->GetPsiStride();
+  const size_t direct = H * PS;
 
   if (L < 2)
     return; // nothing left once the run's own last layer is excluded below
@@ -138,19 +138,28 @@ void DirectKPPCNetwork::DirectFeedbackUpdateBatchedRun() noexcept
   // instead, which correctly no-ops for a null Psi (terminal case, see
   // BindMemory()'s nextSize>0 guard) or does a real update otherwise.
   const size_t M = L - 1;
+
+  // When Compile() padded Psi (see its own comment), K/lda/ldb need
+  // the padded width PS, not terminalSize, to match Psi's real row
+  // stride -- and the A operand becomes the zero-padded copy of
+  // terminalE, refreshed fresh since terminalE's value differs at
+  // every TrainStep() call site that reads it. A no-op, using
+  // terminalE directly, when Compile() didn't pad (PS==terminalSize).
+  RefreshPaddedTerminalE();
   const float* terminalE = layers.back()->GetErrors();
+  const float* A_terminalE = (flatTerminalEPadded != nullptr) ? flatTerminalEPadded : terminalE;
 
   // proj[l] = terminalLayer->GetErrors() @ layerAbove->Psi^T, where
   // layerAbove for run layer l is run layer l+1 -- Psi shifted by one
   // layer, same flat-buffer-plus-offset trick as everywhere else here.
   for (size_t l = 0; l < M; ++l)
   {
-    batchedA[l] = terminalE;
+    batchedA[l] = A_terminalE;
     batchedB[l] = flatPsi + (l + 1) * direct;
     batchedC[l] = flatProj + l * own;
   }
-  backend->MatMulBatched(false, true, (int)batchSize, (int)H, (int)TS, 1.0f, batchedA.data(), (int)TS,
-                         batchedB.data(), (int)TS, 0.0f, batchedC.data(), (int)H, (int)M);
+  backend->MatMulBatched(false, true, (int)batchSize, (int)H, (int)PS, 1.0f, batchedA.data(), (int)PS,
+                         batchedB.data(), (int)PS, 0.0f, batchedC.data(), (int)H, (int)M);
 
   backend->ActivationDerivativeInto(ToDerivativeType(layers[batchedRunStart]->GetActivationType()),
                                     flatDerivScratch, flatPreact, own * M);
@@ -222,8 +231,8 @@ void DirectKPPCNetwork::UpdateWeightsBatchedRun() noexcept
   const size_t H = batchedRunWidth;
   const size_t own = (size_t)batchSize * H;
   const size_t w = H * H;
-  const size_t TS = layers[batchedRunStart]->GetTerminalSize();
-  const size_t direct = H * TS;
+  const size_t PS = layers[batchedRunStart]->GetPsiStride();
+  const size_t direct = H * PS;
 
   if (L < 2)
     return; // the run's own last layer is handled by the caller's own unchanged call
@@ -263,17 +272,31 @@ void DirectKPPCNetwork::UpdateWeightsBatchedRun() noexcept
   // Psi += fl/batchSize * z^T @ terminalLayer->GetErrors() -- the SAME
   // terminal errors for every run layer, so A is the same pointer
   // repeated across the whole batch (MatMulBatched doesn't require
-  // distinct pointers).
+  // distinct pointers). Scoped to M (not L): the run's own last layer
+  // gets this same accumulate-onto-Psi update from its own individual
+  // UpdateWeights() call in the caller, so including it here too would
+  // double its Psi gradient every TrainStep() call.
+  //
+  // N/ldb/ldc use PS (Psi's real, possibly-padded row width), not
+  // terminalSize -- B needs the zero-padded copy of terminalE so the
+  // GEMM's extra output columns see zero inputs (writing zero into
+  // Psi's own padding, same safe-forever argument as every other use
+  // of flatTerminalEPadded here); C writes straight into Psi's own
+  // buffer at its real stride, no write-back copy needed. A no-op,
+  // identical to the unpadded case, when Compile() didn't pad
+  // (PS==terminalSize, flatTerminalEPadded null).
+  RefreshPaddedTerminalE();
   const float* terminalE = layers.back()->GetErrors();
-  for (size_t l = 0; l < L; ++l)
+  const float* B_terminalE = (flatTerminalEPadded != nullptr) ? flatTerminalEPadded : terminalE;
+  for (size_t l = 0; l < M; ++l)
   {
     batchedA[l] = flatZ + l * own;
-    batchedB[l] = terminalE;
+    batchedB[l] = B_terminalE;
     batchedC[l] = flatPsi + l * direct;
   }
-  backend->MatMulBatched(true, false, (int)H, (int)TS, (int)batchSize, fl / (float)batchSize,
-                         batchedA.data(), (int)H, batchedB.data(), (int)TS, 1.0f, batchedC.data(),
-                         (int)TS, (int)L);
+  backend->MatMulBatched(true, false, (int)H, (int)PS, (int)batchSize, fl / (float)batchSize,
+                         batchedA.data(), (int)H, batchedB.data(), (int)PS, 1.0f, batchedC.data(),
+                         (int)PS, (int)M);
 }
 
 float DirectKPPCNetwork::FinalEnergyBatchedRun() noexcept
@@ -298,6 +321,18 @@ float DirectKPPCNetwork::FinalEnergyBatchedRun() noexcept
   // into one scalar). The run's first layer needs layers.front()'s mu
   // (outside the run) and is left to the caller's own per-layer call.
   return backend->ComputeErrorAndEnergy(flatE + own, flatZ + own, flatMu, own * (L - 1));
+}
+
+void DirectKPPCNetwork::RefreshPaddedTerminalE() noexcept
+{
+  if (flatTerminalEPadded == nullptr)
+    return; // Compile() didn't pad Psi -- callers use terminalE directly instead
+
+  const size_t TS = layers[batchedRunStart]->GetTerminalSize();
+  const size_t PS = layers[batchedRunStart]->GetPsiStride();
+  const float* terminalE = layers.back()->GetErrors();
+  for (int row = 0; row < batchSize; ++row)
+    backend->Copy(flatTerminalEPadded + (size_t)row * PS, terminalE + (size_t)row * TS, TS);
 }
 
 void DirectKPPCNetwork::ProjectForward() noexcept
@@ -683,7 +718,27 @@ void DirectKPPCNetwork::Compile()
   const size_t TS = layers.empty() ? 0 : layers.back()->GetTerminalSize();
   const size_t own = B * H;
   const size_t w = H * H;
-  const size_t direct = H * TS;
+  // Matches CUDABackend::MatMulBatched()'s own kMinSafeDim: below this,
+  // it falls back to a plain sequential MatMul() loop rather than risk
+  // cuBLASLt's small-matrix output-overrun bug (see that function's own
+  // comment). DFA's proj GEMM and UpdateWeights()' Psi GEMM both use
+  // terminalSize as a GEMM dimension, so a small terminalSize (the
+  // common case -- 10 for MNIST, say) always tripped that fallback for
+  // the whole batched run, turning an O(1)-dispatch call back into
+  // batchedRunCount-1 sequential ones. Padding Psi's own row width to
+  // kPsiMinSafeWidth (permanently-zero columns beyond terminalSize,
+  // never read or written by anything outside the two batched GEMMs
+  // below) clears that threshold safely: the extra columns always
+  // multiply against an equally-zero-padded copy of the terminal
+  // error, so they can never contribute anything but zero to either
+  // GEMM's real output. CPU's own MatMulBatched() fallback exists for
+  // an unrelated reason (OpenBLAS's cblas_sgemm_batch crash) and never
+  // sees this cost in the first place, so padding there would only
+  // waste memory for no benefit.
+  constexpr size_t kPsiMinSafeWidth = 128;
+  const size_t psiStride =
+      (device == DeviceType::DEVICE_GPU && TS > 0 && TS < kPsiMinSafeWidth) ? kPsiMinSafeWidth : TS;
+  const size_t direct = H * psiStride;
 
   if (L > 0)
   {
@@ -753,6 +808,8 @@ void DirectKPPCNetwork::Compile()
       flatVPsi = gpuArena->AllocateFloats(direct * L);
       flatTPsiDevice = reinterpret_cast<int*>(gpuArena->AllocateFloats(L));
       flatFlDevice = gpuArena->AllocateFloats(L);
+      if (psiStride != TS)
+        flatTerminalEPadded = gpuArena->AllocateFloats(B * psiStride);
 
       backend->Zero(flatZ, own * L);
       backend->Zero(flatE, own * L);
@@ -776,6 +833,8 @@ void DirectKPPCNetwork::Compile()
       backend->Zero(flatGradPsi, direct * L);
       backend->Zero(flatMPsi, direct * L);
       backend->Zero(flatVPsi, direct * L);
+      if (flatTerminalEPadded != nullptr)
+        backend->Zero(flatTerminalEPadded, B * psiStride);
 
       std::vector<int> zeros(L, 0);
       backend->CopyFromHost(reinterpret_cast<float*>(flatTDevice),
@@ -804,6 +863,7 @@ void DirectKPPCNetwork::Compile()
         mem.feedbackError = flatFeedbackError + l * own;
         mem.proj = flatProj + l * own;
         mem.Psi = flatPsi + l * direct;
+        mem.psiStride = psiStride;
         mem.feedbackScratch = flatFeedbackScratch + l * own;
         mem.biasGradScratch = flatBiasGradScratch + l * H;
         mem.grad_W = flatGradW + l * w;
