@@ -169,6 +169,23 @@ public:
     return device;
   }
 
+  /// @brief Returns the length of Compile()'s detected batched-GPU
+  /// fast-path run (0 if none eligible, see the "Batched-GPU fast
+  /// path" member comments below). Benchmark/debug use only.
+  size_t GetBatchedRunCount() const noexcept
+  {
+    return batchedRunCount;
+  }
+  /// @brief Benchmark/debug-only override: forces UseBatchedPath() to
+  /// report false regardless of Compile()'s own detection, by zeroing
+  /// batchedRunCount, so a benchmark can isolate batching's effect on
+  /// timing from "GPU is just fast." Pass GetBatchedRunCount()'s own
+  /// earlier return value to restore the natural batched run.
+  void SetBatchedRunCountForBenchmark(size_t count) noexcept
+  {
+    batchedRunCount = count;
+  }
+
   /// @brief Full train step: reset, clamp input+target, run all
   /// four DKP-PC phases in order, unclamp.
   /// @param x Flattened input batch, clamped to the input layer.
