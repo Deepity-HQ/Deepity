@@ -107,6 +107,11 @@ public:
   /// today, since each passes the same M/N/K for every layer by
   /// construction, but NOT yet exploiting a network with genuinely
   /// ragged per-layer widths (would need cublasGemmGroupedBatchedEx).
+  /// @note Falls back to a plain per-layer MatMul() loop whenever any of
+  /// M/N/K is below 128 -- cuBLASLt's heuristic picks a 128x128-tile
+  /// kernel that writes past the output buffer for small dimensions
+  /// (confirmed via compute-sanitizer), same class of bug as
+  /// CPUBackend::MatMulBatched's own small-matrix guard.
   void MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
                      const float* const* A_array, int lda, const float* const* B_array, int ldb,
                      float beta, float* const* C_array, int ldc, int batchCount) noexcept override;

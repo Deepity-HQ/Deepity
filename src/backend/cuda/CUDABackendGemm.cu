@@ -246,6 +246,25 @@ void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, f
     return;
   }
 
+  // cublasSgemmBatched's cuBLASLt heuristic (confirmed via compute-sanitizer
+  // on an A100: cublasLtSSSMatmul picking ampere_sgemm_128x128_tn, a
+  // 128x128-tile kernel) writes past the end of the output buffer whenever
+  // any of M/N/K is small -- OUT_DIM=10 reproduced it directly, writing up
+  // to ~30 floats past a tightly-packed [OUT_DIM, HIDDEN] allocation. Same
+  // class of bug as OpenBLAS's cblas_sgemm_batch small-matrix crash on the
+  // CPU side (CPUBackend::MatMulBatched's own kMinSafeDim), and the same
+  // shape it hits: a small terminal/output dimension is completely
+  // ordinary for a PC network, not an edge case to carve out. Fall back to
+  // the interface's own default (a plain MatMul() loop) below this
+  // threshold rather than ship a landmine.
+  constexpr int kMinSafeDim = 128;
+  if (M < kMinSafeDim || N < kMinSafeDim || K < kMinSafeDim)
+  {
+    IComputeBackend::MatMulBatched(transA, transB, M, N, K, alpha, A_array, lda, B_array, ldb,
+                                   beta, C_array, ldc, batchCount);
+    return;
+  }
+
   if (!GrowBatchedGemmArrays(static_cast<size_t>(batchCount)))
   {
     std::cerr << "CUDABackend::MatMulBatched: pointer-array scratch allocation failed, "
