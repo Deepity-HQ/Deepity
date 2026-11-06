@@ -74,6 +74,11 @@ public:
   }
   /// @copydoc Deep::IComputeBackend::SetAllowTF32
   void SetAllowTF32(bool) noexcept override {}
+  /// @copydoc Deep::IComputeBackendT::MatMulBatched
+  void MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
+                     const float* const* A_array, int lda, const float* const* B_array, int ldb,
+                     float beta, float* const* C_array, int ldc,
+                     int batchCount) noexcept override;
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
   /// @copydoc Deep::IComputeBackendT::SumRowsAccum
