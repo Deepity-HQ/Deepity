@@ -295,9 +295,9 @@ template <typename ArenaT> void GaussSeidelPCLayer::BindMemory(ArenaT& arena)
   e = arena.AllocateFloats(own_state_size);
   dz_dt = arena.AllocateFloats(own_state_size);
 
-  backend->Zero(z, own_state_size);
-  backend->Zero(e, own_state_size);
-  backend->Zero(dz_dt, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), z, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), e, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), dz_dt, own_state_size);
 
   if (nextSize > 0)
   {
@@ -312,12 +312,12 @@ template <typename ArenaT> void GaussSeidelPCLayer::BindMemory(ArenaT& arena)
     E = arena.AllocateFloats(w_size);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
-    backend->Zero(b, nextSize);
-    backend->Zero(mu, out_state_size);
-    backend->Zero(preact, out_state_size);
-    backend->Zero(feedbackError, out_state_size);
-    backend->Zero(E, w_size);
-    backend->Zero(biasGradScratch, nextSize);
+    ArenaZero<ArenaT>(backend.get(), b, nextSize);
+    ArenaZero<ArenaT>(backend.get(), mu, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), preact, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), feedbackError, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), E, w_size);
+    ArenaZero<ArenaT>(backend.get(), biasGradScratch, nextSize);
 
     // Always allocated; see GetRequiredFloats().
     BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);

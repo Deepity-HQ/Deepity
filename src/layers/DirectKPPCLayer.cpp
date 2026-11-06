@@ -64,8 +64,8 @@ template <typename ArenaT> void DirectKPPCLayer::BindMemory(ArenaT& arena)
   z = arena.AllocateFloats(own_state_size);
   e = arena.AllocateFloats(own_state_size);
 
-  backend->Zero(z, own_state_size);
-  backend->Zero(e, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), z, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), e, own_state_size);
 
   if (nextSize > 0)
   {
@@ -84,17 +84,17 @@ template <typename ArenaT> void DirectKPPCLayer::BindMemory(ArenaT& arena)
     feedbackScratch = arena.AllocateFloats(own_state_size);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
-    backend->Zero(b, nextSize);
-    backend->Zero(mu, out_state_size);
-    backend->Zero(cachedMu, out_state_size);
-    backend->Zero(preact, out_state_size);
-    backend->Zero(cachedPreact, out_state_size);
-    backend->Zero(derivScratch, out_state_size);
-    backend->Zero(feedbackError, out_state_size);
-    backend->Zero(proj, out_state_size);
-    backend->Zero(Psi, direct_size);
-    backend->Zero(feedbackScratch, own_state_size);
-    backend->Zero(biasGradScratch, nextSize);
+    ArenaZero<ArenaT>(backend.get(), b, nextSize);
+    ArenaZero<ArenaT>(backend.get(), mu, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), cachedMu, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), preact, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), cachedPreact, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), derivScratch, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), feedbackError, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), proj, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), Psi, direct_size);
+    ArenaZero<ArenaT>(backend.get(), feedbackScratch, own_state_size);
+    ArenaZero<ArenaT>(backend.get(), biasGradScratch, nextSize);
 
     // Always allocated, see GetRequiredFloats().
     BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);

@@ -355,12 +355,12 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
   p = arena.AllocateFloats(size);
   log_p = arena.AllocateFloats(size);
 
-  backend->Zero(z, ownStateSize);
-  backend->Zero(e, ownStateSize);
-  backend->Zero(dz_dt, ownStateSize);
-  backend->Zero(feedbackScratch, ownStateSize);
-  backend->Fill(p, size, 1.0f);
-  backend->Zero(log_p, size);
+  ArenaZero<ArenaT>(backend.get(), z, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), e, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), dz_dt, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), feedbackScratch, ownStateSize);
+  ArenaFill<ArenaT>(backend.get(), p, size, 1.0f);
+  ArenaZero<ArenaT>(backend.get(), log_p, size);
 
   if (nextSize > 0)
   {
@@ -377,14 +377,14 @@ template <typename ArenaT> void DiscriminativePCLayer::BindMemory(ArenaT& arena)
     derivScratch = arena.AllocateFloats(outStateSize);
     biasGradScratch = arena.AllocateFloats(nextSize);
 
-    backend->Zero(b, nextSize);
-    backend->Zero(mu, outStateSize);
-    backend->Zero(bottom_up, outStateSize);
-    backend->Zero(cachedMu, outStateSize);
-    backend->Zero(preact, outStateSize);
-    backend->Zero(cachedPreact, outStateSize);
-    backend->Zero(derivScratch, outStateSize);
-    backend->Zero(biasGradScratch, nextSize);
+    ArenaZero<ArenaT>(backend.get(), b, nextSize);
+    ArenaZero<ArenaT>(backend.get(), mu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), bottom_up, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedMu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), preact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedPreact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), derivScratch, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), biasGradScratch, nextSize);
 
     // Always allocated, see GetRequiredFloats().
     BindAdamState(arena, backend.get(), wSize, grad_W, m_W, v_W);

@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -16,6 +17,52 @@
  */
 namespace Deep
 {
+/// @brief Zeros `ptr` directly via `std::memset` when `ArenaT` is the
+/// host `MemoryArena` type, regardless of what `backend` is, instead of
+/// `backend->Zero()`. Every layer's constructor eagerly self-binds to a
+/// throwaway host MemoryArena before Compile() ever runs (see
+/// ReleaseLocalArenaIfForeign()'s own comment) -- for a GPU network,
+/// `backend` there is the real CUDABackend, so `backend->Zero()` on
+/// this host pointer would silently succeed via CUDA's slow
+/// page-migration path (instead of erroring) rather than doing a fast,
+/// correct host memset. Behavior-identical for the real CPU-network
+/// bind case, since CPUBackend::Zero() is already just memset.
+template <typename ArenaT>
+inline void ArenaZero(IComputeBackend* backend, float* ptr, size_t n) noexcept
+{
+  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+    std::memset(ptr, 0, n * sizeof(float));
+  else
+    backend->Zero(ptr, n);
+}
+
+/// @brief Host-to-host counterpart to ArenaZero() for the small
+/// host-to-device-mirror copies BindLearningRateState() does -- same
+/// reasoning, see ArenaZero()'s own comment.
+template <typename ArenaT>
+inline void ArenaCopyFromHost(IComputeBackend* backend, float* dst, const float* src,
+                               size_t n) noexcept
+{
+  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+    std::memcpy(dst, src, n * sizeof(float));
+  else
+    backend->CopyFromHost(dst, src, n);
+}
+
+/// @brief Fill() counterpart to ArenaZero() -- some layers (e.g.
+/// ConvPCLayer's `p`) bind a non-zero initial value, which
+/// CUDABackend::Fill() does via an actual kernel launch, not a memset.
+/// Same reasoning as ArenaZero() for why this matters on the
+/// construction-time host arena.
+template <typename ArenaT>
+inline void ArenaFill(IComputeBackend* backend, float* ptr, size_t n, float value) noexcept
+{
+  if constexpr (std::is_same_v<ArenaT, MemoryArena>)
+    std::fill_n(ptr, n, value);
+  else
+    backend->Fill(ptr, n, value);
+}
+
 /// @brief Allocates and zeros a parameter's Adam/AdamW optimizer state
 /// (gradient, first moment, second moment) in the given arena.
 template <typename ArenaT>
@@ -25,9 +72,9 @@ inline void BindAdamState(ArenaT& arena, IComputeBackend* backend, size_t paramS
   grad = arena.AllocateFloats(paramSize);
   m = arena.AllocateFloats(paramSize);
   v = arena.AllocateFloats(paramSize);
-  backend->Zero(m, paramSize);
-  backend->Zero(v, paramSize);
-  backend->Zero(grad, paramSize);
+  ArenaZero<ArenaT>(backend, m, paramSize);
+  ArenaZero<ArenaT>(backend, v, paramSize);
+  ArenaZero<ArenaT>(backend, grad, paramSize);
 }
 
 /// @brief Allocates a layer's device-resident Adam timestep/learning-rate
@@ -40,9 +87,9 @@ inline void BindLearningRateState(ArenaT& arena, IComputeBackend* backend, int*&
   timestepDevice = reinterpret_cast<int*>(arena.AllocateFloats(1));
   lrDevice = arena.AllocateFloats(1);
   int zero = 0;
-  backend->CopyFromHost(reinterpret_cast<float*>(timestepDevice),
-                        reinterpret_cast<float*>(&zero), 1);
-  backend->CopyFromHost(lrDevice, &lr, 1);
+  ArenaCopyFromHost<ArenaT>(backend, reinterpret_cast<float*>(timestepDevice),
+                            reinterpret_cast<float*>(&zero), 1);
+  ArenaCopyFromHost<ArenaT>(backend, lrDevice, &lr, 1);
 }
 
 /// @brief Releases a layer's private fallback arena once BindMemory() has
