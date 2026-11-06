@@ -1103,6 +1103,39 @@ void bind_networks(nb::module_& m)
           "Forward prediction: clamp input, settle for `inference_steps` "
           "iterations with no DFA perturbation and no target clamped.\n"
           "@return The terminal layer's beliefs.")
+      .def_prop_ro("stream_handle", &Deep::FullPCNetwork::GetStreamHandle,
+                   "This network's backend compute stream as an opaque integer "
+                   "handle (0 on CPU). For GPU interop only -- see "
+                   "deepity._interop.to_cuda_device_array().")
+      .def(
+          "_train_step_device",
+          [](Deep::FullPCNetwork& self, CudaFloatArray x, CudaFloatArray y, int inference_steps)
+          {
+            return self.TrainStepDevice(x.data(), x.size(), y.data(), y.size(),
+                                        inference_steps);
+          },
+          nb::arg("x"),
+          nb::arg("y"),
+          nb::arg("inference_steps") = 1,
+          "GPU-interop-only counterpart to train_step(): x/y must already be "
+          "device pointers, pre-synchronized against stream_handle (see "
+          "deepity._interop.to_cuda_device_array()). Never call this with a "
+          "bare tensor -- it will not synchronize anything on its own.")
+      .def(
+          "_predict_device",
+          [](Deep::FullPCNetwork& self, CudaFloatArray x, int inference_steps)
+          {
+            std::vector<float> result = self.PredictDevice(x.data(), x.size(), inference_steps);
+            Deep::FullPCLayer* terminal = self.GetTerminalLayer();
+            return CopyToNewArray(
+                result.data(),
+                {(size_t)terminal->GetBatchSize(), (size_t)terminal->GetInputSize()});
+          },
+          nb::arg("x"),
+          nb::arg("inference_steps"),
+          "GPU-interop-only counterpart to predict(): x must already be a "
+          "device pointer, pre-synchronized against stream_handle. Still "
+          "returns a host array -- see PredictDevice()'s own docs.")
       .def_prop_ro("batch_size", &Deep::FullPCNetwork::GetBatchSize,
                    "Number of samples processed per call.")
       .def_prop_ro("layers",
