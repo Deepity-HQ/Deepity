@@ -489,51 +489,98 @@ else()
 endif()
 
 # --- SLEEF ----------------------------------------------------------
-# These are necessary, but don't ask me why
-set(SLEEF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(SLEEF_BUILD_STATIC_TEST_BINS OFF CACHE BOOL "" FORCE)
-set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(SLEEF_BUILD_QUAD OFF CACHE BOOL "" FORCE)
-set(SLEEF_BUILD_DFT OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_TLFLOAT OFF CACHE BOOL "" FORCE)
-set(ENABLE_TLFLOAT OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_FLOAT128 OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENFORCE_FLOAT128 OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_MPFR OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_SSL OFF CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_SSE2 ON CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_AVX2 ON CACHE BOOL "" FORCE)
-set(SLEEF_ENABLE_AVX512F ON CACHE BOOL "" FORCE)
+# DEEPITY_SLEEF_SYSTEM exists for the same reason DEEPITY_ONEDNN_SYSTEM
+# does below: a from-source FetchContent build reaches out to GitHub at
+# configure time, which conda-forge's (and most other distro packaging
+# systems') network-isolated build sandboxes forbid outright. A conda
+# recipe passes -DDEEPITY_SLEEF_SYSTEM=ON against conda-forge's own
+# `sleef` package instead.
+option(DEEPITY_SLEEF_SYSTEM "Prefer a system-installed SLEEF (via find_package) over building one from source" OFF)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/sleef_install" CACHE PATH "" FORCE)
+set(DEEPITY_SLEEF_RESOLVED FALSE)
+if(DEEPITY_SLEEF_SYSTEM)
+    find_package(sleef CONFIG QUIET)
+    if(TARGET sleef::sleef)
+        message(STATUS "Using system SLEEF (found via find_package(sleef)).")
+        set(DEEPITY_SLEEF_TARGET sleef::sleef)
+        set(DEEPITY_SLEEF_RESOLVED TRUE)
+    else()
+        message(WARNING "DEEPITY_SLEEF_SYSTEM is ON, but SLEEF was not found via "
+            "find_package(sleef CONFIG). Falling back to building it from source.")
+    endif()
+endif()
 
-FetchContent_Declare(
-    sleef
-    GIT_REPOSITORY https://github.com/shibatch/sleef.git
-    GIT_TAG 3.9.0
-)
+if(NOT DEEPITY_SLEEF_RESOLVED)
+    # These are necessary, but don't ask me why
+    set(SLEEF_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(SLEEF_BUILD_STATIC_TEST_BINS OFF CACHE BOOL "" FORCE)
+    set(SLEEF_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(SLEEF_BUILD_QUAD OFF CACHE BOOL "" FORCE)
+    set(SLEEF_BUILD_DFT OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_TLFLOAT OFF CACHE BOOL "" FORCE)
+    set(ENABLE_TLFLOAT OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_FLOAT128 OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENFORCE_FLOAT128 OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_MPFR OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_SSL OFF CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_SSE2 ON CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_AVX2 ON CACHE BOOL "" FORCE)
+    set(SLEEF_ENABLE_AVX512F ON CACHE BOOL "" FORCE)
 
-set(CMAKE_REQUIRED_QUIET ON)
-FetchContent_MakeAvailable(sleef)
-set(CMAKE_REQUIRED_QUIET OFF)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/sleef_install" CACHE PATH "" FORCE)
+
+    FetchContent_Declare(
+        sleef
+        GIT_REPOSITORY https://github.com/shibatch/sleef.git
+        GIT_TAG 3.9.0
+    )
+
+    set(CMAKE_REQUIRED_QUIET ON)
+    FetchContent_MakeAvailable(sleef)
+    set(CMAKE_REQUIRED_QUIET OFF)
+
+    set(DEEPITY_SLEEF_TARGET sleef)
+endif()
 
 # --- Highway (portable SIMD, runtime dispatch) -----------------------
-# Its whole point is compiling multiple per-ISA-target variants of the
-# SAME source and picking the best one at runtime, so it deliberately
-# does NOT get DEEPITY_TARGET_COMPILE_OPTIONS's hard-pinned -march flag
-# (that would force every one of its targets down to the same ISA,
-# defeating runtime dispatch entirely) -- same reasoning as SLEEF above.
-set(HWY_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
-set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "" FORCE)
-set(HWY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+# DEEPITY_HIGHWAY_SYSTEM mirrors DEEPITY_SLEEF_SYSTEM above: lets a
+# packaging recipe (conda-forge's `libhwy`, e.g.) supply Highway instead
+# of fetching it from GitHub during configure.
+option(DEEPITY_HIGHWAY_SYSTEM "Prefer a system-installed Highway (via find_package) over building one from source" OFF)
 
-FetchContent_Declare(
-    highway
-    GIT_REPOSITORY https://github.com/google/highway.git
-    GIT_TAG 1.4.0
-)
-FetchContent_MakeAvailable(highway)
+set(DEEPITY_HIGHWAY_RESOLVED FALSE)
+if(DEEPITY_HIGHWAY_SYSTEM)
+    find_package(hwy CONFIG QUIET)
+    if(TARGET hwy::hwy)
+        message(STATUS "Using system Highway (found via find_package(hwy)).")
+        set(DEEPITY_HWY_TARGET hwy::hwy)
+        set(DEEPITY_HIGHWAY_RESOLVED TRUE)
+    else()
+        message(WARNING "DEEPITY_HIGHWAY_SYSTEM is ON, but Highway was not found via "
+            "find_package(hwy CONFIG). Falling back to building it from source.")
+    endif()
+endif()
+
+if(NOT DEEPITY_HIGHWAY_RESOLVED)
+    # Its whole point is compiling multiple per-ISA-target variants of the
+    # SAME source and picking the best one at runtime, so it deliberately
+    # does NOT get DEEPITY_TARGET_COMPILE_OPTIONS's hard-pinned -march flag
+    # (that would force every one of its targets down to the same ISA,
+    # defeating runtime dispatch entirely) -- same reasoning as SLEEF above.
+    set(HWY_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+    set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "" FORCE)
+    set(HWY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
+    FetchContent_Declare(
+        highway
+        GIT_REPOSITORY https://github.com/google/highway.git
+        GIT_TAG 1.4.0
+    )
+    FetchContent_MakeAvailable(highway)
+
+    set(DEEPITY_HWY_TARGET hwy)
+endif()
 
 # A separate target, deliberately NOT part of DEEPITY_SOURCES: CMake has
 # no clean way to "subtract" a target-level compile option from one
@@ -558,7 +605,7 @@ target_include_directories(DeepityHighwayKernels PRIVATE ${CMAKE_CURRENT_SOURCE_
 # fallback to plain AVX3/AVX2 is identical code, just without the
 # AVX3_SPR-specific dispatch entry.
 target_compile_definitions(DeepityHighwayKernels PRIVATE HWY_DISABLED_TARGETS=HWY_AVX3_SPR)
-target_link_libraries(DeepityHighwayKernels PUBLIC hwy)
+target_link_libraries(DeepityHighwayKernels PUBLIC ${DEEPITY_HWY_TARGET})
 
 if(DEEPITY_USE_ONEDNN)
     set(DEEPITY_DNNL_RESOLVED FALSE)
@@ -784,15 +831,21 @@ target_include_directories(Deepity PUBLIC
     ${BLAS_INCLUDE_DIR}
 )
 
-target_include_directories(Deepity SYSTEM PUBLIC
-    ${sleef_SOURCE_DIR}/include
-    ${sleef_BINARY_DIR}/include
-)
+if(NOT DEEPITY_SLEEF_RESOLVED)
+    # sleef::sleef (the DEEPITY_SLEEF_SYSTEM path) already carries its
+    # own INTERFACE_INCLUDE_DIRECTORIES; these extra dirs are only needed
+    # for the in-tree FetchContent build, which has no installed config
+    # to export them from.
+    target_include_directories(Deepity SYSTEM PUBLIC
+        ${sleef_SOURCE_DIR}/include
+        ${sleef_BINARY_DIR}/include
+    )
+endif()
 
 target_link_libraries(Deepity PUBLIC
     ${BLAS_LIBRARIES}
     OpenMP::OpenMP_CXX
-    sleef
+    ${DEEPITY_SLEEF_TARGET}
 )
 
 # hwy is PUBLIC (not PRIVATE like DeepityHighwayKernels below it): the
@@ -801,7 +854,7 @@ target_link_libraries(Deepity PUBLIC
 # so any consumer of Deepity that touches FullPCLayerT<hwy::float16_t, ...>
 # -- including this project's own test binaries -- needs hwy/base.h on
 # its include path too, not just inside Deepity's own translation units.
-target_link_libraries(Deepity PUBLIC hwy)
+target_link_libraries(Deepity PUBLIC ${DEEPITY_HWY_TARGET})
 target_link_libraries(Deepity PRIVATE DeepityHighwayKernels)
 
 if(DEEPITY_CUDA_ENABLED)
@@ -850,34 +903,6 @@ if(DEEPITY_CUDA_ENABLED)
     target_link_libraries(Deepity PRIVATE CUTLASS)
 endif()
 
-# --- Optional: Use Google Benchmark -----------------------------------
-
-include(FetchContent)
-FetchContent_Declare(
-    benchmark
-    GIT_REPOSITORY https://github.com/google/benchmark.git
-    GIT_TAG v1.9.1
-)
-set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-# Google Benchmark defaults this ON and applies -Werror/-pedantic-errors
-# to ITS OWN sources -- on a newer Clang, that turns its (harmless,
-# widely-supported) use of __COUNTER__ into a hard failure under
-# -Wc2y-extensions, since __COUNTER__ isn't standardized until C2y. Not
-# our code, not our warning bar -- just let this dependency build.
-set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(benchmark)
-# BENCHMARK_ENABLE_WERROR above doesn't cover this: benchmark's own
-# CMakeLists.txt applies -pedantic-errors to itself UNCONDITIONALLY (not
-# gated by that option), which alone is enough to promote the
-# __COUNTER__ diagnostic above to a hard error. A later -Wno-* on the
-# command line overrides an earlier -pedantic-errors for that specific
-# category, so suppress it directly on the already-defined target
-# rather than patching benchmark's vendored source.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(benchmark PRIVATE -Wno-c2y-extensions)
-    target_compile_options(benchmark_main PRIVATE -Wno-c2y-extensions)
-endif()
-
 # --- Tests -----------------------------------------------------------
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
@@ -888,6 +913,40 @@ option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
 enable_testing()
 
 if(DEEPITY_BUILD_TESTS)
+    # --- Optional: Use Google Benchmark --------------------------------
+    # Moved inside this guard deliberately: it's only ever consumed by
+    # the benchmark::benchmark-linking targets below, so fetching it
+    # unconditionally (as this used to) meant even a DEEPITY_BUILD_TESTS=OFF
+    # configure (every packaged wheel/conda build) still reached out to
+    # GitHub for a dependency it was never going to use -- harmless with
+    # network access, a hard failure in a network-isolated build sandbox
+    # (e.g. conda-forge's).
+    include(FetchContent)
+    FetchContent_Declare(
+        benchmark
+        GIT_REPOSITORY https://github.com/google/benchmark.git
+        GIT_TAG v1.9.1
+    )
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    # Google Benchmark defaults this ON and applies -Werror/-pedantic-errors
+    # to ITS OWN sources -- on a newer Clang, that turns its (harmless,
+    # widely-supported) use of __COUNTER__ into a hard failure under
+    # -Wc2y-extensions, since __COUNTER__ isn't standardized until C2y. Not
+    # our code, not our warning bar -- just let this dependency build.
+    set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(benchmark)
+    # BENCHMARK_ENABLE_WERROR above doesn't cover this: benchmark's own
+    # CMakeLists.txt applies -pedantic-errors to itself UNCONDITIONALLY (not
+    # gated by that option), which alone is enough to promote the
+    # __COUNTER__ diagnostic above to a hard error. A later -Wno-* on the
+    # command line overrides an earlier -pedantic-errors for that specific
+    # category, so suppress it directly on the already-defined target
+    # rather than patching benchmark's vendored source.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        target_compile_options(benchmark PRIVATE -Wno-c2y-extensions)
+        target_compile_options(benchmark_main PRIVATE -Wno-c2y-extensions)
+    endif()
+
     # Every target added below is appended here, then given the same
     # -march/-mtune (and, on MSVC, the same __AVX2__-style compile-time
     # defs) that Deepity/deepity_ext get, in one loop at the end of this

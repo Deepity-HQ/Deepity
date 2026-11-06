@@ -1,0 +1,87 @@
+{% set name = "pydeepity" %}
+{% set version = "0.1.0a6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # Prefer the sdist already published to PyPI (issue #29) over a git
+  # checkout -- conda-forge's own linter (conda-smithy) flags git
+  # sources for new recipes. Placeholder sha256 below MUST be replaced
+  # before this is submitted: run
+  #   pip download --no-binary :all: --no-deps pydeepity=={{ version }} && sha256sum pydeepity-{{ version }}.tar.gz
+  # (no network access from the environment this draft was written in,
+  # so it could not be computed here.)
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: REPLACE_ME_WITH_REAL_SDIST_SHA256
+
+build:
+  number: 0
+  skip: true  # [win]
+  # Not noarch: this compiles a per-platform/per-Python-ABI C++
+  # extension module (nanobind), exactly like the PyPI wheels built by
+  # .github/workflows/ci.yml's cibuildwheel matrix. The actual build
+  # invocation (and the CMAKE_ARGS it sets) lives in build.sh.
+  script: build.sh
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - cmake >=3.21
+    - ninja
+  host:
+    - python
+    - pip
+    - scikit-build-core >=0.10
+    - nanobind >=2.13.0
+    # Verified against this project's vendored upstream sources (same
+    # versions this recipe's CMAKE_ARGS asks CMakeLists.txt to prefer
+    # over its own FetchContent fallback): sleef 3.9.0 exports
+    # sleef::sleef via sleefConfig.cmake; highway 1.4.0 (conda-forge
+    # package name: libhwy) exports hwy::hwy via hwy-config.cmake.
+    - sleef
+    - libhwy
+    # oneDNN's conda-forge package/target names were NOT independently
+    # re-verified here (no network access) -- CMakeLists.txt's own
+    # DEEPITY_ONEDNN_SYSTEM path (pre-existing, not added by this PR)
+    # expects find_package(dnnl CONFIG) to yield DNNL::dnnl, which is
+    # what the conda-forge `onednn` package is understood to provide.
+    - onednn
+    - libopenblas
+    - libblas * *openblas
+    - libcblas * *openblas
+    - llvm-openmp  # [osx]
+  run:
+    - python
+    - numpy
+    - rich
+    - libopenblas
+    - llvm-openmp  # [osx]
+
+test:
+  imports:
+    - deepity
+  commands:
+    # Same smoke test ci.yml's cibuildwheel config already runs against
+    # every PyPI wheel.
+    - python -c "import deepity; print('deepity OK:', deepity.__file__)"
+
+about:
+  home: https://github.com/Deepity-HQ/Deepity
+  license: MIT
+  license_file: LICENSE
+  summary: A high-performance Predictive Coding (PC) neural network library.
+  description: |
+    Python bindings (pydeepity, imports as `deepity`) for Deepity, a
+    predictive-coding neural network library written in C++20 with
+    hand-tuned CPU SIMD kernels (AVX2/AVX-512 via SLEEF/Highway) and an
+    optional CUDA backend (not built by this recipe -- see issue #55/#67
+    in the upstream repo for GPU support status).
+  doc_url: https://github.com/Deepity-HQ/Deepity#readme
+
+extra:
+  recipe-maintainers:
+    - Ra4ster
