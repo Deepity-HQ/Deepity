@@ -48,6 +48,7 @@ auto_batch_size = dy.auto_batch_size
 dynamic_thread = dy.dynamic_thread
 omp_max_threads = dy.omp_max_threads
 omp_num_procs = dy.omp_num_procs
+randomize = dy.randomize
 
 # In-place SIMD activation functions
 relu = dy.relu
@@ -88,6 +89,7 @@ __all__ = [
     "dynamic_thread",
     "omp_max_threads",
     "omp_num_procs",
+    "randomize",
 
     # SIMD activation functions
     "relu",

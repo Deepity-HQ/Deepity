@@ -64,8 +64,11 @@ architecture:
 in @ref py_networks and @ref py_layers above wraps it. A handful of
 standalone utilities are re-exported directly, with no wrapper class:
 `StreamAlignedBatcher`, `get_l2_cache_bytes`, `auto_batch_size`,
-`dynamic_thread`, the `omp_*` thread-count queries, and the in-place SIMD
-activation functions (`relu`/`drelu`/`tanh`/`dtanh`/`sigmoid`/`dsigmoid`).
+`dynamic_thread`, the `omp_*` thread-count queries, `randomize` (fills a
+numpy array in place with Deepity's own CPU/GPU RNG, so a project can seed
+weights/data without a separate randomization dependency), and the
+in-place SIMD activation functions
+(`relu`/`drelu`/`tanh`/`dtanh`/`sigmoid`/`dsigmoid`).
 
 @section py_elsewhere Elsewhere
 
