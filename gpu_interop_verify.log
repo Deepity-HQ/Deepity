@@ -1,0 +1,15 @@
+OSC GPU interop verification run -- 2026-11-05
+Ran via: PYTHONPATH=. python3 gpu_interop_verify.py
+CUDA: 13.2.1, CMAKE_CUDA_ARCHITECTURES=80, build.py Release MKL --cuda -DDEEPITY_USE_ONEDNN=OFF
+
+torch.cuda.is_available(): True
+
+=== Correctness: CUDA-tensor path vs. host round-trip ===
+train_step energy  host=627.469849  cuda=626.492310  abs diff=9.775391e-01
+predict() max abs diff: 3.302574e-03
+Correctness check PASSED.
+
+=== Performance: CUDA-tensor path vs. host round-trip ===
+host round-trip predict(): 0.407 ms/call
+CUDA-tensor predict():     0.317 ms/call
+speedup: 1.29x

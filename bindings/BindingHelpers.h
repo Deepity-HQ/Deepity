@@ -32,6 +32,16 @@ using IntArray = nb::ndarray<int, nb::c_contig, nb::device::cpu>;
 /// storage type T rather than being hardcoded to float.
 template <typename T> using TArray = nb::ndarray<T, nb::c_contig, nb::device::cpu>;
 
+/// @brief Same as FloatArray, but CUDA-device instead of CPU. For GPU
+/// interop entry points only: nanobind accepts a raw DLPack PyCapsule
+/// directly for this parameter type (no fresh, unsynchronized
+/// __dlpack__() call of its own), so the Python layer is expected to
+/// have already called the source tensor's own __dlpack__(stream=...)
+/// itself, synchronizing it against this network's stream (see
+/// IComputeBackend::GetStreamHandle()), before this is ever reached --
+/// never pass a bare tensor straight into one of these.
+using CudaFloatArray = nb::ndarray<float, nb::c_contig, nb::device::cuda>;
+
 namespace
 {
 

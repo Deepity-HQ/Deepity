@@ -284,8 +284,18 @@ if(DEEPITY_ENABLE_CUDA)
         # A100/RTX 30xx (80/86), and H100 (90); override with
         # -DCMAKE_CUDA_ARCHITECTURES=<arch> for a narrower, faster build
         # targeting one known GPU.
+        #
+        # CUDA 13 dropped Volta support outright -- nvcc 13.x's own
+        # compiler rejects "compute_70" as a build-time error ("Unsupported
+        # gpu architecture"), not just a runtime "no kernel image" like
+        # older too-new/too-old mismatches. Found on OSC: a CUDA 13.2.1
+        # module failing exactly this way.
         if(NOT CMAKE_CUDA_ARCHITECTURES)
-            set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;90")
+            if(CUDAToolkit_VERSION VERSION_GREATER_EQUAL "13.0")
+                set(CMAKE_CUDA_ARCHITECTURES "75;80;86;90")
+            else()
+                set(CMAKE_CUDA_ARCHITECTURES "70;75;80;86;90")
+            endif()
         endif()
         if(DEEPITY_CCACHE_PROGRAM)
             set(CMAKE_CUDA_COMPILER_LAUNCHER "${DEEPITY_CCACHE_PROGRAM}")

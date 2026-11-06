@@ -284,6 +284,12 @@ public:
   /// @brief Clamps this layer's beliefs to `inputData`, fixing them
   /// against UpdateState() until UnclampState() is called.
   void ClampState(const std::vector<float>& inputData) noexcept;
+  /// @brief Same as ClampState(), but `deviceSrc` is already a pointer
+  /// on this layer's own backend device (copied via backend->Copy(),
+  /// not CopyFromHost()). For GPU interop only: the caller is
+  /// responsible for deviceSrc being safe to read on this backend's
+  /// stream (see IComputeBackend::GetStreamHandle()).
+  void ClampStateDevice(const float* deviceSrc, size_t n) noexcept;
   /// @brief Releases a previous ClampState() call.
   void UnclampState() noexcept;
   /// @brief Resets this layer's beliefs (z) without touching learned weights.

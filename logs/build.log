@@ -1,20 +1,21 @@
 --- Deepity Build Log (Release, arch=fast) ---
 
 === CMake Configuration ===
--- CXX compiler: /usr/lib64/ccache/c++
+-- CXX compiler: /usr/bin/c++
 -- Found OpenMP_C: -fopenmp (found version "5.2")
 -- Found OpenMP_CXX: -fopenmp (found version "5.2")
--- Using explicitly multi-threaded OpenBLAS: /usr/lib64/libopenblaso.so (overriding find_package(BLAS)'s generic result: /usr/lib64/libopenblas.so)
+-- Using Intel MKL (found via MKLConfig.cmake).
+-- Intel OpenMP runtime (libiomp5) resolved to: /opt/intel/oneapi/compiler/latest/lib/libiomp5.so
 -- Configuring SLEEF 3.9.0
 -- Could NOT find OpenSSL, try to set the path to OpenSSL root folder in the system variable OPENSSL_ROOT_DIR (missing: OPENSSL_CRYPTO_LIBRARY OPENSSL_INCLUDE_DIR) 
 -- Found OpenMP_C: -fopenmp (found version "5.2")
 -- Found OpenMP_CXX: -fopenmp (found version "5.2")
 -- Configuring build for SLEEF-v3.9.0
-   Target system: Linux-7.2.15-300.fc45.x86_64
+   Target system: Linux-7.2.11-200.fc44.x86_64
    Target processor: x86_64
-   Host system: Linux-7.2.15-300.fc45.x86_64
+   Host system: Linux-7.2.11-200.fc44.x86_64
    Host processor: x86_64
-   Detected C compiler: GNU @ /usr/lib64/ccache/cc
+   Detected C compiler: GNU @ /usr/bin/cc
    CMake: 4.3.0
    Make program: /usr/bin/ninja-build
    CMake build type: Release
@@ -40,29 +41,7 @@ CMake Deprecation Warning at build/Release/_deps/highway-src/CMakeLists.txt:28 (
   behavior and not rely on setting a policy to OLD.
 
 
-CMake Deprecation Warning at build/Release/_deps/onednn-src/CMakeLists.txt:36 (cmake_policy):
-  The OLD behavior for policy CMP0146 will be removed from a future version
-  of CMake.
-
-  The cmake-policies(7) manual explains that the OLD behaviors of all
-  policies are deprecated and that a policy should be set to OLD only under
-  specific short-term circumstances.  Projects should be ported to the NEW
-  behavior and not rely on setting a policy to OLD.
-
-
--- DNNL_TARGET_ARCH: X64
--- ONEDNN_LIBRARY_TYPE: STATIC (default: SHARED)
--- ONEDNN_BUILD_GRAPH: OFF (default: ON)
--- ONEDNN_ENABLE_WORKLOAD: INFERENCE (default: TRAINING)
--- ONEDNN_ENABLE_PRIMITIVE: MATMUL (default: ALL)
--- Found OpenCL headers: /home/rose0/Projects/deepity/build/Release/_deps/onednn-src/third_party/opencl
--- Enabled testing coverage: CI
--- Enabled workload: INFERENCE
--- Enabled primitives: MATMUL
--- Enabled primitive CPU ISA: ALL
--- Enabled primitive GPU ISA: ALL
--- Enabled GeMM kernels ISA: ALL
--- Primitive cache is enabled
+-- Using system oneDNN (found via find_package(dnnl)).
 -- LLVM FileCheck Found: /usr/bin/FileCheck
 -- Google Benchmark version: v1.9.1, normalized to 1.9.1
 -- Performing Test HAVE_STD_REGEX -- success
@@ -70,104 +49,52 @@ CMake Deprecation Warning at build/Release/_deps/onednn-src/CMakeLists.txt:36 (c
 -- Performing Test HAVE_POSIX_REGEX -- success
 -- Performing Test HAVE_STEADY_CLOCK -- success
 -- Performing Test HAVE_PTHREAD_AFFINITY -- success
--- Configuring done (1.0s)
--- Generating done (0.1s)
--- Build files have been written to: /home/rose0/Projects/deepity/build/Release
+-- Configuring done (0.7s)
+You have changed variables that require your cache to be deleted.
+Configure will be re-run and you may have to reset some variables.
+The following variables have changed:
+CMAKE_C_COMPILER= gcc
+CMAKE_CXX_COMPILER= g++
+CMAKE_C_COMPILER= gcc
+CMAKE_CXX_COMPILER= g++
+CMAKE_CXX_COMPILER= g++
+CMAKE_C_COMPILER= gcc
+CMAKE_CXX_COMPILER= g++
+CMAKE_CXX_COMPILER= g++
+
+-- The C compiler identification is GNU 16.2.1
+-- The CXX compiler identification is GNU 16.2.1
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/lib64/ccache/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/lib64/ccache/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- CXX compiler: /usr/lib64/ccache/g++
+-- Found OpenMP_C: -fopenmp (found version "5.2")
+-- Found OpenMP_CXX: -fopenmp (found version "5.2")
+-- Found OpenMP: TRUE (found version "5.2")
+-- CUDA toolkit not found. Building CPU-only.
+-- Found Python: /usr/bin/python3.15 (found suitable version "3.15.0", minimum required is "3.8") found components: Interpreter Development.Module
+/usr/bin/python3.15: No module named nanobind
+CMake Error at CMakeLists.txt:345 (find_package):
+  Could not find a package configuration file provided by "nanobind" with any
+  of the following names:
+
+    nanobind.cps
+    nanobindConfig.cmake
+    nanobind-config.cmake
+
+  Add the installation prefix of "nanobind" to CMAKE_PREFIX_PATH or set
+  "nanobind_DIR" to a directory containing one of the above files.  If
+  "nanobind" provides a separate development package or SDK, be sure it has
+  been installed.
 
 
-=== Compilation ===
-[1/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/AttentionOutputLayer.cpp.o
-[2/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/AttentionScoresLayer.cpp.o
-[3/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullPCLayer.cpp.o
-[4/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/ConvPCLayer.cpp.o
-[5/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimpleConvPCLayer.cpp.o
-[6/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayer.cpp.o
-[7/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullConvPCLayer.cpp.o
-[8/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/DiscriminativePCLayer.cpp.o
-[9/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/GaussSeidelPCLayer.cpp.o
-[10/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/DirectKPPCLayer.cpp.o
-[11/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullPCNetwork.cpp.o
-[12/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/FullConvPCNetwork.cpp.o
-[13/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/DiscriminativePCNetwork.cpp.o
-[14/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/ConvPCNetwork.cpp.o
-[15/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimplePCNetwork.cpp.o
-[16/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/GaussSeidelPCNetwork.cpp.o
-[17/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/SimpleConvPCNetwork.cpp.o
-[18/48] Building CXX object CMakeFiles/Deepity.dir/src/backend/Backend.cpp.o
-[19/48] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackend.cpp.o
-[20/48] Building CXX object CMakeFiles/Deepity.dir/src/backend/Tensor.cpp.o
-[21/48] Building CXX object CMakeFiles/deepity_ext.dir/bindings/AttentionBindings.cpp.o
-[22/48] Building CXX object CMakeFiles/deepity_ext.dir/bindings/UtilityBindings.cpp.o
-[23/48] Building CXX object CMakeFiles/deepity_ext.dir/bindings/LayerBindings.cpp.o
-In file included from /usr/include/openblas/openblas_config.h:18,
-                 from /usr/include/openblas/cblas.h:33,
-                 from /home/rose0/Projects/deepity/include/deepity/layers/Layer.h:7,
-                 from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:4,
-                 from /home/rose0/Projects/deepity/bindings/LayerBindings.cpp:26:
-/usr/include/openblas/openblas_config-x86_64.h:78:9: warning: ‘__STDC_WANT_IEC_60559_TYPES_EXT__’ redefined
-   78 | #define __STDC_WANT_IEC_60559_TYPES_EXT__
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /usr/include/python3.12/pyconfig.h:6,
-                 from /usr/include/python3.12/Python.h:12,
-                 from /tmp/claude-1000/-home-rose0-Projects-deepity/86ee7e8d-7b2a-4928-a0dd-ab8b1f82bd5f/scratchpad/interop-venv/lib/python3.12/site-packages/nanobind/include/nanobind/nb_python.h:21,
-                 from /tmp/claude-1000/-home-rose0-Projects-deepity/86ee7e8d-7b2a-4928-a0dd-ab8b1f82bd5f/scratchpad/interop-venv/lib/python3.12/site-packages/nanobind/include/nanobind/nanobind.h:32,
-                 from /home/rose0/Projects/deepity/bindings/LayerBindings.h:3,
-                 from /home/rose0/Projects/deepity/bindings/LayerBindings.cpp:7:
-/usr/include/python3.12/pyconfig-64.h:1787:10: note: this is the location of the previous definition
- 1787 | # define __STDC_WANT_IEC_60559_TYPES_EXT__ 1
-      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[24/48] Building CXX object CMakeFiles/Deepity.dir/src/networks/DirectKPPCNetwork.cpp.o
-[25/48] Building CXX object CMakeFiles/GflopsBenchmark.dir/tests/tGflopsBenchmark.cpp.o
-[26/48] Building CXX object CMakeFiles/DiscriminativeNetworkProfile.dir/tests/tDiscriminativeNetworkProfile.cpp.o
-[27/48] Building CXX object CMakeFiles/Deepity.dir/src/backend/CPUBackendT.cpp.o
-[28/48] Building CXX object CMakeFiles/ReadmeBenchmark.dir/tests/tReadme.cpp.o
-[29/48] Building CXX object CMakeFiles/SimpleNetworkProfile.dir/tests/tSimpleNetworkProfile.cpp.o
-[30/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimpleConvPCLayerT.cpp.o
-[31/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/ConvPCLayerT.cpp.o
-[32/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/SimplePCLayerT.cpp.o
-[33/48] Building CXX object CMakeFiles/ConvDiagnose.dir/tests/tConvDiagnose.cpp.o
-[34/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullConvPCLayerT.cpp.o
-[35/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/DirectKPPCLayerT.cpp.o
-[36/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/GaussSeidelPCLayerT.cpp.o
-[37/48] Building CXX object CMakeFiles/Deepity.dir/src/layers/FullPCLayerT.cpp.o
-[38/48] Linking CXX static library bin/libDeepity.a
-[39/48] Linking CXX executable bin/ActivationBenchmark
-[40/48] Building CXX object CMakeFiles/PCNBenchmark.dir/tests/tBenchmark.cpp.o
-[41/48] Linking CXX executable bin/SimpleNetworkProfile
-[42/48] Linking CXX executable bin/GflopsBenchmark
-[43/48] Linking CXX executable bin/ConvDiagnose
-[44/48] Linking CXX executable bin/DiscriminativeNetworkProfile
-[45/48] Linking CXX executable bin/ReadmeBenchmark
-[46/48] Linking CXX executable bin/PCNBenchmark
-[47/48] Building CXX object CMakeFiles/deepity_ext.dir/bindings/NetworkBindings.cpp.o
-In file included from /usr/include/openblas/openblas_config.h:18,
-                 from /usr/include/openblas/cblas.h:33,
-                 from /home/rose0/Projects/deepity/include/deepity/layers/Layer.h:7,
-                 from /home/rose0/Projects/deepity/include/deepity/layers/ConvPCLayer.h:4,
-                 from /home/rose0/Projects/deepity/include/deepity/networks/ConvPCNetwork.h:4,
-                 from /home/rose0/Projects/deepity/bindings/NetworkBindings.cpp:23:
-/usr/include/openblas/openblas_config-x86_64.h:78:9: warning: ‘__STDC_WANT_IEC_60559_TYPES_EXT__’ redefined
-   78 | #define __STDC_WANT_IEC_60559_TYPES_EXT__
-      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In file included from /usr/include/python3.12/pyconfig.h:6,
-                 from /usr/include/python3.12/Python.h:12,
-                 from /tmp/claude-1000/-home-rose0-Projects-deepity/86ee7e8d-7b2a-4928-a0dd-ab8b1f82bd5f/scratchpad/interop-venv/lib/python3.12/site-packages/nanobind/include/nanobind/nb_python.h:21,
-                 from /tmp/claude-1000/-home-rose0-Projects-deepity/86ee7e8d-7b2a-4928-a0dd-ab8b1f82bd5f/scratchpad/interop-venv/lib/python3.12/site-packages/nanobind/include/nanobind/nanobind.h:32,
-                 from /home/rose0/Projects/deepity/bindings/NetworkBindings.h:3,
-                 from /home/rose0/Projects/deepity/bindings/NetworkBindings.cpp:7:
-/usr/include/python3.12/pyconfig-64.h:1787:10: note: this is the location of the previous definition
- 1787 | # define __STDC_WANT_IEC_60559_TYPES_EXT__ 1
-      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-[48/48] Linking CXX shared module bin/deepity.cpython-312-x86_64-linux-gnu.so
-
-
-=== Tests ===
-Test project /home/rose0/Projects/deepity/build/Release
-    Start 1: ConvDiagnose
-1/1 Test #1: ConvDiagnose .....................   Passed    1.30 sec
-
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   1.30 sec
+-- Configuring incomplete, errors occurred!
 
 

@@ -16,6 +16,7 @@ from rich.progress import (
 )
 
 from ._backend import dy
+from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 
@@ -256,8 +257,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
@@ -266,8 +267,8 @@ class SimplePCN(dy.SimplePCNetwork):
         self._require_configured()
 
         self.reset_state()
-        self.clamp_input(X)
-        self[-1].clamp_state(Y)
+        self.clamp_input(to_numpy(X, np.float32))
+        self[-1].clamp_state(to_numpy(Y, np.float32))
 
         total_energy = 0.0
 
@@ -282,7 +283,7 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
@@ -290,7 +291,7 @@ class SimplePCN(dy.SimplePCNetwork):
         self._require_configured()
 
         self.reset_state()
-        self.clamp_input(X.flatten())
+        self.clamp_input(to_numpy(X, np.float32).flatten())
 
         for _ in range(steps):
             self.calculate_state(False)
@@ -300,8 +301,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
@@ -321,8 +322,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,
@@ -347,8 +348,8 @@ class SimplePCN(dy.SimplePCNetwork):
 
     def fit_iavg(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         labels: npt.NDArray[np.int32],
         epochs: int,
         steps: int,
@@ -366,6 +367,9 @@ class SimplePCN(dy.SimplePCNetwork):
         cache. The terminal layer should not be included in cache_layers.
         """
         self._require_configured()
+        X = to_numpy(X, np.float32)
+        Y = to_numpy(Y, np.float32)
+        labels = to_numpy(labels, np.int32)
 
         if initial_lr is None:
             initial_lr = self._learning_rate

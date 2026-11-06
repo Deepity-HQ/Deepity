@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <cstdint>
 #include <deepity/backend/DeviceType.h>
 #include <deepity/utils/Activations.h>
 
@@ -447,6 +448,19 @@ public:
 
   /// @brief Which device this backend instance runs on.
   virtual DeviceType GetDeviceType() const noexcept = 0;
+
+  /// @brief Returns this backend's compute stream as an opaque,
+  /// backend-defined integer handle (a cudaStream_t reinterpret_cast to
+  /// std::uintptr_t, for CUDABackend), or 0 if this backend has no
+  /// stream concept. Exists only so cross-framework GPU interop (e.g.
+  /// importing a DLPack tensor from PyTorch/JAX) can ask the exporting
+  /// framework to synchronize against the exact stream Deepity will
+  /// read from, instead of racing it. No internal Deepity code path
+  /// uses this, so every backend but CUDABackend keeps the default.
+  virtual std::uintptr_t GetStreamHandle() const noexcept
+  {
+    return 0;
+  }
 
   /// @brief dst[i] = a[i] * b[i] for all i in [0, n), elementwise product.
   virtual void MultiplyInto(T* dst, const T* a, const T* b, size_t n) noexcept = 0;

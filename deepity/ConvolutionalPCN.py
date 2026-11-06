@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._interop import InputArray, to_numpy
 from .layer import Activation, Convolution, Layer
 from .utils import _fit_with_progress
 
@@ -196,9 +197,9 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def clamp_input(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
     ) -> None:
-        super().clamp_input(X.flatten())
+        super().clamp_input(to_numpy(X, np.float32).flatten())
 
     def project_forward(self) -> None:
         super().project_forward()
@@ -208,8 +209,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Run one training step on a single batch, settling for
@@ -218,15 +219,15 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._require_configured()
 
         return super().train_step(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
     def train_step_with_projection(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """Same as train_step(), but initializes every layer's
@@ -235,14 +236,14 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self._require_configured()
 
         return super().train_step_with_projection(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Run inference on `X`, settling for `steps` iterations.
@@ -251,14 +252,14 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         return np.asarray(
             super().predict(
-                X.flatten(),
+                to_numpy(X, np.float32).flatten(),
                 steps,
             )
         )
 
     def predict_with_projection(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Same as predict(), but initializes every layer's beliefs
@@ -267,15 +268,15 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         return np.asarray(
             super().predict_with_projection(
-                X.flatten(),
+                to_numpy(X, np.float32).flatten(),
                 steps,
             )
         )
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
@@ -293,8 +294,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,

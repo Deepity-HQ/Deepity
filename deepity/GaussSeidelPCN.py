@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 
@@ -227,8 +228,8 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
 
     def train_step(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """
@@ -241,15 +242,15 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self._require_configured()
 
         return super().train_step(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
     def train_step_with_projection(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         steps: int,
     ) -> float:
         """
@@ -262,14 +263,14 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self._require_configured()
 
         return super().train_step_with_projection(
-            X.flatten(),
-            Y.flatten(),
+            to_numpy(X, np.float32).flatten(),
+            to_numpy(Y, np.float32).flatten(),
             steps,
         )
 
     def predict(
         self,
-        X: npt.NDArray[np.float32],
+        X: InputArray,
         steps: int,
     ) -> npt.NDArray[np.float32]:
         """Settle the network and return the terminal-layer beliefs."""
@@ -277,13 +278,13 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self._require_configured()
 
         return np.asarray(
-            super().predict(X.flatten(), steps)
+            super().predict(to_numpy(X, np.float32).flatten(), steps)
         )
 
     def fit(
         self,
-        X: npt.NDArray[np.float32],
-        Y: npt.NDArray[np.float32],
+        X: InputArray,
+        Y: InputArray,
         epochs: int,
         steps: int,
         initial_lr: Optional[float] = None,
@@ -304,8 +305,8 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
 
         _fit_with_progress(
             self,
-            X,
-            Y,
+            to_numpy(X, np.float32),
+            to_numpy(Y, np.float32),
             epochs,
             steps,
             initial_lr,

@@ -13,9 +13,6 @@ from doing less total sequential work per step, or does it scale the same
 or worse?
 
 Synthetic random data, CPU only, timing only -- no accuracy claim here.
-Run with OPENBLAS_NUM_THREADS=1 once Step() is parallelized across layers
-via OpenMP, to avoid nested-parallelism oversubscription between the new
-per-layer OMP region and OpenBLAS's own internal thread pool.
 """
 import os
 
