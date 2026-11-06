@@ -86,12 +86,30 @@ struct DepthState
   int depth;
 
   Tensor x, W_in, W_out, err, target;
-  std::vector<Tensor> W, Psi, z;
+
+  /// @brief Every per-layer quantity below is ONE contiguous Tensor
+  /// holding all `depth` layers back-to-back (layer l's slice starts at
+  /// l*perLayerSize), not a std::vector of `depth` separate allocations.
+  /// This matters beyond memory layout: it lets elementwise updates
+  /// (AxpyInto/ComputeError) run as a SINGLE O(1)-dispatch call over
+  /// `depth*perLayerSize` elements instead of `depth` separate per-layer
+  /// calls -- without it, IndependentPhasesBatched() below would still
+  /// batch its GEMMs but stay O(depth) in total dispatch count anyway,
+  /// defeating the point of this whole benchmark (this is exactly the
+  /// gap a first version of this file had, found via a flattening-out
+  /// ratio plateau that didn't budge from depth=96 to depth=2048).
+  Tensor Wflat, Psiflat, zflat;
+  Tensor projflat, fgradflat, muflat, eflat, zUpdateflat, wgradflat;
 
   /// @brief ForwardSequential's stored activations, depth+2 of them,
   /// indices 1..depth+1 used (index 0 is unused -- ForwardSequential's
   /// own first GEMM reads s.x directly, not acts[0]; kept for 1:1 index
-  /// correspondence with the CPU version rather than renumbering).
+  /// correspondence with the CPU version rather than renumbering). Left
+  /// as a std::vector<Tensor>, not flattened like the above -- there is
+  /// no cross-layer-independent batching to do here at all, ever: each
+  /// entry depends on the previous one by construction (the whole point
+  /// of ForwardSequential/BPBackwardSequential as the honest sequential
+  /// baseline).
   /// `acts` holds the POST-activation (tanh'd) value at each index, used
   /// as the next layer's GEMM input and as each weight-gradient GEMM's
   /// activated-input operand. `actsPre` holds the matching PRE-activation
@@ -104,8 +122,11 @@ struct DepthState
   // BPBackwardSequential's scratch.
   Tensor bpDelta, bpGradWOut, bpDeltaHidden, bpDeriv, bpCurDelta, bpGradW, bpNextDelta, bpGradWIn;
 
-  // IndependentPhasesBatched's scratch (each depth entries, each own-layer-sized).
-  std::vector<Tensor> proj, fgrad, mu, e, zUpdate, wgrad;
+  // IndependentPhasesBatched's per-call GEMM pointer-array scratch --
+  // cublasSgemmBatched (via MatMulBatched()) still wants an array of
+  // per-layer pointers even though those pointers are now just
+  // base+l*stride into one of the flat Tensors above, rather than `depth`
+  // independently-allocated Tensors' own Data() pointers.
   std::vector<const float*> Aarr, Barr;
   std::vector<float*> Carr;
 
@@ -116,6 +137,15 @@ struct DepthState
       , W_out(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)HIDDEN * OUT_DIM, rng))
       , err(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)BATCH * OUT_DIM, rng))
       , target(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)BATCH * OUT_DIM, rng))
+      , Wflat(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)d * HIDDEN * HIDDEN, rng))
+      , Psiflat(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)d * OUT_DIM * HIDDEN, rng))
+      , zflat(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)d * BATCH * HIDDEN, rng))
+      , projflat(backend, DeviceType::DEVICE_GPU, (size_t)d * BATCH * HIDDEN)
+      , fgradflat(backend, DeviceType::DEVICE_GPU, (size_t)d * OUT_DIM * HIDDEN)
+      , muflat(backend, DeviceType::DEVICE_GPU, (size_t)d * BATCH * HIDDEN)
+      , eflat(backend, DeviceType::DEVICE_GPU, (size_t)d * BATCH * HIDDEN)
+      , zUpdateflat(backend, DeviceType::DEVICE_GPU, (size_t)d * BATCH * HIDDEN)
+      , wgradflat(backend, DeviceType::DEVICE_GPU, (size_t)d * HIDDEN * HIDDEN)
       , bpDelta(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * OUT_DIM)
       , bpGradWOut(backend, DeviceType::DEVICE_GPU, (size_t)HIDDEN * OUT_DIM)
       , bpDeltaHidden(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN)
@@ -128,24 +158,22 @@ struct DepthState
       , Barr(d)
       , Carr(d)
   {
-    for (int l = 0; l < d; ++l)
-    {
-      W.emplace_back(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)HIDDEN * HIDDEN, rng));
-      Psi.emplace_back(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)OUT_DIM * HIDDEN, rng));
-      z.emplace_back(backend, DeviceType::DEVICE_GPU, RandomVec((size_t)BATCH * HIDDEN, rng));
-      proj.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
-      fgrad.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)OUT_DIM * HIDDEN);
-      mu.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
-      e.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
-      zUpdate.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
-      wgrad.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)HIDDEN * HIDDEN);
-    }
     for (int l = 0; l < d + 2; ++l)
     {
       acts.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
       actsPre.emplace_back(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * HIDDEN);
     }
   }
+
+  float* W(int l) noexcept { return Wflat.Data() + (size_t)l * HIDDEN * HIDDEN; }
+  float* Psi(int l) noexcept { return Psiflat.Data() + (size_t)l * OUT_DIM * HIDDEN; }
+  float* z(int l) noexcept { return zflat.Data() + (size_t)l * BATCH * HIDDEN; }
+  float* proj(int l) noexcept { return projflat.Data() + (size_t)l * BATCH * HIDDEN; }
+  float* fgrad(int l) noexcept { return fgradflat.Data() + (size_t)l * OUT_DIM * HIDDEN; }
+  float* mu(int l) noexcept { return muflat.Data() + (size_t)l * BATCH * HIDDEN; }
+  float* e(int l) noexcept { return eflat.Data() + (size_t)l * BATCH * HIDDEN; }
+  float* zUpdate(int l) noexcept { return zUpdateflat.Data() + (size_t)l * BATCH * HIDDEN; }
+  float* wgrad(int l) noexcept { return wgradflat.Data() + (size_t)l * HIDDEN * HIDDEN; }
 };
 
 // Strictly sequential across layers -- the honest baseline for "no
@@ -162,7 +190,7 @@ void ForwardSequential(CUDABackend* backend, DepthState& s, float* out)
   for (int l = 0; l < s.depth; ++l)
   {
     backend->MatMul(false, false, BATCH, HIDDEN, HIDDEN, 1.0f, s.acts[l + 1].Data(), HIDDEN,
-                    s.W[l].Data(), HIDDEN, 0.0f, s.actsPre[l + 2].Data(), HIDDEN);
+                    s.W(l), HIDDEN, 0.0f, s.actsPre[l + 2].Data(), HIDDEN);
     backend->ActivationInto(ActivationType::TANH, s.acts[l + 2].Data(), s.actsPre[l + 2].Data(),
                             (size_t)BATCH * HIDDEN);
   }
@@ -202,7 +230,7 @@ void BPBackwardSequential(CUDABackend* backend, DepthState& s, const float* pred
                     s.bpCurDelta.Data(), HIDDEN, 0.0f, s.bpGradW.Data(), HIDDEN);
 
     backend->MatMul(false, true, BATCH, HIDDEN, HIDDEN, 1.0f, s.bpCurDelta.Data(), HIDDEN,
-                    s.W[l].Data(), HIDDEN, 0.0f, s.bpNextDelta.Data(), HIDDEN);
+                    s.W(l), HIDDEN, 0.0f, s.bpNextDelta.Data(), HIDDEN);
     backend->Copy(s.bpCurDelta.Data(), s.bpNextDelta.Data(), (size_t)BATCH * HIDDEN);
   }
 
@@ -214,9 +242,15 @@ void BPBackwardSequential(CUDABackend* backend, DepthState& s, const float* pred
                   HIDDEN, 0.0f, s.bpGradWIn.Data(), HIDDEN);
 }
 
-// DKP-PC's three cross-layer-independent phases, each dispatched as ONE
-// cublasSgemmBatched() call across all L layers instead of a per-layer
-// loop -- the thing this whole benchmark exists to test.
+// DKP-PC's three cross-layer-independent phases. Every GEMM group is
+// dispatched as ONE cublasSgemmBatched() call across all L layers
+// (MatMulBatched()); every elementwise update is ONE call over all L
+// layers' flattened buffers at once (AxpyInto/ComputeError, called with
+// L*perLayerSize elements, not looped per layer) -- O(1) host-side
+// dispatches total, except the two GEMM groups below whose OUT_DIM=10
+// shape falls below MatMulBatched()'s kMinSafeDim and so still cost
+// O(L) dispatches internally (see that function's own doc comment). This
+// is the thing this whole benchmark exists to test.
 void IndependentPhasesBatched(CUDABackend* backend, DepthState& s)
 {
   const int L = s.depth;
@@ -226,63 +260,62 @@ void IndependentPhasesBatched(CUDABackend* backend, DepthState& s)
 
   // proj[l] = err @ Psi[l]^T (err is the SAME shared pointer for every
   // layer -- each layer reads the shared, already-frozen terminal
-  // error, never another layer's output).
+  // error, never another layer's output). OUT_DIM=10 < kMinSafeDim, so
+  // MatMulBatched() itself falls back to a per-layer loop here.
   for (int l = 0; l < L; ++l)
   {
     Aarr[l] = s.err.Data();
-    Barr[l] = s.Psi[l].Data();
-    Carr[l] = s.proj[l].Data();
+    Barr[l] = s.Psi(l);
+    Carr[l] = s.proj(l);
   }
   backend->MatMulBatched(false, true, BATCH, HIDDEN, OUT_DIM, 1.0f, Aarr.data(), OUT_DIM,
                         Barr.data(), OUT_DIM, 0.0f, Carr.data(), HIDDEN, L);
 
   // feedback_grad[l] = proj[l]^T @ err ; Psi[l] -= lr * feedback_grad[l]
+  // (same OUT_DIM=10 fallback as above for the GEMM itself.)
   for (int l = 0; l < L; ++l)
   {
     Aarr[l] = s.err.Data();
-    Barr[l] = s.proj[l].Data();
-    Carr[l] = s.fgrad[l].Data();
+    Barr[l] = s.proj(l);
+    Carr[l] = s.fgrad(l);
   }
   backend->MatMulBatched(true, false, OUT_DIM, HIDDEN, BATCH, 1.0f, Aarr.data(), OUT_DIM,
                         Barr.data(), HIDDEN, 0.0f, Carr.data(), HIDDEN, L);
-  for (int l = 0; l < L; ++l)
-    backend->AxpyInto(s.Psi[l].Data(), s.fgrad[l].Data(), (size_t)OUT_DIM * HIDDEN, -1e-3f);
+  backend->AxpyInto(s.Psiflat.Data(), s.fgradflat.Data(), (size_t)L * OUT_DIM * HIDDEN, -1e-3f);
 
   // mu[l] = z[l] @ W[l] ; e[l] = proj[l] - mu[l] ; z[l] += 0.1 * e[l] @ W[l]^T
   for (int l = 0; l < L; ++l)
   {
-    Aarr[l] = s.z[l].Data();
-    Barr[l] = s.W[l].Data();
-    Carr[l] = s.mu[l].Data();
+    Aarr[l] = s.z(l);
+    Barr[l] = s.W(l);
+    Carr[l] = s.mu(l);
   }
   backend->MatMulBatched(false, false, BATCH, HIDDEN, HIDDEN, 1.0f, Aarr.data(), HIDDEN,
                         Barr.data(), HIDDEN, 0.0f, Carr.data(), HIDDEN, L);
 
-  for (int l = 0; l < L; ++l)
-    backend->ComputeError(s.e[l].Data(), s.proj[l].Data(), s.mu[l].Data(), (size_t)BATCH * HIDDEN);
+  backend->ComputeError(s.eflat.Data(), s.projflat.Data(), s.muflat.Data(),
+                        (size_t)L * BATCH * HIDDEN);
 
   for (int l = 0; l < L; ++l)
   {
-    Aarr[l] = s.e[l].Data();
-    Barr[l] = s.W[l].Data();
-    Carr[l] = s.zUpdate[l].Data();
+    Aarr[l] = s.e(l);
+    Barr[l] = s.W(l);
+    Carr[l] = s.zUpdate(l);
   }
   backend->MatMulBatched(false, true, BATCH, HIDDEN, HIDDEN, 1.0f, Aarr.data(), HIDDEN,
                         Barr.data(), HIDDEN, 0.0f, Carr.data(), HIDDEN, L);
-  for (int l = 0; l < L; ++l)
-    backend->AxpyInto(s.z[l].Data(), s.zUpdate[l].Data(), (size_t)BATCH * HIDDEN, 0.1f);
+  backend->AxpyInto(s.zflat.Data(), s.zUpdateflat.Data(), (size_t)L * BATCH * HIDDEN, 0.1f);
 
   // weight_grad[l] = z[l]^T @ e[l] ; W[l] -= lr * weight_grad[l]
   for (int l = 0; l < L; ++l)
   {
-    Aarr[l] = s.z[l].Data();
-    Barr[l] = s.e[l].Data();
-    Carr[l] = s.wgrad[l].Data();
+    Aarr[l] = s.z(l);
+    Barr[l] = s.e(l);
+    Carr[l] = s.wgrad(l);
   }
   backend->MatMulBatched(true, false, HIDDEN, HIDDEN, BATCH, 1.0f, Aarr.data(), HIDDEN,
                         Barr.data(), HIDDEN, 0.0f, Carr.data(), HIDDEN, L);
-  for (int l = 0; l < L; ++l)
-    backend->AxpyInto(s.W[l].Data(), s.wgrad[l].Data(), (size_t)HIDDEN * HIDDEN, -1e-3f);
+  backend->AxpyInto(s.Wflat.Data(), s.wgradflat.Data(), (size_t)L * HIDDEN * HIDDEN, -1e-3f);
 }
 } // namespace
 
