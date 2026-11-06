@@ -516,7 +516,10 @@ std::vector<float> DirectKPPCNetwork::Predict(const std::vector<float>& x, int i
   {
     ProjectForward();
     for (int t = 0; t < inferenceSteps; t++)
-      Step();
+      // false: needEnergy's ComputeErrorAndEnergy() does a synchronous
+      // cudaStreamSynchronize() on CUDA, illegal during graph capture
+      // -- see TrainStep()'s own settle loop for the same fix.
+      Step(false);
   };
 
   if (device == DeviceType::DEVICE_GPU)
@@ -533,18 +536,22 @@ std::vector<float> DirectKPPCNetwork::Predict(const std::vector<float>& x, int i
         capturedPredictInferenceSteps = inferenceSteps;
       }
       else
-      {
         std::cerr << "Predict() graph capture failed, falling back to non-graph "
                      "execution for this call.\n";
-      }
     }
-    else
+
+    // Not an else of the block above: on the call that just captured,
+    // this replays it immediately so THIS call's output is real, not
+    // stale -- see FullPCNetwork::PredictSettle()'s identical pattern.
+    if (predictGraphCaptured)
     {
       backend->ReplayGraph(kPredictGraphSlot);
       // cudaGraphLaunch() only enqueues the replay -- the
       // CopyToHost() below needs it to have actually finished.
       backend->Synchronize();
     }
+    else
+      settleAndProject();
   }
   else
   {
