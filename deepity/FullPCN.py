@@ -6,7 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
-from ._interop import to_numpy
+from ._interop import is_cuda_array, to_cuda_capsule, to_numpy
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -423,6 +423,19 @@ class FullPCN:
         @return Total settling energy accumulated over the settling steps."""
         self._require_configured()
 
+        if self.device == "cuda" and is_cuda_array(X) and is_cuda_array(Y):
+            # X/Y already live on the GPU (e.g. a CUDA torch.Tensor):
+            # hand their raw device pointers straight to the backend
+            # instead of a host round trip. to_cuda_capsule() is what
+            # makes this safe -- it synchronizes each tensor against
+            # this network's own stream before returning.
+            stream_ptr = self._impl.stream_handle
+            return self._impl._train_step_device(
+                to_cuda_capsule(X, stream_ptr),
+                to_cuda_capsule(Y, stream_ptr),
+                inference_steps,
+            )
+
         return self._impl.train_step(
             to_numpy(X, self._np_dtype).flatten(),
             to_numpy(Y, self._np_dtype).flatten(),
@@ -437,6 +450,15 @@ class FullPCN:
         """Run inference on `X`, settling for `inference_steps` iterations.
         @return The terminal layer's beliefs."""
         self._require_configured()
+
+        if self.device == "cuda" and is_cuda_array(X):
+            stream_ptr = self._impl.stream_handle
+            return np.asarray(
+                self._impl._predict_device(
+                    to_cuda_capsule(X, stream_ptr),
+                    inference_steps,
+                )
+            )
 
         return np.asarray(
             self._impl.predict(

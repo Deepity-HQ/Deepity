@@ -26,3 +26,36 @@ def to_numpy(x, dtype) -> np.ndarray:
             arr = np.array(arr)
         return arr
     return np.asarray(x, dtype=dtype)
+
+
+# dlpack.h's DLDeviceType.kDLCUDA -- the DLPack spec's own device-type
+# code, not something Deepity defines.
+_DLPACK_DEVICE_TYPE_CUDA = 2
+
+
+def is_cuda_array(x) -> bool:
+    """True if x reports a CUDA DLPack device. False for anything
+    without __dlpack_device__ (plain numpy, Python lists, etc.)."""
+    dlpack_device = getattr(x, "__dlpack_device__", None)
+    if dlpack_device is None:
+        return False
+    device_type, _ = dlpack_device()
+    return int(device_type) == _DLPACK_DEVICE_TYPE_CUDA
+
+
+def to_cuda_capsule(x, stream_ptr: int):
+    """Exports x as a DLPack capsule, explicitly synchronized against
+    stream_ptr (an integer CUDA stream handle, e.g. a CUDA-device
+    FullPCNetwork's own `stream_handle` property) before this returns.
+
+    This is NOT the same as a bare x.__dlpack__() call: with no stream
+    argument, DLPack's spec has the producer synchronize against the
+    *legacy default* stream, not whatever stream the actual consumer
+    (Deepity's own CUDA backend, which never uses the default stream)
+    will read from. Passing stream_ptr makes the producer (e.g.
+    PyTorch) insert a real cross-stream wait first, so the pointer
+    inside the returned capsule is immediately safe to read from
+    stream_ptr -- never pass a bare tensor into a *_device() binding
+    without going through this first.
+    """
+    return x.__dlpack__(stream=stream_ptr)
