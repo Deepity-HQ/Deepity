@@ -1041,6 +1041,15 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS CUDARandomizeBenchmark)
+
+        # Manual profiling tool, not a pass/fail test -- GPU counterpart of
+        # the CPU tBatchedGemmDepthScaling benchmark (issue #74).
+        add_executable(CUDABatchedGemmDepthScaling tests/tCUDABatchedGemmDepthScaling.cpp)
+        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity)
+        set_target_properties(CUDABatchedGemmDepthScaling PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS CUDABatchedGemmDepthScaling)
     endif()
 
     # --- Manual profiling tools (no pass/fail; not registered with ctest) -
