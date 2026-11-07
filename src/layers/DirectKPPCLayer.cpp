@@ -203,14 +203,16 @@ void DirectKPPCLayer::RandomizeWeights(std::mt19937& seedGenerator,
   }
   else
   {
-    // Psi's row width was padded wider than terminalSize (see
-    // GetPsiStride()'s own comment) -- randomize only the real,
-    // logical TS columns of each row, one row at a time, so the
-    // padding columns stay exactly zero (as Compile() zeroed the
-    // whole flat buffer). One-time setup cost, not a hot path.
+    // Padded wider than terminalSize (see GetPsiStride()) -- build the
+    // whole buffer host-side, padding columns left zero, one upload
+    // instead of size separate per-row GPU calls.
+    std::vector<float> hostPsi(size * psiStride, 0.0f);
+    std::normal_distribution<float> dist(0.0f, limPsi);
+    std::mt19937 psiRng(seedDist(seedGenerator));
     for (size_t row = 0; row < size; ++row)
-      backend->RandomizeNormal(Psi + row * psiStride, terminalSize, 0.0f, limPsi,
-                               seedDist(seedGenerator));
+      for (size_t col = 0; col < terminalSize; ++col)
+        hostPsi[row * psiStride + col] = dist(psiRng);
+    backend->CopyFromHost(Psi, hostPsi.data(), hostPsi.size());
   }
 }
 
