@@ -38,6 +38,8 @@ public:
   void Zero(float* ptr, size_t numFloats) noexcept override;
   /// @copydoc Deep::IComputeBackend::Copy
   void Copy(float* dst, const float* src, size_t numFloats) noexcept override;
+  void Copy2D(float* dst, size_t dstStride, const float* src, size_t srcStride, size_t rows,
+             size_t cols) noexcept override;
   /// @copydoc Deep::IComputeBackend::CopyFromHost
   void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept override;
   /// @copydoc Deep::IComputeBackend::CopyToHost

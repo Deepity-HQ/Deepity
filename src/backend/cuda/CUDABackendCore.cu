@@ -206,6 +206,15 @@ void CUDABackend::Copy(float* dst, const float* src, size_t numFloats) noexcept
     cudaMemcpyAsync(dst, src, numFloats * sizeof(float), cudaMemcpyDefault, stream);
 }
 
+void CUDABackend::Copy2D(float* dst, size_t dstStride, const float* src, size_t srcStride,
+                         size_t rows, size_t cols) noexcept
+{
+  if (!dst || !src || rows == 0 || cols == 0)
+    return;
+  cudaMemcpy2DAsync(dst, dstStride * sizeof(float), src, srcStride * sizeof(float),
+                    cols * sizeof(float), rows, cudaMemcpyDefault, stream);
+}
+
 void CUDABackend::CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept
 {
   if (deviceDst && hostSrc && numFloats > 0)
