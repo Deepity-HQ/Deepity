@@ -59,6 +59,16 @@ public:
   /// @brief Copies `numElements` elements of T from `src` to `dst`, both on
   /// this backend's own device.
   virtual void Copy(T* dst, const T* src, size_t numElements) noexcept = 0;
+  /// @brief Copies a rows x cols block of T, where dst and src may use
+  /// different row strides (e.g. copying into a padded-wider buffer).
+  /// Default: one Copy() call per row; CUDABackend overrides this with a
+  /// single cudaMemcpy2DAsync() instead of one kernel launch per row.
+  virtual void Copy2D(T* dst, size_t dstStride, const T* src, size_t srcStride, size_t rows,
+                      size_t cols) noexcept
+  {
+    for (size_t row = 0; row < rows; ++row)
+      Copy(dst + row * dstStride, src + row * srcStride, cols);
+  }
   /// @brief Copies `numElements` elements of T from a host buffer into a
   /// device buffer.
   virtual void CopyFromHost(T* deviceDst, const T* hostSrc, size_t numElements) noexcept = 0;

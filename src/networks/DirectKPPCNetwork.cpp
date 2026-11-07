@@ -345,8 +345,7 @@ void DirectKPPCNetwork::RefreshPaddedTerminalE() noexcept
   const size_t TS = layers[batchedRunStart]->GetTerminalSize();
   const size_t PS = layers[batchedRunStart]->GetPsiStride();
   const float* terminalE = layers.back()->GetErrors();
-  for (int row = 0; row < batchSize; ++row)
-    backend->Copy(flatTerminalEPadded + (size_t)row * PS, terminalE + (size_t)row * TS, TS);
+  backend->Copy2D(flatTerminalEPadded, PS, terminalE, TS, (size_t)batchSize, TS);
 }
 
 void DirectKPPCNetwork::ProjectForward() noexcept
