@@ -105,9 +105,9 @@ template <typename ArenaT> void SimpleConvPCLayer::BindMemory(ArenaT& arena)
   e = arena.AllocateFloats(ownStateSize);
   dz_dt = arena.AllocateFloats(ownStateSize);
 
-  backend->Zero(z, ownStateSize);
-  backend->Zero(e, ownStateSize);
-  backend->Zero(dz_dt, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), z, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), e, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), dz_dt, ownStateSize);
 
   if (outChannels > 0)
   {
@@ -132,18 +132,18 @@ template <typename ArenaT> void SimpleConvPCLayer::BindMemory(ArenaT& arena)
     muRepacked = arena.AllocateFloats(outStateSize);
     onesVector = arena.AllocateFloats(M);
 
-    backend->Zero(b, outChannels);
-    backend->Zero(mu, outStateSize);
-    backend->Zero(cachedMu, outStateSize);
-    backend->Zero(preact, outStateSize);
-    backend->Zero(cachedPreact, outStateSize);
-    backend->Zero(colBuffer, colSize);
-    backend->Zero(feedbackScratch, colSize);
-    backend->Zero(bottom_up_cols, outStateSize);
-    backend->Zero(colsRepacked, colSize);
-    backend->Zero(lgRepacked, outStateSize);
-    backend->Zero(muRepacked, outStateSize);
-    backend->Fill(onesVector, M, 1.0f);
+    ArenaZero<ArenaT>(backend.get(), b, outChannels);
+    ArenaZero<ArenaT>(backend.get(), mu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedMu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), preact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedPreact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), colBuffer, colSize);
+    ArenaZero<ArenaT>(backend.get(), feedbackScratch, colSize);
+    ArenaZero<ArenaT>(backend.get(), bottom_up_cols, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), colsRepacked, colSize);
+    ArenaZero<ArenaT>(backend.get(), lgRepacked, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), muRepacked, outStateSize);
+    ArenaFill<ArenaT>(backend.get(), onesVector, M, 1.0f);
 
     // Always allocated, see GetRequiredFloats().
     BindAdamState(arena, backend.get(), Wsize, grad_W, m_W, v_W);

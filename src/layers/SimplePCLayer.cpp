@@ -418,9 +418,9 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
   e = arena.AllocateFloats(own_state_size);
   rowEnergies = arena.AllocateFloats(batchSize);
 
-  backend->Zero(z, own_state_size);
-  backend->Zero(e, own_state_size);
-  backend->Zero(rowEnergies, batchSize);
+  ArenaZero<ArenaT>(backend.get(), z, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), e, own_state_size);
+  ArenaZero<ArenaT>(backend.get(), rowEnergies, batchSize);
 
   if (nextSize > 0)
   {
@@ -434,12 +434,12 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
     feedbackScratch = arena.AllocateFloats(own_state_size);
     feedbackDerivScratch = arena.AllocateFloats(own_state_size);
 
-    backend->Zero(b, nextSize);
-    backend->Zero(mu, out_state_size);
-    backend->Zero(cachedMu, out_state_size);
-    backend->Zero(zF, own_state_size);
-    backend->Zero(feedbackScratch, own_state_size);
-    backend->Zero(feedbackDerivScratch, own_state_size);
+    ArenaZero<ArenaT>(backend.get(), b, nextSize);
+    ArenaZero<ArenaT>(backend.get(), mu, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), cachedMu, out_state_size);
+    ArenaZero<ArenaT>(backend.get(), zF, own_state_size);
+    ArenaZero<ArenaT>(backend.get(), feedbackScratch, own_state_size);
+    ArenaZero<ArenaT>(backend.get(), feedbackDerivScratch, own_state_size);
 
     // Always allocated, see GetRequiredFloats().
     BindAdamState(arena, backend.get(), w_size, grad_W, m_W, v_W);

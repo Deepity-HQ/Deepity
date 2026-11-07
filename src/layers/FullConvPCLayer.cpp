@@ -138,10 +138,10 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
   dz_dt = arena.AllocateFloats(ownStateSize);
   rowEnergies = arena.AllocateFloats(batchSize);
 
-  backend->Zero(z, ownStateSize);
-  backend->Zero(e, ownStateSize);
-  backend->Zero(dz_dt, ownStateSize);
-  backend->Zero(rowEnergies, batchSize);
+  ArenaZero<ArenaT>(backend.get(), z, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), e, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), dz_dt, ownStateSize);
+  ArenaZero<ArenaT>(backend.get(), rowEnergies, batchSize);
 
   if (outChannels > 0)
   {
@@ -168,19 +168,19 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     v = arena.AllocateFloats(ownStateSize);
     adjoint = arena.AllocateFloats(ownStateSize);
 
-    backend->Zero(b, outChannels);
-    backend->Zero(mu, outStateSize);
-    backend->Zero(cachedMu, outStateSize);
-    backend->Zero(preact, outStateSize);
-    backend->Zero(cachedPreact, outStateSize);
-    backend->Zero(colBuffer, colSize);
-    backend->Zero(feedbackScratch, colSize);
-    backend->Zero(bottom_up_cols, outStateSize);
-    backend->Zero(colsRepacked, colSize);
-    backend->Zero(lgRepacked, outStateSize);
-    backend->Fill(onesVector, M, 1.0f);
-    backend->Zero(v, ownStateSize);
-    backend->Zero(adjoint, ownStateSize);
+    ArenaZero<ArenaT>(backend.get(), b, outChannels);
+    ArenaZero<ArenaT>(backend.get(), mu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedMu, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), preact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), cachedPreact, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), colBuffer, colSize);
+    ArenaZero<ArenaT>(backend.get(), feedbackScratch, colSize);
+    ArenaZero<ArenaT>(backend.get(), bottom_up_cols, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), colsRepacked, colSize);
+    ArenaZero<ArenaT>(backend.get(), lgRepacked, outStateSize);
+    ArenaFill<ArenaT>(backend.get(), onesVector, M, 1.0f);
+    ArenaZero<ArenaT>(backend.get(), v, ownStateSize);
+    ArenaZero<ArenaT>(backend.get(), adjoint, ownStateSize);
 
     BindAdamState(arena, backend.get(), Wsize, grad_W, m_W, v_W);
     BindAdamState(arena, backend.get(), outChannels, grad_b, m_b, v_b);
@@ -190,9 +190,9 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
     projChannel = arena.AllocateFloats((size_t)batchSize * outChannels);
     proj = arena.AllocateFloats(outStateSize);
 
-    backend->Zero(Psi, Psisize);
-    backend->Zero(projChannel, (size_t)batchSize * outChannels);
-    backend->Zero(proj, outStateSize);
+    ArenaZero<ArenaT>(backend.get(), Psi, Psisize);
+    ArenaZero<ArenaT>(backend.get(), projChannel, (size_t)batchSize * outChannels);
+    ArenaZero<ArenaT>(backend.get(), proj, outStateSize);
 
     BindAdamState(arena, backend.get(), Psisize, grad_Psi, m_Psi, v_Psi);
     BindLearningRateState(arena, backend.get(), tPsi_device, fl_device, fl);
@@ -204,9 +204,9 @@ template <typename ArenaT> void FullConvPCLayer::BindMemory(ArenaT& arena)
       poolArgmax = reinterpret_cast<int*>(arena.AllocateFloats(poolOutStateSize));
       unpoolScratch = arena.AllocateFloats(outStateSize);
 
-      backend->Zero(pooledMu, poolOutStateSize);
-      backend->Zero(reinterpret_cast<float*>(poolArgmax), poolOutStateSize);
-      backend->Zero(unpoolScratch, outStateSize);
+      ArenaZero<ArenaT>(backend.get(), pooledMu, poolOutStateSize);
+      ArenaZero<ArenaT>(backend.get(), reinterpret_cast<float*>(poolArgmax), poolOutStateSize);
+      ArenaZero<ArenaT>(backend.get(), unpoolScratch, outStateSize);
     }
   }
 

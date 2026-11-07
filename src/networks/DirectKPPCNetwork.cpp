@@ -37,8 +37,22 @@ void DirectKPPCNetwork::RandomizeWeights(std::mt19937& rng, const char* distribu
 
 void DirectKPPCNetwork::ResetState() noexcept
 {
-  for (auto& l : layers)
-    l->ResetState();
+  if (!UseBatchedPath())
+  {
+    for (auto& l : layers)
+      l->ResetState();
+    return;
+  }
+
+  layers.front()->ResetState();
+  // Unlike FinalEnergyBatchedRun(), zeroing has no cross-layer
+  // dependency, so all L run layers (including batchedRunStart's own)
+  // go in this one call instead of needing the run's first layer
+  // handled separately.
+  const size_t own = (size_t)batchSize * batchedRunWidth;
+  backend->Zero(flatZ, own * batchedRunCount);
+  for (size_t i = batchedRunStart + batchedRunCount; i < layers.size(); ++i)
+    layers[i]->ResetState();
 }
 
 void DirectKPPCNetwork::Clamp(const std::vector<float>& input)
