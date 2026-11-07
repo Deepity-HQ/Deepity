@@ -200,30 +200,8 @@ void CUDABackend::Zero(float* ptr, size_t numFloats) noexcept
     cudaMemsetAsync(ptr, 0, numFloats * sizeof(float), stream);
 }
 
-namespace
-{
-// TEMP diagnostic (dev/host-to-device investigation, D2D follow-up):
-// direct call/element counts for Copy()/Copy2D(), printed at process
-// exit. Remove before merging.
-struct CopyCallCounters
-{
-  size_t copyEntries = 0;
-  size_t copyElements = 0;
-  size_t copy2DEntries = 0;
-  size_t copy2DElements = 0;
-  ~CopyCallCounters()
-  {
-    std::cerr << "[diag] Copy() entries=" << copyEntries << " elements=" << copyElements
-              << " Copy2D() entries=" << copy2DEntries << " elements=" << copy2DElements << "\n";
-  }
-};
-CopyCallCounters g_copyCounters;
-} // namespace
-
 void CUDABackend::Copy(float* dst, const float* src, size_t numFloats) noexcept
 {
-  ++g_copyCounters.copyEntries;
-  g_copyCounters.copyElements += numFloats;
   if (dst && src && numFloats > 0)
     cudaMemcpyAsync(dst, src, numFloats * sizeof(float), cudaMemcpyDefault, stream);
 }
@@ -231,8 +209,6 @@ void CUDABackend::Copy(float* dst, const float* src, size_t numFloats) noexcept
 void CUDABackend::Copy2D(float* dst, size_t dstStride, const float* src, size_t srcStride,
                          size_t rows, size_t cols) noexcept
 {
-  ++g_copyCounters.copy2DEntries;
-  g_copyCounters.copy2DElements += rows * cols;
   if (!dst || !src || rows == 0 || cols == 0)
     return;
   cudaMemcpy2DAsync(dst, dstStride * sizeof(float), src, srcStride * sizeof(float),

@@ -238,33 +238,11 @@ bool CUDABackend::PrewarmBatchedGemmScratch(size_t batchCount) noexcept
   return GrowBatchedGemmArrays(batchCount);
 }
 
-namespace
-{
-// TEMP diagnostic (dev/host-to-device investigation): direct call counts
-// for MatMulBatched()'s entry and its fast cublasSgemmBatched path (the
-// one issuing 3 cudaMemcpyAsync H2D calls per invocation), to check
-// against nsys's aggregate H2D count without guessing from call-site
-// arithmetic. Printed once at process exit. Remove before merging.
-struct MatMulBatchedCallCounters
-{
-  size_t entries = 0;
-  size_t fastPathCalls = 0;
-  ~MatMulBatchedCallCounters()
-  {
-    std::cerr << "[diag] MatMulBatched() entries=" << entries
-              << " fastPathCalls(3 H2D each)=" << fastPathCalls
-              << " expectedH2D=" << (fastPathCalls * 3) << "\n";
-  }
-};
-MatMulBatchedCallCounters g_matMulBatchedCounters;
-} // namespace
-
 void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, float alpha,
                                 const float* const* A_array, int lda, const float* const* B_array,
                                 int ldb, float beta, float* const* C_array, int ldc,
                                 int batchCount) noexcept
 {
-  ++g_matMulBatchedCounters.entries;
   if (batchCount <= 0)
     return;
   if (batchCount == 1)
@@ -306,7 +284,6 @@ void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, f
   // into pinned host memory first, then cudaMemcpyAsync() on `stream` --
   // plain synchronous cudaMemcpy() (as CopyFromHost() uses) isn't safely
   // capturable inside BeginGraphCapture()/EndGraphCapture().
-  ++g_matMulBatchedCounters.fastPathCalls;
   std::memcpy(batchedGemmHostA, A_array, batchCount * sizeof(const float*));
   std::memcpy(batchedGemmHostB, B_array, batchCount * sizeof(const float*));
   std::memcpy(batchedGemmHostC, C_array, batchCount * sizeof(float*));
