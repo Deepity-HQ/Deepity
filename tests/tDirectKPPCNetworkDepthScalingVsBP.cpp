@@ -271,6 +271,11 @@ int main()
     // 1-settling-step graph, not a stale 5-step one.
     double dkp1 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS_ABLATION); });
 
+    // TEMP: isolate the batched-only profile (dkp5/dkp1), skipping the
+    // deliberately-unbatched and BP baselines -- revert before committing.
+#if 1
+    double unbatched = 0.0, bp = 1.0;
+#else
     // A SEPARATE network, not netBatched with the flag flipped -- see
     // this file's header comment for why that would silently replay
     // the wrong graph.
@@ -289,6 +294,7 @@ int main()
           BPBackwardSequential(backend, s, out.Data());
           backend->Synchronize();
         });
+#endif
 
     dkp5Ms.push_back(dkp5);
     dkp1Ms.push_back(dkp1);
