@@ -52,6 +52,7 @@ def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
     STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 30
+    TERMINAL_FEED_WEIGHT_DECAY = float(sys.argv[4]) if len(sys.argv) > 4 else 2e-4
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
@@ -61,12 +62,12 @@ def main() -> None:
     LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
     # See examples/mnist.py for the full derivation of this stabilizer --
-    # identical value, identical reasoning, GEMM kernel is backend-specific
-    # (cuBLAS here instead of cblas_sgemm/oneDNN/libxsmm) so this may need
-    # its own re-tuning pass once real CUDA runs are available to check.
-    TERMINAL_FEED_WEIGHT_DECAY = 2e-4
+    # identical reasoning, GEMM kernel is backend-specific (cuBLAS here
+    # instead of cblas_sgemm/oneDNN/libxsmm), now a CLI arg (default 2e-4)
+    # for sweeping a CUDA-specific value instead of CPU's tuned one.
 
-    print(f"\nBuilding network (784->512->512->10) on CUDA, seed={SEED}...")
+    print(f"\nBuilding network (784->512->512->10) on CUDA, seed={SEED}, "
+          f"TERMINAL_FEED_WEIGHT_DECAY={TERMINAL_FEED_WEIGHT_DECAY}...")
     net = SimplePCN(
         Linear(784, 512),
         Linear(512, 512),
