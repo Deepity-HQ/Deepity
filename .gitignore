@@ -51,3 +51,7 @@ _skbuild/
 __pycache__/
 *.pyc
 scripts/
+
+# Regenerated every build.py run, not a historical reference like the
+# other hand-named files under logs/.
+logs/build.log
