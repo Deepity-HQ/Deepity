@@ -4,11 +4,11 @@
 
 # Deepity
 
-**A fast C++ / CUDA engine for training neural networks with predictive coding — a brain-inspired alternative to backpropagation — with a simple Python interface.**
+**A fast C++ / CUDA engine for training neural networks with predictive coding, a brain-inspired alternative to backpropagation, with a simple Python interface.**
 
-[Website & Documentation](https://ra4ster.github.io/Deepity) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
+[Website & Documentation](https://ra4ster.github.io/Deepity) • [PyPI](https://pypi.org/project/pydeepity/) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
 
-> **At a glance:** Deepity's `SimplePCN` reaches **98.21%** MNIST test accuracy in **487.5s** on a laptop CPU — faster than the two established predictive-coding libraries, jpc (JAX) and ngc-learn, at matching or better accuracy on an identical setup. Details, and where Deepity does *not* win, are in [Performance & Benchmarks](#performance--benchmarks).
+> **At a glance:** Deepity's `SimplePCN` reaches **98.21%** MNIST test accuracy in **487.5s** on a laptop CPU, faster than the two established predictive-coding libraries, jpc (JAX) and ngc-learn, at matching or better accuracy on an identical setup. On GPU, `DKPPCN`'s batched training path scales with network depth far better than hand-rolled backpropagation: by 2048 layers, backprop runs 2 to 5x slower at matched width and batch size. Details, and where Deepity does *not* win, are in [Performance & Benchmarks](#performance--benchmarks).
 
 ---
 
@@ -30,7 +30,7 @@
 
 Most neural networks today (anything you'd build in PyTorch or TensorFlow) learn with **backpropagation**: the network makes a prediction, measures how wrong it is at the output, and sends that error backward through every layer in one big pass.
 
-**Predictive Coding Networks (PCNs)** learn differently. Each layer learns from a *local* signal — how far its own activity is from what the layer next to it predicted — instead of waiting for one global error to flow back from the output. The idea comes from neuroscience, where it's a leading theory of how the brain learns.
+**Predictive Coding Networks (PCNs)** learn differently. Each layer learns from a *local* signal: how far its own activity is from what the layer next to it predicted, instead of waiting for one global error to flow back from the output. The idea comes from neuroscience, where it's a leading theory of how the brain learns.
 
 Deepity is an engine for building and training these networks quickly:
 
@@ -66,7 +66,8 @@ Deepity implements two ways of turning prediction errors into weight updates:
 
 - **No stored backward graph.** Backpropagation has to keep the entire forward computation in memory until the backward pass runs. In a PCN, each layer's update depends only on its own local prediction error, so Deepity never stores a backward computation graph. *(O(1) memory footprint for the learning signal.)*
 - **No weight-transport requirement.** In backpropagation, each layer's backward pass must use the exact transpose of its forward weights, which is one of the main reasons it's considered biologically implausible. Deepity's local updates don't inherit that constraint, and DKP relaxes it further by *learning* the feedback pathway instead of assuming it.
-- **A good fit for future hardware.** That same locality is why the research literature is interested in predictive coding for neuromorphic and edge hardware. Deepity doesn't have benchmarks on either yet, so treat this as context rather than a claim about this engine.
+- **Scales better with depth on real GPUs.** Backpropagation has to wait for layer L's gradient before it can compute layer L-1's: a strict, sequential chain through every layer. A PCN's layers update from local signals that don't depend on each other, so a batched implementation can update many layers at once instead of one at a time. Measured on an A100: `DKPPCN`'s batched CUDA path trains faster than a hand-rolled backpropagation network of the same depth and width starting around 32 layers, and the gap keeps growing as depth increases. See [Depth scaling](#depth-scaling-dkp-pc-vs-backpropagation-gpu) below.
+- **A good fit for future hardware too.** That same locality is also why the research literature is interested in predictive coding for neuromorphic and edge hardware, where it's a separate, longer-term direction from the GPU result above.
 
 ---
 
@@ -157,7 +158,7 @@ Development and testing for the CUDA backend happens on the Ohio Supercomputer C
 
 MNIST is a standard dataset of handwritten digits (0–9); the task is to classify each image.
 
-The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps/batch, batch size 250, 100 epochs, and AdamW lr=0.00373 with 0.94/epoch decay — identical across the first two columns so the comparison is apples-to-apples.
+The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps/batch, batch size 250, 100 epochs, and AdamW lr=0.00373 with 0.94/epoch decay, identical across the first two columns so the comparison is apples-to-apples.
 
 | | Deepity `SimplePCN` | Deepity `SimplePCN` (CUDA) | jpc (JAX) | jpc (JAX, CUDA) | ngc-learn `pc_discrim` | PyTorch backprop (control) | PyTorch backprop (control, CUDA) |
 |---|---|---|---|---|---|---|---|
@@ -174,6 +175,18 @@ The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps
 
 **The faster option:** `DKPPCN` (784&rarr;512&rarr;10, batch size 1000, only 2 inference steps/batch instead of 20) reaches 95.97% in 49.6s on the same CPU (`python examples/mnist_dkppcn.py 7 50 2 cpu`, `logs/DKPPCN_native_mkl.txt`). That's a different point on the speed/accuracy trade-off curve.
 
+### Depth scaling: DKP-PC vs. backpropagation (GPU)
+
+Backpropagation has an unavoidable bottleneck as networks get deeper: the backward pass is a strict chain, where layer L's gradient has to finish before layer L-1's can even start. DKP-PC's layers update from local signals instead, so a batched GPU implementation can process every layer's update together instead of one at a time.
+
+This is measured directly with a synthetic benchmark: a `DKPPCN` and a hand-rolled backpropagation network of identical depth, width and batch size, trained on the same random data and timed on a single A100 (`tests/tDirectKPPCNetworkDepthScalingVsBP.cpp`, using DKP-PC's recommended single settling step per batch). Below about 32 layers the two run at close to the same speed, since there isn't enough depth yet for the batching advantage to show up. Past that point DKP-PC pulls ahead and keeps pulling ahead: by 2048 layers, the backpropagation network runs 2 to 5x slower, depending on how much of the batched execution path's own optimization is turned on.
+
+<p align="center">
+  <img src="resources/dkp_depth_scaling.png" alt="Training step time vs. network depth on GPU, DKP-PC vs. backpropagation" width="650"/>
+</p>
+
+This is a timing benchmark on matched network shapes, not an accuracy comparison, and the 32-layer crossover point is specific to this benchmark's width and batch size. A narrower network needs more layers to reach the same crossover; a wider one needs fewer.
+
 ### Raw kernel throughput (GFLOPS)
 
 **What this measures:** GFLOPS is billions of floating-point operations per second, a standard measure of how efficiently code uses the processor. Higher means more of the hardware's raw compute is doing useful work.
@@ -185,7 +198,7 @@ python build.py Release OpenBLAS --fast
 ./build/Release/bin/GflopsBenchmark
 ```
 
-**How the FLOPs are counted** (from the file's own header comment): for a layer transitioning $\text{size} \to \text{nextSize}$ at a given $\text{batchSize}$, each settling step runs two matrix multiplications (GEMMs) of matched cost — the forward prediction GEMM and the feedback GEMM — each costing $2 \cdot \text{batchSize} \cdot \text{size} \cdot \text{nextSize}$ FLOPs (one multiply plus one add per multiply-accumulate, the standard convention). `UpdateWeights()` runs a third, equally sized GEMM once per *train step* (not once per settling step) for the weight gradient. Summed over every weighted layer transition:
+**How the FLOPs are counted** (from the file's own header comment): for a layer transitioning $\text{size} \to \text{nextSize}$ at a given $\text{batchSize}$, each settling step runs two matrix multiplications (GEMMs) of matched cost, the forward prediction GEMM and the feedback GEMM, each costing $2 \cdot \text{batchSize} \cdot \text{size} \cdot \text{nextSize}$ FLOPs (one multiply plus one add per multiply-accumulate, the standard convention). `UpdateWeights()` runs a third, equally sized GEMM once per *train step* (not once per settling step) for the weight gradient. Summed over every weighted layer transition:
 
 $$
 \text{FLOPs}_{\text{train-step}} = \sum_{\text{layers}} \text{batchSize} \cdot \text{size} \cdot \text{nextSize} \cdot (4 \cdot \text{numSteps} + 2)
@@ -213,7 +226,7 @@ $$
 
 See `logs/gflops_benchmark.txt` for the raw runs.
 
-The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run — 329 TFLOP total across 100 epochs (24,000 train steps), at 487.5s wall-clock — gives **675 GFLOPS/s** sustained, end to end.
+The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run, 329 TFLOP total across 100 epochs (24,000 train steps) at 487.5s wall-clock, gives **675 GFLOPS/s** sustained, end to end.
 
 ### Activation-kernel speedup
 
@@ -261,7 +274,7 @@ Throughput in millions of elements/second; speedup = Deepity ÷ naive; raw outpu
 
 Tanh, Sigmoid and GELU win at every tested size, with the margin generally growing with size. Tanh's jump at the largest size (131,072) is because `Tanh.h`'s settling loop also crosses an OpenMP threshold (`n > 16384`) at that size, adding multi-core parallelism on top of SIMD width. ReLU sits at 0.88x–1.00x, essentially tied with the naive loop. That's expected: `relu(x) = max(0, x)` is one comparison with no multiply, so it's limited by memory bandwidth rather than compute, and the compiler's own auto-vectorization of a one-line loop already reaches the same ceiling.
 
-_Note: the CUDA (GPU) backend is a separate code path with its own characteristics — TF32-enabled im2col+cuBLAS convolution, and CUDA graph capture for the settling loop — and isn't covered by the CPU numbers above. ImageNet-scale training on it is in active development; see `research/imagenet_pc_vgg7_ce.py`, which supports checkpoint/resume and a command-line-overridable settling-step count for sweeping T._
+_Note: the CUDA (GPU) backend is a separate code path with its own characteristics, including TF32-enabled im2col+cuBLAS convolution and CUDA graph capture for the settling loop, and isn't covered by the CPU numbers above. ImageNet-scale training on it is in active development; see `research/imagenet_pc_vgg7_ce.py`, which supports checkpoint/resume and a command-line-overridable settling-step count for sweeping T._
 
 ---
 
@@ -303,6 +316,7 @@ Deepity started as an academic research project and is now becoming a scalable i
 
 - [x] Fused, optimized CUDA kernels
 - [x] DKP-PC acceleration
+- [x] DKP-PC depth scaling benchmarked directly against backpropagation on GPU, confirming the architecture's local-update design turns into a real, measured training-speed advantage at depth (see [Depth scaling](#depth-scaling-dkp-pc-vs-backpropagation-gpu))
 - [x] ImageNet data loading pipeline (see `research/imagenet.py`)
 - [x] Cross-platform CI/CD (Ubuntu + Windows wheel builds and pyright type checks on every push; see `.github/workflows`)
 - [x] Checkpoint/resume for long training runs: `ModelIO` (safetensors-backed) saves a checkpoint after every epoch, and rerunning the same command resumes from `<prefix>.safetensors` + `<prefix>_meta.json`, carrying over `global_step`, `best_acc` and the data-shuffling RNG state, so the learning-rate schedule and data order pick up exactly where they left off
