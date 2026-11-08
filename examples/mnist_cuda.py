@@ -52,6 +52,7 @@ def main() -> None:
     SEED = int(sys.argv[1]) if len(sys.argv) > 1 else 7
     EPOCHS = int(sys.argv[2]) if len(sys.argv) > 2 else 15
     STEPS = int(sys.argv[3]) if len(sys.argv) > 3 else 30
+    TERMINAL_FEED_WEIGHT_DECAY = float(sys.argv[4]) if len(sys.argv) > 4 else 5e-4
 
     X_train, Y_train, X_test, y_test_labels = load_full_mnist()
 
@@ -60,13 +61,12 @@ def main() -> None:
     DECAY_RATE = 0.94
     LMBDA = 0.0  # Keep at 0.0! Weight decay breaks the PCN's symmetric feedback
 
-    # See examples/mnist.py for the full derivation of this stabilizer --
-    # identical value, identical reasoning, GEMM kernel is backend-specific
-    # (cuBLAS here instead of cblas_sgemm/oneDNN/libxsmm) so this may need
-    # its own re-tuning pass once real CUDA runs are available to check.
-    TERMINAL_FEED_WEIGHT_DECAY = 2e-4
+    # See examples/mnist.py for this stabilizer's derivation. cuBLAS's
+    # own GEMM reduction order needed its own retune: 5e-4 (97.60% peak
+    # acc, 100-epoch OSC A100 sweep) vs CPU's 2e-4/5e-4. 4th CLI arg overrides.
 
-    print(f"\nBuilding network (784->512->512->10) on CUDA, seed={SEED}...")
+    print(f"\nBuilding network (784->512->512->10) on CUDA, seed={SEED}, "
+          f"TERMINAL_FEED_WEIGHT_DECAY={TERMINAL_FEED_WEIGHT_DECAY}...")
     net = SimplePCN(
         Linear(784, 512),
         Linear(512, 512),
@@ -115,6 +115,7 @@ def main() -> None:
         correct = 0
         total = 0
         epoch_energy = 0.0
+        batch_energies = []
 
         for b in range(n_batches):
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
@@ -123,6 +124,7 @@ def main() -> None:
             # 3. Call C++ Native Loop (avoid Nanobind overhead)
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
+            batch_energies.append(energy)
 
             if TERMINAL_FEED_WEIGHT_DECAY > 0.0:
                 terminal_feed_layer = net.layers[-2]
@@ -148,8 +150,11 @@ def main() -> None:
         epoch_acc = 100.0 * correct / total
         epoch_accs.append(epoch_acc)
         avg_energy = epoch_energy / n_batches
+        max_energy = max(batch_energies)
+        max_batch = batch_energies.index(max_energy)
         elapsed = perf_counter() - start_time
-        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | Avg energy: {avg_energy:.4f}")
+        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
+              f"Avg energy: {avg_energy:.4f} | Max energy: {max_energy:.4f} (batch {max_batch}/{n_batches})")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")

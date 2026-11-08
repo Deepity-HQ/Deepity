@@ -138,6 +138,7 @@ def main() -> None:
         correct = 0
         total = 0
         epoch_energy = 0.0
+        batch_energies = []
 
         for b in range(n_batches):
             X_batch = X_shuf[b * BATCH_SIZE:(b + 1) * BATCH_SIZE]
@@ -146,6 +147,7 @@ def main() -> None:
             # 3. Call C++ Native Loop (avoid Nanobind overhead)
             energy = net.train_step_with_projection(X_batch, Y_batch, STEPS)
             epoch_energy += energy
+            batch_energies.append(energy)
 
             if TERMINAL_FEED_WEIGHT_DECAY > 0.0:
                 terminal_feed_layer = net.layers[-2]
@@ -177,8 +179,11 @@ def main() -> None:
         epoch_acc = 100.0 * correct / total
         epoch_accs.append(epoch_acc)
         avg_energy = epoch_energy / n_batches
+        max_energy = max(batch_energies)
+        max_batch = batch_energies.index(max_energy)
         elapsed = perf_counter() - start_time
-        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | Avg energy: {avg_energy:.4f}")
+        print(f"Epoch {epoch+1}/{EPOCHS} | Time: {elapsed:.1f}s | Acc: {epoch_acc:.2f}% | "
+              f"Avg energy: {avg_energy:.4f} | Max energy: {max_energy:.4f} (batch {max_batch}/{n_batches})")
 
     train_time = perf_counter() - start_time
     print(f"\nTraining complete in {train_time:.1f}s.")
