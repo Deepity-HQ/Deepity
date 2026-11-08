@@ -201,8 +201,14 @@ jobs:
         uses: astral-sh/setup-uv@v10.3.2
 
       # Linux/macOS get ccache via pyproject.toml's before-all hooks instead.
+      # continue-on-error: ccache is a pure build-speed optimization --
+      # CMakeLists.txt's find_program(DEEPITY_CCACHE_PROGRAM ccache) no-ops
+      # if it's missing -- so a flaky choco/GitHub-CDN download (seen: 504
+      # Gateway Timeout fetching the release zip) shouldn't fail the whole
+      # release pipeline over it.
       - name: Install ccache (Windows)
         if: matrix.os == 'windows-latest'
+        continue-on-error: true
         run: choco install ccache -y --no-progress
 
       # Keyed on oneDNN's pinned version; bump the suffix if that changes.
@@ -280,8 +286,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.2
 
+      # continue-on-error: see build-wheels' identical step for why.
       - name: Install ccache (Windows)
         if: matrix.os == 'windows-latest'
+        continue-on-error: true
         run: choco install ccache -y --no-progress
 
       - name: Restore ccache compiler cache
