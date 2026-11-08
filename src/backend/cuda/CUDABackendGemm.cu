@@ -593,14 +593,6 @@ void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, f
                                                 batchedGemmDeviceC, alpha, beta, batchCount, stream,
                                                 groupedWorkspace, groupedWorkspaceBytes);
   }
-  // TEMPORARY diagnostic -- confirms which path actually ran, since
-  // DirectKPBatchedGPUVerify's correctness check can't tell the two
-  // apart (cuBLAS is correct too, so a silent fallback would still
-  // pass). Remove once the CUTLASS path's real performance effect is
-  // confirmed either way.
-  std::cerr << "MatMulBatched: " << (cutlassOk ? "CUTLASS GemmGrouped" : "cublasSgemmBatched")
-            << " M=" << M << " N=" << N << " K=" << K << " batchCount=" << batchCount
-            << " transA=" << transA << " transB=" << transB << "\n";
   if (cutlassOk)
     return;
 

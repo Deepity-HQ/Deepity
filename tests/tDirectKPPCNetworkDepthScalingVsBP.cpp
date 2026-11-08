@@ -82,10 +82,16 @@ constexpr int SETTLING_STEPS = 5;
 // cost already includes work (ProjectForward/DFA/5x settling/
 // UpdateWeights) BP has no equivalent of.
 constexpr int SETTLING_STEPS_ABLATION = 1;
-// Capped at 2048 for now -- 4096 OOM-killed (SLURM/cgroup kill, not a CUDA
-// allocation failure) on the CUTLASS-Grouped-GEMM-enabled build; revisit
-// once that's understood. Ran cleanly through 8192 before that change.
-constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048};
+// Narrowed to 3 points for a second NVTX profiling pass, now with CUTLASS
+// Grouped GEMM active: one well before the dkp1/bp knee (32), one at it
+// (128), one deep past it (2048) -- same methodology as the first pass
+// that found cublasSgemmBatched's per-item kernel decomposition. This
+// time checking whether CUTLASS's single real kernel launch still shows
+// Total GPU Ops scaling with depth (expected: no, it's genuinely one
+// launch) while that one kernel's own duration scales with depth instead
+// (the throughput-bound hypothesis -- see MatMulBatched's own comment).
+// Restore the full sweep before merging.
+constexpr int DEPTHS[] = {32, 128, 2048};
 constexpr int N_DEPTHS = sizeof(DEPTHS) / sizeof(DEPTHS[0]);
 
 std::vector<float> RandomVec(size_t n, std::mt19937& rng)
