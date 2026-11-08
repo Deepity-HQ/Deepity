@@ -70,7 +70,11 @@ constexpr int SETTLING_STEPS = 5;
 // cost already includes work (ProjectForward/DFA/5x settling/
 // UpdateWeights) BP has no equivalent of.
 constexpr int SETTLING_STEPS_ABLATION = 1;
-constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048, 4096, 8192};
+// Temporarily narrowed to 3 points for GPU occupancy profiling: one well
+// before the dkp1/bp slope knee (32), one right at it (128), and one
+// deep in the post-knee linear region (2048). Restore the full sweep
+// before merging.
+constexpr int DEPTHS[] = {32, 128, 2048};
 constexpr int N_DEPTHS = sizeof(DEPTHS) / sizeof(DEPTHS[0]);
 
 std::vector<float> RandomVec(size_t n, std::mt19937& rng)
