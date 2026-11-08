@@ -329,10 +329,18 @@ bool RunGemmGrouped(int* problemSizesRaw, int64_t* lda, int64_t* ldb, int64_t* l
   typename Op::EpilogueOutputOp::Params epilogueParams(alpha, beta);
   constexpr int kThreadblockCountEstimate = 512;
 
-  typename Op::Arguments args(
-      problemSizes, batchCount, kThreadblockCountEstimate, epilogueParams,
-      const_cast<float* const*>(A_array), const_cast<float* const*>(B_array),
-      const_cast<float* const*>(C_array), const_cast<float* const*>(C_array), lda, ldb, ldc, ldc);
+  // CUTLASS's Arguments wants plain T** (no const anywhere in the outer
+  // pointers) for every operand, A/B included, even though it only
+  // reads through ptr_A/ptr_B -- the same type is reused symmetrically
+  // for C/D, which genuinely get written. const_cast removes const at
+  // every level here (A_array/B_array/C_array are T* const*/const T*
+  // const*), not just the outer one; that's well-formed (only ever
+  // removing cv-qualification, never adding or mismatching it).
+  typename Op::Arguments args(problemSizes, batchCount, kThreadblockCountEstimate, epilogueParams,
+                              const_cast<float**>(A_array), const_cast<float**>(B_array),
+                              const_cast<float**>(C_array), const_cast<float**>(C_array), lda, ldb,
+                              ldc, ldc,
+                              nullptr); // host_problem_sizes: unused under kDeviceOnly schedule.
 
   Op gemmOp;
   size_t neededBytes = Op::get_workspace_size(args);
