@@ -102,7 +102,18 @@ test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file_
 # (AlmaLinux 8 based) ship GCC 12+, which is required here.
 manylinux-x86_64-image = "manylinux_2_28"
 # ccache isn't in AlmaLinux 8's base repos, only EPEL.
-before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache"
+#
+# CUDA toolkit: installed from NVIDIA's own RHEL8 rpm repo (manylinux_2_28
+# is AlmaLinux 8, which that repo targets directly). Using the
+# `cuda-toolkit-12-6` meta-package rather than hand-picking sub-packages
+# (cuda-nvcc-*, libcublas-devel-*, ...) -- this mirror's cuBLAS packages
+# don't follow the libcublas-devel-<ver> naming the other components do
+# (confirmed: no libcublas-devel-12-6 exists there at all), so the
+# meta-package's own dependency resolution is more reliable than guessing
+# names. `nvcc --version` at the end turns a broken install into a loud
+# CI failure here instead of a silent CPU-only fallback later.
+before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache && dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo && dnf install -y cuda-toolkit-12-6 && ln -sf /usr/local/cuda-12.6 /usr/local/cuda && /usr/local/cuda/bin/nvcc --version"
+environment = { PATH = "/usr/local/cuda/bin:$PATH", CUDAToolkit_ROOT = "/usr/local/cuda" }
 
 [tool.cibuildwheel.macos]
 # Not exercised by CI (arm64 runners, but DEEPITY_ARCH_FLAGS is x86-only).
