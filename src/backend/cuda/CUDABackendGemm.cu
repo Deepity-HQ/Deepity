@@ -46,6 +46,9 @@
 #include <cutlass/epilogue/thread/linear_combination_generic.h>
 #include <cutlass/epilogue/thread/linear_combination_sigmoid.h>
 #include <cutlass/gemm/device/gemm.h>
+#include <cutlass/gemm/device/gemm_grouped.h>
+#include <cutlass/gemm/kernel/default_gemm_grouped.h>
+#include <cutlass/gemm/kernel/gemm_grouped.h>
 
 namespace Deep
 {
@@ -160,6 +163,194 @@ using GemmFwdSigmoidScalar = cutlass::gemm::device::Gemm<
     cutlass::gemm::GemmShape<16, 8, 8>,
     cutlass::epilogue::thread::LinearCombinationSigmoid<float, 1, float, float>,
     cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>, 4>;
+
+// --- Grouped GEMM: MatMulBatched()'s CUTLASS fast path -----------------
+//
+// cublasSgemmBatched() (below) decomposes into roughly one GPU kernel
+// instance per batch item -- confirmed via nsys (depth-scaling benchmark's
+// "Total GPU Ops" scales ~linearly with depth while per-op time stays
+// flat, ~20-23us regardless of depth). So its CPU-side dispatch is O(1)
+// (one cudaGraphLaunch() per step once graph-captured) but GPU-side
+// EXECUTION still pays one kernel-launch's worth of fixed overhead per
+// layer, which is why wall-clock time still trends toward O(depth) once
+// depth is large enough for that per-item overhead to dominate.
+// CUTLASS's Grouped GEMM genuinely fuses the whole batch into one kernel
+// launch (the batch/group dimension lives inside the kernel's own grid),
+// so GPU-side execution, not just CPU-side dispatch, becomes O(1) in the
+// item count.
+//
+// Same (RowMajor, ColumnMajor)-means-(not transposed, transposed) mapping
+// as GemmFwdLinear/GemmFwdRelu/etc. above: a [r,c] row-major buffer and a
+// [c,r] column-major buffer over the same bytes/stride are identical, so
+// "transpose this operand" is exactly "flip its Layout tag", independent
+// of the other operand. Only the three (transA,transB) combinations
+// DirectKPPCNetwork.cpp's batched calls actually use are instantiated;
+// (true,true) isn't needed today and falls back to the small-dim path
+// below rather than add a fourth untested instantiation.
+template <typename LayoutA, typename LayoutB>
+using GemmGroupedKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
+    float, LayoutA, cutlass::ComplexTransform::kNone, 1, float, LayoutB,
+    cutlass::ComplexTransform::kNone, 1, float, cutlass::layout::RowMajor, float,
+    cutlass::arch::OpClassTensorOp, cutlass::arch::Sm80, cutlass::gemm::GemmShape<128, 128, 16>,
+    cutlass::gemm::GemmShape<64, 64, 16>, cutlass::gemm::GemmShape<16, 8, 8>,
+    cutlass::epilogue::thread::LinearCombination<float, 128 / cutlass::sizeof_bits<float>::value,
+                                                  float, float>,
+    cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>, 4,
+    cutlass::gemm::kernel::GroupScheduleMode::kDeviceOnly>::GemmKernel;
+
+template <typename LayoutA, typename LayoutB>
+using GemmGroupedOp = cutlass::gemm::device::GemmGrouped<GemmGroupedKernel<LayoutA, LayoutB>>;
+
+// A not transposed, B transposed -- the only combo DirectKPPCNetwork.cpp
+// currently uses twice (lines 111/175 as of this writing).
+using GemmGroupedNT = GemmGroupedOp<cutlass::layout::RowMajor, cutlass::layout::ColumnMajor>;
+// A transposed, B not.
+using GemmGroupedTN = GemmGroupedOp<cutlass::layout::ColumnMajor, cutlass::layout::RowMajor>;
+// Neither transposed.
+using GemmGroupedNN = GemmGroupedOp<cutlass::layout::RowMajor, cutlass::layout::RowMajor>;
+
+static_assert(sizeof(cutlass::gemm::GemmCoord) == 3 * sizeof(int),
+              "cutlass::gemm::GemmCoord's layout changed -- "
+              "CUDABackend::GrowGroupedGemmMetadata's int* reinterpret_cast to "
+              "GemmCoord* (chosen so CUDABackend.h doesn't need to include CUTLASS) "
+              "is no longer safe; store a real GemmCoord* there instead.");
+
+namespace
+{
+// Fills the per-item problem-size/leading-dimension arrays GemmGrouped
+// needs. Every item shares the same (M,N,K,lda,ldb,ldc) in this engine's
+// usage (MatMulBatched's own contract -- a uniform-width batched run), so
+// this is only ever called once per distinct shape, not once per
+// TrainStep(); see GrowGroupedGemmMetadata's own caching.
+__global__ void FillGroupedGemmMetadataKernel(int* problemSizes, int64_t* lda, int64_t* ldb,
+                                               int64_t* ldc, int M, int N, int K, int64_t ldaVal,
+                                               int64_t ldbVal, int64_t ldcVal, size_t batchCount)
+{
+  size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= batchCount)
+    return;
+  problemSizes[i * 3 + 0] = M;
+  problemSizes[i * 3 + 1] = N;
+  problemSizes[i * 3 + 2] = K;
+  lda[i] = ldaVal;
+  ldb[i] = ldbVal;
+  ldc[i] = ldcVal;
+}
+} // namespace
+
+bool CUDABackend::GrowGroupedGemmMetadata(size_t batchCount, int M, int N, int K, int64_t lda,
+                                           int64_t ldb, int64_t ldc) noexcept
+{
+  if (groupedMetaCapacity >= batchCount && cachedGroupedM == M && cachedGroupedN == N &&
+      cachedGroupedK == K && cachedGroupedLda == lda && cachedGroupedLdb == ldb &&
+      cachedGroupedLdc == ldc && cachedGroupedBatchCount == batchCount)
+    return true; // Shape unchanged since the last call -- nothing to refill.
+
+  if (groupedMetaCapacity < batchCount)
+  {
+    if (groupedProblemSizes)
+      cudaFree(groupedProblemSizes);
+    if (groupedLda)
+      cudaFree(groupedLda);
+    if (groupedLdb)
+      cudaFree(groupedLdb);
+    if (groupedLdc)
+      cudaFree(groupedLdc);
+    groupedProblemSizes = nullptr;
+    groupedLda = groupedLdb = groupedLdc = nullptr;
+    groupedMetaCapacity = 0;
+
+    bool ok = cudaMalloc(&groupedProblemSizes, batchCount * 3 * sizeof(int)) == cudaSuccess;
+    ok = ok && cudaMalloc(&groupedLda, batchCount * sizeof(int64_t)) == cudaSuccess;
+    ok = ok && cudaMalloc(&groupedLdb, batchCount * sizeof(int64_t)) == cudaSuccess;
+    ok = ok && cudaMalloc(&groupedLdc, batchCount * sizeof(int64_t)) == cudaSuccess;
+    if (!ok)
+    {
+      if (groupedProblemSizes)
+        cudaFree(groupedProblemSizes);
+      if (groupedLda)
+        cudaFree(groupedLda);
+      if (groupedLdb)
+        cudaFree(groupedLdb);
+      if (groupedLdc)
+        cudaFree(groupedLdc);
+      groupedProblemSizes = nullptr;
+      groupedLda = groupedLdb = groupedLdc = nullptr;
+      return false;
+    }
+    groupedMetaCapacity = batchCount;
+  }
+
+  // CUTLASS wants each operand's physical row stride regardless of its
+  // Layout tag -- exactly the caller's own lda/ldb/ldc (which may be
+  // padded wider than the bare M/N/K, e.g. DirectKPPCNetwork's
+  // psiStride padding -- see that class's own comment), not something
+  // to recompute from M/N/K here. No swap needed, unlike cuBLAS's
+  // column-major-only M<->N<->lda<->ldb dance.
+  const int threads = 256;
+  const int blocks = (int)((batchCount + threads - 1) / threads);
+  FillGroupedGemmMetadataKernel<<<blocks, threads, 0, stream>>>(
+      groupedProblemSizes, groupedLda, groupedLdb, groupedLdc, M, N, K, lda, ldb, ldc, batchCount);
+
+  cachedGroupedM = M;
+  cachedGroupedN = N;
+  cachedGroupedK = K;
+  cachedGroupedLda = lda;
+  cachedGroupedLdb = ldb;
+  cachedGroupedLdc = ldc;
+  cachedGroupedBatchCount = batchCount;
+  return true;
+}
+
+// Builds Arguments, grows groupedWorkspace if needed, and runs the
+// grouped GEMM on `stream`. Returns false on any failure so the caller
+// falls back to cublasSgemmBatched() rather than silently skip the
+// multiply.
+//
+// @note threadblockCount is a scheduling hint for the device-side
+// ProblemVisitor (how many threadblocks' worth of tile-assignment slots
+// to launch), not a correctness parameter -- too low under-utilizes the
+// GPU, too high just wastes a few idle threadblocks that exit
+// immediately once no tiles remain. CUTLASS's own grouped_gemm example
+// computes this from a precomputed host-side problem list via
+// Op::sufficient(); every item here shares one shape, so this uses a
+// flat occupancy-based estimate instead (threadblocks-per-SM for this
+// tile config, times a generous SM-count upper bound) rather than add a
+// host-side array just to call sufficient(). Unverified until profiled
+// on real hardware -- see this function's caller for the fallback this
+// exists to make safe if the estimate is wrong.
+template <typename Op>
+bool RunGemmGrouped(int* problemSizesRaw, int64_t* lda, int64_t* ldb, int64_t* ldc,
+                    const float* const* A_array, const float* const* B_array,
+                    float* const* C_array, float alpha, float beta, int batchCount,
+                    cudaStream_t stream, uint8_t*& workspace, size_t& workspaceBytes) noexcept
+{
+  auto* problemSizes = reinterpret_cast<cutlass::gemm::GemmCoord*>(problemSizesRaw);
+  typename Op::EpilogueOutputOp::Params epilogueParams(alpha, beta);
+  constexpr int kThreadblockCountEstimate = 512;
+
+  typename Op::Arguments args(
+      problemSizes, batchCount, kThreadblockCountEstimate, epilogueParams,
+      const_cast<float* const*>(A_array), const_cast<float* const*>(B_array),
+      const_cast<float* const*>(C_array), const_cast<float* const*>(C_array), lda, ldb, ldc, ldc);
+
+  Op gemmOp;
+  size_t neededBytes = Op::get_workspace_size(args);
+  if (neededBytes > workspaceBytes)
+  {
+    if (workspace)
+      cudaFree(workspace);
+    workspace = nullptr;
+    workspaceBytes = 0;
+    if (neededBytes > 0 && cudaMalloc(&workspace, neededBytes) != cudaSuccess)
+      return false;
+    workspaceBytes = neededBytes;
+  }
+
+  if (gemmOp.initialize(args, workspace, stream) != cutlass::Status::kSuccess)
+    return false;
+  return gemmOp(stream) == cutlass::Status::kSuccess;
+}
 
 void CUDABackend::MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A,
                          int lda, const float* B, int ldb, float beta, float* C, int ldc) noexcept
@@ -293,6 +484,37 @@ void CUDABackend::MatMulBatched(bool transA, bool transB, int M, int N, int K, f
                  cudaMemcpyHostToDevice, stream);
   cudaMemcpyAsync(batchedGemmDeviceC, batchedGemmHostC, batchCount * sizeof(float*),
                  cudaMemcpyHostToDevice, stream);
+
+  // Try CUTLASS's Grouped GEMM first -- genuinely fuses the whole batch
+  // into one GPU-side kernel launch, unlike cublasSgemmBatched() below
+  // (see this file's own comment on GemmGroupedOp for why that matters).
+  // Only the three (transA,transB) combos actually used today are
+  // instantiated; (true,true) and any CUTLASS-side failure (e.g. a
+  // workspace allocation failure, or an unsupported shape this first
+  // attempt didn't anticipate) fall through to the cuBLAS path below
+  // rather than skip the multiply -- unverified against real hardware
+  // yet, so this fallback is load-bearing, not defensive boilerplate.
+  bool cutlassOk = false;
+  if (GrowGroupedGemmMetadata(static_cast<size_t>(batchCount), M, N, K, lda, ldb, ldc))
+  {
+    if (!transA && transB)
+      cutlassOk = RunGemmGrouped<GemmGroupedNT>(groupedProblemSizes, groupedLda, groupedLdb,
+                                                groupedLdc, batchedGemmDeviceA, batchedGemmDeviceB,
+                                                batchedGemmDeviceC, alpha, beta, batchCount, stream,
+                                                groupedWorkspace, groupedWorkspaceBytes);
+    else if (transA && !transB)
+      cutlassOk = RunGemmGrouped<GemmGroupedTN>(groupedProblemSizes, groupedLda, groupedLdb,
+                                                groupedLdc, batchedGemmDeviceA, batchedGemmDeviceB,
+                                                batchedGemmDeviceC, alpha, beta, batchCount, stream,
+                                                groupedWorkspace, groupedWorkspaceBytes);
+    else if (!transA && !transB)
+      cutlassOk = RunGemmGrouped<GemmGroupedNN>(groupedProblemSizes, groupedLda, groupedLdb,
+                                                groupedLdc, batchedGemmDeviceA, batchedGemmDeviceB,
+                                                batchedGemmDeviceC, alpha, beta, batchCount, stream,
+                                                groupedWorkspace, groupedWorkspaceBytes);
+  }
+  if (cutlassOk)
+    return;
 
   // Same row-major -> column-major swap as the plain MatMul() above.
   cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;

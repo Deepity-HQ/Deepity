@@ -375,5 +375,44 @@ private:
   /// All-or-nothing: on any allocation failure, frees everything and
   /// returns false rather than leave a partially-grown, mismatched set.
   bool GrowBatchedGemmArrays(size_t batchCount) noexcept;
+
+  /// @brief Device-resident problem-size/stride metadata for
+  /// MatMulBatched()'s CUTLASS GemmGrouped dispatch path, used once
+  /// M/N/K clear kMinSafeDim (see CUDABackendGemm.cu's own comment):
+  /// cublasSgemmBatched() decomposes into roughly one GPU kernel
+  /// instance per batch item internally, so its wall-clock time still
+  /// scales with batchCount even though CPU-side dispatch is O(1) --
+  /// confirmed via nsys (Total GPU Ops scaling ~linearly with depth,
+  /// per-op time staying flat). CUTLASS's Grouped GEMM genuinely fuses
+  /// the whole batch into one kernel launch instead. Stored as raw
+  /// int/int64 arrays, not cutlass::gemm::GemmCoord*, so this header
+  /// doesn't need to include CUTLASS -- CUDABackendGemm.cu
+  /// reinterpret_casts groupedProblemSizes to GemmCoord*, guarded by a
+  /// static_assert on GemmCoord's layout there. Unlike
+  /// batchedGemmDeviceA/B/C (which may legitimately point to new
+  /// buffers every call), these depend only on shape, which is
+  /// constant for a given network's whole CUDA-graph-captured
+  /// lifetime -- so they're only refilled when (M,N,K,lda,ldb,ldc,
+  /// batchCount) changes from the cached values, not every call.
+  int* groupedProblemSizes = nullptr;
+  int64_t* groupedLda = nullptr;
+  int64_t* groupedLdb = nullptr;
+  int64_t* groupedLdc = nullptr;
+  size_t groupedMetaCapacity = 0;
+  int cachedGroupedM = -1, cachedGroupedN = -1, cachedGroupedK = -1;
+  int64_t cachedGroupedLda = -1, cachedGroupedLdb = -1, cachedGroupedLdc = -1;
+  size_t cachedGroupedBatchCount = 0;
+  /// @brief CUTLASS GemmGrouped's own required scratch (tile-scheduling
+  /// metadata), sized via GemmGroupedOp::get_workspace_size(). Grown
+  /// lazily like everything else above.
+  uint8_t* groupedWorkspace = nullptr;
+  size_t groupedWorkspaceBytes = 0;
+
+  /// @brief Grows/refills the grouped-GEMM metadata arrays above for
+  /// the given shape, if (M,N,K,lda,ldb,ldc,batchCount) differs from
+  /// the cached values. Returns false (leaving the cache untouched) on
+  /// any allocation failure, so the caller can fall back safely.
+  bool GrowGroupedGemmMetadata(size_t batchCount, int M, int N, int K, int64_t lda, int64_t ldb,
+                                int64_t ldc) noexcept;
 };
 } // namespace Deep
