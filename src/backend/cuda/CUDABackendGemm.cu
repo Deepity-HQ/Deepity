@@ -248,32 +248,48 @@ bool CUDABackend::GrowGroupedGemmMetadata(size_t batchCount, int M, int N, int K
 
   if (groupedMetaCapacity < batchCount)
   {
+    // cudaMallocAsync/cudaFreeAsync, not cudaMalloc/cudaFree: this
+    // growth can happen on a network's very first TrainStep(), which
+    // DirectKPPCNetwork::TrainStep() (and siblings) run entirely inside
+    // BeginGraphCapture()/EndGraphCapture() with no warm-up call first
+    // -- see that file's own comment on PrewarmBatchedGemmScratch()
+    // explaining why cublasSgemmBatched's analogous scratch growth
+    // needs an explicit prewarm call to dodge this. The stream-ordered
+    // allocator exists specifically to make that workaround
+    // unnecessary: unlike plain cudaMalloc/cudaFree, it's capturable,
+    // so no prewarm plumbing is needed here. (Freeing Async-allocated
+    // memory with plain cudaFree(), as this file's destructor cleanup
+    // does, remains legal -- only the reverse pairing isn't.)
     if (groupedProblemSizes)
-      cudaFree(groupedProblemSizes);
+      cudaFreeAsync(groupedProblemSizes, stream);
     if (groupedLda)
-      cudaFree(groupedLda);
+      cudaFreeAsync(groupedLda, stream);
     if (groupedLdb)
-      cudaFree(groupedLdb);
+      cudaFreeAsync(groupedLdb, stream);
     if (groupedLdc)
-      cudaFree(groupedLdc);
+      cudaFreeAsync(groupedLdc, stream);
     groupedProblemSizes = nullptr;
     groupedLda = groupedLdb = groupedLdc = nullptr;
     groupedMetaCapacity = 0;
 
-    bool ok = cudaMalloc(&groupedProblemSizes, batchCount * 3 * sizeof(int)) == cudaSuccess;
-    ok = ok && cudaMalloc(&groupedLda, batchCount * sizeof(int64_t)) == cudaSuccess;
-    ok = ok && cudaMalloc(&groupedLdb, batchCount * sizeof(int64_t)) == cudaSuccess;
-    ok = ok && cudaMalloc(&groupedLdc, batchCount * sizeof(int64_t)) == cudaSuccess;
+    bool ok = cudaMallocAsync(&groupedProblemSizes, batchCount * 3 * sizeof(int), stream) ==
+              cudaSuccess;
+    ok = ok &&
+         cudaMallocAsync(&groupedLda, batchCount * sizeof(int64_t), stream) == cudaSuccess;
+    ok = ok &&
+         cudaMallocAsync(&groupedLdb, batchCount * sizeof(int64_t), stream) == cudaSuccess;
+    ok = ok &&
+         cudaMallocAsync(&groupedLdc, batchCount * sizeof(int64_t), stream) == cudaSuccess;
     if (!ok)
     {
       if (groupedProblemSizes)
-        cudaFree(groupedProblemSizes);
+        cudaFreeAsync(groupedProblemSizes, stream);
       if (groupedLda)
-        cudaFree(groupedLda);
+        cudaFreeAsync(groupedLda, stream);
       if (groupedLdb)
-        cudaFree(groupedLdb);
+        cudaFreeAsync(groupedLdb, stream);
       if (groupedLdc)
-        cudaFree(groupedLdc);
+        cudaFreeAsync(groupedLdc, stream);
       groupedProblemSizes = nullptr;
       groupedLda = groupedLdb = groupedLdc = nullptr;
       return false;
@@ -346,11 +362,14 @@ bool RunGemmGrouped(int* problemSizesRaw, int64_t* lda, int64_t* ldb, int64_t* l
   size_t neededBytes = Op::get_workspace_size(args);
   if (neededBytes > workspaceBytes)
   {
+    // cudaMallocAsync/cudaFreeAsync -- see GrowGroupedGemmMetadata's own
+    // comment; this growth is just as likely to land on an uncaptured
+    // first TrainStep() call.
     if (workspace)
-      cudaFree(workspace);
+      cudaFreeAsync(workspace, stream);
     workspace = nullptr;
     workspaceBytes = 0;
-    if (neededBytes > 0 && cudaMalloc(&workspace, neededBytes) != cudaSuccess)
+    if (neededBytes > 0 && cudaMallocAsync(&workspace, neededBytes, stream) != cudaSuccess)
       return false;
     workspaceBytes = neededBytes;
   }
