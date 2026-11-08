@@ -796,6 +796,29 @@ void DirectKPPCNetwork::Compile()
       // call's graph capture.
       backend->PrewarmBatchedGemmScratch(L);
 
+      // Same reasoning, for MatMulBatched()'s own CUTLASS Grouped GEMM
+      // fast path: its per-item problem-size array and solver workspace
+      // are sized by (M,N,K,lda,ldb,ldc), not just batchCount, so every
+      // distinct shape used below needs its own prewarm call -- one per
+      // (transA,transB,M,N,K,lda,ldb,ldc) combination actually passed to
+      // MatMulBatched() in this file (ComputeMuBatchedRun(),
+      // DirectFeedbackUpdateBatchedRun(), StepBatchedRunUpdateState(),
+      // UpdateWeightsBatchedRun() -- grep MatMulBatched( to recheck if
+      // any of those are ever changed). batchCount uses L (not M=L-1,
+      // which some of these sites actually pass) since prewarming for
+      // the larger count is always sufficient and keeps this list
+      // shape-only, not also per-batchCount.
+      backend->PrewarmGroupedGemmScratch(false, true, (int)B, (int)H, (int)H, (int64_t)H,
+                                         (int64_t)H, (int64_t)H, L);
+      backend->PrewarmGroupedGemmScratch(false, true, (int)B, (int)H, (int)psiStride,
+                                         (int64_t)psiStride, (int64_t)psiStride, (int64_t)H, L);
+      backend->PrewarmGroupedGemmScratch(true, false, (int)H, (int)H, (int)B, (int64_t)H,
+                                         (int64_t)H, (int64_t)H, L);
+      backend->PrewarmGroupedGemmScratch(false, false, (int)B, (int)H, (int)H, (int64_t)H,
+                                         (int64_t)H, (int64_t)H, L);
+      backend->PrewarmGroupedGemmScratch(true, false, (int)H, (int)psiStride, (int)B, (int64_t)H,
+                                         (int64_t)psiStride, (int64_t)psiStride, L);
+
       flatZ = gpuArena->AllocateFloats(own * L);
       flatE = gpuArena->AllocateFloats(own * L);
       flatW = gpuArena->AllocateFloats(w * L);

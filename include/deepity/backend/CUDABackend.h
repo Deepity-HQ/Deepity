@@ -86,6 +86,10 @@ public:
   /// @copydoc Deep::IComputeBackend::PrewarmBatchedGemmScratch
   bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept override;
 
+  /// @copydoc Deep::IComputeBackend::PrewarmGroupedGemmScratch
+  bool PrewarmGroupedGemmScratch(bool transA, bool transB, int M, int N, int K, int64_t lda,
+                                 int64_t ldb, int64_t ldc, size_t batchCount) noexcept override;
+
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;

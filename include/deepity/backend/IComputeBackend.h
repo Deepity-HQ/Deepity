@@ -109,6 +109,19 @@ public:
   /// fall back, same as if this were never called.
   virtual bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept = 0;
 
+  /// @brief Call once per distinct MatMulBatched() shape a network will
+  /// ever use, before that network's first BeginGraphCapture() -- same
+  /// capture-safety reasoning as PrewarmBatchedGemmScratch() just above,
+  /// for a backend whose batched fast path needs its OWN separate
+  /// device-side metadata/workspace scratch sized up front (e.g. a
+  /// Grouped GEMM's per-item problem-size array and solver workspace,
+  /// which depend on the shape (M,N,K,lda,ldb,ldc), not just batchCount).
+  /// No-op (returns true) on a backend with no such scratch.
+  /// @return false if the backend needed to grow and couldn't.
+  virtual bool PrewarmGroupedGemmScratch(bool transA, bool transB, int M, int N, int K,
+                                         int64_t lda, int64_t ldb, int64_t ldc,
+                                         size_t batchCount) noexcept = 0;
+
   // GEMM
 
   /// @brief C = alpha * op(A) * op(B) + beta * C, the standard BLAS

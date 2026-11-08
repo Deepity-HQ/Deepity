@@ -51,6 +51,11 @@ public:
   void Synchronize() noexcept override {}
   void PrepareForBatchSize(size_t) noexcept override {}
   bool PrewarmBatchedGemmScratch(size_t) noexcept override { return true; }
+  bool PrewarmGroupedGemmScratch(bool, bool, int, int, int, int64_t, int64_t, int64_t,
+                                 size_t) noexcept override
+  {
+    return true;
+  }
   void SetAllowTF32(bool) noexcept override {}
 
   T* Allocate(size_t numElements) override;
