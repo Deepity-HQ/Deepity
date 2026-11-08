@@ -77,6 +77,12 @@ public:
                         int ldc) noexcept override;
 
   void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept override;
+  void SumRowsBatched(T* dst, const T* src, size_t batchSize, size_t width,
+                      size_t numLayers) noexcept override
+  {
+    for (size_t l = 0; l < numLayers; ++l)
+      SumRows(dst + l * width, src + l * batchSize * width, batchSize, width);
+  }
   void SumRowsAccum(AccumT* dst, const T* src, size_t batchSize, size_t width) noexcept override;
   AccumT Sum(const T* buf, size_t n) noexcept override;
 
@@ -85,6 +91,12 @@ public:
   void AxpyIntoAccum(AccumT* y, const T* x, size_t n, AccumT alpha) noexcept override;
   void AxpyIntoFromAccum(T* y, const AccumT* x, size_t n, AccumT alpha) noexcept override;
   void AddBiasBroadcast(T* buf, const T* bias, size_t batchSize, size_t width) noexcept override;
+  void AddBiasBroadcastBatched(T* buf, const T* bias, size_t batchSize, size_t width,
+                               size_t numLayers) noexcept override
+  {
+    for (size_t l = 0; l < numLayers; ++l)
+      AddBiasBroadcast(buf + l * batchSize * width, bias + l * width, batchSize, width);
+  }
 
   bool TryFusedMatMulBias(bool, bool, int, int, int, const T*, int, const T*, int, const T*, T*,
                           int) noexcept override

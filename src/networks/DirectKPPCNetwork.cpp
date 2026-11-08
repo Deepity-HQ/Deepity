@@ -111,8 +111,7 @@ void DirectKPPCNetwork::ComputeMuBatchedRun() noexcept
   backend->MatMulBatched(false, true, (int)batchSize, (int)H, (int)H, 1.0f, batchedA.data(), (int)H,
                          batchedB.data(), (int)H, 0.0f, batchedC.data(), (int)H, (int)L);
 
-  for (size_t l = 0; l < L; ++l)
-    backend->AddBiasBroadcast(flatMu + l * own, flatB + l * H, (size_t)batchSize, H);
+  backend->AddBiasBroadcastBatched(flatMu, flatB, (size_t)batchSize, H, L);
 
   backend->Copy(flatPreact, flatMu, own * L);
   backend->Activation(layers[batchedRunStart]->GetActivationType(), flatMu, own * L);
@@ -279,8 +278,7 @@ void DirectKPPCNetwork::UpdateWeightsBatchedRun() noexcept
   // M rows are its OWN batch, so this needs M separate reductions, not
   // one flat call. biasGradScratch is small (H floats per layer) and
   // this is O(M) cheap dispatch either way.
-  for (size_t l = 0; l < M; ++l)
-    backend->SumRows(flatBiasGradScratch + l * H, flatFeedbackError + l * own, (size_t)batchSize, H);
+  backend->SumRowsBatched(flatBiasGradScratch, flatFeedbackError, (size_t)batchSize, H, M);
   backend->AxpyInto(flatB, flatBiasGradScratch, H * M, lr / (float)batchSize);
 
   // Psi += fl/batchSize * z^T @ terminalLayer->GetErrors() -- the SAME

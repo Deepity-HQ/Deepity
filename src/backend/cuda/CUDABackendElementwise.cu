@@ -50,6 +50,38 @@ void CUDABackend::AddBiasBroadcast(float* buf, const float* bias, size_t batchSi
   CHECK_CUDA_LAUNCH();
 }
 
+// Same op as AddBiasBroadcastKernel above, fused across numLayers pairs.
+// layer/row are folded into the grid's X dimension, not Y: CUDA caps
+// grid Y (and Z) at 65535 on every current architecture, while X goes
+// up to 2^31-1 -- numLayers*batchSize is the dimension with no
+// realistic ceiling here (width, on Y, is bounded by hidden-layer size).
+__global__ void AddBiasBroadcastBatchedKernel(float* buf, const float* bias, size_t batchSize,
+                                              size_t width, size_t numLayers)
+{
+  size_t layerRow = (size_t)blockIdx.x * blockDim.x + threadIdx.x;
+  size_t col = (size_t)blockIdx.y * blockDim.y + threadIdx.y;
+  size_t layer = layerRow / batchSize;
+  size_t row = layerRow % batchSize;
+
+  if (col < width && layer < numLayers)
+    buf[layer * batchSize * width + row * width + col] += bias[layer * width + col];
+}
+
+void CUDABackend::AddBiasBroadcastBatched(float* buf, const float* bias, size_t batchSize,
+                                          size_t width, size_t numLayers) noexcept
+{
+  if (!buf || !bias || numLayers == 0)
+    return;
+
+  dim3 threads(32, 8);
+  dim3 blocks((unsigned int)((numLayers * batchSize + threads.x - 1) / threads.x),
+              (unsigned int)((width + threads.y - 1) / threads.y));
+
+  AddBiasBroadcastBatchedKernel<<<blocks, threads, 0, stream>>>(buf, bias, batchSize, width,
+                                                                numLayers);
+  CHECK_CUDA_LAUNCH();
+}
+
 __global__ void MultiplyIntoKernel(float* dst, const float* a, const float* b, size_t n)
 {
   size_t i = (size_t)blockIdx.x * blockDim.x + threadIdx.x;

@@ -623,6 +623,27 @@ void CUDABackend::SumRows(float* dst, const float* src, size_t batchSize, size_t
       handle, CUBLAS_OP_N, width, batchSize, &alpha, src, width, onesVector, 1, &beta, dst, 1);
 }
 
+void CUDABackend::SumRowsBatched(float* dst, const float* src, size_t batchSize, size_t width,
+                                 size_t numLayers) noexcept
+{
+  if (!dst || !src || numLayers == 0)
+    return;
+
+  if (!onesVector || onesCapacity < batchSize)
+    PrepareForBatchSize(batchSize);
+
+  // Same cublasSgemv() as SumRows() above, but cublasSgemvStridedBatched:
+  // a mature, standard cuBLAS primitive (unlike MatMulBatched()'s own
+  // CUTLASS Grouped GEMM adventure above) for exactly this "numLayers
+  // independent problems, one dispatch" shape. x (onesVector) is the
+  // same buffer reused for every layer, so its stride is 0; A (src) and
+  // y (dst) each advance by one layer's worth of data per problem.
+  float alpha = 1.0f, beta = 0.0f;
+  cublasSgemvStridedBatched(handle, CUBLAS_OP_N, (int)width, (int)batchSize, &alpha, src,
+                            (int)width, (long long)(batchSize * width), onesVector, 1, 0, &beta,
+                            dst, 1, (long long)width, (int)numLayers);
+}
+
 bool CUDABackend::TryFusedForwardPass(ActivationType actType, const float* zF, const float* W,
                                       const float* bias, float* mu, int batchSize, int size,
                                       int nextSize) noexcept
