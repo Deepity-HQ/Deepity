@@ -82,7 +82,10 @@ constexpr int SETTLING_STEPS = 5;
 // cost already includes work (ProjectForward/DFA/5x settling/
 // UpdateWeights) BP has no equivalent of.
 constexpr int SETTLING_STEPS_ABLATION = 1;
-constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048, 4096, 8192};
+// Capped at 2048 for now -- 4096 OOM-killed (SLURM/cgroup kill, not a CUDA
+// allocation failure) on the CUTLASS-Grouped-GEMM-enabled build; revisit
+// once that's understood. Ran cleanly through 8192 before that change.
+constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048};
 constexpr int N_DEPTHS = sizeof(DEPTHS) / sizeof(DEPTHS[0]);
 
 std::vector<float> RandomVec(size_t n, std::mt19937& rng)
