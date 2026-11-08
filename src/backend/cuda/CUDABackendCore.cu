@@ -100,6 +100,16 @@ CUDABackend::~CUDABackend()
     cudaFreeHost(batchedGemmHostB);
   if (batchedGemmHostC)
     cudaFreeHost(batchedGemmHostC);
+  if (groupedProblemSizes)
+    cudaFree(groupedProblemSizes);
+  if (groupedLda)
+    cudaFree(groupedLda);
+  if (groupedLdb)
+    cudaFree(groupedLdb);
+  if (groupedLdc)
+    cudaFree(groupedLdc);
+  if (groupedWorkspace)
+    cudaFree(groupedWorkspace);
 #ifdef DEEPITY_USE_CUDNN
   cudnnDestroy(this->cudnnHandle);
 #endif

@@ -58,6 +58,13 @@ public:
   /// @copydoc Deep::IComputeBackend::PrewarmBatchedGemmScratch
   bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept override { return true; }
 
+  /// @copydoc Deep::IComputeBackend::PrewarmGroupedGemmScratch
+  bool PrewarmGroupedGemmScratch(bool, bool, int, int, int, int64_t, int64_t, int64_t,
+                                 size_t) noexcept override
+  {
+    return true;
+  }
+
   /// @copydoc Deep::IComputeBackend::MatMul
   void MatMul(bool transA, bool transB, int M, int N, int K, float alpha, const float* A, int lda,
               const float* B, int ldb, float beta, float* C, int ldc) noexcept override;
@@ -84,6 +91,13 @@ public:
                      int batchCount) noexcept override;
   /// @copydoc Deep::IComputeBackend::SumRows
   void SumRows(float* dst, const float* src, size_t batchSize, size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::SumRowsBatched
+  void SumRowsBatched(float* dst, const float* src, size_t batchSize, size_t width,
+                      size_t numLayers) noexcept override
+  {
+    for (size_t l = 0; l < numLayers; ++l)
+      SumRows(dst + l * width, src + l * batchSize * width, batchSize, width);
+  }
   /// @copydoc Deep::IComputeBackendT::SumRowsAccum
   void SumRowsAccum(float* dst, const float* src, size_t batchSize, size_t width) noexcept override
   {
@@ -109,6 +123,13 @@ public:
   /// @copydoc Deep::IComputeBackend::AddBiasBroadcast
   void AddBiasBroadcast(float* buf, const float* bias, size_t batchSize,
                         size_t width) noexcept override;
+  /// @copydoc Deep::IComputeBackend::AddBiasBroadcastBatched
+  void AddBiasBroadcastBatched(float* buf, const float* bias, size_t batchSize, size_t width,
+                               size_t numLayers) noexcept override
+  {
+    for (size_t l = 0; l < numLayers; ++l)
+      AddBiasBroadcast(buf + l * batchSize * width, bias + l * width, batchSize, width);
+  }
   /// @copydoc Deep::IComputeBackend::TryFusedMatMulBias
   bool TryFusedMatMulBias(bool transA, bool transB, int M, int N, int K, const float* A, int lda,
                           const float* B, int ldb, const float* bias, float* C,

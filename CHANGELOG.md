@@ -31,6 +31,7 @@ earlier history.
 ### Fixed
 
 - `tests/*.cpp` benchmark/verification executables didn't receive the same `-march`/ISA compile flags as the `Deepity`/`pydeepity` targets, so Deepity's header-only activation kernels silently compiled against the compiler's default ISA (SSE2) instead of whatever `build.py` selected -- `ActivationBenchmark`/`GflopsBenchmark` were measuring the wrong kernel. `Deepity`/`pydeepity` themselves were unaffected.
+- `examples/mnist_cuda.py`'s `TERMINAL_FEED_WEIGHT_DECAY` stabilizer (see `examples/mnist.py` for the full derivation) was never retuned for cuBLAS's GEMM reduction order -- `2e-4` let the terminal-feed weight matrix diverge mid-training (energy spikes, accuracy crashing to the 30-40% range) before partially recovering. Swept and validated over a 100-epoch OSC A100 run; `5e-4` holds a clean >99% plateau with no late crash. Now the default, overridable via a new 4th CLI arg.
 
 ### Security
 

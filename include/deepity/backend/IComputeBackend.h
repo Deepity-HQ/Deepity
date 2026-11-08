@@ -109,6 +109,19 @@ public:
   /// fall back, same as if this were never called.
   virtual bool PrewarmBatchedGemmScratch(size_t batchCount) noexcept = 0;
 
+  /// @brief Call once per distinct MatMulBatched() shape a network will
+  /// ever use, before that network's first BeginGraphCapture() -- same
+  /// capture-safety reasoning as PrewarmBatchedGemmScratch() just above,
+  /// for a backend whose batched fast path needs its OWN separate
+  /// device-side metadata/workspace scratch sized up front (e.g. a
+  /// Grouped GEMM's per-item problem-size array and solver workspace,
+  /// which depend on the shape (M,N,K,lda,ldb,ldc), not just batchCount).
+  /// No-op (returns true) on a backend with no such scratch.
+  /// @return false if the backend needed to grow and couldn't.
+  virtual bool PrewarmGroupedGemmScratch(bool transA, bool transB, int M, int N, int K,
+                                         int64_t lda, int64_t ldb, int64_t ldc,
+                                         size_t batchCount) noexcept = 0;
+
   // GEMM
 
   /// @brief C = alpha * op(A) * op(B) + beta * C, the standard BLAS
@@ -175,6 +188,18 @@ public:
   /// all j in [0,width).
   virtual void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept = 0;
 
+  /// @brief Same as SumRows(), but fused across numLayers independent
+  /// (dst,src) pairs in one call: dst[l*width + j] = sum over b in
+  /// [0,batchSize) of src[l*batchSize*width + b*width + j], for every l
+  /// in [0,numLayers) and j in [0,width). Equivalent to calling
+  /// SumRows(dst + l*width, src + l*batchSize*width, batchSize, width)
+  /// for l in [0,numLayers), but as one dispatch instead of numLayers
+  /// separate ones -- see AddBiasBroadcastBatched()'s own comment on
+  /// why a per-layer C++ loop around this becomes launch-overhead-bound
+  /// well before any realistic network depth.
+  virtual void SumRowsBatched(T* dst, const T* src, size_t batchSize, size_t width,
+                              size_t numLayers) noexcept = 0;
+
   /// @brief Same operation as SumRows(), but writes into an AccumT* buffer
   /// instead of T*.
   virtual void SumRowsAccum(AccumT* dst, const T* src, size_t batchSize,
@@ -200,6 +225,22 @@ public:
   /// across every row.
   virtual void AddBiasBroadcast(T* buf, const T* bias, size_t batchSize,
                                 size_t width) noexcept = 0;
+
+  /// @brief Same as AddBiasBroadcast(), but fused across numLayers
+  /// independent (buf,bias) pairs in one call:
+  /// buf[l*batchSize*width + row*width + col] += bias[l*width + col],
+  /// for every l in [0,numLayers), row in [0,batchSize), col in
+  /// [0,width). Equivalent to calling AddBiasBroadcast(buf +
+  /// l*batchSize*width, bias + l*width, batchSize, width) for l in
+  /// [0,numLayers), but as one GPU dispatch instead of numLayers
+  /// separate ones -- confirmed via nsys profiling that the per-layer
+  /// C++ loop this replaces costs MORE total GPU time (15% of a whole
+  /// DirectKPPCNetwork::TrainStep()) than the GEMM batching work this
+  /// interface already does for MatMulBatched(), at a batch/width small
+  /// enough that each launch's fixed overhead dominates its ~16K
+  /// elements of real work.
+  virtual void AddBiasBroadcastBatched(T* buf, const T* bias, size_t batchSize, size_t width,
+                                       size_t numLayers) noexcept = 0;
 
   /// @brief Attempts C = A @ B(^T) + bias in one fused kernel (CPU only,
   /// requires a oneDNN build).

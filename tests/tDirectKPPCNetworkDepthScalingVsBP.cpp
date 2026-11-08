@@ -49,11 +49,23 @@
 #include <deepity/backend/Backend.h>
 #include <deepity/backend/CUDABackend.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
+#include <nvtx3/nvToolsExt.h>
 #include <random>
 #include <vector>
 
 using namespace Deep;
 using Clock = std::chrono::steady_clock;
+
+// NVTX ranges, one per (depth, path) measurement block, so an
+// `nsys profile` of this binary can report GPU-busy-time separately
+// per depth/path instead of one flat aggregate across the whole run --
+// needed to tell a genuine compute-bound knee apart from launch/sync
+// overhead at a specific depth.
+struct NvtxScope
+{
+  explicit NvtxScope(const char* name) { nvtxRangePushA(name); }
+  ~NvtxScope() { nvtxRangePop(); }
+};
 
 namespace
 {
@@ -70,7 +82,7 @@ constexpr int SETTLING_STEPS = 5;
 // cost already includes work (ProjectForward/DFA/5x settling/
 // UpdateWeights) BP has no equivalent of.
 constexpr int SETTLING_STEPS_ABLATION = 1;
-constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048};
+constexpr int DEPTHS[] = {2, 4, 8, 16, 32, 64, 96, 128, 256, 512, 1024, 2048, 4096, 8192};
 constexpr int N_DEPTHS = sizeof(DEPTHS) / sizeof(DEPTHS[0]);
 
 std::vector<float> RandomVec(size_t n, std::mt19937& rng)
@@ -264,12 +276,23 @@ int main()
       continue;
     }
 
-    double dkp5 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS); });
+    char nvtxName[64];
+    std::snprintf(nvtxName, sizeof(nvtxName), "depth_%d_dkp5", depth);
+    double dkp5;
+    {
+      NvtxScope scope(nvtxName);
+      dkp5 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS); });
+    }
     // Reuses netBatched: TrainStep() recaptures its graph whenever
     // inferenceSteps changes from what's currently captured (see its
     // own capturedInferenceSteps check), so this is a real, fresh
     // 1-settling-step graph, not a stale 5-step one.
-    double dkp1 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS_ABLATION); });
+    std::snprintf(nvtxName, sizeof(nvtxName), "depth_%d_dkp1", depth);
+    double dkp1;
+    {
+      NvtxScope scope(nvtxName);
+      dkp1 = TimeMsFn([&] { netBatched.TrainStep(input, target, SETTLING_STEPS_ABLATION); });
+    }
 
     // A SEPARATE network, not netBatched with the flag flipped -- see
     // this file's header comment for why that would silently replay
@@ -278,17 +301,27 @@ int main()
     BuildNetwork(netUnbatched, depth);
     netUnbatched.RandomizeWeights(rng);
     netUnbatched.SetBatchedRunCountForBenchmark(0);
-    double unbatched = TimeMsFn([&] { netUnbatched.TrainStep(input, target, SETTLING_STEPS); });
+    std::snprintf(nvtxName, sizeof(nvtxName), "depth_%d_unbatched", depth);
+    double unbatched;
+    {
+      NvtxScope scope(nvtxName);
+      unbatched = TimeMsFn([&] { netUnbatched.TrainStep(input, target, SETTLING_STEPS); });
+    }
 
     BPState s(backend, depth, rng);
     Tensor out(backend, DeviceType::DEVICE_GPU, (size_t)BATCH * OUT_DIM);
-    double bp = TimeMsFn(
-        [&]
-        {
-          ForwardSequential(backend, s, out.Data());
-          BPBackwardSequential(backend, s, out.Data());
-          backend->Synchronize();
-        });
+    std::snprintf(nvtxName, sizeof(nvtxName), "depth_%d_bp", depth);
+    double bp;
+    {
+      NvtxScope scope(nvtxName);
+      bp = TimeMsFn(
+          [&]
+          {
+            ForwardSequential(backend, s, out.Data());
+            BPBackwardSequential(backend, s, out.Data());
+            backend->Synchronize();
+          });
+    }
 
     dkp5Ms.push_back(dkp5);
     dkp1Ms.push_back(dkp1);
