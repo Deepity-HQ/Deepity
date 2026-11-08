@@ -6,7 +6,7 @@
 
 **A fast C++ / CUDA engine for training neural networks with predictive coding, a brain-inspired alternative to backpropagation, with a simple Python interface.**
 
-[Website & Documentation](https://ra4ster.github.io/Deepity) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
+[Website & Documentation](https://ra4ster.github.io/Deepity) • [PyPI](https://pypi.org/project/pydeepity/) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
 
 > **At a glance:** Deepity's `SimplePCN` reaches **98.21%** MNIST test accuracy in **487.5s** on a laptop CPU, faster than the two established predictive-coding libraries, jpc (JAX) and ngc-learn, at matching or better accuracy on an identical setup. On GPU, `DKPPCN`'s batched training path scales with network depth far better than hand-rolled backpropagation: by 2048 layers, backprop runs 2 to 5x slower at matched width and batch size. Details, and where Deepity does *not* win, are in [Performance & Benchmarks](#performance--benchmarks).
 
@@ -180,6 +180,10 @@ The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps
 Backpropagation has an unavoidable bottleneck as networks get deeper: the backward pass is a strict chain, where layer L's gradient has to finish before layer L-1's can even start. DKP-PC's layers update from local signals instead, so a batched GPU implementation can process every layer's update together instead of one at a time.
 
 This is measured directly with a synthetic benchmark: a `DKPPCN` and a hand-rolled backpropagation network of identical depth, width and batch size, trained on the same random data and timed on a single A100 (`tests/tDirectKPPCNetworkDepthScalingVsBP.cpp`, using DKP-PC's recommended single settling step per batch). Below about 32 layers the two run at close to the same speed, since there isn't enough depth yet for the batching advantage to show up. Past that point DKP-PC pulls ahead and keeps pulling ahead: by 2048 layers, the backpropagation network runs 2 to 5x slower, depending on how much of the batched execution path's own optimization is turned on.
+
+<p align="center">
+  <img src="resources/dkp_depth_scaling.png" alt="Training step time vs. network depth on GPU, DKP-PC vs. backpropagation" width="650"/>
+</p>
 
 This is a timing benchmark on matched network shapes, not an accuracy comparison, and the 32-layer crossover point is specific to this benchmark's width and batch size. A narrower network needs more layers to reach the same crossover; a wider one needs fewer.
 
