@@ -21,6 +21,22 @@ dependencies = [
     "numpy",
     "rich",
 ]
+
+# `pip install pydeepity[cuda]` -- pulls the CUDA runtime/cuBLAS shared
+# libraries DeepityCUDA.so/.dll (bundled in the wheel itself, see
+# CMakeLists.txt's DeepityCUDA target) dlopen()s at the moment GPU
+# support is actually requested. Deliberately not vendored into the
+# wheel directly: PyPI's size limits make that a non-starter the moment
+# cuBLAS is linked (see the auditwheel --exclude lists below), and this
+# is the pattern every CUDA-linked PyPI package (PyTorch, JAX, ONNX
+# Runtime) has converged on for exactly that reason. Versions pinned to
+# match the CUDA 12.6 toolkit CI builds against (see
+# [tool.cibuildwheel.linux]'s before-all).
+[project.optional-dependencies]
+cuda = [
+    "nvidia-cuda-runtime-cu12==12.6.*",
+    "nvidia-cublas-cu12==12.6.*",
+]
 # Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
 # `license` field above is the modern replacement for that classifier,
 # and pairing both is a deprecated pattern some build backends warn on.
@@ -82,7 +98,14 @@ sdist.exclude = [
 # Portability over speed; build.py's --distributed profile mirrors this.
 DEEPITY_BUILD_TESTS = "OFF"
 DEEPITY_BUILD_PYTHON_BINDINGS = "ON"
-DEEPITY_ENABLE_CUDA = "OFF"
+# Safe to leave ON unconditionally (CMakeLists.txt's find_package(CUDAToolkit
+# QUIET) no-ops to CPU-only if the toolkit isn't present) -- and now that
+# CUDA lives in the separate DeepityCUDA plugin (dlopen()'d at runtime,
+# never linked into deepity_ext itself), turning this on no longer risks
+# breaking `import deepity` on a machine with no CUDA toolkit/runtime at
+# all. See CMakeLists.txt's DeepityCUDA target and
+# CUDAPluginLoader.h/.cpp.
+DEEPITY_ENABLE_CUDA = "ON"
 DEEPITY_ARCH_FLAGS = "-march=x86-64-v2 -mtune=generic"
 DEEPITY_MSVC_ARCH_FLAGS = ""
 
@@ -114,6 +137,16 @@ manylinux-x86_64-image = "manylinux_2_28"
 # CI failure here instead of a silent CPU-only fallback later.
 before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache && dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo && dnf install -y cuda-toolkit-12-6 && ln -sf /usr/local/cuda-12.6 /usr/local/cuda && /usr/local/cuda/bin/nvcc --version"
 environment = { PATH = "/usr/local/cuda/bin:$PATH", CUDAToolkit_ROOT = "/usr/local/cuda" }
+# --exclude: without this, auditwheel's default repair tries to vendor
+# every shared lib DeepityCUDA.so links against -- including cuBLAS --
+# straight into the wheel, which is how a <2MB wheel becomes >400MB and
+# blows past PyPI's size cap (see pyproject.toml's [project.optional-
+# dependencies] cuda comment for the actual precedent this follows).
+# SONAMEs below match CUDA 12.x's convention (major-version-only, stable
+# across 12.0-12.6); unverified against a real built wheel yet -- run
+# `auditwheel show` on the next CI-built wheel and correct this list if
+# it's wrong, same as this file's ccache-install history.
+repair-wheel-command = "auditwheel repair -w {dest_dir} --exclude libcublas.so.12 --exclude libcublasLt.so.12 --exclude libcudart.so.12 {wheel}"
 
 [tool.cibuildwheel.macos]
 # Not exercised by CI (arm64 runners, but DEEPITY_ARCH_FLAGS is x86-only).
@@ -123,4 +156,8 @@ archs = ["x86_64"]
 
 [tool.cibuildwheel.windows]
 before-build = "uv pip install delvewheel"
-repair-wheel-command = "delvewheel repair --add-path deepity -w {dest_dir} {wheel}"
+# --exclude: Windows counterpart of the Linux auditwheel --exclude list
+# above, same reason. DLL names match CUDA 12.x's Windows naming
+# convention; unverified against a real built wheel yet, same caveat as
+# the Linux list.
+repair-wheel-command = "delvewheel repair --add-path deepity --exclude cublas64_12.dll --exclude cublasLt64_12.dll --exclude cudart64_12.dll -w {dest_dir} {wheel}"
