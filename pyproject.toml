@@ -114,6 +114,13 @@ DEEPITY_MSVC_ARCH_FLAGS = ""
 build = "cp311-* cp312-* cp313-*"
 skip = "*-musllinux* *-win32 *-manylinux_i686"
 build-verbosity = 1
+# "latest", not the default "pinned": pinned means downloading one exact
+# virtualenv version's .pyz from a github.com/.../blob/...?raw=true URL,
+# which just 504'd twice in a row in CI. "latest" resolves virtualenv via
+# a normal `pip install` instead -- a different, more reliable path --
+# and version drift here doesn't matter, since this is a build-time tool,
+# not anything that ships in the wheel.
+dependency-versions = "latest"
 # Not "build"/"build[uv]": `python -m build` adds cwd to sys.path, and
 # this repo's own root-level build.py shadows the `build` package there.
 build-frontend = "pip"
