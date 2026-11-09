@@ -875,7 +875,16 @@ if(DEEPITY_CUDA_ENABLED)
     FetchContent_Declare(
         cutlass
         GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-        GIT_TAG v4.8.0
+        # v3.7.0, not a newer 4.x: this project only targets compute_70
+        # through compute_90 (Volta-Hopper), has no use for Blackwell
+        # (SM100/SM103) kernels, and 4.8.0's SM100/SM103 headers hit a
+        # real, currently-unfixed MSVC bug (constexpr functions can't
+        # return dim3, a nonliteral type) that GCC doesn't reject --
+        # confirmed via CUTLASS's own v3.8.0 (first Blackwell) release
+        # notes: "CUTLASS 3.x builds are known to be down on Windows
+        # platforms for all CUDA toolkits." v3.7.0 is the last tag before
+        # Blackwell support was added, so the broken files don't exist.
+        GIT_TAG v3.7.0
     )
     set(CUTLASS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
     set(CUTLASS_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
