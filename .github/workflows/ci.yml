@@ -188,7 +188,18 @@ jobs:
         # arm64, and CMakeLists.txt's SIMD flags (DEEPITY_ARCH_FLAGS's
         # x86-64-v2, SLEEF_ENABLE_AVX2/AVX512F) are x86-only with no
         # arch-conditional branching yet.
-        os: [ubuntu-latest, windows-latest]
+        #
+        # windows-2022, not windows-latest: windows-latest just rolled to
+        # windows-2025-vs2026 (Visual Studio 18), and CUDA 12.6's Windows
+        # toolkit only ships MSBuild integration files for VS versions
+        # that existed at its own 2024 release -- enable_language(CUDA)
+        # fails with "No CUDA toolset found" on VS18 as a result (this
+        # is independent of the Ninja generator Deepity otherwise uses;
+        # CMake's CUDA compiler-id detection on Windows always goes
+        # through MSBuild). windows-2022 ships VS2022, which CUDA 12.6
+        # does support. Revisit once a CUDA release ships VS18/2026
+        # integration files.
+        os: [ubuntu-latest, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -209,7 +220,7 @@ jobs:
       # silently -- we want this one loud while we're finding out whether
       # it even works.
       - name: Install CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: Jimver/cuda-toolkit@v0.2.36
         with:
           cuda: "12.6.3"
@@ -223,7 +234,7 @@ jobs:
           use-github-cache: true
 
       - name: Verify CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: nvcc --version
 
       # ccache isn't exercised by this install, so a flaky choco/GitHub-CDN
@@ -232,7 +243,7 @@ jobs:
       # CMakeLists.txt's find_program(DEEPITY_CCACHE_PROGRAM ccache) no-ops
       # if it's missing.
       - name: Install ccache (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         continue-on-error: true
         run: choco install ccache -y --no-progress
 
@@ -249,7 +260,16 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21
         env:
-          CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache
+          # PATH/CUDAToolkit_ROOT/CUDACXX: belong in pyproject.toml's
+          # [tool.cibuildwheel.linux] environment table by rights, but
+          # cibuildwheel treats CIBW_ENVIRONMENT_LINUX (this env var) as a
+          # full override of that TOML table, not a merge -- confirmed by
+          # CI: find_package(CUDAToolkit) kept succeeding regardless (it
+          # hits /usr/local/cuda via CMake's own hardcoded default search
+          # path, unrelated to any of this), while enable_language(CUDA)
+          # kept failing to find a compiler, since it has no such
+          # hardcoded fallback and never actually saw these variables.
+          CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/usr/local/cuda/bin:$PATH CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
           CIBW_ENVIRONMENT_WINDOWS: CCACHE_DIR=${{ github.workspace }}\.ccache
 
       # if: always() -- restore/save split so a failed build still keeps
@@ -300,7 +320,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # windows-2022: see build-wheels' identical matrix entry above for why.
+        os: [ubuntu-latest, windows-2022]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -313,7 +334,7 @@ jobs:
 
       # See build-wheels' identical steps for why.
       - name: Install CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: Jimver/cuda-toolkit@v0.2.36
         with:
           cuda: "12.6.3"
@@ -321,12 +342,12 @@ jobs:
           use-github-cache: true
 
       - name: Verify CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: nvcc --version
 
       # continue-on-error: see build-wheels' identical step for why.
       - name: Install ccache (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         continue-on-error: true
         run: choco install ccache -y --no-progress
 
@@ -343,7 +364,10 @@ jobs:
       - name: Build wheels (fast profile)
         uses: pypa/cibuildwheel@v2.21
         env:
-          CIBW_ENVIRONMENT_LINUX: CMAKE_ARGS=-DDEEPITY_ARCH_FLAGS=-march=x86-64-v3 CCACHE_DIR=/host${{ github.workspace }}/.ccache
+          # PATH/CUDAToolkit_ROOT/CUDACXX: see build-wheels' identical
+          # CIBW_ENVIRONMENT_LINUX comment above for why these are here
+          # instead of pyproject.toml's environment table.
+          CIBW_ENVIRONMENT_LINUX: CMAKE_ARGS=-DDEEPITY_ARCH_FLAGS=-march=x86-64-v3 CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/usr/local/cuda/bin:$PATH CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_ARGS=-DDEEPITY_MSVC_ARCH_FLAGS=/arch:AVX2 CCACHE_DIR=${{ github.workspace }}\.ccache
 
       - name: Save ccache compiler cache
@@ -418,7 +442,7 @@ jobs:
       - name: Download wheels (windows)
         uses: actions/download-artifact@v4
         with:
-          name: wheels-windows-latest
+          name: wheels-windows-2022
           path: dist
 
       - name: Download sdist

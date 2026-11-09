@@ -746,18 +746,16 @@ set(DEEPITY_SOURCES
     src/layers/FullConvPCLayerT.cpp
 )
 
-if(DEEPITY_CUDA_ENABLED)
-    list(APPEND DEEPITY_SOURCES
-        src/backend/cuda/CUDABackendCore.cu
-        src/backend/cuda/CUDABackendGemm.cu
-        src/backend/cuda/CUDABackendElementwise.cu
-        src/backend/cuda/CUDABackendActivations.cu
-        src/backend/cuda/CUDABackendFusedOps.cu
-        src/backend/cuda/CUDABackendOptimizer.cu
-        src/backend/cuda/CUDABackendConv.cu
-        src/backend/cuda/CUDABackendCudnnConv.cu
-    )
-endif()
+# CUDAPluginLoader.cpp is unconditional, not gated on DEEPITY_CUDA_ENABLED:
+# it's plain OS dynamic-loading code (dlopen/LoadLibrary), with no CUDA
+# headers of its own, so it belongs in Deepity itself rather than the
+# DeepityCUDA plugin target below -- it's what finds and loads that
+# plugin at runtime, on every build regardless of whether THIS build has
+# a CUDA toolkit. See CUDAPluginLoader.h for why: the actual .cu sources
+# (and cuBLAS/cudart/cuDNN/CUTLASS) live in the separate DeepityCUDA
+# target instead of here, so a CPU-only `import deepity` never has a
+# hard link-time dependency on CUDA.
+list(APPEND DEEPITY_SOURCES src/backend/CUDAPluginLoader.cpp)
 
 add_library(Deepity ${DEEPITY_SOURCES})
 
@@ -830,16 +828,18 @@ target_link_libraries(Deepity PUBLIC
 target_link_libraries(Deepity PUBLIC hwy)
 target_link_libraries(Deepity PRIVATE DeepityHighwayKernels)
 
-if(DEEPITY_CUDA_ENABLED)
-    target_link_libraries(Deepity PUBLIC CUDA::cublas CUDA::cudart)
-    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
-    target_compile_options(Deepity PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
-endif()
+# CMAKE_DL_LIBS: dlopen/dlsym/dlerror for CUDAPluginLoader.cpp (empty on
+# Windows, where it's windows.h's LoadLibrary/GetProcAddress instead --
+# no extra library needed there).
+target_link_libraries(Deepity PRIVATE ${CMAKE_DL_LIBS})
 
-if(DEEPITY_CUDNN_ENABLED)
-    target_include_directories(Deepity PRIVATE ${DEEPITY_CUDNN_INCLUDE_DIR})
-    target_link_libraries(Deepity PRIVATE ${DEEPITY_CUDNN_LIBRARY})
-    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDNN)
+# DEEPITY_USE_CUDA stays PUBLIC here even though cuBLAS/cudart/the .cu
+# sources themselves have moved to the DeepityCUDA plugin target below --
+# this macro still gates the (CUDA-free, backend-polymorphic)
+# DeviceMemoryArenaT<T, AccumT> usage throughout the network/layer
+# headers, which has nothing to do with linking CUDA directly.
+if(DEEPITY_CUDA_ENABLED)
+    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_CUDA)
 endif()
 
 if(DEEPITY_USE_ONEDNN)
@@ -859,13 +859,32 @@ endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
 
-# --- Optional: Use CUTLASS for fused GEMM kernels ---------------------
-
+# --- DeepityCUDA: the actual CUDA backend, as a separate plugin -------
+#
+# Deliberately its own SHARED library, not part of Deepity: this is
+# where cuBLAS/cudart/cuDNN/CUTLASS and the .cu kernel sources actually
+# live, so none of that is a link-time dependency of the main Deepity
+# library/deepity_ext extension module. CUDAPluginLoader.cpp (compiled
+# into Deepity instead) dlopen()s/LoadLibrary()s this at runtime, only
+# when DeviceType::DEVICE_GPU is actually requested -- see its header
+# for the full reasoning. Lands in the same output directory as Deepity
+# (CMAKE_RUNTIME_OUTPUT_DIRECTORY, set at the top of this file) for
+# build-tree executables, and is installed alongside deepity_ext below
+# for the wheel.
 if(DEEPITY_CUDA_ENABLED)
     FetchContent_Declare(
         cutlass
         GIT_REPOSITORY https://github.com/NVIDIA/cutlass.git
-        GIT_TAG v4.8.0
+        # v3.7.0, not a newer 4.x: this project only targets compute_70
+        # through compute_90 (Volta-Hopper), has no use for Blackwell
+        # (SM100/SM103) kernels, and 4.8.0's SM100/SM103 headers hit a
+        # real, currently-unfixed MSVC bug (constexpr functions can't
+        # return dim3, a nonliteral type) that GCC doesn't reject --
+        # confirmed via CUTLASS's own v3.8.0 (first Blackwell) release
+        # notes: "CUTLASS 3.x builds are known to be down on Windows
+        # platforms for all CUDA toolkits." v3.7.0 is the last tag before
+        # Blackwell support was added, so the broken files don't exist.
+        GIT_TAG v3.7.0
     )
     set(CUTLASS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
     set(CUTLASS_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -873,7 +892,58 @@ if(DEEPITY_CUDA_ENABLED)
     set(CUTLASS_ENABLE_LIBRARY OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(cutlass)
 
-    target_link_libraries(Deepity PRIVATE CUTLASS)
+    add_library(DeepityCUDA SHARED
+        src/backend/cuda/CUDABackendCore.cu
+        src/backend/cuda/CUDABackendGemm.cu
+        src/backend/cuda/CUDABackendElementwise.cu
+        src/backend/cuda/CUDABackendActivations.cu
+        src/backend/cuda/CUDABackendFusedOps.cu
+        src/backend/cuda/CUDABackendOptimizer.cu
+        src/backend/cuda/CUDABackendConv.cu
+        src/backend/cuda/CUDABackendCudnnConv.cu
+        src/backend/cuda/CUDAPluginExports.cpp
+    )
+
+    target_include_directories(DeepityCUDA PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${BLAS_INCLUDE_DIR}
+    )
+    target_compile_definitions(DeepityCUDA PRIVATE DEEPITY_USE_CUDA)
+    target_compile_options(DeepityCUDA PRIVATE
+        $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
+
+    # Same arch flags/defs Deepity's own sources get. On Linux this is
+    # GCC-style (-march=...), which nvcc forwards to g++ without issue --
+    # but on MSVC it's /arch:AVX2, which nvcc misparses as a stray input
+    # file the same way it misparsed /openmp:llvm above. CXX-only here
+    # for the same reason documented there (an -Xcompiler="..." wrap was
+    # tried and discarded: MSBuild's own command-line serialization
+    # corrupted it for some, not all, .cu files). The .cu files' actual
+    # compute work happens in CUDA kernels, not host-side AVX2
+    # intrinsics, so skipping this for CUDA language costs nothing real.
+    if(DEEPITY_TARGET_COMPILE_OPTIONS)
+        if(MSVC)
+            target_compile_options(DeepityCUDA PRIVATE
+                $<$<COMPILE_LANGUAGE:CXX>:${DEEPITY_TARGET_COMPILE_OPTIONS}>)
+        else()
+            target_compile_options(DeepityCUDA PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
+        endif()
+    endif()
+    if(DEEPITY_TARGET_COMPILE_DEFS)
+        target_compile_definitions(DeepityCUDA PRIVATE ${DEEPITY_TARGET_COMPILE_DEFS})
+    endif()
+
+    # PRIVATE Deepity: DeepityCUDA calls back into Deepity's own compiled
+    # utility code (Tensor, shared backend helpers), but nothing in
+    # Deepity ever names a DeepityCUDA symbol directly -- the dependency
+    # only goes this one direction.
+    target_link_libraries(DeepityCUDA PRIVATE Deepity CUDA::cublas CUDA::cudart CUTLASS)
+
+    if(DEEPITY_CUDNN_ENABLED)
+        target_include_directories(DeepityCUDA PRIVATE ${DEEPITY_CUDNN_INCLUDE_DIR})
+        target_link_libraries(DeepityCUDA PRIVATE ${DEEPITY_CUDNN_LIBRARY})
+        target_compile_definitions(DeepityCUDA PRIVATE DEEPITY_USE_CUDNN)
+    endif()
 endif()
 
 # --- Optional: Use Google Benchmark -----------------------------------
@@ -1034,7 +1104,11 @@ if(DEEPITY_BUILD_TESTS)
         list(APPEND DEEPITY_TEST_TARGETS DirectKPBatchedGPUVerify)
 
         add_executable(DirectKPPCNetworkDepthScalingVsBP tests/tDirectKPPCNetworkDepthScalingVsBP.cpp)
-        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity)
+        # DeepityCUDA directly: this test dynamic_casts CreateBackend()'s
+        # result to the concrete CUDABackend (not just the abstract
+        # interface), so it needs the real symbol, not just the plugin
+        # CUDAPluginLoader.cpp dlopen()s transparently at runtime.
+        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity DeepityCUDA)
         set_target_properties(DirectKPPCNetworkDepthScalingVsBP PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1050,7 +1124,9 @@ if(DEEPITY_BUILD_TESTS)
         # Manual profiling tool, not a pass/fail test -- see its own doc
         # comment. Still CUDA-gated since it calls CreateBackend(DEVICE_GPU).
         add_executable(CUDARandomizeBenchmark tests/tCUDARandomizeBenchmark.cpp)
-        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity)
+        # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
+        # identical comment above -- this one dynamic_casts to CUDABackend too.
+        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity DeepityCUDA)
         set_target_properties(CUDARandomizeBenchmark PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1059,7 +1135,9 @@ if(DEEPITY_BUILD_TESTS)
         # Manual profiling tool, not a pass/fail test -- GPU counterpart of
         # the CPU tBatchedGemmDepthScaling benchmark (issue #74).
         add_executable(CUDABatchedGemmDepthScaling tests/tCUDABatchedGemmDepthScaling.cpp)
-        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity)
+        # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
+        # identical comment above -- this one dynamic_casts to CUDABackend too.
+        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity DeepityCUDA)
         set_target_properties(CUDABatchedGemmDepthScaling PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1099,10 +1177,22 @@ endif()
 # --- Compiler flags -------------------------------------------------
 
 if(MSVC)
+    # CXX-only: PUBLIC means DeepityCUDA (which links Deepity) would
+    # otherwise inherit these too, but nvcc doesn't understand
+    # /openmp:llvm directly and misparses it as a stray input file ("A
+    # single input file is required..."). A -Xcompiler="..."-wrapped CUDA
+    # variant was tried here and actually made things worse: for some
+    # (not all) .cu files, MSBuild's own command-line serialization
+    # corrupted the string, dropping `-Xcompiler="` and leaving a stray
+    # `\"` behind. Not worth chasing a generator-specific escaping bug
+    # for what's a host-side optimization/OpenMP nicety, not a
+    # correctness requirement -- an unapplied OpenMP pragma is a silent
+    # no-op, and CMake's own CUDA Release defaults still optimize .cu
+    # files' host-compiled portions regardless.
     target_compile_options(Deepity PUBLIC
-        $<$<CONFIG:Release>:/O2 /fp:fast /openmp:llvm>
-        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>
-        $<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Release>:/O2 /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>>
     )
 endif()
 
@@ -1174,6 +1264,17 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         $<TARGET_FILE:deepity_ext>
         ${CMAKE_SOURCE_DIR}/deepity/
     )
+    if(DEEPITY_CUDA_ENABLED)
+        # $<TARGET_RUNTIME_DLLS:deepity_ext> below only follows real
+        # link-time dependencies, so it never picks up DeepityCUDA (it's
+        # dlopen()'d, not linked) -- copy it for local/editable installs
+        # the same way deepity_ext itself is copied, just above.
+        add_custom_command(TARGET deepity_ext POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            $<TARGET_FILE:DeepityCUDA>
+            ${CMAKE_SOURCE_DIR}/deepity/
+        )
+    endif()
     add_custom_command(TARGET deepity_ext POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:deepity_ext>>,copy_if_different,true>
         $<TARGET_RUNTIME_DLLS:deepity_ext>
@@ -1197,6 +1298,19 @@ if(DEEPITY_BUILD_PYTHON_BINDINGS AND NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         LIBRARY DESTINATION deepity
         RUNTIME DESTINATION deepity
     )
+
+    if(DEEPITY_CUDA_ENABLED)
+        # Ships libDeepityCUDA.so/.dll inside the wheel's deepity/ package
+        # dir, next to deepity_ext -- CUDAPluginLoader.cpp looks there.
+        # Not bundling cuBLAS/cudart themselves: those stay system/
+        # pip-installed deps (`pip install pydeepity[cuda]`), excluded
+        # from auditwheel/delvewheel repair -- see pyproject.toml.
+        install(TARGETS DeepityCUDA
+            COMPONENT python_runtime
+            LIBRARY DESTINATION deepity
+            RUNTIME DESTINATION deepity
+        )
+    endif()
 endif()
 
 if(WIN32)
