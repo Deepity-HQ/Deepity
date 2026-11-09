@@ -22,21 +22,6 @@ dependencies = [
     "rich",
 ]
 
-# `pip install pydeepity[cuda]` -- pulls the CUDA runtime/cuBLAS shared
-# libraries DeepityCUDA.so/.dll (bundled in the wheel itself, see
-# CMakeLists.txt's DeepityCUDA target) dlopen()s at the moment GPU
-# support is actually requested. Deliberately not vendored into the
-# wheel directly: PyPI's size limits make that a non-starter the moment
-# cuBLAS is linked (see the auditwheel --exclude lists below), and this
-# is the pattern every CUDA-linked PyPI package (PyTorch, JAX, ONNX
-# Runtime) has converged on for exactly that reason. Versions pinned to
-# match the CUDA 12.6 toolkit CI builds against (see
-# [tool.cibuildwheel.linux]'s before-all).
-[project.optional-dependencies]
-cuda = [
-    "nvidia-cuda-runtime-cu12==12.6.*",
-    "nvidia-cublas-cu12==12.6.*",
-]
 # Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
 # `license` field above is the modern replacement for that classifier,
 # and pairing both is a deprecated pattern some build backends warn on.
@@ -51,6 +36,22 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
+]
+
+# `pip install pydeepity[cuda]` -- pulls the CUDA runtime/cuBLAS shared
+# libraries DeepityCUDA.so/.dll (bundled in the wheel itself, see
+# CMakeLists.txt's DeepityCUDA target) dlopen()s at the moment GPU
+# support is actually requested. Deliberately not vendored into the
+# wheel directly: PyPI's size limits make that a non-starter the moment
+# cuBLAS is linked (see the auditwheel --exclude lists below), and this
+# is the pattern every CUDA-linked PyPI package (PyTorch, JAX, ONNX
+# Runtime) has converged on for exactly that reason. Versions pinned to
+# match the CUDA 12.6 toolkit CI builds against (see
+# [tool.cibuildwheel.linux]'s before-all).
+[project.optional-dependencies]
+cuda = [
+    "nvidia-cuda-runtime-cu12==12.6.*",
+    "nvidia-cublas-cu12==12.6.*",
 ]
 
 [project.urls]
