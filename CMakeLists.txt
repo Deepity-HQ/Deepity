@@ -903,12 +903,24 @@ if(DEEPITY_CUDA_ENABLED)
     target_compile_options(DeepityCUDA PRIVATE
         $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 
-    # Same arch flags/defs Deepity's own sources get -- these .cu files
-    # used to compile as part of Deepity itself and already passed
-    # through nvcc fine with them applied, unlike DEEPITY_PGO_COMPILE_FLAGS
-    # just below (which needs the CXX-only guard it already has).
+    # Same arch flags/defs Deepity's own sources get. On Linux this is
+    # GCC-style (-march=...), which nvcc forwards to g++ without issue --
+    # but on MSVC it's /arch:AVX2, and nvcc misparses a bare /arch:AVX2
+    # the same way it misparsed /openmp:llvm above (a colon-flag that
+    # isn't in nvcc's own small recognized-MSVC-flag table gets read as
+    # a stray input file), so it needs the identical -Xcompiler="..."
+    # wrapping, not just the CXX-only guard DEEPITY_PGO_COMPILE_FLAGS
+    # below already has.
     if(DEEPITY_TARGET_COMPILE_OPTIONS)
-        target_compile_options(DeepityCUDA PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
+        if(MSVC)
+            list(JOIN DEEPITY_TARGET_COMPILE_OPTIONS " " DEEPITY_TARGET_COMPILE_OPTIONS_JOINED)
+            target_compile_options(DeepityCUDA PRIVATE
+                $<$<COMPILE_LANGUAGE:CXX>:${DEEPITY_TARGET_COMPILE_OPTIONS}>
+                $<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=\"${DEEPITY_TARGET_COMPILE_OPTIONS_JOINED}\">
+            )
+        else()
+            target_compile_options(DeepityCUDA PRIVATE ${DEEPITY_TARGET_COMPILE_OPTIONS})
+        endif()
     endif()
     if(DEEPITY_TARGET_COMPILE_DEFS)
         target_compile_definitions(DeepityCUDA PRIVATE ${DEEPITY_TARGET_COMPILE_DEFS})
@@ -1162,15 +1174,19 @@ if(MSVC)
     # but nvcc doesn't understand /openmp:llvm directly and misparses it
     # as a stray input file ("A single input file is required..."), so
     # the CXX and CUDA variants need to stay separate: CXX gets the bare
-    # flags, CUDA gets the identical flags wrapped in -Xcompiler= so they
-    # reach cl.exe instead of nvcc's own argument parser.
+    # flags, CUDA gets the identical flags wrapped in -Xcompiler=. The
+    # embedded \"...\" matters -- without it, MSBuild/nvcc's own command-
+    # line parsing still splits on the spaces inside the wrapped list and
+    # undoes the wrapping; CMake's own internal CUDA/MSVC default flags
+    # (visible as -Xcompiler="/EHsc -Ob2" earlier in this same nvcc
+    # invocation) use the identical quoted form for this exact reason.
     target_compile_options(Deepity PUBLIC
         $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Release>:/O2 /fp:fast /openmp:llvm>>
         $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>>
         $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>>
-        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Release>:-Xcompiler=/O2 /fp:fast /openmp:llvm>>
-        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:RelWithDebInfo>:-Xcompiler=/O2 /Zi /fp:fast /openmp:llvm>>
-        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Debug>:-Xcompiler=/Od /Zi /W4 /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Release>:-Xcompiler=\"/O2 /fp:fast /openmp:llvm\">>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:RelWithDebInfo>:-Xcompiler=\"/O2 /Zi /fp:fast /openmp:llvm\">>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Debug>:-Xcompiler=\"/Od /Zi /W4 /openmp:llvm\">>
     )
 endif()
 
