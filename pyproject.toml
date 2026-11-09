@@ -137,16 +137,15 @@ manylinux-x86_64-image = "manylinux_2_28"
 # names. `nvcc --version` at the end turns a broken install into a loud
 # CI failure here instead of a silent CPU-only fallback later.
 before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache && dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo && dnf install -y cuda-toolkit-12-6 && ln -sf /usr/local/cuda-12.6 /usr/local/cuda && /usr/local/cuda/bin/nvcc --version"
-# CUDACXX: find_package(CUDAToolkit) happily finds the toolkit via
-# CUDAToolkit_ROOT alone, but CMakeLists.txt's later enable_language(CUDA)
-# call uses its own, separate compiler-discovery path that doesn't honor
-# CUDAToolkit_ROOT/PATH the same way -- confirmed by CI: configure got
-# all the way to "CUDAToolkit_FOUND" (so PATH/CUDAToolkit_ROOT DID work
-# for that part) and only then failed with "No CMAKE_CUDA_COMPILER could
-# be found", whose own error text names CUDACXX as the fix. Pointing it
-# straight at nvcc's absolute path sidesteps the question of whether
-# PATH itself is even propagating correctly into this build step.
-environment = { PATH = "/usr/local/cuda/bin:$PATH", CUDAToolkit_ROOT = "/usr/local/cuda", CUDACXX = "/usr/local/cuda/bin/nvcc" }
+# No `environment` table here for PATH/CUDAToolkit_ROOT/CUDACXX: this
+# section's values get fully overridden (not merged) by ci.yml's
+# CIBW_ENVIRONMENT_LINUX, since cibuildwheel treats that env var as a
+# complete replacement for this TOML table whenever both are set --
+# confirmed the hard way in CI, after setting them here alone did
+# nothing (find_package(CUDAToolkit) kept succeeding regardless, via
+# CMake's own hardcoded /usr/local/cuda default search path, while
+# enable_language(CUDA) kept failing since it has no such fallback and
+# never actually saw these variables). They live in ci.yml instead now.
 # --exclude: without this, auditwheel's default repair tries to vendor
 # every shared lib DeepityCUDA.so links against -- including cuBLAS --
 # straight into the wheel, which is how a <2MB wheel becomes >400MB and
