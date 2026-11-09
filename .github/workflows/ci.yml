@@ -188,7 +188,18 @@ jobs:
         # arm64, and CMakeLists.txt's SIMD flags (DEEPITY_ARCH_FLAGS's
         # x86-64-v2, SLEEF_ENABLE_AVX2/AVX512F) are x86-only with no
         # arch-conditional branching yet.
-        os: [ubuntu-latest, windows-latest]
+        #
+        # windows-2022, not windows-latest: windows-latest just rolled to
+        # windows-2025-vs2026 (Visual Studio 18), and CUDA 12.6's Windows
+        # toolkit only ships MSBuild integration files for VS versions
+        # that existed at its own 2024 release -- enable_language(CUDA)
+        # fails with "No CUDA toolset found" on VS18 as a result (this
+        # is independent of the Ninja generator Deepity otherwise uses;
+        # CMake's CUDA compiler-id detection on Windows always goes
+        # through MSBuild). windows-2022 ships VS2022, which CUDA 12.6
+        # does support. Revisit once a CUDA release ships VS18/2026
+        # integration files.
+        os: [ubuntu-latest, windows-2022]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
@@ -209,7 +220,7 @@ jobs:
       # silently -- we want this one loud while we're finding out whether
       # it even works.
       - name: Install CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: Jimver/cuda-toolkit@v0.2.36
         with:
           cuda: "12.6.3"
@@ -223,7 +234,7 @@ jobs:
           use-github-cache: true
 
       - name: Verify CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: nvcc --version
 
       # ccache isn't exercised by this install, so a flaky choco/GitHub-CDN
@@ -232,7 +243,7 @@ jobs:
       # CMakeLists.txt's find_program(DEEPITY_CCACHE_PROGRAM ccache) no-ops
       # if it's missing.
       - name: Install ccache (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         continue-on-error: true
         run: choco install ccache -y --no-progress
 
@@ -300,7 +311,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        # windows-2022: see build-wheels' identical matrix entry above for why.
+        os: [ubuntu-latest, windows-2022]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: write
@@ -313,7 +325,7 @@ jobs:
 
       # See build-wheels' identical steps for why.
       - name: Install CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         uses: Jimver/cuda-toolkit@v0.2.36
         with:
           cuda: "12.6.3"
@@ -321,12 +333,12 @@ jobs:
           use-github-cache: true
 
       - name: Verify CUDA toolkit (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         run: nvcc --version
 
       # continue-on-error: see build-wheels' identical step for why.
       - name: Install ccache (Windows)
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2022'
         continue-on-error: true
         run: choco install ccache -y --no-progress
 
@@ -418,7 +430,7 @@ jobs:
       - name: Download wheels (windows)
         uses: actions/download-artifact@v4
         with:
-          name: wheels-windows-latest
+          name: wheels-windows-2022
           path: dist
 
       - name: Download sdist
