@@ -1158,10 +1158,19 @@ endif()
 # --- Compiler flags -------------------------------------------------
 
 if(MSVC)
+    # PUBLIC, so DeepityCUDA (which links Deepity) inherits these too --
+    # but nvcc doesn't understand /openmp:llvm directly and misparses it
+    # as a stray input file ("A single input file is required..."), so
+    # the CXX and CUDA variants need to stay separate: CXX gets the bare
+    # flags, CUDA gets the identical flags wrapped in -Xcompiler= so they
+    # reach cl.exe instead of nvcc's own argument parser.
     target_compile_options(Deepity PUBLIC
-        $<$<CONFIG:Release>:/O2 /fp:fast /openmp:llvm>
-        $<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>
-        $<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Release>:/O2 /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:RelWithDebInfo>:/O2 /Zi /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CXX>:$<$<CONFIG:Debug>:/Od /Zi /W4 /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Release>:-Xcompiler=/O2 /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:RelWithDebInfo>:-Xcompiler=/O2 /Zi /fp:fast /openmp:llvm>>
+        $<$<COMPILE_LANGUAGE:CUDA>:$<$<CONFIG:Debug>:-Xcompiler=/Od /Zi /W4 /openmp:llvm>>
     )
 endif()
 
