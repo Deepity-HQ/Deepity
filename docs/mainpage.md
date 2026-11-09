@@ -7,7 +7,7 @@ backend currently in development.
 
 This page is the entry point into the **API reference**. For build
 instructions, benchmarks, and contribution guidelines, see the
-[GitHub README](https://github.com/ra4ster/deepity#readme).
+[GitHub README](https://github.com/Deepity-HQ/Deepity#readme).
 
 @section overview Overview
 
@@ -116,7 +116,7 @@ Deepity's custom SIMD micro-kernels, 64-byte-aligned buffers, and
 contiguous memory arena sustain ~690 GFLOPS/s on a full PC train step
 (`tests/tGflopsBenchmark.cpp`, built as the `GflopsBenchmark` target),
 and 487.5s/98.21% on the full MNIST benchmark -- see the
-[README](https://github.com/ra4ster/deepity#performance--benchmarks) for
+[README](https://github.com/Deepity-HQ/Deepity#performance--benchmarks) for
 the exact commands and FLOP accounting.
 
 @section roadmap Roadmap
@@ -129,14 +129,14 @@ the exact commands and FLOP accounting.
 - [x] Multithreading and Precision Metrics
 - [x] Memory Arena Contiguity
 - [x] File IO Support (@ref Deep::ModelIO)
-- [ ] CUDA accelerated engine (GPU GEMM operations for massive scales) —
-  in active development on the `dev/CUDA` branch
+- [x] CUDA accelerated engine (GPU GEMM operations for massive scales),
+  packaged into the PyPI wheels via the `cuda` extra
 - [ ] Java port
 
 @section elsewhere Elsewhere
 
 - [pydeepity API reference](python/index.html) — the Python
   package's own class docs
-- [GitHub README](https://github.com/ra4ster/deepity#readme) — install,
+- [GitHub README](https://github.com/Deepity-HQ/Deepity#readme) — install,
   build (`build.py`), and benchmark details
-- [CONTRIBUTING.md](https://github.com/ra4ster/deepity/blob/main/CONTRIBUTING.md)
+- [CONTRIBUTING.md](https://github.com/Deepity-HQ/Deepity/blob/main/CONTRIBUTING.md)
