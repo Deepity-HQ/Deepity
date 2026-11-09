@@ -8,7 +8,7 @@ Deepity's C++ engine.
 
 For the underlying C++ API, see the [main Deepity documentation](../index.html).
 For install/build instructions, see the
-[GitHub README](https://github.com/ra4ster/deepity#readme).
+[GitHub README](https://github.com/Deepity-HQ/Deepity#readme).
 
 @section py_quickstart Quick Start
 
@@ -73,4 +73,4 @@ in-place SIMD activation functions
 @section py_elsewhere Elsewhere
 
 - [Deepity C++ API reference](../index.html)
-- [GitHub README](https://github.com/ra4ster/deepity#readme)
+- [GitHub README](https://github.com/Deepity-HQ/Deepity#readme)

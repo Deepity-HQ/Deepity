@@ -30,8 +30,7 @@ earlier history.
 
 ### Fixed
 
-- `tests/*.cpp` benchmark/verification executables didn't receive the same `-march`/ISA compile flags as the `Deepity`/`pydeepity` targets, so Deepity's header-only activation kernels silently compiled against the compiler's default ISA (SSE2) instead of whatever `build.py` selected -- `ActivationBenchmark`/`GflopsBenchmark` were measuring the wrong kernel. `Deepity`/`pydeepity` themselves were unaffected.
-- `examples/mnist_cuda.py`'s `TERMINAL_FEED_WEIGHT_DECAY` stabilizer (see `examples/mnist.py` for the full derivation) was never retuned for cuBLAS's GEMM reduction order -- `2e-4` let the terminal-feed weight matrix diverge mid-training (energy spikes, accuracy crashing to the 30-40% range) before partially recovering. Swept and validated over a 100-epoch OSC A100 run; `5e-4` holds a clean >99% plateau with no late crash. Now the default, overridable via a new 4th CLI arg.
+-
 
 ### Security
 
@@ -45,6 +44,20 @@ When cutting a release:
   4. Bump the version in pyproject.toml to match
 -->
 
+## [0.1.0a7] - 2026-11-09
+
+### Added
+
+- CUDA backend packaged into the published wheels: `pip install pydeepity[cuda]` pulls the matching CUDA 12.6 runtime/cuBLAS libraries, dlopen'd on demand (see `CUDAPluginLoader`). Plain `pip install pydeepity` remains CPU-only and unaffected.
+
+### Fixed
+
+- `tests/*.cpp` benchmark/verification executables didn't receive the same `-march`/ISA compile flags as the `Deepity`/`pydeepity` targets, so Deepity's header-only activation kernels silently compiled against the compiler's default ISA (SSE2) instead of whatever `build.py` selected -- `ActivationBenchmark`/`GflopsBenchmark` were measuring the wrong kernel. `Deepity`/`pydeepity` themselves were unaffected.
+- `examples/mnist_cuda.py`'s `TERMINAL_FEED_WEIGHT_DECAY` stabilizer (see `examples/mnist.py` for the full derivation) was never retuned for cuBLAS's GEMM reduction order -- `2e-4` let the terminal-feed weight matrix diverge mid-training (energy spikes, accuracy crashing to the 30-40% range) before partially recovering. Swept and validated over a 100-epoch OSC A100 run; `5e-4` holds a clean >99% plateau with no late crash. Now the default, overridable via a new 4th CLI arg.
+- cibuildwheel's `CIBW_ENVIRONMENT_LINUX` (set in CI) was silently overriding, not merging with, `pyproject.toml`'s `[tool.cibuildwheel.linux]` environment table, so the Linux wheel build's CUDA toolchain discovery never saw `CUDACXX`/`CUDAToolkit_ROOT`. Those variables now live directly in `ci.yml`.
+- MSVC-only flags (`/openmp:llvm`, `/arch:AVX2`) were leaking onto nvcc's command line during CUDA-language compilation and being misparsed as stray input files; they're no longer applied to `.cu` files on Windows.
+- CUTLASS was pinned down to `v3.7.0` (from `v4.8.0`) to sidestep a current, unfixed upstream MSVC incompatibility in its Blackwell (SM100/SM103) kernel headers (`constexpr` functions returning `dim3`, a non-literal type) -- this project only targets `compute_70`-`compute_90` and has no use for those kernels.
+
 <!--
 ## [0.1.0] - YYYY-MM-DD
 
@@ -53,7 +66,8 @@ When cutting a release:
 - Initial tracked release.
 -->
 
-[Unreleased]: https://github.com/Ra4ster/Deepity/compare/main...HEAD
+[Unreleased]: https://github.com/Deepity-HQ/Deepity/compare/v0.1.0a7...HEAD
+[0.1.0a7]: https://github.com/Deepity-HQ/Deepity/compare/v0.1.0a6...v0.1.0a7
 
 ## Versioning
 

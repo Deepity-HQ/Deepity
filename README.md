@@ -6,7 +6,7 @@
 
 **A fast C++ / CUDA engine for training neural networks with predictive coding, a brain-inspired alternative to backpropagation, with a simple Python interface.**
 
-[Website & Documentation](https://ra4ster.github.io/Deepity) • [PyPI](https://pypi.org/project/pydeepity/) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
+[Website & Documentation](https://deepity.dev) • [PyPI](https://pypi.org/project/pydeepity/) • [Quick Start](#quick-start) • [Benchmarks](#performance--benchmarks) • [Contributing](#contributing)
 
 > **At a glance:** Deepity's `SimplePCN` reaches **98.21%** MNIST test accuracy in **487.5s** on a laptop CPU, faster than the two established predictive-coding libraries, jpc (JAX) and ngc-learn, at matching or better accuracy on an identical setup. On GPU, `DKPPCN`'s batched training path scales with network depth far better than hand-rolled backpropagation: by 2048 layers, backprop runs 2 to 5x slower at matched width and batch size. Details, and where Deepity does *not* win, are in [Performance & Benchmarks](#performance--benchmarks).
 
@@ -75,25 +75,29 @@ Deepity implements two ways of turning prediction errors into weight updates:
 
 ### 1. Install
 
-**From PyPI** (prebuilt wheels, Linux + Windows, Python 3.9-3.13):
+**From PyPI** (prebuilt wheels, Linux + Windows, Python 3.11-3.13):
 
 ```bash
 uv add pydeepity
 # or: pip install pydeepity
+
+# For GPU support (NVIDIA, CUDA 12.6), add the `cuda` extra instead:
+uv add "pydeepity[cuda]"
+# or: pip install "pydeepity[cuda]"
 ```
 
-This is an early pre-release (`0.1.0a1`) -- the CPU engine itself is
-well-tested (see [Performance & Benchmarks](#performance--benchmarks)
-below), but these wheels are CPU-only and some edge cases are still being
-worked through; see [Architecture & Roadmap](#architecture--roadmap).
+This is an early pre-release -- the CPU engine itself is well-tested (see
+[Performance & Benchmarks](#performance--benchmarks) below); the CUDA
+backend is newer and some edge cases are still being worked through; see
+[Architecture & Roadmap](#architecture--roadmap).
 
-**From source** (needed for CUDA, or to track the latest `dev/CUDA` work):
-you'll need CMake 3.21+, Ninja, a C++20 compiler, OpenBLAS or Intel MKL, and
-Python 3.9+ with `nanobind` (the full list is in [Building from
-source](#building-from-source)). Then:
+**From source** (to customize the build, or target a platform the prebuilt
+wheels don't cover): you'll need CMake 3.21+, Ninja, a C++20 compiler,
+OpenBLAS or Intel MKL, and Python 3.11+ with `nanobind` (the full list is
+in [Building from source](#building-from-source)). Then:
 
 ```bash
-git clone https://github.com/Ra4ster/Deepity.git
+git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
 python build.py Release OpenBLAS --fast
 ```
@@ -285,7 +289,7 @@ _Note: the CUDA (GPU) backend is a separate code path with its own characteristi
 - CMake 3.21+ and Ninja
 - A C++20 compiler (Clang recommended; GCC and MSVC are also supported)
 - OpenBLAS or Intel MKL
-- Python 3.9+ with development headers, plus `nanobind` (for the `deepity` bindings)
+- Python 3.11+ with development headers, plus `nanobind` (for the `deepity` bindings)
 - CUDA Toolkit (optional: the CUDA backend is detected automatically if present; otherwise the project builds and runs CPU-only)
 
 See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CMake invocations (for example, Windows + Clang).
@@ -295,7 +299,7 @@ See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CM
 `build.py` handles CMake/Ninja configuration, compilation and running the test suite in one command:
 
 ```bash
-git clone https://github.com/Ra4ster/Deepity.git
+git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
 python build.py Release OpenBLAS --fast
 ```
@@ -314,7 +318,7 @@ Deepity started as an academic research project and is now becoming a scalable i
 
 **Done**
 
-- [x] Fused, optimized CUDA kernels
+- [x] Fused, optimized CUDA kernels, packaged into the PyPI wheels (`pip install pydeepity[cuda]`)
 - [x] DKP-PC acceleration
 - [x] DKP-PC depth scaling benchmarked directly against backpropagation on GPU, confirming the architecture's local-update design turns into a real, measured training-speed advantage at depth (see [Depth scaling](#depth-scaling-dkp-pc-vs-backpropagation-gpu))
 - [x] ImageNet data loading pipeline (see `research/imagenet.py`)
