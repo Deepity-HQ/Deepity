@@ -200,7 +200,7 @@ check_ipo_supported(RESULT DEEPITY_IPO_SUPPORTED OUTPUT DEEPITY_IPO_ERROR)
 # be the detected compiler links every executable target successfully
 # right up until this exact failure, with no earlier signal.
 set(DEEPITY_IPO_DISABLED_BY_LINKER_CHECK FALSE)
-if(DEEPITY_IPO_SUPPORTED AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(DEEPITY_IPO_SUPPORTED AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
     find_program(DEEPITY_LLD_PROGRAM NAMES ld.lld lld)
     if(DEEPITY_LLD_PROGRAM)
         message(STATUS "Clang + LTO detected: using lld (${DEEPITY_LLD_PROGRAM}) as the "
@@ -627,7 +627,7 @@ if(DEEPITY_USE_ONEDNN)
         function(deepity_silence_warnings_recursive dir)
             get_property(targets DIRECTORY "${dir}" PROPERTY BUILDSYSTEM_TARGETS)
             foreach(target ${targets})
-                if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+                if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|IntelLLVM")
                     target_compile_options(${target} PRIVATE -w)
                 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
                     target_compile_options(${target} PRIVATE /w)
@@ -969,7 +969,7 @@ FetchContent_MakeAvailable(benchmark)
 # command line overrides an earlier -pedantic-errors for that specific
 # category, so suppress it directly on the already-defined target
 # rather than patching benchmark's vendored source.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
     target_compile_options(benchmark PRIVATE -Wno-c2y-extensions)
     target_compile_options(benchmark_main PRIVATE -Wno-c2y-extensions)
 endif()
