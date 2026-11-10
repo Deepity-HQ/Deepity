@@ -29,6 +29,9 @@ jobs:
           - compiler: clang
             cc: clang
             cxx: clang++
+          - compiler: icpx
+            cc: icx
+            cxx: icpx
 
     env:
       CC: ${{ matrix.cc }}
@@ -55,6 +58,17 @@ jobs:
             libopenblas-dev \
             python3-dev \
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
+
+      - name: Install Intel oneAPI DPC++/C++ compiler (icpx)
+        if: matrix.compiler == 'icpx'
+        run: |
+          wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | sudo gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update && sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp
+          echo "/opt/intel/oneapi/compiler/latest/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
 
       - name: Install Python build dependencies
         # --system: install into actions/setup-python's interpreter
