@@ -134,6 +134,10 @@ test-command = "python -c \"import deepity; print('deepity OK:', deepity.__file_
 manylinux-x86_64-image = "manylinux_2_28"
 # ccache isn't in AlmaLinux 8's base repos, only EPEL.
 #
+# Compiler: Intel's icpx (oneAPI DPC++/C++), installed from Intel's own yum
+# repo and selected via CC/CXX in ci.yml's CIBW_ENVIRONMENT_LINUX. The
+# `icpx --version` call makes a broken install a loud failure here.
+#
 # CUDA toolkit: installed from NVIDIA's own RHEL8 rpm repo (manylinux_2_28
 # is AlmaLinux 8, which that repo targets directly). Using the
 # `cuda-toolkit-12-6` meta-package rather than hand-picking sub-packages
@@ -143,7 +147,7 @@ manylinux-x86_64-image = "manylinux_2_28"
 # meta-package's own dependency resolution is more reliable than guessing
 # names. `nvcc --version` at the end turns a broken install into a loud
 # CI failure here instead of a silent CPU-only fallback later.
-before-all = "dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache && dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo && dnf install -y cuda-toolkit-12-6 && ln -sf /usr/local/cuda-12.6 /usr/local/cuda && /usr/local/cuda/bin/nvcc --version"
+before-all = "printf '[oneAPI]\\nname=Intel oneAPI\\nbaseurl=https://yum.repos.intel.com/oneapi\\nenabled=1\\ngpgcheck=1\\nrepo_gpgcheck=1\\ngpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB\\n' > /etc/yum.repos.d/oneAPI.repo && dnf install -y intel-oneapi-compiler-dpcpp-cpp && /opt/intel/oneapi/compiler/latest/bin/icpx --version && dnf install -y epel-release && dnf install -y openblas-devel libgomp ccache && dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel8/x86_64/cuda-rhel8.repo && dnf install -y cuda-toolkit-12-6 && ln -sf /usr/local/cuda-12.6 /usr/local/cuda && /usr/local/cuda/bin/nvcc --version"
 # No `environment` table here for PATH/CUDAToolkit_ROOT/CUDACXX: this
 # section's values get fully overridden (not merged) by ci.yml's
 # CIBW_ENVIRONMENT_LINUX, since cibuildwheel treats that env var as a

@@ -269,7 +269,7 @@ jobs:
           # path, unrelated to any of this), while enable_language(CUDA)
           # kept failing to find a compiler, since it has no such
           # hardcoded fallback and never actually saw these variables.
-          CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/usr/local/cuda/bin:$PATH CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
+          CIBW_ENVIRONMENT_LINUX: CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/opt/intel/oneapi/compiler/latest/bin:/usr/local/cuda/bin:$PATH LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH CC=icx CXX=icpx CUDAHOSTCXX=g++ CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
           CIBW_ENVIRONMENT_WINDOWS: CCACHE_DIR=${{ github.workspace }}\.ccache
 
       # if: always() -- restore/save split so a failed build still keeps
@@ -367,7 +367,7 @@ jobs:
           # PATH/CUDAToolkit_ROOT/CUDACXX: see build-wheels' identical
           # CIBW_ENVIRONMENT_LINUX comment above for why these are here
           # instead of pyproject.toml's environment table.
-          CIBW_ENVIRONMENT_LINUX: CMAKE_ARGS=-DDEEPITY_ARCH_FLAGS=-march=x86-64-v3 CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/usr/local/cuda/bin:$PATH CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
+          CIBW_ENVIRONMENT_LINUX: CMAKE_ARGS=-DDEEPITY_ARCH_FLAGS=-march=x86-64-v3 CCACHE_DIR=/host${{ github.workspace }}/.ccache PATH=/opt/intel/oneapi/compiler/latest/bin:/usr/local/cuda/bin:$PATH LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH CC=icx CXX=icpx CUDAHOSTCXX=g++ CUDAToolkit_ROOT=/usr/local/cuda CUDACXX=/usr/local/cuda/bin/nvcc
           CIBW_ENVIRONMENT_WINDOWS: CMAKE_ARGS=-DDEEPITY_MSVC_ARCH_FLAGS=/arch:AVX2 CCACHE_DIR=${{ github.workspace }}\.ccache
 
       - name: Save ccache compiler cache
@@ -397,8 +397,19 @@ jobs:
       - name: Install system dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libopenblas-dev
 
+      # Same compiler as the Linux wheels (see pyproject.toml's before-all).
+      - name: Install Intel oneAPI DPC++/C++ compiler (icpx)
+        run: |
+          wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
+            | sudo gpg --dearmor -o /usr/share/keyrings/oneapi-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main" \
+            | sudo tee /etc/apt/sources.list.d/oneAPI.list
+          sudo apt-get update && sudo apt-get install -y intel-oneapi-compiler-dpcpp-cpp
+          echo "/opt/intel/oneapi/compiler/latest/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=/opt/intel/oneapi/compiler/latest/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
       - name: Build (fast profile, CPU-only, library only)
-        run: python3 build.py --fast --no-cuda --no-tests --no-python-bindings
+        run: python3 build.py --fast --no-cuda --no-tests --no-python-bindings -DCMAKE_CXX_COMPILER=icpx -DCMAKE_C_COMPILER=icx
 
       # Ships the whole include/ tree, not just include/deepity/ --
       # ModelIO.h pulls in the vendored nlohmann/json.hpp header too.
