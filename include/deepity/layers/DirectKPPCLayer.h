@@ -237,7 +237,7 @@ public:
   /// @brief Subtracts each output unit's mean incoming weight from W
   /// (two backend GEMMs, so CPU and GPU). Removes the common-mode drift that pushes
   /// ReLU units below zero, where they stop learning.
-  void CenterWeights() noexcept;
+  void CenterWeights() noexcept override;
   void UpdateWeights() noexcept override;
   /// @brief Perturbs W using the layer above's Psi and the terminal
   /// layer's error, the DFA phase, run once per batch before settling

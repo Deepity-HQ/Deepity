@@ -104,6 +104,12 @@ public:
   /// p^{(l+1)})^T \phi(z^{(l)})
   /// \f]
   void UpdateWeights() noexcept override;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept override
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
 
   /// @brief Updates this layer's precision weighting based on the
   /// current prediction error.

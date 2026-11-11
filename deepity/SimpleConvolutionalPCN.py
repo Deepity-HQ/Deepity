@@ -109,6 +109,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         inference_rate: float = 0.1,
         lmbda: float = 1e-2,
         optimizer: str = "SGD",
+        center_weights: bool = False,
     ) -> None:
         """
         Configure network hyperparameters and initialize the backend.
@@ -118,6 +119,7 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         @param inference_rate Inference/settling rate.
         @param lmbda Regularization parameter.
         @param optimizer Optimizer used for the forward weights.
+        @param center_weights Re-center each layer's W rows after every weight update.
         """
 
         self._learning_rate = learning_rate
@@ -128,7 +130,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self._build_backend()
 
         # The backend requires the optimizer to be selected before compile.
-        self.set_optimizer(optimizer)
+        # Base-class call: the public setter needs _configured, set below.
+        super().set_optimizer(optimizer)
         # Compile() must run before RandomizeWeights(): each layer uses its
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
@@ -136,6 +139,8 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self.randomize_weights()
 
         self._configured = True
+        self.set_center_weights(center_weights)
+
 
     def _require_configured(self) -> None:
         if not self._configured:

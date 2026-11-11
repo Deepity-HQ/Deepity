@@ -136,6 +136,12 @@ public:
   void ComputeMuOnly() noexcept;
   void UpdateState() noexcept;
   void UpdateWeights() noexcept;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
   /// @brief Perturbs W using the layer above's Psi and the terminal
   /// layer's error, the DFA phase, run once per batch before settling
   /// begins.

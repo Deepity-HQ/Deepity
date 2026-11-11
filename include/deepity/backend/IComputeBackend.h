@@ -550,15 +550,12 @@ public:
                                                             size_t n) noexcept = 0;
   /// @brief buf[i] = value for all i in [0, n).
   virtual void Fill(T* buf, size_t n, AccumT value) noexcept = 0;
-  /// @brief Attempts buf[r*cols + c] -= mean_c(buf[r*cols + c]) for every
-  /// row r of a dense row-major (rows, cols) matrix, in place, as one
-  /// fused pass. Returns false (buf untouched) if this backend has no
-  /// kernel for it; the caller then falls back to two MatMul() calls.
-  virtual bool TryCenterRows(T* buf, size_t rows, size_t cols) noexcept
-  {
-    (void)buf, (void)rows, (void)cols;
-    return false;
-  }
+  /// @brief buf[r*cols + c] -= mean_c(buf[r*cols + c]) for every row r
+  /// of a dense row-major (rows, cols) matrix, in place. Used to remove
+  /// the common-mode drift of a weight matrix's rows (see
+  /// DirectKPPCNetwork::SetCenterWeights()). For sub-16-bit T the
+  /// subtraction re-rounds to T.
+  virtual void CenterRows(T* buf, size_t rows, size_t cols) noexcept = 0;
   /// @brief Convolutional bias-add: buf[c*spatialSize + s] += bias[c] for
   /// all c in [0,channels), s in [0,spatialSize). Per-channel broadcast
   /// across spatial positions. For a shared bias across a batch, fold

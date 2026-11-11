@@ -126,10 +126,22 @@ public:
   /// @brief Calls UpdateWeights() on every layer except the terminal
   /// one (each layer's own UpdateWeights() is also self-guarded
   /// against outChannels==0, so this is belt-and-suspenders).
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+  }
+
   void UpdateWeights() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
       layers[i]->UpdateWeights();
+    if (centerWeights)
+      for (size_t i = 0; i + 1 < layers.size(); ++i)
+        layers[i]->CenterWeights();
   }
 
   SimpleConvPCLayerT<T, AccumT>* GetTerminalLayer() noexcept
@@ -257,6 +269,7 @@ public:
   }
 
 private:
+  bool centerWeights = false;
   std::vector<std::unique_ptr<SimpleConvPCLayerT<T, AccumT>>> layers;
   std::unique_ptr<IComputeBackendT<T, AccumT>> backend;
   DeviceType device;

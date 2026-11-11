@@ -224,6 +224,12 @@ public:
   void ComputeMuOnly() noexcept;
   void UpdateState() noexcept;
   void UpdateWeights() noexcept;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
   void DirectFeedbackUpdate() noexcept;
 
   void ReconstructBelief() noexcept;

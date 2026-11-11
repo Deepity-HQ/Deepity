@@ -80,6 +80,17 @@ public:
   /// against outChannels==0, so this is belt-and-suspenders).
   void UpdateWeights() noexcept;
 
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+    graphCaptured = false;
+    graphCapturedWithProjection = false;
+  }
+
   /// @brief Returns the last layer (outChannels==0, the terminal one).
   SimpleConvPCLayer* GetTerminalLayer() noexcept
   {
@@ -133,6 +144,7 @@ private:
   // CUDA graph capture state, GPU-only: TrainStep() and
   // TrainStepWithProjection() capture different op sequences, so
   // each needs its own capture-validity tracking.
+  bool centerWeights = false;
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
   bool graphCapturedWithProjection = false;

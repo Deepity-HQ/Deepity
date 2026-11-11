@@ -62,6 +62,16 @@ public:
   void EPCStep() noexcept;
   void UpdateWeights() noexcept;
 
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+    graphCaptured = false;
+  }
+
   void SetOptimizer(OptimizerType o) noexcept
   {
     for (auto& layer : layers)
@@ -189,6 +199,7 @@ private:
   bool useMuPCScaling = false;
   bool useResidualConnections = false;
 
+  bool centerWeights = false;
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 

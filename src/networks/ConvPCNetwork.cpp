@@ -117,6 +117,9 @@ void ConvPCNetwork::UpdateWeights() noexcept
 {
   for (size_t i = 0; i + 1 < layers.size(); ++i)
     layers[i]->UpdateWeights();
+  if (centerWeights)
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+      layers[i]->CenterWeights();
 }
 
 void ConvPCNetwork::UpdatePrecision() noexcept

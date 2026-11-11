@@ -247,15 +247,14 @@ __global__ void CenterRowsKernel(float* buf, size_t cols)
     row[c] -= mean;
 }
 
-bool CUDABackend::TryCenterRows(float* buf, size_t rows, size_t cols) noexcept
+void CUDABackend::CenterRows(float* buf, size_t rows, size_t cols) noexcept
 {
   if (!buf || rows == 0 || cols == 0)
-    return true;
+    return;
   // Block size: a multiple of 32, no larger than the row needs, max 256.
   unsigned int threads = (unsigned int)std::min<size_t>(256, ((cols + 31) / 32) * 32);
   CenterRowsKernel<<<(unsigned int)rows, threads, 0, stream>>>(buf, cols);
   CHECK_CUDA_LAUNCH();
-  return true;
 }
 } // namespace Deep
 

@@ -260,10 +260,10 @@ void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t 
     cblas_saxpy(width, 1.0f, src + b * width, 1, dst, 1);
 }
 
-bool CPUBackend::TryCenterRows(float* buf, size_t rows, size_t cols) noexcept
+void CPUBackend::CenterRows(float* buf, size_t rows, size_t cols) noexcept
 {
   if (!buf || rows == 0 || cols == 0)
-    return true;
+    return;
 #pragma omp parallel for schedule(static) if (rows * cols > 262144 && !omp_in_parallel())
   for (size_t r = 0; r < rows; ++r)
   {
@@ -277,7 +277,6 @@ bool CPUBackend::TryCenterRows(float* buf, size_t rows, size_t cols) noexcept
     for (size_t c = 0; c < cols; ++c)
       row[c] -= mean;
   }
-  return true;
 }
 
 float CPUBackend::Sum(const float* buf, size_t n) noexcept

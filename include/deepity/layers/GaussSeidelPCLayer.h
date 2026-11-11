@@ -116,6 +116,12 @@ public:
   /// weight decay. Called once after the full settling loop
   /// completes.
   void UpdateWeights() noexcept override;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept override
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
 
   /// @brief No-op; exists for Layer interface conformance.
   void Flush() noexcept override {}

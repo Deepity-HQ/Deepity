@@ -71,6 +71,8 @@ public:
   virtual void UpdateState() noexcept = 0;
   /// @brief Updates the weights after state updates.
   virtual void UpdateWeights() noexcept = 0;
+  /// @brief Re-centers this layer's weight rows. No-op by default.
+  virtual void CenterWeights() noexcept {}
   /// @brief Flushes remaining batches.
   virtual void Flush() noexcept {}
   /// @brief Returns this layer's named, shaped weight/bias tensors,

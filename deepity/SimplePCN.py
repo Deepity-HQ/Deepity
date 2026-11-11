@@ -164,6 +164,7 @@ class SimplePCN(dy.SimplePCNetwork):
         optimizer: str = "SGD",
         seed: Optional[int] = None,
         dist: str = "normal",
+        center_weights: bool = False,
     ) -> None:
         """
         Configure the network and build its backend layers.
@@ -191,6 +192,9 @@ class SimplePCN(dy.SimplePCNetwork):
             "uniform(-0.3,0.3)". The default "normal" has no "(a,b)"
             and so deliberately falls back to each layer's own
             existing default (see RandomizeWeights()).
+
+        center_weights:
+            Re-center each layer's W rows after every weight update.
         """
 
         self._learning_rate = learning_rate
@@ -208,6 +212,8 @@ class SimplePCN(dy.SimplePCNetwork):
         super().randomize_weights(seed, dist)
 
         self._configured = True
+        self.set_center_weights(center_weights)
+
 
     def _require_configured(self) -> None:
         if not self._configured:

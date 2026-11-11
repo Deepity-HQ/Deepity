@@ -114,10 +114,22 @@ public:
     for (auto& l : layers)
       l->UpdateState();
   }
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+  }
+
   void UpdateWeights() noexcept
   {
     for (size_t i = 0; i + 1 < layers.size(); ++i)
       layers[i]->UpdateWeights();
+    if (centerWeights)
+      for (size_t i = 0; i + 1 < layers.size(); ++i)
+        layers[i]->CenterWeights();
   }
   /// @brief Applies precision updates to every non-terminal layer. Not
   /// called automatically by TrainStep(); the caller invokes this
@@ -240,6 +252,7 @@ public:
   }
 
 private:
+  bool centerWeights = false;
   std::vector<std::unique_ptr<ConvPCLayerT<T, AccumT>>> layers;
   std::unique_ptr<IComputeBackendT<T, AccumT>> backend;
   DeviceType device;
