@@ -130,6 +130,9 @@ public:
     for (auto& layer : layers)
       layer->SetPsiOptimizer(o);
   }
+  /// @brief Re-centers every non-terminal layer's W rows after each
+  /// UpdateWeights(). Off by default.
+  void SetCenterWeights(bool enabled);
   /// @brief Sets the learning rate used for W updates, on every layer.
   void SetLearningRate(float lr) noexcept
   {
@@ -207,6 +210,7 @@ public:
   void Compile();
 
 private:
+  void UpdateWeightsImpl() noexcept;
   /// @brief Every layer in the network, in the order they were added.
   std::vector<std::unique_ptr<DirectKPPCLayer>> layers;
 
@@ -234,6 +238,7 @@ private:
   // above since they capture different operations.
   bool predictGraphCaptured = false;
   int capturedPredictInferenceSteps = -1;
+  bool centerWeights = false;
   static constexpr size_t kPredictGraphSlot = 1;
 
   // --- Batched-GPU fast path (issue #74's DKP-PC depth-scaling result)

@@ -273,6 +273,8 @@ public:
                                                     ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
+  /// @copydoc Deep::IComputeBackend::TryCenterRows
+  bool TryCenterRows(float* buf, size_t rows, size_t cols) noexcept override;
   /// @copydoc Deep::IComputeBackend::AddBiasPerChannel
   void AddBiasPerChannel(float* buf, const float* bias, size_t channels,
                          size_t spatialSize) noexcept override;

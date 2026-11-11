@@ -292,6 +292,22 @@ void DirectKPPCLayer::ComputeMuOnly() noexcept
   }
 }
 
+void DirectKPPCLayer::CenterWeights() noexcept
+{
+  if (layerAbove == nullptr || nextSize == 0)
+    return;
+  if (backend->TryCenterRows(W, nextSize, size))
+    return;
+  // Fallback, scratch is free here (runs after UpdateWeights()). Two
+  // GEMMs: rowSum = W @ ones, then W -= (1/size) * rowSum @ ones^T.
+  float* ones = feedbackScratch;
+  backend->Fill(ones, size, 1.0f);
+  backend->MatMul(false, false, (int)nextSize, 1, (int)size, 1.0f, W, (int)size, ones, 1, 0.0f,
+                  biasGradScratch, 1);
+  backend->MatMul(false, false, (int)nextSize, (int)size, 1, -1.0f / (float)size, biasGradScratch,
+                  1, ones, (int)size, 1.0f, W, (int)size);
+}
+
 void DirectKPPCLayer::UpdateState() noexcept
 {
   size_t N = (size_t)batchSize * size;

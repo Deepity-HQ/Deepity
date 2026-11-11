@@ -462,7 +462,23 @@ float DirectKPPCNetwork::Step(bool needEnergy) noexcept
   return 0.0f;
 }
 
+void DirectKPPCNetwork::SetCenterWeights(bool enabled)
+{
+  if (enabled == centerWeights)
+    return;
+  centerWeights = enabled;
+  graphCaptured = false; // the captured TrainStep() graph bakes the flag in
+}
+
 void DirectKPPCNetwork::UpdateWeights() noexcept
+{
+  UpdateWeightsImpl();
+  if (centerWeights)
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+      layers[i]->CenterWeights();
+}
+
+void DirectKPPCNetwork::UpdateWeightsImpl() noexcept
 {
   // Step()'s last CalculateState() call left preact one settling
   // iteration behind the z that UpdateState() just produced from it --

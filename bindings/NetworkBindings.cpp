@@ -803,6 +803,8 @@ void bind_networks(nb::module_& m)
            "Runs one settling step (calculate_state + update_state) on every layer.")
       .def("update_weights", &Deep::DirectKPPCNetwork::UpdateWeights,
            "Applies weight updates to every layer.")
+      .def("set_center_weights", &Deep::DirectKPPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each hidden layer's W rows after every weight update.")
       .def(
           "set_optimizer",
           [](Deep::DirectKPPCNetwork& self, const std::string& opt)

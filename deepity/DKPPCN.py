@@ -24,6 +24,14 @@ class DKPPCN(dy.DirectKPPCNetwork):
     Unlike the other PCN implementations, DKP performs a direct
     feedback alignment update before the ordinary settling loop.
     This allows inference_steps=1 to be the default operating point.
+
+    Note:
+        With ReLU hidden layers and inference_steps > 1, the mean
+        incoming weight of each hidden unit drifts negative, since the
+        previous layer's output is non-negative. Pre-activations then
+        sit below zero and the units go silent. Pass
+        configure(center_weights=True) to counter this.
+        Sigmoid hidden layers do not need it.
     """
 
     def __init__(
@@ -141,6 +149,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         lmbda: float = 1e-2,
         optimizer: str = "SGD",
         psi_optimizer: str = "SGD",
+        center_weights: bool = False,
     ) -> "DKPPCN":
         """
         Configure and initialize the DKP network.
@@ -164,6 +173,10 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
         psi_optimizer:
             Independent optimizer used for Psi.
+
+        center_weights:
+            Re-center each hidden layer's W rows after every update. Recommended for ReLU hidden layers with
+            inference_steps > 1.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -179,6 +192,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
 
         self.compile()
         self.randomize_weights()
+        self.set_center_weights(center_weights)
 
         return self
 

@@ -234,6 +234,10 @@ public:
   /// @brief Computes only mu (forward prediction), skipping error/energy.
   void ComputeMuOnly() noexcept;
   void UpdateState() noexcept override;
+  /// @brief Subtracts each output unit's mean incoming weight from W
+  /// (two backend GEMMs, so CPU and GPU). Removes the common-mode drift that pushes
+  /// ReLU units below zero, where they stop learning.
+  void CenterWeights() noexcept;
   void UpdateWeights() noexcept override;
   /// @brief Perturbs W using the layer above's Psi and the terminal
   /// layer's error, the DFA phase, run once per batch before settling
