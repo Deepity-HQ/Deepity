@@ -75,6 +75,12 @@ public:
   void UpdateState() noexcept override;
   /// @brief Hebbian/gradient weight update.
   void UpdateWeights() noexcept override;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept override
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, (size_t)outChannels, (size_t)inChannels * kernelH * kernelW);
+  }
   /// @brief Updates this layer's precision estimate from current
   /// prediction errors, using the configured precision rate (pr).
   void UpdatePrecision() noexcept;

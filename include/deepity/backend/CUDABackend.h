@@ -263,6 +263,8 @@ public:
                                                     ActivationType dType, size_t n) noexcept override;
   /// @copydoc Deep::IComputeBackend::Fill
   void Fill(float* buf, size_t n, float value) noexcept override;
+  /// @copydoc Deep::IComputeBackend::CenterRows
+  void CenterRows(float* buf, size_t rows, size_t cols) noexcept override;
 
   /// @copydoc Deep::IComputeBackend::Im2Col
   void Im2Col(const float* input, int batchSize, int channels, int height, int width, int kernelH,

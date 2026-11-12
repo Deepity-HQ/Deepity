@@ -143,6 +143,7 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         inference_rate: float = 0.1,
         lmbda: float = 1e-2,
         optimizer: str = "SGD",
+        center_weights: bool = False,
     ) -> None:
         """
         Configure the network and build its backend layers.
@@ -160,6 +161,9 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
 
         optimizer:
             Optimizer to use: SGD, ADAM, or ADAMW.
+
+        center_weights:
+            Re-center each layer's W rows after every weight update.
         """
 
         self._learning_rate = learning_rate
@@ -177,6 +181,8 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         super().randomize_weights()
 
         self._configured = True
+        self.set_center_weights(center_weights)
+
 
     def _require_configured(self) -> None:
         if not self._configured:

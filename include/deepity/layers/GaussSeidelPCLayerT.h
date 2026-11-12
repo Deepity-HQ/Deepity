@@ -114,6 +114,12 @@ public:
   /// @brief Computes weight updates. Called once after the full
   /// settling loop completes.
   void UpdateWeights() noexcept;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
 
   /// @brief Clamps this layer's beliefs to externally-provided data.
   void ClampState(const std::vector<T>& inputData) noexcept;

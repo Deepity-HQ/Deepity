@@ -16,15 +16,9 @@
    ========================================================================== */
 
 @font-face {
-  font-family: "Michroma";
-  src: url("/fonts/Michroma-Regular.ttf") format("truetype");
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Jura";
-  src: url("/fonts/Jura-VariableFont_wght.ttf") format("truetype");
-  font-weight: 300 700;
+  font-family: "Inter";
+  src: url("/fonts/Inter.woff2") format("woff2");
+  font-weight: 100 900;
   font-display: swap;
 }
 
@@ -46,7 +40,7 @@
      -------------------------------------------------------------------- */
   color-scheme: dark;
 
-  --dx-bg: #020205;
+  --dx-bg: #08080a;
   --dx-panel: #0c0c0d;
   --dx-panel-raised: #141415;
   --dx-border: rgba(255, 255, 255, 0.1);
@@ -233,13 +227,13 @@
   /* fonts -- Inter/Roboto match the main site's body copy; Fira Code
      matches the monospace font used in the site's own homepage code
      samples (see HomePage.jsx's syntaxCustomStyle) */
-  --font-family-normal: "Jura", "Segoe UI", sans-serif;
-  --font-family-title: "Michroma", "Jura", sans-serif;
+  --font-family-normal: "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-family-title: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-family-monospace: "JetBrains Mono", "Fira Code", ui-monospace, Consolas, monospace;
-  --font-family-nav: "Michroma", "Jura", sans-serif;
-  --font-family-toc: "Jura", sans-serif;
-  --font-family-search: "Jura", sans-serif;
-  --font-family-tooltip: "Jura", sans-serif;
+  --font-family-nav: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-family-toc: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-family-search: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-family-tooltip: "Inter", ui-sans-serif, system-ui, sans-serif;
 
   /* special sections (@note/@warning/@deprecated/etc admonitions) --
      kept close to Doxygen's own light values, which already read
@@ -411,15 +405,13 @@ ul.page-outline .arrowhead.opened {
 
 #top,
 #titlearea {
-  background: rgba(2, 2, 5, 0.9) !important;
-  backdrop-filter: blur(8px);
+  background: var(--dx-bg) !important;
   border-bottom: 1px solid var(--dx-border);
 }
 
 #projectname {
   color: var(--dx-text);
-  font-family: "Michroma", "Jura", sans-serif;
-  font-weight: 400;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -441,8 +433,7 @@ div.title,
 .contents h1,
 .contents h2,
 .contents h3 {
-  font-family: "Michroma", "Jura", sans-serif;
-  font-weight: 400;
+  font-weight: 600;
   color: var(--dx-text);
 }
 
@@ -588,4 +579,431 @@ div.dyncontent img,
 div.image img,
 .dynheader + .dyncontent img {
   filter: invert(0.9) hue-rotate(180deg);
+}
+
+/* ==========================================================================
+   Layout and typography refinements
+   Quiet header, a readable column width, plain member tables and compact
+   navigation, so the reference reads like a manual instead of a code dump.
+   ========================================================================== */
+
+body {
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header: one compact row */
+#titlearea {
+  border-bottom: 0 !important;
+}
+
+#titlearea table {
+  height: 52px;
+}
+
+#projectname {
+  font-size: 17px !important;
+  line-height: 1.2;
+  padding: 0 !important;
+}
+
+#projectbrief {
+  font-size: 12px !important;
+  padding: 0 !important;
+}
+
+#projectlogo img {
+  height: 26px;
+}
+
+#projectlogo {
+  vertical-align: middle;
+  padding: 0 10px 0 14px;
+}
+
+#main-menu,
+.sm-dox {
+  border-bottom: 1px solid var(--dx-border);
+  box-shadow: none !important;
+}
+
+.sm-dox a {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+/* Reading column */
+div.contents {
+  max-width: 960px;
+  margin: 0 !important;
+  padding: 12px 40px 80px !important;
+}
+
+div.header {
+  border-bottom: 1px solid var(--dx-border) !important;
+  background: var(--dx-bg) !important;
+}
+
+div.headertitle {
+  padding: 20px 40px 14px !important;
+}
+
+div.title {
+  font-size: 24px !important;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.contents h1 {
+  font-size: 26px;
+  margin: 44px 0 14px;
+  letter-spacing: -0.02em;
+}
+
+.contents h2 {
+  font-size: 21px;
+  margin: 40px 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--dx-border);
+  letter-spacing: -0.015em;
+}
+
+.contents h3 {
+  font-size: 17px;
+  margin: 28px 0 10px;
+}
+
+.contents p,
+.contents li,
+.textblock {
+  color: var(--dx-text-dim);
+}
+
+.contents p {
+  margin: 0 0 14px;
+}
+
+/* Member summary tables: rows with hairlines instead of boxes */
+table.memberdecls {
+  border-collapse: collapse;
+  width: 100%;
+  border: 0;
+  margin: 8px 0 24px;
+}
+
+table.memberdecls td,
+.memItemLeft,
+.memItemRight,
+.memTemplParams,
+.memTemplItemLeft,
+.memTemplItemRight,
+.mdescLeft,
+.mdescRight,
+tr.heading td {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+tr[class^="memitem:"] > td {
+  padding-top: 8px;
+  padding-bottom: 2px;
+}
+
+tr[class^="memdesc:"] > td {
+  padding: 0 0 8px;
+  color: var(--dx-text-muted);
+  font-size: 14px;
+}
+
+td.memSeparator {
+  border: 0 !important;
+  border-bottom: 1px solid var(--dx-border) !important;
+  height: 0 !important;
+  line-height: 0 !important;
+  font-size: 0;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+table.memberdecls td {
+  padding-left: 0;
+}
+
+tr.heading td,
+h2.groupheader {
+  background: transparent !important;
+}
+
+h2.groupheader {
+  font-size: 19px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--dx-border);
+  margin: 44px 0 12px;
+  padding: 0 0 10px;
+}
+
+.memItemLeft,
+.memTemplItemLeft {
+  color: var(--dx-text-muted);
+  font-family: var(--font-family-monospace);
+  font-size: 13px;
+  white-space: nowrap;
+  width: 1%;
+  padding-right: 14px !important;
+}
+
+.memItemRight,
+.memTemplItemRight {
+  font-family: var(--font-family-monospace);
+  font-size: 13px;
+}
+
+/* Detailed member documentation: a title row over the description */
+.memitem {
+  background: transparent !important;
+  border: 1px solid var(--dx-border) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+  margin: 0 0 8px;
+}
+
+.memproto {
+  background: var(--dx-panel) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--dx-border) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  padding: 12px 16px !important;
+  font-family: var(--font-family-monospace);
+  font-size: 13px;
+}
+
+.memname,
+.memproto table {
+  font-family: var(--font-family-monospace);
+  font-size: 13px;
+}
+
+.memdoc {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 14px 16px 6px !important;
+}
+
+h2.memtitle {
+  font-size: 15px;
+  font-weight: 600;
+  border: 0;
+  margin: 28px 0 10px;
+  padding: 0;
+  background: transparent !important;
+}
+
+/* Parameter / return tables */
+table.params,
+table.retval,
+table.exception,
+table.tparams {
+  margin: 8px 0 14px;
+}
+
+table.params td,
+table.retval td,
+table.exception td,
+table.tparams td {
+  border: 0 !important;
+  border-bottom: 1px solid var(--dx-border) !important;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+dl.params dt,
+dl.retval dt,
+dl.tparams dt,
+dl.section dt {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dx-text-muted);
+}
+
+/* Code */
+div.fragment,
+pre.fragment {
+  border-radius: 10px;
+  padding: 14px 16px;
+  line-height: 1.6;
+  font-size: 13px;
+  margin: 14px 0 20px;
+}
+
+/* Tables written in markdown */
+table.markdownTable {
+  border-collapse: collapse;
+  margin: 16px 0 22px;
+}
+
+table.markdownTable th,
+table.markdownTable td {
+  padding: 8px 14px;
+  border: 1px solid var(--dx-border);
+}
+
+/* Left navigation tree */
+#nav-tree {
+  font-size: 13px;
+}
+
+#nav-tree .item {
+  height: 26px;
+  line-height: 26px;
+}
+
+#nav-tree .label {
+  font-size: 13px;
+}
+
+#nav-tree .selected {
+  border-radius: 6px;
+}
+
+#nav-tree .selected a {
+  font-weight: 600;
+}
+
+#nav-tree,
+#side-nav {
+  border-right: 1px solid var(--dx-border);
+}
+
+/* Right-hand outline */
+ul.page-outline li .item {
+  font-size: 12.5px;
+  padding: 3px 6px;
+}
+
+/* Breadcrumb footer and credit line */
+#nav-path ul {
+  background: var(--dx-bg) !important;
+  border-top: 1px solid var(--dx-border) !important;
+  font-size: 12px;
+}
+
+.navpath li.footer,
+address.footer {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* Admonitions: a quiet left rule, no heavy fill */
+dl.warning,
+dl.note,
+dl.attention,
+dl.bug,
+dl.todo,
+dl.deprecated {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+table.memberdecls tr[class^="memitem:"] > td {
+  border-top: 1px solid var(--dx-border) !important;
+}
+
+table.memberdecls tr.heading + tr[class^="memitem:"] > td {
+  border-top: 0 !important;
+}
+
+tr.heading td,
+h2.groupheader,
+table.memberdecls {
+  box-shadow: none !important;
+  padding-left: 0;
+  padding-right: 0;
+  background-image: none !important;
+}
+
+h2.groupheader::before,
+h2.groupheader::after,
+tr.heading td::before,
+tr.heading td::after {
+  display: none !important;
+}
+
+/* Phones: drop the side panels and give the page the full width. The menu
+   button in the top bar still reaches every section. */
+@media (max-width: 700px) {
+  #side-nav,
+  #page-nav,
+  .page-nav-panel,
+  #page-nav-resize-handle,
+  .ui-resizable-handle {
+    display: none !important;
+  }
+
+  #doc-content {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    height: auto !important;
+    min-height: 0;
+  }
+
+  div.contents {
+    padding: 8px 18px 56px !important;
+    max-width: none;
+  }
+
+  div.headertitle {
+    padding: 16px 18px 12px !important;
+  }
+
+  div.title {
+    font-size: 20px !important;
+    overflow-wrap: anywhere;
+  }
+
+  div.fragment,
+  pre.fragment {
+    overflow-x: auto;
+  }
+
+  table.memberdecls,
+  table.memberdecls tbody,
+  table.memberdecls tr,
+  table.memberdecls td {
+    display: block;
+    width: auto;
+  }
+
+  table.memberdecls .memItemLeft,
+  table.memberdecls .memTemplItemLeft {
+    white-space: normal;
+    text-align: left;
+    padding: 0 !important;
+  }
+
+  table.memberdecls .memItemRight,
+  table.memberdecls .memTemplItemRight {
+    padding: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  table.memberdecls .mdescLeft {
+    display: none;
+  }
+
+  table.memberdecls .mdescRight {
+    padding: 4px 0 10px !important;
+  }
+
+  .memproto,
+  .memname {
+    overflow-wrap: anywhere;
+  }
 }

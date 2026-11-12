@@ -130,6 +130,15 @@ public:
   }
 
   /// @brief Phase 3: updates every non-terminal layer's W and Psi.
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+  }
+
   void UpdateWeights() noexcept
   {
     // Refreshes preact against the current z before computing gradients.
@@ -138,6 +147,9 @@ public:
 
     for (size_t i = 0; i + 1 < layers.size(); i++)
       layers[i]->UpdateWeights();
+    if (centerWeights)
+      for (size_t i = 0; i + 1 < layers.size(); ++i)
+        layers[i]->CenterWeights();
   }
 
   void SetOptimizer(OptimizerType o) noexcept
@@ -271,6 +283,7 @@ public:
   }
 
 private:
+  bool centerWeights = false;
   std::vector<std::unique_ptr<DirectKPPCLayerT<T, AccumT>>> layers;
 
   std::unique_ptr<IComputeBackendT<T, AccumT>> backend;

@@ -260,6 +260,30 @@ void CPUBackend::SumRows(float* dst, const float* src, size_t batchSize, size_t 
     cblas_saxpy(width, 1.0f, src + b * width, 1, dst, 1);
 }
 
+void CPUBackend::CenterRows(float* buf, size_t rows, size_t cols) noexcept
+{
+  if (!buf || rows == 0 || cols == 0)
+    return;
+#pragma omp parallel for schedule(static) if (rows * cols > 262144 && !omp_in_parallel())
+  for (size_t r = 0; r < rows; ++r)
+  {
+    float* row = buf + r * cols;
+    // Eight independent accumulators let every compiler vectorize the sum
+    // (MSVC rejects `omp simd` without -openmp:experimental).
+    float acc[8] = {};
+    size_t c = 0;
+    for (; c + 8 <= cols; c += 8)
+      for (size_t k = 0; k < 8; ++k)
+        acc[k] += row[c + k];
+    float sum = ((acc[0] + acc[4]) + (acc[1] + acc[5])) + ((acc[2] + acc[6]) + (acc[3] + acc[7]));
+    for (; c < cols; ++c)
+      sum += row[c];
+    const float mean = sum / (float)cols;
+    for (size_t i = 0; i < cols; ++i)
+      row[i] -= mean;
+  }
+}
+
 float CPUBackend::Sum(const float* buf, size_t n) noexcept
 {
   float total = 0.0f;

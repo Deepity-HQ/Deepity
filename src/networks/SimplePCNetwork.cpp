@@ -77,6 +77,9 @@ void SimplePCNetwork::UpdateWeights()
 {
   for (size_t i = 0; i + 1 < layers.size(); i++)
     layers[i]->UpdateWeights();
+  if (centerWeights)
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+      layers[i]->CenterWeights();
 }
 
 float SimplePCNetwork::TrainStep(const std::vector<float>& x, const std::vector<float>& y,

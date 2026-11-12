@@ -172,6 +172,16 @@ public:
   }
 
   /// @brief Applies weight updates to every layer.
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+    graphCaptured = false;
+  }
+
   void UpdateWeights() noexcept
   {
     // Refreshes preact against the current z before computing gradients.
@@ -179,6 +189,9 @@ public:
       layers[i]->ComputeMuOnly();
     for (size_t i = 0; i + 1 < layers.size(); i++)
       layers[i]->UpdateWeights();
+    if (centerWeights)
+      for (size_t i = 0; i + 1 < layers.size(); ++i)
+        layers[i]->CenterWeights();
   }
 
   void SetOptimizer(OptimizerType o) noexcept
@@ -545,6 +558,7 @@ private:
   bool useMuPCScaling = false;
   bool useResidualConnections = false;
 
+  bool centerWeights = false;
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 

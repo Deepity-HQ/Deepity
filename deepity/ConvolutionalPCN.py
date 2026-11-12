@@ -117,6 +117,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         inference_rate: float = 0.1,
         precision_rate: float = 0.0,
         lmbda: float = 1e-2,
+        center_weights: bool = False,
     ) -> "ConvolutionalPCN":
         """
         Configure and build the convolutional network. Must be called
@@ -126,6 +127,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         @param inference_rate Inference/settling rate.
         @param precision_rate Learning rate for precision weighting.
         @param lmbda Regularization parameter.
+        @param center_weights Re-center each layer's W rows after every weight update.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -139,6 +141,8 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
         self.randomize_weights()
+
+        self.set_center_weights(center_weights)
 
         return self
 

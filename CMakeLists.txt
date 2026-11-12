@@ -1043,6 +1043,16 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME ConvDiagnose COMMAND ConvDiagnose)
     list(APPEND DEEPITY_TEST_TARGETS ConvDiagnose)
 
+    # Weight centering: backend op vs a reference, plus every network type's
+    # hidden-layer row means with SetCenterWeights() off vs on.
+    add_executable(WeightCenteringVerify tests/tWeightCenteringVerify.cpp)
+    target_link_libraries(WeightCenteringVerify PRIVATE Deepity)
+    set_target_properties(WeightCenteringVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME WeightCenteringVerify COMMAND WeightCenteringVerify)
+    list(APPEND DEEPITY_TEST_TARGETS WeightCenteringVerify)
+
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----
 

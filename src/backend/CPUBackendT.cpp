@@ -1068,6 +1068,24 @@ void CPUBackendT<T, AccumT>::Fill(T* buf, size_t n, AccumT value) noexcept
 }
 
 template <typename T, typename AccumT>
+void CPUBackendT<T, AccumT>::CenterRows(T* buf, size_t rows, size_t cols) noexcept
+{
+  if (!buf || rows == 0 || cols == 0)
+    return;
+#pragma omp parallel for schedule(static) if (rows * cols > 262144 && !omp_in_parallel())
+  for (size_t r = 0; r < rows; ++r)
+  {
+    T* row = buf + r * cols;
+    AccumT sum = AccumT(0);
+    for (size_t c = 0; c < cols; ++c)
+      sum += hwy::ConvertScalarTo<AccumT>(row[c]);
+    const AccumT mean = sum / static_cast<AccumT>(cols);
+    for (size_t c = 0; c < cols; ++c)
+      row[c] = hwy::ConvertScalarTo<T>(hwy::ConvertScalarTo<AccumT>(row[c]) - mean);
+  }
+}
+
+template <typename T, typename AccumT>
 void CPUBackendT<T, AccumT>::AddBiasPerChannel(T* buf, const T* bias, size_t channels,
                                                size_t spatialSize) noexcept
 {

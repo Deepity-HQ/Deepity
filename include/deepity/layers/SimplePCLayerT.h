@@ -99,6 +99,12 @@ public:
 
   void UpdateState() noexcept;
   void UpdateWeights() noexcept;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, nextSize, size);
+  }
 
   void ClampState(const std::vector<T>& inputData) noexcept;
   void UnclampState() noexcept;

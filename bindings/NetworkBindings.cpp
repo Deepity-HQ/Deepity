@@ -63,6 +63,8 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
       .def("compile", &NetT::Compile, "Compiles all layers into a contiguous block.")
       .def("calculate_state", &NetT::CalculateState, "Compute the total network energy.")
       .def("update_state", &NetT::UpdateState, "Run one inference step.")
+      .def("set_center_weights", &NetT::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &NetT::UpdateWeights, "Apply weight updates to every layer.")
       .def("reset_state", &NetT::ResetState, "Resets the beliefs 'z' on every layer.")
       .def("get_terminal_layer",
@@ -219,6 +221,8 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
            "terminal layer's error, the DFA phase, run once per batch "
            "before settling begins.")
       .def("step", &NetT::Step, "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("set_center_weights", &NetT::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &NetT::UpdateWeights, "Applies weight updates to every layer.")
       .def(
           "set_optimizer",
@@ -610,6 +614,8 @@ void bind_networks(nb::module_& m)
           "Clamp the first (input) layer to the supplied, flattened batch.")
       .def("step", &Deep::GaussSeidelPCNetwork::Step,
            "Runs one Gauss-Seidel settling step (calculate_state + update_state) on every layer.")
+      .def("set_center_weights", &Deep::GaussSeidelPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &Deep::GaussSeidelPCNetwork::UpdateWeights,
            "Applies weight updates to every layer.")
       .def("project_forward", &Deep::GaussSeidelPCNetwork::ProjectForward,
@@ -803,6 +809,8 @@ void bind_networks(nb::module_& m)
            "Runs one settling step (calculate_state + update_state) on every layer.")
       .def("update_weights", &Deep::DirectKPPCNetwork::UpdateWeights,
            "Applies weight updates to every layer.")
+      .def("set_center_weights", &Deep::DirectKPPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each hidden layer's W rows after every weight update.")
       .def(
           "set_optimizer",
           [](Deep::DirectKPPCNetwork& self, const std::string& opt)
@@ -1040,6 +1048,8 @@ void bind_networks(nb::module_& m)
            "before settling begins.")
       .def("step", &Deep::FullPCNetwork::Step,
            "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("set_center_weights", &Deep::FullPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &Deep::FullPCNetwork::UpdateWeights,
            "Applies weight updates to every layer.")
       .def(
@@ -1347,6 +1357,8 @@ void bind_networks(nb::module_& m)
            "before settling begins.")
       .def("step", &Deep::FullConvPCNetwork::Step,
            "Runs one settling step (calculate_state + update_state) on every layer.")
+      .def("set_center_weights", &Deep::FullConvPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &Deep::FullConvPCNetwork::UpdateWeights,
            "Applies weight updates to every layer.")
       .def(
@@ -1576,6 +1588,8 @@ void bind_networks(nb::module_& m)
           "Clamp the first (input) layer to the supplied, flattened batch.")
       .def("calculate_state", &Deep::ConvPCNetwork::CalculateState, "Compute the total network energy.")
       .def("update_state", &Deep::ConvPCNetwork::UpdateState, "Run one inference step.")
+      .def("set_center_weights", &Deep::ConvPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &Deep::ConvPCNetwork::UpdateWeights, "Apply weight updates to every layer.")
       .def("update_precision", &Deep::ConvPCNetwork::UpdatePrecision,
            "Apply precision updates to every layer.")
@@ -1775,6 +1789,8 @@ void bind_networks(nb::module_& m)
       .def("calculate_state", &Deep::SimpleConvPCNetwork::CalculateState,
            "Compute the total network energy.")
       .def("update_state", &Deep::SimpleConvPCNetwork::UpdateState, "Run one inference step.")
+      .def("set_center_weights", &Deep::SimpleConvPCNetwork::SetCenterWeights, nb::arg("enabled"),
+           "Re-centers each layer's W rows after every weight update.")
       .def("update_weights", &Deep::SimpleConvPCNetwork::UpdateWeights,
            "Apply weight updates to every layer.")
       .def("reset_state", &Deep::SimpleConvPCNetwork::ResetState,

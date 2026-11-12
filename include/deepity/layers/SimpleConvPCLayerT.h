@@ -64,6 +64,12 @@ public:
   AccumT CalculateState(bool needEnergy) noexcept;
   void UpdateState() noexcept;
   void UpdateWeights() noexcept;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, (size_t)outChannels, (size_t)inChannels * kernelH * kernelW);
+  }
 
   void ClampState(const std::vector<T>& inputData) noexcept;
   void UnclampState() noexcept;

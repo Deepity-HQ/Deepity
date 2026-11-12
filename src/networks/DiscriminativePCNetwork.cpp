@@ -98,6 +98,9 @@ void DiscriminativePCNetwork::UpdateWeights()
 {
   for (size_t i = 0; i + 1 < layers.size(); ++i)
     layers[i]->UpdateWeights();
+  if (centerWeights)
+    for (size_t i = 0; i + 1 < layers.size(); ++i)
+      layers[i]->CenterWeights();
 }
 
 void DiscriminativePCNetwork::UpdatePrecision()

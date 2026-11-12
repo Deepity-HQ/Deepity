@@ -155,6 +155,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         precision_rate: float = 0.01,
         lmbda: float = 1e-2,
         optimizer: str = "SGD",
+        center_weights: bool = False,
     ) -> None:
         """
         Configure network hyperparameters and initialize the backend.
@@ -165,6 +166,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         @param precision_rate Learning rate for precision weighting.
         @param lmbda Regularization parameter.
         @param optimizer Optimizer used for the forward weights.
+        @param center_weights Re-center each layer's W rows after every weight update.
         """
 
         self._learning_rate = learning_rate
@@ -175,6 +177,8 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
 
         self._build_backend()
         self.set_optimizer(optimizer)
+        self.set_center_weights(center_weights)
+
 
     def _require_configured(self) -> None:
         if not self._configured:

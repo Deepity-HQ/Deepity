@@ -8,6 +8,7 @@
  * CUDABackendOptimizer.cu, CUDABackendConv.cu for the rest.
  */
 #include <deepity/backend/CUDABackend.h>
+#include <algorithm>
 #include <iostream>
 
 #ifdef DEEPITY_USE_CUDA
@@ -212,6 +213,47 @@ void CUDABackend::MultiplyBroadcastInto(float* dst, const float* a, const float*
   dim3 blocks((unsigned int)((width + threads.x - 1) / threads.x),
               (unsigned int)((batchSize + threads.y - 1) / threads.y));
   MultiplyBroadcastIntoKernel<<<blocks, threads, 0, stream>>>(dst, a, factor, b, batchSize, width);
+  CHECK_CUDA_LAUNCH();
+}
+
+// One block per row: strided partial sums, block reduce via warp shuffles,
+// then every thread subtracts the row mean. Dense row-major, in place.
+__global__ void CenterRowsKernel(float* buf, size_t cols)
+{
+  __shared__ float warpSums[32];
+  float* row = buf + (size_t)blockIdx.x * cols;
+
+  float sum = 0.0f;
+  for (size_t c = threadIdx.x; c < cols; c += blockDim.x)
+    sum += row[c];
+  for (int off = 16; off > 0; off >>= 1)
+    sum += __shfl_down_sync(0xffffffffu, sum, off);
+  if ((threadIdx.x & 31) == 0)
+    warpSums[threadIdx.x >> 5] = sum;
+  __syncthreads();
+
+  if (threadIdx.x < 32)
+  {
+    float v = threadIdx.x < (blockDim.x + 31) / 32 ? warpSums[threadIdx.x] : 0.0f;
+    for (int off = 16; off > 0; off >>= 1)
+      v += __shfl_down_sync(0xffffffffu, v, off);
+    if (threadIdx.x == 0)
+      warpSums[0] = v / (float)cols;
+  }
+  __syncthreads();
+
+  const float mean = warpSums[0];
+  for (size_t c = threadIdx.x; c < cols; c += blockDim.x)
+    row[c] -= mean;
+}
+
+void CUDABackend::CenterRows(float* buf, size_t rows, size_t cols) noexcept
+{
+  if (!buf || rows == 0 || cols == 0)
+    return;
+  // Block size: a multiple of 32, no larger than the row needs, max 256.
+  unsigned int threads = (unsigned int)std::min<size_t>(256, ((cols + 31) / 32) * 32);
+  CenterRowsKernel<<<(unsigned int)rows, threads, 0, stream>>>(buf, cols);
   CHECK_CUDA_LAUNCH();
 }
 } // namespace Deep

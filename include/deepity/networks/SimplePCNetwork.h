@@ -98,6 +98,16 @@ public:
   /// @brief Updates each layer's weights
   void UpdateWeights();
 
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+    graphCaptured = false;
+  }
+
   // NOTE: no UpdatePrecision(), precision doesn't exist in this class.
 
   /// @brief Returns the network's terminal (final) layer.
@@ -198,6 +208,7 @@ private:
   /// and Compile() needs to know which arena type to construct.
   DeviceType device;
 
+  bool centerWeights = false;
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
 

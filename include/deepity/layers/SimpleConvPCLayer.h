@@ -63,6 +63,12 @@ public:
   float CalculateState(bool needEnergy) noexcept;
   void UpdateState() noexcept override;
   void UpdateWeights() noexcept override;
+  /// @brief Subtracts each row's mean from W (see IComputeBackend::CenterRows()).
+  void CenterWeights() noexcept override
+  {
+    if (W != nullptr)
+      backend->CenterRows(W, (size_t)outChannels, (size_t)inChannels * kernelH * kernelW);
+  }
 
   void Flush() noexcept override {}
 

@@ -292,6 +292,12 @@ void DirectKPPCLayer::ComputeMuOnly() noexcept
   }
 }
 
+void DirectKPPCLayer::CenterWeights() noexcept
+{
+  if (W != nullptr && nextSize > 0)
+    backend->CenterRows(W, nextSize, size);
+}
+
 void DirectKPPCLayer::UpdateState() noexcept
 {
   size_t N = (size_t)batchSize * size;

@@ -252,6 +252,7 @@ class FullPCN:
         use_cross_entropy: bool = False,
         seed: Optional[int] = None,
         dist: str = "normal",
+        center_weights: bool = False,
     ) -> "FullPCN":
         """
         Configure and initialize the network.
@@ -289,6 +290,9 @@ class FullPCN:
             "uniform(-0.3,0.3)". The default "normal" has no "(a,b)"
             and so deliberately falls back to each layer's own
             existing muPC-aware default (see RandomizeWeights()).
+
+        center_weights:
+            Re-center each layer's W rows after every weight update.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -321,6 +325,8 @@ class FullPCN:
         self.randomize_weights(seed=seed, dist=dist)
 
         self._configured = True
+
+        self._impl.set_center_weights(center_weights)
 
         return self
 
@@ -370,6 +376,10 @@ class FullPCN:
         """
         self._require_configured()
         self._impl.set_use_cross_entropy(enabled)
+
+    def set_center_weights(self, enabled: bool) -> None:
+        """Re-center each layer's W rows after every weight update."""
+        self._impl.set_center_weights(enabled)
 
     def set_optimizer(self, optimizer: str) -> None:
         """Set the optimizer used for the forward weights W."""

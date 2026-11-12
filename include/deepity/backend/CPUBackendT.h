@@ -77,6 +77,7 @@ public:
                         int ldc) noexcept override;
 
   void SumRows(T* dst, const T* src, size_t batchSize, size_t width) noexcept override;
+  void CenterRows(T* buf, size_t rows, size_t cols) noexcept override;
   void SumRowsBatched(T* dst, const T* src, size_t batchSize, size_t width,
                       size_t numLayers) noexcept override
   {

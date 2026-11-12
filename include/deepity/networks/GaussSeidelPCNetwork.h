@@ -106,6 +106,17 @@ public:
   /// once after the full settling loop completes.
   void UpdateWeights() noexcept;
 
+  /// @brief Re-centers every non-terminal layer's W rows after each UpdateWeights().
+  /// Off by default.
+  void SetCenterWeights(bool enabled) noexcept
+  {
+    if (enabled == centerWeights)
+      return;
+    centerWeights = enabled;
+    graphCaptured = false;
+    graphCapturedWithProjection = false;
+  }
+
   /// @brief Seeds every hidden layer's z from a genuine forward
   /// pass through current weights (ComputePrediction() only, no
   /// error/energy side effects). Assumes layers[0] is already
@@ -179,6 +190,7 @@ private:
 
   // CUDA graph capture state, GPU-only. TrainStep() and
   // TrainStepWithProjection() each track their own capture validity.
+  bool centerWeights = false;
   bool graphCaptured = false;
   int capturedInferenceSteps = -1;
   bool graphCapturedWithProjection = false;
