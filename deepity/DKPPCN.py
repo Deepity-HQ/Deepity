@@ -26,12 +26,13 @@ class DKPPCN(dy.DirectKPPCNetwork):
     This allows inference_steps=1 to be the default operating point.
 
     Note:
-        With ReLU hidden layers and inference_steps > 1, the mean
-        incoming weight of each hidden unit drifts negative, since the
-        previous layer's output is non-negative. Pre-activations then
-        sit below zero and the units go silent. Pass
-        configure(center_weights=True) to counter this.
-        Sigmoid hidden layers do not need it.
+        With ReLU hidden layers and inference_steps > 1, settling hands
+        each hidden unit a common-mode pull (-W^T W z of the layer above)
+        that scales with the output width times the init variance. The
+        previous layer's output is non-negative, so it accumulates in each
+        row's mean weight, pre-activations go negative and the units go
+        silent. Pass configure(center_weights=True) to counter this, or
+        use a smaller init. Sigmoid hidden layers do not need it.
     """
 
     def __init__(
