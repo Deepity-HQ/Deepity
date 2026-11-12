@@ -268,14 +268,19 @@ void CPUBackend::CenterRows(float* buf, size_t rows, size_t cols) noexcept
   for (size_t r = 0; r < rows; ++r)
   {
     float* row = buf + r * cols;
-    float sum = 0.0f;
-#pragma omp simd reduction(+ : sum)
-    for (size_t c = 0; c < cols; ++c)
+    // Eight independent accumulators let every compiler vectorize the sum
+    // (MSVC rejects `omp simd` without -openmp:experimental).
+    float acc[8] = {};
+    size_t c = 0;
+    for (; c + 8 <= cols; c += 8)
+      for (size_t k = 0; k < 8; ++k)
+        acc[k] += row[c + k];
+    float sum = ((acc[0] + acc[4]) + (acc[1] + acc[5])) + ((acc[2] + acc[6]) + (acc[3] + acc[7]));
+    for (; c < cols; ++c)
       sum += row[c];
     const float mean = sum / (float)cols;
-#pragma omp simd
-    for (size_t c = 0; c < cols; ++c)
-      row[c] -= mean;
+    for (size_t i = 0; i < cols; ++i)
+      row[i] -= mean;
   }
 }
 
