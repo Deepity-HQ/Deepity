@@ -424,6 +424,9 @@ void DirectKPPCLayer::UpdateWeights() noexcept
   {
   case OptimizerType::SGD:
   {
+    if (psiDecay > 0.0f)
+      backend->Scale(Psi, size * psiStride, 1.0f - psiDecay);
+
     backend->MatMul(
         /*transA=*/true,
         /*transB=*/false,
@@ -470,8 +473,8 @@ void DirectKPPCLayer::UpdateWeights() noexcept
         (int)psiStride);
 
     if (optPsi == OptimizerType::ADAMW)
-      backend->AdamWStep(
-          Psi, grad_Psi, m_Psi, v_Psi, num_weights_psi, tPsi_device, fl_device, lmbda);
+      backend->AdamWStep(Psi, grad_Psi, m_Psi, v_Psi, num_weights_psi, tPsi_device, fl_device,
+                         psiDecay >= 0.0f ? psiDecay : lmbda);
     else
       backend->AdamStep(Psi, grad_Psi, m_Psi, v_Psi, num_weights_psi, tPsi_device, fl_device);
 
