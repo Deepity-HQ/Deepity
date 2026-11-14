@@ -301,8 +301,10 @@ public:
   }
   /// @brief Sets the feedback rate, propagating it to the optimizer state.
   void SetFeedbackRate(float feedbackRate) noexcept;
-  /// @brief Sets Psi's own decay. Negative (the default) keeps the legacy behavior: none under
-  /// SGD, `lmbda` under AdamW.
+  /// @brief Sets Psi's own decay, independent of `lmbda`. Under SGD, Psi is scaled by
+  /// (1 - decay) each step; under AdamW, the decay is passed to the optimizer (so its per-step
+  /// strength is feedback rate * decay). Negative (the default) keeps the legacy behavior: none
+  /// under SGD, `lmbda` under AdamW.
   void SetPsiDecay(float decay) noexcept
   {
     psiDecay = decay;

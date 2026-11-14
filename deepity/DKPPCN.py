@@ -181,8 +181,13 @@ class DKPPCN(dy.DirectKPPCNetwork):
             inference_steps > 1.
 
         psi_decay:
-            Decay applied to the feedback weights Psi alone. Default (None) keeps the old behavior:
-            none under SGD, `lmbda` under AdamW. Setting it bounds Psi's growth without shrinking W.
+            Weight decay for the feedback weights Psi, independent of `lmbda` (which keeps
+            applying to W). Use it if Psi grows without bound during long runs, which can end in
+            non-finite outputs. It follows the same convention as `lmbda`: with SGD, Psi is
+            multiplied by (1 - psi_decay) every step, so use small values (for example 1e-4);
+            with ADAMW, each step subtracts feedback_rate * psi_decay * Psi, so larger values
+            (0.1 to 1) are needed. If None, Psi follows the optimizer's default: no decay with
+            SGD, `lmbda` with ADAMW.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
