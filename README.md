@@ -99,7 +99,7 @@ in [Building from source](#building-from-source)). Then:
 ```bash
 git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
-uv run --no-project python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ```
 
 This builds the C++ engine, runs the test suite, and builds the `deepity` Python package.
@@ -198,7 +198,7 @@ This is a timing benchmark on matched network shapes, not an accuracy comparison
 `tests/tGflopsBenchmark.cpp`, built as the `GflopsBenchmark` target via Google Benchmark, measures sustained GFLOPS for a full PC train step (`SimplePCN`, 784-512-256-64-10, batch 256, T=20):
 
 ```bash
-uv run --no-project python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ./build/Release/bin/GflopsBenchmark
 ```
 
@@ -301,14 +301,14 @@ See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CM
 ```bash
 git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
-uv run --no-project python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ```
 
-> Always build through `build.py` (`uv run --no-project python build.py ...`), never by calling `cmake` or `ninja` directly. See [CONTRIBUTING.md](CONTRIBUTING.md#building-always-use-buildpy) for the one-time setup.
+> Always build through `build.py` (`uv run python build.py ...`), never by calling `cmake` or `ninja` directly. See [CONTRIBUTING.md](CONTRIBUTING.md#building-always-use-buildpy) for the one-time setup.
 
 - `Release` / `Debug` selects the build type.
 - `OpenBLAS` / `MKL` selects the linear-algebra library.
-- `--fast` targets a portable AVX2/FMA baseline. Run `uv run --no-project python build.py --list-profiles` for the other options, and `uv run --no-project python build.py --help` for CUDA, test and job-count flags.
+- `--fast` targets a portable AVX2/FMA baseline. Run `uv run python build.py --list-profiles` for the other options, and `uv run python build.py --help` for CUDA, test and job-count flags.
 
 The `deepity` Python package is built too, unless you pass `--no-python-bindings`.
 

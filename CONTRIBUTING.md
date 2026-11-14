@@ -38,7 +38,7 @@ you hit a build error that looks like it should be obvious, check here first.
 ### Before you push
 
 - **Build both configurations you touched.** At minimum, run
-  `uv run --no-project python build.py Release` (and `Debug` if you changed anything
+  `uv run python build.py Release` (and `Debug` if you changed anything
   correctness-sensitive, since Debug enables additional checks). This also
   runs the `DeepityTests` suite automatically, see
   `build/build.log` for full output if anything fails.
@@ -98,19 +98,18 @@ Include in the PR description:
 
 ### Building: always use `build.py`
 
-Every build goes through `build.py`, run with `uv`:
+Every build goes through `build.py`, run with `uv`. There is no separate setup step: `uv run`
+creates `.venv` on first use with just numpy, rich and nanobind.
 
 ```bash
-uv sync --frozen --no-install-project --no-dev --python 3.12   # once: numpy + rich in .venv
-uv pip install nanobind                                           # once: needed by the Python bindings
-uv run --no-project python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ```
 
 - **Do not run `cmake`, `ninja` or `cmake --build` by hand.** `build.py` picks the generator, arch
   flags, CUDA/BLAS options and reconfigure rules together; hand-built trees drift from CI.
-- **Do not use a bare `uv run`, `uv sync` (with dev deps) or `pip install .` for building.** In this
-  repo a bare `uv run` syncs the `dev` group (torch, several GB), recreates `.venv` and tries to
-  build the whole project through scikit-build. `--no-project` avoids all of that.
+- **Do not use `pip install .` to build.** The `[tool.uv]` table in `pyproject.toml` makes `uv run`
+  skip building pydeepity itself and skip the heavy `dev` group (torch); only the `build` group is
+  installed by default. Add dev tools explicitly with `uv sync --group dev --no-install-project`.
 - Extra CMake options go on the end and are forwarded as-is, e.g.
   `-DDEEPITY_ONEDNN_SYSTEM=ON` to use a system oneDNN (`dnf install onednn-devel`) instead of
   compiling one from source. A local tree with system oneDNN and OpenBLAS is about 150 MB.
