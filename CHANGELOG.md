@@ -14,7 +14,7 @@ earlier history.
 
 ### Added
 
--
+- `DKPPCN.configure(psi_decay=...)` (and `set_psi_decay()` on `DirectKPPCNetwork` / `DirectKPPCLayer`): a decay applied to the direct feedback weights Psi alone, separate from `lmbda`, which keeps governing W. The default (`None`) keeps the previous behavior exactly: no decay on Psi under SGD, `lmbda` under AdamW. Only the float DKP family has it; `DirectKPPCNetworkT` / `DirectKPPCLayerT` do not yet.
 
 ### Changed
 
