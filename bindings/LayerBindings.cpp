@@ -722,6 +722,8 @@ void bind_layers(nb::module_& m)
           "Sets the optimizer used for the forward weights W: \"SGD\", \"ADAM\", or \"ADAMW\".")
       .def("set_feedback_rate", &Deep::DirectKPPCLayer::SetFeedbackRate, nb::arg("fl"),
            "Sets the learning rate for the direct feedback weights Psi.")
+      .def("set_psi_decay", &Deep::DirectKPPCLayer::SetPsiDecay, nb::arg("decay"),
+           "Sets Psi's own decay; negative keeps the legacy behavior.")
       .def_prop_ro("terminal_size", &Deep::DirectKPPCLayer::GetTerminalSize,
                    "Size of the terminal (output) layer this layer's DKP feedback targets.")
       .def_prop_ro("psi",

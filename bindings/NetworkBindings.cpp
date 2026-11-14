@@ -841,6 +841,8 @@ void bind_networks(nb::module_& m)
            "Sets the learning rate for the forward weights W, on every layer.")
       .def("set_feedback_rate", &Deep::DirectKPPCNetwork::SetFeedbackRate, nb::arg("fl"),
            "Sets the learning rate for the feedback weights Psi, on every layer.")
+      .def("set_psi_decay", &Deep::DirectKPPCNetwork::SetPsiDecay, nb::arg("decay"),
+           "Sets Psi's own decay on every layer; negative keeps the legacy behavior.")
       .def(
           "train_step",
           [](Deep::DirectKPPCNetwork& self, FloatArray x, FloatArray y, int inference_steps)

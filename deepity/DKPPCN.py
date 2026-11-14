@@ -151,6 +151,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         optimizer: str = "SGD",
         psi_optimizer: str = "SGD",
         center_weights: bool = False,
+        psi_decay: Optional[float] = None,
     ) -> "DKPPCN":
         """
         Configure and initialize the DKP network.
@@ -178,6 +179,15 @@ class DKPPCN(dy.DirectKPPCNetwork):
         center_weights:
             Re-center each hidden layer's W rows after every update. Recommended for ReLU hidden layers with
             inference_steps > 1.
+
+        psi_decay:
+            Weight decay for the feedback weights Psi, independent of `lmbda` (which keeps
+            applying to W). Use it if Psi grows without bound during long runs, which can end in
+            non-finite outputs. It follows the same convention as `lmbda`: with SGD, Psi is
+            multiplied by (1 - psi_decay) every step, so use small values (for example 1e-4);
+            with ADAMW, each step subtracts feedback_rate * psi_decay * Psi, so larger values
+            (0.1 to 1) are needed. If None, Psi follows the optimizer's default: no decay with
+            SGD, `lmbda` with ADAMW.
         """
         self._learning_rate = learning_rate
         self._inference_rate = inference_rate
@@ -194,6 +204,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self.compile()
         self.randomize_weights()
         self.set_center_weights(center_weights)
+        self.set_psi_decay(-1.0 if psi_decay is None else psi_decay)
 
         return self
 

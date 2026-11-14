@@ -146,6 +146,13 @@ public:
       layer->SetFeedbackRate(fl);
   }
 
+  /// @brief Sets Psi's own decay on every layer (negative restores the legacy behavior).
+  void SetPsiDecay(float decay) noexcept
+  {
+    for (auto& layer : layers)
+      layer->SetPsiDecay(decay);
+  }
+
   /// @brief Returns the network's terminal (final) layer.
   DirectKPPCLayer* GetTerminalLayer() noexcept
   {

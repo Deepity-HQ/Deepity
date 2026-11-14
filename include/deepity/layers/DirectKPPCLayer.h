@@ -41,7 +41,8 @@ protected:
   float lr;    ///< Learning rate for W.
   float ir;    ///< Inference rate (Euler integration step size).
   float fl;    ///< Feedback rate for Psi.
-  float lmbda; ///< Weight decay (L2 regularization) coefficient, shared between W and Psi.
+  float lmbda; ///< Weight decay (L2 regularization) coefficient for W (and Psi unless psiDecay is set).
+  float psiDecay = -1.0f; ///< Psi's own decay; negative means legacy behavior (see SetPsiDecay()).
 
   bool isClamped = false;    ///< Whether ClampState() is currently active.
   bool muCacheValid = false; ///< Whether `cachedMu` holds a valid, up-to-date value.
@@ -300,6 +301,14 @@ public:
   }
   /// @brief Sets the feedback rate, propagating it to the optimizer state.
   void SetFeedbackRate(float feedbackRate) noexcept;
+  /// @brief Sets Psi's own decay, independent of `lmbda`. Under SGD, Psi is scaled by
+  /// (1 - decay) each step; under AdamW, the decay is passed to the optimizer (so its per-step
+  /// strength is feedback rate * decay). Negative (the default) keeps the legacy behavior: none
+  /// under SGD, `lmbda` under AdamW.
+  void SetPsiDecay(float decay) noexcept
+  {
+    psiDecay = decay;
+  }
   /// @brief Returns the current feedback rate for Psi.
   float GetFeedbackRate() const noexcept
   {
