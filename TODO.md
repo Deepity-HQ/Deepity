@@ -25,13 +25,24 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - `Save`/`Load` return `bool` with no reason. Writes are not atomic.
 - Python API is inconsistent (`SequentialPCN.save` takes a directory, others take a file).
 - Custom dtype names (`FP4_E2M1`, `POSIT4_*`) live only in `DTypeTag.h`.
-- Not yet verified: whether the stock `safetensors` library can read our current files.
+- Verified 2026-11-14 on a small DKPPCN: stock `safetensors` (`safe_open`) reads our files fine.
+- But the header is not padded to 8 bytes, so tensor data starts at an unaligned offset (670 in the
+  test file). That breaks aligned mmap access.
+- **Bug:** `DirectKPPCLayer::GetStateDict()` labels Psi as `[nextSize, terminalSize]`, but the
+  buffer is `[size, terminalSize]`. Save writes only the first `nextSize` rows. Round trip on
+  `Linear(8,6),ReLU,Linear(6,4)`: layer 1 Psi loses rows 4 and 5, layer 0 loses rows 6 and 7, the
+  terminal layer's Psi is not saved. Resumed DKP training gets partly wrong feedback weights.
+  Fixing it changes the stored shape, so do it together with the versioned format (Phase 1).
+- Zero-size tensors are written for the terminal layer (`layer_2.W` has shape `[0, 4]`).
+- The `__metadata__.dtype` field holds the last tensor's dtype, which is meaningless.
 
 ## Phase 0: spec and test fixtures (before any code)
 
-- [ ] Write `docs/model-format.md`: file layout, metadata schema, dtype names, tensor naming,
+- [~] Write `docs/model-format.md`: file layout, metadata schema, dtype names, tensor naming,
       layout conventions (conv `[outC, inC*kH*kW]`, Psi padding), versioning rules.
-- [ ] Check that stock `safetensors` reads and writes our current files. Record the gaps.
+      Draft v0 written; open questions are listed at the bottom of the file.
+- [x] Check that stock `safetensors` reads our current files. Gaps recorded above.
+- [ ] Add a DKP save/load round-trip regression test (Psi rows), expected to fail until fixed.
 - [ ] Add golden files (a7/a8-era file, plus one per dtype) and a CI test that loads them forever.
       Note `.gitignore` excludes `*.safetensors` and `*_meta.json`, so fixtures need an exception.
 - [ ] Decide naming: stable tensor names (for example `layers.3.weight`) instead of positional keys.
