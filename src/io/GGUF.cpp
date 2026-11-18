@@ -1,6 +1,7 @@
 #include "deepity/io/GGUF.h"
 #include "GGUFTables.h"
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -518,6 +519,9 @@ size_t GGUFTensor::Elements() const noexcept
 
 GGUFReader::GGUFReader(const std::string& filePath) : path(filePath)
 {
+  // Header fields and block data are read in host order, and GGUF is little endian.
+  if constexpr (std::endian::native != std::endian::little)
+    Fail(filePath, "GGUF files can only be read on a little-endian host");
   file = MappedFile::Open(path);
   if (file.Data() == nullptr) Fail(path, "cannot open or map the file (missing, empty or unreadable)");
   Cursor c(file.Data(), file.Size(), path);

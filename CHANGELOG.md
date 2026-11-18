@@ -14,6 +14,8 @@ earlier history.
 
 ### Added
 
+- The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target and the GGUF reader throws there, instead of producing wrong hashes or misreading files.
+
 - Model files: `deepity.format_version` is now checked on every load path, not only metadata reads. A
   newer version is refused with both versions named, a malformed one is refused, and a missing one
   loads. Unknown metadata keys, tensors and JSON fields are ignored; a hyperparameter this version

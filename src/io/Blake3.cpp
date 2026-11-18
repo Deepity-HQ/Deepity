@@ -8,6 +8,12 @@
 
 #include "deepity/io/Blake3.h"
 
+// The message words below are loaded in host byte order, but BLAKE3 defines them little endian. A
+// big-endian build would write hashes no other machine can verify, so it must not compile until the
+// loads are byte-swapped and tested on real hardware.
+static_assert(std::endian::native == std::endian::little,
+              "Blake3.cpp assumes a little-endian host; see docs/model-format.md, section Byte order");
+
 HWY_BEFORE_NAMESPACE();
 namespace Deep::io
 {

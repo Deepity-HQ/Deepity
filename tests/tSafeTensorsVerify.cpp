@@ -7,6 +7,7 @@
  * Run with `--write-golden <path>` or `--write-golden-dtypes <path>` to regenerate a golden file.
  */
 #include "deepity/io/Blake3.h"
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <deepity/io/SafeTensors.h>
@@ -132,6 +133,134 @@ void WriteGoldenDTypes(const std::string& path)
   w.SetMetadata("deepity.format_version", "1");
   w.SetMetadata("deepity.kind", "inference");
   w.Write(path);
+}
+
+struct SimulatedBigEndianHost
+{
+  SimulatedBigEndianHost() { SimulateBigEndianHost(true); }
+  ~SimulatedBigEndianHost() { SimulateBigEndianHost(false); }
+};
+
+/// @brief The little-endian bytes of a golden tensor as a big-endian host holds them in memory.
+std::vector<uint8_t> AsBigEndianMemory(const DTypeInfo& info, std::vector<uint8_t> bytes)
+{
+  if (info.kind == DTypeKind::Standard && info.memBytes > 1)
+    for (size_t e = 0; e < 5; ++e)
+      std::reverse(bytes.begin() + e * info.memBytes, bytes.begin() + (e + 1) * info.memBytes);
+  return bytes;
+}
+
+/// @brief No big-endian hardware exists to run on, so SimulateBigEndianHost() drives the real reader
+/// and writer as if the host were one: files must come out byte-identical to the little-endian
+/// host's, and reads must hand back big-endian memory.
+void TestBigEndianHost()
+{
+  printf("--- simulated big-endian host ---\n");
+  std::vector<std::vector<uint8_t>> little, big;
+  for (const char* name : kGoldenDTypes)
+  {
+    const DTypeInfo& info = *FindDType(name);
+    little.push_back(GoldenBytes(info, little.size()));
+    big.push_back(AsBigEndianMemory(info, little.back()));
+  }
+  auto fill = [&](SafeTensorsWriter& w, const std::vector<std::vector<uint8_t>>& memory)
+  {
+    size_t i = 0;
+    for (const char* name : kGoldenDTypes)
+    {
+      w.AddTensor(std::string("t_") + name, name, {5}, memory[i].data(), memory[i].size());
+      ++i;
+    }
+  };
+
+  const std::string plain = Tmp("le_host.safetensors"), simulated = Tmp("be_host.safetensors");
+  {
+    SafeTensorsWriter w;
+    fill(w, little);
+    w.Write(plain);
+  }
+  {
+    SimulatedBigEndianHost host;
+    SafeTensorsWriter w;
+    fill(w, big);
+    w.Write(simulated);
+  }
+  const auto plainBytes = Slurp(plain);
+  Check(plainBytes == Slurp(simulated), "a big-endian host writes the same file, hash included");
+
+  uint64_t headerSize = 0;
+  for (int i = 7; i >= 0; --i)
+    headerSize = (headerSize << 8) | static_cast<unsigned char>(plainBytes[i]);
+  Check(8 + headerSize < plainBytes.size() && plainBytes[8] == '{',
+        "the header length field is little endian");
+
+  auto readsBack = [&](bool mmap, bool simulate, const std::vector<std::vector<uint8_t>>& want)
+  {
+    SimulatedBigEndianHost* host = simulate ? new SimulatedBigEndianHost : nullptr;
+    SafeTensorsReader r(plain, true, mmap);
+    bool ok = true;
+    size_t i = 0;
+    for (const char* name : kGoldenDTypes)
+    {
+      const TensorEntry* t = r.Find(std::string("t_") + name);
+      std::vector<uint8_t> got(want[i].size());
+      r.Read(*t, got.data(), got.size());
+      const DTypeInfo& info = *FindDType(name);
+      const bool swapped = simulate && !t->packed && info.memBytes > 1;
+      // Zero-copy views are raw file bytes, so a host that must swap gets none for multi-byte types.
+      const bool viewExpected = mmap && !swapped;
+      ok &= got == want[i] && (r.Bytes(*t) != nullptr) == viewExpected;
+      ++i;
+    }
+    delete host;
+    return ok;
+  };
+  Check(readsBack(true, false, little), "little-endian host, mapped: contents and zero-copy views");
+  Check(readsBack(false, false, little), "little-endian host, streamed: contents");
+  Check(readsBack(true, true, big), "big-endian host, mapped: contents are swapped, no view for multi-byte types");
+  Check(readsBack(false, true, big), "big-endian host, streamed: contents are swapped");
+
+  const std::string dirA = Tmp("shards_le"), dirB = Tmp("shards_be");
+  for (const auto& d : {dirA, dirB})
+  {
+    fs::remove_all(d);
+    fs::create_directories(d);
+  }
+  {
+    SafeTensorsWriter w;
+    fill(w, little);
+    w.WriteSharded(dirA + "/m.safetensors.index.json", 64);
+  }
+  {
+    SimulatedBigEndianHost host;
+    SafeTensorsWriter w;
+    fill(w, big);
+    w.WriteSharded(dirB + "/m.safetensors.index.json", 64);
+  }
+  std::vector<std::string> names;
+  for (const auto& e : fs::directory_iterator(dirA))
+    names.push_back(e.path().filename().string());
+  bool sameShards = names.size() > 1;
+  for (const auto& n : names)
+    sameShards &= fs::exists(dirB + "/" + n) && Slurp(dirA + "/" + n) == Slurp(dirB + "/" + n);
+  Check(sameShards, "a big-endian host writes the same shard set (" + std::to_string(names.size()) + " files)");
+  {
+    SimulatedBigEndianHost host;
+    SafeTensorsReader r(dirA + "/m.safetensors.index.json");
+    bool ok = true;
+    size_t i = 0;
+    for (const char* name : kGoldenDTypes)
+    {
+      std::vector<uint8_t> got(big[i].size());
+      r.Read(*r.Find(std::string("t_") + name), got.data(), got.size());
+      ok &= got == big[i++];
+    }
+    Check(ok, "big-endian host reads a shard set swapped");
+  }
+  for (const auto& d : {dirA, dirB})
+    fs::remove_all(d);
+  fs::remove(plain);
+  fs::remove(simulated);
 }
 
 void TestBlake3()
@@ -495,6 +624,7 @@ int main(int argc, char** argv)
   TestDTypes();
   TestMmap();
   TestGolden();
+  TestBigEndianHost();
   printf(failures == 0 ? "PASSED: SafeTensors reader/writer\n" : "FAILED: %d check(s)\n", failures);
   return failures == 0 ? 0 : 1;
 }

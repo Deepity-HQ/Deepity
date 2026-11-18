@@ -87,6 +87,12 @@ inline void CheckFormatVersion(const std::map<std::string, std::string>& metadat
                            ". Upgrade Deepity to load it.");
 }
 
+/// @brief Testing only: makes every reader and writer behave as on a big-endian host, so the byte-swap
+/// paths can be exercised on a little-endian machine. In this mode tensor memory passed to
+/// SafeTensorsWriter, and read back by SafeTensorsReader::Read(), is in big-endian order and the
+/// files are still little endian. Not thread safe against concurrent readers and writers.
+void SimulateBigEndianHost(bool enabled) noexcept;
+
 /// @brief Collects tensors and metadata, then writes one file atomically.
 ///
 /// Layout written: 8-byte size, JSON header padded with spaces so the data region starts on a

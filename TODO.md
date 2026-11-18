@@ -83,8 +83,10 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       (`include/deepity/io/DType.h`). fp4 and posit4 now store packed, half the bytes, as `U8` plus
       `deepity.dtypes`; stock `safetensors` opens them. GGUF-style block quant (Q4_K and similar)
       is one more registry row plus codec each, added in Phase 5.
-- [x] Endianness policy: little endian on disk, swap on big-endian hosts. Logic unit tested; no
-      big-endian hardware or CI job exists to run the real path.
+- [x] Endianness policy: little endian on disk. The header length field is now explicitly little endian,
+      and a simulated big-endian host (`SimulateBigEndianHost()`) drives the real swap code and writes
+      byte-identical files. Still open: BLAKE3 and GGUF reading assume a little-endian host (the build
+      refuses a big-endian target for BLAKE3), and nothing has run on real big-endian hardware.
 
 ## Phase 3: self-describing models
 

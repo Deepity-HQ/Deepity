@@ -164,10 +164,17 @@ Every dtype is a row in the registry (`include/deepity/io/DType.h`): a logical n
 
 ## Byte order
 
-Files are little endian, always. A big-endian host swaps each multi-byte element of a standard
-dtype on write and on read; packed types and single bytes need no swap. The content hash covers
-the bytes as stored, so it is the same on every host. The swap logic is unit tested, but nothing
-here has run on big-endian hardware.
+Files are little endian, always: the 8-byte header length, the tensor data and the hash. The
+container code (`SafeTensorsReader`/`Writer`) swaps each multi-byte element of a standard dtype on
+write and on read on a big-endian host; packed types and single bytes need no swap, and a mapped
+file gives no zero-copy view of a tensor that would need swapping. The content hash covers the bytes
+as stored, so it is the same on every host.
+
+**Big-endian hosts are not supported yet.** The swap logic is tested by simulating such a host
+(`SimulateBigEndianHost()`, which must write byte-identical files, single and sharded, and read them
+back swapped), but two parts read little-endian data in host order and are unfinished: BLAKE3
+(`Blake3.cpp` refuses to compile on a big-endian target) and the GGUF reader (throws at open).
+Making them correct needs byte-swapped loads and a real big-endian machine or emulator to test on.
 
 ## Validation (every reader)
 

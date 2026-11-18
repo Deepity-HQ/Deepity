@@ -1,6 +1,7 @@
 #include "deepity/io/SafeTensors.h"
 #include "deepity/io/Blake3.h"
 #include <algorithm>
+#include <atomic>
 #include <bit>
 #include <cstdio>
 #include <cstring>
@@ -14,7 +15,28 @@ namespace
 {
 constexpr const char* kMetadataKey = "__metadata__";
 constexpr size_t kChunkBytes = 1u << 20;
-constexpr bool kHostIsBigEndian = std::endian::native == std::endian::big;
+std::atomic<bool> gSimulateBigEndian{false};
+
+/// @brief True on a big-endian host, or when a test asks for one to be simulated.
+bool HostIsBigEndian() noexcept
+{
+  return std::endian::native == std::endian::big || gSimulateBigEndian.load(std::memory_order_relaxed);
+}
+
+/// @brief The 8-byte header length field is little endian on every host.
+void EncodeLE64(uint64_t value, char* out) noexcept
+{
+  for (int i = 0; i < 8; ++i)
+    out[i] = static_cast<char>((value >> (8 * i)) & 0xFF);
+}
+
+uint64_t DecodeLE64(const unsigned char* in) noexcept
+{
+  uint64_t value = 0;
+  for (int i = 7; i >= 0; --i)
+    value = (value << 8) | in[i];
+  return value;
+}
 
 /// @brief prod(shape) * elemBytes, or false on overflow.
 bool CheckedBytes(const std::vector<size_t>& shape, size_t elemBytes, uint64_t* out)
@@ -91,10 +113,10 @@ void SafeTensorsWriter::AddTensor(const std::string& name, const std::string& dt
   p.entry.shape = shape;
   p.entry.packed = packed;
   p.data = data;
-  if (!packed && kHostIsBigEndian && info->memBytes > 1 && bytes > 0)
+  if (!packed && HostIsBigEndian() && info->memBytes > 1 && bytes > 0)
   {
     p.owned.assign(static_cast<const char*>(data), static_cast<const char*>(data) + bytes);
-    ConvertEndianness(p.owned.data(), info->memBytes, bytes / info->memBytes, kHostIsBigEndian);
+    ConvertEndianness(p.owned.data(), info->memBytes, bytes / info->memBytes, HostIsBigEndian());
     p.data = p.owned.data();
   }
   tensors.push_back(std::move(p));
@@ -155,7 +177,9 @@ void SafeTensorsWriter::Write(const std::string& path) const
     std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
     if (!out)
       Fail(path, "cannot open '" + tmp + "' for writing");
-    out.write(reinterpret_cast<const char*>(&headerSize), sizeof(headerSize));
+    char sizeField[8];
+    EncodeLE64(headerSize, sizeField);
+    out.write(sizeField, sizeof(sizeField));
     out.write(headerText.data(), static_cast<std::streamsize>(headerText.size()));
     for (const Pending* t : order)
       if (t->entry.end > 0)
@@ -322,10 +346,11 @@ SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHas
   if (fileSize < 8)
     Fail(path, "file is smaller than the 8-byte header size field");
 
-  uint64_t headerSize = 0;
-  in.read(reinterpret_cast<char*>(&headerSize), sizeof(headerSize));
+  unsigned char sizeField[8];
+  in.read(reinterpret_cast<char*>(sizeField), sizeof(sizeField));
   if (!in)
     Fail(path, "cannot read the header size");
+  const uint64_t headerSize = DecodeLE64(sizeField);
   if (headerSize > kMaxHeaderBytes)
     Fail(path, "header size " + std::to_string(headerSize) + " exceeds the limit of " +
                    std::to_string(kMaxHeaderBytes));
@@ -493,7 +518,7 @@ const void* SafeTensorsReader::Bytes(const TensorEntry& entry) const noexcept
 {
   if (!shards.empty()) return shards[entry.shard]->Bytes(entry);
   if (mapping == nullptr) return nullptr;
-  if (!entry.packed && kHostIsBigEndian && DTypeSize(entry.dtype) > 1) return nullptr;
+  if (!entry.packed && HostIsBigEndian() && DTypeSize(entry.dtype) > 1) return nullptr;
   return mapping->Data() + dataOffset + entry.begin;
 }
 
@@ -522,7 +547,12 @@ void SafeTensorsReader::Read(const TensorEntry& entry, void* dst, size_t dstByte
   if (!entry.packed)
   {
     const size_t elemBytes = DTypeSize(entry.dtype);
-    ConvertEndianness(dst, elemBytes, dstBytes / elemBytes, kHostIsBigEndian);
+    ConvertEndianness(dst, elemBytes, dstBytes / elemBytes, HostIsBigEndian());
   }
+}
+
+void SimulateBigEndianHost(bool enabled) noexcept
+{
+  gSimulateBigEndian.store(enabled, std::memory_order_relaxed);
 }
 } // namespace Deep::io
