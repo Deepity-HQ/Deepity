@@ -27,10 +27,20 @@ _ACTIVATIONS: dict[str, type[Activation]] = {
 
 def _network_classes() -> dict[str, type]:
     # Imported here because the network modules import this one.
+    from .ConvolutionalPCN import ConvolutionalPCN
     from .DKPPCN import DKPPCN
     from .FullPCN import FullPCN
+    from .GaussSeidelPCN import GaussSeidelPCN
+    from .SequentialPCN import SequentialPCN
+    from .SimpleConvolutionalPCN import SimpleConvolutionalPCN
+    from .SimplePCN import SimplePCN
 
-    return {"DKPPCN": DKPPCN, "FullPCN": FullPCN}
+    return {
+        cls.__name__: cls
+        for cls in (
+            DKPPCN, FullPCN, SequentialPCN, SimplePCN, SimpleConvolutionalPCN, GaussSeidelPCN, ConvolutionalPCN
+        )
+    }
 
 
 def architecture_to_json(architecture: tuple[Layer | Activation, ...]) -> list[dict[str, Any]]:
@@ -118,16 +128,21 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     model: dict[str, Any] = {
         "network": network,
         "batch_size": int(net.batch_size),
-        "device": net.device,
+        "device": getattr(net, "device", "cpu"),
         "layers": architecture_to_json(net.architecture),
         "hyperparameters": hyperparameters,
     }
     if dtype is not None:
         model["dtype"] = dtype
+    if getattr(net, "input_shape", None) is not None:
+        model["input_shape"] = [int(d) for d in net.input_shape]
 
     card = getattr(net, "card", None)
 
-    inference = {"mode": "iterative", "inference_steps": int(net.default_inference_steps)}
+    # Only networks that carry a default settling count record one; the others take `steps` per call.
+    inference = {"mode": "iterative"}
+    if hasattr(net, "default_inference_steps"):
+        inference["inference_steps"] = int(net.default_inference_steps)
     return {
         "deepity.model": json.dumps(model, separators=(",", ":")),
         "deepity.inference": json.dumps(inference, separators=(",", ":")),
@@ -151,12 +166,18 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
     if name not in classes:
         raise ValueError(f"{path} describes network {name!r}, which this build cannot load. Known: {sorted(classes)}.")
 
-    kwargs: dict[str, Any] = {
-        "batch_size": batch_size if batch_size is not None else model.get("batch_size"),
-        "device": device if device is not None else model.get("device", "cpu"),
-    }
+    import inspect
+
+    accepted = inspect.signature(classes[name].__init__).parameters
+    kwargs: dict[str, Any] = {"batch_size": batch_size if batch_size is not None else model.get("batch_size")}
+    if "device" in accepted:
+        kwargs["device"] = device if device is not None else model.get("device", "cpu")
+    elif device not in (None, "cpu"):
+        raise ValueError(f"{name} runs on the CPU only, so device={device!r} is not available.")
     if "dtype" in model:
         kwargs["dtype"] = model["dtype"]
+    if "input_shape" in model:
+        kwargs["input_shape"] = tuple(model["input_shape"])
 
     net = classes[name](*architecture_from_json(model["layers"]), **kwargs)
     net.configure(**model.get("hyperparameters", {}))
@@ -171,6 +192,55 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
     if "inference_steps" in inference:
         net.default_inference_steps = int(inference["inference_steps"])
     return net, meta
+
+
+class ModelFileMixin:
+    """Self-describing save, checkpoint and import for the network classes whose C++ side exposes the
+    `_save`/`_save_checkpoint`/`_load_checkpoint`/`_load_weights` methods (see `BindModelFiles`).
+
+    Subclasses list this mixin before their native base, set `_center_weights` and the usual
+    private hyperparameter attributes, and implement `_current_hyperparameters()`.
+    """
+
+    _center_weights: bool = False
+
+    def set_center_weights(self, enabled: bool) -> None:
+        super().set_center_weights(enabled)  # type: ignore[misc]
+        self._center_weights = bool(enabled)
+
+    def _current_hyperparameters(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def _file_metadata(self) -> dict[str, str]:
+        return build_metadata(self, type(self).__name__, self._current_hyperparameters(), None)
+
+    def save(self, filepath: str, max_shard_bytes: Optional[int] = None) -> bool:
+        """Write a self-describing model file: weights, architecture, hyperparameters. `deepity.load(filepath)`
+        rebuilds the network from it. A path ending in `.safetensors.index.json` writes shards."""
+        self._require_configured()  # type: ignore[attr-defined]
+        return self._save(filepath, self._file_metadata(), shard_bytes(filepath, max_shard_bytes))  # type: ignore[attr-defined]
+
+    def save_checkpoint(
+        self, filepath: str, training_state: Optional[dict] = None, max_shard_bytes: Optional[int] = None
+    ) -> bool:
+        """Write a training checkpoint: everything `save` writes plus the optimizer state (Adam/AdamW
+        moments and step counters), so `deepity.resume(filepath)` continues training exactly.
+        `training_state` is any JSON-serializable dict you want back on resume. CPU networks only."""
+        self._require_configured()  # type: ignore[attr-defined]
+        metadata = {**self._file_metadata(), **training_metadata(training_state)}
+        return self._save_checkpoint(filepath, metadata, shard_bytes(filepath, max_shard_bytes))  # type: ignore[attr-defined]
+
+    def load_checkpoint(self, filepath: str) -> dict:
+        """Restore weights and optimizer state from a checkpoint into this configured network.
+        Returns the `training_state` dict that was saved with it (empty if none)."""
+        self._require_configured()  # type: ignore[attr-defined]
+        self._load_checkpoint(filepath)  # type: ignore[attr-defined]
+        return read_training_state(filepath)
+
+    def load_weights(self, filepath: str, strict: bool = True, rename=None):
+        """Load weights from any safetensors file; see `deepity.import_weights` for PyTorch sources."""
+        self._require_configured()  # type: ignore[attr-defined]
+        return self._load_weights(filepath, strict, rename)  # type: ignore[attr-defined]
 
 
 def load(path: str, device: Optional[str] = None, batch_size: Optional[int] = None) -> Any:

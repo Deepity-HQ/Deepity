@@ -330,6 +330,11 @@ public:
   {
     return true;
   }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
 
 private:
   std::unique_ptr<MemoryArena> localArena;

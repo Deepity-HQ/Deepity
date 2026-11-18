@@ -44,6 +44,10 @@ public:
   void CopyFromHost(float* deviceDst, const float* hostSrc, size_t numFloats) noexcept override;
   /// @copydoc Deep::IComputeBackend::CopyToHost
   void CopyToHost(float* hostDst, const float* deviceSrc, size_t numFloats) noexcept override;
+  /// @copydoc Deep::IComputeBackend::CopyCounterToHost
+  void CopyCounterToHost(int* hostDst, const int* counter) noexcept override;
+  /// @copydoc Deep::IComputeBackend::CopyCounterFromHost
+  void CopyCounterFromHost(int* counter, const int* hostSrc) noexcept override;
   /// @copydoc Deep::IComputeBackend::RandomizeNormal
   void RandomizeNormal(float* buf, size_t n, float mean, float stddev,
                        uint32_t seed) noexcept override;

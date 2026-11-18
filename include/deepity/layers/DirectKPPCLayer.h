@@ -211,6 +211,11 @@ public:
   {
     return true;
   }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
 
   /// @brief Sets the layer immediately above this one in the network.
   void SetLayerAbove(DirectKPPCLayer* l) noexcept

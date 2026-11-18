@@ -16,12 +16,13 @@ from rich.progress import (
 )
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 
 
-class SimplePCN(dy.SimplePCNetwork):
+class SimplePCN(ModelFileMixin, dy.SimplePCNetwork):
     """
     A Sequential Predictive Coding Network using synchronous settling dynamics.
 
@@ -214,6 +215,9 @@ class SimplePCN(dy.SimplePCNetwork):
         self._configured = True
         self.set_center_weights(center_weights)
 
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "lmbda": self._lambda, "optimizer": self._optimizer, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if not self._configured:

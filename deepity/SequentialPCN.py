@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
@@ -20,7 +21,7 @@ from rich.progress import (
 )
 
 
-class SequentialPCN(dy.DiscriminativePCNetwork):
+class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
     """
     Sequential Predictive Coding Network.
 
@@ -179,6 +180,9 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
         self.set_optimizer(optimizer)
         self.set_center_weights(center_weights)
 
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "precision_rate": self._precision_rate, "lmbda": self._lambda, "optimizer": self._optimizer, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if not self._configured:
@@ -482,12 +486,7 @@ class SequentialPCN(dy.DiscriminativePCNetwork):
 
         return self
 
-    def save(self, dir_path: str) -> bool:
-        """Save the network's weights to `dir_path`."""
+    def load(self, path: str) -> bool:
+        """Load weights from a model file written by `save`."""
         self._require_configured()
-        return super().save(dir_path)
-
-    def load(self, dir_path: str) -> bool:
-        """Load the network's weights from `dir_path`."""
-        self._require_configured()
-        return super().load(dir_path)
+        return super().load(path)

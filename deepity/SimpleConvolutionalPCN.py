@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Layer, Convolution, Activation
 from .utils import _fit_with_progress
@@ -9,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
+class SimpleConvolutionalPCN(ModelFileMixin, dy.SimpleConvPCNetwork):
     """
     Simple convolutional Predictive Coding Network.
 
@@ -141,6 +142,9 @@ class SimpleConvolutionalPCN(dy.SimpleConvPCNetwork):
         self._configured = True
         self.set_center_weights(center_weights)
 
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "lmbda": self._lambda, "optimizer": self._optimizer, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if not self._configured:

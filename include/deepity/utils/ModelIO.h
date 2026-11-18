@@ -2,8 +2,11 @@
 #include <algorithm>
 #include <cstdint>
 #include <deepity/backend/DeviceType.h>
+#include <deepity/backend/IComputeBackend.h>
+#include <deepity/layers/Layer.h>
 #include <deepity/io/SafeTensors.h>
 #include <deepity/utils/DTypeTag.h>
+#include <deque>
 #include <map>
 #include <stdexcept>
 #include <functional>
@@ -38,6 +41,51 @@ template <typename LayerPtr> void SyncToDeviceIfSupported(LayerPtr& layerPtr)
 {
   if constexpr (requires { layerPtr->SyncStateDictToDevice(); })
     layerPtr->SyncStateDictToDevice();
+}
+
+template <typename LayerPtr> IComputeBackend* StateBackendOf(const LayerPtr& layerPtr)
+{
+  if constexpr (requires { layerPtr->DeviceStateBackend(); })
+    return layerPtr->DeviceStateBackend();
+  return nullptr;
+}
+
+template <typename LayerPtr> IComputeBackend* CounterBackendOf(const LayerPtr& layerPtr)
+{
+  if constexpr (requires { layerPtr->DeviceCounterBackend(); })
+    return layerPtr->DeviceCounterBackend();
+  return nullptr;
+}
+
+/// @brief Element count from the first element to the last, rows included.
+inline size_t TensorExtent(const std::vector<size_t>& shape, size_t rowStride)
+{
+  size_t rows = 1, width = shape.empty() ? 0 : shape.back();
+  for (size_t i = 0; i + 1 < shape.size(); ++i)
+    rows *= shape[i];
+  const size_t stride = rowStride == 0 ? width : rowStride;
+  return rows == 0 || width == 0 ? 0 : (rows - 1) * stride + width;
+}
+
+/// @brief Host tensors need no staging.
+template <typename Descriptor>
+Descriptor StagedForSave(IComputeBackend*, const Descriptor& tensor, std::vector<std::vector<float>>&)
+{
+  return tensor;
+}
+
+/// @brief Copies a device tensor into a host buffer kept alive in `keep` and returns a descriptor for it.
+inline TensorDescriptor StagedForSave(IComputeBackend* dev, const TensorDescriptor& tensor,
+                                      std::vector<std::vector<float>>& keep)
+{
+  if (dev == nullptr)
+    return tensor;
+  keep.emplace_back(TensorExtent(tensor.shape, tensor.rowStride));
+  dev->Synchronize();
+  dev->CopyToHost(keep.back().data(), tensor.data, keep.back().size());
+  TensorDescriptor host = tensor;
+  host.data = keep.back().data();
+  return host;
 }
 
 /// @brief Row count implied by `shape` (product of every dimension but
@@ -105,6 +153,37 @@ void AddTensorPacked(io::SafeTensorsWriter& writer, std::vector<std::vector<char
   writer.AddTensor(fileName, dtypeName, tensor.shape, tight, count * sizeof(ElementType));
 }
 
+template <typename Descriptor>
+void ReadTensorInto(const io::SafeTensorsReader& reader, const io::TensorEntry& entry,
+                    const std::vector<size_t>& readShape, const Descriptor& tensor);
+
+/// @brief Reads into `tensor`, going through a host buffer and the backend's copy when the tensor is
+/// device memory. The buffer starts as the device contents so padding between rows is kept.
+template <typename Descriptor>
+void ReadTensorIntoStaged(IComputeBackend* dev, const io::SafeTensorsReader& reader, const io::TensorEntry& entry,
+                          const std::vector<size_t>& readShape, const Descriptor& tensor)
+{
+  ReadTensorInto(reader, entry, readShape, tensor);
+}
+
+inline void ReadTensorIntoStaged(IComputeBackend* dev, const io::SafeTensorsReader& reader,
+                                 const io::TensorEntry& entry, const std::vector<size_t>& readShape,
+                                 const TensorDescriptor& tensor)
+{
+  if (dev == nullptr)
+  {
+    ReadTensorInto(reader, entry, readShape, tensor);
+    return;
+  }
+  std::vector<float> host(TensorExtent(tensor.shape, tensor.rowStride));
+  dev->Synchronize();
+  dev->CopyToHost(host.data(), tensor.data, host.size());
+  TensorDescriptor staged = tensor;
+  staged.data = host.data();
+  ReadTensorInto(reader, entry, readShape, staged);
+  dev->CopyFromHost(tensor.data, host.data(), host.size());
+}
+
 /// @brief Reads `entry` (whose shape is `readShape`) into `tensor`, decoding packed types and
 /// spreading rows over the tensor's row stride when it is padded.
 template <typename Descriptor>
@@ -137,13 +216,9 @@ void ReadTensorInto(const io::SafeTensorsReader& reader, const io::TensorEntry& 
     std::copy_n(tight.data() + r * width, width, tensor.data + r * stride);
 }
 
-/// @brief Throws unless every layer can describe all of its optimizer state, and the network
-/// lives in host memory (device-resident moments are not readable from here).
+/// @brief Throws unless every layer can describe all of its optimizer state.
 template <typename NetworkType> void RequireCheckpointSupport(const NetworkType& net)
 {
-  if constexpr (requires { net.GetDevice(); })
-    if (net.GetDevice() == DeviceType::DEVICE_GPU)
-      throw std::runtime_error("ModelIO: checkpoints of GPU networks are not supported yet.");
   size_t index = 0;
   for (const auto& layerPtr : net.GetLayers())
   {
@@ -205,7 +280,7 @@ public:
   /// moments and step counters for every layer. The file has `deepity.kind = "checkpoint"`;
   /// Load() still reads its weights, LoadCheckpoint() restores the optimizer state too.
   /// Caller state (epoch, step, learning-rate position, RNG) goes in `metadata`.
-  /// @throws std::runtime_error for a GPU network or a layer without optimizer-state accessors.
+  /// @throws std::runtime_error for a layer without optimizer-state accessors.
   template <typename NetworkType>
   static bool SaveCheckpoint(const NetworkType& net, const std::string& filepath,
                              const std::map<std::string, std::string>& metadata = {})
@@ -305,7 +380,7 @@ public:
         using MomentType = std::remove_pointer_t<decltype(tensor.data)>;
         if (entry->dtype != DTypeTag<MomentType>::Name() || entry->shape != tensor.shape)
           throw std::runtime_error("ModelIO::LoadCheckpoint: dtype or shape mismatch for '" + key + "'.");
-        detail::ReadTensorInto(reader, *entry, tensor.shape, tensor);
+        detail::ReadTensorIntoStaged(detail::StateBackendOf(layerPtr), reader, *entry, tensor.shape, tensor);
       }
       for (const auto& [name, counter] : layerPtr->GetOptimizerCounters())
       {
@@ -313,7 +388,14 @@ public:
         const io::TensorEntry* entry = reader.Find(key);
         if (entry == nullptr || entry->dtype != "I32" || entry->shape != std::vector<size_t>{1})
           throw std::runtime_error("ModelIO::LoadCheckpoint: '" + key + "' is missing or malformed in " + filepath + ".");
-        reader.Read(*entry, counter, sizeof(int32_t));
+        if (IComputeBackend* counterDev = detail::CounterBackendOf(layerPtr); counterDev != nullptr)
+        {
+          int32_t value = 0;
+          reader.Read(*entry, &value, sizeof(int32_t));
+          counterDev->CopyCounterFromHost(counter, &value);
+        }
+        else
+          reader.Read(*entry, counter, sizeof(int32_t));
       }
       }
       ++layerIdx;
@@ -333,6 +415,8 @@ private:
     writer.SetMetadata("deepity.kind", checkpoint ? "checkpoint" : "inference");
 
     std::vector<std::vector<char>> packed;
+    std::vector<std::vector<float>> deviceCopies; // host copies of device tensors, alive until Write()
+    std::deque<int32_t> counterCopies;
     size_t layerIdx = 0, tensorCount = 0;
     for (const auto& layerPtr : net.GetLayers())
     {
@@ -340,9 +424,11 @@ private:
       // staging buffers before GetStateDict() reads them. No-op for a
       // CPU layer.
       detail::SyncFromDeviceIfSupported(layerPtr);
+      IComputeBackend* const dev = detail::StateBackendOf(layerPtr);
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
       {
-        detail::AddTensorPacked(writer, packed, detail::TensorFileName(layerIdx, name), tensor);
+        detail::AddTensorPacked(writer, packed, detail::TensorFileName(layerIdx, name),
+                                detail::StagedForSave(dev, tensor, deviceCopies));
         ++tensorCount;
       }
       // Layer types without the accessors never reach here with `checkpoint` set, see
@@ -351,9 +437,20 @@ private:
         if (checkpoint)
         {
           for (const auto& [name, tensor] : layerPtr->GetOptimizerStateDict())
-            detail::AddTensorPacked(writer, packed, detail::OptimizerTensorName(layerIdx, name), tensor);
+            detail::AddTensorPacked(writer, packed, detail::OptimizerTensorName(layerIdx, name),
+                                    detail::StagedForSave(dev, tensor, deviceCopies));
+          IComputeBackend* const counterDev = detail::CounterBackendOf(layerPtr);
           for (const auto& [name, counter] : layerPtr->GetOptimizerCounters())
-            writer.AddTensor(detail::OptimizerTensorName(layerIdx, name), "I32", {1}, counter, sizeof(int32_t));
+          {
+            const int* source = counter;
+            if (counterDev != nullptr)
+            {
+              counterCopies.emplace_back(0);
+              counterDev->CopyCounterToHost(&counterCopies.back(), counter);
+              source = &counterCopies.back();
+            }
+            writer.AddTensor(detail::OptimizerTensorName(layerIdx, name), "I32", {1}, source, sizeof(int32_t));
+          }
         }
       ++layerIdx;
     }
@@ -422,7 +519,7 @@ private:
             throw std::runtime_error("ModelIO::Load: shape mismatch for '" + key + "'.");
           readShape = entry->shape;
         }
-        detail::ReadTensorInto(reader, *entry, readShape, tensor);
+        detail::ReadTensorIntoStaged(detail::StateBackendOf(layerPtr), reader, *entry, readShape, tensor);
       }
       // Pushes the reads above from host staging buffers on to the
       // actual device-resident parameters. No-op for a CPU layer.

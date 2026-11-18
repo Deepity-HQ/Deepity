@@ -584,6 +584,18 @@ int main()
   ok &= CheckpointResumes<SimpleConvPCNetworkT<double, double>, decltype(&MakeSimpleConvDouble), double>(
       "SimpleConvPCNetworkT<double>", MakeSimpleConvDouble, path, 64, 10);
 
+  // The same checks through the staging path a GPU network takes (host copy, backend copy, counters).
+  ForceDeviceStaging() = true;
+  ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork (staged)", MakeNet, path, 8, 4);
+  ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork (staged)", MakeFullNet, path, 8, 4);
+  ok &= CheckpointResumes<FullConvPCNetwork>("FullConvPCNetwork (staged)", MakeConvNet, path, 64, 10);
+  ok &= CheckpointResumes<GaussSeidelPCNetwork>("GaussSeidelPCNetwork (staged)", MakeGaussSeidel, path, 8, 4);
+  ok &= CheckpointResumes<DiscriminativePCNetwork>("DiscriminativePCNetwork (staged)", MakeDiscriminative, path, 8, 4);
+  ok &= CheckpointResumes<ConvPCNetwork>("ConvPCNetwork (staged)", MakeConvPC, path, 64, 10);
+  ok &= CheckpointResumes<SimplePCNetwork>("SimplePCNetwork (staged)", MakeSimple, path, 8, 4);
+  ok &= CheckpointResumes<SimpleConvPCNetwork>("SimpleConvPCNetwork (staged)", MakeSimpleConv, path, 64, 10);
+  ForceDeviceStaging() = false;
+
   // A network whose layers expose no state dict must refuse to write an empty file.
   NoStateNet noState;
   const bool emptyRefused = Throws([&] { ModelIO::Save(noState, path + ".nostate"); });

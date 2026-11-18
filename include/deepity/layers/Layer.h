@@ -10,6 +10,20 @@
 #include <string>
 #include <vector>
 
+namespace Deep
+{
+template <typename T, typename AccumT> class IComputeBackendT;
+using IComputeBackend = IComputeBackendT<float, float>;
+
+/// @brief Test switch: makes layers on the CPU report their state as "device" memory too, so
+/// ModelIO's staging path (the one a GPU network takes) runs without a GPU.
+inline bool& ForceDeviceStaging() noexcept
+{
+  static bool force = false;
+  return force;
+}
+} // namespace Deep
+
 /**
  * @file Layer.h
  * @brief Virtual Layer.
@@ -104,6 +118,19 @@ public:
   virtual bool SupportsCheckpoint() const noexcept
   {
     return false;
+  }
+  /// @brief The backend whose device memory holds this layer's GetStateDict() and
+  /// GetOptimizerStateDict() tensors and optimizer counters, or nullptr when they are host memory.
+  /// ModelIO stages device tensors through it, so a GPU layer needs no staging code of its own.
+  virtual IComputeBackend* DeviceStateBackend() const noexcept
+  {
+    return nullptr;
+  }
+  /// @brief Like DeviceStateBackend(), for the counters alone. A layer that stages its tensors
+  /// itself (SyncStateDictFromDevice) overrides only this one.
+  virtual IComputeBackend* DeviceCounterBackend() const noexcept
+  {
+    return DeviceStateBackend();
   }
   /// @brief Copies this layer's parameters from device memory into
   /// the host-readable buffers GetStateDict() exposes, so a save

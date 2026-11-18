@@ -441,6 +441,11 @@ public:
   {
     return true;
   }
+  /// @copydoc Deep::Layer::DeviceCounterBackend
+  IComputeBackend* DeviceCounterBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
   /// @copydoc Deep::Layer::SyncStateDictFromDevice
   void SyncStateDictFromDevice() const override;
   /// @copydoc Deep::Layer::SyncStateDictToDevice

@@ -39,6 +39,46 @@
 namespace
 {
 
+/// @brief Adds the file-IO methods the self-describing Python classes build on (`_save`,
+/// `_save_checkpoint`, `_load_checkpoint`, `_load_weights`) to an already registered network class.
+/// Underscore names keep them apart from each class's own `save`/`load`.
+template <typename NetT> void BindModelFiles(nb::module_& m, const char* className)
+{
+  auto cls = nb::borrow<nb::class_<NetT>>(m.attr(className));
+  cls.def(
+         "_save",
+         [](const NetT& self, const std::string& filepath, const std::map<std::string, std::string>& metadata,
+            uint64_t maxShardBytes)
+         {
+           return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                    : Deep::ModelIO::Save(self, filepath, metadata);
+         },
+         nb::arg("filepath"), nb::arg("metadata"), nb::arg("max_shard_bytes") = 0)
+      .def(
+          "_save_checkpoint",
+          [](const NetT& self, const std::string& filepath, const std::map<std::string, std::string>& metadata,
+             uint64_t maxShardBytes)
+          {
+            return maxShardBytes > 0
+                       ? Deep::ModelIO::SaveCheckpointSharded(self, filepath, maxShardBytes, metadata)
+                       : Deep::ModelIO::SaveCheckpoint(self, filepath, metadata);
+          },
+          nb::arg("filepath"), nb::arg("metadata"), nb::arg("max_shard_bytes") = 0)
+      .def(
+          "_load_checkpoint",
+          [](NetT& self, const std::string& filepath) { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"))
+      .def(
+          "_load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none());
+}
+
 template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const char* className)
 {
   cls.def(nb::init<int>(), nb::arg("batch_size"), "Construct a network with a fixed batch size.")
@@ -1999,6 +2039,12 @@ void bind_networks(nb::module_& m)
            "Seeds hidden layers from a genuine forward pass through current "
            "weights, instead of zero-init. Call after clamp_input(), before "
            "the settling loop.");
+
+  BindModelFiles<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork");
+  BindModelFiles<Deep::SimplePCNetwork>(m, "SimplePCNetwork");
+  BindModelFiles<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork");
+  BindModelFiles<Deep::ConvPCNetwork>(m, "ConvPCNetwork");
+  BindModelFiles<Deep::SimpleConvPCNetwork>(m, "SimpleConvPCNetwork");
 
   BindFullPCNetworkT<float, float>(m, "FullPCNetwork_f32");
   BindFullPCNetworkT<double, double>(m, "FullPCNetwork_f64");

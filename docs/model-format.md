@@ -101,11 +101,15 @@ weights and ignores the rest. Implemented (CPU only) for `DirectKPPCNetwork`, `D
 `FullPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork`, `GaussSeidelPCNetworkT`,
 `DiscriminativePCNetwork`, `ConvPCNetwork`, `SimplePCNetwork`, `SimpleConvPCNetwork`,
 `ConvPCNetworkT`, `FullConvPCNetworkT` and the `T` forms of the Simple networks: every network class has
-a state dict now. A Simple network on a GPU backend reports no weights (its buffers are device memory),
-so `Save` refuses it with an error. After loading weights, layers that cache log(precision) rebuild it
+a state dict now. After loading weights, layers that cache log(precision) rebuild it
 from the loaded p. (The conv layers already keep their
 moments in the ordinary state dict as `m_W`, `v_W`, ..., so a conv checkpoint adds only the step
-counters.) Other networks and GPU networks refuse to write one.
+counters.) A network whose layers have no optimizer accessors refuses to write one.
+
+On a GPU backend a layer names the backend that holds its tensors and counters
+(`Layer::DeviceStateBackend()`), and `ModelIO` copies them through it. The file is identical to a CPU
+one, so a checkpoint moves between devices. This path is tested on the CPU with
+`ForceDeviceStaging()`, and has not been run on a GPU.
 
 Layers with no weights (the terminal layer) write no tensors. Zero-size tensors are not written.
 Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by

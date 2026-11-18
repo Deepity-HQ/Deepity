@@ -12,6 +12,7 @@
 #include <cstring>
 #include <deepity/io/GGUF.h>
 #include <deepity/io/SafeTensors.h>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <random>
@@ -109,7 +110,8 @@ void WriteStr(std::vector<char>& v, const std::string& s) { WriteU64(v, s.size()
 
 int main()
 {
-  const fs::path dir = fs::temp_directory_path() / "deepity_fuzz";
+  // One directory per process: the plain and sanitized runs execute in parallel under ctest -j.
+  const fs::path dir = fs::temp_directory_path() / ("deepity_fuzz_" + std::to_string((unsigned long long)std::chrono::steady_clock::now().time_since_epoch().count()));
   fs::create_directories(dir);
   const std::string scratch = (dir / "m.bin").string();
 

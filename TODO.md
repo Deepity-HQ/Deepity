@@ -88,17 +88,18 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 ## Phase 3: self-describing models
 
 - [~] Architecture and inference settings serialized as JSON in the metadata block. Done for
-      `DKPPCN` and `FullPCN` (`save()` writes them). Other networks still save weights only.
-- [x] `deepity.load(path)` rebuilds the network from the file (`DKPPCN`, `FullPCN`).
+      every Python network class (`save()` writes them).
+- [x] `deepity.load(path)` rebuilds the network from the file (every Python network class).
       Test: `tests/pyModelFilesVerify.py` (run in the Linux CI job).
 - [x] `net.load_weights(path, strict=True, rename=...)` for partial loads and foreign names.
 - [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoints (Adam/AdamW
       moments, step counters, caller training state) work on CPU for `DirectKPPCNetwork(T)`,
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
-      and `ConvPCNetwork`, each verified to resume bit-identically. Still to do: GPU networks
-      (moments live on the device) and an inference artifact that omits Psi.
+      and `ConvPCNetwork`, each verified to resume bit-identically. GPU networks stage
+      through the backend (code written, CPU-tested via `ForceDeviceStaging()`, **not run on a GPU**).
+      Still to do: an inference artifact that omits Psi.
 - [x] State dicts for every network class (Simple family, `ConvPCNetworkT`, `FullConvPCNetworkT`);
-      checkpoints resume bit-identically for all of them on CPU. GPU Simple networks still cannot save.
+      checkpoints resume bit-identically for all of them on CPU.
 - [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 

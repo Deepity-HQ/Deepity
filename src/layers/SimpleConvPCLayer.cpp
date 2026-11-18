@@ -631,15 +631,13 @@ void SimpleConvPCLayer::UnclampState() noexcept
 
 std::map<std::string, TensorDescriptor> SimpleConvPCLayer::GetStateDict() const
 {
-  if (backend->GetDeviceType() != DeviceType::DEVICE_CPU)
-    return {};
   const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
   return {{"W", {W, {(size_t)outChannels, rowLen}}}, {"b", {b, {(size_t)outChannels}}}};
 }
 
 std::map<std::string, TensorDescriptor> SimpleConvPCLayer::GetOptimizerStateDict() const
 {
-  if (outChannels == 0 || backend->GetDeviceType() != DeviceType::DEVICE_CPU)
+  if (outChannels == 0)
     return {};
   const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
   return {{"weight.m", {m_W, {(size_t)outChannels, rowLen}}}, {"weight.v", {v_W, {(size_t)outChannels, rowLen}}},
@@ -648,7 +646,7 @@ std::map<std::string, TensorDescriptor> SimpleConvPCLayer::GetOptimizerStateDict
 
 std::map<std::string, int*> SimpleConvPCLayer::GetOptimizerCounters() const
 {
-  if (outChannels == 0 || backend->GetDeviceType() != DeviceType::DEVICE_CPU)
+  if (outChannels == 0)
     return {};
   return {{"step", t_device}};
 }

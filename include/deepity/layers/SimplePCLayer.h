@@ -219,6 +219,11 @@ public:
   {
     return true;
   }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
 
   /// @brief Returns the learning rate used for weight updates.
   float GetLearningRate() const noexcept

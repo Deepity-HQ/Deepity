@@ -4,12 +4,13 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Activation, Convolution, Layer
 from .utils import _fit_with_progress
 
 
-class ConvolutionalPCN(dy.ConvPCNetwork):
+class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
     """
     Precision-weighted Convolutional Predictive Coding Network.
 
@@ -145,6 +146,9 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self.set_center_weights(center_weights)
 
         return self
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "precision_rate": self._precision_rate, "lmbda": self._lambda, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if self._learning_rate is None:

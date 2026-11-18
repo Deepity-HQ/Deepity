@@ -137,6 +137,11 @@ public:
   {
     return true;
   }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
 
   /// @brief Returns the current learning rate.
   float GetLearningRate() const noexcept
