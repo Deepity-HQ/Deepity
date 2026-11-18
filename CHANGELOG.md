@@ -37,7 +37,10 @@ earlier history.
 - `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file, shard set or GGUF file, and convert between them (GGUF in, shards in either direction, dtypes and metadata kept).
 - Model cards: set `net.card = {"license": ..., "description": ..., "metrics": ...}` before saving; it is stored as `deepity.card`, restored by `deepity.load` and shown by `inspect`. `deepity.read_card(path)` reads it.
 - `FormatFuzz` test: seeded mutation fuzzing of the safetensors, shard index and GGUF parsers. It found that a GGUF file with invalid UTF-8 in a string made the reader throw a non-GGUF exception; that is fixed.
+- `-DDEEPITY_BUILD_FUZZ=ON` adds `FormatFuzzSanitized` (the mutation fuzzer under ASan and UBSan, run by ctest and CI) and, with clang or icpx, `FuzzFormats`, a libFuzzer target for the three parsers.
 - `SECURITY.md` explains what loading an untrusted model does and does not guarantee.
+
+- `SimplePCNetwork`, `SimpleConvPCNetwork` and their `T` forms can now save, load and write resumable checkpoints (CPU backends; a GPU Simple network refuses with an error).
 
 ### Changed
 
@@ -45,7 +48,7 @@ earlier history.
 
 - `ModelIO::Save/Load` (and the network `Save/Load` wrappers) now report failure by exception with the reason instead of returning `false`; they return `true` on success. `FullConvPCNetwork::Save/Load` and `DiscriminativePCNetwork::Save/Load` are no longer `noexcept`, because a corrupt file would otherwise terminate the process.
 
-- `ModelIO::Save()` now throws instead of writing an empty file when a network exposes no weights (the Simple networks, `ConvPCNetworkT` and `FullConvPCNetworkT` have no state dict yet). Before, it silently produced a model with no tensors.
+- `ModelIO::Save()` now throws instead of writing an empty file when a network exposes no weights (for example a GPU Simple network). Before, it silently produced a model with no tensors.
 
 - 4-bit weight types (`fp4_e2m1`, `posit4_0/1/2`) now save packed, two codes per byte, as a 1-D `U8` tensor plus a `deepity.dtypes` entry, so those model files are about half the size and still open in stock safetensors readers. Files from 0.1.0a8 that stored them one byte per element still load. Model files are little endian on every host; big-endian hosts byte-swap on read and write.
 

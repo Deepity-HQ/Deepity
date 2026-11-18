@@ -78,8 +78,9 @@ jobs:
 
       - name: Build and run C++ tests (Release)
         # build.py runs ctest after the build: ModelIO/SafeTensors round
-        # trips, weight centering and the conv diagnostics.
-        run: python build.py Release
+        # trips, weight centering and the conv diagnostics. DEEPITY_BUILD_FUZZ adds
+        # the ASan/UBSan run of the file-parser mutation fuzzer.
+        run: python build.py Release -DDEEPITY_BUILD_FUZZ=ON
 
       - name: Python model-file tests
         # The build leaves the extension next to the deepity package, so

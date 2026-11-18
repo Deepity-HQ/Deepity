@@ -26,7 +26,9 @@ content. Loading one cannot run code. What it does do:
   it. Check the download against a hash or signature you obtained separately if provenance matters.
 - A shard index may only name plain file names beside itself, never paths.
 - GGUF files are parsed with the same bounds checks: counts, string and array lengths and tensor
-  ranges must fit the file. Both parsers are mutation-fuzzed in CI (`tests/tFormatFuzz.cpp`).
+  ranges must fit the file. All three parsers are mutation-fuzzed in CI, including under AddressSanitizer and UBSan
+  (`tests/tFormatFuzz.cpp`, `-DDEEPITY_BUILD_FUZZ=ON`), and a libFuzzer target
+  (`tests/fuzz/FuzzFormats.cpp`) is available for longer runs.
 - Memory-mapped files must not be truncated or rewritten in place while open; doing so can crash the
   reader. Replace the file instead, as `Save` does.
 - PyTorch `.pt` and `.pth` files are pickles. `deepity.import_weights` loads them with

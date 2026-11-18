@@ -981,6 +981,7 @@ endif()
 # --- Tests -----------------------------------------------------------
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
+option(DEEPITY_BUILD_FUZZ "Build the sanitizer-instrumented format fuzz test and (clang) the libFuzzer target" OFF)
 
 # Without this, every add_test() below is silently inert -- ctest reports
 # "No tests were found" regardless of how many are registered, since no
@@ -1084,6 +1085,31 @@ if(DEEPITY_BUILD_TESTS)
     )
     add_test(NAME FormatFuzz COMMAND FormatFuzz)
     list(APPEND DEEPITY_TEST_TARGETS FormatFuzz)
+
+    # --- Sanitized fuzzing of the file parsers. Off by default. The IO sources are rebuilt
+    # --- on their own with ASan+UBSan (not the whole library), so this stays quick.
+    if(DEEPITY_BUILD_FUZZ AND NOT MSVC)
+        set(DEEPITY_FUZZ_IO_SOURCES
+            src/io/SafeTensors.cpp src/io/DType.cpp src/io/MappedFile.cpp src/io/GGUF.cpp src/io/Blake3.cpp)
+        set(DEEPITY_SAN_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g -O1)
+
+        add_executable(FormatFuzzSanitized tests/tFormatFuzz.cpp ${DEEPITY_FUZZ_IO_SOURCES})
+        target_include_directories(FormatFuzzSanitized PRIVATE include src)
+        target_compile_options(FormatFuzzSanitized PRIVATE ${DEEPITY_SAN_FLAGS})
+        target_link_options(FormatFuzzSanitized PRIVATE ${DEEPITY_SAN_FLAGS})
+        target_link_libraries(FormatFuzzSanitized PRIVATE hwy)
+        set_target_properties(FormatFuzzSanitized PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+        add_test(NAME FormatFuzzSanitized COMMAND FormatFuzzSanitized)
+
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
+            add_executable(FuzzFormats tests/fuzz/FuzzFormats.cpp ${DEEPITY_FUZZ_IO_SOURCES})
+            target_include_directories(FuzzFormats PRIVATE include src)
+            target_compile_options(FuzzFormats PRIVATE -fsanitize=fuzzer-no-link,address,undefined -fno-sanitize-recover=all -g -O1)
+            target_link_options(FuzzFormats PRIVATE -fsanitize=fuzzer,address,undefined)
+            target_link_libraries(FuzzFormats PRIVATE hwy)
+            set_target_properties(FuzzFormats PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+        endif()
+    endif()
 
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----

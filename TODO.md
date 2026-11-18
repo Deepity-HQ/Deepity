@@ -97,9 +97,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
       and `ConvPCNetwork`, each verified to resume bit-identically. Still to do: GPU networks
       (moments live on the device) and an inference artifact that omits Psi.
-- [ ] State dicts for the networks that have none (`SimplePCNetwork`, `SimpleConvPCNetwork`, their
-      `T` forms, `ConvPCNetworkT`, `FullConvPCNetworkT`). Today `Save` refuses them, so they cannot
-      save weights at all; checkpoints follow once they can.
+- [~] State dicts for the networks that had none: the Simple family is done (float, `T`, conv and
+      conv `T`, CPU only, checkpoints resume bit-identically). `ConvPCNetworkT` and `FullConvPCNetworkT`
+      still have no `GetStateDict`, so they cannot use `ModelIO` at all.
 - [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 
@@ -128,7 +128,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] Model card metadata: `net.card = {...}` is stored as `deepity.card`, restored by `deepity.load`, read by `deepity.read_card`.
 - [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, GGUF in).
 - [x] Mutation fuzzing of the safetensors, shard index and GGUF parsers (`FormatFuzz`, found one real bug: invalid UTF-8 in a GGUF string).
-      Security note in `SECURITY.md`. Still to do: run FormatFuzz under ASan/UBSan, and a libFuzzer target.
+      Security note in `SECURITY.md`. Also run under ASan/UBSan (`FormatFuzzSanitized`, `-DDEEPITY_BUILD_FUZZ=ON`, in CI) and as a libFuzzer
+      target (`FuzzFormats`, clang/icpx): 818k runs in two minutes, no findings.
 - [x] CHANGELOG entries and docs.
 
 ## Open questions

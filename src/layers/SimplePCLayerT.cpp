@@ -331,6 +331,31 @@ template <typename T, typename AccumT> void SimplePCLayerT<T, AccumT>::UnclampSt
   isClamped = false;
 }
 
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<T>> SimplePCLayerT<T, AccumT>::GetStateDict() const
+{
+  return {{"W", {W, std::vector<size_t>{nextSize, size}}}, {"b", {b, std::vector<size_t>{nextSize}}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> SimplePCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const std::vector<size_t> wShape{nextSize, size}, bShape{nextSize};
+  return {{"weight.m", {ptr(m_W), wShape}}, {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},   {"bias.v", {ptr(v_b), bShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> SimplePCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}};
+}
+
 template class SimplePCLayerT<float, float>;
 template void SimplePCLayerT<float, float>::BindMemory<MemoryArenaT<float>>(
     MemoryArenaT<float>& arena);

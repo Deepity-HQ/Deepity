@@ -417,6 +417,33 @@ template <typename T, typename AccumT> void SimpleConvPCLayerT<T, AccumT>::Uncla
   isClamped = false;
 }
 
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<T>> SimpleConvPCLayerT<T, AccumT>::GetStateDict() const
+{
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  return {{"W", {W, std::vector<size_t>{(size_t)outChannels, rowLen}}}, {"b", {b, std::vector<size_t>{(size_t)outChannels}}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> SimpleConvPCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  const std::vector<size_t> wShape{(size_t)outChannels, rowLen}, bShape{(size_t)outChannels};
+  return {{"weight.m", {ptr(m_W), wShape}}, {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},   {"bias.v", {ptr(v_b), bShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> SimpleConvPCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}};
+}
+
 template class SimpleConvPCLayerT<float, float>;
 template class SimpleConvPCLayerT<double, double>;
 template class SimpleConvPCLayerT<Fp4E2M1Value, float>;

@@ -16,7 +16,10 @@
 #include <deepity/networks/DiscriminativePCNetwork.h>
 #include <deepity/networks/GaussSeidelPCNetwork.h>
 #include <deepity/networks/GaussSeidelPCNetworkT.h>
+#include <deepity/networks/SimpleConvPCNetwork.h>
+#include <deepity/networks/SimpleConvPCNetworkT.h>
 #include <deepity/networks/SimplePCNetwork.h>
+#include <deepity/networks/SimplePCNetworkT.h>
 #include <deepity/networks/FullConvPCNetwork.h>
 #include <deepity/networks/FullPCNetwork.h>
 #include <deepity/networks/FullPCNetworkT.h>
@@ -205,6 +208,79 @@ std::unique_ptr<DiscriminativePCNetwork> MakeDiscriminative(unsigned seed)
   n->AddLayer(8, 6, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
   n->AddLayer(6, 4, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
   n->AddLayer(4, 0, 1e-3f, 0.1f, 0.01f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+/// @brief A layer that keeps Layer's default (empty) GetStateDict, standing in for a layer family
+/// with no weights to expose.
+struct NoStateLayer : Layer
+{
+  float* GetBeliefs() noexcept override { return nullptr; }
+  const float* GetErrors() const noexcept override { return nullptr; }
+  size_t GetInputSize() const noexcept override { return 4; }
+  size_t GetOutputSize() const noexcept override { return 4; }
+  size_t GetBatchSize() const noexcept override { return 1; }
+  float CalculateState() noexcept override { return 0.f; }
+  void UpdateState() noexcept override {}
+  void UpdateWeights() noexcept override {}
+};
+
+struct NoStateNet
+{
+  std::vector<std::unique_ptr<Layer>> layers;
+  NoStateNet() { layers.push_back(std::make_unique<NoStateLayer>()); }
+  const std::vector<std::unique_ptr<Layer>>& GetLayers() const { return layers; }
+};
+
+std::unique_ptr<SimplePCNetwork> MakeSimple(unsigned seed)
+{
+  auto n = std::make_unique<SimplePCNetwork>(kBatch);
+  n->AddLayer(8, 6, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(6, 4, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(4, 0, 1e-3f, 0.1f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<SimplePCNetworkT<double, double>> MakeSimpleDouble(unsigned seed)
+{
+  auto n = std::make_unique<SimplePCNetworkT<double, double>>(kBatch);
+  n->AddLayer(8, 6, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(6, 4, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 0, 1e-3, 0.1, 1e-4, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<SimpleConvPCNetwork> MakeSimpleConv(unsigned seed)
+{
+  auto n = std::make_unique<SimpleConvPCNetwork>(kBatch);
+  n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1e-3f, 0.1f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<SimpleConvPCNetworkT<double, double>> MakeSimpleConvDouble(unsigned seed)
+{
+  auto n = std::make_unique<SimpleConvPCNetworkT<double, double>>(kBatch);
+  n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1e-3, 0.1, 1e-4, kLin, kDLin);
   SetAdam(*n);
   n->Compile();
   std::mt19937 rng(seed);
@@ -469,13 +545,16 @@ int main()
       "GaussSeidelPCNetworkT<double>", MakeGaussSeidelDouble, path, 8, 4);
   ok &= CheckpointResumes<DiscriminativePCNetwork>("DiscriminativePCNetwork", MakeDiscriminative, path, 8, 4);
   ok &= CheckpointResumes<ConvPCNetwork>("ConvPCNetwork", MakeConvPC, path, 64, 10);
+  ok &= CheckpointResumes<SimplePCNetwork>("SimplePCNetwork", MakeSimple, path, 8, 4);
+  ok &= CheckpointResumes<SimplePCNetworkT<double, double>, decltype(&MakeSimpleDouble), double>(
+      "SimplePCNetworkT<double>", MakeSimpleDouble, path, 8, 4);
+  ok &= CheckpointResumes<SimpleConvPCNetwork>("SimpleConvPCNetwork", MakeSimpleConv, path, 64, 10);
+  ok &= CheckpointResumes<SimpleConvPCNetworkT<double, double>, decltype(&MakeSimpleConvDouble), double>(
+      "SimpleConvPCNetworkT<double>", MakeSimpleConvDouble, path, 64, 10);
 
-  // A network whose layers expose no state dict yet must refuse to write an empty file.
-  SimplePCNetwork simple(kBatch);
-  simple.AddLayer(4, 3, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
-  simple.AddLayer(3, 0, 1e-3f, 0.1f, 1e-4f, kLin, kDLin);
-  simple.Compile();
-  const bool emptyRefused = Throws([&] { ModelIO::Save(simple, path + ".simple"); });
+  // A network whose layers expose no state dict must refuse to write an empty file.
+  NoStateNet noState;
+  const bool emptyRefused = Throws([&] { ModelIO::Save(noState, path + ".nostate"); });
   printf("%s\n", emptyRefused ? "PASSED: a network with no state dict refuses to save an empty file"
                               : "FAILED: empty file was written");
   ok &= emptyRefused;

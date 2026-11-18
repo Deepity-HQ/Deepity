@@ -449,6 +449,28 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
   ReleaseLocalArenaIfForeign(localArena, arena);
 }
 
+std::map<std::string, TensorDescriptor> SimplePCLayer::GetStateDict() const
+{
+  if (backend->GetDeviceType() != DeviceType::DEVICE_CPU)
+    return {};
+  return {{"W", {W, {(size_t)nextSize, (size_t)size}}}, {"b", {b, {(size_t)nextSize}}}};
+}
+
+std::map<std::string, TensorDescriptor> SimplePCLayer::GetOptimizerStateDict() const
+{
+  if (nextSize == 0 || backend->GetDeviceType() != DeviceType::DEVICE_CPU)
+    return {};
+  return {{"weight.m", {m_W, {(size_t)nextSize, (size_t)size}}}, {"weight.v", {v_W, {(size_t)nextSize, (size_t)size}}},
+          {"bias.m", {m_b, {(size_t)nextSize}}},   {"bias.v", {v_b, {(size_t)nextSize}}}};
+}
+
+std::map<std::string, int*> SimplePCLayer::GetOptimizerCounters() const
+{
+  if (nextSize == 0 || backend->GetDeviceType() != DeviceType::DEVICE_CPU)
+    return {};
+  return {{"step", t_device}};
+}
+
 template void SimplePCLayer::BindMemory<MemoryArena>(MemoryArena& arena);
 #if defined(DEEPITY_USE_CUDA)
 template void SimplePCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena& arena);
