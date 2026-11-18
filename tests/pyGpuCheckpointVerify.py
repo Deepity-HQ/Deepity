@@ -26,8 +26,21 @@ def check(ok, what):
     failures += not ok
 
 
+conv = lambda: (dp.Convolution(4, 3, 3, 1, 1, 1, 1), dp.ReLU(), dp.Convolution(10, 8, 8), dp.Convolution(0, 1, 1))
+dense = lambda: (dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4))
+
+
+def P(net):
+    return np.asarray(net.predict(x, 2), dtype=np.float64).ravel()
+
+
 def make(cls, device):
-    net = cls(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8, device=device)
+    if cls in (dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
+        net = cls(*conv(), input_shape=(1, 8, 8), batch_size=8, device=device)
+        extra = dict(optimizer="ADAM") if cls is dp.SimpleConvolutionalPCN else dict(precision_rate=0.01)
+        net.configure(learning_rate=1e-3, inference_rate=0.1, **extra)
+        return net
+    net = cls(*dense(), batch_size=8, device=device)
     net.configure(learning_rate=1e-3, inference_rate=0.1, optimizer="ADAM")
     return net
 
@@ -40,12 +53,15 @@ except Exception as error:  # noqa: BLE001
     sys.exit(0)
 
 rng = np.random.default_rng(0)
-x = rng.standard_normal((8, 12)).astype(np.float32)
-y = rng.standard_normal((8, 4)).astype(np.float32)
+DATA = {
+    False: (rng.standard_normal((8, 12)).astype(np.float32), rng.standard_normal((8, 4)).astype(np.float32)),
+    True: (rng.standard_normal((8, 64)).astype(np.float32), rng.standard_normal((8, 10)).astype(np.float32)),
+}
 
 with tempfile.TemporaryDirectory() as tmp:
-    for cls in (dp.FullPCN, dp.DKPPCN, dp.SimplePCN):
+    for cls in (dp.FullPCN, dp.DKPPCN, dp.SimplePCN, dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
         print(f"--- {cls.__name__} on cuda ---")
+        x, y = DATA[cls in (dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN)]
         gpu = make(cls, "cuda")
         for _ in range(3):
             gpu.train_step(x, y, 2)
@@ -57,12 +73,12 @@ with tempfile.TemporaryDirectory() as tmp:
         check(any(np.abs(v).max() > 0 for v in weights.values()), "the saved weights are not all zero (real device data)")
 
         cpu = dp.load(path, device="cpu")
-        a, b = np.asarray(gpu.predict(x, 2)), np.asarray(cpu.predict(x, 2))
+        a, b = P(gpu), P(cpu)
         d_cpu = np.abs(a - b).max()
         check(d_cpu < REL_TOL * np.abs(a).max(), f"a GPU-saved model loads on the CPU and predicts the same (max difference {d_cpu:.1e}, output scale {np.abs(a).max():.1e})")
 
         back = dp.load(path, device="cuda")
-        check(np.allclose(np.asarray(back.predict(x, 2)), a, atol=1e-5), "it loads back onto the GPU and predicts the same")
+        check(np.allclose(P(back), a, atol=1e-5), "it loads back onto the GPU and predicts the same")
 
         ck = os.path.join(tmp, "g.ckpt.safetensors")
         gpu.save_checkpoint(ck, {"step": 3})
@@ -71,17 +87,18 @@ with tempfile.TemporaryDirectory() as tmp:
         for _ in range(3):
             gpu.train_step(x, y, 2)
             resumed.train_step(x, y, 2)
-        diff = np.abs(np.asarray(gpu.predict(x, 2)) - np.asarray(resumed.predict(x, 2))).max()
+        diff = np.abs(P(gpu) - P(resumed)).max()
         check(diff < 1e-4, f"a resumed GPU run tracks the uninterrupted one (max difference {diff:.1e})")
 
         wo = dp.load(ck, device="cuda")
         for _ in range(3):
             wo.train_step(x, y, 2)
-        wdiff = np.abs(np.asarray(gpu.predict(x, 2)) - np.asarray(wo.predict(x, 2))).max()
-        check(wdiff > 10 * max(diff, 1e-7), f"a weights-only load does not resume (difference {wdiff:.1e}), so optimizer state was restored")
+        wdiff = np.abs(P(gpu) - P(wo)).max()
+        if cls is not dp.ConvolutionalPCN:  # plain SGD, so there is no optimizer state to restore
+            check(wdiff > 10 * max(diff, 1e-7), f"a weights-only load does not resume (difference {wdiff:.1e}), so optimizer state was restored")
 
         cpu_resumed, _ = dp.resume(ck, device="cpu")
-        d_res = np.abs(np.asarray(cpu_resumed.predict(x, 2)) - np.asarray(dp.resume(ck, device="cuda")[0].predict(x, 2))).max()
+        d_res = np.abs(P(cpu_resumed) - P(dp.resume(ck, device="cuda")[0])).max()
         check(d_res < REL_TOL * np.abs(a).max(), f"a GPU checkpoint resumes on the CPU with the same predictions (max difference {d_res:.1e})")
 
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")

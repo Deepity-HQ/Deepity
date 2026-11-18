@@ -24,9 +24,11 @@ class SimpleConvolutionalPCN(ModelFileMixin, dy.SimpleConvPCNetwork):
         *architecture: Layer | Activation,
         input_shape: tuple[int, int, int],
         batch_size: Optional[int] = None,
+        device: str = "cpu",
     ) -> None:
         bsz = dy.auto_batch_size() if batch_size is None else batch_size
-        super().__init__(bsz)
+        self.device = device
+        super().__init__(bsz, device)
 
         self.architecture = architecture
         self.input_shape = input_shape

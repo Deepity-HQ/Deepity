@@ -25,12 +25,15 @@ class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
         *architecture: Layer | Activation,
         input_shape: tuple[int, int, int],
         batch_size: int,
+        device: str = "cpu",
     ) -> None:
         """
         @param architecture Convolution/Activation objects describing the layer stack.
         @param input_shape (channels, height, width) of a single input image.
         @param batch_size Number of samples processed per train_step()/predict() call.
+        @param device "cpu" or "cuda".
         """
+        self.device = device
         self.architecture = architecture
         self.input_shape = input_shape
         # NOTE: batch_size is NOT stored as a plain attribute here,
@@ -48,7 +51,7 @@ class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(batch_size)
+        super().__init__(batch_size, device)
 
     def _validate_architecture(self) -> None:
         if not self.architecture:

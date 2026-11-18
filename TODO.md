@@ -96,7 +96,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       moments, step counters, caller training state) work on CPU for `DirectKPPCNetwork(T)`,
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
       and `ConvPCNetwork`, each verified to resume bit-identically. GPU networks stage
-      through the backend (code written, CPU-tested via `ForceDeviceStaging()`, **not run on a GPU**).
+      through the backend (verified on an A100 at OSC for FullPCN, DKPPCN and SimplePCN with `tests/pyGpuCheckpointVerify.py`;
+      CPU/GPU predictions differ by about 1e-3 relative, GPU-to-GPU resume is exact). Other GPU classes untested.
       Still to do: an inference artifact that omits Psi.
 - [x] State dicts for every network class (Simple family, `ConvPCNetworkT`, `FullConvPCNetworkT`);
       checkpoints resume bit-identically for all of them on CPU.
