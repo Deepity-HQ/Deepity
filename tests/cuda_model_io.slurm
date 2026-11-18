@@ -12,16 +12,16 @@
 
 # Builds Deepity with CUDA on a GPU node and runs the model-IO tests that touch the device.
 # Submit with: sbatch tests/cuda_model_io.slurm      (or run the same lines inside `srun --pty` / salloc)
-# CHECK BEFORE FIRST USE: the module names below are the ones I could not verify from here.
+# Module names come from `module spider` on Ascend (there is no openblas module, so this builds with MKL).
 cd ~/Jack_rose1775/Deepity || exit 1
 
-module load cuda/13.2.1
-# module load gcc/..., cmake/..., openblas/...   <- add whatever `module spider` shows you need for the build
+module load gcc/13.2.0 cmake/3.25.2 cuda/13.2.1 intel-oneapi-mkl/2025.0.1
+echo "MKLROOT=$MKLROOT"
 
 export OMP_WAIT_POLICY=PASSIVE GOMP_SPINCOUNT=0
 
 # CUDA build (no --no-cuda). Add -D flags your cluster needs (oneDNN/OpenBLAS locations).
-uv run python build.py Release OpenBLAS --jobs 8 || exit 1
+uv run python build.py Release MKL --jobs 8 || exit 1
 
 echo "=== C++ tests (includes the CUDA ones) ==="
 ctest --test-dir build/Release --output-on-failure
