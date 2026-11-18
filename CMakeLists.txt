@@ -737,6 +737,7 @@ set(DEEPITY_SOURCES
     src/io/DType.cpp
     src/io/MappedFile.cpp
     src/io/GGUF.cpp
+    src/io/GGUFTables.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp
@@ -1090,7 +1091,7 @@ if(DEEPITY_BUILD_TESTS)
     # --- on their own with ASan+UBSan (not the whole library), so this stays quick.
     if(DEEPITY_BUILD_FUZZ AND NOT MSVC)
         set(DEEPITY_FUZZ_IO_SOURCES
-            src/io/SafeTensors.cpp src/io/DType.cpp src/io/MappedFile.cpp src/io/GGUF.cpp src/io/Blake3.cpp)
+            src/io/SafeTensors.cpp src/io/DType.cpp src/io/MappedFile.cpp src/io/GGUF.cpp src/io/GGUFTables.cpp src/io/Blake3.cpp)
         set(DEEPITY_SAN_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g -O1)
 
         add_executable(FormatFuzzSanitized tests/tFormatFuzz.cpp ${DEEPITY_FUZZ_IO_SOURCES})

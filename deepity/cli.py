@@ -8,7 +8,10 @@ import re
 import sys
 from typing import Any, Optional
 
+import numpy as np
+
 from ._backend import dy
+from ._gguf_write import write_gguf
 from ._serialization import DEFAULT_SHARD_BYTES, INDEX_SUFFIX, write_tensors
 
 _UNITS = {"": 1, "k": 10**3, "m": 10**6, "g": 10**9, "t": 10**12, "ki": 1 << 10, "mi": 1 << 20, "gi": 1 << 30, "ti": 1 << 40}
@@ -100,14 +103,32 @@ def _print(info: dict[str, Any], out) -> None:
         w(f"    ... {info['tensor_count'] - 200} more (use --json for the full table)")
 
 
-def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None) -> None:
-    """Converts `src` (safetensors, shard index or GGUF) to a safetensors file at `dst`.
+def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Optional[str] = None) -> None:
+    """Converts `src` (safetensors, shard index or GGUF) to a safetensors file at `dst`, or to GGUF when
+    `dst` ends in `.gguf` (float tensors as `dtype`: f32, f16, bf16 or q8_0; default keeps them).
 
     A `dst` ending in `.safetensors.index.json` writes a sharded model (2 GiB shards unless
     `max_shard_bytes` is given). A safetensors source keeps every dtype, packed 4-bit ones included.
     A GGUF source is decoded to float32 (int tensors to int64) and its key-value header is kept as the
     `gguf.metadata` entry.
     """
+    if dst.endswith(".gguf"):
+        if max_shard_bytes:
+            raise ValueError("GGUF output is a single file; --max-shard-size does not apply")
+        if src.endswith(".gguf"):
+            tensors, metadata = dy.read_gguf(src)
+            kept = metadata if isinstance(metadata, dict) else json.loads(metadata)
+            metadata = {k: v for k, v in kept.items() if k != "general.alignment"}
+        else:
+            tensors, metadata = dy.read_tensors(src), {}
+            for key, value in dict(dy.read_model_metadata(src)).items():
+                if key.startswith("deepity.") and key != "deepity.content_blake3":
+                    metadata[key] = value
+        arrays = {k: np.array(v) for k, v in tensors.items()}
+        write_gguf(dst, {k: v for k, v in arrays.items() if v.size > 0}, metadata, dtype)
+        return
+    if dtype:
+        raise ValueError("--dtype only applies to a .gguf destination")
     shard = 0
     if dst.endswith(INDEX_SUFFIX):
         shard = max_shard_bytes or DEFAULT_SHARD_BYTES
@@ -127,10 +148,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     p_inspect.add_argument("file", help=".safetensors, .safetensors.index.json or .gguf")
     p_inspect.add_argument("--json", action="store_true", help="print machine-readable JSON")
     p_inspect.add_argument("--no-verify", action="store_true", help="skip the content hash check (trusted local files)")
-    p_convert = sub.add_parser("convert", help="convert between safetensors, shard sets and GGUF (read only)")
+    p_convert = sub.add_parser("convert", help="convert between safetensors, shard sets and GGUF")
     p_convert.add_argument("src")
     p_convert.add_argument("dst")
     p_convert.add_argument("--max-shard-size", type=parse_size, help="shard size for a .safetensors.index.json destination, e.g. 500MB")
+    p_convert.add_argument("--dtype", choices=["f32", "f16", "bf16", "q8_0"], help="float storage type for a .gguf destination")
     args = parser.parse_args(argv)
     try:
         if args.command == "inspect":
@@ -141,7 +163,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             else:
                 _print(info, sys.stdout)
         else:
-            convert(args.src, args.dst, args.max_shard_size)
+            convert(args.src, args.dst, args.max_shard_size, args.dtype)
             print(f"wrote {args.dst}")
     except Exception as error:  # noqa: BLE001 - a CLI reports every failure the same way
         print(f"deepity: error: {error}", file=sys.stderr)

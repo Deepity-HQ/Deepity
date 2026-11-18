@@ -84,6 +84,8 @@ with tempfile.TemporaryDirectory() as tmp:
     merged = os.path.join(tmp, "merged.safetensors")
     check(run("convert", index, merged)[0] == 0 and np.array_equal(dp.load(merged).predict(x), dp.load(path).predict(x)), "a shard set merges back")
     check(dp.read_card(merged) == dp.read_card(path) and dp.read_card(path)["license"] == "MIT", "conversion keeps the metadata")
+    gg = os.path.join(tmp, "out.gguf")
+    check(run("convert", path, gg, "--dtype", "f16")[0] == 0 and "layers.0.weight" in dp.read_gguf(gg)[0], "convert to GGUF")
     check(run("convert", path, os.path.join(tmp, "p.safetensors"), "--max-shard-size", "1MB")[0] == 1, "a shard size without an index destination is an error")
     q = os.path.join(tmp, "q.safetensors")
     dp.write_tensors(os.path.join(tmp, "f.safetensors"), {"a": np.arange(4, dtype=np.float32)})

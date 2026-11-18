@@ -115,18 +115,19 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 ## Phase 5: converters (separate from the core)
 
 - [x] Import: safetensors and PyTorch `state_dict` with name mapping (`deepity.import_weights`; real torch files untested, torch is not installed here).
-- [~] Export: ONNX for the forward path (`predict` with 0 steps) is done for dense networks
-      (`deepity.export_onnx`, relu/sigmoid/tanh/gelu). Conv networks and an unrolled settling graph
-      with a fixed step count are still open.
+- [~] Export: ONNX for the forward path is done for dense and convolutional networks
+      (`deepity.export_onnx`, relu/sigmoid/tanh/gelu; conv checked against `predict_with_projection(x, 0)`).
+      Unrolled settling (`settling_steps=N`) is done for `SimplePCN` and `SequentialPCN` and trivial for
+      `FullPCN`/`DKPPCN`/`GaussSeidelPCN`. Conv networks are still open.
 - [~] GGUF read done (`deepity.read_gguf`, `import_weights(.gguf)`): F32/F16/BF16/F64, ints, Q4_0/Q4_1/Q5_0/Q5_1/Q8_0 and
-      Q2_K..Q6_K/Q8_K, checked against the reference `gguf` package. GGUF write and the IQ (importance)
-      quants are open.
+      Q2_K..Q6_K/Q8_K, checked against the reference `gguf` package. IQ quants (IQ1_S/M, IQ2_XXS/XS/S, IQ3_XXS/S, IQ4_NL/XS) also done. GGUF write
+      done for F32/F16/BF16/F64/ints/Q8_0 (`deepity.write_gguf`, `export_gguf`, `convert ... .gguf`); other quant formats are not written.
 - [x] Round-trip test: Deepity to ONNX to onnxruntime within 1e-5 (`tests/pyOnnxVerify.py`, CI).
 
 ## Phase 6: ecosystem polish
 
 - [x] Model card metadata: `net.card = {...}` is stored as `deepity.card`, restored by `deepity.load`, read by `deepity.read_card`.
-- [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, GGUF in).
+- [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, GGUF both ways).
 - [x] Mutation fuzzing of the safetensors, shard index and GGUF parsers (`FormatFuzz`, found one real bug: invalid UTF-8 in a GGUF string).
       Security note in `SECURITY.md`. Also run under ASan/UBSan (`FormatFuzzSanitized`, `-DDEEPITY_BUILD_FUZZ=ON`, in CI) and as a libFuzzer
       target (`FuzzFormats`, clang/icpx): 818k runs in two minutes, no findings.

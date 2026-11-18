@@ -202,17 +202,44 @@ missing, since a PyTorch model has no counterpart.
 `deepity.export_onnx(net, path)` writes `act(x W0^T + b0) W1^T + b1 ...` as Gemm and activation nodes
 (opset 20, dynamic batch). That is `net.predict(x, inference_steps=0)`, verified against
 onnxruntime to 1e-5 for relu, sigmoid, tanh and gelu (Deepity's tanh approximation). It carries no
-settling, so it can differ from `predict` with the model's default steps. Dense networks only.
+settling, so it can differ from `predict` with the model's default steps. Convolutional networks
+(`SimpleConvolutionalPCN`, `ConvolutionalPCN`) export as Reshape, Conv, activation and Flatten nodes; the input
+stays the flattened `[batch, C*H*W]` and the reference is `predict_with_projection(x, 0)`, because their
+plain `predict(x, 0)` leaves the output at zero. Mixing dense and convolution layers is not supported.
+
+`export_onnx(net, path, settling_steps=N)` makes the graph match `net.predict(x, N)`. `SimplePCN` and
+`SequentialPCN` predict from a cleared state, so their output depends on the step count and the settling is
+unrolled into the graph (about 15 nodes per layer per step; verified against `predict` to 1e-7 for relu, tanh,
+sigmoid and gelu at 1, 5 and 20 steps, batch size dynamic). `SequentialPCN`'s learned per-feature precisions
+(`layers.i.p`) are baked in as constants. `FullPCN`, `DKPPCN` and `GaussSeidelPCN` predict from the forward pass, where every error is
+already zero, so settling changes nothing and the plain forward graph is exact for any N. the conv
+networks raise `NotImplementedError` for `settling_steps > 0`.
+
+A `GaussSeidelPCN` has no separate terminal layer, so its `predict` returns the last layer's belief, the
+previous layer's prediction; its exported graph therefore leaves the last `Linear` out and ends one layer earlier.
 
 ## Reading GGUF
 
 `deepity.read_gguf(path)` returns `(tensors, metadata)` for GGUF versions 2 and 3. Decoded types:
 F32, F16, BF16, F64, I8..I64 and the block formats Q4_0, Q4_1, Q5_0, Q5_1, Q8_0 and the K-quants
-Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, Q8_K (checked against the reference `gguf` package). Floats come back as
-float32, integers as int64, shapes reversed to row-major. Other types (the IQ quants, Q8_1) raise an
+Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, Q8_K and the IQ quants IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL, IQ4_XS (all checked against the reference `gguf` package; the IQ lookup grids in `src/io/GGUFTables.cpp` are generated from it). Floats come back as
+float32, integers as int64, shapes reversed to row-major. Other types (Q8_1, the ternary TQ formats, MXFP4) raise an
 error naming the type. Reading is bounds checked: counts, string and
 array lengths and every tensor range must fit the file, names must be unique, and alignment must be
 a power of two. GGUF is not a Deepity format; weights still need `import_weights` and a name map.
+
+## Writing GGUF
+
+`deepity.write_gguf(path, tensors, metadata, dtype)` writes numpy arrays as GGUF v3 (32-byte alignment,
+atomic write). Floats are stored as F32 or F16 by default, F64 is kept, and `dtype` can force `"f32"`,
+`"f16"`, `"bf16"` or `"q8_0"` for every float tensor (Q8_0 leaves 1-D tensors and widths not divisible
+by 32 as F32). Integer tensors keep their width. Names are limited to 64 bytes and shapes to 4
+dimensions, GGUF's own limits, and empty tensors are rejected. Metadata values may be str, int, float,
+bool, homogeneous lists, or dicts (stored as JSON strings); `general.architecture` defaults to
+`"deepity"`. `deepity.export_gguf(net, path, dtype)` writes a network's weights with its description under
+`deepity.model`, and `deepity convert SRC out.gguf [--dtype q8_0]` does the same from a safetensors file.
+Other quant formats are not written. A Deepity GGUF file loads back with `import_weights`; llama.cpp has no
+loader for Deepity architectures, so the file is for exchange and inspection, not for running there.
 
 ## Model card (`deepity.card`)
 

@@ -2,6 +2,7 @@
 
   OMP_WAIT_POLICY=PASSIVE GOMP_SPINCOUNT=0 uv run --with gguf python tests/pyGgufVerify.py
 """
+import json
 import os
 import struct
 import sys
@@ -156,6 +157,9 @@ def k_quant_oracle(tmp):
     layout = {  # type: (bytes per block, offsets of half-float fields, offset of a float32 field or None)
         "Q2_K": (84, [80, 82], None), "Q3_K": (110, [108], None), "Q4_K": (144, [0, 2], None),
         "Q5_K": (176, [0, 2], None), "Q6_K": (210, [208], None), "Q8_K": (292, [], 0),
+        "IQ2_XXS": (66, [0], None), "IQ2_XS": (74, [0], None), "IQ2_S": (82, [0], None),
+        "IQ3_XXS": (98, [0], None), "IQ3_S": (110, [0], None), "IQ1_S": (50, [0], None),
+        "IQ1_M": (56, [], None), "IQ4_NL": (18, [0], None), "IQ4_XS": (136, [0], None),
     }
     for name, (size, halves, f32off) in layout.items():
         qt = getattr(gguf.GGMLQuantizationType, name)
@@ -165,6 +169,11 @@ def k_quant_oracle(tmp):
             for b in range(blocks):
                 for off in halves:
                     raw[r, b * size + off: b * size + off + 2] = np.frombuffer(np.float16(rng.uniform(0.01, 0.5)).tobytes(), np.uint8)
+                if name == "IQ1_M":  # the half scale is spread over the top nibbles of the four 16-bit scales
+                    bits = int(np.frombuffer(np.float16(rng.uniform(0.01, 0.5)).tobytes(), np.uint16)[0])
+                    for i in range(4):
+                        pos = b * size + 48 + 2 * i + 1
+                        raw[r, pos] = (raw[r, pos] & 0x0F) | (((bits >> (4 * i)) & 0xF) << 4)
                 if f32off is not None:
                     raw[r, b * size: b * size + 4] = np.frombuffer(np.float32(rng.uniform(0.01, 0.5)).tobytes(), np.uint8)
         path = os.path.join(tmp, f"k_{name}.gguf")
@@ -189,6 +198,72 @@ with tempfile.TemporaryDirectory() as tmp2:
         pass
     else:
         k_quant_oracle(tmp2)
+
+
+def writer_checks(tmp):
+    from deepity.cli import convert
+
+    x = rng.standard_normal((4, 64)).astype(np.float32)
+    tensors = {"a.weight": x, "a.bias": rng.standard_normal(4).astype(np.float32), "i": np.arange(6, dtype=np.int32).reshape(2, 3),
+               "d": rng.standard_normal((2, 2)).astype(np.float64), "s": np.float32(3.5), "h": x.astype(np.float16)}
+    meta = {"general.name": "w", "n": 7, "big": 1 << 40, "f": 0.5, "flag": True, "tags": ["a", "b"], "nums": [1, 2.5], "obj": {"k": [1, 2]}}
+    path = os.path.join(tmp, "w.gguf")
+    dp.write_gguf(path, tensors, meta)
+    got, gm = dp.read_gguf(path)
+    check(np.array_equal(got["a.weight"], x) and got["a.weight"].shape == (4, 64), "F32 round trip keeps values and shape")
+    check(np.array_equal(got["h"], x.astype(np.float16).astype(np.float32)), "F16 tensors stay F16")
+    check(np.allclose(got["d"], tensors["d"]) and got["i"].tolist() == [[0, 1, 2], [3, 4, 5]], "F64 and int tensors round trip")
+    check(got["s"].shape == (1,) and got["s"][0] == 3.5, "a scalar is stored as one element")
+    check(gm["general.name"] == "w" and gm["n"] == 7 and gm["big"] == 1 << 40 and gm["flag"] is True and gm["tags"] == ["a", "b"]
+          and gm["general.architecture"] == "deepity" and json.loads(gm["obj"]) == {"k": [1, 2]}, "metadata round trips")
+    for dt, tol in (("f16", 2e-3), ("bf16", 2e-2), ("q8_0", 0.05)):
+        p2 = os.path.join(tmp, f"w_{dt}.gguf")
+        dp.write_gguf(p2, {"w": x, "b": tensors["a.bias"]}, None, dt)
+        back = dp.read_gguf(p2)[0]
+        check(back["w"].shape == x.shape and np.abs(back["w"] - x).max() < tol, f"{dt}: values within tolerance")
+        check(np.array_equal(back["b"], tensors["a.bias"]) if dt == "q8_0" else True, f"{dt}: small tensors handled")
+    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"n" * 65: x})), "a name over 64 bytes is rejected")
+    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": np.zeros((1,) * 5, np.float32)})), "more than 4 dimensions is rejected")
+    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": x}, {"general.alignment": 64})), "the alignment key is reserved")
+    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": x}, None, "q4_0")), "an unknown dtype is rejected")
+    check(not [f for f in os.listdir(tmp) if f.endswith(".tmp")], "no temp files are left behind")
+    try:
+        import gguf
+        reader = gguf.GGUFReader(path)
+        names = {t.name: t for t in reader.tensors}
+        check(set(names) == set(tensors) and names["a.weight"].shape.tolist() == [64, 4], "the reference gguf reader opens the file")
+        check(np.array_equal(np.array(names["a.weight"].data).reshape(4, 64), x), "the reference reader sees the same values")
+        qpath = os.path.join(tmp, "w_q8_0.gguf")
+        qt = {t.name: t for t in gguf.GGUFReader(qpath).tensors}["w"]
+        ref = gguf.quants.dequantize(np.array(qt.data), gguf.GGMLQuantizationType.Q8_0)
+        check(np.array_equal(ref.reshape(x.shape), dp.read_gguf(qpath)[0]["w"]), "Q8_0 written here decodes identically in the reference package")
+    except ImportError:
+        print("  (gguf package not installed: skipping the reference reader checks)")
+
+    net = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=2).configure(learning_rate=1e-3)
+    ng = os.path.join(tmp, "net.gguf")
+    dp.export_gguf(net, ng)
+    nt, nm = dp.read_gguf(ng)
+    check("layers.0.weight" in nt and nt["layers.0.weight"].shape == (10, 12), "export_gguf writes the network's weights")
+    check(json.loads(nm["deepity.model"])["network"] == "FullPCN", "export_gguf records the architecture")
+    clone = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=2).configure(learning_rate=1e-3)
+    missing, unexpected = dp.import_weights(clone, ng)
+    xin = rng.standard_normal((2, 12)).astype(np.float32)
+    check(np.array_equal(net.predict(xin, 0), clone.predict(xin, 0)), "a network imported from its own GGUF predicts identically")
+
+    st = os.path.join(tmp, "c.safetensors")
+    net.save(st)
+    cg = os.path.join(tmp, "c.gguf")
+    convert(st, cg, None, "f16")
+    check(dp.read_gguf(cg)[0]["layers.0.weight"].shape == (10, 12), "convert safetensors to GGUF")
+    back = os.path.join(tmp, "back.safetensors")
+    convert(cg, back)
+    check(raises(lambda: convert(st, cg, 1000)), "a shard size with a GGUF destination is an error")
+    check(raises(lambda: convert(cg, back, None, "f16")), "--dtype with a safetensors destination is an error")
+
+
+with tempfile.TemporaryDirectory() as tmp3:
+    writer_checks(tmp3)
 
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

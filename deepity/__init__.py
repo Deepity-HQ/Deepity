@@ -27,6 +27,7 @@ from .FullPCN import FullPCN
 
 # Model files
 from ._export import export_onnx
+from ._gguf_write import export_gguf, write_gguf
 from ._import import import_weights, read_gguf
 from ._serialization import load, read_card, resume, write_tensors
 from ._backend import dy as _dy
@@ -68,6 +69,8 @@ dsigmoid = dy.dsigmoid
 
 __all__ = [
     "export_onnx",
+    "export_gguf",
+    "write_gguf",
     "import_weights",
     "read_gguf",
     "read_card",

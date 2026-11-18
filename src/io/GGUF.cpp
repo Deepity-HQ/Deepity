@@ -1,4 +1,5 @@
 #include "deepity/io/GGUF.h"
+#include "GGUFTables.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -77,6 +78,15 @@ TypeInfo InfoOf(uint32_t id) noexcept
   case 13: return {"Q5_K", 256, 176, false, true};
   case 14: return {"Q6_K", 256, 210, false, true};
   case 15: return {"Q8_K", 256, 292, false, true};
+  case 16: return {"IQ2_XXS", 256, 66, false, true};
+  case 17: return {"IQ2_XS", 256, 74, false, true};
+  case 18: return {"IQ3_XXS", 256, 98, false, true};
+  case 19: return {"IQ1_S", 256, 50, false, true};
+  case 20: return {"IQ4_NL", 32, 18, false, true};
+  case 21: return {"IQ3_S", 256, 110, false, true};
+  case 22: return {"IQ2_S", 256, 82, false, true};
+  case 23: return {"IQ4_XS", 256, 136, false, true};
+  case 29: return {"IQ1_M", 256, 56, false, true};
   case 24: return {"I8", 1, 1, true, true};
   case 25: return {"I16", 1, 2, true, true};
   case 26: return {"I32", 1, 4, true, true};
@@ -324,6 +334,173 @@ void DequantizeKBlock(uint32_t type, const unsigned char* p, float* y) noexcept
   }
 }
 
+constexpr int8_t kValuesIQ4[16] = {-127, -104, -83, -65, -49, -35, -22, -10, 1, 13, 25, 38, 53, 69, 89, 113};
+
+uint16_t U16At(const unsigned char* q) noexcept
+{
+  uint16_t v;
+  std::memcpy(&v, q, 2);
+  return v;
+}
+
+uint32_t U32At(const unsigned char* q) noexcept
+{
+  uint32_t v;
+  std::memcpy(&v, q, 4);
+  return v;
+}
+
+/// Writes `sign * scale * grid[0..7]`, where bit j of `signBits` set means negative.
+void EmitSigned(float scale, const uint8_t* grid, unsigned signBits, float* y) noexcept
+{
+  for (int j = 0; j < 8; ++j) y[j] = scale * grid[j] * (((signBits >> j) & 1) ? -1.f : 1.f);
+}
+
+/// Decodes one block of an IQ (importance) format. Layouts and arithmetic follow the reference
+/// numpy decoders in the `gguf` package, which this is tested against.
+void DequantizeIQBlock(uint32_t type, const unsigned char* p, float* y) noexcept
+{
+  using namespace iq;
+  switch (type)
+  {
+  case 16: // IQ2_XXS: d, 8 groups of (4 grid bytes, scale+signs word)
+  {
+    const float d = HalfAt(p);
+    for (int g = 0; g < 8; ++g)
+    {
+      const unsigned char* q = p + 2 + 8 * g;
+      const uint32_t aux = U32At(q + 4);
+      const float db = d * (0.5f + (aux >> 28)) * 0.25f;
+      for (int k = 0; k < 4; ++k, y += 8) EmitSigned(db, kGridIQ2XXS + 8 * q[k], kSignsIQ2[(aux >> (7 * k)) & 127], y);
+    }
+    break;
+  }
+  case 17: // IQ2_XS: d, qs[32] (uint16), scales[8]
+  {
+    const float d = HalfAt(p);
+    const unsigned char* sc = p + 2 + 64;
+    for (int e = 0; e < 32; ++e, y += 8)
+    {
+      const uint16_t q = U16At(p + 2 + 2 * e);
+      const int s = (sc[e / 4] >> (4 * ((e / 2) & 1))) & 0x0F;
+      EmitSigned(d * (0.5f + s) * 0.25f, kGridIQ2XS + 8 * (q & 511), kSignsIQ2[q >> 9], y);
+    }
+    break;
+  }
+  case 22: // IQ2_S: d, qs[32], signs[32], qh[8], scales[8]
+  {
+    const float d = HalfAt(p);
+    const unsigned char *qs = p + 2, *signs = p + 34, *qh = p + 66, *sc = p + 74;
+    for (int e = 0; e < 32; ++e, y += 8)
+    {
+      const int s = (sc[e / 4] >> (4 * ((e / 2) & 1))) & 0x0F;
+      const int idx = qs[e] | (((qh[e / 4] >> (2 * (e % 4))) & 3) << 8);
+      EmitSigned(d * (0.5f + s) * 0.25f, kGridIQ2S + 8 * idx, signs[e], y);
+    }
+    break;
+  }
+  case 18: // IQ3_XXS: d, qs[64], scale+signs words[8]
+  {
+    const float d = HalfAt(p);
+    const unsigned char* qs = p + 2;
+    for (int g = 0; g < 8; ++g)
+    {
+      const uint32_t aux = U32At(p + 2 + 64 + 4 * g);
+      const float db = d * (0.5f + (aux >> 28)) * 0.5f;
+      for (int k = 0; k < 4; ++k, y += 8)
+      {
+        const unsigned signBits = kSignsIQ2[(aux >> (7 * k)) & 127];
+        for (int h = 0; h < 2; ++h)
+          for (int j = 0; j < 4; ++j)
+            y[4 * h + j] = db * kGridIQ3XXS[4 * qs[8 * g + 2 * k + h] + j] * (((signBits >> (4 * h + j)) & 1) ? -1.f : 1.f);
+      }
+    }
+    break;
+  }
+  case 21: // IQ3_S: d, qs[64], qh[8], signs[32], scales[4]
+  {
+    const float d = HalfAt(p);
+    const unsigned char *qs = p + 2, *qh = p + 66, *signs = p + 74, *sc = p + 106;
+    for (int g = 0; g < 8; ++g)
+    {
+      const float db = d * (1 + 2 * ((sc[g / 2] >> (4 * (g % 2))) & 0x0F));
+      for (int k = 0; k < 4; ++k, y += 8)
+      {
+        const unsigned signBits = signs[4 * g + k];
+        for (int h = 0; h < 2; ++h)
+        {
+          const int e = 8 * g + 2 * k + h;
+          const int idx = qs[e] | (((qh[e / 8] >> (e % 8)) & 1) << 8);
+          for (int j = 0; j < 4; ++j)
+            y[4 * h + j] = db * kGridIQ3S[4 * idx + j] * (((signBits >> (4 * h + j)) & 1) ? -1.f : 1.f);
+        }
+      }
+    }
+    break;
+  }
+  case 19: // IQ1_S: d, qs[32], qh[8] (uint16)
+  {
+    const float d = HalfAt(p);
+    for (int g = 0; g < 8; ++g)
+    {
+      const uint16_t qh = U16At(p + 34 + 2 * g);
+      const float dl = d * (2 * ((qh >> 12) & 7) + 1);
+      const float delta = (qh & 0x8000) ? -0.125f : 0.125f;
+      for (int k = 0; k < 4; ++k, y += 8)
+      {
+        const int idx = p[2 + 4 * g + k] | (((qh >> (3 * k)) & 7) << 8);
+        for (int j = 0; j < 8; ++j) y[j] = dl * (kGridIQ1S[8 * idx + j] + delta);
+      }
+    }
+    break;
+  }
+  case 29: // IQ1_M: qs[32], qh[16], scales[4] (uint16); d is the scales' top nibbles
+  {
+    const unsigned char *qs = p, *qh = p + 32;
+    uint16_t sc[4];
+    for (int i = 0; i < 4; ++i) sc[i] = U16At(p + 48 + 2 * i);
+    const uint16_t dBits = (sc[0] >> 12) | ((sc[1] >> 12) << 4) | ((sc[2] >> 12) << 8) | ((sc[3] >> 12) << 12);
+    const float d = HalfToFloat(dBits);
+    for (int e = 0; e < 32; ++e, y += 8)
+    {
+      const int scale = (sc[(e / 2) / 4] >> (3 * ((e / 2) % 4))) & 7;
+      const int nib = (qh[e / 2] >> (4 * (e % 2))) & 0x0F;
+      const float dl = d * (2 * scale + 1);
+      const float delta = (nib & 8) ? -0.125f : 0.125f;
+      const int idx = qs[e] | ((nib & 7) << 8);
+      for (int j = 0; j < 8; ++j) y[j] = dl * (kGridIQ1S[8 * idx + j] + delta);
+    }
+    break;
+  }
+  case 20: // IQ4_NL: d, qs[16]
+  {
+    const float d = HalfAt(p);
+    for (int j = 0; j < 16; ++j)
+    {
+      y[j] = d * kValuesIQ4[p[2 + j] & 0x0F];
+      y[j + 16] = d * kValuesIQ4[p[2 + j] >> 4];
+    }
+    break;
+  }
+  default: // IQ4_XS: d, scales_h (uint16), scales_l[4], qs[128]
+  {
+    const float d = HalfAt(p);
+    const uint16_t sh = U16At(p + 2);
+    const unsigned char *sl = p + 4, *qs = p + 8;
+    for (int g = 0; g < 8; ++g, y += 32)
+    {
+      const int ls = ((sl[g / 2] >> (4 * (g % 2))) & 0x0F) | (((sh >> (2 * g)) & 3) << 4);
+      const float dl = d * (ls - 32);
+      for (int j = 0; j < 16; ++j)
+      {
+        y[j] = dl * kValuesIQ4[qs[16 * g + j] & 0x0F];
+        y[j + 16] = dl * kValuesIQ4[qs[16 * g + j] >> 4];
+      }
+    }
+  }
+  }
+}
+
 bool MulOverflows(uint64_t a, uint64_t b, uint64_t* out) noexcept
 {
   if (a != 0 && b > std::numeric_limits<uint64_t>::max() / a) return true;
@@ -443,6 +620,12 @@ void GGUFReader::ReadFloat32(const GGUFTensor& t, float* dst) const
     break;
   case 10: case 11: case 12: case 13: case 14: case 15:
     for (size_t b = 0; b < n / 256; ++b, p += info.blockBytes, dst += 256) DequantizeKBlock(t.ggmlType, p, dst);
+    break;
+  case 16: case 17: case 18: case 19: case 21: case 22: case 23: case 29:
+    for (size_t b = 0; b < n / 256; ++b, p += info.blockBytes, dst += 256) DequantizeIQBlock(t.ggmlType, p, dst);
+    break;
+  case 20:
+    for (size_t b = 0; b < n / 32; ++b, p += info.blockBytes, dst += 32) DequantizeIQBlock(20, p, dst);
     break;
   default:
     for (size_t b = 0; b < n / 32; ++b, p += info.blockBytes, dst += 32)

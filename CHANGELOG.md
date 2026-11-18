@@ -30,9 +30,9 @@ earlier history.
 
 - `deepity.import_weights(net, source, rename=None, strict=False)` loads weights from a PyTorch `state_dict`, a `.pt`/`.pth` file, a safetensors file or a dict of arrays. `rename="sequential"` pairs each module's weight and bias with layers 0, 1, 2; conv weights are flattened and half precision floats converted.
 
-- `deepity.export_onnx(net, path)` writes the forward path of a dense network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
+- `deepity.export_onnx(net, path)` writes the forward path of a dense or convolutional network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
 
-- `deepity.read_gguf(path)` reads GGUF files (llama.cpp format, versions 2 and 3): float tensors including Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0 and the K-quants Q2_K to Q6_K decode to float32, metadata comes back as a dict, and the file is bounds-checked for untrusted input. `import_weights` accepts a `.gguf` path. The IQ quants are not decoded yet.
+- `deepity.read_gguf(path)` reads GGUF files (llama.cpp format, versions 2 and 3): float tensors including Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0 and the K-quants Q2_K to Q6_K decode to float32, metadata comes back as a dict, and the file is bounds-checked for untrusted input. `import_weights` accepts a `.gguf` path. 
 
 - `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file, shard set or GGUF file, and convert between them (GGUF in, shards in either direction, dtypes and metadata kept).
 - Model cards: set `net.card = {"license": ..., "description": ..., "metrics": ...}` before saving; it is stored as `deepity.card`, restored by `deepity.load` and shown by `inspect`. `deepity.read_card(path)` reads it.
@@ -47,6 +47,12 @@ earlier history.
 - `SimplePCN`, `SimpleConvolutionalPCN`, `GaussSeidelPCN`, `SequentialPCN` and `ConvolutionalPCN` now have the self-describing `save`, `save_checkpoint`, `load_checkpoint` and `load_weights` that `DKPPCN` and `FullPCN` have, so `deepity.load` and `deepity.resume` rebuild them from a file. `SequentialPCN.save` now writes a model file, not a directory.
 
 - GPU networks can write and load weights and checkpoints: layers expose `DeviceStateBackend()` and `ModelIO` stages device tensors and Adam step counters through the backend (`CopyCounterToHost`/`CopyCounterFromHost` are new). Untested on a GPU so far. Simple networks on a GPU no longer return an empty state dict.
+
+- GGUF reading decodes the IQ quants: IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL and IQ4_XS.
+
+- `deepity.write_gguf`, `deepity.export_gguf` and `deepity convert SRC out.gguf [--dtype f32|f16|bf16|q8_0]` write GGUF files (F32, F16, BF16, F64, integers, Q8_0; atomic; metadata incl. the architecture under `deepity.model`). Checked against the reference `gguf` reader and its Q8_0 decoder.
+
+- `export_onnx(net, path, settling_steps=N)` unrolls settling into the graph for `SimplePCN` and `SequentialPCN` (with its learned precisions) so it matches `predict(x, N)`; for `FullPCN`, `DKPPCN` and `GaussSeidelPCN`, whose settling is a no-op from the forward pass, the forward graph already matches.
 
 ### Changed
 
