@@ -14,6 +14,8 @@ earlier history.
 
 ### Added
 
+- Inference artifacts: `net.save(path, for_inference=True)` (`DKPPCN`, `FullPCN` and the mixin classes) leaves out the DKP feedback weights Psi, which `predict()` never reads, and marks the file `deepity.training_tensors = "omitted"`. `deepity convert SRC DST --inference` makes one from any model file or checkpoint, also dropping optimizer tensors and saved training state (a small DKPPCN checkpoint went from 2.6 MB to 0.8 MB). A plain `save()` is unchanged. A network loaded from such a file starts training again with a fresh Psi.
+
 - The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target and the GGUF reader throws there, instead of producing wrong hashes or misreading files.
 
 - Model files: `deepity.format_version` is now checked on every load path, not only metadata reads. A
@@ -83,6 +85,8 @@ earlier history.
 -
 
 ### Fixed
+
+- `ModelIO::Load()` and `LoadCheckpoint()` silently skipped a tensor missing from the file, leaving random weights. They now throw, naming the tensor. (A file marked as an inference artifact may still lack Psi, and empty tensors are never written.)
 
 - `ModelIO::Save()` truncated every `Psi` tensor (DKP and FullPC feedback weights) whenever a layer's size differed from the next layer's: the state dict labeled Psi `[nextSize, terminal]` while the buffer is `[size, terminal]`, so rows were dropped and a resumed run loaded partly wrong feedback weights. Affects `DirectKPPCLayer`, `DirectKPPCLayerT`, `FullPCLayer` and `FullPCLayerT` (the last also staged too few Psi rows on the host). Files written by 0.1.0a8 and earlier still load; their missing rows keep the network's current values.
 - `ModelIO::Load()` now throws on a tensor shape mismatch instead of reading mismatched bytes.

@@ -351,5 +351,59 @@ with tempfile.TemporaryDirectory() as tmp:
     edit_header(src, mod, lambda h: h["__metadata__"].__setitem__("deepity.model", "{not json"))
     check("deepity.model" in error_text(lambda: dp.load(mod)), "malformed JSON names the key")
 
+def configured(net, **kwargs):
+    net.configure(**kwargs)
+    return net
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    print("--- inference artifacts (no Psi) ---")
+    y = np.random.default_rng(1).standard_normal((8, 4)).astype(np.float32)
+    for name, make, has_psi in [
+        ("DKPPCN", lambda: dp.DKPPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)
+         .configure(learning_rate=1e-3, optimizer="ADAM"), True),
+        ("FullPCN", lambda: dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)
+         .configure(learning_rate=1e-3, optimizer="ADAM"), True),
+        ("SimplePCN", lambda: configured(dp.SimplePCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8),
+                                         learning_rate=1e-3, inference_rate=0.1, optimizer="ADAM"), False),
+    ]:
+        net = make()
+        for _ in range(2):
+            net.train_step(x, y, 2)
+        full, slim, ck, slimmed = (os.path.join(tmp, f"{name}.{k}.safetensors") for k in ("full", "slim", "ckpt", "conv"))
+        net.save(full)
+        net.save(slim, for_inference=True)
+        net.save_checkpoint(ck, {"epoch": 3})
+        names = lambda path: list(dp.read_tensors(path))
+        has = lambda path: any(n.endswith(".psi") or n.startswith("optimizer.") for n in names(path))
+        check(has(full) == has_psi and not has(slim), f"{name}: save(for_inference=True) leaves out the training-only tensors")
+        check(os.path.getsize(slim) < os.path.getsize(full) if has_psi else abs(os.path.getsize(slim) - os.path.getsize(full)) < 256,
+              f"{name}: the file is smaller" if has_psi else f"{name}: no Psi to drop, same size")
+        meta = dp.dy.read_model_metadata(slim)
+        check(meta["deepity.kind"] == "inference" and meta["deepity.training_tensors"] == "omitted", f"{name}: marked as an inference artifact")
+        loaded = dp.load(slim)
+        check(np.array_equal(loaded.predict(x, 2), net.predict(x, 2)), f"{name}: predictions identical after load")
+        energy = loaded.train_step(x, y, 2)
+        check(np.isfinite(energy) and np.isfinite(loaded.predict(x, 2)).all(), f"{name}: the loaded model can train again")
+        check(raises(lambda: dp.resume(slim)), f"{name}: an inference artifact is not a checkpoint")
+
+        from deepity.cli import convert
+        convert(ck, slimmed, for_inference=True)
+        check(not has(slimmed) and dp.dy.read_model_metadata(slimmed)["deepity.kind"] == "inference", f"{name}: convert --inference turns a checkpoint into a model file")
+        check("deepity.training" not in dp.dy.read_model_metadata(slimmed), f"{name}: the saved training state is dropped")
+        check(np.array_equal(dp.load(slimmed).predict(x, 2), net.predict(x, 2)), f"{name}: the converted file predicts the same")
+        check(os.path.getsize(slimmed) < os.path.getsize(ck), f"{name}: smaller than the checkpoint it came from")
+
+    index = os.path.join(tmp, "m.safetensors.index.json")
+    net = dp.DKPPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8).configure(learning_rate=1e-3)
+    net.save(index, max_shard_bytes=200, for_inference=True)
+    check(np.array_equal(dp.load(index).predict(x), net.predict(x)), "a sharded inference artifact loads")
+
+    # A file that simply lost a tensor, with no marker, must not load with random weights.
+    bad = os.path.join(tmp, "cut.safetensors")
+    net.save(os.path.join(tmp, "whole.safetensors"))
+    edit_header(os.path.join(tmp, "whole.safetensors"), bad, lambda h: [h.pop(k) for k in list(h) if k.endswith(".weight") and k.startswith("layers.0")])
+    check(raises(lambda: dp.load(bad)), "a file missing a weight tensor is refused")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

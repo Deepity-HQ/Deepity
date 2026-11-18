@@ -457,7 +457,8 @@ bool LoadWeightsWorks(const std::string& path)
 /// @brief Copies a model file with its metadata edited: `edit` may change or erase keys, and
 /// `extraTensor` adds an unknown tensor. The hash is dropped (it is rewritten for the copy).
 void RewriteMeta(const std::string& src, const std::string& dst,
-                 const std::function<void(std::map<std::string, std::string>&)>& edit, bool extraTensor)
+                 const std::function<void(std::map<std::string, std::string>&)>& edit, bool extraTensor,
+                 const std::function<bool(const std::string&)>& skip = {})
 {
   io::SafeTensorsReader reader(src);
   std::map<std::string, std::string> meta = reader.Metadata();
@@ -471,6 +472,7 @@ void RewriteMeta(const std::string& src, const std::string& dst,
   bufs.reserve(reader.Tensors().size());
   for (const auto& t : reader.Tensors())
   {
+    if (skip && skip(t.name)) continue;
     bufs.emplace_back(t.ByteSize());
     reader.Read(t, bufs.back().data(), bufs.back().size());
     w.AddTensor(t.name, t.dtype, t.shape, bufs.back().data(), bufs.back().size());
@@ -542,6 +544,66 @@ bool FormatVersionRules(const std::string& path)
   printf("%s\n", current ? "PASSED: the current format version loads" : "FAILED: version 1 rejected");
   ok &= current;
   for (const auto& f : {ckpt, edited})
+    std::filesystem::remove(f);
+  return ok;
+}
+
+/// @brief An inference artifact leaves out Psi: smaller, still loads, W and b match, Psi stays the
+/// fresh initialization, and a file that is merely missing a tensor (no marker) is still an error.
+bool InferenceArtifact(const std::string& path)
+{
+  auto a = MakeNet(51);
+  SetAdam(*a);
+  const std::string slim = path + ".slim", full = path + ".full", cut = path + ".cut";
+  ModelIO::Save(*a, full);
+  ModelIO::Save(*a, slim, {{io::kTrainingTensorsKey, "omitted"}});
+  auto countTraining = [](const std::string& file)
+  {
+    io::SafeTensorsReader r(file);
+    size_t n = 0;
+    for (const auto& t : r.Tensors())
+      n += io::IsTrainingOnlyTensor(t.name);
+    return n;
+  };
+  bool ok = true;
+  const bool contents = countTraining(full) > 0 && countTraining(slim) == 0 &&
+                        std::filesystem::file_size(slim) < std::filesystem::file_size(full) &&
+                        io::SafeTensorsReader(slim).Metadata().at("deepity.kind") == "inference" &&
+                        io::SafeTensorsReader(slim).Metadata().at(io::kTrainingTensorsKey) == "omitted";
+  printf("%s\n", contents ? "PASSED: an inference artifact has no Psi and is smaller" : "FAILED: inference artifact contents");
+  ok &= contents;
+
+  auto b = MakeNet(52), fresh = MakeNet(52);
+  const bool loads = !Throws([&] { ModelIO::Load(*b, slim); });
+  bool weightsMatch = true, psiKept = true;
+  for (size_t i = 0; loads && i + 1 < a->GetLayers().size(); ++i)
+  {
+    const auto& la = a->GetLayers()[i];
+    const auto& lb = b->GetLayers()[i];
+    const auto& lf = fresh->GetLayers()[i];
+    const size_t size = la->GetInputSize(), next = la->GetOutputSize(), term = la->GetTerminalSize();
+    size_t bad = 0;
+    weightsMatch &= SameRows(la->GetWeights(), lb->GetWeights(), next, size, size, &bad) &&
+                    SameRows(la->GetBiases(), lb->GetBiases(), 1, next, next, &bad);
+    psiKept &= SameRows(lf->GetDirectFeedbackWeights(), lb->GetDirectFeedbackWeights(), size, term,
+                        la->GetPsiStride(), &bad);
+  }
+  printf("%s\n", loads && weightsMatch && psiKept ? "PASSED: loading an inference artifact restores W and b, keeps a fresh Psi"
+                                                  : "FAILED: loading an inference artifact");
+  ok &= loads && weightsMatch && psiKept;
+
+  RewriteMeta(full, cut, [](auto&) {}, false, [](const std::string& n) { return io::IsTrainingOnlyTensor(n); });
+  auto c = MakeNet(53);
+  const std::string text = ErrorText([&] { ModelIO::Load(*c, cut); });
+  const bool strict = text.find("psi") != std::string::npos && text.find("needs") != std::string::npos;
+  printf("%s\n", strict ? "PASSED: a file missing Psi without the marker is an error naming the tensor"
+                        : "FAILED: a file with a missing tensor loaded");
+  ok &= strict;
+
+  const bool contradiction = Throws([&] { ModelIO::SaveCheckpoint(*a, cut, {{io::kTrainingTensorsKey, "omitted"}}); });
+  printf("%s\n", contradiction ? "PASSED: a checkpoint cannot omit training tensors" : "FAILED: omitting checkpoint accepted");
+  ok &= contradiction;
+  for (const auto& f : {slim, full, cut})
     std::filesystem::remove(f);
   return ok;
 }
@@ -699,6 +761,7 @@ int main()
 
   const bool versionsOk = FormatVersionRules(path);
   ok &= versionsOk;
+  ok &= InferenceArtifact(path);
 
   const bool missingOk = Throws([&] { ModelIO::Load(*fdst, path + ".does_not_exist"); }) &&
                          Throws([&] { ModelIO::Save(*fsrc, path + "_no_such_dir/x.safetensors"); });

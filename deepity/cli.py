@@ -103,7 +103,16 @@ def _print(info: dict[str, Any], out) -> None:
         w(f"    ... {info['tensor_count'] - 200} more (use --json for the full table)")
 
 
-def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Optional[str] = None) -> None:
+def _training_only(name: str) -> bool:
+    """True for a tensor name only training needs: Psi and optimizer state (mirrors C++ IsTrainingOnlyTensor)."""
+    return name.startswith("optimizer.") or (name.startswith("layers.") and name.endswith(".psi")) or (
+        name.startswith("layer_") and name.endswith(".Psi")
+    )
+
+
+def convert(
+    src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Optional[str] = None, for_inference: bool = False
+) -> None:
     """Converts `src` (safetensors, shard index or GGUF) to a safetensors file at `dst`, or to GGUF when
     `dst` ends in `.gguf` (float tensors as `dtype`: f32, f16, bf16 or q8_0; default keeps them).
 
@@ -111,6 +120,9 @@ def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Op
     `max_shard_bytes` is given). A safetensors source keeps every dtype, packed 4-bit ones included.
     A GGUF source is decoded to float32 (int tensors to int64) and its key-value header is kept as the
     `gguf.metadata` entry.
+
+    With `for_inference`, tensors only training uses (Psi, optimizer state) and the saved training state are
+    dropped, and the file is marked as an inference artifact. A checkpoint becomes a model file that way.
     """
     if dst.endswith(".gguf"):
         if max_shard_bytes:
@@ -124,7 +136,7 @@ def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Op
             for key, value in dict(dy.read_model_metadata(src)).items():
                 if key.startswith("deepity.") and key != "deepity.content_blake3":
                     metadata[key] = value
-        arrays = {k: np.array(v) for k, v in tensors.items()}
+        arrays = {k: np.array(v) for k, v in tensors.items() if not (for_inference and _training_only(k))}
         write_gguf(dst, {k: v for k, v in arrays.items() if v.size > 0}, metadata, dtype)
         return
     if dtype:
@@ -138,7 +150,7 @@ def convert(src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Op
         tensors, metadata = dy.read_gguf(src)
         write_tensors(dst, tensors, {"gguf.metadata": metadata, "converted_from": "gguf"}, shard or None)
     else:
-        dy.convert_safetensors(src, dst, shard)
+        dy.convert_safetensors(src, dst, shard, for_inference)
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -152,6 +164,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     p_convert.add_argument("src")
     p_convert.add_argument("dst")
     p_convert.add_argument("--max-shard-size", type=parse_size, help="shard size for a .safetensors.index.json destination, e.g. 500MB")
+    p_convert.add_argument("--inference", action="store_true", help="drop what only training uses (Psi, optimizer state) to make a smaller inference file")
     p_convert.add_argument("--dtype", choices=["f32", "f16", "bf16", "q8_0"], help="float storage type for a .gguf destination")
     args = parser.parse_args(argv)
     try:
@@ -163,7 +176,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             else:
                 _print(info, sys.stdout)
         else:
-            convert(args.src, args.dst, args.max_shard_size, args.dtype)
+            convert(args.src, args.dst, args.max_shard_size, args.dtype, args.inference)
             print(f"wrote {args.dst}")
     except Exception as error:  # noqa: BLE001 - a CLI reports every failure the same way
         print(f"deepity: error: {error}", file=sys.stderr)

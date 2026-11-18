@@ -161,17 +161,27 @@ nb::dict FileTable(const std::string& path, bool verifyHash)
 
 /// @brief Copies every tensor of a safetensors file or shard index into a new file or shard set,
 /// keeping dtypes (packed ones included) and metadata. Used to merge, split and re-hash models.
-void ConvertSafetensors(const std::string& src, const std::string& dst, uint64_t maxShardBytes)
+void ConvertSafetensors(const std::string& src, const std::string& dst, uint64_t maxShardBytes, bool forInference)
 {
   using namespace Deep::io;
   SafeTensorsReader reader(src);
   SafeTensorsWriter writer;
   for (const auto& [key, value] : reader.Metadata())
-    if (key != kHashKey && key != kDTypesKey) writer.SetMetadata(key, value);
+  {
+    if (key == kHashKey || key == kDTypesKey) continue;
+    if (forInference && (key == "deepity.training" || key == "deepity.kind" || key == kTrainingTensorsKey)) continue;
+    writer.SetMetadata(key, value);
+  }
+  if (forInference)
+  {
+    writer.SetMetadata("deepity.kind", "inference");
+    writer.SetMetadata(kTrainingTensorsKey, "omitted");
+  }
   std::vector<std::vector<char>> copies; // only for tensors that cannot be viewed in place
   copies.reserve(reader.Tensors().size());
   for (const auto& t : reader.Tensors())
   {
+    if (forInference && IsTrainingOnlyTensor(t.name)) continue;
     const void* data = reader.Bytes(t);
     if (data == nullptr)
     {
@@ -338,6 +348,7 @@ void bind_utilities(nb::module_& m)
         "Validates a safetensors file, shard index or GGUF file and returns a dict with its format, "
         "metadata and a (name, dtype, shape, bytes) table, without decoding any tensor.");
   m.def("convert_safetensors", &ConvertSafetensors, nb::arg("src"), nb::arg("dst"), nb::arg("max_shard_bytes") = 0,
+        nb::arg("for_inference") = false,
         "Copies every tensor of a safetensors file or shard index to a new file (or, with "
         "max_shard_bytes and an index path, a new shard set), keeping dtypes and metadata.");
   m.def("write_tensors", &WriteTensors, nb::arg("filepath"), nb::arg("tensors"),

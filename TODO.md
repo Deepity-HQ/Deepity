@@ -101,7 +101,7 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       and `ConvPCNetwork`, each verified to resume bit-identically. GPU networks stage
       through the backend (verified on an A100 at OSC for FullPCN, DKPPCN, SimplePCN, SimpleConvolutionalPCN and ConvolutionalPCN with `tests/pyGpuCheckpointVerify.py`;
       CPU/GPU predictions differ by about 1e-3 relative, GPU-to-GPU resume is exact). `FullConvPCNetwork` (native only), `GaussSeidelPCN` and `SequentialPCN` are untested on a GPU.
-      Still to do: an inference artifact that omits Psi.
+      An inference artifact that omits Psi is done (`save(for_inference=True)`, `deepity convert --inference`).
 - [x] State dicts for every network class (Simple family, `ConvPCNetworkT`, `FullConvPCNetworkT`);
       checkpoints resume bit-identically for all of them on CPU.
 - [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full

@@ -412,6 +412,10 @@ private:
     for (const auto& [key, value] : metadata)
       writer.SetMetadata(key, value);
     writer.SetMetadata("deepity.kind", checkpoint ? "checkpoint" : "inference");
+    const auto marker = metadata.find(io::kTrainingTensorsKey);
+    const bool inferenceOnly = marker != metadata.end() && marker->second == "omitted";
+    if (inferenceOnly && checkpoint)
+      throw std::runtime_error("ModelIO: a checkpoint exists to resume training, so it cannot omit training tensors.");
 
     std::vector<std::vector<char>> packed;
     std::vector<std::vector<float>> deviceCopies; // host copies of device tensors, alive until Write()
@@ -426,6 +430,7 @@ private:
       IComputeBackend* const dev = detail::StateBackendOf(layerPtr);
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
       {
+        if (inferenceOnly && name == "Psi") continue; // feedback weights are never read by predict()
         detail::AddTensorPacked(writer, packed, detail::TensorFileName(layerIdx, name),
                                 detail::StagedForSave(dev, tensor, deviceCopies));
         ++tensorCount;
@@ -481,6 +486,8 @@ private:
       const auto it = byName.find(key);
       return it == byName.end() ? nullptr : it->second;
     };
+    const auto marker = reader.Metadata().find(io::kTrainingTensorsKey);
+    const bool trainingOmitted = marker != reader.Metadata().end() && marker->second == "omitted";
     size_t layerIdx = 0;
     for (auto& layerPtr : net.GetLayers())
     {
@@ -494,9 +501,20 @@ private:
           entry = find(detail::LegacyTensorFileName(layerIdx, name));
         if (entry == nullptr)
         {
+          // An inference artifact leaves Psi out on purpose; the network keeps its fresh initialization.
+          if (trainingOmitted && name == "Psi") continue;
           if (report != nullptr)
+          {
             report->missing.push_back(key);
-          continue;
+            continue;
+          }
+          // Load() and LoadCheckpoint() need every tensor the network has. Empty ones (the terminal
+          // layer's) are never written, so they are not missing.
+          size_t elements = 1;
+          for (const size_t extent : tensor.shape)
+            elements *= extent;
+          if (elements == 0) continue;
+          throw std::runtime_error("ModelIO::Load: " + reader.Path() + " has no tensor '" + key + "' that the network needs.");
         }
         used.insert(entry->name);
 

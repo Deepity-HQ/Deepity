@@ -33,6 +33,7 @@ All values are strings. Deepity keys are prefixed `deepity.`.
 |---|---|
 | `deepity.format_version` | `"1"`. Bumped only for incompatible changes. |
 | `deepity.kind` | `"inference"` or `"checkpoint"`. |
+| `deepity.training_tensors` | Optional. `"omitted"` marks an inference artifact written without training-only tensors (Psi). |
 | `deepity.model` | JSON string: architecture, see below. |
 | `deepity.inference` | JSON string: default settling settings, see below. |
 | `deepity.created_by` | e.g. `"deepity 0.1.0a9"`. Informational. |
@@ -100,9 +101,17 @@ unused tensor raises, naming all of them; with `strict=False` the call returns
 
 ## Tensor names
 
-`layers.{i}.weight`, `layers.{i}.bias` for every artifact. A checkpoint adds:
+`layers.{i}.weight`, `layers.{i}.bias` for every artifact, plus `layers.{i}.p` (precisions) where a network
+has them and `layers.{i}.psi` (feedback weights) for the DKP family. `predict()` never reads Psi, so
+an **inference artifact** may leave it out: `save(path, for_inference=True)` or
+`deepity convert SRC DST --inference` (which also turns a checkpoint into one, dropping the optimizer
+tensors and `deepity.training`). Such a file has `deepity.training_tensors = "omitted"`. It loads and predicts identically; a
+network loaded from it that trains again starts from a fresh Psi, so use a checkpoint to resume.
+A plain `save()` still writes Psi. Without the marker, a file that lacks any tensor the network needs
+is an error naming it (a truncated file never loads with random weights). A checkpoint cannot omit
+training tensors. A checkpoint adds:
 
-- `layers.{i}.psi` (DKP feedback weights, full `[size, terminal]` shape)
+- `layers.{i}.psi` (DKP feedback weights, full `[size, terminal]` shape; also in plain `save()` files)
 - `optimizer.layers.{i}.{weight,bias,psi}.{m,v}`: Adam/AdamW moments, same shapes and dtype
   rules as the matching parameter (`F32` or `F64` by the network's accumulation type)
 - `optimizer.layers.{i}.step` and `optimizer.layers.{i}.psi_step`: `I32`, shape `[1]`, the

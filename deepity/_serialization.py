@@ -155,6 +155,11 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     }
 
 
+def for_inference_metadata(metadata: dict[str, str], for_inference: bool) -> dict[str, str]:
+    """Adds the marker that makes a save leave out training-only tensors."""
+    return {**metadata, "deepity.training_tensors": "omitted"} if for_inference else metadata
+
+
 def _json_field(meta: dict[str, str], key: str, path: str, default: Optional[str] = None) -> dict[str, Any]:
     """Parses a JSON object stored under `key`, naming the file and key when it is malformed."""
     try:
@@ -246,11 +251,13 @@ class ModelFileMixin:
     def _file_metadata(self) -> dict[str, str]:
         return build_metadata(self, type(self).__name__, self._current_hyperparameters(), None)
 
-    def save(self, filepath: str, max_shard_bytes: Optional[int] = None) -> bool:
+    def save(self, filepath: str, max_shard_bytes: Optional[int] = None, for_inference: bool = False) -> bool:
         """Write a self-describing model file: weights, architecture, hyperparameters. `deepity.load(filepath)`
-        rebuilds the network from it. A path ending in `.safetensors.index.json` writes shards."""
+        rebuilds the network from it. A path ending in `.safetensors.index.json` writes shards.
+        If `for_inference`, the file leaves out what only training uses (the DKP feedback weights Psi), so it is
+        smaller. It loads and predicts identically; a model loaded from it that trains again starts with a fresh Psi."""
         self._require_configured()  # type: ignore[attr-defined]
-        return self._save(filepath, self._file_metadata(), shard_bytes(filepath, max_shard_bytes))  # type: ignore[attr-defined]
+        return self._save(filepath, for_inference_metadata(self._file_metadata(), for_inference), shard_bytes(filepath, max_shard_bytes))  # type: ignore[attr-defined]
 
     def save_checkpoint(
         self, filepath: str, training_state: Optional[dict] = None, max_shard_bytes: Optional[int] = None

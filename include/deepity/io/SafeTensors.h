@@ -63,6 +63,20 @@ inline constexpr const char* kFormatVersionKey = "deepity.format_version";
 /// @brief The newest model format version this build reads, and the one it writes.
 inline constexpr int kModelFormatVersion = 1;
 
+/// @brief Metadata key saying what a file leaves out. `"omitted"` marks an inference artifact written
+/// without tensors that only training uses (the DKP feedback weights Psi, optimizer state). Giving the
+/// key to a save asks for that; loading tolerates the missing Psi only when the key is present.
+inline constexpr const char* kTrainingTensorsKey = "deepity.training_tensors";
+
+/// @brief True for a file tensor name only training needs: feedback weights (`layers.N.psi`, legacy
+/// `layer_N.Psi`) and optimizer state (`optimizer.*`).
+inline bool IsTrainingOnlyTensor(const std::string& name)
+{
+  const auto endsWith = [&](const char* tail) { return name.size() >= std::char_traits<char>::length(tail) && name.compare(name.size() - std::char_traits<char>::length(tail), std::string::npos, tail) == 0; };
+  return name.rfind("optimizer.", 0) == 0 || (name.rfind("layers.", 0) == 0 && endsWith(".psi")) ||
+         (name.rfind("layer_", 0) == 0 && endsWith(".Psi"));
+}
+
 /// @brief Throws unless `metadata` has no format version (a foreign or pre-versioned file) or one
 /// this build supports. Names both versions when the file is newer, and rejects values that are not
 /// a positive integer. Unknown keys and tensors are never an error; only the version is.
@@ -165,6 +179,8 @@ public:
   {
     return metadata;
   }
+  /// @brief The path this reader was opened with.
+  const std::string& Path() const noexcept { return path; }
   /// @brief Tensors in file order.
   const std::vector<TensorEntry>& Tensors() const noexcept
   {

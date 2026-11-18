@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from ._backend import dy
 from ._interop import InputArray, to_numpy
-from ._serialization import build_metadata, read_training_state, shard_bytes, training_metadata
+from ._serialization import build_metadata, for_inference_metadata, read_training_state, shard_bytes, training_metadata
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -286,15 +286,18 @@ class DKPPCN(dy.DirectKPPCNetwork):
             **self._flags,
         }
 
-    def save(self, filepath: str, max_shard_bytes: Optional[int] = None) -> bool:
+    def save(self, filepath: str, max_shard_bytes: Optional[int] = None, for_inference: bool = False) -> bool:
         """Write a self-describing model file: weights, architecture, hyperparameters and the
         default settling steps. `deepity.load(filepath)` rebuilds the network from it.
         A path ending in `.safetensors.index.json` writes a sharded model (shards of at most
         `max_shard_bytes`, default 2 GiB) that `deepity.load` opens through the index.
+        If `for_inference`, the file leaves out what only training uses (the DKP feedback weights Psi), so it is
+        smaller. It loads and predicts identically; a model loaded from it that trains again starts with a fresh Psi.
         Raises on any failure."""
         self._require_configured()
 
-        return super().save(filepath, build_metadata(self, "DKPPCN", self._current_hyperparameters(), None), shard_bytes(filepath, max_shard_bytes))
+        meta = for_inference_metadata(build_metadata(self, "DKPPCN", self._current_hyperparameters(), None), for_inference)
+        return super().save(filepath, meta, shard_bytes(filepath, max_shard_bytes))
 
     def save_checkpoint(
         self, filepath: str, training_state: Optional[dict] = None, max_shard_bytes: Optional[int] = None
