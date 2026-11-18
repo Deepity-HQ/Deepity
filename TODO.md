@@ -125,10 +125,11 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 6: ecosystem polish
 
-- [ ] Model card metadata (license, training data, metrics, Deepity version).
-- [ ] CLI: `deepity inspect model.safetensors` and `deepity convert in out`.
-- [ ] Fuzz tests for the header parser. Security note in `SECURITY.md` about untrusted models.
-- [ ] CHANGELOG entries and docs.
+- [x] Model card metadata: `net.card = {...}` is stored as `deepity.card`, restored by `deepity.load`, read by `deepity.read_card`.
+- [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, GGUF in).
+- [x] Mutation fuzzing of the safetensors, shard index and GGUF parsers (`FormatFuzz`, found one real bug: invalid UTF-8 in a GGUF string).
+      Security note in `SECURITY.md`. Still to do: run FormatFuzz under ASan/UBSan, and a libFuzzer target.
+- [x] CHANGELOG entries and docs.
 
 ## Open questions
 

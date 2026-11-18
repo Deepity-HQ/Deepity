@@ -370,7 +370,8 @@ GGUFReader::GGUFReader(const std::string& filePath) : path(filePath)
     }
     meta[key] = std::move(value);
   }
-  metadata = meta.dump();
+  // Strings in a hostile file may not be UTF-8; replace bad bytes instead of throwing a foreign exception.
+  metadata = meta.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 
   struct Raw { GGUFTensor t; uint64_t relOffset; };
   std::vector<Raw> raws;

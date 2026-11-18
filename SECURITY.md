@@ -15,6 +15,30 @@ no backport policy for older versions.
 This table will be updated once versioned releases begin (see
 [`CHANGELOG.md`](CHANGELOG.md)).
 
+## Loading models from untrusted sources
+
+Deepity model files are safetensors, which holds tensors and string metadata and no executable
+content. Loading one cannot run code. What it does do:
+
+- The header size, every tensor offset and size, dtype and shape arithmetic are checked against the
+  file before anything is read. The content hash (BLAKE3) is verified by default and catches
+  corruption, but it is not a signature: a hash stored inside a file proves nothing about who wrote
+  it. Check the download against a hash or signature you obtained separately if provenance matters.
+- A shard index may only name plain file names beside itself, never paths.
+- GGUF files are parsed with the same bounds checks: counts, string and array lengths and tensor
+  ranges must fit the file. Both parsers are mutation-fuzzed in CI (`tests/tFormatFuzz.cpp`).
+- Memory-mapped files must not be truncated or rewritten in place while open; doing so can crash the
+  reader. Replace the file instead, as `Save` does.
+- PyTorch `.pt` and `.pth` files are pickles. `deepity.import_weights` loads them with
+  `torch.load(weights_only=True)`, which refuses arbitrary objects, but prefer safetensors for files
+  you do not trust.
+- Model metadata (`deepity.model`, `deepity.card`) is data. A loader only reads the layer kinds,
+  sizes and hyperparameters it knows, and a model that asks for a network class this build does not
+  have is rejected.
+
+Nothing here stops a hostile model from being large, so cap what you accept (file size, tensor
+count) when serving models from users.
+
 ## Scope
 
 Deepity is a native C++ library with Python bindings. Security-relevant areas

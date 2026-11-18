@@ -56,6 +56,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self._psi_optimizer: Optional[str] = None
         self._flags: dict = {}
         self.default_inference_steps: int = 1
+        self.card: Optional[dict] = None
 
         self._validate_architecture()
 

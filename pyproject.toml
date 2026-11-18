@@ -22,6 +22,9 @@ dependencies = [
     "rich",
 ]
 
+[project.scripts]
+deepity = "deepity.cli:main"
+
 # Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
 # `license` field above is the modern replacement for that classifier,
 # and pairing both is a deprecated pattern some build backends warn on.

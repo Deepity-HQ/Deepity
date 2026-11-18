@@ -10,6 +10,8 @@
 
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/map.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/tuple.h>
 #include <nanobind/stl/pair.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
@@ -125,6 +127,62 @@ std::pair<nb::dict, std::string> ReadGguf(const std::string& path)
     }
   }
   return {out, reader.MetadataJson()};
+}
+
+/// @brief Describes a file without decoding any tensor: format, metadata and a tensor table.
+nb::dict FileTable(const std::string& path, bool verifyHash)
+{
+  using namespace Deep::io;
+  nb::dict out;
+  nb::list tensors;
+  if (path.size() > 5 && path.compare(path.size() - 5, 5, ".gguf") == 0)
+  {
+    GGUFReader r(path);
+    out["format"] = "gguf";
+    out["version"] = r.Version();
+    out["metadata_json"] = r.MetadataJson();
+    for (const auto& t : r.Tensors())
+      tensors.append(nb::make_tuple(t.name, t.typeName, t.shape, t.byteSize));
+  }
+  else
+  {
+    SafeTensorsReader r(path, verifyHash);
+    out["format"] = "safetensors";
+    out["version"] = 1;
+    out["shards"] = r.ShardCount();
+    out["metadata"] = r.Metadata();
+    out["hash_verified"] = verifyHash && r.Metadata().count(kHashKey) == 1;
+    for (const auto& t : r.Tensors())
+      tensors.append(nb::make_tuple(t.name, t.dtype, t.shape, t.ByteSize()));
+  }
+  out["tensors"] = tensors;
+  return out;
+}
+
+/// @brief Copies every tensor of a safetensors file or shard index into a new file or shard set,
+/// keeping dtypes (packed ones included) and metadata. Used to merge, split and re-hash models.
+void ConvertSafetensors(const std::string& src, const std::string& dst, uint64_t maxShardBytes)
+{
+  using namespace Deep::io;
+  SafeTensorsReader reader(src);
+  SafeTensorsWriter writer;
+  for (const auto& [key, value] : reader.Metadata())
+    if (key != kHashKey && key != kDTypesKey) writer.SetMetadata(key, value);
+  std::vector<std::vector<char>> copies; // only for tensors that cannot be viewed in place
+  copies.reserve(reader.Tensors().size());
+  for (const auto& t : reader.Tensors())
+  {
+    const void* data = reader.Bytes(t);
+    if (data == nullptr)
+    {
+      copies.emplace_back(t.ByteSize());
+      reader.Read(t, copies.back().data(), copies.back().size());
+      data = copies.back().data();
+    }
+    writer.AddTensor(t.name, t.dtype, t.shape, data, t.ByteSize());
+  }
+  if (maxShardBytes > 0) writer.WriteSharded(dst, maxShardBytes);
+  else writer.Write(dst);
 }
 
 nb::dict ReadTensors(const std::string& path, bool verifyHash, bool mmap)
@@ -276,6 +334,12 @@ void bind_utilities(nb::module_& m)
         "Reads a GGUF file (versions 2 and 3). Returns (tensors, metadata_json): float tensors, "
         "including Q4_0/Q4_1/Q5_0/Q5_1/Q8_0, as float32 numpy arrays in row-major shape; integer "
         "tensors as int64. K-quants raise a clear error. Raises on any malformed or truncated file.");
+  m.def("file_table", &FileTable, nb::arg("filepath"), nb::arg("verify_hash") = true,
+        "Validates a safetensors file, shard index or GGUF file and returns a dict with its format, "
+        "metadata and a (name, dtype, shape, bytes) table, without decoding any tensor.");
+  m.def("convert_safetensors", &ConvertSafetensors, nb::arg("src"), nb::arg("dst"), nb::arg("max_shard_bytes") = 0,
+        "Copies every tensor of a safetensors file or shard index to a new file (or, with "
+        "max_shard_bytes and an index path, a new shard set), keeping dtypes and metadata.");
   m.def("write_tensors", &WriteTensors, nb::arg("filepath"), nb::arg("tensors"),
         nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
         "Writes a dict of numpy arrays (float16/32/64, int8..64, uint8..64, bool) to a safetensors "

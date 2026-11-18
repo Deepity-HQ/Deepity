@@ -34,6 +34,11 @@ earlier history.
 
 - `deepity.read_gguf(path)` reads GGUF files (llama.cpp format, versions 2 and 3): float tensors including Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0 and the K-quants Q2_K to Q6_K decode to float32, metadata comes back as a dict, and the file is bounds-checked for untrusted input. `import_weights` accepts a `.gguf` path. The IQ quants are not decoded yet.
 
+- `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file, shard set or GGUF file, and convert between them (GGUF in, shards in either direction, dtypes and metadata kept).
+- Model cards: set `net.card = {"license": ..., "description": ..., "metrics": ...}` before saving; it is stored as `deepity.card`, restored by `deepity.load` and shown by `inspect`. `deepity.read_card(path)` reads it.
+- `FormatFuzz` test: seeded mutation fuzzing of the safetensors, shard index and GGUF parsers. It found that a GGUF file with invalid UTF-8 in a string made the reader throw a non-GGUF exception; that is fixed.
+- `SECURITY.md` explains what loading an untrusted model does and does not guarantee.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).

@@ -130,6 +130,7 @@ class FullPCN:
         self._psi_optimizer: str = "SGD"
         self._flags: dict = {}
         self.default_inference_steps: int = 1
+        self.card: Optional[dict] = None
 
         self._validate_architecture()
 

@@ -208,6 +208,24 @@ error naming the type. Reading is bounds checked: counts, string and
 array lengths and every tensor range must fit the file, names must be unique, and alignment must be
 a power of two. GGUF is not a Deepity format; weights still need `import_weights` and a name map.
 
+## Model card (`deepity.card`)
+
+A JSON object of plain values the author chooses, at most 64 KiB, for example
+`{"license": "MIT", "description": "...", "training_data": "MNIST", "metrics": {"accuracy": 0.97}}`.
+Set it with `net.card = {...}` before `save`. `deepity.load` puts it back on the network, so a
+re-save keeps it. No field is required and loaders ignore ones they do not know.
+
+## Command line
+
+```
+deepity inspect model.safetensors [--json] [--no-verify]
+deepity convert model.gguf model.safetensors
+deepity convert model.safetensors model.safetensors.index.json --max-shard-size 500MB
+```
+
+`inspect` validates the file (hash included unless `--no-verify`) and prints the network, layers,
+card, metadata and a tensor table. `convert` reads a safetensors file, shard set or GGUF file.
+
 ## Plain tensor files
 
 `deepity.write_tensors` and `deepity.read_tensors` use the same container for arbitrary numpy data

@@ -1077,6 +1077,14 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME SafeTensorsVerify COMMAND SafeTensorsVerify)
     list(APPEND DEEPITY_TEST_TARGETS SafeTensorsVerify)
 
+    add_executable(FormatFuzz tests/tFormatFuzz.cpp)
+    target_link_libraries(FormatFuzz PRIVATE Deepity)
+    set_target_properties(FormatFuzz PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME FormatFuzz COMMAND FormatFuzz)
+    list(APPEND DEEPITY_TEST_TARGETS FormatFuzz)
+
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----
 

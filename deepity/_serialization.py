@@ -84,6 +84,28 @@ def architecture_from_json(layers: list[dict[str, Any]]) -> tuple[Layer | Activa
     return tuple(architecture)
 
 
+_MAX_CARD_BYTES = 64 << 10
+
+
+def card_to_json(card: dict[str, Any]) -> str:
+    """Validates a model card and returns its JSON. A card is a dict of plain values (license,
+    description, authors, training_data, metrics, url, ...), at most 64 KiB once serialized."""
+    if not isinstance(card, dict):
+        raise TypeError("net.card must be a dict.")
+    try:
+        text = json.dumps(card, separators=(",", ":"))
+    except TypeError as error:
+        raise TypeError(f"net.card must be JSON serializable: {error}") from error
+    if len(text.encode()) > _MAX_CARD_BYTES:
+        raise ValueError(f"net.card is larger than {_MAX_CARD_BYTES} bytes.")
+    return text
+
+
+def read_card(path: str) -> dict[str, Any]:
+    """The model card stored in a model file, or `{}` if it has none."""
+    return json.loads(dy.read_model_metadata(path).get("deepity.card", "{}"))
+
+
 def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtype: Optional[str]) -> dict[str, str]:
     """The `deepity.*` metadata entries for `net`, ready to pass to the C++ save."""
     from importlib.metadata import PackageNotFoundError, version
@@ -103,11 +125,14 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     if dtype is not None:
         model["dtype"] = dtype
 
+    card = getattr(net, "card", None)
+
     inference = {"mode": "iterative", "inference_steps": int(net.default_inference_steps)}
     return {
         "deepity.model": json.dumps(model, separators=(",", ":")),
         "deepity.inference": json.dumps(inference, separators=(",", ":")),
         "deepity.created_by": created_by,
+        **({"deepity.card": card_to_json(card)} if card else {}),
     }
 
 
@@ -135,6 +160,9 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
 
     net = classes[name](*architecture_from_json(model["layers"]), **kwargs)
     net.configure(**model.get("hyperparameters", {}))
+
+    if "deepity.card" in meta:
+        net.card = json.loads(meta["deepity.card"])
 
     inference = json.loads(meta.get("deepity.inference", "{}"))
     mode = inference.get("mode", "iterative")
