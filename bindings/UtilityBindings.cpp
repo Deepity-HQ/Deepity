@@ -8,6 +8,7 @@
 #include "UtilityBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/stl/map.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 
@@ -19,6 +20,7 @@
 
 #include <deepity/backend/Backend.h>
 #include <deepity/utils/Activations.h>
+#include <deepity/utils/ModelIO.h>
 #include <deepity/utils/Optimize.h>
 #include <deepity/utils/RandomizeDistribution.h>
 #include <deepity/utils/StreamAlignedBatcher.h>
@@ -144,6 +146,9 @@ void bind_utilities(nb::module_& m)
         "(GPU randomizes into a device buffer and copies the result back; "
         "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
+  m.def("read_model_metadata", &Deep::ModelIO::ReadMetadata, nb::arg("filepath"),
+        "Validates a model file and returns its string metadata (architecture, inference defaults, "
+        "format version) without reading the weights. Raises on a missing or corrupt file.");
   m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes,
         "Queries the size of this CPU's L2 cache (per-core, level 2), "
         "falling back to 512 KiB on platforms where it can't be queried.");

@@ -1,6 +1,7 @@
 # Deepity model format (draft v0)
 
-Status: draft for discussion. Nothing here is implemented yet. See `TODO.md` for the plan.
+Status: draft. The container, hash, tensor names and `deepity.model`/`deepity.inference` for
+`DKPPCN` and `FullPCN` are implemented; the rest is planned. See `TODO.md`.
 
 ## Goals
 
@@ -42,24 +43,32 @@ one they support, with a message naming both versions.
 
 ## Model description (`deepity.model`)
 
+Implemented for `DKPPCN` and `FullPCN` (Python layer; weights never pass through Python).
+
 ```json
 {
   "network": "DKPPCN",
   "batch_size": 64,
+  "device": "cpu",
+  "dtype": "float32",
   "layers": [
     {"kind": "linear", "in": 784, "out": 512, "activation": "relu"},
     {"kind": "linear", "in": 512, "out": 10, "activation": "linear"}
-  ]
+  ],
+  "hyperparameters": {"learning_rate": 0.001, "inference_rate": 0.1, "lmbda": 0.01}
 }
 ```
 
-`network` selects the class. Layer kinds and fields are defined per network and versioned by
-`format_version`. Unknown fields are ignored.
+`network` selects the class (`dtype` appears only for networks that have one). `hyperparameters`
+are the keyword arguments of the network's `configure()`. A convolution layer is
+`{"kind": "convolution", "out_channels", "kernel": [h, w], "stride": [h, w], "pad": [h, w], "activation"}`.
+Layer kinds and fields are versioned by `format_version`. Unknown fields are ignored.
+`deepity.load(path)` rebuilds the network, then loads the weights over the fresh initialization.
 
 ## Inference defaults (`deepity.inference`)
 
 ```json
-{"inference_steps": 1, "inference_rate": 0.1, "cross_entropy": false}
+{"inference_steps": 1}
 ```
 
 These are the defaults a loaded model uses for `predict`. Callers can override them. A file
@@ -70,8 +79,16 @@ states which prediction it describes: the full iterative model, or a forward-onl
 `layers.{i}.weight`, `layers.{i}.bias` for every artifact. A checkpoint adds:
 
 - `layers.{i}.psi` (DKP feedback weights, full `[size, terminal]` shape)
-- `optimizer.layers.{i}.{weight,bias,psi}.{m,v}` and scalar `optimizer.step`
-- `rng.state`
+- `optimizer.layers.{i}.{weight,bias,psi}.{m,v}`: Adam/AdamW moments, same shapes and dtype
+  rules as the matching parameter (`F32` or `F64` by the network's accumulation type)
+- `optimizer.layers.{i}.step` and `optimizer.layers.{i}.psi_step`: `I32`, shape `[1]`, the
+  Adam/AdamW step counts for W and b, and for Psi
+- Caller state (epoch, global step, learning-rate schedule position, RNG state) is the string
+  metadata key `deepity.training`, a JSON object the caller supplies and gets back unchanged
+
+A checkpoint has `deepity.kind = "checkpoint"`. Loading one as an inference model reads its
+weights and ignores the rest. Implemented for `DirectKPPCNetwork`, `FullPCNetwork` and
+`FullPCNetworkT` (any dtype), CPU only. Other networks and GPU networks refuse to write one.
 
 Layers with no weights (the terminal layer) write no tensors. Zero-size tensors are not written.
 Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by

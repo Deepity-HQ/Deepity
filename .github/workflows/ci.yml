@@ -74,14 +74,20 @@ jobs:
         # --system: install into actions/setup-python's interpreter
         # directly (build.py's own CMake configure step needs nanobind
         # importable from there), not an isolated uv-managed venv.
-        run: uv pip install --system nanobind rich
+        run: uv pip install --system nanobind rich numpy
 
-      - name: Build (Release)
-        # --no-tests: CMakeLists.txt no longer registers any CTest tests
-        # (the old test/benchmark executables were removed), so running
-        # ctest here would just fail on "no tests found" for no useful
-        # reason.
-        run: python build.py Release --no-tests
+      - name: Build and run C++ tests (Release)
+        # build.py runs ctest after the build: ModelIO/SafeTensors round
+        # trips, weight centering and the conv diagnostics.
+        run: python build.py Release
+
+      - name: Python model-file tests
+        # The build leaves the extension next to the deepity package, so
+        # the repo root is the import path.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: python tests/pyModelFilesVerify.py
 
       - name: Upload build log
         if: always()

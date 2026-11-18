@@ -7,6 +7,7 @@
 #include "NetworkBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/stl/map.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -84,8 +85,12 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
           "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
+          "Save this network's weights to filepath, with optional string metadata entries "
+          "(e.g. 'deepity.model'). Raises on any failure.")
       .def(
           "load",
           [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
@@ -297,9 +302,28 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
       .def("get_terminal_layer", &NetT::GetTerminalLayer, nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](NetT& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
+          "Save this network's weights to filepath, with optional string metadata entries "
+          "(e.g. 'deepity.model'). Raises on any failure.")
       .def(
           "load",
           [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
@@ -692,9 +716,10 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
@@ -890,10 +915,26 @@ void bind_networks(nb::module_& m)
            nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](Deep::DirectKPPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::DirectKPPCNetwork& self, const std::string& filepath)
@@ -1162,10 +1203,26 @@ void bind_networks(nb::module_& m)
       .def("get_terminal_layer", &Deep::FullPCNetwork::GetTerminalLayer, nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const Deep::FullPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](Deep::FullPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const Deep::FullPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::FullPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::FullPCNetwork& self, const std::string& filepath)
@@ -1463,9 +1520,10 @@ void bind_networks(nb::module_& m)
            "Returns the last layer.")
       .def(
           "save",
-          [](const Deep::FullConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"),
+          [](const Deep::FullConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{},
           "Save this network's weights to filepath. Safe on a CUDA-device network -- syncs "
           "device-resident parameters to host before writing.")
       .def(
@@ -1640,9 +1698,10 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::ConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::ConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::ConvPCNetwork& self, const std::string& filepath)
@@ -1843,9 +1902,10 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata)
+          { return Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::SimpleConvPCNetwork& self, const std::string& filepath)

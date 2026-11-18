@@ -25,6 +25,8 @@ from .GaussSeidelPCN import GaussSeidelPCN
 from .DKPPCN import DKPPCN
 from .FullPCN import FullPCN
 
+# Model files
+from ._serialization import load, resume
 # Architecture
 from .layer import (
     Layer,
@@ -60,6 +62,9 @@ dsigmoid = dy.dsigmoid
 
 
 __all__ = [
+    # Model files
+    "load",
+    "resume",
     # Networks
     "SequentialPCN",
     "SimplePCN",

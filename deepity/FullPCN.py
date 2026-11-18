@@ -7,6 +7,7 @@ import numpy.typing as npt
 
 from ._backend import dy
 from ._interop import InputArray, is_cuda_array, to_cuda_capsule, to_numpy
+from ._serialization import build_metadata, read_training_state, training_metadata
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -127,6 +128,8 @@ class FullPCN:
         self._lambda: float = 1e-2
         self._optimizer: str = "SGD"
         self._psi_optimizer: str = "SGD"
+        self._flags: dict = {}
+        self.default_inference_steps: int = 1
 
         self._validate_architecture()
 
@@ -328,6 +331,18 @@ class FullPCN:
 
         self._impl.set_center_weights(center_weights)
 
+        self._flags = {
+            "use_mu_pc_scaling": use_mu_pc_scaling,
+            "use_residual_connections": use_residual_connections,
+            "use_ipc": use_ipc,
+            "use_epc": use_epc,
+            "use_momentum": use_momentum,
+            "momentum_beta": momentum_beta,
+            "use_cross_entropy": use_cross_entropy,
+            "dist": dist,
+            "center_weights": center_weights,
+        }
+
         return self
 
     def _require_configured(self) -> None:
@@ -358,16 +373,19 @@ class FullPCN:
         """Enable/disable incremental PC. Safe to call at any time."""
         self._require_configured()
         self._impl.set_use_ipc(enabled)
+        self._flags["use_ipc"] = enabled
 
     def set_use_epc(self, enabled: bool) -> None:
         """Enable/disable ePC settling. Safe to call at any time."""
         self._require_configured()
         self._impl.set_use_epc(enabled)
+        self._flags["use_epc"] = enabled
 
     def set_use_momentum(self, enabled: bool, beta: float = 0.9) -> None:
         """Enable/disable momentum settling. Safe to call at any time."""
         self._require_configured()
         self._impl.set_use_momentum(enabled, beta)
+        self._flags.update(use_momentum=enabled, momentum_beta=beta)
 
     def set_use_cross_entropy(self, enabled: bool) -> None:
         """
@@ -376,10 +394,12 @@ class FullPCN:
         """
         self._require_configured()
         self._impl.set_use_cross_entropy(enabled)
+        self._flags["use_cross_entropy"] = enabled
 
     def set_center_weights(self, enabled: bool) -> None:
         """Re-center each layer's W rows after every weight update."""
         self._impl.set_center_weights(enabled)
+        self._flags["center_weights"] = enabled
 
     def set_optimizer(self, optimizer: str) -> None:
         """Set the optimizer used for the forward weights W."""
@@ -422,6 +442,48 @@ class FullPCN:
         layer's own existing init)."""
         self._impl.randomize_weights(seed, dist)
 
+    def _current_hyperparameters(self) -> dict:
+        return {
+            "learning_rate": self._learning_rate,
+            "inference_rate": self._inference_rate,
+            "feedback_rate": self._feedback_rate,
+            "lmbda": self._lambda,
+            "optimizer": self._optimizer,
+            "psi_optimizer": self._psi_optimizer,
+            **self._flags,
+        }
+
+    def save(self, filepath: str) -> bool:
+        """Write a self-describing model file: weights, architecture, hyperparameters and the
+        default settling steps. `deepity.load(filepath)` rebuilds the network from it.
+        Raises on any failure."""
+        self._require_configured()
+
+        return self._impl.save(filepath, build_metadata(self, "FullPCN", self._current_hyperparameters(), self.dtype))
+
+    def save_checkpoint(self, filepath: str, training_state: Optional[dict] = None) -> bool:
+        """Write a training checkpoint: everything `save` writes plus the optimizer state (Adam/AdamW
+        moments and step counters), so `deepity.resume(filepath)` continues training exactly.
+        `training_state` is any JSON-serializable dict you want back on resume (epoch, global step,
+        learning-rate schedule position, RNG state). CPU networks only. Raises on any failure."""
+        self._require_configured()
+
+        metadata = {
+            **build_metadata(self, "FullPCN", self._current_hyperparameters(), self.dtype),
+            **training_metadata(training_state),
+        }
+
+        return self._impl.save_checkpoint(filepath, metadata)
+
+    def load_checkpoint(self, filepath: str) -> dict:
+        """Restore weights and optimizer state from a checkpoint into this already-configured
+        network. Returns the `training_state` dict that was saved with it (empty if none)."""
+        self._require_configured()
+
+        self._impl.load_checkpoint(filepath)
+
+        return read_training_state(filepath)
+
     def train_step(
         self,
         X: InputArray,
@@ -455,11 +517,15 @@ class FullPCN:
     def predict(
         self,
         X: InputArray,
-        inference_steps: int = 1,
+        inference_steps: Optional[int] = None,
     ) -> npt.NDArray[np.float32]:
-        """Run inference on `X`, settling for `inference_steps` iterations.
+        """Run inference on `X`, settling for `inference_steps` iterations (default: the model's
+        `default_inference_steps`, which a loaded model file sets).
         @return The terminal layer's beliefs."""
         self._require_configured()
+
+        if inference_steps is None:
+            inference_steps = self.default_inference_steps
 
         if self.device == "cuda" and is_cuda_array(X):
             stream_ptr = self._impl.stream_handle

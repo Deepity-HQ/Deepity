@@ -87,6 +87,24 @@ public:
   {
     return {};
   }
+  /// @brief Optimizer state (Adam/AdamW moments) for a training checkpoint, keyed by
+  /// "weight.m", "weight.v", "bias.m", "bias.v", "psi.m", "psi.v". Empty for a layer that owns
+  /// no weights. Only meaningful when SupportsCheckpoint() is true.
+  virtual std::map<std::string, TensorDescriptor> GetOptimizerStateDict() const
+  {
+    return {};
+  }
+  /// @brief Adam/AdamW step counters, keyed by "step" (W and b) and "psi_step" (Psi).
+  virtual std::map<std::string, int*> GetOptimizerCounters() const
+  {
+    return {};
+  }
+  /// @brief Whether GetOptimizerStateDict()/GetOptimizerCounters() describe all of this layer's
+  /// optimizer state. ModelIO refuses to write a checkpoint through a layer that returns false.
+  virtual bool SupportsCheckpoint() const noexcept
+  {
+    return false;
+  }
   /// @brief Copies this layer's parameters from device memory into
   /// the host-readable buffers GetStateDict() exposes, so a save
   /// can read them directly. No-op by default, for layers whose

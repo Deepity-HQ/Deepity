@@ -16,6 +16,10 @@ earlier history.
 
 - `DKPPCN.configure(psi_decay=...)` (and `set_psi_decay()` on `DirectKPPCNetwork` / `DirectKPPCLayer`): a decay applied to the direct feedback weights Psi alone, separate from `lmbda`, which keeps governing W. The default (`None`) keeps the previous behavior exactly: no decay on Psi under SGD, `lmbda` under AdamW. Only the float DKP family has it; `DirectKPPCNetworkT` / `DirectKPPCLayerT` do not yet.
 
+- Self-describing model files for `DKPPCN` and `FullPCN`: `net.save(path)` stores the architecture, hyperparameters and default settling steps next to the weights, and `deepity.load(path)` rebuilds the network from the file alone. `predict()` now defaults to the model's `default_inference_steps` (1 for a new model; a loaded file restores its saved value). New `deepity.dy.read_model_metadata(path)` reads a file's metadata without loading weights, and every native network's `save()` accepts an optional `metadata` map.
+
+- Training checkpoints for `DKPPCN` and `FullPCN` (CPU): `net.save_checkpoint(path, training_state)` stores the weights, Adam/AdamW moments and step counters plus any JSON dict you pass (epoch, step, RNG state), and `deepity.resume(path)` returns `(net, training_state)` ready to continue training bit-for-bit. In C++: `ModelIO::SaveCheckpoint` / `LoadCheckpoint`, backed by new `Layer::GetOptimizerStateDict()`, `GetOptimizerCounters()` and `SupportsCheckpoint()`. Other networks and GPU networks throw a clear error instead of writing a checkpoint that would not resume.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).

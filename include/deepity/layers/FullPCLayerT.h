@@ -155,6 +155,15 @@ public:
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Adam/AdamW moments (AccumT) for a checkpoint, keyed like Layer::GetOptimizerStateDict().
+  /// Host memory only: the moments live in host vectors on the CPU backend.
+  std::map<std::string, TensorDescriptorT<AccumT>> GetOptimizerStateDict() const;
+  /// @brief Adam/AdamW step counters, keyed "step" (W and b) and "psi_step" (Psi).
+  std::map<std::string, int*> GetOptimizerCounters() const;
+  bool SupportsCheckpoint() const noexcept
+  {
+    return true;
+  }
   /// @brief Copies W/b/Psi into the host staging buffers GetStateDict()
   /// exposes. Call before reading a GetStateDict() pointer.
   void SyncStateDictFromDevice() const;

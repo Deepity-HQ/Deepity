@@ -51,8 +51,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] Round-trip test covers `DirectKPPCNetwork`, `FullPCNetwork`, `FullPCNetworkT<double>`,
       `FullConvPCNetwork`, dtype mismatch and corruption rejection (`tests/tModelIOVerify.cpp`).
 - [~] Golden files: `tests/data/golden_v1.safetensors` and `legacy_a8_dkp.safetensors` added and
-      loaded by `SafeTensorsVerify`. Still to add: one per extra dtype once those are written. CI does
-      not run tests (`--no-tests`), so a test job is still needed.
+      loaded by `SafeTensorsVerify`. Still to add: one per extra dtype once those are written. CI now runs
+      ctest and `tests/pyModelFilesVerify.py` on Linux (gcc, clang, icpx); Windows still builds only.
       Note `.gitignore` excludes `*.safetensors` and `*_meta.json`, so fixtures need an exception.
 - [ ] Decide naming: stable tensor names (for example `layers.3.weight`) instead of positional keys.
 
@@ -84,11 +84,15 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 3: self-describing models
 
-- [ ] Architecture and inference settings serialized as versioned JSON in the metadata block.
-- [ ] `deepity.load(path)` rebuilds the network from the file. No hand-built architecture first.
+- [~] Architecture and inference settings serialized as JSON in the metadata block. Done for
+      `DKPPCN` and `FullPCN` (`save()` writes them). Other networks still save weights only.
+- [x] `deepity.load(path)` rebuilds the network from the file (`DKPPCN`, `FullPCN`).
+      Test: `tests/pyModelFilesVerify.py` (run in the Linux CI job).
 - [ ] `net.load_weights(path, strict=False, rename=...)` for partial loads.
-- [ ] Two artifact kinds: inference artifact (weights plus settings) and training checkpoint
-      (adds Psi, optimizer state, RNG, step, learning-rate schedule position).
+- [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoint done for
+      `DirectKPPCNetwork`, `FullPCNetwork` and `FullPCNetworkT` on CPU (Adam/AdamW moments, step
+      counters, caller training state). Still to do: conv family, `DirectKPPCNetworkT`, GPU
+      networks (moments live on the device), and an inference artifact that omits Psi.
 - [ ] Make settling semantics explicit in the file. An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 

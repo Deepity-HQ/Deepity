@@ -126,6 +126,43 @@ bool Throws(auto&& fn)
 }
 } // namespace
 
+/// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
+/// same moments, same step counters. A weights-only Load() must not.
+template <typename Net, typename Make> bool CheckpointResumes(const char* name, Make make, const std::string& path)
+{
+  const std::vector<float> x(kBatch * 8, 0.5f), y(kBatch * 4, 0.25f);
+  auto setup = [&](unsigned seed)
+  {
+    auto n = make(seed);
+    n->SetOptimizer(OptimizerType::ADAM);
+    n->SetPsiOptimizer(OptimizerType::ADAM);
+    return n;
+  };
+  auto ref = setup(11), resumed = setup(12), weightsOnly = setup(13);
+  for (int i = 0; i < 5; ++i)
+    ref->TrainStep(x, y, 2);
+  ModelIO::SaveCheckpoint(*ref, path);
+  ModelIO::LoadCheckpoint(*resumed, path);
+  ModelIO::Load(*weightsOnly, path);
+  weightsOnly->SetOptimizer(OptimizerType::ADAM);
+  weightsOnly->SetPsiOptimizer(OptimizerType::ADAM);
+  for (int i = 0; i < 3; ++i)
+  {
+    ref->TrainStep(x, y, 2);
+    resumed->TrainStep(x, y, 2);
+    weightsOnly->TrainStep(x, y, 2);
+  }
+  const bool same = SameState(*ref, *resumed);
+  const bool differs = !SameState(*ref, *weightsOnly);
+  const bool notCheckpoint = Throws([&] { ModelIO::Save(*ref, path); ModelIO::LoadCheckpoint(*resumed, path); });
+  printf("%s\n", same ? "PASSED" : "FAILED");
+  printf("  %s: training continues bit-identically after LoadCheckpoint: %s\n", name, same ? "yes" : "NO");
+  printf("  %s: a weights-only Load() does not reproduce it (so the state really matters): %s\n", name,
+         differs ? "yes" : "NO");
+  printf("  %s: LoadCheckpoint rejects a non-checkpoint file: %s\n", name, notCheckpoint ? "yes" : "NO");
+  return same && differs && notCheckpoint;
+}
+
 int main()
 {
   const auto path = (std::filesystem::temp_directory_path() / "deepity_modelio_verify.safetensors").string();
@@ -195,6 +232,11 @@ int main()
   const bool corruptOk = Throws([&] { ModelIO::Load(*fdst, path); });
   printf("%s\n", corruptOk ? "PASSED: corrupted file is rejected" : "FAILED: corrupted file was loaded");
   ok &= corruptOk;
+  ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork", MakeNet, path);
+  ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path);
+  const bool gpuFree = !Throws([&] { ModelIO::SaveCheckpoint(*fsrc, path); });
+  ok &= gpuFree;
+
   const bool missingOk = Throws([&] { ModelIO::Load(*fdst, path + ".does_not_exist"); }) &&
                          Throws([&] { ModelIO::Save(*fsrc, path + "_no_such_dir/x.safetensors"); });
   printf("%s\n", missingOk ? "PASSED: missing file and unwritable path throw" : "FAILED: no exception for bad paths");
