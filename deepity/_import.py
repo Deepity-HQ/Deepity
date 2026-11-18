@@ -14,6 +14,7 @@ import numpy as np
 
 from ._backend import dy
 from ._serialization import write_tensors
+from ._sources import resolve
 
 Source = Union[str, os.PathLike, Mapping[str, Any]]
 Rename = Union[None, str, Mapping[str, str], Callable[[str], str]]
@@ -36,7 +37,7 @@ def _to_numpy(value: Any, dtype: np.dtype) -> np.ndarray:
 def _load_source(source: Source, dtype: np.dtype) -> dict[str, np.ndarray]:
     if isinstance(source, Mapping):
         return {str(k): _to_numpy(v, dtype) for k, v in source.items()}
-    path = os.fspath(source)
+    path = resolve(source)
     if path.endswith(".gguf"):
         return {k: _to_numpy(v, dtype) for k, v in dy.read_gguf(path)[0].items()}
     if path.endswith((".safetensors", ".index.json")):
@@ -80,7 +81,7 @@ def read_gguf(path: Union[str, os.PathLike]) -> tuple[dict[str, np.ndarray], dic
     """
     import json
 
-    tensors, metadata = dy.read_gguf(os.fspath(path))
+    tensors, metadata = dy.read_gguf(resolve(path))
     return tensors, json.loads(metadata)
 
 

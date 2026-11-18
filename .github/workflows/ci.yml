@@ -90,6 +90,13 @@ jobs:
           GOMP_SPINCOUNT: "0"
         run: python tests/pyModelFilesVerify.py
 
+      - name: Model sources (URLs, s3, cache)
+        # Local HTTP servers only; no internet needed.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: python tests/pySourcesVerify.py
+
       - name: CLI and model cards
         env:
           OMP_WAIT_POLICY: PASSIVE

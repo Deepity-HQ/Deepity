@@ -109,9 +109,13 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 4: sources and speed
 
-- [ ] Small `Source`/`Sink` interface: file, memory buffer, mmap, then `https://` and `s3://`,
-      with a local cache directory.
-- [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies for CUDA still open.
+- [x] Sources (`deepity/_sources.py`): path, `file://`, `https://`, `s3://` (boto3 or public HTTPS) and bytes, resolved
+      through a download cache with ETag revalidation, size cap, hash check and shard sets. Tested against local
+      servers (`tests/pySourcesVerify.py`, in CI). Not built: uploading (Sink), `hf://`, a no-disk C++ memory reader,
+      resuming a partial download; real S3 and a real remote server are untested.
+- [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies: a float tensor loads straight
+      from the mapped file to the device in one copy (was device to host, file to host, host to device). Tested
+      on the CPU with `ForceDeviceStaging()`; **not yet run on a GPU**.
 - [x] Bulk Python read and write: `deepity.read_tensors` (zero-copy when mapped) and `deepity.write_tensors` (any numpy dtype safetensors has; index path shards).
 - [~] Benchmark script written (`experiments/benchmark_model_io.py`); numbers not collected yet.
 - [x] Sharding plus an index file (C++ `SaveSharded`, Python `save(path, max_shard_bytes=...)`).

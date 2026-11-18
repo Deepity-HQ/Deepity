@@ -14,6 +14,10 @@ earlier history.
 
 ### Added
 
+- Model sources: every loader accepts `http(s)://` and `s3://` URLs, `file://` and raw bytes wherever it took a path. Remote files go through a download cache (`$DEEPITY_CACHE_DIR`, default `~/.cache/deepity`) with ETag revalidation, a size cap, content-hash validation before a download is kept, shard sets from an index URL, and safe redirects (no credentials to another host, no https to http). New `deepity.fetch(url, headers=, timeout=, max_bytes=, sha256=, refresh=)`; `deepity inspect` and `convert` take URLs. Standard library only; `s3://` uses `boto3` when installed.
+
+- Loading onto a GPU copies each float tensor straight from the mapped file to the device, skipping a device-to-host copy and a host staging copy.
+
 - Inference artifacts: `net.save(path, for_inference=True)` (`DKPPCN`, `FullPCN` and the mixin classes) leaves out the DKP feedback weights Psi, which `predict()` never reads, and marks the file `deepity.training_tensors = "omitted"`. `deepity convert SRC DST --inference` makes one from any model file or checkpoint, also dropping optimizer tensors and saved training state (a small DKPPCN checkpoint went from 2.6 MB to 0.8 MB). A plain `save()` is unchanged. A network loaded from such a file starts training again with a fresh Psi.
 
 - The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target and the GGUF reader throws there, instead of producing wrong hashes or misreading files.

@@ -175,6 +175,24 @@ inline void ReadTensorIntoStaged(IComputeBackend* dev, const io::SafeTensorsRead
     ReadTensorInto(reader, entry, readShape, tensor);
     return;
   }
+  // A float tensor that fills the whole device buffer needs nothing from the device first. A mapped file
+  // is copied straight from its pages (one transfer); otherwise one read into a host buffer, then one copy.
+  const auto [rows, width] = RowsAndWidth(readShape);
+  const size_t count = rows * width;
+  if (!entry.packed && entry.dtype == "F32" && readShape == tensor.shape && !IsPadded(tensor.shape, tensor.rowStride) &&
+      entry.ByteSize() == count * sizeof(float))
+  {
+    dev->Synchronize();
+    if (const void* view = reader.Bytes(entry))
+    {
+      dev->CopyFromHost(tensor.data, static_cast<const float*>(view), count);
+      return;
+    }
+    std::vector<float> host(count);
+    reader.Read(entry, host.data(), count * sizeof(float));
+    dev->CopyFromHost(tensor.data, host.data(), count);
+    return;
+  }
   std::vector<float> host(TensorExtent(tensor.shape, tensor.rowStride));
   dev->Synchronize();
   dev->CopyToHost(host.data(), tensor.data, host.size());

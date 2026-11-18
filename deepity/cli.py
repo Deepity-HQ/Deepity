@@ -13,6 +13,7 @@ import numpy as np
 from ._backend import dy
 from ._gguf_write import write_gguf
 from ._serialization import DEFAULT_SHARD_BYTES, INDEX_SUFFIX, write_tensors
+from ._sources import resolve
 
 _UNITS = {"": 1, "k": 10**3, "m": 10**6, "g": 10**9, "t": 10**12, "ki": 1 << 10, "mi": 1 << 20, "gi": 1 << 30, "ti": 1 << 40}
 
@@ -39,7 +40,7 @@ def _human(n: int) -> str:
 
 def describe(path: str, verify_hash: bool = True) -> dict[str, Any]:
     """Everything `inspect` prints, as a dict (also its --json output)."""
-    table = dy.file_table(path, verify_hash)
+    table = dy.file_table(resolve(path), verify_hash)
     info: dict[str, Any] = {"path": path, "format": table["format"], "version": table["version"]}
     tensors = [{"name": n, "dtype": d, "shape": list(s), "bytes": b} for n, d, s, b in table["tensors"]]
     info["tensors"] = tensors
@@ -123,7 +124,10 @@ def convert(
 
     With `for_inference`, tensors only training uses (Psi, optimizer state) and the saved training state are
     dropped, and the file is marked as an inference artifact. A checkpoint becomes a model file that way.
+
+    `src` may also be an http(s) or s3 URL, which is downloaded to the cache first.
     """
+    src = resolve(src)
     if dst.endswith(".gguf"):
         if max_shard_bytes:
             raise ValueError("GGUF output is a single file; --max-shard-size does not apply")

@@ -11,6 +11,7 @@ import json
 from typing import Any, Optional
 
 from ._backend import dy
+from ._sources import resolve
 from .layer import Activation, Convolution, GeLU, Layer, Linear, ReLU, Sigmoid, TanH
 
 FORMAT_VERSION = 1
@@ -116,8 +117,8 @@ def card_to_json(card: dict[str, Any]) -> str:
 
 
 def read_card(path: str) -> dict[str, Any]:
-    """The model card stored in a model file, or `{}` if it has none."""
-    return json.loads(dy.read_model_metadata(path).get("deepity.card", "{}"))
+    """The model card stored in a model file (path, URL or bytes), or `{}` if it has none."""
+    return json.loads(dy.read_model_metadata(resolve(path)).get("deepity.card", "{}"))
 
 
 def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtype: Optional[str]) -> dict[str, str]:
@@ -273,13 +274,14 @@ class ModelFileMixin:
         """Restore weights and optimizer state from a checkpoint into this configured network.
         Returns the `training_state` dict that was saved with it (empty if none)."""
         self._require_configured()  # type: ignore[attr-defined]
+        filepath = resolve(filepath)
         self._load_checkpoint(filepath)  # type: ignore[attr-defined]
         return read_training_state(filepath)
 
     def load_weights(self, filepath: str, strict: bool = True, rename=None):
         """Load weights from any safetensors file; see `deepity.import_weights` for PyTorch sources."""
         self._require_configured()  # type: ignore[attr-defined]
-        return self._load_weights(filepath, strict, rename)  # type: ignore[attr-defined]
+        return self._load_weights(resolve(filepath), strict, rename)  # type: ignore[attr-defined]
 
 
 def load(path: str, device: Optional[str] = None, batch_size: Optional[int] = None) -> Any:
@@ -289,6 +291,7 @@ def load(path: str, device: Optional[str] = None, batch_size: Optional[int] = No
     on a GPU machine onto a CPU). Works on a checkpoint too (weights only). Raises if the file is
     missing, corrupt, from a newer Deepity, or describes a network this build does not know.
     """
+    path = resolve(path)
     net, _ = _build(path, device, batch_size)
     net.load(path)
     return net
@@ -298,6 +301,7 @@ def resume(path: str, device: Optional[str] = None, batch_size: Optional[int] = 
     """Rebuilds a network from a checkpoint written by `net.save_checkpoint(...)` and restores
     its weights and optimizer state. Returns `(net, training_state)`, where `training_state` is
     the dict passed to `save_checkpoint` (epoch, step, RNG state, ...), or `{}` if none was given."""
+    path = resolve(path)
     net, meta = _build(path, device, batch_size)
     return net, net.load_checkpoint(path)
 
@@ -344,4 +348,4 @@ def training_metadata(training_state: Optional[dict[str, Any]]) -> dict[str, str
 
 
 def read_training_state(path: str) -> dict[str, Any]:
-    return json.loads(dy.read_model_metadata(path).get("deepity.training", "{}"))
+    return json.loads(dy.read_model_metadata(resolve(path)).get("deepity.training", "{}"))

@@ -307,6 +307,40 @@ card, metadata and a tensor table. `convert` reads a safetensors file, shard set
 with no model attached (no `deepity.kind`, only the metadata you pass and the content hash).
 Supported: float16/32/64, int8..64, uint8..64 and bool (stored as `BOOL`, one byte).
 
+## Sources
+
+Every Python loader (`deepity.load`, `resume`, `net.load_weights`, `net.load_checkpoint`, `read_tensors`,
+`read_card`, `import_weights`, `read_gguf`, `deepity inspect` and `convert`) accepts any of these where it
+takes a path, and resolves it to a local file first (`deepity/_sources.py`):
+
+| Source | Behaviour |
+|---|---|
+| a path | used as is, no cost |
+| `file://...` | the local path |
+| `http://`, `https://` | downloaded to the cache, then loaded through mmap |
+| `s3://bucket/key` | through `boto3` when installed (private buckets, your credentials), else the bucket's public HTTPS address |
+| `bytes`, `bytearray`, `memoryview` | written once to the cache under their content hash |
+
+The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
+
+- A finished download is checked before it is put in place (structure and the content hash when the file has
+  one), by an atomic rename, so an interrupted or corrupt download leaves nothing behind.
+- A cached file is revalidated with the server's ETag on every load (an unchanged model costs one small
+  request, not a download). With no network the cached copy is used with a warning. A server that sends no
+  validator is trusted as is; `fetch(url, refresh=True)` forces a download. `DEEPITY_OFFLINE=1` never
+  touches the network.
+- `deepity.fetch(url, ...)` takes `headers`, `timeout`, `max_bytes` (also `$DEEPITY_MAX_DOWNLOAD_BYTES`, default
+  256 GiB, enforced with or without a `Content-Length`) and `sha256` (the expected hash of the file).
+- A `.safetensors.index.json` URL downloads the index and then every shard it names from the same
+  folder. A shard name that is not a plain file name is refused, as in the local reader.
+- Redirects are followed only over http(s), never from https down to http, and credentials are dropped when
+  a redirect goes to another host.
+- A signed URL's query string is part of its cache key, so a fresh signature downloads again, and a
+  sharded model needs an unsigned base URL.
+
+Not built: uploading (no Sink), `hf://`, a C++ memory-buffer reader (bytes are written to the cache, then
+mapped), and resuming a partial download.
+
 ## Memory mapping
 
 `SafeTensorsReader` maps the file by default and falls back to buffered reads. `Bytes(entry)`

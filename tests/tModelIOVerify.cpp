@@ -10,6 +10,7 @@
  */
 #include <cstdio>
 #include <cstring>
+#include <deepity/backend/Backend.h>
 #include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/networks/ConvPCNetworkT.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
@@ -608,6 +609,57 @@ bool InferenceArtifact(const std::string& path)
   return ok;
 }
 
+/// @brief The device-load fast path (no device-to-host copy first, straight from the mapped file when it
+/// can) must give the same bytes as the general path, for mapped and streamed readers, and must leave the
+/// padding of a padded tensor alone.
+bool DirectDeviceLoad(const std::string& path)
+{
+  auto backend = CreateBackend(DeviceType::DEVICE_CPU);
+  std::vector<float> want(15);
+  for (size_t i = 0; i < want.size(); ++i)
+    want[i] = 0.25f * static_cast<float>(i) - 2.f;
+  {
+    io::SafeTensorsWriter w;
+    w.AddTensor("t", "F32", {3, 5}, want.data(), want.size() * sizeof(float));
+    w.Write(path);
+  }
+  bool ok = true;
+  for (const bool mapped : {true, false})
+  {
+    io::SafeTensorsReader reader(path, true, mapped);
+    std::vector<float> dst(15, -9.f);
+    TensorDescriptor tight{dst.data(), {3, 5}, 0};
+    detail::ReadTensorIntoStaged(backend.get(), reader, *reader.Find("t"), {3, 5}, tight);
+    ok &= dst == want && reader.IsMapped() == mapped;
+  }
+  // A padded destination (row stride 8) takes the general path and keeps its padding.
+  io::SafeTensorsReader reader(path);
+  std::vector<float> padded(3 * 8, -9.f);
+  TensorDescriptor wide{padded.data(), {3, 5}, 8};
+  detail::ReadTensorIntoStaged(backend.get(), reader, *reader.Find("t"), {3, 5}, wide);
+  bool paddedOk = true;
+  for (size_t r = 0; r < 3; ++r)
+    for (size_t c = 0; c < 8; ++c)
+      paddedOk &= padded[r * 8 + c] == (c < 5 ? want[r * 5 + c] : -9.f);
+  ok &= paddedOk;
+  // A file tensor with fewer rows than the destination (old truncated Psi) fills only those rows.
+  std::vector<float> longer(15, -9.f);
+  TensorDescriptor taller{longer.data(), {5, 3}, 0};
+  io::SafeTensorsWriter w2;
+  w2.AddTensor("t", "F32", {3, 3}, want.data(), 9 * sizeof(float));
+  w2.Write(path);
+  io::SafeTensorsReader small(path);
+  detail::ReadTensorIntoStaged(backend.get(), small, *small.Find("t"), {3, 3}, taller);
+  bool shortOk = true;
+  for (size_t i = 0; i < 15; ++i)
+    shortOk &= longer[i] == (i < 9 ? want[i] : -9.f);
+  ok &= shortOk;
+  printf("%s\n", ok ? "PASSED: device loads (direct, streamed, padded, fewer rows) match the general path"
+                    : "FAILED: direct device load");
+  std::filesystem::remove(path);
+  return ok;
+}
+
 } // namespace
 
 /// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
@@ -762,6 +814,7 @@ int main()
   const bool versionsOk = FormatVersionRules(path);
   ok &= versionsOk;
   ok &= InferenceArtifact(path);
+  ok &= DirectDeviceLoad(path + ".direct");
 
   const bool missingOk = Throws([&] { ModelIO::Load(*fdst, path + ".does_not_exist"); }) &&
                          Throws([&] { ModelIO::Save(*fsrc, path + "_no_such_dir/x.safetensors"); });

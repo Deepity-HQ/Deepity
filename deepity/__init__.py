@@ -32,7 +32,7 @@ from ._import import import_weights, read_gguf
 from ._serialization import load, read_card, resume, write_tensors
 from ._backend import dy as _dy
 
-read_tensors = _dy.read_tensors
+from ._sources import fetch, read_tensors
 # Architecture
 from .layer import (
     Layer,
@@ -75,6 +75,7 @@ __all__ = [
     "read_gguf",
     "read_card",
     "read_tensors",
+    "fetch",
     "write_tensors",
     # Model files
     "load",
