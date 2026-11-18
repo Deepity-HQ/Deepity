@@ -9,6 +9,7 @@
  * drops rows and only shows up when size != nextSize.
  */
 #include <cstdio>
+#include <cstring>
 #include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetworkT.h>
@@ -105,6 +106,57 @@ std::unique_ptr<FullConvPCNetwork> MakeConvNet(unsigned seed)
   std::mt19937 rng(seed);
   n->RandomizeWeights(rng);
   return n;
+}
+
+template <typename Q> std::unique_ptr<FullPCNetworkT<Q, float>> MakeQuant(unsigned seed)
+{
+  auto n = std::make_unique<FullPCNetworkT<Q, float>>(kBatch);
+  n->AddLayer(8, 7, 3, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
+  n->AddLayer(7, 3, 3, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
+  n->AddLayer(3, 0, 3, 1e-3f, 0.1f, 1e-4f, 1e-4f, kLin, kDLin);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+/// @brief A 4-bit network must save as packed U8 (about half the bytes) and load back bit-exactly.
+template <typename Q> bool QuantRoundTrips(const char* name, const std::string& path)
+{
+  auto a = MakeQuant<Q>(21), b = MakeQuant<Q>(22);
+  ModelIO::Save(*a, path);
+  ModelIO::Load(*b, path);
+  bool same = true;
+  size_t tensors = 0;
+  for (size_t i = 0; i < a->GetLayers().size(); ++i)
+  {
+    detail::SyncFromDeviceIfSupported(a->GetLayers()[i]);
+    detail::SyncFromDeviceIfSupported(b->GetLayers()[i]);
+    const auto da = a->GetLayers()[i]->GetStateDict(), db = b->GetLayers()[i]->GetStateDict();
+    for (const auto& [key, t] : da)
+    {
+      const auto [rows, width] = detail::RowsAndWidth(t.shape);
+      same &= std::memcmp(t.data, db.at(key).data, rows * width * sizeof(Q)) == 0;
+      ++tensors;
+    }
+  }
+  const io::SafeTensorsReader reader(path);
+  bool packedOnDisk = reader.Metadata().count(io::kDTypesKey) == 1;
+  uint64_t diskBytes = 0, memBytes = 0;
+  for (const auto& t : reader.Tensors())
+  {
+    packedOnDisk &= t.dtype == DTypeTag<Q>::Name() && t.packed;
+    diskBytes += t.ByteSize();
+    size_t elems = 1;
+    for (size_t d : t.shape)
+      elems *= d;
+    memBytes += elems * sizeof(Q);
+  }
+  const bool smaller = diskBytes < memBytes;
+  printf("  %s: %zu tensors, %llu bytes on disk vs %llu in memory\n", name, tensors, (unsigned long long)diskBytes,
+         (unsigned long long)memBytes);
+  printf("%s\n", same && packedOnDisk && smaller ? "PASSED: packed 4-bit round trip" : "FAILED: packed 4-bit round trip");
+  return same && packedOnDisk && smaller;
 }
 
 std::unique_ptr<DirectKPPCNetworkT<double, double>> MakeDkpDouble(unsigned seed)
@@ -212,6 +264,47 @@ bool Throws(auto&& fn)
   }
   return false;
 }
+
+/// @brief Foreign tensor names: a prefixed copy of a saved file loads through `rename`, and
+/// strict mode reports every name that does not line up.
+bool LoadWeightsWorks(const std::string& path)
+{
+  auto a = MakeNet(31);
+  ModelIO::Save(*a, path);
+  const std::string foreign = path + ".foreign";
+  {
+    io::SafeTensorsReader reader(path);
+    std::vector<std::vector<char>> bufs;
+    io::SafeTensorsWriter w;
+    for (const auto& t : reader.Tensors())
+    {
+      size_t elems = 1;
+      for (size_t d : t.shape)
+        elems *= d;
+      bufs.emplace_back(t.ByteSize());
+      reader.Read(t, bufs.back().data(), bufs.back().size());
+      w.AddTensor("model." + t.name, t.dtype, t.shape, bufs.back().data(), bufs.back().size());
+    }
+    const float junk[1] = {0.f};
+    w.AddTensor("junk", "F32", {1}, junk, sizeof(junk));
+    w.Write(foreign);
+  }
+  auto strip = [](const std::string& n) { return n.rfind("model.", 0) == 0 ? n.substr(6) : n; };
+
+  auto b = MakeNet(32);
+  const bool strictThrows = Throws([&] { ModelIO::LoadWeights(*b, foreign, true, strip); });
+  auto c = MakeNet(32);
+  const auto lenient = ModelIO::LoadWeights(*c, foreign, false, strip);
+  const bool reported = lenient.missing.empty() && lenient.unexpected == std::vector<std::string>{"junk"};
+  const bool loaded = SameState(*a, *c);
+  auto d = MakeNet(32);
+  const auto unrenamed = ModelIO::LoadWeights(*d, foreign, false);
+  const bool allMissing = !unrenamed.missing.empty() && !SameState(*a, *d);
+  const bool ok = strictThrows && reported && loaded && allMissing;
+  printf("%s\n", ok ? "PASSED: LoadWeights renames, reports and enforces strict" : "FAILED: LoadWeights");
+  return ok;
+}
+
 } // namespace
 
 /// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
@@ -318,6 +411,9 @@ int main()
   ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork", MakeNet, path, 8, 4);
   ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path, 8, 4);
   ok &= CheckpointResumes<FullConvPCNetwork>("FullConvPCNetwork", MakeConvNet, path, 64, 10);
+  ok &= LoadWeightsWorks(path);
+  ok &= QuantRoundTrips<Fp4E2M1Value>("FullPCNetworkT<fp4_e2m1>", path);
+  ok &= QuantRoundTrips<Posit4_1Value>("FullPCNetworkT<posit4_1>", path);
   ok &= CheckpointResumes<DirectKPPCNetworkT<double, double>, decltype(&MakeDkpDouble), double>(
       "DirectKPPCNetworkT<double>", MakeDkpDouble, path, 8, 4);
   ok &= CheckpointResumes<FullPCNetworkT<double, double>, decltype(&MakeDoubleNet), double>(

@@ -6,29 +6,13 @@
 #include <limits>
 #include <nlohmann/json.hpp>
 
-static_assert(std::endian::native == std::endian::little,
-              "Model files are little-endian; big-endian hosts need byte swapping first.");
-
 namespace Deep::io
 {
 namespace
 {
 constexpr const char* kMetadataKey = "__metadata__";
 constexpr size_t kChunkBytes = 1u << 20;
-
-struct DTypeRow
-{
-  const char* name;
-  size_t bytes;
-};
-
-// Standard safetensors names, plus the names Deepity's 0.1.0a7/a8 writer used for its own types
-// (one byte per element), so those files stay readable.
-constexpr DTypeRow kDTypes[] = {
-    {"F64", 8},     {"F32", 4},      {"F16", 2},      {"BF16", 2},     {"I64", 8},       {"I32", 4},
-    {"I16", 2},     {"I8", 1},       {"U64", 8},      {"U32", 4},      {"U16", 2},       {"U8", 1},
-    {"BOOL", 1},    {"FP4_E2M1", 1}, {"POSIT4_0", 1}, {"POSIT4_1", 1}, {"POSIT4_2", 1},
-};
+constexpr bool kHostIsBigEndian = std::endian::native == std::endian::big;
 
 /// @brief prod(shape) * elemBytes, or false on overflow.
 bool CheckedBytes(const std::vector<size_t>& shape, size_t elemBytes, uint64_t* out)
@@ -44,6 +28,12 @@ bool CheckedBytes(const std::vector<size_t>& shape, size_t elemBytes, uint64_t* 
   return true;
 }
 
+/// @brief Element size of what the header will say: 1 for a packed tensor (stored as U8).
+size_t StorageElemBytes(const TensorEntry& e) noexcept
+{
+  return e.packed ? 1 : DTypeSize(e.dtype);
+}
+
 [[noreturn]] void Fail(const std::string& path, const std::string& why)
 {
   throw SafeTensorsError("SafeTensors: " + path + ": " + why);
@@ -52,17 +42,17 @@ bool CheckedBytes(const std::vector<size_t>& shape, size_t elemBytes, uint64_t* 
 
 size_t DTypeSize(const std::string& dtype) noexcept
 {
-  for (const auto& row : kDTypes)
-    if (dtype == row.name)
-      return row.bytes;
-  return 0;
+  const DTypeInfo* info = FindDType(dtype);
+  if (info == nullptr)
+    return 0;
+  return info->kind == DTypeKind::Standard ? info->memBytes : 1;
 }
 
 // ---------------------------------------------------------------- writer
 
 void SafeTensorsWriter::SetMetadata(const std::string& key, const std::string& value)
 {
-  if (key == kMetadataKey || key == kHashKey)
+  if (key == kMetadataKey || key == kHashKey || key == kDTypesKey)
     throw SafeTensorsError("SafeTensors: metadata key '" + key + "' is reserved.");
   metadata[key] = value;
 }
@@ -70,25 +60,41 @@ void SafeTensorsWriter::SetMetadata(const std::string& key, const std::string& v
 void SafeTensorsWriter::AddTensor(const std::string& name, const std::string& dtype,
                                   const std::vector<size_t>& shape, const void* data, size_t bytes)
 {
-  const size_t elem = DTypeSize(dtype);
-  if (elem == 0)
+  const DTypeInfo* info = FindDType(dtype);
+  if (info == nullptr)
     throw SafeTensorsError("SafeTensors: tensor '" + name + "' has unsupported dtype '" + dtype + "'.");
   if (name.empty() || name == kMetadataKey)
     throw SafeTensorsError("SafeTensors: invalid tensor name '" + name + "'.");
   for (const auto& t : tensors)
     if (t.entry.name == name)
       throw SafeTensorsError("SafeTensors: duplicate tensor name '" + name + "'.");
-  uint64_t expected = 0;
-  if (!CheckedBytes(shape, elem, &expected) || expected != bytes)
+
+  uint64_t elements = 0, expected = 0;
+  if (!CheckedBytes(shape, 1, &elements) || elements > std::numeric_limits<uint64_t>::max() - 64)
+    throw SafeTensorsError("SafeTensors: tensor '" + name + "' has an overflowing shape.");
+  const bool packed = info->kind == DTypeKind::Packed;
+  if (packed)
+    expected = StorageBytes(*info, static_cast<size_t>(elements));
+  else if (!CheckedBytes(shape, info->memBytes, &expected))
+    throw SafeTensorsError("SafeTensors: tensor '" + name + "' has an overflowing shape.");
+  if (expected != bytes)
     throw SafeTensorsError("SafeTensors: tensor '" + name + "' has " + std::to_string(bytes) +
                            " bytes, but its shape and dtype need " + std::to_string(expected) + ".");
   if (bytes > 0 && data == nullptr)
     throw SafeTensorsError("SafeTensors: tensor '" + name + "' has a null data pointer.");
+
   Pending p;
   p.entry.name = name;
   p.entry.dtype = dtype;
   p.entry.shape = shape;
+  p.entry.packed = packed;
   p.data = data;
+  if (!packed && kHostIsBigEndian && info->memBytes > 1 && bytes > 0)
+  {
+    p.owned.assign(static_cast<const char*>(data), static_cast<const char*>(data) + bytes);
+    ConvertEndianness(p.owned.data(), info->memBytes, bytes / info->memBytes, kHostIsBigEndian);
+    p.data = p.owned.data();
+  }
   tensors.push_back(std::move(p));
   tensors.back().entry.end = bytes; // temporarily the byte size; real offsets are set in Write()
 }
@@ -100,7 +106,7 @@ void SafeTensorsWriter::Write(const std::string& path) const
   for (const auto& t : tensors)
     order.push_back(&t);
   std::stable_sort(order.begin(), order.end(), [](const Pending* a, const Pending* b)
-                   { return DTypeSize(a->entry.dtype) > DTypeSize(b->entry.dtype); });
+                   { return StorageElemBytes(a->entry) > StorageElemBytes(b->entry); });
 
   std::map<std::string, std::string> meta = metadata;
   if (hash)
@@ -113,15 +119,26 @@ void SafeTensorsWriter::Write(const std::string& path) const
   }
 
   nlohmann::json header = nlohmann::json::object();
+  nlohmann::json packedTypes = nlohmann::json::object();
   uint64_t offset = 0;
   for (const Pending* t : order)
   {
     const uint64_t bytes = t->entry.end;
-    header[t->entry.name] = {{"dtype", t->entry.dtype},
-                             {"shape", t->entry.shape},
-                             {"data_offsets", {offset, offset + bytes}}};
+    if (t->entry.packed)
+    {
+      packedTypes[t->entry.name] = {{"dtype", t->entry.dtype}, {"shape", t->entry.shape}};
+      header[t->entry.name] = {{"dtype", "U8"},
+                               {"shape", std::vector<uint64_t>{bytes}},
+                               {"data_offsets", {offset, offset + bytes}}};
+    }
+    else
+      header[t->entry.name] = {{"dtype", t->entry.dtype},
+                               {"shape", t->entry.shape},
+                               {"data_offsets", {offset, offset + bytes}}};
     offset += bytes;
   }
+  if (!packedTypes.empty())
+    meta[kDTypesKey] = packedTypes.dump();
   if (!meta.empty())
     header[kMetadataKey] = meta;
 
@@ -259,6 +276,46 @@ SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHas
     Fail(path, "the data region is " + std::to_string(dataSize) + " bytes, but tensors cover " +
                    std::to_string(cursor));
 
+  const auto typesIt = metadata.find(kDTypesKey);
+  if (typesIt != metadata.end())
+  {
+    nlohmann::json overlay = nlohmann::json::parse(typesIt->second, nullptr, /*allow_exceptions=*/false);
+    if (overlay.is_discarded() || !overlay.is_object())
+      Fail(path, std::string(kDTypesKey) + " is not a valid JSON object");
+    for (auto it = overlay.begin(); it != overlay.end(); ++it)
+    {
+      const std::string& name = it.key();
+      const nlohmann::json& v = it.value();
+      auto entry = std::find_if(tensors.begin(), tensors.end(), [&](const TensorEntry& t) { return t.name == name; });
+      if (entry == tensors.end())
+        Fail(path, std::string(kDTypesKey) + " names '" + name + "', which is not a tensor in the file");
+      if (!v.is_object() || !v.contains("dtype") || !v["dtype"].is_string() || !v.contains("shape") ||
+          !v["shape"].is_array())
+        Fail(path, std::string(kDTypesKey) + " entry for '" + name + "' is malformed");
+      const DTypeInfo* info = FindDType(v["dtype"].get<std::string>());
+      if (info == nullptr || info->kind != DTypeKind::Packed)
+        Fail(path, "tensor '" + name + "' declares logical dtype '" + v["dtype"].get<std::string>() +
+                       "', which is not a packed dtype this build knows");
+      if (entry->dtype != "U8" || entry->shape.size() != 1)
+        Fail(path, "packed tensor '" + name + "' must be stored as a 1-D U8 tensor");
+      std::vector<size_t> logicalShape;
+      for (const auto& d : v["shape"])
+      {
+        if (!d.is_number_unsigned())
+          Fail(path, "packed tensor '" + name + "' has a non-integer or negative logical dimension");
+        logicalShape.push_back(d.get<size_t>());
+      }
+      uint64_t elements = 0;
+      if (!CheckedBytes(logicalShape, 1, &elements) || elements > std::numeric_limits<uint64_t>::max() - 64 ||
+          StorageBytes(*info, static_cast<size_t>(elements)) != entry->ByteSize())
+        Fail(path, "packed tensor '" + name + "' has " + std::to_string(entry->ByteSize()) +
+                       " bytes, which does not match its logical shape and dtype");
+      entry->dtype = info->name;
+      entry->shape = std::move(logicalShape);
+      entry->packed = true;
+    }
+  }
+
   const auto hashIt = metadata.find(kHashKey);
   if (verifyHash && hashIt != metadata.end())
   {
@@ -299,5 +356,10 @@ void SafeTensorsReader::Read(const TensorEntry& entry, void* dst, size_t dstByte
   in.read(static_cast<char*>(dst), static_cast<std::streamsize>(dstBytes));
   if (!in)
     Fail(path, "cannot read tensor '" + entry.name + "'");
+  if (!entry.packed)
+  {
+    const size_t elemBytes = DTypeSize(entry.dtype);
+    ConvertEndianness(dst, elemBytes, dstBytes / elemBytes, kHostIsBigEndian);
+  }
 }
 } // namespace Deep::io

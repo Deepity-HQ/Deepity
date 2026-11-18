@@ -278,6 +278,90 @@ void TestMalformed()
   Check(Throws([&] { SafeTensorsReader r(Tmp("does_not_exist")); }), "missing file");
 }
 
+void TestDTypes()
+{
+  printf("--- dtype registry, packed types, byte order ---\n");
+  Check(FindDType("F32") != nullptr && FindDType("F32")->bytesPerBlock == 4, "F32 is a 4-byte standard type");
+  Check(FindDType("FP4_E2M1")->kind == DTypeKind::Packed && StorageBytes(*FindDType("FP4_E2M1"), 7) == 4,
+        "7 four-bit elements take 4 bytes (last block padded)");
+  Check(FindDType("F31") == nullptr, "unknown dtype is not in the registry");
+
+  // Every 4-bit code survives pack/unpack, for even and odd counts.
+  for (size_t n : {size_t(0), size_t(1), size_t(2), size_t(7), size_t(16), size_t(33)})
+  {
+    std::vector<uint8_t> codes(n), packed(StorageBytes(*FindDType("POSIT4_1"), n)), back(n);
+    for (size_t i = 0; i < n; ++i)
+      codes[i] = static_cast<uint8_t>((i * 7 + 3) & 0x0F);
+    FindDType("POSIT4_1")->pack(codes.data(), n, packed.data());
+    FindDType("POSIT4_1")->unpack(packed.data(), n, back.data());
+    Check(codes == back, "4-bit pack/unpack round trip, " + std::to_string(n) + " elements");
+  }
+
+  // Byte order: the swap acts only when the host is big endian, and is its own inverse.
+  uint32_t v = 0x01020304;
+  ConvertEndianness(&v, 4, 1, false);
+  Check(v == 0x01020304, "no swap on a little-endian host");
+  ConvertEndianness(&v, 4, 1, true);
+  Check(v == 0x04030201, "32-bit swap on a big-endian host");
+  ConvertEndianness(&v, 4, 1, true);
+  Check(v == 0x01020304, "swap twice restores the value");
+  uint16_t h[2] = {0x0102, 0x0304};
+  ConvertEndianness(h, 2, 2, true);
+  Check(h[0] == 0x0201 && h[1] == 0x0403, "16-bit swap covers every element");
+  uint8_t bytes[3] = {1, 2, 3};
+  ConvertEndianness(bytes, 1, 3, true);
+  Check(bytes[0] == 1 && bytes[2] == 3, "single bytes are never swapped");
+
+  // A packed tensor is stored as 1-D U8 plus deepity.dtypes, and reads back with its logical type.
+  const std::string path = Tmp("packed.safetensors");
+  const std::vector<uint8_t> packed = {0x21, 0x43, 0x65, 0x07}; // 7 elements 1..7
+  const float f[2] = {1.5f, -2.5f};
+  {
+    SafeTensorsWriter w;
+    w.AddTensor("q", "FP4_E2M1", {7}, packed.data(), packed.size());
+    w.AddTensor("f", "F32", {2}, f, sizeof(f));
+    w.Write(path);
+  }
+  SafeTensorsReader r(path);
+  const TensorEntry* q = r.Find("q");
+  Check(q != nullptr && q->dtype == "FP4_E2M1" && q->shape == std::vector<size_t>{7} && q->packed && q->ByteSize() == 4,
+        "packed tensor reports its logical dtype and shape");
+  std::vector<uint8_t> got(4);
+  r.Read(*q, got.data(), got.size());
+  Check(got == packed, "packed bytes read back unchanged");
+  Check(r.Metadata().count(kDTypesKey) == 1, "deepity.dtypes is written");
+  {
+    const auto raw = Slurp(path);
+    uint64_t n = 0;
+    std::memcpy(&n, raw.data(), 8);
+    const auto header = nlohmann::json::parse(std::string(raw.data() + 8, n));
+    Check(header["q"]["dtype"] == "U8" && header["q"]["shape"] == nlohmann::json::array({4}),
+          "header stores the packed tensor as 1-D U8, so stock readers open it");
+  }
+  Check(Throws([&] { SafeTensorsWriter w; w.SetMetadata(kDTypesKey, "{}"); }), "deepity.dtypes is reserved");
+  Check(Throws([&] { SafeTensorsWriter w; w.AddTensor("q", "FP4_E2M1", {7}, packed.data(), 7); }),
+        "packed tensor with an unpacked byte count is rejected");
+
+  // The reader checks deepity.dtypes against the header instead of trusting it.
+  const std::string bad = Tmp("bad_dtypes.safetensors");
+  auto rejects = [&](const char* what, const std::string& overlay, const std::string& dtype, const std::string& shape)
+  {
+    const std::string header = std::string(R"({"q":{"dtype":")") + dtype + R"(","shape":)" + shape +
+                               R"(,"data_offsets":[0,4]},"__metadata__":{"deepity.dtypes":)" +
+                               nlohmann::json(overlay).dump() + "}}";
+    WriteRaw(bad, header, 4);
+    Check(Throws([&] { SafeTensorsReader rr(bad); }), what);
+  };
+  rejects("overlay with the wrong element count", R"({"q":{"dtype":"FP4_E2M1","shape":[20]}})", "U8", "[4]");
+  rejects("overlay naming a missing tensor", R"({"nope":{"dtype":"FP4_E2M1","shape":[7]}})", "U8", "[4]");
+  rejects("overlay on a tensor that is not U8", R"({"q":{"dtype":"FP4_E2M1","shape":[1]}})", "I8", "[4]");
+  rejects("overlay on a tensor that is not 1-D", R"({"q":{"dtype":"FP4_E2M1","shape":[7]}})", "U8", "[2,2]");
+  rejects("overlay with a standard logical dtype", R"({"q":{"dtype":"F32","shape":[1]}})", "U8", "[4]");
+  rejects("overlay with an unknown logical dtype", R"({"q":{"dtype":"FP3","shape":[1]}})", "U8", "[4]");
+  rejects("overlay that is not an object", "[1]", "U8", "[4]");
+  rejects("overlay with a negative dimension", R"({"q":{"dtype":"FP4_E2M1","shape":[-7]}})", "U8", "[4]");
+}
+
 void TestGolden()
 {
   printf("--- golden and legacy files ---\n");
@@ -314,6 +398,7 @@ int main(int argc, char** argv)
   TestWriterRejects();
   TestHash();
   TestMalformed();
+  TestDTypes();
   TestGolden();
   printf(failures == 0 ? "PASSED: SafeTensors reader/writer\n" : "FAILED: %d check(s)\n", failures);
   return failures == 0 ? 0 : 1;

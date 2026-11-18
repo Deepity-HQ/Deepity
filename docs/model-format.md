@@ -68,11 +68,21 @@ Layer kinds and fields are versioned by `format_version`. Unknown fields are ign
 ## Inference defaults (`deepity.inference`)
 
 ```json
-{"inference_steps": 1}
+{"mode": "iterative", "inference_steps": 1}
 ```
 
-These are the defaults a loaded model uses for `predict`. Callers can override them. A file
-states which prediction it describes: the full iterative model, or a forward-only export.
+These are the defaults a loaded model uses for `predict`. Callers can override them. `mode` states
+which prediction the file describes: `"iterative"` is the full settling model (the only mode
+written today); `"forward"` is reserved for a forward-only export. A file with a missing `mode` is
+`"iterative"`, and a loader rejects a mode it does not know instead of guessing.
+
+## Importing weights from other files
+
+`net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) fills a network
+from any safetensors file, such as a PyTorch export. `rename` maps each file tensor name to a
+Deepity name (`layers.0.weight`). Dtype and shape must match. With `strict=True` any missing or
+unused tensor raises, naming all of them; with `strict=False` the call returns
+`(missing, unexpected)` and loads the rest. Optimizer tensors in a checkpoint are not "unexpected".
 
 ## Tensor names
 
@@ -107,10 +117,31 @@ Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by
 
 ## Dtypes
 
-Standard safetensors names are used where one exists (`F32`, `F16`, `F64`). Types safetensors
-does not know (posit4, packed fp4 variants) are stored as `U8` with the true type recorded in
-`deepity.dtypes`, so stock readers still open the file. A stock reader sees opaque bytes, which is
-safe; only Deepity interprets them. (Decided 2026-11-14.)
+Every dtype is a row in the registry (`include/deepity/io/DType.h`): a logical name, a block of
+`elementsPerBlock` elements that takes `bytesPerBlock` bytes on disk, and a storage dtype.
+
+- **Standard** types (`F64 F32 F16 BF16 I64 I32 I16 I8 U64 U32 U16 U8 BOOL`) store as themselves,
+  one element per block, in the header's own dtype.
+- **Packed** types store as a 1-D `U8` tensor of whole blocks, with the logical dtype and shape in
+  `deepity.dtypes`, a JSON object `{"<tensor>": {"dtype": "FP4_E2M1", "shape": [7]}}`. Stock
+  readers see opaque bytes and open the file; only Deepity interprets them. The last block is
+  zero padded.
+- Defined packed types: `FP4_E2M1`, `POSIT4_0`, `POSIT4_1`, `POSIT4_2`. Two 4-bit codes per byte
+  (a 2-element block of 1 byte), the first element in the low nibble. In memory each code takes a
+  byte.
+- A reader validates the overlay against the header: the tensor exists, is stored as 1-D `U8`, the
+  logical dtype is a packed type it knows, and the byte count equals the block arithmetic for the
+  logical shape. Anything else is rejected.
+- A new block type (for example a GGUF-style quantization) is one registry row plus its codec.
+- Files from 0.1.0a8 that wrote these names directly as header dtypes (one byte per element) still
+  load.
+
+## Byte order
+
+Files are little endian, always. A big-endian host swaps each multi-byte element of a standard
+dtype on write and on read; packed types and single bytes need no swap. The content hash covers
+the bytes as stored, so it is the same on every host. The swap logic is unit tested, but nothing
+here has run on big-endian hardware.
 
 ## Validation (every reader)
 

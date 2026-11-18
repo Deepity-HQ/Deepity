@@ -128,5 +128,25 @@ with tempfile.TemporaryDirectory() as tmp:
         res64.train_step(x64, y64, 2)
     check(np.array_equal(f64.predict(x64), res64.predict(x64)), "FullPCN float64: resumed run matches the uninterrupted run")
 
+print("--- load_weights and inference mode ---")
+with tempfile.TemporaryDirectory() as tmp:
+    for name, make in [
+        ("DKPPCN", lambda: dp.DKPPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+        ("FullPCN", lambda: dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+    ]:
+        src, dst = make().configure(learning_rate=1e-3), make().configure(learning_rate=1e-3)
+        path = os.path.join(tmp, name + ".safetensors")
+        src.save(path)
+        missing, unexpected = dst.load_weights(path)
+        check(not missing and not unexpected, f"{name}: strict load_weights of its own file reports nothing")
+        check(np.array_equal(src.predict(x), dst.predict(x)), f"{name}: load_weights reproduces predictions")
+        check(raises(lambda: dst.load_weights(path, rename=lambda n: "x." + n)), f"{name}: strict rename mismatch raises")
+        missing, unexpected = dst.load_weights(path, strict=False, rename=lambda n: "x." + n)
+        check(len(missing) > 0 and len(unexpected) > 0, f"{name}: non-strict reports missing and unexpected names")
+    import json
+    from deepity import _serialization as ser
+    meta = ser.build_metadata(src, "FullPCN", {}, "float32")
+    check(json.loads(meta["deepity.inference"])["mode"] == "iterative", "file states its inference mode")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

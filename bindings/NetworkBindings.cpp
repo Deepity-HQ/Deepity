@@ -8,6 +8,8 @@
 #include "BindingHelpers.h"
 
 #include <nanobind/stl/map.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/function.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -97,6 +99,17 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -330,6 +343,17 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -727,6 +751,17 @@ void bind_networks(nb::module_& m)
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](Deep::GaussSeidelPCNetwork& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__",
            [](const Deep::GaussSeidelPCNetwork& self) { return self.GetLayers().size(); })
       .def(
@@ -942,6 +977,17 @@ void bind_networks(nb::module_& m)
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](Deep::DirectKPPCNetwork& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const Deep::DirectKPPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",

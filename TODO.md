@@ -78,9 +78,12 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 2: dtype system
 
-- [ ] Registry that records logical type, storage layout, block size and bytes per block.
-      Needed for sub-byte types (fp4, posit4) and GGUF-style block quant (Q4_K and similar).
-- [ ] Endianness policy (little endian on disk, byte-swap on big-endian hosts).
+- [x] Registry that records logical type, storage layout, block size and bytes per block
+      (`include/deepity/io/DType.h`). fp4 and posit4 now store packed, half the bytes, as `U8` plus
+      `deepity.dtypes`; stock `safetensors` opens them. GGUF-style block quant (Q4_K and similar)
+      is one more registry row plus codec each, added in Phase 5.
+- [x] Endianness policy: little endian on disk, swap on big-endian hosts. Logic unit tested; no
+      big-endian hardware or CI job exists to run the real path.
 
 ## Phase 3: self-describing models
 
@@ -88,7 +91,7 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       `DKPPCN` and `FullPCN` (`save()` writes them). Other networks still save weights only.
 - [x] `deepity.load(path)` rebuilds the network from the file (`DKPPCN`, `FullPCN`).
       Test: `tests/pyModelFilesVerify.py` (run in the Linux CI job).
-- [ ] `net.load_weights(path, strict=False, rename=...)` for partial loads.
+- [x] `net.load_weights(path, strict=True, rename=...)` for partial loads and foreign names.
 - [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoints (Adam/AdamW
       moments, step counters, caller training state) work on CPU for `DirectKPPCNetwork(T)`,
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
@@ -97,7 +100,7 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [ ] State dicts for the networks that have none (`SimplePCNetwork`, `SimpleConvPCNetwork`, their
       `T` forms, `ConvPCNetworkT`, `FullConvPCNetworkT`). Today `Save` refuses them, so they cannot
       save weights at all; checkpoints follow once they can.
-- [ ] Make settling semantics explicit in the file. An exported model says whether it is the full
+- [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 
 ## Phase 4: sources and speed

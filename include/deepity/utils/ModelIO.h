@@ -6,6 +6,8 @@
 #include <deepity/utils/DTypeTag.h>
 #include <map>
 #include <stdexcept>
+#include <functional>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -69,44 +71,70 @@ inline std::string LegacyTensorFileName(size_t layer, const std::string& name)
   return "layer_" + std::to_string(layer) + "." + name;
 }
 
-/// @brief Adds `tensor` to `writer` under `fileName`, packing padded rows into `packed` (the writer
-/// keeps pointers until Write() returns, so `packed` must outlive it).
+/// @brief Adds `tensor` to `writer` under `fileName`. Padded rows are packed tight, and types whose
+/// on-disk layout differs (4-bit codes) are encoded; both go into `scratch`, which must outlive the
+/// writer's Write() because the writer keeps pointers.
 template <typename Descriptor>
-void AddTensorPacked(io::SafeTensorsWriter& writer, std::vector<std::vector<char>>& packed,
+void AddTensorPacked(io::SafeTensorsWriter& writer, std::vector<std::vector<char>>& scratch,
                      const std::string& fileName, const Descriptor& tensor)
 {
   using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
+  const char* dtypeName = DTypeTag<ElementType>::Name();
+  const io::DTypeInfo* info = io::FindDType(dtypeName);
   const auto [rows, width] = RowsAndWidth(tensor.shape);
-  const size_t rowBytes = width * sizeof(ElementType);
-  const void* source = tensor.data;
+  const size_t count = rows * width, rowBytes = width * sizeof(ElementType);
+
+  const void* tight = tensor.data;
   if (IsPadded(tensor.shape, tensor.rowStride))
   {
-    packed.emplace_back(rows * rowBytes);
+    scratch.emplace_back(count * sizeof(ElementType));
     for (size_t r = 0; r < rows; ++r)
       std::copy_n(reinterpret_cast<const char*>(tensor.data + r * tensor.rowStride), rowBytes,
-                  packed.back().data() + r * rowBytes);
-    source = packed.back().data();
+                  scratch.back().data() + r * rowBytes);
+    tight = scratch.back().data();
   }
-  writer.AddTensor(fileName, DTypeTag<ElementType>::Name(), tensor.shape, source, rows * rowBytes);
+  if (info != nullptr && info->kind == io::DTypeKind::Packed)
+  {
+    if (sizeof(ElementType) != info->memBytes)
+      throw std::runtime_error(std::string("ModelIO: in-memory size of ") + dtypeName + " does not match the registry.");
+    scratch.emplace_back(io::StorageBytes(*info, count));
+    info->pack(static_cast<const uint8_t*>(tight), count, reinterpret_cast<uint8_t*>(scratch.back().data()));
+    writer.AddTensor(fileName, dtypeName, tensor.shape, scratch.back().data(), scratch.back().size());
+    return;
+  }
+  writer.AddTensor(fileName, dtypeName, tensor.shape, tight, count * sizeof(ElementType));
 }
 
-/// @brief Reads `entry` (whose shape is `readShape`) into `tensor`, spreading rows over the
-/// tensor's row stride when it is padded.
+/// @brief Reads `entry` (whose shape is `readShape`) into `tensor`, decoding packed types and
+/// spreading rows over the tensor's row stride when it is padded.
 template <typename Descriptor>
 void ReadTensorInto(const io::SafeTensorsReader& reader, const io::TensorEntry& entry,
                     const std::vector<size_t>& readShape, const Descriptor& tensor)
 {
   using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
   const auto [rows, width] = RowsAndWidth(readShape);
-  if (!IsPadded(readShape, tensor.rowStride))
+  const size_t count = rows * width;
+  if (!entry.packed && !IsPadded(readShape, tensor.rowStride))
   {
-    reader.Read(entry, tensor.data, rows * width * sizeof(ElementType));
+    reader.Read(entry, tensor.data, count * sizeof(ElementType));
     return;
   }
-  std::vector<ElementType> tight(rows * width);
-  reader.Read(entry, tight.data(), tight.size() * sizeof(ElementType));
+  std::vector<ElementType> tight(count);
+  if (entry.packed)
+  {
+    const io::DTypeInfo* info = io::FindDType(entry.dtype);
+    if (sizeof(ElementType) != info->memBytes)
+      throw std::runtime_error("ModelIO::Load: '" + entry.name + "' holds " + entry.dtype +
+                               ", which does not match the network's element type.");
+    std::vector<uint8_t> bytes(entry.ByteSize());
+    reader.Read(entry, bytes.data(), bytes.size());
+    info->unpack(bytes.data(), count, reinterpret_cast<uint8_t*>(tight.data()));
+  }
+  else
+    reader.Read(entry, tight.data(), count * sizeof(ElementType));
+  const size_t stride = tensor.rowStride == 0 ? width : tensor.rowStride;
   for (size_t r = 0; r < rows; ++r)
-    std::copy_n(tight.data() + r * width, width, tensor.data + r * tensor.rowStride);
+    std::copy_n(tight.data() + r * width, width, tensor.data + r * stride);
 }
 
 /// @brief Throws unless every layer can describe all of its optimizer state, and the network
@@ -191,8 +219,40 @@ public:
   template <typename NetworkType> static bool Load(NetworkType& net, const std::string& filepath)
   {
     const io::SafeTensorsReader reader(filepath);
-    ReadWeights(net, reader);
+    ReadWeights(net, reader, nullptr, nullptr);
     return true;
+  }
+
+  /// @brief Which names did not line up in a LoadWeights() call.
+  struct LoadReport
+  {
+    std::vector<std::string> missing;    ///< Network tensors the file had no tensor for (left unchanged).
+    std::vector<std::string> unexpected; ///< File tensors no network tensor used (optimizer state excluded).
+  };
+
+  /// @brief Loads weights from any safetensors file, for example one exported from PyTorch.
+  ///
+  /// `rename` maps each file tensor name to the Deepity name it should fill (`layers.0.weight`);
+  /// it may be empty if the names already match. With `strict`, any missing or unexpected tensor
+  /// throws, naming all of them. Without it, they are reported and the rest still loads. Dtype and
+  /// shape must match either way.
+  template <typename NetworkType>
+  static LoadReport LoadWeights(NetworkType& net, const std::string& filepath, bool strict = true,
+                                const std::function<std::string(const std::string&)>& rename = {})
+  {
+    const io::SafeTensorsReader reader(filepath);
+    LoadReport report;
+    ReadWeights(net, reader, rename ? &rename : nullptr, &report);
+    if (strict && (!report.missing.empty() || !report.unexpected.empty()))
+    {
+      std::string msg = "ModelIO::LoadWeights: names do not match.";
+      for (const auto& n : report.missing)
+        msg += " Missing from file: " + n + ".";
+      for (const auto& n : report.unexpected)
+        msg += " Not used by the network: " + n + ".";
+      throw std::runtime_error(msg);
+    }
+    return report;
   }
 
   /// @brief Loads a checkpoint written by SaveCheckpoint(): weights, then Adam/AdamW moments and
@@ -210,7 +270,7 @@ public:
                                " is not a checkpoint (deepity.kind is '" +
                                (kind == reader.Metadata().end() ? std::string("missing") : kind->second) +
                                "'). Use Load() for a weights-only file.");
-    ReadWeights(net, reader);
+    ReadWeights(net, reader, nullptr, nullptr);
 
     size_t layerIdx = 0;
     for (auto& layerPtr : net.GetLayers())
@@ -286,8 +346,23 @@ private:
   }
 
   template <typename NetworkType>
-  static void ReadWeights(NetworkType& net, const io::SafeTensorsReader& reader)
+  static void ReadWeights(NetworkType& net, const io::SafeTensorsReader& reader,
+                          const std::function<std::string(const std::string&)>* rename, LoadReport* report)
   {
+    // File name (after renaming) to entry, so renamed and plain files share one lookup.
+    std::map<std::string, const io::TensorEntry*> byName;
+    std::set<std::string> used;
+    if (rename != nullptr)
+      for (const auto& t : reader.Tensors())
+        if (!byName.emplace((*rename)(t.name), &t).second)
+          throw std::runtime_error("ModelIO::LoadWeights: rename maps two file tensors to '" + (*rename)(t.name) + "'.");
+    auto find = [&](const std::string& key) -> const io::TensorEntry*
+    {
+      if (rename == nullptr)
+        return reader.Find(key);
+      const auto it = byName.find(key);
+      return it == byName.end() ? nullptr : it->second;
+    };
     size_t layerIdx = 0;
     for (auto& layerPtr : net.GetLayers())
     {
@@ -296,11 +371,16 @@ private:
       {
         using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
         const std::string key = detail::TensorFileName(layerIdx, name);
-        const io::TensorEntry* entry = reader.Find(key);
+        const io::TensorEntry* entry = find(key);
         if (entry == nullptr)
-          entry = reader.Find(detail::LegacyTensorFileName(layerIdx, name));
+          entry = find(detail::LegacyTensorFileName(layerIdx, name));
         if (entry == nullptr)
+        {
+          if (report != nullptr)
+            report->missing.push_back(key);
           continue;
+        }
+        used.insert(entry->name);
 
         const char* expectedDtype = DTypeTag<ElementType>::Name();
         if (entry->dtype != expectedDtype)
@@ -327,6 +407,10 @@ private:
       detail::SyncToDeviceIfSupported(layerPtr);
       ++layerIdx;
     }
+    if (report != nullptr)
+      for (const auto& t : reader.Tensors())
+        if (used.count(t.name) == 0 && t.name.rfind("optimizer.", 0) != 0)
+          report->unexpected.push_back(t.name);
   }
 };
 } // namespace Deep

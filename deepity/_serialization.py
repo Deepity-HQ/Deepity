@@ -14,6 +14,8 @@ from ._backend import dy
 from .layer import Activation, Convolution, GeLU, Layer, Linear, ReLU, Sigmoid, TanH
 
 FORMAT_VERSION = 1
+# "iterative" is the full settling model; "forward" is reserved for forward-only exports.
+INFERENCE_MODES = ("iterative",)
 
 _ACTIVATIONS: dict[str, type[Activation]] = {
     "relu": ReLU,
@@ -101,7 +103,7 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     if dtype is not None:
         model["dtype"] = dtype
 
-    inference = {"inference_steps": int(net.default_inference_steps)}
+    inference = {"mode": "iterative", "inference_steps": int(net.default_inference_steps)}
     return {
         "deepity.model": json.dumps(model, separators=(",", ":")),
         "deepity.inference": json.dumps(inference, separators=(",", ":")),
@@ -135,6 +137,9 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
     net.configure(**model.get("hyperparameters", {}))
 
     inference = json.loads(meta.get("deepity.inference", "{}"))
+    mode = inference.get("mode", "iterative")
+    if mode not in INFERENCE_MODES:
+        raise ValueError(f"{path} uses inference mode {mode!r}, which this build cannot run. Known: {list(INFERENCE_MODES)}.")
     if "inference_steps" in inference:
         net.default_inference_steps = int(inference["inference_steps"])
     return net, meta

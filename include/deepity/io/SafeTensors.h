@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <cstdint>
+#include <deepity/io/DType.h>
 #include <fstream>
 #include <map>
 #include <stdexcept>
@@ -23,7 +24,9 @@ public:
   using std::runtime_error::runtime_error;
 };
 
-/// @brief One tensor's header entry. Offsets are relative to the start of the data region.
+/// @brief One tensor's entry. `dtype` and `shape` are the logical ones (a packed 4-bit tensor reports
+/// its real type and shape, not the `U8` bytes in the header). `begin`/`end` are on-disk byte
+/// offsets relative to the start of the data region.
 struct TensorEntry
 {
   std::string name;
@@ -31,6 +34,8 @@ struct TensorEntry
   std::vector<size_t> shape;
   uint64_t begin = 0;
   uint64_t end = 0;
+  /// @brief True when the bytes use a packed layout (see DType.h), so callers must unpack them.
+  bool packed = false;
 
   size_t ByteSize() const noexcept
   {
@@ -38,11 +43,14 @@ struct TensorEntry
   }
 };
 
-/// @brief Bytes per element for an allowed dtype name, or 0 if the dtype is not on the allow-list.
+/// @brief Bytes per element as laid out in a file written by a Standard dtype, or 0 if the dtype is
+/// unknown. Packed dtype names report 1, the layout of 0.1.0a8 files that stored them unpacked.
 size_t DTypeSize(const std::string& dtype) noexcept;
 
 /// @brief Metadata key under which the data-region BLAKE3 is stored.
 inline constexpr const char* kHashKey = "deepity.content_blake3";
+/// @brief Metadata key mapping tensor name to its logical dtype and shape, for packed tensors.
+inline constexpr const char* kDTypesKey = "deepity.dtypes";
 
 /// @brief Collects tensors and metadata, then writes one file atomically.
 ///
@@ -61,9 +69,12 @@ public:
   {
     hash = enabled;
   }
-  /// @brief Registers a tensor. `data` is not copied and must stay valid until Write() returns.
+  /// @brief Registers a tensor. `data` must stay valid until Write() returns. For a Packed dtype
+  /// (see DType.h) `data` is already in the packed on-disk layout and `bytes` is StorageBytes();
+  /// the writer stores it as `U8` and records the logical type in `deepity.dtypes`. Standard
+  /// dtypes are given in host byte order and written little endian.
   /// @throws SafeTensorsError for an unknown dtype, a duplicate name, or a size that does not
-  /// equal prod(shape) * element size.
+  /// match the dtype and shape.
   void AddTensor(const std::string& name, const std::string& dtype, const std::vector<size_t>& shape,
                  const void* data, size_t bytes);
   /// @brief Writes to `path` through a temporary file and a rename, so a crash never leaves a
@@ -74,7 +85,8 @@ private:
   struct Pending
   {
     TensorEntry entry;
-    const void* data;
+    const void* data = nullptr;
+    std::vector<char> owned; ///< Byte-swapped copy on big-endian hosts; `data` points into it.
   };
   std::vector<Pending> tensors;
   std::map<std::string, std::string> metadata;

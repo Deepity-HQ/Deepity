@@ -20,6 +20,9 @@ earlier history.
 
 - Training checkpoints for `DKPPCN` and `FullPCN` (CPU): `net.save_checkpoint(path, training_state)` stores the weights, Adam/AdamW moments and step counters plus any JSON dict you pass (epoch, step, RNG state), and `deepity.resume(path)` returns `(net, training_state)` ready to continue training bit-for-bit. In C++ it also works for `DirectKPPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork` and `ConvPCNetwork` (no Python wrappers for those yet). In C++: `ModelIO::SaveCheckpoint` / `LoadCheckpoint`, backed by new `Layer::GetOptimizerStateDict()`, `GetOptimizerCounters()` and `SupportsCheckpoint()`. Other networks and GPU networks throw a clear error instead of writing a checkpoint that would not resume.
 
+- `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) loads weights from any safetensors file, such as a PyTorch export, mapping names with `rename` and reporting or rejecting names that do not line up.
+- `deepity.inference` now records `mode` (`"iterative"`), and `deepity.load` rejects a mode it does not know.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
@@ -27,6 +30,8 @@ earlier history.
 - `ModelIO::Save/Load` (and the network `Save/Load` wrappers) now report failure by exception with the reason instead of returning `false`; they return `true` on success. `FullConvPCNetwork::Save/Load` and `DiscriminativePCNetwork::Save/Load` are no longer `noexcept`, because a corrupt file would otherwise terminate the process.
 
 - `ModelIO::Save()` now throws instead of writing an empty file when a network exposes no weights (the Simple networks, `ConvPCNetworkT` and `FullConvPCNetworkT` have no state dict yet). Before, it silently produced a model with no tensors.
+
+- 4-bit weight types (`fp4_e2m1`, `posit4_0/1/2`) now save packed, two codes per byte, as a 1-D `U8` tensor plus a `deepity.dtypes` entry, so those model files are about half the size and still open in stock safetensors readers. Files from 0.1.0a8 that stored them one byte per element still load. Model files are little endian on every host; big-endian hosts byte-swap on read and write.
 
 ### Deprecated
 

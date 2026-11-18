@@ -734,6 +734,7 @@ set(DEEPITY_SOURCES
     src/networks/DirectKPPCNetwork.cpp
     src/utils/StreamAlignedBatcher.cpp
     src/io/SafeTensors.cpp
+    src/io/DType.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp
