@@ -68,7 +68,7 @@ std::string DTypeName(const nb::dlpack::dtype& d)
   return "";
 }
 
-using AnyArray = nb::ndarray<nb::c_contig, nb::device::cpu>;
+using AnyArray = nb::ndarray<nb::c_contig, nb::device::cpu, nb::ro>;
 
 void WriteTensors(const std::string& path, nb::dict tensors, const std::map<std::string, std::string>& metadata,
                   uint64_t maxShardBytes)

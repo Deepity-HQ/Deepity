@@ -89,6 +89,15 @@ jobs:
           GOMP_SPINCOUNT: "0"
         run: python tests/pyModelFilesVerify.py
 
+      - name: ONNX export round trip
+        # Deepity -> ONNX -> onnxruntime must match predict(x, 0).
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: |
+          uv pip install --system onnx onnxruntime
+          python tests/pyOnnxVerify.py
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4

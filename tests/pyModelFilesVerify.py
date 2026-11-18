@@ -222,5 +222,53 @@ with tempfile.TemporaryDirectory() as tmp:
     check(raises(lambda: dp.write_tensors(path, data, {"deepity.kind": "x"})), "reserved metadata keys are rejected")
     check(raises(lambda: dp.write_tensors(os.path.join(tmp, "no", "dir", "x.safetensors"), data)), "unwritable path raises")
 
+print("--- import_weights ---")
+with tempfile.TemporaryDirectory() as tmp:
+    for name, make in [
+        ("DKPPCN", lambda: dp.DKPPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+        ("FullPCN", lambda: dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+    ]:
+        src, dst = make().configure(learning_rate=1e-3), make().configure(learning_rate=1e-3)
+        path = os.path.join(tmp, name + ".safetensors")
+        src.save(path)
+        own = {k: v for k, v in dp.read_tensors(path).items() if not k.endswith("psi")}
+        # PyTorch naming: nn.Sequential(Linear, ReLU, Linear) keeps modules at 0 and 2.
+        torch_like = {"0.weight": own["layers.0.weight"], "0.bias": own["layers.0.bias"],
+                      "2.weight": own["layers.1.weight"], "2.bias": own["layers.1.bias"]}
+        missing, unexpected = dp.import_weights(dst, torch_like, rename="sequential", strict=False)
+        check(not unexpected and sorted(missing) == ["layers.2.bias", "layers.2.weight"], f"{name}: sequential rename maps module names to layers, psi is not reported")
+        check(np.array_equal(src.predict(x), dst.predict(x)), f"{name}: imported weights reproduce predictions")
+        named = {"fc1.weight": own["layers.0.weight"], "fc1.bias": own["layers.0.bias"],
+                 "fc2.weight": own["layers.1.weight"], "fc2.bias": own["layers.1.bias"]}
+        third = make().configure(learning_rate=1e-3)
+        dp.import_weights(third, named, rename="sequential", strict=False)
+        check(np.array_equal(src.predict(x), third.predict(x)), f"{name}: fc1/fc2 naming works too")
+        check(raises(lambda: dp.import_weights(make().configure(learning_rate=1e-3), torch_like, strict=True)), f"{name}: strict import of unmapped names raises")
+        wrong = dict(torch_like, **{"0.weight": np.zeros((9, 12), dtype=np.float32)})
+        check(raises(lambda: dp.import_weights(make().configure(learning_rate=1e-3), wrong, rename="sequential", strict=False)),
+              f"{name}: a wrong shape raises even when not strict")
+        half = {k: v.astype(np.float16) for k, v in torch_like.items()}
+        fourth = make().configure(learning_rate=1e-3)
+        dp.import_weights(fourth, half, rename="sequential", strict=False)
+        check(np.allclose(src.predict(x), fourth.predict(x), atol=5e-2), f"{name}: float16 weights are converted")
+        st = os.path.join(tmp, name + ".torchlike.safetensors")
+        dp.write_tensors(st, torch_like)
+        fifth = make().configure(learning_rate=1e-3)
+        dp.import_weights(fifth, st, rename="sequential", strict=False)
+        check(np.array_equal(src.predict(x), fifth.predict(x)), f"{name}: import from a safetensors path")
+    try:
+        import torch
+    except ImportError:
+        print("  (PyTorch not installed: skipping the torch tensor and .pt checks)")
+    else:
+        t = torch.nn.Sequential(torch.nn.Linear(12, 10), torch.nn.ReLU(), torch.nn.Linear(10, 4))
+        ptfile = os.path.join(tmp, "m.pt")
+        torch.save(t.state_dict(), ptfile)
+        a = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8).configure(learning_rate=1e-3)
+        b = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8).configure(learning_rate=1e-3)
+        dp.import_weights(a, t.state_dict(), rename="sequential", strict=False)
+        dp.import_weights(b, ptfile, rename="sequential", strict=False)
+        check(np.array_equal(a.predict(x), b.predict(x)), "torch state_dict and .pt file import identically")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

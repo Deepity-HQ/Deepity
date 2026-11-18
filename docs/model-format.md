@@ -182,6 +182,22 @@ A large model may be split across files with an index, as Hugging Face does. `Mo
   is not a plain file name beside the index, a tensor present in a different shard than the index
   says, an indexed tensor that no shard holds, and an index with no tensors.
 
+## Importing from PyTorch
+
+`deepity.import_weights(net, source, rename=None, strict=False)` accepts a `state_dict`, a `.pt` file
+(loaded with `weights_only=True`), a safetensors file or a dict of arrays, and loads it through the
+same C++ path as `load_weights`. `rename="sequential"` maps each module's `weight` and `bias`, in
+file order, to `layers.0`, `layers.1`, ...; PyTorch `Linear.weight` is `[out, in]`, as here. Feedback
+weights (`psi`) are never expected from a foreign file. The terminal layer's own tensors are reported
+missing, since a PyTorch model has no counterpart.
+
+## Exporting to ONNX
+
+`deepity.export_onnx(net, path)` writes `act(x W0^T + b0) W1^T + b1 ...` as Gemm and activation nodes
+(opset 20, dynamic batch). That is `net.predict(x, inference_steps=0)`, verified against
+onnxruntime to 1e-5 for relu, sigmoid, tanh and gelu (Deepity's tanh approximation). It carries no
+settling, so it can differ from `predict` with the model's default steps. Dense networks only.
+
 ## Plain tensor files
 
 `deepity.write_tensors` and `deepity.read_tensors` use the same container for arbitrary numpy data

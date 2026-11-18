@@ -114,11 +114,12 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 5: converters (separate from the core)
 
-- [ ] Import: safetensors and PyTorch `state_dict` with name mapping.
-- [ ] Export: ONNX for the forward path (`predict` with 0 steps), and optionally an unrolled
-      settling graph with a fixed step count.
+- [x] Import: safetensors and PyTorch `state_dict` with name mapping (`deepity.import_weights`; real torch files untested, torch is not installed here).
+- [~] Export: ONNX for the forward path (`predict` with 0 steps) is done for dense networks
+      (`deepity.export_onnx`, relu/sigmoid/tanh/gelu). Conv networks and an unrolled settling graph
+      with a fixed step count are still open.
 - [ ] GGUF: read first (quantized weights), write later.
-- [ ] Round-trip tests: Deepity to ONNX to onnxruntime, outputs within tolerance.
+- [x] Round-trip test: Deepity to ONNX to onnxruntime within 1e-5 (`tests/pyOnnxVerify.py`, CI).
 
 ## Phase 6: ecosystem polish
 

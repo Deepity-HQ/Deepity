@@ -28,6 +28,10 @@ earlier history.
 
 - `deepity.write_tensors(path, {name: array}, metadata=None, max_shard_bytes=None)` writes numpy arrays to a safetensors file in one call, atomically and with a content hash, sharding when `path` ends in `.safetensors.index.json`.
 
+- `deepity.import_weights(net, source, rename=None, strict=False)` loads weights from a PyTorch `state_dict`, a `.pt`/`.pth` file, a safetensors file or a dict of arrays. `rename="sequential"` pairs each module's weight and bias with layers 0, 1, 2; conv weights are flattened and half precision floats converted.
+
+- `deepity.export_onnx(net, path)` writes the forward path of a dense network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
