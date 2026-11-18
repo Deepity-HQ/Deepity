@@ -73,9 +73,15 @@ def architecture_from_json(layers: list[dict[str, Any]]) -> tuple[Layer | Activa
     architecture: list[Layer | Activation] = []
     for entry in layers:
         kind = entry.get("kind")
+        needed = {"linear": ("in", "out"), "convolution": ("out_channels", "kernel", "stride", "pad")}.get(kind)
+        if needed is None:
+            raise ValueError(f"Unknown layer kind {kind!r} in model file. This version knows: linear, convolution.")
+        missing = [k for k in needed if k not in entry]
+        if missing:
+            raise ValueError(f"A {kind} layer in the model file lacks {missing}.")
         if kind == "linear":
             architecture.append(Linear(int(entry["in"]), int(entry["out"])))
-        elif kind == "convolution":
+        else:
             architecture.append(
                 Convolution(
                     int(entry["out_channels"]),
@@ -84,8 +90,6 @@ def architecture_from_json(layers: list[dict[str, Any]]) -> tuple[Layer | Activa
                     *entry["pad"],
                 )
             )
-        else:
-            raise ValueError(f"Unknown layer kind {kind!r} in model file.")
         activation = entry.get("activation", "linear")
         if activation != "linear":
             if activation not in _ACTIVATIONS:
@@ -151,6 +155,32 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     }
 
 
+def _json_field(meta: dict[str, str], key: str, path: str, default: Optional[str] = None) -> dict[str, Any]:
+    """Parses a JSON object stored under `key`, naming the file and key when it is malformed."""
+    try:
+        value = json.loads(meta[key] if default is None else meta.get(key, default))
+    except json.JSONDecodeError as error:
+        raise ValueError(f"{path}: {key} is not valid JSON ({error}).") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"{path}: {key} must be a JSON object.")
+    return value
+
+
+def _known_hyperparameters(net: Any, saved: dict[str, Any], path: str) -> dict[str, Any]:
+    """Drops saved hyperparameters this build's configure() does not take (a newer file may add some),
+    with a warning, so an older Deepity still loads a newer file's weights."""
+    import inspect
+    import warnings
+
+    parameters = inspect.signature(net.configure).parameters
+    if any(p.kind is inspect.Parameter.VAR_KEYWORD for p in parameters.values()):
+        return saved
+    unknown = sorted(set(saved) - set(parameters))
+    if unknown:
+        warnings.warn(f"{path}: ignoring hyperparameters this version does not know: {unknown}.", stacklevel=3)
+    return {k: v for k, v in saved.items() if k in parameters}
+
+
 def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple[Any, dict[str, str]]:
     """Reads the file's metadata and returns a freshly configured network (weights not loaded yet)."""
     meta = dy.read_model_metadata(path)
@@ -159,7 +189,9 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
             f"{path} has no architecture ('deepity.model'). Build the network yourself, "
             "then call net.load(path) to load its weights."
         )
-    model = json.loads(meta["deepity.model"])
+    model = _json_field(meta, "deepity.model", path)
+    if not isinstance(model.get("layers"), list):
+        raise ValueError(f"{path}: deepity.model has no 'layers' list.")
 
     classes = _network_classes()
     name = model.get("network")
@@ -180,12 +212,12 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
         kwargs["input_shape"] = tuple(model["input_shape"])
 
     net = classes[name](*architecture_from_json(model["layers"]), **kwargs)
-    net.configure(**model.get("hyperparameters", {}))
+    net.configure(**_known_hyperparameters(net, model.get("hyperparameters", {}), path))
 
     if "deepity.card" in meta:
         net.card = json.loads(meta["deepity.card"])
 
-    inference = json.loads(meta.get("deepity.inference", "{}"))
+    inference = _json_field(meta, "deepity.inference", path, default="{}")
     mode = inference.get("mode", "iterative")
     if mode not in INFERENCE_MODES:
         raise ValueError(f"{path} uses inference mode {mode!r}, which this build cannot run. Known: {list(INFERENCE_MODES)}.")

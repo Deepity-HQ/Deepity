@@ -14,6 +14,14 @@ earlier history.
 
 ### Added
 
+- Model files: `deepity.format_version` is now checked on every load path, not only metadata reads. A
+  newer version is refused with both versions named, a malformed one is refused, and a missing one
+  loads. Unknown metadata keys, tensors and JSON fields are ignored; a hyperparameter this version
+  cannot take is dropped with a warning. A bad model description (unknown layer kind, missing field,
+  malformed JSON) is an error that names the problem.
+- Test fixture `tests/data/golden_v1_dtypes.safetensors`: one tensor for each of the 17 dtypes, with exact
+  bytes checked. The Windows CI job now runs the file-format tests.
+
 - `DKPPCN.configure(psi_decay=...)` (and `set_psi_decay()` on `DirectKPPCNetwork` / `DirectKPPCLayer`): a decay applied to the direct feedback weights Psi alone, separate from `lmbda`, which keeps governing W. The default (`None`) keeps the previous behavior exactly: no decay on Psi under SGD, `lmbda` under AdamW. Only the float DKP family has it; `DirectKPPCNetworkT` / `DirectKPPCLayerT` do not yet.
 
 - Self-describing model files for `DKPPCN` and `FullPCN`: `net.save(path)` stores the architecture, hyperparameters and default settling steps next to the weights, and `deepity.load(path)` rebuilds the network from the file alone. `predict()` now defaults to the model's `default_inference_steps` (1 for a new model; a loaded file restores its saved value). New `deepity.dy.read_model_metadata(path)` reads a file's metadata without loading weights, and every native network's `save()` accepts an optional `metadata` map.

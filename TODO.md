@@ -61,7 +61,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       header padding, 64-byte data alignment, string metadata, contiguous offsets, atomic write,
       BLAKE3 hash, strict validation. Output opens in stock `safetensors`. Not yet wired into
       `ModelIO::Save/Load`.
-- [ ] `format_version` plus unknown-field-tolerant reads. Reader for current a7/a8 files.
+- [x] `format_version` checked on every load path (integer, newer is refused naming both versions, missing
+      is fine); unknown metadata keys, tensors and JSON fields are ignored. a7 and a8 wrote the same
+      format (identical `ModelIO.h`), covered by `legacy_a8_dkp`.
 - [x] Validate untrusted input (in the new reader): header size cap, offsets against the real file
       size, no overlaps or gaps, `prod(shape) * dtype size == bytes`, overflow-safe, dtype allow-list.
 - [x] `ModelIO::Save/Load` use the validating reader/writer, new `layers.{i}.weight|bias|psi` names,

@@ -58,6 +58,35 @@ inline constexpr const char* kHashKey = "deepity.content_blake3";
 /// @brief Metadata key mapping tensor name to its logical dtype and shape, for packed tensors.
 inline constexpr const char* kDTypesKey = "deepity.dtypes";
 
+/// @brief Metadata key holding the Deepity model format version (a positive integer in a string).
+inline constexpr const char* kFormatVersionKey = "deepity.format_version";
+/// @brief The newest model format version this build reads, and the one it writes.
+inline constexpr int kModelFormatVersion = 1;
+
+/// @brief Throws unless `metadata` has no format version (a foreign or pre-versioned file) or one
+/// this build supports. Names both versions when the file is newer, and rejects values that are not
+/// a positive integer. Unknown keys and tensors are never an error; only the version is.
+inline void CheckFormatVersion(const std::map<std::string, std::string>& metadata, const std::string& path)
+{
+  const auto it = metadata.find(kFormatVersionKey);
+  if (it == metadata.end()) return;
+  const std::string& text = it->second;
+  long long version = 0;
+  bool valid = !text.empty() && text.size() <= 9;
+  for (const char c : text)
+  {
+    valid = valid && c >= '0' && c <= '9';
+    if (valid) version = version * 10 + (c - '0');
+  }
+  if (!valid || version < 1)
+    throw SafeTensorsError("SafeTensors: " + path + " has an invalid " + kFormatVersionKey + " '" + text +
+                           "'; it must be a positive integer.");
+  if (version > kModelFormatVersion)
+    throw SafeTensorsError("SafeTensors: " + path + " was written with model format version " + text +
+                           ", but this build of Deepity reads up to version " + std::to_string(kModelFormatVersion) +
+                           ". Upgrade Deepity to load it.");
+}
+
 /// @brief Collects tensors and metadata, then writes one file atomically.
 ///
 /// Layout written: 8-byte size, JSON header padded with spaces so the data region starts on a

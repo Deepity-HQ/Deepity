@@ -3,14 +3,18 @@
 Run from the repo root with the built extension importable, e.g.
   OMP_WAIT_POLICY=PASSIVE GOMP_SPINCOUNT=0 uv run python tests/pyModelFilesVerify.py
 """
+import json
 import os
+import struct
 import sys
 import tempfile
+import warnings
 
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import deepity as dp  # noqa: E402
+from deepity.cli import describe as inspect_file  # noqa: E402
 
 failures = 0
 
@@ -27,6 +31,34 @@ def raises(fn) -> bool:
     except Exception:
         return True
     return False
+
+
+def edit_header(src: str, dst: str, edit) -> None:
+    """Copies a model file with `edit(header_dict)` applied to its JSON header. Tensor offsets are
+    relative to the data region and the hash covers only the data, so both stay valid."""
+    raw = open(src, "rb").read()
+    (size,) = struct.unpack("<Q", raw[:8])
+    header = json.loads(raw[8 : 8 + size])
+    edit(header)
+    text = json.dumps(header).encode()
+    open(dst, "wb").write(struct.pack("<Q", len(text)) + text + raw[8 + size :])
+
+
+def with_model(src: str, dst: str, edit_model) -> None:
+    def edit(header):
+        model = json.loads(header["__metadata__"]["deepity.model"])
+        edit_model(model)
+        header["__metadata__"]["deepity.model"] = json.dumps(model)
+
+    edit_header(src, dst, edit)
+
+
+def error_text(fn) -> str:
+    try:
+        fn()
+    except Exception as error:
+        return str(error)
+    return ""
 
 
 x = np.random.default_rng(0).standard_normal((8, 12)).astype(np.float32)
@@ -269,6 +301,55 @@ with tempfile.TemporaryDirectory() as tmp:
         dp.import_weights(a, t.state_dict(), rename="sequential", strict=False)
         dp.import_weights(b, ptfile, rename="sequential", strict=False)
         check(np.array_equal(a.predict(x), b.predict(x)), "torch state_dict and .pt file import identically")
+
+with tempfile.TemporaryDirectory() as tmp:
+    print("--- format versions and unknown fields ---")
+    base = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8).configure(learning_rate=1e-3)
+    src = os.path.join(tmp, "base.safetensors")
+    mod = os.path.join(tmp, "mod.safetensors")
+    base.save(src)
+    want = base.predict(x)
+
+    def set_meta(key, value):
+        return lambda h: h["__metadata__"].__setitem__(key, value) if value is not None else h["__metadata__"].pop(key)
+
+    edit_header(src, mod, set_meta("deepity.format_version", "2"))
+    text = error_text(lambda: dp.load(mod))
+    check("version 2" in text and "up to version 1" in text, "a newer format version is refused, naming both versions")
+    check(raises(lambda: dp.dy.read_model_metadata(mod)), "metadata reads refuse it too")
+    check(inspect_file(mod)["format_version"] == "2", "inspect still shows a newer file")
+    edit_header(src, mod, set_meta("deepity.format_version", "abc"))
+    check("invalid" in error_text(lambda: dp.load(mod)), "a malformed format version is refused")
+
+    edit_header(src, mod, set_meta("deepity.format_version", None))
+    check(np.array_equal(dp.load(mod).predict(x), want), "a file with no format version loads")
+
+    def add_unknowns(header):
+        header["__metadata__"]["deepity.from_the_future"] = "{}"
+        model = json.loads(header["__metadata__"]["deepity.model"])
+        model["new_top_level_field"] = [1, 2]
+        model["layers"][0]["new_layer_field"] = "x"
+        model["hyperparameters"]["learning_rate_warmup"] = 100
+        header["__metadata__"]["deepity.model"] = json.dumps(model)
+        inference = json.loads(header["__metadata__"].get("deepity.inference", "{}"))
+        inference["new_inference_field"] = True
+        header["__metadata__"]["deepity.inference"] = json.dumps(inference)
+
+    edit_header(src, mod, add_unknowns)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        loaded = dp.load(mod)
+    check(np.array_equal(loaded.predict(x), want), "unknown keys and fields are ignored, weights load")
+    check(any("learning_rate_warmup" in str(w.message) for w in caught), "an unknown hyperparameter is dropped with a warning")
+
+    with_model(src, mod, lambda m: m["layers"].append({"kind": "attention"}))
+    check("attention" in error_text(lambda: dp.load(mod)), "an unknown layer kind is a clear error")
+    with_model(src, mod, lambda m: m["layers"][0].pop("out"))
+    check("lacks" in error_text(lambda: dp.load(mod)), "a layer missing a field is a clear error")
+    with_model(src, mod, lambda m: m.pop("layers"))
+    check("layers" in error_text(lambda: dp.load(mod)), "a description without layers is a clear error")
+    edit_header(src, mod, lambda h: h["__metadata__"].__setitem__("deepity.model", "{not json"))
+    check("deepity.model" in error_text(lambda: dp.load(mod)), "malformed JSON names the key")
 
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

@@ -454,6 +454,98 @@ bool LoadWeightsWorks(const std::string& path)
   return ok;
 }
 
+/// @brief Copies a model file with its metadata edited: `edit` may change or erase keys, and
+/// `extraTensor` adds an unknown tensor. The hash is dropped (it is rewritten for the copy).
+void RewriteMeta(const std::string& src, const std::string& dst,
+                 const std::function<void(std::map<std::string, std::string>&)>& edit, bool extraTensor)
+{
+  io::SafeTensorsReader reader(src);
+  std::map<std::string, std::string> meta = reader.Metadata();
+  meta.erase(io::kHashKey);
+  meta.erase(io::kDTypesKey);
+  edit(meta);
+  io::SafeTensorsWriter w;
+  for (const auto& [k, v] : meta)
+    w.SetMetadata(k, v);
+  std::vector<std::vector<char>> bufs;
+  bufs.reserve(reader.Tensors().size());
+  for (const auto& t : reader.Tensors())
+  {
+    bufs.emplace_back(t.ByteSize());
+    reader.Read(t, bufs.back().data(), bufs.back().size());
+    w.AddTensor(t.name, t.dtype, t.shape, bufs.back().data(), bufs.back().size());
+  }
+  const float extra[2] = {1.f, 2.f};
+  if (extraTensor) w.AddTensor("from_the_future.extra", "F32", {2}, extra, sizeof(extra));
+  w.Write(dst);
+}
+
+std::string ErrorText(auto&& fn)
+{
+  try
+  {
+    fn();
+  }
+  catch (const std::exception& e)
+  {
+    return e.what();
+  }
+  return {};
+}
+
+/// @brief The version rule: a newer format is refused with both versions named, a malformed version is
+/// refused, and everything else unknown (keys, tensors, a missing version) is tolerated.
+bool FormatVersionRules(const std::string& path)
+{
+  auto a = MakeNet(41);
+  SetAdam(*a);
+  ModelIO::Save(*a, path);
+  const std::string ckpt = path + ".ckpt", edited = path + ".edited";
+  ModelIO::SaveCheckpoint(*a, ckpt);
+  auto setVersion = [](const char* v) { return [v](auto& m) { m[io::kFormatVersionKey] = v; }; };
+  bool ok = true;
+
+  RewriteMeta(path, edited, setVersion("2"), false);
+  auto b = MakeNet(42);
+  const std::string text = ErrorText([&] { ModelIO::Load(*b, edited); });
+  ok &= text.find("version 2") != std::string::npos && text.find("up to version 1") != std::string::npos;
+  ok &= Throws([&] { ModelIO::LoadWeights(*b, edited); }) && Throws([&] { ModelIO::ReadMetadata(edited); });
+  RewriteMeta(ckpt, edited, setVersion("2"), false);
+  ok &= Throws([&] { ModelIO::LoadCheckpoint(*b, edited); });
+  printf("%s\n", ok ? "PASSED: a newer format version is refused by every load path" : "FAILED: newer version accepted");
+
+  bool malformed = true;
+  for (const char* bad : {"", "0", "-1", "abc", "1.0", "1 ", "99999999999"})
+  {
+    RewriteMeta(path, edited, setVersion(bad), false);
+    malformed &= ErrorText([&] { ModelIO::Load(*b, edited); }).find("invalid") != std::string::npos;
+  }
+  printf("%s\n", malformed ? "PASSED: a malformed format version is refused" : "FAILED: malformed version accepted");
+  ok &= malformed;
+
+  RewriteMeta(path, edited, [](auto& m) { m["deepity.from_the_future"] = "{\"anything\":1}"; }, true);
+  auto c = MakeNet(43);
+  const bool tolerant = !Throws([&] { ModelIO::Load(*c, edited); }) && SameState(*a, *c) &&
+                        ModelIO::ReadMetadata(edited).count("deepity.from_the_future") == 1;
+  printf("%s\n", tolerant ? "PASSED: unknown metadata keys and unknown tensors are ignored" : "FAILED: unknown fields rejected");
+  ok &= tolerant;
+
+  RewriteMeta(path, edited, [](auto& m) { m.erase(io::kFormatVersionKey); }, false);
+  auto d = MakeNet(44);
+  const bool unversioned = !Throws([&] { ModelIO::Load(*d, edited); }) && SameState(*a, *d);
+  printf("%s\n", unversioned ? "PASSED: a file with no format version still loads" : "FAILED: unversioned file rejected");
+  ok &= unversioned;
+
+  RewriteMeta(path, edited, setVersion("1"), false);
+  auto e = MakeNet(45);
+  const bool current = !Throws([&] { ModelIO::Load(*e, edited); }) && SameState(*a, *e);
+  printf("%s\n", current ? "PASSED: the current format version loads" : "FAILED: version 1 rejected");
+  ok &= current;
+  for (const auto& f : {ckpt, edited})
+    std::filesystem::remove(f);
+  return ok;
+}
+
 } // namespace
 
 /// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
@@ -604,6 +696,9 @@ int main()
   ok &= emptyRefused;
   const bool gpuFree = !Throws([&] { ModelIO::SaveCheckpoint(*fsrc, path); });
   ok &= gpuFree;
+
+  const bool versionsOk = FormatVersionRules(path);
+  ok &= versionsOk;
 
   const bool missingOk = Throws([&] { ModelIO::Load(*fdst, path + ".does_not_exist"); }) &&
                          Throws([&] { ModelIO::Save(*fsrc, path + "_no_such_dir/x.safetensors"); });

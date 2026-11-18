@@ -39,8 +39,19 @@ All values are strings. Deepity keys are prefixed `deepity.`.
 | `deepity.content_blake3` | Optional hex hash of the data region. |
 | `deepity.dtypes` | Optional JSON map from tensor name to logical dtype, for non-standard types. |
 
-Readers ignore unknown `deepity.*` keys. Readers must reject a `format_version` greater than the
-one they support, with a message naming both versions.
+Readers ignore unknown `deepity.*` keys, unknown tensors, and unknown fields inside the JSON
+values (a hyperparameter this version cannot take is dropped with a warning). Only the version is
+checked, on every load path (`load`, `load_weights`, `resume`, metadata reads):
+
+- No `format_version` at all (a foreign or pre-versioned file) loads.
+- A value that is not a positive integer is an error ("invalid").
+- A version greater than the reader's is an error naming both ("written with model format version 2,
+  but this build reads up to version 1"). `deepity inspect` still opens such a file and shows it.
+
+What can still fail is a model description the build cannot construct: an unknown `network`, layer
+`kind` or activation, or a layer missing a required field. Each is an error that names it. The
+version is bumped for any change an older reader could not safely ignore, such as a new required
+tensor, a changed layout or meaning of an existing field, or a new layer kind.
 
 ## Model description (`deepity.model`)
 
@@ -175,7 +186,9 @@ here has run on big-endian hardware.
   exact bytes checked) and `legacy_a8_dkp.safetensors`. Regenerate with
   `SafeTensorsVerify --write-golden <path>` or `--write-golden-dtypes <path>`, only on a deliberate
   format change.
-- Files written by 0.1.0a7 and a8 (legacy names, no metadata) stay readable.
+- Files written by 0.1.0a7 and a8 (legacy names, no metadata) stay readable. The two releases wrote
+  the same format (`ModelIO.h` is identical between the tags), so one fixture, `legacy_a8_dkp.safetensors`,
+  covers both.
 
 ## Sharding
 

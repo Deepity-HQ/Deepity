@@ -296,12 +296,8 @@ public:
   static std::map<std::string, std::string> ReadMetadata(const std::string& filepath)
   {
     const io::SafeTensorsReader reader(filepath, /*verifyHash=*/false);
-    const auto& meta = reader.Metadata();
-    const auto it = meta.find("deepity.format_version");
-    if (it != meta.end() && it->second != "1")
-      throw io::SafeTensorsError("ModelIO: " + filepath + " has deepity.format_version " + it->second +
-                                 ", but this build only reads version 1.");
-    return meta;
+    io::CheckFormatVersion(reader.Metadata(), filepath);
+    return reader.Metadata();
   }
 
   /// @brief Reads a file written by Save() (or by 0.1.0a8 and earlier) back into `net`'s
@@ -313,6 +309,7 @@ public:
   template <typename NetworkType> static bool Load(NetworkType& net, const std::string& filepath)
   {
     const io::SafeTensorsReader reader(filepath);
+    io::CheckFormatVersion(reader.Metadata(), filepath);
     ReadWeights(net, reader, nullptr, nullptr);
     return true;
   }
@@ -335,6 +332,7 @@ public:
                                 const std::function<std::string(const std::string&)>& rename = {})
   {
     const io::SafeTensorsReader reader(filepath);
+    io::CheckFormatVersion(reader.Metadata(), filepath);
     LoadReport report;
     ReadWeights(net, reader, rename ? &rename : nullptr, &report);
     if (strict && (!report.missing.empty() || !report.unexpected.empty()))
@@ -358,6 +356,7 @@ public:
   {
     detail::RequireCheckpointSupport(net);
     const io::SafeTensorsReader reader(filepath);
+    io::CheckFormatVersion(reader.Metadata(), filepath);
     const auto kind = reader.Metadata().find("deepity.kind");
     if (kind == reader.Metadata().end() || kind->second != "checkpoint")
       throw std::runtime_error("ModelIO::LoadCheckpoint: " + filepath +
@@ -409,7 +408,7 @@ private:
                     const std::map<std::string, std::string>& metadata, bool checkpoint, uint64_t maxShardBytes = 0)
   {
     io::SafeTensorsWriter writer;
-    writer.SetMetadata("deepity.format_version", "1");
+    writer.SetMetadata(io::kFormatVersionKey, std::to_string(io::kModelFormatVersion));
     for (const auto& [key, value] : metadata)
       writer.SetMetadata(key, value);
     writer.SetMetadata("deepity.kind", checkpoint ? "checkpoint" : "inference");
