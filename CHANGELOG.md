@@ -42,6 +42,8 @@ earlier history.
 
 - `SimplePCNetwork`, `SimpleConvPCNetwork` and their `T` forms can now save, load and write resumable checkpoints (CPU backends; a GPU Simple network refuses with an error).
 
+- `ConvPCNetworkT` and `FullConvPCNetworkT` can now save, load and write resumable checkpoints, so every network class has a state dict. `Load` also rebuilds the cached log-precision of layers that keep one (the conv and discriminative layers) from the loaded p.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).

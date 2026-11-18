@@ -436,6 +436,35 @@ void ConvPCLayerT<T, AccumT>::ResyncLogPrecision() noexcept
   backend->CopyFromHost(log_p, hostLogP.data(), ownSize);
 }
 
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<T>> ConvPCLayerT<T, AccumT>::GetStateDict() const
+{
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  return {{"W", {W, std::vector<size_t>{(size_t)outChannels, rowLen}}},
+          {"b", {b, std::vector<size_t>{(size_t)outChannels}}},
+          {"p", {p, std::vector<size_t>{(size_t)inChannels * inHeight * inWidth}}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> ConvPCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  const std::vector<size_t> wShape{(size_t)outChannels, rowLen}, bShape{(size_t)outChannels};
+  return {{"weight.m", {ptr(m_W), wShape}}, {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},   {"bias.v", {ptr(v_b), bShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> ConvPCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}};
+}
+
 template class ConvPCLayerT<float, float>;
 template class ConvPCLayerT<double, double>;
 template class ConvPCLayerT<Fp4E2M1Value, float>;

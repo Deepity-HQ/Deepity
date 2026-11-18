@@ -427,6 +427,9 @@ private:
       // Pushes the reads above from host staging buffers on to the
       // actual device-resident parameters. No-op for a CPU layer.
       detail::SyncToDeviceIfSupported(layerPtr);
+      // Layers that cache log(precision) must rebuild it from the p they just loaded.
+      if constexpr (requires { layerPtr->ResyncLogPrecision(); })
+        layerPtr->ResyncLogPrecision();
       ++layerIdx;
     }
     if (report != nullptr)

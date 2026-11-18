@@ -97,9 +97,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
       and `ConvPCNetwork`, each verified to resume bit-identically. Still to do: GPU networks
       (moments live on the device) and an inference artifact that omits Psi.
-- [~] State dicts for the networks that had none: the Simple family is done (float, `T`, conv and
-      conv `T`, CPU only, checkpoints resume bit-identically). `ConvPCNetworkT` and `FullConvPCNetworkT`
-      still have no `GetStateDict`, so they cannot use `ModelIO` at all.
+- [x] State dicts for every network class (Simple family, `ConvPCNetworkT`, `FullConvPCNetworkT`);
+      checkpoints resume bit-identically for all of them on CPU. GPU Simple networks still cannot save.
 - [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 

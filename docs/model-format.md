@@ -99,10 +99,11 @@ unused tensor raises, naming all of them; with `strict=False` the call returns
 A checkpoint has `deepity.kind = "checkpoint"`. Loading one as an inference model reads its
 weights and ignores the rest. Implemented (CPU only) for `DirectKPPCNetwork`, `DirectKPPCNetworkT`, `FullPCNetwork`,
 `FullPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork`, `GaussSeidelPCNetworkT`,
-`DiscriminativePCNetwork`, `ConvPCNetwork`, `SimplePCNetwork`, `SimpleConvPCNetwork` and their `T`
-forms. `ConvPCNetworkT` and `FullConvPCNetworkT` have no state dict yet, so they cannot use `ModelIO` at
-all. A Simple network on a GPU backend also reports no weights (its buffers are device memory), and
-`Save` refuses it with an error. (The conv layers already keep their
+`DiscriminativePCNetwork`, `ConvPCNetwork`, `SimplePCNetwork`, `SimpleConvPCNetwork`,
+`ConvPCNetworkT`, `FullConvPCNetworkT` and the `T` forms of the Simple networks: every network class has
+a state dict now. A Simple network on a GPU backend reports no weights (its buffers are device memory),
+so `Save` refuses it with an error. After loading weights, layers that cache log(precision) rebuild it
+from the loaded p. (The conv layers already keep their
 moments in the ordinary state dict as `m_W`, `v_W`, ..., so a conv checkpoint adds only the step
 counters.) Other networks and GPU networks refuse to write one.
 

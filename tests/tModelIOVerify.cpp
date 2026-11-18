@@ -11,7 +11,9 @@
 #include <cstdio>
 #include <cstring>
 #include <deepity/networks/ConvPCNetwork.h>
+#include <deepity/networks/ConvPCNetworkT.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
+#include <deepity/networks/FullConvPCNetworkT.h>
 #include <deepity/networks/DirectKPPCNetworkT.h>
 #include <deepity/networks/DiscriminativePCNetwork.h>
 #include <deepity/networks/GaussSeidelPCNetwork.h>
@@ -235,6 +237,32 @@ struct NoStateNet
   NoStateNet() { layers.push_back(std::make_unique<NoStateLayer>()); }
   const std::vector<std::unique_ptr<Layer>>& GetLayers() const { return layers; }
 };
+
+std::unique_ptr<ConvPCNetworkT<double, double>> MakeConvPCDouble(unsigned seed)
+{
+  auto n = std::make_unique<ConvPCNetworkT<double, double>>(kBatch);
+  n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 1e-3, 0.1, 0.01, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 1e-3, 0.1, 0.01, 1e-4, kAct, kDAct);
+  n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1e-3, 0.1, 0.01, 1e-4, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<FullConvPCNetworkT<double, double>> MakeFullConvDouble(unsigned seed)
+{
+  auto n = std::make_unique<FullConvPCNetworkT<double, double>>(kBatch);
+  n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 10, 1e-3, 0.1, 0.0, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 10, 1e-3, 0.1, 0.0, 1e-4, kAct, kDAct);
+  n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 1e-3, 0.1, 0.0, 1e-4, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
 
 std::unique_ptr<SimplePCNetwork> MakeSimple(unsigned seed)
 {
@@ -545,6 +573,10 @@ int main()
       "GaussSeidelPCNetworkT<double>", MakeGaussSeidelDouble, path, 8, 4);
   ok &= CheckpointResumes<DiscriminativePCNetwork>("DiscriminativePCNetwork", MakeDiscriminative, path, 8, 4);
   ok &= CheckpointResumes<ConvPCNetwork>("ConvPCNetwork", MakeConvPC, path, 64, 10);
+  ok &= CheckpointResumes<ConvPCNetworkT<double, double>, decltype(&MakeConvPCDouble), double>(
+      "ConvPCNetworkT<double>", MakeConvPCDouble, path, 64, 10);
+  ok &= CheckpointResumes<FullConvPCNetworkT<double, double>, decltype(&MakeFullConvDouble), double>(
+      "FullConvPCNetworkT<double>", MakeFullConvDouble, path, 64, 10);
   ok &= CheckpointResumes<SimplePCNetwork>("SimplePCNetwork", MakeSimple, path, 8, 4);
   ok &= CheckpointResumes<SimplePCNetworkT<double, double>, decltype(&MakeSimpleDouble), double>(
       "SimplePCNetworkT<double>", MakeSimpleDouble, path, 8, 4);

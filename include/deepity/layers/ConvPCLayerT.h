@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/layers/Layer.h>
+#include <map>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/utils/DeviceMemoryArena.h>
@@ -19,7 +20,8 @@
  * (colBuffer, feedbackScratch, bottom_up_cols, colsRepacked,
  * lgRepacked) stays T*, not AccumT*, same as SimpleConvPCLayerT.
  *
- * Does not inherit from Layer. Does not implement GetStateDict()/checkpointing.
+ * Does not inherit from Layer. GetStateDict() and the checkpoint accessors follow the same
+ * duck-typed shape as the other templated layers, so ModelIO reads them directly.
  */
 
 namespace Deep
@@ -239,6 +241,16 @@ public:
 
   size_t GetRequiredElements() const noexcept;
   template <typename ArenaT> void BindMemory(ArenaT& arena);
+
+  /// @brief Weights for ModelIO. Host memory, since the templated backends run on the CPU.
+  std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Adam/AdamW moments (AccumT) for a checkpoint.
+  std::map<std::string, TensorDescriptorT<AccumT>> GetOptimizerStateDict() const;
+  std::map<std::string, int*> GetOptimizerCounters() const;
+  bool SupportsCheckpoint() const noexcept
+  {
+    return true;
+  }
 
 private:
   std::unique_ptr<MemoryArenaT<T>> localArena;
