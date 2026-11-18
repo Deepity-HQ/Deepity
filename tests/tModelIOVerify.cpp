@@ -9,7 +9,13 @@
  * drops rows and only shows up when size != nextSize.
  */
 #include <cstdio>
+#include <deepity/networks/ConvPCNetwork.h>
 #include <deepity/networks/DirectKPPCNetwork.h>
+#include <deepity/networks/DirectKPPCNetworkT.h>
+#include <deepity/networks/DiscriminativePCNetwork.h>
+#include <deepity/networks/GaussSeidelPCNetwork.h>
+#include <deepity/networks/GaussSeidelPCNetworkT.h>
+#include <deepity/networks/SimplePCNetwork.h>
 #include <deepity/networks/FullConvPCNetwork.h>
 #include <deepity/networks/FullPCNetwork.h>
 #include <deepity/networks/FullPCNetworkT.h>
@@ -27,6 +33,14 @@ constexpr int kBatch = 2;
 const ActivationType kAct = ActivationType::RELU, kDAct = ActivationType::dRELU;
 const ActivationType kLin = ActivationType::LINEAR, kDLin = ActivationType::dLINEAR;
 
+/// @brief Selects Adam for W/b (and Psi where the network has it); checkpoints must carry its state.
+template <typename Net> void SetAdam(Net& n)
+{
+  n.SetOptimizer(OptimizerType::ADAM);
+  if constexpr (requires { n.SetPsiOptimizer(OptimizerType::ADAM); })
+    n.SetPsiOptimizer(OptimizerType::ADAM);
+}
+
 std::unique_ptr<DirectKPPCNetwork> MakeNet(unsigned seed)
 {
   auto n = std::make_unique<DirectKPPCNetwork>(kBatch);
@@ -34,6 +48,7 @@ std::unique_ptr<DirectKPPCNetwork> MakeNet(unsigned seed)
   n->AddLayer(8, 6, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
   n->AddLayer(6, 4, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
   n->AddLayer(4, 0, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
   n->Compile();
   std::mt19937 rng(seed);
   n->RandomizeWeights(rng);
@@ -58,6 +73,7 @@ std::unique_ptr<FullPCNetwork> MakeFullNet(unsigned seed)
   n->AddLayer(8, 6, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
   n->AddLayer(6, 4, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kAct, kDAct);
   n->AddLayer(4, 0, 4, 1e-3f, 0.1f, 1e-4f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
   n->Compile();
   std::mt19937 rng(seed);
   n->RandomizeWeights(rng);
@@ -70,6 +86,7 @@ std::unique_ptr<FullPCNetworkT<double, double>> MakeDoubleNet(unsigned seed)
   n->AddLayer(8, 6, 4, 1e-3, 0.1, 1e-4, 1e-4, kAct, kDAct);
   n->AddLayer(6, 4, 4, 1e-3, 0.1, 1e-4, 1e-4, kAct, kDAct);
   n->AddLayer(4, 0, 4, 1e-3, 0.1, 1e-4, 1e-4, kLin, kDLin);
+  SetAdam(*n);
   n->Compile();
   std::mt19937 rng(seed);
   n->RandomizeWeights(rng);
@@ -83,6 +100,74 @@ std::unique_ptr<FullConvPCNetwork> MakeConvNet(unsigned seed)
   n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 10, 1e-3f, 0.1f, 0.0f, 1e-4f, kAct, kDAct);
   n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 10, 1e-3f, 0.1f, 0.0f, 1e-4f, kAct, kDAct);
   n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 10, 1e-3f, 0.1f, 0.0f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<DirectKPPCNetworkT<double, double>> MakeDkpDouble(unsigned seed)
+{
+  auto n = std::make_unique<DirectKPPCNetworkT<double, double>>(kBatch);
+  n->AddLayer(8, 6, 4, 1e-3, 0.1, 1e-4, 1e-4, kAct, kDAct);
+  n->AddLayer(6, 4, 4, 1e-3, 0.1, 1e-4, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 0, 4, 1e-3, 0.1, 1e-4, 1e-4, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<GaussSeidelPCNetwork> MakeGaussSeidel(unsigned seed)
+{
+  auto n = std::make_unique<GaussSeidelPCNetwork>(kBatch);
+  n->AddLayer(8, 6, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(6, 4, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  n->AddLayer(4, 0, 1e-3f, 0.1f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<GaussSeidelPCNetworkT<double, double>> MakeGaussSeidelDouble(unsigned seed)
+{
+  auto n = std::make_unique<GaussSeidelPCNetworkT<double, double>>(kBatch);
+  n->AddLayer(8, 6, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(6, 4, 1e-3, 0.1, 1e-4, kAct, kDAct);
+  n->AddLayer(4, 0, 1e-3, 0.1, 1e-4, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<DiscriminativePCNetwork> MakeDiscriminative(unsigned seed)
+{
+  auto n = std::make_unique<DiscriminativePCNetwork>(kBatch);
+  // size, next, lr, ir, pr, lmbda, act, dact
+  n->AddLayer(8, 6, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
+  n->AddLayer(6, 4, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
+  n->AddLayer(4, 0, 1e-3f, 0.1f, 0.01f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
+  n->Compile();
+  std::mt19937 rng(seed);
+  n->RandomizeWeights(rng);
+  return n;
+}
+
+std::unique_ptr<ConvPCNetwork> MakeConvPC(unsigned seed)
+{
+  auto n = std::make_unique<ConvPCNetwork>(kBatch);
+  // in, out, H, W, kH, kW, strideH, strideW, padH, padW, lr, ir, pr, lmbda, act, dact
+  n->AddLayer(1, 4, 8, 8, 3, 3, 1, 1, 1, 1, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
+  n->AddLayer(4, 10, 8, 8, 8, 8, 1, 1, 0, 0, 1e-3f, 0.1f, 0.01f, 1e-4f, kAct, kDAct);
+  n->AddLayer(10, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1e-3f, 0.1f, 0.01f, 1e-4f, kLin, kDLin);
+  SetAdam(*n);
   n->Compile();
   std::mt19937 rng(seed);
   n->RandomizeWeights(rng);
@@ -131,27 +216,19 @@ bool Throws(auto&& fn)
 
 /// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
 /// same moments, same step counters. A weights-only Load() must not.
-template <typename Net, typename Make> bool CheckpointResumes(const char* name, Make make, const std::string& path, size_t inSize,
+template <typename Net, typename Make, typename S = float> bool CheckpointResumes(const char* name, Make make, const std::string& path, size_t inSize,
                       size_t outSize)
 {
-  std::vector<float> x(kBatch * inSize), y(kBatch * outSize, 0.1f);
+  std::vector<S> x(kBatch * inSize), y(kBatch * outSize, S(0.1));
   for (size_t i = 0; i < x.size(); ++i)
-    x[i] = 0.1f * (static_cast<float>(i % 7) - 3.0f) / 3.0f;
-  auto setup = [&](unsigned seed)
-  {
-    auto n = make(seed);
-    n->SetOptimizer(OptimizerType::ADAM);
-    n->SetPsiOptimizer(OptimizerType::ADAM);
-    return n;
-  };
+    x[i] = S(0.1) * (static_cast<S>(i % 7) - S(3)) / S(3);
+  auto setup = [&](unsigned seed) { return make(seed); };
   auto ref = setup(11), resumed = setup(12), weightsOnly = setup(13);
   for (int i = 0; i < 5; ++i)
     ref->TrainStep(x, y, 2);
   ModelIO::SaveCheckpoint(*ref, path);
   ModelIO::LoadCheckpoint(*resumed, path);
   ModelIO::Load(*weightsOnly, path);
-  weightsOnly->SetOptimizer(OptimizerType::ADAM);
-  weightsOnly->SetPsiOptimizer(OptimizerType::ADAM);
   for (int i = 0; i < 3; ++i)
   {
     ref->TrainStep(x, y, 2);
@@ -241,6 +318,25 @@ int main()
   ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork", MakeNet, path, 8, 4);
   ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path, 8, 4);
   ok &= CheckpointResumes<FullConvPCNetwork>("FullConvPCNetwork", MakeConvNet, path, 64, 10);
+  ok &= CheckpointResumes<DirectKPPCNetworkT<double, double>, decltype(&MakeDkpDouble), double>(
+      "DirectKPPCNetworkT<double>", MakeDkpDouble, path, 8, 4);
+  ok &= CheckpointResumes<FullPCNetworkT<double, double>, decltype(&MakeDoubleNet), double>(
+      "FullPCNetworkT<double>", MakeDoubleNet, path, 8, 4);
+  ok &= CheckpointResumes<GaussSeidelPCNetwork>("GaussSeidelPCNetwork", MakeGaussSeidel, path, 8, 4);
+  ok &= CheckpointResumes<GaussSeidelPCNetworkT<double, double>, decltype(&MakeGaussSeidelDouble), double>(
+      "GaussSeidelPCNetworkT<double>", MakeGaussSeidelDouble, path, 8, 4);
+  ok &= CheckpointResumes<DiscriminativePCNetwork>("DiscriminativePCNetwork", MakeDiscriminative, path, 8, 4);
+  ok &= CheckpointResumes<ConvPCNetwork>("ConvPCNetwork", MakeConvPC, path, 64, 10);
+
+  // A network whose layers expose no state dict yet must refuse to write an empty file.
+  SimplePCNetwork simple(kBatch);
+  simple.AddLayer(4, 3, 1e-3f, 0.1f, 1e-4f, kAct, kDAct);
+  simple.AddLayer(3, 0, 1e-3f, 0.1f, 1e-4f, kLin, kDLin);
+  simple.Compile();
+  const bool emptyRefused = Throws([&] { ModelIO::Save(simple, path + ".simple"); });
+  printf("%s\n", emptyRefused ? "PASSED: a network with no state dict refuses to save an empty file"
+                              : "FAILED: empty file was written");
+  ok &= emptyRefused;
   const bool gpuFree = !Throws([&] { ModelIO::SaveCheckpoint(*fsrc, path); });
   ok &= gpuFree;
 

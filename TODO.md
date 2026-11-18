@@ -89,10 +89,14 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] `deepity.load(path)` rebuilds the network from the file (`DKPPCN`, `FullPCN`).
       Test: `tests/pyModelFilesVerify.py` (run in the Linux CI job).
 - [ ] `net.load_weights(path, strict=False, rename=...)` for partial loads.
-- [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoint done for
-      `DirectKPPCNetwork`, `FullPCNetwork`, `FullPCNetworkT` and `FullConvPCNetwork` on CPU (Adam/AdamW moments, step
-      counters, caller training state). Still to do: other conv networks, `DirectKPPCNetworkT`, GPU
-      networks (moments live on the device), and an inference artifact that omits Psi.
+- [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoints (Adam/AdamW
+      moments, step counters, caller training state) work on CPU for `DirectKPPCNetwork(T)`,
+      `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
+      and `ConvPCNetwork`, each verified to resume bit-identically. Still to do: GPU networks
+      (moments live on the device) and an inference artifact that omits Psi.
+- [ ] State dicts for the networks that have none (`SimplePCNetwork`, `SimpleConvPCNetwork`, their
+      `T` forms, `ConvPCNetworkT`, `FullConvPCNetworkT`). Today `Save` refuses them, so they cannot
+      save weights at all; checkpoints follow once they can.
 - [ ] Make settling semantics explicit in the file. An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 

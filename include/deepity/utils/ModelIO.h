@@ -254,7 +254,7 @@ private:
     writer.SetMetadata("deepity.kind", checkpoint ? "checkpoint" : "inference");
 
     std::vector<std::vector<char>> packed;
-    size_t layerIdx = 0;
+    size_t layerIdx = 0, tensorCount = 0;
     for (const auto& layerPtr : net.GetLayers())
     {
       // Pushes a device-resident layer's current state into its host
@@ -262,7 +262,10 @@ private:
       // CPU layer.
       detail::SyncFromDeviceIfSupported(layerPtr);
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
+      {
         detail::AddTensorPacked(writer, packed, detail::TensorFileName(layerIdx, name), tensor);
+        ++tensorCount;
+      }
       // Layer types without the accessors never reach here with `checkpoint` set, see
       // RequireCheckpointSupport(); the requires-check just keeps them compiling.
       if constexpr (requires { layerPtr->GetOptimizerStateDict(); })
@@ -275,6 +278,9 @@ private:
         }
       ++layerIdx;
     }
+    if (layerIdx > 0 && tensorCount == 0)
+      throw std::runtime_error("ModelIO: this network exposes no weights to save (its layers have no "
+                               "state dict yet), so the file would be empty.");
     writer.Write(filepath);
     return true;
   }

@@ -337,6 +337,12 @@ public:
   void ComputeMuOnly() noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
+  std::map<std::string, TensorDescriptor> GetOptimizerStateDict() const override;
+  std::map<std::string, int*> GetOptimizerCounters() const override;
+  bool SupportsCheckpoint() const noexcept override
+  {
+    return true;
+  }
 
 private:
   std::unique_ptr<MemoryArena> localArena;

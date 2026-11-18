@@ -388,6 +388,25 @@ std::map<std::string, TensorDescriptorT<T>> GaussSeidelPCLayerT<T, AccumT>::GetS
           {"E", {E, std::vector<size_t>{nextSize, size}}}};
 }
 
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> GaussSeidelPCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const std::vector<size_t> wShape = std::vector<size_t>{nextSize, size}, bShape = std::vector<size_t>{nextSize};
+  return {{"weight.m", {ptr(m_W), wShape}}, {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},   {"bias.v", {ptr(v_b), bShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> GaussSeidelPCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}};
+}
+
 template class GaussSeidelPCLayerT<float, float>;
 template void GaussSeidelPCLayerT<float, float>::BindMemory<MemoryArenaT<float>>(
     MemoryArenaT<float>& arena);
