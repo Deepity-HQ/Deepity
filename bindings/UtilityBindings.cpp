@@ -42,7 +42,7 @@ nb::object TensorToNumpy(const Deep::io::SafeTensorsReader& reader, const Deep::
     dims[i] = e.shape[i];
   if (bytes != nullptr && reinterpret_cast<uintptr_t>(bytes) % alignof(T) == 0)
   {
-    auto mapping = new std::shared_ptr<const Deep::io::MappedFile>(reader.Mapping());
+    auto mapping = new std::shared_ptr<const Deep::io::MappedFile>(reader.Mapping(e));
     nb::capsule owner(mapping, [](void* p) noexcept { delete static_cast<std::shared_ptr<const Deep::io::MappedFile>*>(p); });
     return nb::cast(nb::ndarray<nb::numpy, const T>(static_cast<const T*>(bytes), e.shape.size(), dims, owner));
   }

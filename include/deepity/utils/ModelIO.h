@@ -182,6 +182,25 @@ public:
     return Write(net, filepath, metadata, /*checkpoint=*/false);
   }
 
+  /// @brief Like Save(), but splits the file over several shards of at most `maxShardBytes` each
+  /// (see SafeTensorsWriter::WriteSharded). `indexPath` must end in `.safetensors.index.json`;
+  /// Load(), LoadCheckpoint() and ReadMetadata() accept that index path as they do a file path.
+  template <typename NetworkType>
+  static bool SaveSharded(const NetworkType& net, const std::string& indexPath, uint64_t maxShardBytes,
+                          const std::map<std::string, std::string>& metadata = {})
+  {
+    return Write(net, indexPath, metadata, /*checkpoint=*/false, maxShardBytes);
+  }
+
+  /// @brief Sharded form of SaveCheckpoint().
+  template <typename NetworkType>
+  static bool SaveCheckpointSharded(const NetworkType& net, const std::string& indexPath, uint64_t maxShardBytes,
+                                    const std::map<std::string, std::string>& metadata = {})
+  {
+    detail::RequireCheckpointSupport(net);
+    return Write(net, indexPath, metadata, /*checkpoint=*/true, maxShardBytes);
+  }
+
   /// @brief Like Save(), but also writes everything needed to resume training: Adam/AdamW
   /// moments and step counters for every layer. The file has `deepity.kind = "checkpoint"`;
   /// Load() still reads its weights, LoadCheckpoint() restores the optimizer state too.
@@ -305,7 +324,7 @@ public:
 private:
   template <typename NetworkType>
   static bool Write(const NetworkType& net, const std::string& filepath,
-                    const std::map<std::string, std::string>& metadata, bool checkpoint)
+                    const std::map<std::string, std::string>& metadata, bool checkpoint, uint64_t maxShardBytes = 0)
   {
     io::SafeTensorsWriter writer;
     writer.SetMetadata("deepity.format_version", "1");
@@ -341,7 +360,10 @@ private:
     if (layerIdx > 0 && tensorCount == 0)
       throw std::runtime_error("ModelIO: this network exposes no weights to save (its layers have no "
                                "state dict yet), so the file would be empty.");
-    writer.Write(filepath);
+    if (maxShardBytes > 0)
+      writer.WriteSharded(filepath, maxShardBytes);
+    else
+      writer.Write(filepath);
     return true;
   }
 

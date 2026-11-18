@@ -265,6 +265,51 @@ bool Throws(auto&& fn)
   return false;
 }
 
+/// @brief A model split over several shards must load as one, resume as a checkpoint, and reject
+/// an index that lies about its shards.
+bool ShardingWorks(const std::string& dir)
+{
+  namespace fs = std::filesystem;
+  fs::create_directories(dir);
+  const std::string index = dir + "/m.safetensors.index.json";
+  auto a = MakeNet(41), b = MakeNet(42);
+  ModelIO::SaveSharded(*a, index, 200);
+  size_t shardFiles = 0;
+  for (const auto& e : fs::directory_iterator(dir))
+    shardFiles += e.path().extension() == ".safetensors";
+  ModelIO::Load(*b, index);
+  const bool loads = shardFiles > 1 && SameState(*a, *b);
+  const io::SafeTensorsReader reader(index);
+  const bool oneReader = reader.ShardCount() == shardFiles && ModelIO::ReadMetadata(index).count("deepity.kind") == 1;
+
+  // Moving the index to a directory with no shards must fail, not guess.
+  auto indexText = [&] { std::ifstream f(index); return std::string((std::istreambuf_iterator<char>(f)), {}); }();
+  auto writeIndex = [&](const std::string& name, const std::string& text) { std::ofstream(dir + "/" + name) << text; return dir + "/" + name; };
+  const bool missingShard = Throws([&] { io::SafeTensorsReader r(writeIndex("gone.safetensors.index.json",
+                                                                              std::string(indexText).replace(indexText.find("m-00001"), 7, "x-00001"))); });
+  const bool escapes = Throws([&] { io::SafeTensorsReader r(writeIndex("esc.safetensors.index.json",
+                                                                         R"({"weight_map":{"a":"../../etc/passwd"}})")); });
+  const bool empty = Throws([&] { io::SafeTensorsReader r(writeIndex("none.safetensors.index.json", R"({"weight_map":{}})")); });
+  const bool lies = Throws([&]
+                           {
+                             std::string t = indexText;
+                             const size_t at = t.find("m-00002");
+                             t.replace(at, 7, "m-00001");
+                             io::SafeTensorsReader r(writeIndex("lie.safetensors.index.json", t));
+                           });
+
+  auto c = MakeNet(43), d = MakeNet(44);
+  ModelIO::SaveCheckpointSharded(*c, dir + "/c.safetensors.index.json", 400);
+  const bool checkpointLoads = !Throws([&] { ModelIO::LoadCheckpoint(*d, dir + "/c.safetensors.index.json"); }) && SameState(*c, *d);
+  fs::remove_all(dir);
+  const bool ok = loads && oneReader && missingShard && escapes && empty && lies && checkpointLoads;
+  printf("  %zu shards: loads=%d oneReader=%d missingShard=%d escapes=%d empty=%d lies=%d checkpoint=%d\n", shardFiles, loads, oneReader,
+         missingShard, escapes, empty, lies, checkpointLoads);
+  printf("%s\n", ok ? "PASSED: sharded save, load, checkpoint and index validation" : "FAILED: sharding");
+  return ok;
+}
+
+
 /// @brief Foreign tensor names: a prefixed copy of a saved file loads through `rename`, and
 /// strict mode reports every name that does not line up.
 bool LoadWeightsWorks(const std::string& path)
@@ -412,6 +457,7 @@ int main()
   ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path, 8, 4);
   ok &= CheckpointResumes<FullConvPCNetwork>("FullConvPCNetwork", MakeConvNet, path, 64, 10);
   ok &= LoadWeightsWorks(path);
+  ok &= ShardingWorks(path + ".shards");
   ok &= QuantRoundTrips<Fp4E2M1Value>("FullPCNetworkT<fp4_e2m1>", path);
   ok &= QuantRoundTrips<Posit4_1Value>("FullPCNetworkT<posit4_1>", path);
   ok &= CheckpointResumes<DirectKPPCNetworkT<double, double>, decltype(&MakeDkpDouble), double>(

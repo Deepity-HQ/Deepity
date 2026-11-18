@@ -27,6 +27,9 @@ from .FullPCN import FullPCN
 
 # Model files
 from ._serialization import load, resume
+from ._backend import dy as _dy
+
+read_tensors = _dy.read_tensors
 # Architecture
 from .layer import (
     Layer,
@@ -62,6 +65,7 @@ dsigmoid = dy.dsigmoid
 
 
 __all__ = [
+    "read_tensors",
     # Model files
     "load",
     "resume",

@@ -2,6 +2,7 @@
 #include "deepity/io/Blake3.h"
 #include <algorithm>
 #include <bit>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <limits>
@@ -177,10 +178,140 @@ void SafeTensorsWriter::Write(const std::string& path) const
   }
 }
 
+void SafeTensorsWriter::WriteSharded(const std::string& indexPath, uint64_t maxShardBytes) const
+{
+  const std::string suffix = kIndexSuffix;
+  if (indexPath.size() <= suffix.size() || indexPath.compare(indexPath.size() - suffix.size(), suffix.size(), suffix) != 0)
+    Fail(indexPath, "a shard index path must end in " + suffix);
+  if (maxShardBytes == 0)
+    Fail(indexPath, "the shard size limit must be above zero");
+  if (tensors.empty())
+    Fail(indexPath, "there are no tensors to write");
+
+  const std::filesystem::path index(indexPath);
+  const std::string stem = index.filename().string().substr(0, index.filename().string().size() - suffix.size());
+
+  std::vector<std::vector<const Pending*>> groups(1);
+  uint64_t used = 0, total = 0;
+  for (const auto& t : tensors)
+  {
+    if (!groups.back().empty() && used + t.entry.end > maxShardBytes)
+    {
+      groups.emplace_back();
+      used = 0;
+    }
+    groups.back().push_back(&t);
+    used += t.entry.end;
+    total += t.entry.end;
+  }
+
+  nlohmann::json weightMap = nlohmann::json::object();
+  for (size_t g = 0; g < groups.size(); ++g)
+  {
+    char name[64];
+    std::snprintf(name, sizeof(name), "-%05zu-of-%05zu.safetensors", g + 1, groups.size());
+    const std::string shardName = stem + name;
+    SafeTensorsWriter shard;
+    shard.metadata = metadata;
+    shard.hash = hash;
+    for (const Pending* p : groups[g])
+    {
+      shard.tensors.push_back(*p);
+      // A byte-swapped copy lives in `owned`; point the copy at its own buffer, not the original's.
+      if (!p->owned.empty())
+        shard.tensors.back().data = shard.tensors.back().owned.data();
+      weightMap[p->entry.name] = shardName;
+    }
+    shard.Write((index.parent_path() / shardName).string());
+  }
+
+  nlohmann::json body = {{"metadata", {{"total_size", total}, {"shard_count", groups.size()}}}, {"weight_map", weightMap}};
+  const std::string tmp = indexPath + ".tmp";
+  {
+    std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
+    if (!out)
+      Fail(indexPath, "cannot open '" + tmp + "' for writing");
+    const std::string text = body.dump(2);
+    out.write(text.data(), static_cast<std::streamsize>(text.size()));
+    out.flush();
+    if (!out)
+      Fail(indexPath, "write failed (disk full or permission problem)");
+  }
+  std::error_code ec;
+  std::filesystem::rename(tmp, indexPath, ec);
+  if (ec)
+  {
+    std::filesystem::remove(tmp, ec);
+    Fail(indexPath, "cannot move the finished index into place");
+  }
+}
+
 // ---------------------------------------------------------------- reader
+
+void SafeTensorsReader::OpenSharded(bool verifyHash, bool useMmap)
+{
+  std::error_code ec;
+  const uint64_t size = std::filesystem::file_size(path, ec);
+  if (ec)
+    Fail(path, "cannot open file: " + ec.message());
+  if (size > kMaxHeaderBytes)
+    Fail(path, "shard index is larger than " + std::to_string(kMaxHeaderBytes) + " bytes");
+  std::ifstream f(path, std::ios::binary);
+  const std::string text((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+  const nlohmann::json index = nlohmann::json::parse(text, nullptr, /*allow_exceptions=*/false);
+  if (index.is_discarded() || !index.is_object() || !index.contains("weight_map") || !index["weight_map"].is_object())
+    Fail(path, "shard index is not a JSON object with a weight_map");
+
+  const std::filesystem::path dir = std::filesystem::path(path).parent_path();
+  std::map<std::string, size_t> shardOf;
+  for (const auto& [tensor, file] : index["weight_map"].items())
+  {
+    if (!file.is_string())
+      Fail(path, "weight_map entry for '" + tensor + "' is not a file name");
+    const std::string name = file.get<std::string>();
+    if (name.empty() || name.find('/') != std::string::npos || name.find('\\') != std::string::npos || name == "." || name == ".." ||
+        name.find("..") != std::string::npos)
+      Fail(path, "shard name '" + name + "' must be a plain file name beside the index");
+    size_t idx = shards.size();
+    for (size_t i = 0; i < shards.size(); ++i)
+      if (shardFiles[i] == name)
+        idx = i;
+    if (idx == shards.size())
+    {
+      shards.push_back(std::make_shared<SafeTensorsReader>((dir / name).string(), verifyHash, useMmap));
+      shardFiles.push_back(name);
+    }
+    shardOf[tensor] = idx;
+  }
+  if (shards.empty())
+    Fail(path, "shard index lists no tensors");
+
+  for (size_t i = 0; i < shards.size(); ++i)
+    for (TensorEntry t : shards[i]->tensors)
+    {
+      const auto it = shardOf.find(t.name);
+      if (it == shardOf.end() || it->second != i)
+        Fail(path, "tensor '" + t.name + "' is in " + shardFiles[i] + " but the index does not say so");
+      t.shard = i;
+      tensors.push_back(std::move(t));
+      shardOf.erase(it);
+    }
+  if (!shardOf.empty())
+    Fail(path, "the index names tensor '" + shardOf.begin()->first + "', which no shard contains");
+
+  metadata = shards[0]->metadata;
+  dataOffset = shards[0]->dataOffset;
+  dataSize = shards[0]->dataSize;
+}
 
 SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHash, bool useMmap) : path(filePath)
 {
+  const std::string suffix = ".index.json";
+  if (path.size() > suffix.size() && path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0)
+  {
+    OpenSharded(verifyHash, useMmap);
+    return;
+  }
   std::error_code ec;
   const uint64_t fileSize = std::filesystem::file_size(path, ec);
   if (ec)
@@ -360,6 +491,7 @@ const TensorEntry* SafeTensorsReader::Find(const std::string& name) const noexce
 
 const void* SafeTensorsReader::Bytes(const TensorEntry& entry) const noexcept
 {
+  if (!shards.empty()) return shards[entry.shard]->Bytes(entry);
   if (mapping == nullptr) return nullptr;
   if (!entry.packed && kHostIsBigEndian && DTypeSize(entry.dtype) > 1) return nullptr;
   return mapping->Data() + dataOffset + entry.begin;
@@ -367,6 +499,11 @@ const void* SafeTensorsReader::Bytes(const TensorEntry& entry) const noexcept
 
 void SafeTensorsReader::Read(const TensorEntry& entry, void* dst, size_t dstBytes) const
 {
+  if (!shards.empty())
+  {
+    shards[entry.shard]->Read(entry, dst, dstBytes);
+    return;
+  }
   if (dstBytes != entry.ByteSize())
     Fail(path, "tensor '" + entry.name + "' is " + std::to_string(entry.ByteSize()) +
                    " bytes, but the destination holds " + std::to_string(dstBytes));

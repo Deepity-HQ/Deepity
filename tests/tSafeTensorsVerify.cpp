@@ -396,10 +396,11 @@ void TestMmap()
 
   // A view keeps the data alive after the reader is gone.
   std::shared_ptr<const MappedFile> keep;
+  (void)keep;
   const void* viewPtr = nullptr;
   {
     SafeTensorsReader r(path);
-    keep = r.Mapping();
+    keep = r.Mapping(*r.Find("a"));
     viewPtr = r.Bytes(*r.Find("a"));
   }
   Check(viewPtr != nullptr && std::memcmp(viewPtr, a.data(), 4000) == 0, "mapping outlives the reader");

@@ -158,14 +158,35 @@ here has run on big-endian hardware.
 - Golden files for each version live in `tests/data/` and are loaded by CI on every build.
 - Files written by 0.1.0a7 and a8 (legacy names, no metadata) stay readable.
 
-## Sharding (planned, not built yet)
+## Sharding
 
-Large models may later be split across files with a `model.safetensors.index.json` mapping tensor
-names to shard files, as Hugging Face does. Rules reserved now so v1 files stay valid:
+A large model may be split across files with an index, as Hugging Face does. `ModelIO::SaveSharded`
+(and `SaveCheckpointSharded`) write `<stem>-00001-of-0000N.safetensors` files plus
+`<stem>.safetensors.index.json`:
+
+```json
+{"metadata": {"total_size": 123456, "shard_count": 4},
+ "weight_map": {"layers.0.weight": "m-00001-of-00004.safetensors", "...": "..."}}
+```
 
 - A single file is always a valid model. The index is optional and lives next to the shards.
-- Tensor names never encode the shard. Readers resolve names through the index when it exists.
-- `deepity.format_version` and `deepity.model` appear in every shard's metadata.
+- Tensor names never encode the shard. Readers resolve names through `weight_map`.
+- Every shard is a complete safetensors file with the full `deepity.*` metadata and its own
+  `deepity.content_blake3`, so a shard also opens alone in a stock reader.
+- Shards fill in tensor order and close when the next tensor would pass the size limit. A tensor
+  larger than the limit gets a shard of its own.
+- Shards are written first and the index last, each atomically, so an index never names a missing
+  shard. Saving again over an old set does not delete shards the new set no longer uses.
+- A reader opens a path ending in `.index.json` as one logical file. It rejects a shard name that
+  is not a plain file name beside the index, a tensor present in a different shard than the index
+  says, an indexed tensor that no shard holds, and an index with no tensors.
+
+## Memory mapping
+
+`SafeTensorsReader` maps the file by default and falls back to buffered reads. `Bytes(entry)`
+gives a zero-copy pointer and `Mapping(entry)` an owner that keeps it valid, which is how
+`deepity.read_tensors` returns read-only numpy views. Truncating a mapped file while it is open
+can crash the reader, as with any mmap; write models by replacing the file, as `Save` does.
 
 ## Hash
 

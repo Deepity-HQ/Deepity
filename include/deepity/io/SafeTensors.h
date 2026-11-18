@@ -38,6 +38,8 @@ struct TensorEntry
   uint64_t end = 0;
   /// @brief True when the bytes use a packed layout (see DType.h), so callers must unpack them.
   bool packed = false;
+  /// @brief Which shard holds the tensor (0 for a single file). Set by the reader.
+  size_t shard = 0;
 
   size_t ByteSize() const noexcept
   {
@@ -49,6 +51,8 @@ struct TensorEntry
 /// unknown. Packed dtype names report 1, the layout of 0.1.0a8 files that stored them unpacked.
 size_t DTypeSize(const std::string& dtype) noexcept;
 
+/// @brief Suffix of a shard index file.
+inline constexpr const char* kIndexSuffix = ".safetensors.index.json";
 /// @brief Metadata key under which the data-region BLAKE3 is stored.
 inline constexpr const char* kHashKey = "deepity.content_blake3";
 /// @brief Metadata key mapping tensor name to its logical dtype and shape, for packed tensors.
@@ -82,6 +86,13 @@ public:
   /// @brief Writes to `path` through a temporary file and a rename, so a crash never leaves a
   /// half-written model at `path`.
   void Write(const std::string& path) const;
+  /// @brief Splits the tensors over several files named `<stem>-00001-of-0000N.safetensors` next to
+  /// `indexPath` (which must end in `.safetensors.index.json`), then writes that index. Tensors
+  /// keep their order and a shard closes once the next tensor would push it past `maxShardBytes`
+  /// (a tensor larger than the limit gets a shard of its own). Every shard carries the full
+  /// metadata and its own hash; the index goes last, so it never names a missing shard.
+  /// @throws SafeTensorsError on a bad path or limit, or any write failure.
+  void WriteSharded(const std::string& indexPath, uint64_t maxShardBytes) const;
 
 private:
   struct Pending
@@ -109,6 +120,10 @@ public:
   /// is hashed and compared. Pass false to skip the pass for a trusted local file.
   /// @throws SafeTensorsError if the file is missing, truncated, malformed or unsafe.
   /// @param useMmap map the file (the default); falls back to buffered reads if mapping fails.
+  ///
+  /// A path ending in `.index.json` opens a sharded model: the index and every shard it names are
+  /// validated (shard names must be plain file names beside the index, each tensor must be in
+  /// exactly the shard the index says), and the reader then behaves as one file.
   explicit SafeTensorsReader(const std::string& path, bool verifyHash = true, bool useMmap = true);
 
   const std::map<std::string, std::string>& Metadata() const noexcept
@@ -136,10 +151,16 @@ public:
   /// or the tensor would need conversion (byte swap on a big-endian host, packed types are fine
   /// as raw bytes). Valid while `Mapping()` or this reader is alive.
   const void* Bytes(const TensorEntry& entry) const noexcept;
-  /// @brief Shared owner of the mapping, so a view (for example a numpy array) can outlive the reader.
-  std::shared_ptr<const MappedFile> Mapping() const noexcept
+  /// @brief Shared owner of the mapping holding `entry`, so a view (for example a numpy array) can
+  /// outlive the reader. Null when the file is not mapped.
+  std::shared_ptr<const MappedFile> Mapping(const TensorEntry& entry) const noexcept
   {
-    return mapping;
+    return shards.empty() ? mapping : shards[entry.shard]->mapping;
+  }
+  /// @brief Number of files behind this reader: 1 for a plain file, N for a shard index.
+  size_t ShardCount() const noexcept
+  {
+    return shards.empty() ? 1 : shards.size();
   }
   /// @brief Reads exactly `entry.ByteSize()` bytes into `dst`.
   /// @throws SafeTensorsError if `dstBytes` differs from the tensor's size or the read fails.
@@ -149,6 +170,9 @@ private:
   std::string path;
   mutable std::ifstream in;
   std::shared_ptr<const MappedFile> mapping;
+  std::vector<std::shared_ptr<SafeTensorsReader>> shards; ///< Non-empty only for a shard index.
+  std::vector<std::string> shardFiles;
+  void OpenSharded(bool verifyHash, bool useMmap);
   std::map<std::string, std::string> metadata;
   std::vector<TensorEntry> tensors;
   uint64_t dataOffset = 0;

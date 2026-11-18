@@ -23,6 +23,9 @@ earlier history.
 - `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) loads weights from any safetensors file, such as a PyTorch export, mapping names with `rename` and reporting or rejecting names that do not line up.
 - `deepity.inference` now records `mode` (`"iterative"`), and `deepity.load` rejects a mode it does not know.
 
+- Model files are memory mapped on read by default, and `deepity.read_tensors(path)` returns every tensor as a numpy array in one call (zero-copy read-only views when mapped).
+- Sharded models: `ModelIO::SaveSharded` and `SaveCheckpointSharded` split a model over several safetensors files with a `*.safetensors.index.json`; `Load`, `LoadCheckpoint` and `deepity.load` open the index path like a file.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
