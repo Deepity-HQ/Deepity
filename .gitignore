@@ -8,6 +8,7 @@ tiny-imagenet-200/
 MNIST/*
 pyrightconfig.json
 *.safetensors
+!tests/data/*.safetensors
 *_meta.json
 
 # Claude Code -- local instructions and session/settings state, not shared.

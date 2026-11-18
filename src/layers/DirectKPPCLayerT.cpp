@@ -169,7 +169,7 @@ std::map<std::string, TensorDescriptorT<T>> DirectKPPCLayerT<T, AccumT>::GetStat
 {
   return {{"W", {W, std::vector<size_t>{nextSize, size}}},
           {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {Psi, std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}}}};
 }
 
 template <typename T, typename AccumT>

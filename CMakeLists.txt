@@ -551,7 +551,7 @@ FetchContent_MakeAvailable(highway)
 # their own small static library instead, built without
 # DEEPITY_TARGET_COMPILE_OPTIONS's -march pin, then linked into Deepity
 # like any other dependency (sleef, hwy itself).
-add_library(DeepityHighwayKernels STATIC src/backend/CPUBackendHighway.cpp)
+add_library(DeepityHighwayKernels STATIC src/backend/CPUBackendHighway.cpp src/io/Blake3.cpp)
 target_include_directories(DeepityHighwayKernels PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # HWY_TARGET_INCLUDE ("backend/CPUBackendHighway.cpp") must resolve via
 # an include search path -- add src/ so it does.
@@ -733,6 +733,7 @@ set(DEEPITY_SOURCES
     src/networks/SimpleConvPCNetwork.cpp
     src/networks/DirectKPPCNetwork.cpp
     src/utils/StreamAlignedBatcher.cpp
+    src/io/SafeTensors.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp
@@ -1052,6 +1053,26 @@ if(DEEPITY_BUILD_TESTS)
     )
     add_test(NAME WeightCenteringVerify COMMAND WeightCenteringVerify)
     list(APPEND DEEPITY_TEST_TARGETS WeightCenteringVerify)
+
+    # ModelIO save/load round trip (every W, b and Psi value must survive).
+    add_executable(ModelIOVerify tests/tModelIOVerify.cpp)
+    target_link_libraries(ModelIOVerify PRIVATE Deepity)
+    set_target_properties(ModelIOVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ModelIOVerify COMMAND ModelIOVerify)
+    list(APPEND DEEPITY_TEST_TARGETS ModelIOVerify)
+
+    # Standalone safetensors reader/writer: round trips, validation, golden files.
+    add_executable(SafeTensorsVerify tests/tSafeTensorsVerify.cpp)
+    target_link_libraries(SafeTensorsVerify PRIVATE Deepity)
+    target_compile_definitions(SafeTensorsVerify PRIVATE
+        DEEPITY_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
+    set_target_properties(SafeTensorsVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME SafeTensorsVerify COMMAND SafeTensorsVerify)
+    list(APPEND DEEPITY_TEST_TARGETS SafeTensorsVerify)
 
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----

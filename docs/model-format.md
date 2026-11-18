@@ -15,8 +15,10 @@ The container is the safetensors format, unchanged:
 
 1. 8 bytes: little-endian `u64` header size `N`.
 2. `N` bytes: UTF-8 JSON header, padded with trailing spaces so `8 + N` is a multiple of 64.
-3. Tensor data, back to back. Each tensor starts at a 64-byte aligned file offset (insert
-   alignment gaps if needed; the header's `data_offsets` are relative to the end of the header).
+3. Tensor data, back to back with no gaps (stock safetensors rejects gaps). The header's
+   `data_offsets` are relative to the end of the header. The writer orders tensors by decreasing
+   element size, so every tensor starts at a multiple of its own element size, and the data
+   region starts on a 64-byte boundary. Readers do not require alignment.
 
 Tensor entries in the JSON header use the standard keys: `dtype`, `shape`, `data_offsets`.
 `__metadata__` is a string-to-string map, as safetensors requires.
@@ -32,7 +34,7 @@ All values are strings. Deepity keys are prefixed `deepity.`.
 | `deepity.model` | JSON string: architecture, see below. |
 | `deepity.inference` | JSON string: default settling settings, see below. |
 | `deepity.created_by` | e.g. `"deepity 0.1.0a9"`. Informational. |
-| `deepity.content_sha256` | Optional hex hash of the data region. |
+| `deepity.content_blake3` | Optional hex hash of the data region. |
 | `deepity.dtypes` | Optional JSON map from tensor name to logical dtype, for non-standard types. |
 
 Readers ignore unknown `deepity.*` keys. Readers must reject a `format_version` greater than the
@@ -85,7 +87,8 @@ Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by
 
 Standard safetensors names are used where one exists (`F32`, `F16`, `F64`). Types safetensors
 does not know (posit4, packed fp4 variants) are stored as `U8` with the true type recorded in
-`deepity.dtypes`, so stock readers still open the file. Open question below.
+`deepity.dtypes`, so stock readers still open the file. A stock reader sees opaque bytes, which is
+safe; only Deepity interprets them. (Decided 2026-11-14.)
 
 ## Validation (every reader)
 
@@ -102,9 +105,22 @@ does not know (posit4, packed fp4 variants) are stored as `U8` with the true typ
 - Golden files for each version live in `tests/data/` and are loaded by CI on every build.
 - Files written by 0.1.0a7 and a8 (legacy names, no metadata) stay readable.
 
+## Sharding (planned, not built yet)
+
+Large models may later be split across files with a `model.safetensors.index.json` mapping tensor
+names to shard files, as Hugging Face does. Rules reserved now so v1 files stay valid:
+
+- A single file is always a valid model. The index is optional and lives next to the shards.
+- Tensor names never encode the shard. Readers resolve names through the index when it exists.
+- `deepity.format_version` and `deepity.model` appear in every shard's metadata.
+
+## Hash
+
+`deepity.content_blake3` is optional and written by default. It is the BLAKE3 hash (32 bytes) of the
+data region (every byte after the header), as lowercase hex. Loaders verify it when present, and offer a flag to skip verification for
+trusted local files. (Decided 2026-11-14; SHA-256 replaced by BLAKE3 on 2026-11-17 for speed. Files with a
+`deepity.content_sha256` key from drafts are not supported.)
+
 ## Open questions
 
-- Custom dtype storage: `U8` plus `deepity.dtypes`, or register names with the safetensors project?
-- Single file only, or also a sharded layout with `model.safetensors.index.json` for large models?
 - How much of the layer description is shared between the float and templated layer families?
-- Is `deepity.content_sha256` mandatory for checkpoints?

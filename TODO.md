@@ -5,6 +5,10 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Decisions so far
 
+- [x] Custom dtypes: stored as `U8` plus `deepity.dtypes` metadata.
+- [x] Sharding: planned in the spec, built later (Phase 4).
+- [x] Content hash: optional, written by default.
+
 - [x] **Native format is real safetensors** plus a versioned Deepity metadata block. Chosen for
       cross-platform support, zero-copy mmap and adoption.
 - [x] **Settling settings are part of the artifact** (`inference_steps`, inference rate, per-layer
@@ -42,20 +46,34 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       layout conventions (conv `[outC, inC*kH*kW]`, Psi padding), versioning rules.
       Draft v0 written; open questions are listed at the bottom of the file.
 - [x] Check that stock `safetensors` reads our current files. Gaps recorded above.
-- [ ] Add a DKP save/load round-trip regression test (Psi rows), expected to fail until fixed.
-- [ ] Add golden files (a7/a8-era file, plus one per dtype) and a CI test that loads them forever.
+- [x] Add a DKP save/load round-trip regression test (`tests/tModelIOVerify.cpp`). Failed on the
+      old code at the predicted rows, passes now. Legacy (a8) files verified to still load.
+- [x] Round-trip test covers `DirectKPPCNetwork`, `FullPCNetwork`, `FullPCNetworkT<double>`,
+      `FullConvPCNetwork`, dtype mismatch and corruption rejection (`tests/tModelIOVerify.cpp`).
+- [~] Golden files: `tests/data/golden_v1.safetensors` and `legacy_a8_dkp.safetensors` added and
+      loaded by `SafeTensorsVerify`. Still to add: one per extra dtype once those are written. CI does
+      not run tests (`--no-tests`), so a test job is still needed.
       Note `.gitignore` excludes `*.safetensors` and `*_meta.json`, so fixtures need an exception.
 - [ ] Decide naming: stable tensor names (for example `layers.3.weight`) instead of positional keys.
 
 ## Phase 1: core format cleanup
 
-- [ ] Conform to the safetensors spec (header padding, metadata as string map, contiguous offsets).
+- [x] Standalone reader/writer (`include/deepity/io/SafeTensors.h`, `src/io/SafeTensors.cpp`):
+      header padding, 64-byte data alignment, string metadata, contiguous offsets, atomic write,
+      BLAKE3 hash, strict validation. Output opens in stock `safetensors`. Not yet wired into
+      `ModelIO::Save/Load`.
 - [ ] `format_version` plus unknown-field-tolerant reads. Reader for current a7/a8 files.
-- [ ] Validate untrusted input: header size cap, offsets against real file size, no overlaps,
-      `prod(shape) * dtype size == bytes`, dtype allow-list.
-- [ ] Atomic writes (temp file plus rename) and optional content hash.
+- [x] Validate untrusted input (in the new reader): header size cap, offsets against the real file
+      size, no overlaps or gaps, `prod(shape) * dtype size == bytes`, overflow-safe, dtype allow-list.
+- [x] `ModelIO::Save/Load` use the validating reader/writer, new `layers.{i}.weight|bias|psi` names,
+      legacy `layer_{i}.*` names still load. Still `bool` returns (see below).
+- [x] Atomic writes (temp file plus rename) and content hash, in the new writer.
 - [ ] Replace `bool` returns with exceptions or a result type that carries the reason.
-- [ ] Aligned tensor data (64 bytes) so mmap and SIMD paths work.
+- [x] Aligned data region (64 bytes), tensors aligned to element size.
+- [x] Hash: BLAKE3 in Highway with runtime dispatch (`src/io/Blake3.cpp`, adapted from
+      Universal-Blake3), checked against the reference implementation. Dispatch costs nothing
+      versus the static upstream header (same speed, same compiler). Absolute speed here varies
+      with the CPU governor (1.9 to 3.5 GB/s per thread on one laptop).
 
 ## Phase 2: dtype system
 
@@ -107,5 +125,5 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Housekeeping
 
-- [ ] Commit the root cleanup (deleted `.whl`, `gpu_interop_verify.*`).
+- [x] Root cleanup committed.
 - [ ] `pyrightconfig.json` is tracked but also listed in `.gitignore`. Pick one.

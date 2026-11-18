@@ -187,7 +187,7 @@ std::map<std::string, Deep::TensorDescriptor> Deep::FullPCLayer::GetStateDict() 
 {
   return {{"W", {W, std::vector<size_t>{nextSize, size}}},
           {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {Psi, std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}}}};
 }
 
 float FullPCLayer::CalculateState(bool needEnergy) noexcept

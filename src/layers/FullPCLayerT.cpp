@@ -184,7 +184,7 @@ void FullPCLayerT<T, AccumT>::EnsureStateDictStaging() const noexcept
 {
   hostW.resize(nextSize * size);
   hostB.resize(nextSize);
-  hostPsi.resize(nextSize * terminalSize);
+  hostPsi.resize((nextSize > 0 ? size : 0) * terminalSize);
 }
 
 template <typename T, typename AccumT>
@@ -193,7 +193,7 @@ std::map<std::string, TensorDescriptorT<T>> FullPCLayerT<T, AccumT>::GetStateDic
   EnsureStateDictStaging();
   return {{"W", {hostW.data(), std::vector<size_t>{nextSize, size}}},
           {"b", {hostB.data(), std::vector<size_t>{nextSize}}},
-          {"Psi", {hostPsi.data(), std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {hostPsi.data(), std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}}}};
 }
 
 template <typename T, typename AccumT>

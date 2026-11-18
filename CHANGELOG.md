@@ -18,7 +18,7 @@ earlier history.
 
 ### Changed
 
--
+- `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
 
 ### Deprecated
 
@@ -30,7 +30,8 @@ earlier history.
 
 ### Fixed
 
--
+- `ModelIO::Save()` truncated every `Psi` tensor (DKP and FullPC feedback weights) whenever a layer's size differed from the next layer's: the state dict labeled Psi `[nextSize, terminal]` while the buffer is `[size, terminal]`, so rows were dropped and a resumed run loaded partly wrong feedback weights. Affects `DirectKPPCLayer`, `DirectKPPCLayerT`, `FullPCLayer` and `FullPCLayerT` (the last also staged too few Psi rows on the host). Files written by 0.1.0a8 and earlier still load; their missing rows keep the network's current values.
+- `ModelIO::Load()` now throws on a tensor shape mismatch instead of reading mismatched bytes.
 
 ### Security
 

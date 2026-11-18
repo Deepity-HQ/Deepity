@@ -1,22 +1,21 @@
 #pragma once
+#include <algorithm>
 #include <cstdint>
+#include <deepity/io/SafeTensors.h>
 #include <deepity/utils/DTypeTag.h>
-#include <fstream>
-#include <nlohmann/json.hpp>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <vector>
 
 /**
  * @file ModelIO.h
- * @brief Saves/loads a network's compiled weight arena to/from disk,
- * as a JSON header (per-layer shapes/offsets/dtypes) plus a raw
- * binary data blob. Templated on NetworkType, so it works across
- * every PC network variant that exposes GetLayers(). The element
- * type backing each tensor is derived from each tensor's own `.data`
- * pointer (via DTypeTag<T>), not assumed to be `float`. Load() checks
- * the file's dtype against what the calling network's own tensors
- * expect and throws std::runtime_error on a mismatch.
+ * @brief Saves/loads a network's weights to/from a safetensors file (see docs/model-format.md),
+ * through the validating reader/writer in deepity/io/SafeTensors.h. Templated on NetworkType, so
+ * it works across every PC network variant that exposes GetLayers(). Each tensor's element type
+ * comes from its own `.data` pointer (via DTypeTag<T>). Load() checks the file's dtype and shape
+ * against the calling network and throws std::runtime_error on a mismatch.
  */
 
 namespace Deep
@@ -50,36 +49,23 @@ inline std::pair<size_t, size_t> RowsAndWidth(const std::vector<size_t>& shape)
   return {rows, width};
 }
 
-/// @brief Writes a tensor's real (unpadded) elements to `out`, one row
-/// at a time when rowStride requires it, so a padded buffer like a
-/// DirectKPPCLayer run's Psi never has its padding columns serialized.
-template <typename ElementType>
-void WriteTensorData(std::ofstream& out, const ElementType* data, const std::vector<size_t>& shape,
-                     size_t rowStride)
+/// @brief True when the tensor is stored with padding between rows.
+inline bool IsPadded(const std::vector<size_t>& shape, size_t rowStride)
 {
-  auto [rows, width] = RowsAndWidth(shape);
-  if (rowStride == 0 || rowStride == width)
-  {
-    out.write(reinterpret_cast<const char*>(data), rows * width * sizeof(ElementType));
-    return;
-  }
-  for (size_t r = 0; r < rows; ++r)
-    out.write(reinterpret_cast<const char*>(data + r * rowStride), width * sizeof(ElementType));
+  return rowStride != 0 && rowStride != RowsAndWidth(shape).second;
 }
 
-/// @brief Counterpart to WriteTensorData() for Load().
-template <typename ElementType>
-void ReadTensorData(std::ifstream& in, ElementType* data, const std::vector<size_t>& shape,
-                    size_t rowStride)
+/// @brief Stable on-disk name for a layer's state-dict entry ("W" becomes "weight", and so on).
+inline std::string TensorFileName(size_t layer, const std::string& name)
 {
-  auto [rows, width] = RowsAndWidth(shape);
-  if (rowStride == 0 || rowStride == width)
-  {
-    in.read(reinterpret_cast<char*>(data), rows * width * sizeof(ElementType));
-    return;
-  }
-  for (size_t r = 0; r < rows; ++r)
-    in.read(reinterpret_cast<char*>(data + r * rowStride), width * sizeof(ElementType));
+  std::string base = name == "W" ? "weight" : name == "b" ? "bias" : name == "Psi" ? "psi" : name;
+  return "layers." + std::to_string(layer) + "." + base;
+}
+
+/// @brief Name used by files written before the versioned format (0.1.0a8 and earlier).
+inline std::string LegacyTensorFileName(size_t layer, const std::string& name)
+{
+  return "layer_" + std::to_string(layer) + "." + name;
 }
 } // namespace detail
 
@@ -89,123 +75,122 @@ void ReadTensorData(std::ifstream& in, ElementType* data, const std::vector<size
 class ModelIO
 {
 public:
-  /// @brief Writes `net`'s weights to a single file at `filepath`:
-  /// a JSON header (per-layer tensor shapes/offsets) followed by
-  /// the raw float data, back to back.
-  /// @return false if `filepath` couldn't be opened for writing;
-  /// true on success.
+  /// @brief Writes `net`'s weights to a single safetensors file at `filepath`, atomically, with
+  /// a content hash and `deepity.*` metadata. Padded tensors are written without their padding.
+  /// @return false if `filepath` couldn't be written; true on success.
   template <typename NetworkType>
   static bool Save(const NetworkType& net, const std::string& filepath)
   {
-    nlohmann::json header;
-    size_t current_offset = 0;
-    int layer_idx = 0;
-    std::string fileDtype = "F32"; // stays "F32" for an empty network, matching old behavior.
+    io::SafeTensorsWriter writer;
+    writer.SetMetadata("deepity.format_version", "1");
+    writer.SetMetadata("deepity.kind", "inference");
 
+    // Padded tensors are packed here; the writer keeps pointers until Write() returns.
+    std::vector<std::vector<char>> packed;
+    size_t layerIdx = 0;
     for (const auto& layerPtr : net.GetLayers())
     {
       // Pushes a device-resident layer's current state into its host
       // staging buffers before GetStateDict() reads them. No-op for a
       // CPU layer.
       detail::SyncFromDeviceIfSupported(layerPtr);
-      auto state_dict = layerPtr->GetStateDict();
-
-      for (const auto& [name, tensor] : state_dict)
-      {
-        using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
-        fileDtype = DTypeTag<ElementType>::Name();
-
-        std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
-
-        size_t num_elements = 1;
-        for (size_t dim : tensor.shape)
-        {
-          num_elements *= dim;
-        }
-        size_t byte_size = num_elements * sizeof(ElementType);
-
-        header[key] = {{"dtype", fileDtype},
-                       {"shape", tensor.shape},
-                       {"data_offsets", {current_offset, current_offset + byte_size}}};
-        current_offset += byte_size;
-      }
-      layer_idx++;
-    }
-
-    header["__metadata__"] = {{"format", "deepity_safetensors"}, {"dtype", fileDtype}};
-
-    std::string header_str = header.dump();
-    uint64_t header_size = header_str.size();
-
-    std::ofstream out(filepath, std::ios::binary);
-    if (!out.is_open())
-      return false;
-
-    out.write(reinterpret_cast<const char*>(&header_size), sizeof(uint64_t));
-    out.write(header_str.data(), header_size);
-
-    for (const auto& layerPtr : net.GetLayers())
-    {
       for (const auto& [name, tensor] : layerPtr->GetStateDict())
       {
         using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
-        detail::WriteTensorData(out, tensor.data, tensor.shape, tensor.rowStride);
+        const auto [rows, width] = detail::RowsAndWidth(tensor.shape);
+        const size_t rowBytes = width * sizeof(ElementType);
+        const void* source = tensor.data;
+        if (detail::IsPadded(tensor.shape, tensor.rowStride))
+        {
+          packed.emplace_back(rows * rowBytes);
+          for (size_t r = 0; r < rows; ++r)
+            std::copy_n(reinterpret_cast<const char*>(tensor.data + r * tensor.rowStride), rowBytes,
+                        packed.back().data() + r * rowBytes);
+          source = packed.back().data();
+        }
+        try
+        {
+          writer.AddTensor(detail::TensorFileName(layerIdx, name), DTypeTag<ElementType>::Name(),
+                           tensor.shape, source, rows * rowBytes);
+        }
+        catch (const io::SafeTensorsError&)
+        {
+          return false;
+        }
       }
+      ++layerIdx;
+    }
+
+    try
+    {
+      writer.Write(filepath);
+    }
+    catch (const io::SafeTensorsError&)
+    {
+      return false;
     }
     return true;
   }
 
-  /// @brief Reads a file written by Save() back into `net`'s
-  /// already-compiled weight arena, matching each tensor by the
-  /// same "layer_N.name" key Save() wrote it under.
-  /// @return false if `filepath` couldn't be opened for reading;
-  /// true on success.
+  /// @brief Reads a file written by Save() (or by 0.1.0a8 and earlier) back into `net`'s
+  /// already-compiled weight arena. The whole file is validated first, including its hash.
+  /// @return false if `filepath` doesn't exist; true on success.
+  /// @throws io::SafeTensorsError for a malformed, truncated or corrupted file.
+  /// @throws std::runtime_error for a dtype or shape that doesn't match the network.
   template <typename NetworkType> static bool Load(NetworkType& net, const std::string& filepath)
   {
-    std::ifstream in(filepath, std::ios::binary);
-    if (!in.is_open())
+    if (!std::filesystem::exists(filepath))
       return false;
+    const io::SafeTensorsReader reader(filepath);
 
-    uint64_t header_size;
-    in.read(reinterpret_cast<char*>(&header_size), sizeof(uint64_t));
-
-    std::string header_str(header_size, '\0');
-    in.read(&header_str[0], header_size);
-
-    auto header = nlohmann::json::parse(header_str);
-    size_t base_offset = sizeof(uint64_t) + header_size;
-
-    int layer_idx = 0;
+    size_t layerIdx = 0;
     for (auto& layerPtr : net.GetLayers())
     {
-      auto state_dict = layerPtr->GetStateDict();
-      for (auto& [name, tensor] : state_dict)
+      auto stateDict = layerPtr->GetStateDict();
+      for (auto& [name, tensor] : stateDict)
       {
         using ElementType = std::remove_pointer_t<decltype(tensor.data)>;
-        std::string key = "layer_" + std::to_string(layer_idx) + "." + name;
+        const std::string key = detail::TensorFileName(layerIdx, name);
+        const io::TensorEntry* entry = reader.Find(key);
+        if (entry == nullptr)
+          entry = reader.Find(detail::LegacyTensorFileName(layerIdx, name));
+        if (entry == nullptr)
+          continue;
 
-        if (header.contains(key))
+        const char* expectedDtype = DTypeTag<ElementType>::Name();
+        if (entry->dtype != expectedDtype)
+          throw std::runtime_error("ModelIO::Load: dtype mismatch for '" + key + "' -- file has " +
+                                   entry->dtype + ", network expects " + expectedDtype + ".");
+
+        // Files written before 0.1.0a9 stored Psi as [nextSize, terminal] although the buffer is
+        // [size, terminal], dropping rows. Read what such a file has; anything else must match.
+        std::vector<size_t> readShape = tensor.shape;
+        if (entry->shape != tensor.shape)
         {
-          std::string fileDtype = header[key].value("dtype", std::string());
-          const char* expectedDtype = DTypeTag<ElementType>::Name();
-          if (!fileDtype.empty() && fileDtype != expectedDtype)
-          {
-            throw std::runtime_error("ModelIO::Load: dtype mismatch for '" + key +
-                                     "' -- file "
-                                     "has " +
-                                     fileDtype + ", network expects " + expectedDtype + ".");
-          }
-
-          size_t start_offset = header[key]["data_offsets"][0];
-
-          in.seekg(base_offset + start_offset, std::ios::beg);
-          detail::ReadTensorData(in, tensor.data, tensor.shape, tensor.rowStride);
+          const bool legacyTruncatedPsi = name == "Psi" && entry->shape.size() == 2 &&
+                                          tensor.shape.size() == 2 &&
+                                          entry->shape[1] == tensor.shape[1] &&
+                                          entry->shape[0] < tensor.shape[0];
+          if (!legacyTruncatedPsi)
+            throw std::runtime_error("ModelIO::Load: shape mismatch for '" + key + "'.");
+          readShape = entry->shape;
         }
+
+        const auto [rows, width] = detail::RowsAndWidth(readShape);
+        if (!detail::IsPadded(readShape, tensor.rowStride))
+        {
+          reader.Read(*entry, tensor.data, rows * width * sizeof(ElementType));
+          continue;
+        }
+        std::vector<ElementType> tight(rows * width);
+        reader.Read(*entry, tight.data(), tight.size() * sizeof(ElementType));
+        for (size_t r = 0; r < rows; ++r)
+          std::copy_n(tight.data() + r * width, width, tensor.data + r * tensor.rowStride);
       }
       // Pushes the reads above from host staging buffers on to the
       // actual device-resident parameters. No-op for a CPU layer.
       detail::SyncToDeviceIfSupported(layerPtr);
-      layer_idx++;
+      ++layerIdx;
     }
     return true;
   }
