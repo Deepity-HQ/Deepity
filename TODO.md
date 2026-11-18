@@ -90,8 +90,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       Test: `tests/pyModelFilesVerify.py` (run in the Linux CI job).
 - [ ] `net.load_weights(path, strict=False, rename=...)` for partial loads.
 - [~] Two artifact kinds: inference artifact and training checkpoint. Checkpoint done for
-      `DirectKPPCNetwork`, `FullPCNetwork` and `FullPCNetworkT` on CPU (Adam/AdamW moments, step
-      counters, caller training state). Still to do: conv family, `DirectKPPCNetworkT`, GPU
+      `DirectKPPCNetwork`, `FullPCNetwork`, `FullPCNetworkT` and `FullConvPCNetwork` on CPU (Adam/AdamW moments, step
+      counters, caller training state). Still to do: other conv networks, `DirectKPPCNetworkT`, GPU
       networks (moments live on the device), and an inference artifact that omits Psi.
 - [ ] Make settling semantics explicit in the file. An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.

@@ -87,8 +87,10 @@ states which prediction it describes: the full iterative model, or a forward-onl
   metadata key `deepity.training`, a JSON object the caller supplies and gets back unchanged
 
 A checkpoint has `deepity.kind = "checkpoint"`. Loading one as an inference model reads its
-weights and ignores the rest. Implemented for `DirectKPPCNetwork`, `FullPCNetwork` and
-`FullPCNetworkT` (any dtype), CPU only. Other networks and GPU networks refuse to write one.
+weights and ignores the rest. Implemented for `DirectKPPCNetwork`, `FullPCNetwork`,
+`FullPCNetworkT` (any dtype) and `FullConvPCNetwork`, CPU only. (The conv layers already keep their
+moments in the ordinary state dict as `m_W`, `v_W`, ..., so a conv checkpoint adds only the step
+counters.) Other networks and GPU networks refuse to write one.
 
 Layers with no weights (the terminal layer) write no tensors. Zero-size tensors are not written.
 Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by

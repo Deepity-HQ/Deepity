@@ -434,6 +434,13 @@ public:
   /// -- always safe for ModelIO to read or write directly, regardless
   /// of backend.
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
+  /// @brief Adam/AdamW moments already travel inside GetStateDict() (m_W, v_W, ...), so only the
+  /// step counters are extra for a checkpoint.
+  std::map<std::string, int*> GetOptimizerCounters() const override;
+  bool SupportsCheckpoint() const noexcept override
+  {
+    return true;
+  }
   /// @copydoc Deep::Layer::SyncStateDictFromDevice
   void SyncStateDictFromDevice() const override;
   /// @copydoc Deep::Layer::SyncStateDictToDevice

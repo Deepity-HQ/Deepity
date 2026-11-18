@@ -95,6 +95,9 @@ template <typename Net> bool SameState(const Net& a, const Net& b)
   bool ok = true;
   for (size_t i = 0; i < a.GetLayers().size(); ++i)
   {
+    // Device-backed layers expose staging buffers that must be refreshed before reading.
+    detail::SyncFromDeviceIfSupported(a.GetLayers()[i]);
+    detail::SyncFromDeviceIfSupported(b.GetLayers()[i]);
     const auto da = a.GetLayers()[i]->GetStateDict();
     const auto db = b.GetLayers()[i]->GetStateDict();
     for (const auto& [name, t] : da)
@@ -128,9 +131,12 @@ bool Throws(auto&& fn)
 
 /// @brief Resuming from a checkpoint must continue training bit-for-bit like the uninterrupted run:
 /// same moments, same step counters. A weights-only Load() must not.
-template <typename Net, typename Make> bool CheckpointResumes(const char* name, Make make, const std::string& path)
+template <typename Net, typename Make> bool CheckpointResumes(const char* name, Make make, const std::string& path, size_t inSize,
+                      size_t outSize)
 {
-  const std::vector<float> x(kBatch * 8, 0.5f), y(kBatch * 4, 0.25f);
+  std::vector<float> x(kBatch * inSize), y(kBatch * outSize, 0.1f);
+  for (size_t i = 0; i < x.size(); ++i)
+    x[i] = 0.1f * (static_cast<float>(i % 7) - 3.0f) / 3.0f;
   auto setup = [&](unsigned seed)
   {
     auto n = make(seed);
@@ -232,8 +238,9 @@ int main()
   const bool corruptOk = Throws([&] { ModelIO::Load(*fdst, path); });
   printf("%s\n", corruptOk ? "PASSED: corrupted file is rejected" : "FAILED: corrupted file was loaded");
   ok &= corruptOk;
-  ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork", MakeNet, path);
-  ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path);
+  ok &= CheckpointResumes<DirectKPPCNetwork>("DirectKPPCNetwork", MakeNet, path, 8, 4);
+  ok &= CheckpointResumes<FullPCNetwork>("FullPCNetwork", MakeFullNet, path, 8, 4);
+  ok &= CheckpointResumes<FullConvPCNetwork>("FullConvPCNetwork", MakeConvNet, path, 64, 10);
   const bool gpuFree = !Throws([&] { ModelIO::SaveCheckpoint(*fsrc, path); });
   ok &= gpuFree;
 
