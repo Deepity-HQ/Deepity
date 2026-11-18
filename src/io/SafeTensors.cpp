@@ -2,6 +2,7 @@
 #include "deepity/io/Blake3.h"
 #include <algorithm>
 #include <bit>
+#include <cstring>
 #include <filesystem>
 #include <limits>
 #include <nlohmann/json.hpp>
@@ -178,7 +179,7 @@ void SafeTensorsWriter::Write(const std::string& path) const
 
 // ---------------------------------------------------------------- reader
 
-SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHash) : path(filePath)
+SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHash, bool useMmap) : path(filePath)
 {
   std::error_code ec;
   const uint64_t fileSize = std::filesystem::file_size(path, ec);
@@ -316,8 +317,21 @@ SafeTensorsReader::SafeTensorsReader(const std::string& filePath, bool verifyHas
     }
   }
 
+  if (useMmap)
+  {
+    MappedFile m = MappedFile::Open(path);
+    if (m.Data() != nullptr && m.Size() == fileSize) mapping = std::make_shared<const MappedFile>(std::move(m));
+  }
+
   const auto hashIt = metadata.find(kHashKey);
-  if (verifyHash && hashIt != metadata.end())
+  if (verifyHash && hashIt != metadata.end() && mapping != nullptr)
+  {
+    Blake3 hasher;
+    hasher.Update(mapping->Data() + dataOffset, static_cast<size_t>(dataSize));
+    if (hasher.Hex() != hashIt->second)
+      Fail(path, "content hash mismatch: the file is corrupted or was modified");
+  }
+  else if (verifyHash && hashIt != metadata.end())
   {
     Blake3 hasher;
     std::vector<char> chunk(kChunkBytes);
@@ -344,6 +358,13 @@ const TensorEntry* SafeTensorsReader::Find(const std::string& name) const noexce
   return nullptr;
 }
 
+const void* SafeTensorsReader::Bytes(const TensorEntry& entry) const noexcept
+{
+  if (mapping == nullptr) return nullptr;
+  if (!entry.packed && kHostIsBigEndian && DTypeSize(entry.dtype) > 1) return nullptr;
+  return mapping->Data() + dataOffset + entry.begin;
+}
+
 void SafeTensorsReader::Read(const TensorEntry& entry, void* dst, size_t dstBytes) const
 {
   if (dstBytes != entry.ByteSize())
@@ -351,11 +372,16 @@ void SafeTensorsReader::Read(const TensorEntry& entry, void* dst, size_t dstByte
                    " bytes, but the destination holds " + std::to_string(dstBytes));
   if (dstBytes == 0)
     return;
-  in.clear();
-  in.seekg(static_cast<std::streamoff>(dataOffset + entry.begin));
-  in.read(static_cast<char*>(dst), static_cast<std::streamsize>(dstBytes));
-  if (!in)
-    Fail(path, "cannot read tensor '" + entry.name + "'");
+  if (mapping != nullptr)
+    std::memcpy(dst, mapping->Data() + dataOffset + entry.begin, dstBytes);
+  else
+  {
+    in.clear();
+    in.seekg(static_cast<std::streamoff>(dataOffset + entry.begin));
+    in.read(static_cast<char*>(dst), static_cast<std::streamsize>(dstBytes));
+    if (!in)
+      Fail(path, "cannot read tensor '" + entry.name + "'");
+  }
   if (!entry.packed)
   {
     const size_t elemBytes = DTypeSize(entry.dtype);

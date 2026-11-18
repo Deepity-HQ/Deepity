@@ -2,8 +2,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <deepity/io/DType.h>
+#include <deepity/io/MappedFile.h>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -106,7 +108,8 @@ public:
   /// @param verifyHash when true and the file carries `deepity.content_blake3`, the data region
   /// is hashed and compared. Pass false to skip the pass for a trusted local file.
   /// @throws SafeTensorsError if the file is missing, truncated, malformed or unsafe.
-  explicit SafeTensorsReader(const std::string& path, bool verifyHash = true);
+  /// @param useMmap map the file (the default); falls back to buffered reads if mapping fails.
+  explicit SafeTensorsReader(const std::string& path, bool verifyHash = true, bool useMmap = true);
 
   const std::map<std::string, std::string>& Metadata() const noexcept
   {
@@ -124,6 +127,20 @@ public:
   {
     return dataOffset;
   }
+  /// @brief True when the file is memory mapped (reads copy from the mapping; Bytes() works).
+  bool IsMapped() const noexcept
+  {
+    return mapping != nullptr;
+  }
+  /// @brief Zero-copy pointer to a tensor's on-disk bytes, or nullptr when the file is not mapped
+  /// or the tensor would need conversion (byte swap on a big-endian host, packed types are fine
+  /// as raw bytes). Valid while `Mapping()` or this reader is alive.
+  const void* Bytes(const TensorEntry& entry) const noexcept;
+  /// @brief Shared owner of the mapping, so a view (for example a numpy array) can outlive the reader.
+  std::shared_ptr<const MappedFile> Mapping() const noexcept
+  {
+    return mapping;
+  }
   /// @brief Reads exactly `entry.ByteSize()` bytes into `dst`.
   /// @throws SafeTensorsError if `dstBytes` differs from the tensor's size or the read fails.
   void Read(const TensorEntry& entry, void* dst, size_t dstBytes) const;
@@ -131,6 +148,7 @@ public:
 private:
   std::string path;
   mutable std::ifstream in;
+  std::shared_ptr<const MappedFile> mapping;
   std::map<std::string, std::string> metadata;
   std::vector<TensorEntry> tensors;
   uint64_t dataOffset = 0;

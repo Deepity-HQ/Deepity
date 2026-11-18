@@ -735,6 +735,7 @@ set(DEEPITY_SOURCES
     src/utils/StreamAlignedBatcher.cpp
     src/io/SafeTensors.cpp
     src/io/DType.cpp
+    src/io/MappedFile.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp

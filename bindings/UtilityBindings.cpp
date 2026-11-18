@@ -8,6 +8,7 @@
 #include "UtilityBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/ndarray.h>
 #include <nanobind/stl/map.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
@@ -19,6 +20,7 @@
 #include <string>
 
 #include <deepity/backend/Backend.h>
+#include <deepity/io/SafeTensors.h>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/ModelIO.h>
 #include <deepity/utils/Optimize.h>
@@ -27,6 +29,55 @@
 
 namespace
 {
+/// @brief One tensor as a numpy array. Zero-copy (a read-only view that keeps the file mapped)
+/// when the file is mapped and the bytes are aligned; otherwise a private copy.
+template <typename T>
+nb::object TensorToNumpy(const Deep::io::SafeTensorsReader& reader, const Deep::io::TensorEntry& e)
+{
+  const void* bytes = reader.Bytes(e);
+  if (e.shape.size() > 8)
+    throw nb::value_error(("tensor '" + e.name + "' has more than 8 dimensions").c_str());
+  size_t dims[8];
+  for (size_t i = 0; i < e.shape.size(); ++i)
+    dims[i] = e.shape[i];
+  if (bytes != nullptr && reinterpret_cast<uintptr_t>(bytes) % alignof(T) == 0)
+  {
+    auto mapping = new std::shared_ptr<const Deep::io::MappedFile>(reader.Mapping());
+    nb::capsule owner(mapping, [](void* p) noexcept { delete static_cast<std::shared_ptr<const Deep::io::MappedFile>*>(p); });
+    return nb::cast(nb::ndarray<nb::numpy, const T>(static_cast<const T*>(bytes), e.shape.size(), dims, owner));
+  }
+  auto* copy = new T[std::max<size_t>(e.ByteSize() / sizeof(T), 1)];
+  reader.Read(e, copy, e.ByteSize());
+  nb::capsule owner(copy, [](void* p) noexcept { delete[] static_cast<T*>(p); });
+  return nb::cast(nb::ndarray<nb::numpy, T>(copy, e.shape.size(), dims, owner));
+}
+
+nb::dict ReadTensors(const std::string& path, bool verifyHash, bool mmap)
+{
+  using namespace Deep::io;
+  SafeTensorsReader reader(path, verifyHash, mmap);
+  nb::dict out;
+  for (const auto& e : reader.Tensors())
+  {
+    nb::object a;
+    if (e.packed || e.dtype == "BF16" || e.dtype == "F16")
+      throw nb::value_error(("tensor '" + e.name + "' has dtype " + e.dtype + ", which numpy cannot hold here; "
+                             "use ModelIO to load it into a network").c_str());
+    else if (e.dtype == "F32") a = TensorToNumpy<float>(reader, e);
+    else if (e.dtype == "F64") a = TensorToNumpy<double>(reader, e);
+    else if (e.dtype == "I64") a = TensorToNumpy<int64_t>(reader, e);
+    else if (e.dtype == "I32") a = TensorToNumpy<int32_t>(reader, e);
+    else if (e.dtype == "I16") a = TensorToNumpy<int16_t>(reader, e);
+    else if (e.dtype == "I8") a = TensorToNumpy<int8_t>(reader, e);
+    else if (e.dtype == "U64") a = TensorToNumpy<uint64_t>(reader, e);
+    else if (e.dtype == "U32") a = TensorToNumpy<uint32_t>(reader, e);
+    else if (e.dtype == "U16") a = TensorToNumpy<uint16_t>(reader, e);
+    else if (e.dtype == "U8" || e.dtype == "BOOL") a = TensorToNumpy<uint8_t>(reader, e);
+    out[e.name.c_str()] = a;
+  }
+  return out;
+}
+
 /// @brief Fills `x` in place via Deep::RandomizeWithDistribution(), picking
 /// the backend (and therefore the RNG: OpenMP-parallel Mersenne Twister on
 /// CPU, curand/host-fallback on GPU -- see CUDABackendT's
@@ -146,6 +197,11 @@ void bind_utilities(nb::module_& m)
         "(GPU randomizes into a device buffer and copies the result back; "
         "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
+  m.def("read_tensors", &ReadTensors, nb::arg("filepath"), nb::arg("verify_hash") = true, nb::arg("mmap") = true,
+        "Reads every tensor of a safetensors file into a dict of numpy arrays in one call. With "
+        "mmap the arrays are read-only views of the mapped file (no copy, nothing read until "
+        "touched); the mapping stays alive as long as any array does. F16, BF16 and packed 4-bit "
+        "tensors raise; load those into a network instead.");
   m.def("read_model_metadata", &Deep::ModelIO::ReadMetadata, nb::arg("filepath"),
         "Validates a model file and returns its string metadata (architecture, inference defaults, "
         "format version) without reading the weights. Raises on a missing or corrupt file.");

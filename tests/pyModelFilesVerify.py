@@ -148,5 +148,22 @@ with tempfile.TemporaryDirectory() as tmp:
     meta = ser.build_metadata(src, "FullPCN", {}, "float32")
     check(json.loads(meta["deepity.inference"])["mode"] == "iterative", "file states its inference mode")
 
+print("--- read_tensors ---")
+with tempfile.TemporaryDirectory() as tmp:
+    net = dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8).configure(learning_rate=1e-3)
+    path = os.path.join(tmp, "t.safetensors")
+    net.save(path)
+    for mm in (True, False):
+        tensors = dp.read_tensors(path, mmap=mm)
+        check(set(tensors) >= {"layers.0.weight", "layers.0.bias"}, f"mmap={mm}: names present")
+        w = tensors["layers.0.weight"]
+        check(w.shape == (10, 12) and w.dtype == np.float32, f"mmap={mm}: shape and dtype")
+        check(not w.flags.writeable or not mm, f"mmap={mm}: mapped views are read-only")
+    del tensors
+    keep = dp.read_tensors(path)["layers.0.weight"]
+    import gc; gc.collect()
+    check(float(np.abs(keep).sum()) > 0, "view stays valid after the dict is dropped")
+    check(raises(lambda: dp.read_tensors(os.path.join(tmp, "missing.safetensors"))), "missing file raises")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

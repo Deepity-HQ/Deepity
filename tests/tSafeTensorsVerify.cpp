@@ -362,6 +362,49 @@ void TestDTypes()
   rejects("overlay with a negative dimension", R"({"q":{"dtype":"FP4_E2M1","shape":[-7]}})", "U8", "[4]");
 }
 
+void TestMmap()
+{
+  printf("--- mmap and buffered reads ---\n");
+  const std::string path = Tmp("mmap.safetensors");
+  std::vector<float> a(1000), b(33);
+  for (size_t i = 0; i < a.size(); ++i) a[i] = static_cast<float>(i) * 0.5f;
+  for (size_t i = 0; i < b.size(); ++i) b[i] = -static_cast<float>(i);
+  {
+    SafeTensorsWriter w;
+    w.AddTensor("a", "F32", {1000}, a.data(), a.size() * 4);
+    w.AddTensor("b", "F32", {33}, b.data(), b.size() * 4);
+    w.Write(path);
+  }
+  SafeTensorsReader mapped(path, true, true), buffered(path, true, false);
+  Check(mapped.IsMapped() && !buffered.IsMapped(), "mmap on by default, off when asked");
+  std::vector<float> m(1000), f(1000);
+  mapped.Read(*mapped.Find("a"), m.data(), 4000);
+  buffered.Read(*buffered.Find("a"), f.data(), 4000);
+  Check(m == a && f == a, "mapped and buffered reads return identical bytes");
+  const void* p = mapped.Bytes(*mapped.Find("b"));
+  Check(p != nullptr && std::memcmp(p, b.data(), b.size() * 4) == 0, "Bytes() is a zero-copy view of the tensor");
+  Check(buffered.Bytes(*buffered.Find("a")) == nullptr, "Bytes() is null without a mapping");
+
+  // The hash is checked over the mapping too.
+  auto raw = Slurp(path);
+  raw[raw.size() - 1] ^= 0x1;
+  const std::string bad = Tmp("mmap_bad.safetensors");
+  { std::ofstream o(bad, std::ios::binary); o.write(raw.data(), static_cast<std::streamsize>(raw.size())); }
+  Check(Throws([&] { SafeTensorsReader r(bad, true, true); }), "mapped reader rejects a corrupted file");
+  Check(Throws([&] { SafeTensorsReader r(bad, true, false); }), "buffered reader rejects a corrupted file");
+  Check(!Throws([&] { SafeTensorsReader r(bad, false, true); }), "verifyHash=false skips the check");
+
+  // A view keeps the data alive after the reader is gone.
+  std::shared_ptr<const MappedFile> keep;
+  const void* viewPtr = nullptr;
+  {
+    SafeTensorsReader r(path);
+    keep = r.Mapping();
+    viewPtr = r.Bytes(*r.Find("a"));
+  }
+  Check(viewPtr != nullptr && std::memcmp(viewPtr, a.data(), 4000) == 0, "mapping outlives the reader");
+}
+
 void TestGolden()
 {
   printf("--- golden and legacy files ---\n");
@@ -399,6 +442,7 @@ int main(int argc, char** argv)
   TestHash();
   TestMalformed();
   TestDTypes();
+  TestMmap();
   TestGolden();
   printf(failures == 0 ? "PASSED: SafeTensors reader/writer\n" : "FAILED: %d check(s)\n", failures);
   return failures == 0 ? 0 : 1;
