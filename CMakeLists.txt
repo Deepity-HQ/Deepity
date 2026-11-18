@@ -1180,7 +1180,8 @@ if(DEEPITY_BUILD_TESTS)
         # result to the concrete CUDABackend (not just the abstract
         # interface), so it needs the real symbol, not just the plugin
         # CUDAPluginLoader.cpp dlopen()s transparently at runtime.
-        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(DirectKPPCNetworkDepthScalingVsBP PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1198,7 +1199,8 @@ if(DEEPITY_BUILD_TESTS)
         add_executable(CUDARandomizeBenchmark tests/tCUDARandomizeBenchmark.cpp)
         # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
         # identical comment above -- this one dynamic_casts to CUDABackend too.
-        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(CUDARandomizeBenchmark PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1209,7 +1211,8 @@ if(DEEPITY_BUILD_TESTS)
         add_executable(CUDABatchedGemmDepthScaling tests/tCUDABatchedGemmDepthScaling.cpp)
         # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
         # identical comment above -- this one dynamic_casts to CUDABackend too.
-        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(CUDABatchedGemmDepthScaling PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )

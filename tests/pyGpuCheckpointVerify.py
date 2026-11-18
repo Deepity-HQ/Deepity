@@ -54,7 +54,8 @@ with tempfile.TemporaryDirectory() as tmp:
 
         cpu = dp.load(path, device="cpu")
         a, b = np.asarray(gpu.predict(x, 2)), np.asarray(cpu.predict(x, 2))
-        check(np.allclose(a, b, atol=1e-4), "a GPU-saved model loads on the CPU and predicts the same")
+        d_cpu = np.abs(a - b).max()
+        check(d_cpu < 1e-4, f"a GPU-saved model loads on the CPU and predicts the same (max difference {d_cpu:.1e}, output scale {np.abs(a).max():.1e})")
 
         back = dp.load(path, device="cuda")
         check(np.allclose(np.asarray(back.predict(x, 2)), a, atol=1e-5), "it loads back onto the GPU and predicts the same")
@@ -76,8 +77,8 @@ with tempfile.TemporaryDirectory() as tmp:
         check(wdiff > 10 * max(diff, 1e-7), f"a weights-only load does not resume (difference {wdiff:.1e}), so optimizer state was restored")
 
         cpu_resumed, _ = dp.resume(ck, device="cpu")
-        check(np.allclose(np.asarray(cpu_resumed.predict(x, 2)), np.asarray(dp.resume(ck, device="cuda")[0].predict(x, 2)), atol=1e-4),
-              "a GPU checkpoint resumes on the CPU with the same predictions")
+        d_res = np.abs(np.asarray(cpu_resumed.predict(x, 2)) - np.asarray(dp.resume(ck, device="cuda")[0].predict(x, 2))).max()
+        check(d_res < 1e-4, f"a GPU checkpoint resumes on the CPU with the same predictions (max difference {d_res:.1e})")
 
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)
