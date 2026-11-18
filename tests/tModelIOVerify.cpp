@@ -195,6 +195,10 @@ int main()
   const bool corruptOk = Throws([&] { ModelIO::Load(*fdst, path); });
   printf("%s\n", corruptOk ? "PASSED: corrupted file is rejected" : "FAILED: corrupted file was loaded");
   ok &= corruptOk;
+  const bool missingOk = Throws([&] { ModelIO::Load(*fdst, path + ".does_not_exist"); }) &&
+                         Throws([&] { ModelIO::Save(*fsrc, path + "_no_such_dir/x.safetensors"); });
+  printf("%s\n", missingOk ? "PASSED: missing file and unwritable path throw" : "FAILED: no exception for bad paths");
+  ok &= missingOk;
   std::filesystem::remove(path);
   return ok ? 0 : 1;
 }

@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <deepity/io/SafeTensors.h>
 #include <deepity/utils/DTypeTag.h>
-#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -77,7 +76,8 @@ class ModelIO
 public:
   /// @brief Writes `net`'s weights to a single safetensors file at `filepath`, atomically, with
   /// a content hash and `deepity.*` metadata. Padded tensors are written without their padding.
-  /// @return false if `filepath` couldn't be written; true on success.
+  /// @return true. Failure is reported by exception, so the reason is never lost.
+  /// @throws io::SafeTensorsError if the file can't be written (message names the path and cause).
   template <typename NetworkType>
   static bool Save(const NetworkType& net, const std::string& filepath)
   {
@@ -108,39 +108,23 @@ public:
                         packed.back().data() + r * rowBytes);
           source = packed.back().data();
         }
-        try
-        {
-          writer.AddTensor(detail::TensorFileName(layerIdx, name), DTypeTag<ElementType>::Name(),
-                           tensor.shape, source, rows * rowBytes);
-        }
-        catch (const io::SafeTensorsError&)
-        {
-          return false;
-        }
+        writer.AddTensor(detail::TensorFileName(layerIdx, name), DTypeTag<ElementType>::Name(),
+                         tensor.shape, source, rows * rowBytes);
       }
       ++layerIdx;
     }
 
-    try
-    {
-      writer.Write(filepath);
-    }
-    catch (const io::SafeTensorsError&)
-    {
-      return false;
-    }
+    writer.Write(filepath);
     return true;
   }
 
   /// @brief Reads a file written by Save() (or by 0.1.0a8 and earlier) back into `net`'s
   /// already-compiled weight arena. The whole file is validated first, including its hash.
-  /// @return false if `filepath` doesn't exist; true on success.
-  /// @throws io::SafeTensorsError for a malformed, truncated or corrupted file.
+  /// @return true. Failure is reported by exception, so the reason is never lost.
+  /// @throws io::SafeTensorsError for a missing, malformed, truncated or corrupted file.
   /// @throws std::runtime_error for a dtype or shape that doesn't match the network.
   template <typename NetworkType> static bool Load(NetworkType& net, const std::string& filepath)
   {
-    if (!std::filesystem::exists(filepath))
-      return false;
     const io::SafeTensorsReader reader(filepath);
 
     size_t layerIdx = 0;

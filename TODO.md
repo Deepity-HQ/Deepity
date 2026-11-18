@@ -66,9 +66,10 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] Validate untrusted input (in the new reader): header size cap, offsets against the real file
       size, no overlaps or gaps, `prod(shape) * dtype size == bytes`, overflow-safe, dtype allow-list.
 - [x] `ModelIO::Save/Load` use the validating reader/writer, new `layers.{i}.weight|bias|psi` names,
-      legacy `layer_{i}.*` names still load. Still `bool` returns (see below).
+      legacy `layer_{i}.*` names still load.
 - [x] Atomic writes (temp file plus rename) and content hash, in the new writer.
-- [ ] Replace `bool` returns with exceptions or a result type that carries the reason.
+- [x] Failures throw with the reason (`ModelIO` and network `Save/Load`); `true` on success is kept
+      for source compatibility.
 - [x] Aligned data region (64 bytes), tensors aligned to element size.
 - [x] Hash: BLAKE3 in Highway with runtime dispatch (`src/io/Blake3.cpp`, adapted from
       Universal-Blake3), checked against the reference implementation. Dispatch costs nothing

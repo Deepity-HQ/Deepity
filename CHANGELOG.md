@@ -20,6 +20,8 @@ earlier history.
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
 
+- `ModelIO::Save/Load` (and the network `Save/Load` wrappers) now report failure by exception with the reason instead of returning `false`; they return `true` on success. `FullConvPCNetwork::Save/Load` and `DiscriminativePCNetwork::Save/Load` are no longer `noexcept`, because a corrupt file would otherwise terminate the process.
+
 ### Deprecated
 
 -
