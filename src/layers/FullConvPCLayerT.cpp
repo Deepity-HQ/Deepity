@@ -680,4 +680,23 @@ template void FullConvPCLayerT<Posit4_1Value, float>::BindMemory<MemoryArenaT<Po
     MemoryArenaT<Posit4_1Value>& arena);
 template void FullConvPCLayerT<Posit4_2Value, float>::BindMemory<MemoryArenaT<Posit4_2Value>>(
     MemoryArenaT<Posit4_2Value>& arena);
+
+#if defined(DEEPITY_USE_CUDA)
+// The network's GPU branch calls BindMemory<DeviceMemoryArenaT<...>> for every explicitly instantiated
+// type, even though only float and double have a CUDA backend, so these must exist to link.
+template void FullConvPCLayerT<float, float>::BindMemory<DeviceMemoryArenaT<float, float>>(
+    DeviceMemoryArenaT<float, float>& arena);
+template void FullConvPCLayerT<double, double>::BindMemory<DeviceMemoryArenaT<double, double>>(
+    DeviceMemoryArenaT<double, double>& arena);
+template void FullConvPCLayerT<Fp4E2M1Value, float>::BindMemory<DeviceMemoryArenaT<Fp4E2M1Value, float>>(
+    DeviceMemoryArenaT<Fp4E2M1Value, float>& arena);
+template void FullConvPCLayerT<hwy::float16_t, float>::BindMemory<DeviceMemoryArenaT<hwy::float16_t, float>>(
+    DeviceMemoryArenaT<hwy::float16_t, float>& arena);
+template void FullConvPCLayerT<Posit4_0Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_0Value, float>>(
+    DeviceMemoryArenaT<Posit4_0Value, float>& arena);
+template void FullConvPCLayerT<Posit4_1Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_1Value, float>>(
+    DeviceMemoryArenaT<Posit4_1Value, float>& arena);
+template void FullConvPCLayerT<Posit4_2Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_2Value, float>>(
+    DeviceMemoryArenaT<Posit4_2Value, float>& arena);
+#endif
 } // namespace Deep

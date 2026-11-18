@@ -1117,7 +1117,8 @@ if(DEEPITY_BUILD_TESTS)
 
     if(DEEPITY_CUDA_ENABLED)
         add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
-        target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDALaunchErrorVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1131,14 +1132,16 @@ if(DEEPITY_BUILD_TESTS)
         list(APPEND DEEPITY_TEST_TARGETS CUDAIntRoundtripVerify)
 
         add_executable(CUDAIncrementCounterVerify tests/tCUDAIncrementCounterVerify.cpp)
-        target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDAIncrementCounterVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS CUDAIncrementCounterVerify)
 
         add_executable(CUDAIncrementCounterSyncVerify tests/tCUDAIncrementCounterSyncVerify.cpp)
-        target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDAIncrementCounterSyncVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
