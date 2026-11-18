@@ -1,7 +1,8 @@
-# Deepity model format (draft v0)
+# Deepity model format (v1)
 
-Status: draft. The container, hash, tensor names and `deepity.model`/`deepity.inference` for
-`DKPPCN` and `FullPCN` are implemented; the rest is planned. See `TODO.md`.
+Status: format version 1, implemented. The container, hash, tensor names, `deepity.model` and
+`deepity.inference` are written and read for every Python network class. Checkpoints, sharding,
+mmap and the converters are described below. Open items are in `TODO.md`.
 
 ## Goals
 
@@ -43,7 +44,9 @@ one they support, with a message naming both versions.
 
 ## Model description (`deepity.model`)
 
-Implemented for `DKPPCN` and `FullPCN` (Python layer; weights never pass through Python).
+Written by every Python network class (weights never pass through Python). The C++ `*NetworkT`
+templates save and load the same tensors under the same names but write no `deepity.model`, so a
+file made from them needs a hand-built network of matching layers to load into.
 
 ```json
 {
@@ -97,7 +100,7 @@ unused tensor raises, naming all of them; with `strict=False` the call returns
   metadata key `deepity.training`, a JSON object the caller supplies and gets back unchanged
 
 A checkpoint has `deepity.kind = "checkpoint"`. Loading one as an inference model reads its
-weights and ignores the rest. Implemented (CPU only) for `DirectKPPCNetwork`, `DirectKPPCNetworkT`, `FullPCNetwork`,
+weights and ignores the rest. Implemented for `DirectKPPCNetwork`, `DirectKPPCNetworkT`, `FullPCNetwork`,
 `FullPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork`, `GaussSeidelPCNetworkT`,
 `DiscriminativePCNetwork`, `ConvPCNetwork`, `SimplePCNetwork`, `SimpleConvPCNetwork`,
 `ConvPCNetworkT`, `FullConvPCNetworkT` and the `T` forms of the Simple networks: every network class has
@@ -108,12 +111,18 @@ counters.) A network whose layers have no optimizer accessors refuses to write o
 
 On a GPU backend a layer names the backend that holds its tensors and counters
 (`Layer::DeviceStateBackend()`), and `ModelIO` copies them through it. The file is identical to a CPU
-one, so a checkpoint moves between devices. This path is tested on the CPU with
-`ForceDeviceStaging()`, and has not been run on a GPU.
+one, so a checkpoint moves between devices. Tested on the CPU with `ForceDeviceStaging()`, and on an
+A100 for `FullPCN`, `DKPPCN`, `SimplePCN`, `SimpleConvolutionalPCN` and `ConvolutionalPCN`. A GPU
+resumes its own checkpoint exactly; CPU and GPU predictions differ by about 1e-3 relative (TF32).
+`GaussSeidelPCN`, `SequentialPCN` and `FullConvPCNetwork` have not been run on a GPU.
 
 Layers with no weights (the terminal layer) write no tensors. Zero-size tensors are not written.
 Legacy files use `layer_{i}.{W,b,Psi}`; a reader detects them by
 `__metadata__.format == "deepity_safetensors"` and maps the names.
+
+Decided: names are positional per layer (`layers.{i}.weight`), not per-module paths. A network is a
+flat list of layers, so the index is stable and needs no registry. The legacy `layer_N.*` names are
+read for compatibility and never written. Other files' names are mapped on import with `rename`.
 
 ## Layout rules
 
@@ -161,7 +170,11 @@ here has run on big-endian hardware.
 ## Compatibility
 
 - Format versions are integers. A reader supports every version up to its own.
-- Golden files for each version live in `tests/data/` and are loaded by CI on every build.
+- Golden files for each version live in `tests/data/` and are loaded by CI on every build:
+  `golden_v1.safetensors` (container), `golden_v1_dtypes.safetensors` (one tensor for every dtype,
+  exact bytes checked) and `legacy_a8_dkp.safetensors`. Regenerate with
+  `SafeTensorsVerify --write-golden <path>` or `--write-golden-dtypes <path>`, only on a deliberate
+  format change.
 - Files written by 0.1.0a7 and a8 (legacy names, no metadata) stay readable.
 
 ## Sharding
@@ -278,7 +291,3 @@ can crash the reader, as with any mmap; write models by replacing the file, as `
 data region (every byte after the header), as lowercase hex. Loaders verify it when present, and offer a flag to skip verification for
 trusted local files. (Decided 2026-11-14; SHA-256 replaced by BLAKE3 on 2026-11-17 for speed. Files with a
 `deepity.content_sha256` key from drafts are not supported.)
-
-## Open questions
-
-- How much of the layer description is shared between the float and templated layer families?

@@ -4,7 +4,7 @@
  *
  * Covers: BLAKE3 vectors, round trips, alignment, atomic writes, hash verification, rejection of
  * every kind of malformed file, a checked-in golden file (v1) and a file written by 0.1.0a8.
- * Run with `--write-golden <path>` to regenerate the golden file.
+ * Run with `--write-golden <path>` or `--write-golden-dtypes <path>` to regenerate a golden file.
  */
 #include "deepity/io/Blake3.h"
 #include <cstdio>
@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <iterator>
 #include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
@@ -103,6 +104,35 @@ struct Sample
     w.SetMetadata("deepity.kind", "inference");
   }
 };
+
+// One 5-element tensor for every dtype name the format defines. The names are listed here on purpose,
+// not read from the registry, so removing or renaming a dtype breaks this test and the golden file.
+const char* const kGoldenDTypes[] = {"F64", "F32", "F16", "BF16", "I64", "I32", "I16", "I8", "U64", "U32", "U16",
+                                     "U8",  "BOOL", "FP4_E2M1", "POSIT4_0", "POSIT4_1", "POSIT4_2"};
+
+std::vector<uint8_t> GoldenBytes(const DTypeInfo& info, size_t index)
+{
+  std::vector<uint8_t> bytes(StorageBytes(info, 5));
+  for (size_t i = 0; i < bytes.size(); ++i)
+    bytes[i] = static_cast<uint8_t>(i * 37 + 11 + index);
+  if (info.kind == DTypeKind::Packed) bytes.back() &= 0x0F; // padding nibble of the odd last block is zero
+  return bytes;
+}
+
+void WriteGoldenDTypes(const std::string& path)
+{
+  SafeTensorsWriter w;
+  std::vector<std::vector<uint8_t>> keep; // the writer holds pointers until Write()
+  keep.reserve(std::size(kGoldenDTypes));
+  for (const char* name : kGoldenDTypes)
+  {
+    keep.push_back(GoldenBytes(*FindDType(name), keep.size()));
+    w.AddTensor(std::string("t_") + name, name, {5}, keep.back().data(), keep.back().size());
+  }
+  w.SetMetadata("deepity.format_version", "1");
+  w.SetMetadata("deepity.kind", "inference");
+  w.Write(path);
+}
 
 void TestBlake3()
 {
@@ -423,6 +453,20 @@ void TestGolden()
             l.Metadata().at("format") == "deepity_safetensors",
         "file written by 0.1.0a8 loads (unaligned, legacy names)");
   Check(l.DataOffset() % 64 != 0, "legacy file really is unaligned, so the reader does not require alignment");
+
+  SafeTensorsReader d(dir + "/golden_v1_dtypes.safetensors");
+  size_t index = 0, good = 0;
+  for (const char* name : kGoldenDTypes)
+  {
+    const DTypeInfo* info = FindDType(name);
+    const TensorEntry* t = d.Find(std::string("t_") + name);
+    const auto want = GoldenBytes(*info, index++);
+    good += t != nullptr && t->dtype == name && t->shape == std::vector<size_t>{5} &&
+            t->packed == (info->kind == DTypeKind::Packed) && t->ByteSize() == want.size() &&
+            std::memcmp(d.Bytes(*t), want.data(), want.size()) == 0;
+  }
+  Check(good == std::size(kGoldenDTypes) && d.Tensors().size() == good,
+        "golden dtype file: all " + std::to_string(good) + " dtypes read back with exact bytes");
 }
 } // namespace
 
@@ -434,6 +478,12 @@ int main(int argc, char** argv)
     SafeTensorsWriter w;
     s.Fill(w);
     w.Write(argv[2]);
+    printf("wrote %s\n", argv[2]);
+    return 0;
+  }
+  if (argc == 3 && std::string(argv[1]) == "--write-golden-dtypes")
+  {
+    WriteGoldenDTypes(argv[2]);
     printf("wrote %s\n", argv[2]);
     return 0;
   }

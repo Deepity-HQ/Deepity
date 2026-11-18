@@ -42,19 +42,18 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 0: spec and test fixtures (before any code)
 
-- [~] Write `docs/model-format.md`: file layout, metadata schema, dtype names, tensor naming,
-      layout conventions (conv `[outC, inC*kH*kW]`, Psi padding), versioning rules.
-      Draft v0 written; open questions are listed at the bottom of the file.
+- [x] Write `docs/model-format.md`: file layout, metadata schema, dtype names, tensor naming,
+      layout conventions (conv `[outC, inC*kH*kW]`, Psi padding), versioning rules. Now v1.
 - [x] Check that stock `safetensors` reads our current files. Gaps recorded above.
 - [x] Add a DKP save/load round-trip regression test (`tests/tModelIOVerify.cpp`). Failed on the
       old code at the predicted rows, passes now. Legacy (a8) files verified to still load.
 - [x] Round-trip test covers `DirectKPPCNetwork`, `FullPCNetwork`, `FullPCNetworkT<double>`,
       `FullConvPCNetwork`, dtype mismatch and corruption rejection (`tests/tModelIOVerify.cpp`).
-- [~] Golden files: `tests/data/golden_v1.safetensors` and `legacy_a8_dkp.safetensors` added and
-      loaded by `SafeTensorsVerify`. Still to add: one per extra dtype once those are written. CI now runs
-      ctest and `tests/pyModelFilesVerify.py` on Linux (gcc, clang, icpx); Windows still builds only.
-      Note `.gitignore` excludes `*.safetensors` and `*_meta.json`, so fixtures need an exception.
-- [ ] Decide naming: stable tensor names (for example `layers.3.weight`) instead of positional keys.
+- [x] Golden files in `tests/data/`: `golden_v1` (container), `golden_v1_dtypes` (all 17 dtypes, exact
+      bytes), `legacy_a8_dkp`. Loaded by `SafeTensorsVerify`. CI runs ctest and the Python tests on Linux
+      (gcc, clang, icpx). The Windows job now also runs the file-format tests (first run pending).
+      `.gitignore` excludes `*.safetensors` with an exception for `tests/data/`.
+- [x] Naming decided: `layers.{i}.weight|bias|psi`, legacy `layer_N.*` read-only (see the spec).
 
 ## Phase 1: core format cleanup
 
@@ -96,8 +95,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       moments, step counters, caller training state) work on CPU for `DirectKPPCNetwork(T)`,
       `FullPCNetwork(T)`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork`
       and `ConvPCNetwork`, each verified to resume bit-identically. GPU networks stage
-      through the backend (verified on an A100 at OSC for FullPCN, DKPPCN and SimplePCN with `tests/pyGpuCheckpointVerify.py`;
-      CPU/GPU predictions differ by about 1e-3 relative, GPU-to-GPU resume is exact). Other GPU classes untested.
+      through the backend (verified on an A100 at OSC for FullPCN, DKPPCN, SimplePCN, SimpleConvolutionalPCN and ConvolutionalPCN with `tests/pyGpuCheckpointVerify.py`;
+      CPU/GPU predictions differ by about 1e-3 relative, GPU-to-GPU resume is exact). `FullConvPCNetwork` (native only), `GaussSeidelPCN` and `SequentialPCN` are untested on a GPU.
       Still to do: an inference artifact that omits Psi.
 - [x] State dicts for every network class (Simple family, `ConvPCNetworkT`, `FullConvPCNetworkT`);
       checkpoints resume bit-identically for all of them on CPU.
@@ -136,11 +135,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Open questions
 
-- Tensor naming scheme and whether to keep a compatibility alias for `layer_N.name`.
-- Single file with metadata, or `config.json` sidecar, or both?
-- Which PC networks get self-describing save first (suggest `DKPPCN` and `FullPCN`).
-- How to handle the two layer hierarchies (float classes and `*LayerT` templates) in one schema.
-- GGUF scope: which quant types matter for Deepity users first?
+None open. Decided: positional tensor names, one file with metadata (no sidecar), `FullPCN`/`DKPPCN`
+first and now every Python class, `*NetworkT` templates save tensors without a description, GGUF
+covers every read quant and writes F32/F16/BF16/F64/ints/Q8_0.
 
 ## Housekeeping
 

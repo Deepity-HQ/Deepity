@@ -188,6 +188,11 @@ jobs:
       - name: Build
         run: cmake --build build/Release --config Release --parallel 2>&1 | Tee-Object -FilePath windows-build.log
 
+      - name: Model file tests
+        # The file-format tests only (reader, writer, mmap via MapViewOfFile, round trips, fuzz). They
+        # are what has never run on Windows. The rest of the suite is not run here yet.
+        run: ctest --test-dir build/Release -C Release --output-on-failure -R "SafeTensorsVerify|ModelIOVerify|FormatFuzz"
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
