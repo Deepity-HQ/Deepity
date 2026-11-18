@@ -32,6 +32,8 @@ earlier history.
 
 - `deepity.export_onnx(net, path)` writes the forward path of a dense network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
 
+- `deepity.read_gguf(path)` reads GGUF files (llama.cpp format, versions 2 and 3): float tensors including Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0 and the K-quants Q2_K to Q6_K decode to float32, metadata comes back as a dict, and the file is bounds-checked for untrusted input. `import_weights` accepts a `.gguf` path. The IQ quants are not decoded yet.
+
 ### Changed
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).

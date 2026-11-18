@@ -37,6 +37,8 @@ def _load_source(source: Source, dtype: np.dtype) -> dict[str, np.ndarray]:
     if isinstance(source, Mapping):
         return {str(k): _to_numpy(v, dtype) for k, v in source.items()}
     path = os.fspath(source)
+    if path.endswith(".gguf"):
+        return {k: _to_numpy(v, dtype) for k, v in dy.read_gguf(path)[0].items()}
     if path.endswith((".safetensors", ".index.json")):
         return {k: _to_numpy(v, dtype) for k, v in dy.read_tensors(path).items()}
     try:
@@ -68,13 +70,27 @@ def _sequential_names(names: list[str]) -> dict[str, str]:
     return mapping
 
 
+def read_gguf(path: Union[str, os.PathLike]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """Reads a GGUF file (the llama.cpp format, versions 2 and 3) and returns `(tensors, metadata)`.
+
+    Float tensors, including the block-quantized Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0, come back as float32
+    arrays in row-major shape; integer tensors as int64. The K-quants (Q4_K and friends) raise an
+    error naming the tensor. `metadata` is the key-value header; arrays longer than 256 entries
+    (token lists) appear as `{"array_length": n}`. Raises on a malformed, truncated or unsafe file.
+    """
+    import json
+
+    tensors, metadata = dy.read_gguf(os.fspath(path))
+    return tensors, json.loads(metadata)
+
+
 def import_weights(
     net: Any,
     source: Source,
     rename: Rename = None,
     strict: bool = False,
 ) -> tuple[list[str], list[str]]:
-    """Loads weights from a PyTorch `state_dict`, a `.pt`/`.pth` file, a safetensors file or a dict
+    """Loads weights from a PyTorch `state_dict`, a `.pt`/`.pth` file, a GGUF file, a safetensors file or a dict
     of arrays into an already-built, configured network.
 
     `rename` says which Deepity tensor each source name fills (`layers.0.weight`, `layers.0.bias`,

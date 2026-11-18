@@ -198,6 +198,16 @@ missing, since a PyTorch model has no counterpart.
 onnxruntime to 1e-5 for relu, sigmoid, tanh and gelu (Deepity's tanh approximation). It carries no
 settling, so it can differ from `predict` with the model's default steps. Dense networks only.
 
+## Reading GGUF
+
+`deepity.read_gguf(path)` returns `(tensors, metadata)` for GGUF versions 2 and 3. Decoded types:
+F32, F16, BF16, F64, I8..I64 and the block formats Q4_0, Q4_1, Q5_0, Q5_1, Q8_0 and the K-quants
+Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, Q8_K (checked against the reference `gguf` package). Floats come back as
+float32, integers as int64, shapes reversed to row-major. Other types (the IQ quants, Q8_1) raise an
+error naming the type. Reading is bounds checked: counts, string and
+array lengths and every tensor range must fit the file, names must be unique, and alignment must be
+a power of two. GGUF is not a Deepity format; weights still need `import_weights` and a name map.
+
 ## Plain tensor files
 
 `deepity.write_tensors` and `deepity.read_tensors` use the same container for arbitrary numpy data

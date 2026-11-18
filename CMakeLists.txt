@@ -736,6 +736,7 @@ set(DEEPITY_SOURCES
     src/io/SafeTensors.cpp
     src/io/DType.cpp
     src/io/MappedFile.cpp
+    src/io/GGUF.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp

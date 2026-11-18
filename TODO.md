@@ -118,7 +118,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [~] Export: ONNX for the forward path (`predict` with 0 steps) is done for dense networks
       (`deepity.export_onnx`, relu/sigmoid/tanh/gelu). Conv networks and an unrolled settling graph
       with a fixed step count are still open.
-- [ ] GGUF: read first (quantized weights), write later.
+- [~] GGUF read done (`deepity.read_gguf`, `import_weights(.gguf)`): F32/F16/BF16/F64, ints, Q4_0/Q4_1/Q5_0/Q5_1/Q8_0 and
+      Q2_K..Q6_K/Q8_K, checked against the reference `gguf` package. GGUF write and the IQ (importance)
+      quants are open.
 - [x] Round-trip test: Deepity to ONNX to onnxruntime within 1e-5 (`tests/pyOnnxVerify.py`, CI).
 
 ## Phase 6: ecosystem polish

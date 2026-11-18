@@ -98,6 +98,15 @@ jobs:
           uv pip install --system onnx onnxruntime
           python tests/pyOnnxVerify.py
 
+      - name: GGUF reader
+        # Hand-built and hostile files, plus the reference gguf package as the oracle.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: |
+          uv pip install --system gguf
+          python tests/pyGgufVerify.py
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
