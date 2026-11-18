@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from ._backend import dy
 from ._interop import InputArray, is_cuda_array, to_cuda_capsule, to_numpy
-from ._serialization import build_metadata, read_training_state, training_metadata
+from ._serialization import build_metadata, read_training_state, shard_bytes, training_metadata
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -453,19 +453,24 @@ class FullPCN:
             **self._flags,
         }
 
-    def save(self, filepath: str) -> bool:
+    def save(self, filepath: str, max_shard_bytes: Optional[int] = None) -> bool:
         """Write a self-describing model file: weights, architecture, hyperparameters and the
         default settling steps. `deepity.load(filepath)` rebuilds the network from it.
+        A path ending in `.safetensors.index.json` writes a sharded model (shards of at most
+        `max_shard_bytes`, default 2 GiB) that `deepity.load` opens through the index.
         Raises on any failure."""
         self._require_configured()
 
-        return self._impl.save(filepath, build_metadata(self, "FullPCN", self._current_hyperparameters(), self.dtype))
+        return self._impl.save(filepath, build_metadata(self, "FullPCN", self._current_hyperparameters(), self.dtype), shard_bytes(filepath, max_shard_bytes))
 
-    def save_checkpoint(self, filepath: str, training_state: Optional[dict] = None) -> bool:
+    def save_checkpoint(
+        self, filepath: str, training_state: Optional[dict] = None, max_shard_bytes: Optional[int] = None
+    ) -> bool:
         """Write a training checkpoint: everything `save` writes plus the optimizer state (Adam/AdamW
         moments and step counters), so `deepity.resume(filepath)` continues training exactly.
         `training_state` is any JSON-serializable dict you want back on resume (epoch, global step,
-        learning-rate schedule position, RNG state). CPU networks only. Raises on any failure."""
+        learning-rate schedule position, RNG state). A `.safetensors.index.json` path shards it as `save`
+        does. CPU networks only. Raises on any failure."""
         self._require_configured()
 
         metadata = {
@@ -473,7 +478,7 @@ class FullPCN:
             **training_metadata(training_state),
         }
 
-        return self._impl.save_checkpoint(filepath, metadata)
+        return self._impl.save_checkpoint(filepath, metadata, shard_bytes(filepath, max_shard_bytes))
 
     def load_checkpoint(self, filepath: str) -> dict:
         """Restore weights and optimizer state from a checkpoint into this already-configured

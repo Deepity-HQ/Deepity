@@ -26,7 +26,7 @@ from .DKPPCN import DKPPCN
 from .FullPCN import FullPCN
 
 # Model files
-from ._serialization import load, resume
+from ._serialization import load, resume, write_tensors
 from ._backend import dy as _dy
 
 read_tensors = _dy.read_tensors
@@ -66,6 +66,7 @@ dsigmoid = dy.dsigmoid
 
 __all__ = [
     "read_tensors",
+    "write_tensors",
     # Model files
     "load",
     "resume",

@@ -24,7 +24,9 @@ earlier history.
 - `deepity.inference` now records `mode` (`"iterative"`), and `deepity.load` rejects a mode it does not know.
 
 - Model files are memory mapped on read by default, and `deepity.read_tensors(path)` returns every tensor as a numpy array in one call (zero-copy read-only views when mapped).
-- Sharded models: `ModelIO::SaveSharded` and `SaveCheckpointSharded` split a model over several safetensors files with a `*.safetensors.index.json`; `Load`, `LoadCheckpoint` and `deepity.load` open the index path like a file.
+- Sharded models: `ModelIO::SaveSharded` and `SaveCheckpointSharded` split a model over several safetensors files with a `*.safetensors.index.json`; `Load`, `LoadCheckpoint` and `deepity.load` open the index path like a file. From Python, `net.save(path, max_shard_bytes=...)` and `save_checkpoint` shard when `path` ends in `.safetensors.index.json`.
+
+- `deepity.write_tensors(path, {name: array}, metadata=None, max_shard_bytes=None)` writes numpy arrays to a safetensors file in one call, atomically and with a content hash, sharding when `path` ends in `.safetensors.index.json`.
 
 ### Changed
 

@@ -165,5 +165,62 @@ with tempfile.TemporaryDirectory() as tmp:
     check(float(np.abs(keep).sum()) > 0, "view stays valid after the dict is dropped")
     check(raises(lambda: dp.read_tensors(os.path.join(tmp, "missing.safetensors"))), "missing file raises")
 
+print("--- sharded save ---")
+with tempfile.TemporaryDirectory() as tmp:
+    for name, make in [
+        ("DKPPCN", lambda: dp.DKPPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+        ("FullPCN", lambda: dp.FullPCN(dp.Linear(12, 10), dp.ReLU(), dp.Linear(10, 4), batch_size=8)),
+    ]:
+        net = make().configure(learning_rate=1e-3, optimizer="ADAM", psi_optimizer="ADAM")
+        index = os.path.join(tmp, name + ".safetensors.index.json")
+        net.save(index, max_shard_bytes=300)
+        shards = [f for f in os.listdir(tmp) if f.startswith(name + "-")]
+        check(len(shards) > 1, f"{name}: weights split over {len(shards)} shards")
+        loaded = dp.load(index)
+        check(np.array_equal(net.predict(x), loaded.predict(x)), f"{name}: deepity.load(index) reproduces predictions")
+        y = np.zeros((8, 4), dtype=np.float32)
+        for _ in range(2):
+            net.train_step(x, y, 2)
+        ck = os.path.join(tmp, name + ".ck.safetensors.index.json")
+        net.save_checkpoint(ck, {"epoch": 3}, max_shard_bytes=300)
+        resumed, state = dp.resume(ck)
+        net.train_step(x, y, 2)
+        resumed.train_step(x, y, 2)
+        check(state == {"epoch": 3} and np.array_equal(net.predict(x), resumed.predict(x)),
+              f"{name}: sharded checkpoint resumes exactly")
+        check(raises(lambda: net.save(os.path.join(tmp, "plain.safetensors"), max_shard_bytes=300)),
+              f"{name}: max_shard_bytes with a plain path raises")
+        check(raises(lambda: net.save(index, max_shard_bytes=0)), f"{name}: zero shard size raises")
+
+print("--- write_tensors ---")
+with tempfile.TemporaryDirectory() as tmp:
+    rng = np.random.default_rng(1)
+    data = {
+        "a": rng.standard_normal((5, 7)).astype(np.float32),
+        "b": rng.standard_normal(11),
+        "c": np.arange(6, dtype=np.int32).reshape(2, 3),
+        "d": np.array([1, 2, 3], dtype=np.uint8),
+        "e": np.asfortranarray(rng.standard_normal((4, 3)).astype(np.float32)),
+        "f": np.array([True, False]),
+        "g": np.float32(2.5) * np.ones((), dtype=np.float32),
+    }
+    path = os.path.join(tmp, "w.safetensors")
+    dp.write_tensors(path, data, {"note": "hi"})
+    back = dp.read_tensors(path)
+    check(all(np.array_equal(back[k], np.asarray(v)) and back[k].shape == np.asarray(v).shape for k, v in data.items() if k != "f"),
+          "round trip through read_tensors (incl. non-contiguous and 0-d)")
+    check(back["f"].tolist() == [1, 0], "bool arrays are stored as one byte")
+    check(dp._backend.dy.read_model_metadata(path)["note"] == "hi", "metadata is stored")
+    check("deepity.content_blake3" in dp._backend.dy.read_model_metadata(path), "content hash is written")
+    idx = os.path.join(tmp, "w.safetensors.index.json")
+    dp.write_tensors(idx, data, max_shard_bytes=100)
+    check(len([f for f in os.listdir(tmp) if f.startswith("w-")]) > 1, "sharded write splits the arrays")
+    check(np.array_equal(dp.read_tensors(idx)["a"], data["a"]), "sharded arrays read back through the index")
+    check(raises(lambda: dp.write_tensors(path, {"x": np.array(["a"])})), "string arrays are rejected")
+    check(raises(lambda: dp.write_tensors(path, {"x": np.zeros(2, dtype=np.complex64)})), "complex arrays are rejected")
+    check(raises(lambda: dp.write_tensors(path, {})), "empty dict is rejected")
+    check(raises(lambda: dp.write_tensors(path, data, {"deepity.kind": "x"})), "reserved metadata keys are rejected")
+    check(raises(lambda: dp.write_tensors(os.path.join(tmp, "no", "dir", "x.safetensors"), data)), "unwritable path raises")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

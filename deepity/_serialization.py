@@ -165,6 +165,40 @@ def resume(path: str, device: Optional[str] = None, batch_size: Optional[int] = 
     return net, net.load_checkpoint(path)
 
 
+INDEX_SUFFIX = ".safetensors.index.json"
+DEFAULT_SHARD_BYTES = 2 << 30
+
+
+def shard_bytes(path: str, requested: Optional[int]) -> int:
+    """0 for a single file; otherwise the shard size limit. An index path shards by default."""
+    if requested is not None and requested <= 0:
+        raise ValueError("max_shard_bytes must be a positive number of bytes.")
+    if str(path).endswith(INDEX_SUFFIX):
+        return requested if requested is not None else DEFAULT_SHARD_BYTES
+    if requested is not None:
+        raise ValueError(f"max_shard_bytes needs a path ending in {INDEX_SUFFIX}, got {path!r}.")
+    return 0
+
+
+def write_tensors(
+    path: str,
+    tensors: dict[str, Any],
+    metadata: Optional[dict[str, str]] = None,
+    max_shard_bytes: Optional[int] = None,
+) -> None:
+    """Writes a dict of numpy arrays to a safetensors file in one call, with a content hash.
+    A path ending in `.safetensors.index.json` shards it (see `net.save`). `metadata` is a
+    string-to-string dict; keys starting with `deepity.` are reserved. Readable by any safetensors
+    reader and by `deepity.read_tensors`."""
+    bad = [k for k in (metadata or {}) if k.startswith("deepity.")]
+    if bad:
+        raise ValueError(f"Metadata keys {bad} are reserved for Deepity.")
+    import numpy as np
+
+    arrays = {name: np.asarray(value, order="C") for name, value in tensors.items()}
+    dy.write_tensors(path, arrays, metadata or {}, shard_bytes(path, max_shard_bytes))
+
+
 def training_metadata(training_state: Optional[dict[str, Any]]) -> dict[str, str]:
     """Metadata entry carrying the caller's training state (must be JSON-serializable)."""
     if training_state is None:

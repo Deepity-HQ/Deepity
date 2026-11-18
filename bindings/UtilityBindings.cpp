@@ -52,6 +52,51 @@ nb::object TensorToNumpy(const Deep::io::SafeTensorsReader& reader, const Deep::
   return nb::cast(nb::ndarray<nb::numpy, T>(copy, e.shape.size(), dims, owner));
 }
 
+/// @brief Safetensors dtype name of a numpy-style dtype, or "" if the format has none.
+std::string DTypeName(const nb::dlpack::dtype& d)
+{
+  const uint8_t code = d.code;
+  const std::string bits = std::to_string(d.bits);
+  if (d.lanes != 1) return "";
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Float) && (d.bits == 16 || d.bits == 32 || d.bits == 64))
+    return "F" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Int) && d.bits >= 8 && d.bits <= 64)
+    return "I" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::UInt) && d.bits >= 8 && d.bits <= 64)
+    return "U" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Bool) && d.bits == 8) return "BOOL";
+  return "";
+}
+
+using AnyArray = nb::ndarray<nb::c_contig, nb::device::cpu>;
+
+void WriteTensors(const std::string& path, nb::dict tensors, const std::map<std::string, std::string>& metadata,
+                  uint64_t maxShardBytes)
+{
+  using namespace Deep::io;
+  if (tensors.size() == 0) throw nb::value_error("write_tensors needs at least one tensor");
+  std::vector<AnyArray> keep; // holds the (possibly converted) arrays until the write finishes
+  keep.reserve(tensors.size());
+  SafeTensorsWriter writer;
+  for (const auto& [key, value] : metadata) writer.SetMetadata(key, value);
+  for (auto item : tensors)
+  {
+    const std::string name = nb::cast<std::string>(item.first);
+    AnyArray arr;
+    if (!nb::try_cast(item.second, arr, /*convert=*/true))
+      throw nb::type_error(("tensor '" + name + "' is not a CPU array").c_str());
+    const std::string dtype = DTypeName(arr.dtype());
+    if (dtype.empty())
+      throw nb::type_error(("tensor '" + name + "' has a dtype safetensors cannot store (use float16/32/64, int or uint)").c_str());
+    std::vector<size_t> shape(arr.ndim());
+    for (size_t i = 0; i < shape.size(); ++i) shape[i] = arr.shape(i);
+    writer.AddTensor(name, dtype, shape, arr.data(), arr.nbytes());
+    keep.push_back(std::move(arr));
+  }
+  if (maxShardBytes > 0) writer.WriteSharded(path, maxShardBytes);
+  else writer.Write(path);
+}
+
 nb::dict ReadTensors(const std::string& path, bool verifyHash, bool mmap)
 {
   using namespace Deep::io;
@@ -197,6 +242,11 @@ void bind_utilities(nb::module_& m)
         "(GPU randomizes into a device buffer and copies the result back; "
         "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
+  m.def("write_tensors", &WriteTensors, nb::arg("filepath"), nb::arg("tensors"),
+        nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+        "Writes a dict of numpy arrays (float16/32/64, int8..64, uint8..64, bool) to a safetensors "
+        "file in one call: atomic, 64-byte aligned, with a BLAKE3 hash. A max_shard_bytes above "
+        "zero writes a sharded model and needs an index path.");
   m.def("read_tensors", &ReadTensors, nb::arg("filepath"), nb::arg("verify_hash") = true, nb::arg("mmap") = true,
         "Reads every tensor of a safetensors file into a dict of numpy arrays in one call. With "
         "mmap the arrays are read-only views of the mapped file (no copy, nothing read until "

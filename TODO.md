@@ -108,9 +108,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [ ] Small `Source`/`Sink` interface: file, memory buffer, mmap, then `https://` and `s3://`,
       with a local cache directory.
 - [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies for CUDA still open.
-- [x] Bulk Python read: `deepity.read_tensors` (numpy, zero-copy when mapped). Bulk write from numpy still open.
+- [x] Bulk Python read and write: `deepity.read_tensors` (zero-copy when mapped) and `deepity.write_tensors` (any numpy dtype safetensors has; index path shards).
 - [~] Benchmark script written (`experiments/benchmark_model_io.py`); numbers not collected yet.
-- [x] Sharding plus an index file (C++ `SaveSharded`). Python `save` cannot shard yet.
+- [x] Sharding plus an index file (C++ `SaveSharded`, Python `save(path, max_shard_bytes=...)`).
 
 ## Phase 5: converters (separate from the core)
 

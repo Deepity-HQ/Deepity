@@ -162,7 +162,8 @@ here has run on big-endian hardware.
 
 A large model may be split across files with an index, as Hugging Face does. `ModelIO::SaveSharded`
 (and `SaveCheckpointSharded`) write `<stem>-00001-of-0000N.safetensors` files plus
-`<stem>.safetensors.index.json`:
+`<stem>.safetensors.index.json`. From Python, `net.save(path, max_shard_bytes=...)` and
+`save_checkpoint` do the same when `path` ends in `.safetensors.index.json` (default 2 GiB per shard).
 
 ```json
 {"metadata": {"total_size": 123456, "shard_count": 4},
@@ -180,6 +181,12 @@ A large model may be split across files with an index, as Hugging Face does. `Mo
 - A reader opens a path ending in `.index.json` as one logical file. It rejects a shard name that
   is not a plain file name beside the index, a tensor present in a different shard than the index
   says, an indexed tensor that no shard holds, and an index with no tensors.
+
+## Plain tensor files
+
+`deepity.write_tensors` and `deepity.read_tensors` use the same container for arbitrary numpy data
+with no model attached (no `deepity.kind`, only the metadata you pass and the content hash).
+Supported: float16/32/64, int8..64, uint8..64 and bool (stored as `BOOL`, one byte).
 
 ## Memory mapping
 
