@@ -121,6 +121,15 @@ jobs:
           uv pip install --system gguf
           python tests/pyGgufVerify.py
 
+      - name: PyTorch import
+        # Real .pt/.pth files from a CPU-only torch, checked against torch's own forward pass.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: |
+          uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
+          python tests/pyTorchImportVerify.py
+
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4

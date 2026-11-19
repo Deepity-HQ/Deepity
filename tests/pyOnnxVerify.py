@@ -69,13 +69,38 @@ with tempfile.TemporaryDirectory() as tmp:
             check(session.run(None, {"x": x[:3]})[0].shape == (3, want.shape[1]), f"{cls.__name__} {act.__name__}: unrolled graph has a dynamic batch")
             if cls in (dp.SimplePCN, dp.SequentialPCN):
                 check(not np.allclose(net.predict(x, 20), net.predict(x, 0), atol=1e-3), "settling changes the output, so the match is not vacuous")
-    conv_net = dp.SimpleConvolutionalPCN(dp.Convolution(4, 3, 3), dp.Convolution(0, 1, 1), input_shape=(1, 8, 8), batch_size=2)
-    conv_net.configure(learning_rate=1e-3)
+    for cls in (dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
+        for act in (dp.ReLU, dp.TanH, dp.Sigmoid, dp.GeLU):
+            # The stride-2 layer leaves a 3x3 map from 8x8, so the transposed convolution needs output_padding.
+            net = cls(
+                dp.Convolution(4, 3, 3, 1, 1, 1, 1), act(), dp.Convolution(6, 3, 3, 2, 2, 0, 0), act(),
+                dp.Convolution(10, 3, 3), dp.Convolution(0, 1, 1), input_shape=(2, 8, 8), batch_size=8,
+            )
+            net.configure(learning_rate=1e-3, inference_rate=0.1)
+            xc = rng.standard_normal((8, 2 * 8 * 8)).astype(np.float32)
+            if cls is dp.ConvolutionalPCN:  # non-trivial learned precisions, so they are really exercised
+                net.save(os.path.join(tmp, "p.safetensors"))
+                weights = {k: np.array(v) for k, v in dp.read_tensors(os.path.join(tmp, "p.safetensors")).items()}
+                for key in [k for k in weights if k.endswith(".p")]:
+                    weights[key] = rng.uniform(0.3, 2.5, weights[key].shape).astype(np.float32)
+                dp.import_weights(net, weights)
+            for steps in (1, 5, 20):
+                path = os.path.join(tmp, "cs.onnx")
+                dp.export_onnx(net, path, settling_steps=steps)
+                session = ort.InferenceSession(path)
+                got = session.run(None, {"x": xc})[0]
+                want = np.asarray(net.predict(xc, steps)).reshape(got.shape)
+                err = np.abs(got - want).max()
+                check(err < 1e-4 * max(1.0, np.abs(want).max()), f"{cls.__name__} {act.__name__}: {steps} settling steps match predict (max error {err:.1e})")
+            check(session.run(None, {"x": xc[:3]})[0].shape == (3, want.shape[1]), f"{cls.__name__} {act.__name__}: unrolled graph has a dynamic batch")
+            check(not np.allclose(net.predict(xc, 20), net.predict(xc, 1), atol=1e-4), f"{cls.__name__} {act.__name__}: settling changes the output, so the match is not vacuous")
+    unsupported = dp.ConvolutionalPCN(dp.Convolution(4, 3, 3), dp.Convolution(0, 1, 1), input_shape=(1, 8, 8), batch_size=2)
+    unsupported.configure(learning_rate=1e-3)
     try:
-        dp.export_onnx(conv_net, os.path.join(tmp, "u.onnx"), settling_steps=3)
-        check(False, "conv networks refuse unrolled settling")
-    except NotImplementedError:
-        check(True, "conv networks refuse unrolled settling")
+        dp.export_onnx(unsupported, os.path.join(tmp, "u.onnx"), settling_steps=100000)
+        check(False, "an unreasonably large unrolled graph is refused")
+    except ValueError:
+        check(True, "an unreasonably large unrolled graph is refused")
     for cls, kwargs in ((dp.SimpleConvolutionalPCN, {}), (dp.ConvolutionalPCN, {})):
         for act in (dp.ReLU, dp.TanH):
             net = cls(

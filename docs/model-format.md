@@ -254,8 +254,16 @@ plain `predict(x, 0)` leaves the output at zero. Mixing dense and convolution la
 unrolled into the graph (about 15 nodes per layer per step; verified against `predict` to 1e-7 for relu, tanh,
 sigmoid and gelu at 1, 5 and 20 steps, batch size dynamic). `SequentialPCN`'s learned per-feature precisions
 (`layers.i.p`) are baked in as constants. `FullPCN`, `DKPPCN` and `GaussSeidelPCN` predict from the forward pass, where every error is
-already zero, so settling changes nothing and the plain forward graph is exact for any N. the conv
-networks raise `NotImplementedError` for `settling_steps > 0`.
+already zero, so settling changes nothing and the plain forward graph is exact for any N.
+
+`SimpleConvolutionalPCN` and `ConvolutionalPCN` are unrolled the same way, from zero beliefs, so the graph
+matches their plain `predict(x, N)` (not the forward-projected `predict_with_projection` that the
+`settling_steps=0` graph matches). Each step is Conv nodes for the predictions, then ConvTranspose nodes for
+the bottom-up drive; a strided layer that leaves a few pixels uncovered gets `output_padding` so the
+transposed convolution returns to the layer's own size. `ConvolutionalPCN`'s learned per-feature precisions
+are baked in as constants. Verified against `predict` to about 1e-8 (outputs near 0.3) for relu, tanh, sigmoid
+and gelu at 1, 5 and 20 steps, including a stride-2 layer, with a dynamic batch. `FullConvPCNetwork` has no
+Python class and is not exported.
 
 A `GaussSeidelPCN` has no separate terminal layer, so its `predict` returns the last layer's belief, the
 previous layer's prediction; its exported graph therefore leaves the last `Linear` out and ends one layer earlier.
@@ -274,13 +282,19 @@ a power of two. GGUF is not a Deepity format; weights still need `import_weights
 
 `deepity.write_gguf(path, tensors, metadata, dtype)` writes numpy arrays as GGUF v3 (32-byte alignment,
 atomic write). Floats are stored as F32 or F16 by default, F64 is kept, and `dtype` can force `"f32"`,
-`"f16"`, `"bf16"` or `"q8_0"` for every float tensor (Q8_0 leaves 1-D tensors and widths not divisible
-by 32 as F32). Integer tensors keep their width. Names are limited to 64 bytes and shapes to 4
+`"f16"`, `"bf16"` or a block quantization for every float tensor: `"q4_0"`, `"q4_1"`, `"q5_0"`, `"q5_1"`,
+`"q8_0"` (block of 32) and `"q2_k"`, `"q3_k"`, `"q4_k"`, `"q5_k"`, `"q6_k"` (block of 256). A quantized
+write leaves 1-D tensors and widths that are not a whole number of blocks as F32, as llama.cpp does. Integer tensors keep their width. Names are limited to 64 bytes and shapes to 4
 dimensions, GGUF's own limits, and empty tensors are rejected. Metadata values may be str, int, float,
 bool, homogeneous lists, or dicts (stored as JSON strings); `general.architecture` defaults to
 `"deepity"`. `deepity.export_gguf(net, path, dtype)` writes a network's weights with its description under
-`deepity.model`, and `deepity convert SRC out.gguf [--dtype q8_0]` does the same from a safetensors file.
-Other quant formats are not written. A Deepity GGUF file loads back with `import_weights`; llama.cpp has no
+`deepity.model`, and `deepity convert SRC out.gguf [--dtype q4_k]` does the same from a safetensors file.
+The quantizers are this library's own (`deepity/_gguf_quant.py`): they pick scales with a short
+least-squares search, not llama.cpp's exact procedure, so the bytes differ from llama.cpp's but are valid
+GGUF. All ten decode identically in the reference `gguf` package (type, size and values checked in
+`tests/pyGgufVerify.py`), and the relative RMS error on Gaussian data is about 0.09 for Q4_0, 0.08 for Q4_K,
+0.04 for Q5_K, 0.017 for Q6_K and 0.29 for Q2_K. Re-quantizing the Q4_0 weights of a real llama.cpp model
+reproduces them exactly. The IQ quants are read-only (they need codebooks and importance data). A Deepity GGUF file loads back with `import_weights`; llama.cpp has no
 loader for Deepity architectures, so the file is for exchange and inspection, not for running there.
 
 ## Model card (`deepity.card`)
@@ -326,7 +340,8 @@ The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
 - A finished download is checked before it is put in place (structure and the content hash when the file has
   one), by an atomic rename, so an interrupted or corrupt download leaves nothing behind.
 - A cached file is revalidated with the server's ETag on every load (an unchanged model costs one small
-  request, not a download). With no network the cached copy is used with a warning. A server that sends no
+  request, not a download). When a redirect carries `x-linked-etag` (Hugging Face), that is the validator
+  kept, because the origin answers a conditional request by it and not by the CDN's own `etag`. With no network the cached copy is used with a warning. A server that sends no
   validator is trusted as is; `fetch(url, refresh=True)` forces a download. `DEEPITY_OFFLINE=1` never
   touches the network.
 - `deepity.fetch(url, ...)` takes `headers`, `timeout`, `max_bytes` (also `$DEEPITY_MAX_DOWNLOAD_BYTES`, default
@@ -337,6 +352,10 @@ The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
   a redirect goes to another host.
 - A signed URL's query string is part of its cache key, so a fresh signature downloads again, and a
   sharded model needs an unsigned base URL.
+
+Checked against a real server: Hugging Face model files (two redirects, the second to a signed CDN URL),
+including revalidation, in `tests/pyRealFilesVerify.py` (not in CI). S3 is still tested only against a fake
+`boto3`.
 
 Not built: uploading (no Sink), `hf://`, a C++ memory-buffer reader (bytes are written to the cache, then
 mapped), and resuming a partial download.

@@ -14,6 +14,14 @@ earlier history.
 
 ### Added
 
+- GGUF writing for every block quantization except the IQ family: `dtype` (and `deepity convert --dtype`) now takes `q4_0`, `q4_1`, `q5_0`, `q5_1`, `q8_0`, `q2_k`, `q3_k`, `q4_k`, `q5_k` and `q6_k`. The quantizers are this library's own (`deepity/_gguf_quant.py`); all ten decode identically in the reference `gguf` package, and re-quantizing a real llama.cpp model's Q4_0 weights reproduces them exactly.
+
+- ONNX export of unrolled settling for `SimpleConvolutionalPCN` and `ConvolutionalPCN` (`export_onnx(..., settling_steps=N)` matches `predict(x, N)` to about 1e-8), including strided layers and learned precisions. Conv networks no longer raise `NotImplementedError` there.
+
+- Tests on real files: `tests/pyTorchImportVerify.py` (real `torch.save` files, CI) and `tests/pyRealFilesVerify.py` (two llama.cpp models from Hugging Face, not in CI).
+
+- Model file load speed benchmark results (512 MiB, OSC Ascend node) added to the README and `docs/model-format.md`: memory-mapped loads run at 5.28 GB/s, about 1.7x stock safetensors; BLAKE3 verification costs about 230 ms for 512 MiB.
+
 - Model sources: every loader accepts `http(s)://` and `s3://` URLs, `file://` and raw bytes wherever it took a path. Remote files go through a download cache (`$DEEPITY_CACHE_DIR`, default `~/.cache/deepity`) with ETag revalidation, a size cap, content-hash validation before a download is kept, shard sets from an index URL, and safe redirects (no credentials to another host, no https to http). New `deepity.fetch(url, headers=, timeout=, max_bytes=, sha256=, refresh=)`; `deepity inspect` and `convert` take URLs. Standard library only; `s3://` uses `boto3` when installed.
 
 - Loading onto a GPU copies each float tensor straight from the mapped file to the device, skipping a device-to-host copy and a host staging copy.
@@ -89,6 +97,10 @@ earlier history.
 -
 
 ### Fixed
+
+- ETag revalidation never worked against Hugging Face: the origin answers a conditional request by `x-linked-etag` on its redirect, but the cache kept the CDN's own `etag`, so every load downloaded the file again (19 MB in 2.2 s instead of a 0.24 s 304). The validator from the redirect is now kept. Found by fetching real models; the local-server tests could not show it.
+
+- `deepity.read_gguf`'s docstring said K-quants raise an error; they have decoded since earlier in this release.
 
 - `ModelIO::Load()` and `LoadCheckpoint()` silently skipped a tensor missing from the file, leaving random weights. They now throw, naming the tensor. (A file marked as an inference artifact may still lack Psi, and empty tensors are never written.)
 

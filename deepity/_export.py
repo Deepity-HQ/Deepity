@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import os
 import tempfile
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -29,9 +29,11 @@ def export_onnx(net: Any, path: str, dynamic_batch: bool = True, settling_steps:
     `[batch, channels * height * width]`, like `predict`, and the graph reshapes it. The output `y`
     is `[batch, out]`. With `dynamic_batch` the batch size is left free. Raises if `onnx` is missing.
 
-    `settling_steps > 0` makes the graph match `net.predict(x, settling_steps)`. `SimplePCN` and
-    `SequentialPCN`, whose predictions start from a cleared state and depend on the step count, get that
-    many settling steps unrolled (the graph grows with the count). `FullPCN`, `DKPPCN` and `GaussSeidelPCN` predict from the forward pass, where
+    `settling_steps > 0` makes the graph match `net.predict(x, settling_steps)`. `SimplePCN`,
+    `SequentialPCN`, `SimpleConvolutionalPCN` and `ConvolutionalPCN`, whose predictions start from a cleared state
+    and depend on the step count, get that many settling steps unrolled (the graph grows with the count). For a
+    convolutional network this is the plain `predict`, which starts from zero beliefs, not the forward-projected
+    `predict_with_projection` that `settling_steps=0` matches. `FullPCN`, `DKPPCN` and `GaussSeidelPCN` predict from the forward pass, where
     settling changes nothing, so the plain forward graph already matches for any step count. Other
     networks raise `NotImplementedError`.
     """
@@ -76,16 +78,16 @@ def export_onnx(net: Any, path: str, dynamic_batch: bool = True, settling_steps:
 
     if settling_steps > 0:
         _check_settling_supported(net, convolutional, settling_steps)
-    if settling_steps > 0 and type(net).__name__ in _UNROLLED:
-        previous, nodes_extra, init_extra = _unroll_settling(helper, numpy_helper, elem, dtype, tensors, layers, net, settling_steps)
-        nodes += nodes_extra
-        initializers += init_extra
+    if settling_steps > 0 and type(net).__name__ in _UNROLLED + _UNROLLED_CONV:
+        g = _Graph(helper, numpy_helper, elem, dtype)
+        (_unroll_conv_settling if convolutional else _unroll_settling)(g, tensors, layers, net, settling_steps)
+        out_width = int(np.prod(_conv_shapes(net, layers)[-1])) if convolutional else layers[-1]["out"]
         graph = helper.make_graph(
-            nodes,
+            nodes + g.nodes,
             "deepity_settled",
             [helper.make_tensor_value_info("x", elem, [batch, in_width])],
-            [helper.make_tensor_value_info("y", elem, [batch, layers[-1]["out"]])],
-            initializers,
+            [helper.make_tensor_value_info("y", elem, [batch, out_width])],
+            initializers + g.inits,
         )
         model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", _OPSET)], producer_name="deepity")
         onnx.checker.check_model(model)
@@ -145,72 +147,72 @@ _MAX_UNROLLED_STEPS = 2000
 # settling changes nothing and the plain forward graph is exact for any step count.
 _NO_OP_SETTLING = ("FullPCN", "DKPPCN", "GaussSeidelPCN")
 _UNROLLED = ("SimplePCN", "SequentialPCN")
+_UNROLLED_CONV = ("SimpleConvolutionalPCN", "ConvolutionalPCN")
 
 
 def _check_settling_supported(net: Any, convolutional: bool, steps: int) -> None:
     kind = type(net).__name__
-    if kind not in _NO_OP_SETTLING + _UNROLLED:
+    if convolutional and kind not in _UNROLLED_CONV:
+        raise NotImplementedError(f"Unrolled settling for convolutional networks is supported for SimpleConvolutionalPCN and ConvolutionalPCN only (not {kind}).")
+    if not convolutional and kind not in _NO_OP_SETTLING + _UNROLLED:
         raise NotImplementedError(f"Unrolled settling is supported for SimplePCN and SequentialPCN only (not {kind}).")
-    if convolutional:
-        raise NotImplementedError("Unrolled settling is not supported for convolutional networks.")
     if steps > _MAX_UNROLLED_STEPS:
         raise ValueError(f"settling_steps above {_MAX_UNROLLED_STEPS} would make an unreasonably large graph.")
 
 
-def _unroll_settling(helper, numpy_helper, elem, dtype, tensors, layers, net, steps):
-    """Settling from a cleared state, step by step, as ONNX nodes, for SimplePCN and SequentialPCN.
+class _Graph:
+    """Nodes and constants for an unrolled settling graph, with the small operator helpers both networks use."""
 
-    Beliefs start at zero except z_0 = x (clamped). One step reads every error before changing any
-    belief: e_i = z_i - mu_{i-1}.
-      SimplePCN: mu_i = f_i(z_i) W_i^T + b_i; hidden z_i += ir * (f_i'(z_i) * (e_{i+1} W_i) - e_i),
-        terminal z_n -= ir * e_n.
-      SequentialPCN: mu_i = f_i(z_i W_i^T + b_i) with preactivation a_i, and learned per-feature
-        precisions p_i (stored in the file as `layers.i.p`); hidden
-        z_i += ir * (((e_{i+1} * p_{i+1}) * f_i'(a_i)) W_i - p_i * e_i), terminal z_n -= ir * p_n * e_n.
-    """
-    precision = type(net).__name__ == "SequentialPCN"
-    nodes: list = []
-    inits: list = []
-    counter = [0]
+    def __init__(self, helper: Any, numpy_helper: Any, elem: int, dtype: np.dtype) -> None:
+        self.helper, self.numpy_helper, self.elem, self.dtype = helper, numpy_helper, elem, dtype
+        self.nodes: list = []
+        self.inits: list = []
+        self._count = 0
+        self._one: Optional[str] = None
 
-    def name(prefix: str) -> str:
-        counter[0] += 1
-        return f"{prefix}{counter[0]}"
+    @property
+    def one(self) -> str:
+        if self._one is None:
+            self._one = self.const(1.0)
+        return self._one
 
-    def const(value: float) -> str:
-        key = name("c")
-        inits.append(numpy_helper.from_array(np.array(value, dtype=dtype), key))
+    def name(self, prefix: str) -> str:
+        self._count += 1
+        return f"{prefix}{self._count}"
+
+    def const(self, value: float) -> str:
+        key = self.name("c")
+        self.inits.append(self.numpy_helper.from_array(np.array(value, dtype=self.dtype), key))
         return key
 
-    def op(kind: str, inputs: list[str], **attrs: Any) -> str:
-        out = name("t")
-        nodes.append(helper.make_node(kind, inputs, [out], **attrs))
+    def const_int(self, values: list[int]) -> str:
+        key = self.name("i")
+        self.inits.append(self.numpy_helper.from_array(np.array(values, dtype=np.int64), key))
+        return key
+
+    def array(self, key: str, value: np.ndarray) -> str:
+        self.inits.append(self.numpy_helper.from_array(value, key))
+        return key
+
+    def op(self, kind: str, inputs: list[str], **attrs: Any) -> str:
+        out = self.name("t")
+        self.nodes.append(self.helper.make_node(kind, inputs, [out], **attrs))
         return out
 
-    one = const(1.0)
-    n = len(layers)
-    sizes = [layers[0]["in"]] + [layer["out"] for layer in layers]
-    for i, layer in enumerate(layers):
-        weight = np.array(tensors[f"layers.{i}.weight"], dtype=dtype)
-        bias = np.array(tensors[f"layers.{i}.bias"], dtype=dtype)
-        inits += [numpy_helper.from_array(weight, f"W{i}"), numpy_helper.from_array(bias, f"b{i}")]
-        if layer["activation"] != "linear" and layer["activation"] not in _ACTIVATION_OPS:
-            raise NotImplementedError(f"No ONNX operator for activation {layer['activation']!r}.")
-    ir = const(float(net._inference_rate))
-    prec = [None] + [const_vec(inits, numpy_helper, f"p{i}", np.array(tensors[f"layers.{i}.p"], dtype=dtype)) for i in range(1, n + 1)] if precision else None
-
-    def activate(z: str, i: int) -> str:
-        act = layers[i]["activation"]
+    def activate(self, z: str, act: str) -> str:
         if act == "linear":
             return z
         extra = {"approximate": "tanh"} if act == "gelu" else {}
-        return op(_ACTIVATION_OPS[act], [z], **extra)
+        return self.op(_ACTIVATION_OPS[act], [z], **extra)
 
-    def derivative(z: str, act: str) -> Optional[str]:
+    def derivative(self, z: str, act: str) -> Optional[str]:
+        """f'(z) for the pre-activation `z`, or None for a linear activation."""
         if act == "linear":
             return None
+        op, const = self.op, self.const
         if act == "relu":
-            return op("Cast", [op("Greater", [z, const(0.0)])], to=elem)
+            return op("Cast", [op("Greater", [z, const(0.0)])], to=self.elem)
+        one = self.one
         if act == "sigmoid":
             s = op("Sigmoid", [z])
             return op("Mul", [s, op("Sub", [one, s])])
@@ -228,20 +230,46 @@ def _unroll_settling(helper, numpy_helper, elem, dtype, tensors, layers, net, st
         right = op("Mul", [op("Mul", [const(0.5), z]), op("Mul", [sech2, poly])])
         return op("Add", [left, right])
 
-    # The batch size is dynamic, so the zero beliefs are built from x's shape: sum x over its columns,
-    # scale by 0, then expand to each layer's width.
-    zero_col = op("Mul", [op("ReduceSum", ["x", const_int(inits, numpy_helper, name("ax"), [1])], keepdims=1), const(0.0)])
-    z = ["x"] + [op("Expand", [zero_col, const_int(inits, numpy_helper, name("sh"), [1, sizes[i]])]) for i in range(1, n + 1)]
+    def zero_beliefs(self, shape: list[int]) -> str:
+        """A zero tensor of `[batch] + shape`, taking the (dynamic) batch size from `x`."""
+        column = self.op("Mul", [self.op("ReduceSum", ["x", self.const_int([1])], keepdims=1), self.const(0.0)])
+        column = self.op("Reshape", [column, self.const_int([-1] + [1] * len(shape))])
+        return self.op("Expand", [column, self.const_int([1] + shape)])
 
+
+def _unroll_settling(g: _Graph, tensors, layers, net, steps):
+    """Settling from a cleared state, step by step, as ONNX nodes, for SimplePCN and SequentialPCN.
+
+    Beliefs start at zero except z_0 = x (clamped). One step reads every error before changing any
+    belief: e_i = z_i - mu_{i-1}.
+      SimplePCN: mu_i = f_i(z_i) W_i^T + b_i; hidden z_i += ir * (f_i'(z_i) * (e_{i+1} W_i) - e_i),
+        terminal z_n -= ir * e_n.
+      SequentialPCN: mu_i = f_i(z_i W_i^T + b_i) with preactivation a_i, and learned per-feature
+        precisions p_i (stored in the file as `layers.i.p`); hidden
+        z_i += ir * (((e_{i+1} * p_{i+1}) * f_i'(a_i)) W_i - p_i * e_i), terminal z_n -= ir * p_n * e_n.
+    """
+    precision = type(net).__name__ == "SequentialPCN"
+    dtype, op, const = g.dtype, g.op, g.const
+    n = len(layers)
+    sizes = [layers[0]["in"]] + [layer["out"] for layer in layers]
+    for i, layer in enumerate(layers):
+        g.array(f"W{i}", np.array(tensors[f"layers.{i}.weight"], dtype=dtype))
+        g.array(f"b{i}", np.array(tensors[f"layers.{i}.bias"], dtype=dtype))
+        if layer["activation"] != "linear" and layer["activation"] not in _ACTIVATION_OPS:
+            raise NotImplementedError(f"No ONNX operator for activation {layer['activation']!r}.")
+    ir = const(float(net._inference_rate))
+    prec = [None] + [g.array(f"p{i}", np.array(tensors[f"layers.{i}.p"], dtype=dtype)) for i in range(1, n + 1)] if precision else None
+
+    z = ["x"] + [g.zero_beliefs([sizes[i]]) for i in range(1, n + 1)]
     for _ in range(steps):
         pre = [None] * n
         if precision:
             mu = []
             for i in range(n):
                 pre[i] = op("Gemm", [z[i], f"W{i}", f"b{i}"], transB=1)
-                mu.append(activate(pre[i], i))
+                mu.append(g.activate(pre[i], layers[i]["activation"]))
         else:
-            mu = [op("Gemm", [activate(z[i], i), f"W{i}", f"b{i}"], transB=1) for i in range(n)]
+            mu = [op("Gemm", [g.activate(z[i], layers[i]["activation"]), f"W{i}", f"b{i}"], transB=1) for i in range(n)]
         err = [None] + [op("Sub", [z[i], mu[i - 1]]) for i in range(1, n + 1)]
         new = ["x"]
         for i in range(1, n + 1):
@@ -250,25 +278,83 @@ def _unroll_settling(helper, numpy_helper, elem, dtype, tensors, layers, net, st
                 delta = op("Mul", [ir, op("Sub", [const(0.0), pull])])
             elif precision:
                 gated = op("Mul", [err[i + 1], prec[i + 1]])
-                d = derivative(pre[i], layers[i]["activation"])
+                d = g.derivative(pre[i], layers[i]["activation"])
                 gated = gated if d is None else op("Mul", [gated, d])
                 delta = op("Mul", [ir, op("Sub", [op("MatMul", [gated, f"W{i}"]), pull])])
             else:
                 back = op("MatMul", [err[i + 1], f"W{i}"])
-                d = derivative(z[i], layers[i]["activation"])
+                d = g.derivative(z[i], layers[i]["activation"])
                 driven = back if d is None else op("Mul", [d, back])
                 delta = op("Mul", [ir, op("Sub", [driven, pull])])
             new.append(op("Add", [z[i], delta]))
         z = new
-    nodes.append(helper.make_node("Identity", [z[n]], ["y"]))
-    return "y", nodes, inits
+    g.nodes.append(g.helper.make_node("Identity", [z[n]], ["y"]))
 
 
-def const_int(inits: list, numpy_helper, key: str, values: list[int]) -> str:
-    inits.append(numpy_helper.from_array(np.array(values, dtype=np.int64), key))
-    return key
+def _conv_shapes(net: Any, layers: list[dict[str, Any]]) -> list[tuple[int, int, int]]:
+    """Each layer's own (channels, height, width): the shape of its belief, which is its input."""
+    shapes = [tuple(int(d) for d in net.input_shape)]
+    for layer in layers[:-1]:
+        c, h, w = shapes[-1]
+        (kh, kw), (sh, sw), (ph, pw) = layer["kernel"], layer["stride"], layer["pad"]
+        shapes.append((layer["out_channels"], (h + 2 * ph - kh) // sh + 1, (w + 2 * pw - kw) // sw + 1))
+    return shapes
 
 
-def const_vec(inits: list, numpy_helper, key: str, value: np.ndarray) -> str:
-    inits.append(numpy_helper.from_array(value, key))
-    return key
+def _unroll_conv_settling(g: _Graph, tensors, layers, net, steps):
+    """Settling for SimpleConvolutionalPCN and ConvolutionalPCN, from a cleared state, as ONNX nodes.
+
+    Layer i owns the belief z_i of its own input, shape [batch, C, H, W]; z_0 = x is clamped and the last layer is
+    the terminal one (its z is the output). Errors are read for every layer before any belief moves:
+    e_i = z_i - mu_{i-1}, with mu_i = f_i(conv(z_i, W_i) + b_i) and preactivation a_i. A step is
+      z_i += ir * (convT(e_{i+1} * p_{i+1} * f_i'(a_i), W_i) - p_i * e_i)
+    for hidden layers and z_n -= ir * p_n * e_n for the terminal one. `SimpleConvolutionalPCN` has no
+    precisions (p = 1); `ConvolutionalPCN` stores them as `layers.i.p`.
+    """
+    precision = type(net).__name__ == "ConvolutionalPCN"
+    dtype, op, const = g.dtype, g.op, g.const
+    n = len(layers)
+    if any(layer["out_channels"] <= 0 for layer in layers[:-1]) or layers[-1]["out_channels"] != 0:
+        raise NotImplementedError("Unrolled convolutional settling needs a terminal Convolution with 0 output channels, last.")
+    shapes = _conv_shapes(net, layers)
+    for i, layer in enumerate(layers[:-1]):
+        c, h, w = shapes[i]
+        kh, kw = layer["kernel"]
+        g.array(f"W{i}", np.array(tensors[f"layers.{i}.weight"], dtype=dtype).reshape(layer["out_channels"], c, kh, kw))
+        g.array(f"b{i}", np.array(tensors[f"layers.{i}.bias"], dtype=dtype))
+        if layer["activation"] != "linear" and layer["activation"] not in _ACTIVATION_OPS:
+            raise NotImplementedError(f"No ONNX operator for activation {layer['activation']!r}.")
+    ir = const(float(net._inference_rate))
+    prec = [None] + [g.array(f"p{i}", np.array(tensors[f"layers.{i}.p"], dtype=dtype).reshape(shapes[i])) for i in range(1, n)] if precision else None
+
+    def attrs(i: int) -> dict[str, Any]:
+        (kh, kw), (sh, sw), (ph, pw) = layers[i]["kernel"], layers[i]["stride"], layers[i]["pad"]
+        return {"kernel_shape": [kh, kw], "strides": [sh, sw], "pads": [ph, pw, ph, pw]}
+
+    def conv_transpose(gated: str, i: int) -> str:
+        # The transposed convolution must come back to layer i's own height and width, which a strided
+        # forward convolution can leave a few pixels short of: output_padding makes up the difference.
+        _, h, w = shapes[i]
+        _, oh, ow = shapes[i + 1]
+        (kh, kw), (sh, sw), (ph, pw) = layers[i]["kernel"], layers[i]["stride"], layers[i]["pad"]
+        pad_out = [h - ((oh - 1) * sh - 2 * ph + kh), w - ((ow - 1) * sw - 2 * pw + kw)]
+        return op("ConvTranspose", [gated, f"W{i}"], output_padding=pad_out, **attrs(i))
+
+    z = ["x4"] + [g.zero_beliefs(list(shapes[i])) for i in range(1, n)]
+    for _ in range(steps):
+        pre = [op("Conv", [z[i], f"W{i}", f"b{i}"], **attrs(i)) for i in range(n - 1)]
+        mu = [g.activate(pre[i], layers[i]["activation"]) for i in range(n - 1)]
+        err = [None] + [op("Sub", [z[i], mu[i - 1]]) for i in range(1, n)]
+        new = ["x4"]
+        for i in range(1, n):
+            pull = err[i] if not precision else op("Mul", [err[i], prec[i]])
+            if i == n - 1:
+                delta = op("Mul", [ir, op("Sub", [const(0.0), pull])])
+            else:
+                gated = err[i + 1] if not precision else op("Mul", [err[i + 1], prec[i + 1]])
+                d = g.derivative(pre[i], layers[i]["activation"])
+                gated = gated if d is None else op("Mul", [gated, d])
+                delta = op("Mul", [ir, op("Sub", [conv_transpose(gated, i), pull])])
+            new.append(op("Add", [z[i], delta]))
+        z = new
+    g.nodes.append(g.helper.make_node("Flatten", [z[n - 1]], ["y"], axis=1))

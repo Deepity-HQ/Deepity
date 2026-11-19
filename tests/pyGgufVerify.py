@@ -222,10 +222,36 @@ def writer_checks(tmp):
         back = dp.read_gguf(p2)[0]
         check(back["w"].shape == x.shape and np.abs(back["w"] - x).max() < tol, f"{dt}: values within tolerance")
         check(np.array_equal(back["b"], tensors["a.bias"]) if dt == "q8_0" else True, f"{dt}: small tensors handled")
+    # Every block quantization: decodes within a bound, handles zero and constant blocks, has the right size.
+    qx = rng.standard_normal((6, 512)).astype(np.float32)
+    qx[1, :40] *= 20  # outliers
+    qx[2] = 0.0
+    qx[3, :256] = 1.5
+    bounds = {"q4_0": 0.13, "q4_1": 0.13, "q5_0": 0.07, "q5_1": 0.06, "q8_0": 0.01,
+              "q2_k": 0.4, "q3_k": 0.2, "q4_k": 0.11, "q5_k": 0.055, "q6_k": 0.025}
+    block_bytes = {"q4_0": 18, "q4_1": 20, "q5_0": 22, "q5_1": 24, "q8_0": 34, "q2_k": 84, "q3_k": 110, "q4_k": 144, "q5_k": 176, "q6_k": 210}
+    block_elems = {name: (256 if name.endswith("_k") else 32) for name in bounds}
+    quant_paths = {}
+    for dt, bound in bounds.items():
+        qp = os.path.join(tmp, f"q_{dt}.gguf")
+        quant_paths[dt] = qp
+        dp.write_gguf(qp, {"w": qx, "narrow": qx[:, :64], "bias": qx[0]}, None, dt)
+        back = dp.read_gguf(qp)[0]
+        rel = max(np.sqrt(((back["w"][r] - qx[r]) ** 2).mean() / (qx[r] ** 2).mean()) for r in (0, 1, 4))
+        check(back["w"].shape == qx.shape and rel < bound, f"{dt}: values within tolerance (relative RMS error {rel:.3f})")
+        check(not back["w"][2].any() and np.abs(back["w"][3, :256] - 1.5).max() < 1e-3, f"{dt}: all-zero and constant blocks decode cleanly")
+        check(np.isfinite(back["w"]).all(), f"{dt}: no NaN or infinity")
+        check(np.array_equal(back["bias"], qx[0]), f"{dt}: a 1-D tensor stays float32")
+        check(np.array_equal(back["narrow"], qx[:, :64]) == (64 % block_elems[dt] != 0), f"{dt}: a width that is not whole blocks stays float32, others are quantized")
+    for dt in bounds:
+        wp = os.path.join(tmp, f"only_{dt}.gguf")
+        dp.write_gguf(wp, {"w": qx}, None, dt)
+        extra = os.path.getsize(wp) - qx.size // block_elems[dt] * block_bytes[dt]
+        check(0 < extra < 600, f"{dt}: the file holds exactly the blocks plus a small header ({extra} bytes of header and padding)")
     check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"n" * 65: x})), "a name over 64 bytes is rejected")
     check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": np.zeros((1,) * 5, np.float32)})), "more than 4 dimensions is rejected")
     check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": x}, {"general.alignment": 64})), "the alignment key is reserved")
-    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": x}, None, "q4_0")), "an unknown dtype is rejected")
+    check(raises(lambda: dp.write_gguf(os.path.join(tmp, "x.gguf"), {"t": x}, None, "iq4_nl")), "an unknown dtype is rejected")
     check(not [f for f in os.listdir(tmp) if f.endswith(".tmp")], "no temp files are left behind")
     try:
         import gguf
@@ -237,6 +263,11 @@ def writer_checks(tmp):
         qt = {t.name: t for t in gguf.GGUFReader(qpath).tensors}["w"]
         ref = gguf.quants.dequantize(np.array(qt.data), gguf.GGMLQuantizationType.Q8_0)
         check(np.array_equal(ref.reshape(x.shape), dp.read_gguf(qpath)[0]["w"]), "Q8_0 written here decodes identically in the reference package")
+        for dt in bounds:
+            qt = {t.name: t for t in gguf.GGUFReader(quant_paths[dt]).tensors}["w"]
+            ref = gguf.quants.dequantize(np.array(qt.data), qt.tensor_type).reshape(qx.shape)
+            check(qt.tensor_type.name.lower() == dt and qt.n_bytes == qx.size // block_elems[dt] * block_bytes[dt] and np.allclose(ref, dp.read_gguf(quant_paths[dt])[0]["w"], rtol=1e-6, atol=1e-7),
+                  f"{dt} written here has the right type and size and decodes identically in the reference package")
     except ImportError:
         print("  (gguf package not installed: skipping the reference reader checks)")
 

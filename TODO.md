@@ -112,24 +112,27 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] Sources (`deepity/_sources.py`): path, `file://`, `https://`, `s3://` (boto3 or public HTTPS) and bytes, resolved
       through a download cache with ETag revalidation, size cap, hash check and shard sets. Tested against local
       servers (`tests/pySourcesVerify.py`, in CI). Not built: uploading (Sink), `hf://`, a no-disk C++ memory reader,
-      resuming a partial download; real S3 and a real remote server are untested.
+      resuming a partial download; real S3 is untested (a real server, Hugging Face, passes: `tests/pyRealFilesVerify.py`).
 - [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies: a float tensor loads straight
       from the mapped file to the device in one copy (was device to host, file to host, host to device). Tested
-      on the CPU with `ForceDeviceStaging()`; **not yet run on a GPU**.
+      on the CPU with `ForceDeviceStaging()` and on an A100 through `tests/pyGpuCheckpointVerify.py`.
 - [x] Bulk Python read and write: `deepity.read_tensors` (zero-copy when mapped) and `deepity.write_tensors` (any numpy dtype safetensors has; index path shards).
-- [~] Benchmark script written (`experiments/benchmark_model_io.py`); numbers not collected yet.
+- [x] Benchmark script (`experiments/benchmark_model_io.py`); host load numbers collected on an Ascend node and recorded in
+      the README and `docs/model-format.md`. The script does not time the direct-to-device CUDA load yet.
 - [x] Sharding plus an index file (C++ `SaveSharded`, Python `save(path, max_shard_bytes=...)`).
 
 ## Phase 5: converters (separate from the core)
 
-- [x] Import: safetensors and PyTorch `state_dict` with name mapping (`deepity.import_weights`; real torch files untested, torch is not installed here).
-- [~] Export: ONNX for the forward path is done for dense and convolutional networks
-      (`deepity.export_onnx`, relu/sigmoid/tanh/gelu; conv checked against `predict_with_projection(x, 0)`).
-      Unrolled settling (`settling_steps=N`) is done for `SimplePCN` and `SequentialPCN` and trivial for
-      `FullPCN`/`DKPPCN`/`GaussSeidelPCN`. Conv networks are still open.
-- [~] GGUF read done (`deepity.read_gguf`, `import_weights(.gguf)`): F32/F16/BF16/F64, ints, Q4_0/Q4_1/Q5_0/Q5_1/Q8_0 and
-      Q2_K..Q6_K/Q8_K, checked against the reference `gguf` package. IQ quants (IQ1_S/M, IQ2_XXS/XS/S, IQ3_XXS/S, IQ4_NL/XS) also done. GGUF write
-      done for F32/F16/BF16/F64/ints/Q8_0 (`deepity.write_gguf`, `export_gguf`, `convert ... .gguf`); other quant formats are not written.
+- [x] Import: safetensors and PyTorch `state_dict` with name mapping (`deepity.import_weights`). Checked against real
+      `torch.save` files (`tests/pyTorchImportVerify.py`, CI): Sequential and Conv2d state dicts, `{"state_dict": ...}`
+      checkpoints, fp16 and bf16, matching torch's own forward pass; a whole pickled model and a malicious pickle are refused.
+- [x] Export: ONNX for the forward path (dense and convolutional) and unrolled settling for `SimplePCN`, `SequentialPCN`,
+      `SimpleConvolutionalPCN` and `ConvolutionalPCN` (`deepity.export_onnx`, relu/sigmoid/tanh/gelu, strided layers
+      via `output_padding`); the other dense classes need no settling. `FullConvPCNetwork` is native only.
+- [x] GGUF read (`deepity.read_gguf`, `import_weights(.gguf)`): every type but Q8_1, TQ and MXFP4, checked against the
+      reference `gguf` package and on real llama.cpp models (`tests/pyRealFilesVerify.py`, not in CI). GGUF write
+      (`deepity.write_gguf`, `export_gguf`, `convert ... .gguf`): F32/F16/BF16/F64/ints and Q4_0, Q4_1, Q5_0, Q5_1, Q8_0,
+      Q2_K to Q6_K (own quantizers, `deepity/_gguf_quant.py`). The IQ quants are read-only.
 - [x] Round-trip test: Deepity to ONNX to onnxruntime within 1e-5 (`tests/pyOnnxVerify.py`, CI).
 
 ## Phase 6: ecosystem polish
@@ -145,7 +148,7 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 None open. Decided: positional tensor names, one file with metadata (no sidecar), `FullPCN`/`DKPPCN`
 first and now every Python class, `*NetworkT` templates save tensors without a description, GGUF
-covers every read quant and writes F32/F16/BF16/F64/ints/Q8_0.
+covers every read quant and writes F32/F16/BF16/F64/ints and the Q and K quants.
 
 ## Housekeeping
 

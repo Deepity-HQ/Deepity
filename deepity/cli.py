@@ -115,7 +115,7 @@ def convert(
     src: str, dst: str, max_shard_bytes: Optional[int] = None, dtype: Optional[str] = None, for_inference: bool = False
 ) -> None:
     """Converts `src` (safetensors, shard index or GGUF) to a safetensors file at `dst`, or to GGUF when
-    `dst` ends in `.gguf` (float tensors as `dtype`: f32, f16, bf16 or q8_0; default keeps them).
+    `dst` ends in `.gguf` (float tensors as `dtype`: f32, f16, bf16, q4_0, q4_1, q5_0, q5_1, q8_0, q2_k to q6_k; default keeps them).
 
     A `dst` ending in `.safetensors.index.json` writes a sharded model (2 GiB shards unless
     `max_shard_bytes` is given). A safetensors source keeps every dtype, packed 4-bit ones included.
@@ -169,7 +169,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     p_convert.add_argument("dst")
     p_convert.add_argument("--max-shard-size", type=parse_size, help="shard size for a .safetensors.index.json destination, e.g. 500MB")
     p_convert.add_argument("--inference", action="store_true", help="drop what only training uses (Psi, optimizer state) to make a smaller inference file")
-    p_convert.add_argument("--dtype", choices=["f32", "f16", "bf16", "q8_0"], help="float storage type for a .gguf destination")
+    p_convert.add_argument("--dtype", choices=["f32", "f16", "bf16", "q4_0", "q4_1", "q5_0", "q5_1", "q8_0", "q2_k", "q3_k", "q4_k", "q5_k", "q6_k"], help="float storage type for a .gguf destination")
     args = parser.parse_args(argv)
     try:
         if args.command == "inspect":

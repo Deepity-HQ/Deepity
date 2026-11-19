@@ -232,6 +232,21 @@ See `research/benchmark_logs/gflops_benchmark.txt` for the raw runs.
 
 The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run, 329 TFLOP total across 100 epochs (24,000 train steps) at 487.5s wall-clock, gives **675 GFLOPS/s** sustained, end to end.
 
+### Model file load speed
+
+**What this measures:** how long a full load of a saved model takes (every byte touched), for a 512 MiB file of 8 float32 tensors. `experiments/benchmark_model_io.py` writes the same tensors in each format and times the best of 5 loads, warm page cache, on an OSC Ascend node. Details and the command to reproduce are in [docs/model-format.md](docs/model-format.md#load-speed).
+
+| Load | Time | Throughput |
+|---|---|---|
+| Deepity file, mmap, verify off | 101.6 ms | 5.28 GB/s |
+| `deepity.read_tensors`, mmap, verify off | 115.1 ms | 4.66 GB/s |
+| `safetensors.numpy.load_file` | 189.2 ms | 2.84 GB/s |
+| `deepity.read_tensors`, copy, verify off | 201.2 ms | 2.67 GB/s |
+| Deepity file, mmap, verify on (BLAKE3) | 334.7 ms | 1.60 GB/s |
+| `np.load` (`.npz`) | 356.1 ms | 1.51 GB/s |
+
+Memory mapping loads about 1.7x faster than stock safetensors. Verifying the BLAKE3 hash adds about 230 ms here, so skip it for trusted local files when load time matters.
+
 ### Activation-kernel speedup
 
 **What this measures:** activation functions (tanh, sigmoid, ReLU, GELU) are applied to every value in every layer at every settling step, so their speed matters. Deepity uses hand-written SIMD kernels, which process many values per CPU instruction, instead of plain one-value-at-a-time loops.

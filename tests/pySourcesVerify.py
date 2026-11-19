@@ -200,6 +200,20 @@ with tempfile.TemporaryDirectory() as tmp:
     check("plain file name" in error_text(lambda: dp.fetch(site.url + "/evil/m.safetensors.index.json")),
           "an index naming a shard outside its folder is refused")
 
+    print("--- a redirecting origin that validates by its own etag (Hugging Face style) ---")
+    # Like the real CDN, this one reports an etag but does not honour a conditional request.
+    site.routes["/cdn.safetensors"] = lambda h: h.reply(200, body_a, {"ETag": '"cdn-etag"'})
+
+    def origin(h):
+        if h.headers.get("If-None-Match") == '"linked-etag"':
+            return h.reply(304, b"", {"ETag": 'W/"x"'})
+        h.reply(302, b"", {"Location": "/cdn.safetensors", "X-Linked-ETag": '"linked-etag"'})
+
+    site.routes["/origin.safetensors"] = origin
+    check(np.array_equal(dp.load(site.url + "/origin.safetensors").predict(x, 2), want_a), "a file behind such a redirect loads")
+    before = site.count("/cdn.safetensors", 200)
+    dp.load(site.url + "/origin.safetensors")
+    check(site.count("/cdn.safetensors", 200) == before, "the second load revalidates with the origin's etag and downloads nothing")
     print("--- redirects and credentials ---")
     site.routes["/redirect.safetensors"] = lambda h: h.reply(302, b"", {"Location": "/m.safetensors"})
     check(np.array_equal(dp.load(site.url + "/redirect.safetensors").predict(x, 2), want_b), "a redirect on the same host is followed")

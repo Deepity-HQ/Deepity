@@ -74,9 +74,9 @@ def _sequential_names(names: list[str]) -> dict[str, str]:
 def read_gguf(path: Union[str, os.PathLike]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     """Reads a GGUF file (the llama.cpp format, versions 2 and 3) and returns `(tensors, metadata)`.
 
-    Float tensors, including the block-quantized Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0, come back as float32
-    arrays in row-major shape; integer tensors as int64. The K-quants (Q4_K and friends) raise an
-    error naming the tensor. `metadata` is the key-value header; arrays longer than 256 entries
+    Float tensors, including every block quantization (Q4_0 to Q8_0, the K-quants and the IQ quants), come
+    back as float32 arrays in row-major shape; integer tensors as int64. A type that cannot be decoded
+    (Q8_1, the ternary formats) raises an error naming the tensor. `metadata` is the key-value header; arrays longer than 256 entries
     (token lists) appear as `{"array_length": n}`. Raises on a malformed, truncated or unsafe file.
     """
     import json

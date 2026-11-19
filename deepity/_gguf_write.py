@@ -1,6 +1,7 @@
 """Write GGUF files (the llama.cpp container) from numpy arrays or a Deepity network.
 
-Float tensors can be stored as F32, F16, BF16 or Q8_0; integer tensors keep their width. GGUF is read
+Float tensors can be stored as F32, F16, BF16 or a block quantization (Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q2_K to
+Q6_K); integer tensors keep their width. GGUF is read
 by llama.cpp tooling and by `deepity.read_gguf`. Network weights are only useful to other tools if they
 know the architecture, so a Deepity export carries the model description under `deepity.model`.
 """
@@ -16,12 +17,12 @@ from typing import Any, Optional
 import numpy as np
 
 from ._backend import dy
+from ._gguf_quant import QUANTIZERS
 
 _ALIGNMENT = 32
 _MAX_NAME_BYTES = 64
 _MAX_DIMS = 4
-_Q8_BLOCK = 32
-_FLOAT_TYPES = {"f32": 0, "f16": 1, "bf16": 30, "q8_0": 8}
+_FLOAT_TYPES = {"f32": 0, "f16": 1, "bf16": 30, **{name: info[0] for name, info in QUANTIZERS.items()}}
 _INT_TYPES = {np.dtype(np.int8): 24, np.dtype(np.int16): 25, np.dtype(np.int32): 26, np.dtype(np.int64): 27}
 _F64 = 28
 _RESERVED_KEYS = {"general.alignment"}
@@ -73,19 +74,6 @@ def _bf16_bits(x: np.ndarray) -> np.ndarray:
     return np.where(nan, np.uint16(0x7FC0), rounded)
 
 
-def _quantize_q8_0(x: np.ndarray) -> bytes:
-    blocks = np.ascontiguousarray(x, dtype=np.float32).reshape(-1, _Q8_BLOCK)
-    d = np.abs(blocks).max(axis=1) / 127.0
-    d16 = d.astype(np.float16)
-    scale = d16.astype(np.float32)  # quantize against the scale that is actually stored
-    safe = np.where(scale == 0, 1.0, scale)
-    q = np.clip(np.sign(blocks / safe[:, None]) * np.floor(np.abs(blocks / safe[:, None]) + 0.5), -127, 127).astype(np.int8)
-    out = np.empty((blocks.shape[0], 34), dtype=np.uint8)
-    out[:, :2] = d16.view(np.uint8).reshape(-1, 2)
-    out[:, 2:] = q.view(np.uint8)
-    return out.tobytes()
-
-
 def _encode(name: str, array: np.ndarray, dtype: Optional[str]) -> tuple[int, bytes]:
     """The GGML type id and raw little-endian bytes for one tensor."""
     if array.dtype in _INT_TYPES:
@@ -95,15 +83,16 @@ def _encode(name: str, array: np.ndarray, dtype: Optional[str]) -> tuple[int, by
     if array.dtype.kind != "f":
         raise TypeError(f"tensor '{name}' has dtype {array.dtype}, which GGUF cannot store here")
     target = dtype or ("f16" if array.dtype == np.float16 else "f32")
-    if target == "q8_0" and (array.ndim < 2 or array.shape[-1] % _Q8_BLOCK != 0):
-        target = "f32"  # biases and odd widths stay unquantized, as llama.cpp does
+    if target in QUANTIZERS and (array.ndim < 2 or array.shape[-1] % QUANTIZERS[target][1] != 0):
+        target = "f32"  # biases and widths that are not whole blocks stay unquantized, as llama.cpp does
     if target == "f32":
         return 0, array.astype("<f4").tobytes()
     if target == "f16":
         return 1, array.astype("<f2").tobytes()
     if target == "bf16":
         return 30, _bf16_bits(array).astype("<u2").tobytes()
-    return 8, _quantize_q8_0(array)
+    type_id, _, quantize = QUANTIZERS[target]
+    return type_id, quantize(array)
 
 
 def write_gguf(
@@ -116,8 +105,11 @@ def write_gguf(
     """Writes `tensors` (name -> numpy array) and `metadata` (str -> str/int/float/bool/list/dict) to a GGUF file.
 
     `dtype` is `None` (keep each float tensor's own width: float32, float16; float64 is kept too),
-    or `"f32"`, `"f16"`, `"bf16"` or `"q8_0"` for every float tensor. With `"q8_0"`, tensors that are not
-    at least 2-D with a last dimension divisible by 32 stay float32. Shapes are written in GGUF's
+    or `"f32"`, `"f16"`, `"bf16"` or a block quantization (`"q4_0"`, `"q4_1"`, `"q5_0"`, `"q5_1"`, `"q8_0"`,
+    `"q2_k"`, `"q3_k"`, `"q4_k"`, `"q5_k"`, `"q6_k"`) for every float tensor. With a block quantization, tensors
+    that are not at least 2-D with a last dimension divisible by the block size (32, or 256 for the K-quants)
+    stay float32. The quantizers are this library's own, so the bytes are valid GGUF that decodes within
+    quantization error but differ from llama.cpp's; IQ quants are read-only. Shapes are written in GGUF's
     fastest-axis-first order. Dicts become JSON strings. The write is atomic.
     """
     if dtype is not None and dtype not in _FLOAT_TYPES:

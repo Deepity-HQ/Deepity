@@ -75,8 +75,11 @@ class _SafeRedirect(urllib.request.HTTPRedirectHandler):
     """Follows only http(s), never from https down to http, and never takes credentials to another host."""
 
     max_redirections = _MAX_REDIRECTS
+    linked_etag: Optional[str] = None
 
     def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: ANN001
+        # Hugging Face answers a conditional request by `x-linked-etag` on its redirect, not by the CDN's etag.
+        self.linked_etag = self.linked_etag or headers.get("x-linked-etag")
         old, new = urllib.parse.urlparse(req.full_url), urllib.parse.urlparse(newurl)
         if new.scheme not in ("http", "https"):
             raise urllib.error.HTTPError(req.full_url, code, f"refusing a redirect to {new.scheme}://", headers, fp)
@@ -107,7 +110,8 @@ def _open_http(url: str, headers: dict[str, str], etag: Optional[str], timeout: 
     request = urllib.request.Request(url, headers={"User-Agent": "deepity", **headers})
     if etag:
         request.add_header("If-None-Match", etag)
-    opener = urllib.request.build_opener(_SafeRedirect)
+    redirect = _SafeRedirect()
+    opener = urllib.request.build_opener(redirect)
     try:
         response = opener.open(request, timeout=timeout)
     except urllib.error.HTTPError as error:
@@ -117,7 +121,10 @@ def _open_http(url: str, headers: dict[str, str], etag: Optional[str], timeout: 
         if error.code in (401, 403) and url.startswith("https://") and ".s3.amazonaws.com" in url:
             hint = " (a private S3 object needs boto3 and AWS credentials)"
         raise OSError(f"{url}: HTTP {error.code} {error.reason}{hint}") from error
-    return _Response(response, dict(response.headers.items()))
+    received = {key.lower(): value for key, value in response.headers.items()}
+    if redirect.linked_etag:
+        received["etag"] = redirect.linked_etag  # the validator the origin accepts next time
+    return _Response(response, received)
 
 
 def _open_s3(url: str, headers: dict[str, str], etag: Optional[str], timeout: float) -> _Response:
