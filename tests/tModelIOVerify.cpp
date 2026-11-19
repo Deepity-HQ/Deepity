@@ -384,8 +384,12 @@ bool ShardingWorks(const std::string& dir)
     shardFiles += e.path().extension() == ".safetensors";
   ModelIO::Load(*b, index);
   const bool loads = shardFiles > 1 && SameState(*a, *b);
-  const io::SafeTensorsReader reader(index);
-  const bool oneReader = reader.ShardCount() == shardFiles && ModelIO::ReadMetadata(index).count("deepity.kind") == 1;
+  // Scoped: Windows cannot delete shard files while a reader has them mapped.
+  const bool oneReader = [&]
+  {
+    const io::SafeTensorsReader reader(index);
+    return reader.ShardCount() == shardFiles && ModelIO::ReadMetadata(index).count("deepity.kind") == 1;
+  }();
 
   // Moving the index to a directory with no shards must fail, not guess.
   auto indexText = [&] { std::ifstream f(index); return std::string((std::istreambuf_iterator<char>(f)), {}); }();
@@ -633,23 +637,28 @@ bool DirectDeviceLoad(const std::string& path)
     ok &= dst == want && reader.IsMapped() == mapped;
   }
   // A padded destination (row stride 8) takes the general path and keeps its padding.
-  io::SafeTensorsReader reader(path);
-  std::vector<float> padded(3 * 8, -9.f);
-  TensorDescriptor wide{padded.data(), {3, 5}, 8};
-  detail::ReadTensorIntoStaged(backend.get(), reader, *reader.Find("t"), {3, 5}, wide);
-  bool paddedOk = true;
-  for (size_t r = 0; r < 3; ++r)
-    for (size_t c = 0; c < 8; ++c)
-      paddedOk &= padded[r * 8 + c] == (c < 5 ? want[r * 5 + c] : -9.f);
-  ok &= paddedOk;
+  // Readers are scoped: Windows cannot replace or delete a file while it is mapped.
+  {
+    io::SafeTensorsReader reader(path);
+    std::vector<float> padded(3 * 8, -9.f);
+    TensorDescriptor wide{padded.data(), {3, 5}, 8};
+    detail::ReadTensorIntoStaged(backend.get(), reader, *reader.Find("t"), {3, 5}, wide);
+    bool paddedOk = true;
+    for (size_t r = 0; r < 3; ++r)
+      for (size_t c = 0; c < 8; ++c)
+        paddedOk &= padded[r * 8 + c] == (c < 5 ? want[r * 5 + c] : -9.f);
+    ok &= paddedOk;
+  }
   // A file tensor with fewer rows than the destination (old truncated Psi) fills only those rows.
   std::vector<float> longer(15, -9.f);
   TensorDescriptor taller{longer.data(), {5, 3}, 0};
   io::SafeTensorsWriter w2;
   w2.AddTensor("t", "F32", {3, 3}, want.data(), 9 * sizeof(float));
   w2.Write(path);
-  io::SafeTensorsReader smallFile(path);
-  detail::ReadTensorIntoStaged(backend.get(), smallFile, *smallFile.Find("t"), {3, 3}, taller);
+  {
+    io::SafeTensorsReader smallFile(path);
+    detail::ReadTensorIntoStaged(backend.get(), smallFile, *smallFile.Find("t"), {3, 3}, taller);
+  }
   bool shortOk = true;
   for (size_t i = 0; i < 15; ++i)
     shortOk &= longer[i] == (i < 9 ? want[i] : -9.f);
@@ -694,9 +703,24 @@ template <typename Net, typename Make, typename S = float> bool CheckpointResume
   return same && differs && notCheckpoint;
 }
 
+static int Run();
+
 int main()
 {
   setvbuf(stdout, nullptr, _IONBF, 0);
+  try
+  {
+    return Run();
+  }
+  catch (const std::exception& e)
+  {
+    printf("FAILED: uncaught exception: %s\n", e.what());
+    return 1;
+  }
+}
+
+static int Run()
+{
   const auto path = (std::filesystem::temp_directory_path() / "deepity_modelio_verify.safetensors").string();
   auto src = MakeNet(1), dst = MakeNet(2);
 

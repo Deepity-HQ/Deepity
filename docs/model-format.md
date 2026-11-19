@@ -279,6 +279,10 @@ gives a zero-copy pointer and `Mapping(entry)` an owner that keeps it valid, whi
 `deepity.read_tensors` returns read-only numpy views. Truncating a mapped file while it is open
 can crash the reader, as with any mmap; write models by replacing the file, as `Save` does.
 
+On Windows a mapped file cannot be replaced or deleted at all, so saving over a path whose tensors are still
+viewed (for example an array from `read_tensors`) fails with an error that says so. Drop the arrays, or pass
+`mmap=False` to `read_tensors`, before overwriting the file.
+
 ## Hash
 
 `deepity.content_blake3` is optional and written by default. It is the BLAKE3 hash (32 bytes) of the

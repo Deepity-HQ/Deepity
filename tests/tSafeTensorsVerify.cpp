@@ -314,32 +314,35 @@ void TestRoundTrip()
   w.Write(path);
   Check(!fs::exists(path + ".tmp"), "no temporary file left behind");
 
-  SafeTensorsReader r(path);
-  Check(r.Tensors().size() == 5, "five tensors read back");
-  Check(r.DataOffset() % 64 == 0, "data region starts on a 64-byte boundary");
-  Check(r.Metadata().at("deepity.kind") == "inference" && r.Metadata().count(kHashKey) == 1,
-        "metadata present, hash written by default");
-
-  bool aligned = true, sizesOk = true;
-  for (const auto& t : r.Tensors())
+  // The reader is scoped: Windows cannot replace or delete a file while it is mapped.
   {
-    aligned &= (t.begin % DTypeSize(t.dtype)) == 0;
-    sizesOk &= t.ByteSize() == DTypeSize(t.dtype) * [&] { size_t n = 1; for (size_t d : t.shape) n *= d; return n; }();
-  }
-  Check(aligned, "every tensor is aligned to its element size");
-  Check(sizesOk, "byte sizes match shape and dtype");
+    SafeTensorsReader r(path);
+    Check(r.Tensors().size() == 5, "five tensors read back");
+    Check(r.DataOffset() % 64 == 0, "data region starts on a 64-byte boundary");
+    Check(r.Metadata().at("deepity.kind") == "inference" && r.Metadata().count(kHashKey) == 1,
+          "metadata present, hash written by default");
 
-  std::vector<float> a(15);
-  r.Read(*r.Find("mat"), a.data(), a.size() * 4);
-  std::vector<uint16_t> b(7);
-  r.Read(*r.Find("half"), b.data(), b.size() * 2);
-  std::vector<uint8_t> c(11);
-  r.Read(*r.Find("bytes"), c.data(), c.size());
-  std::vector<double> d(4);
-  r.Read(*r.Find("wide"), d.data(), d.size() * 8);
-  Check(a == s.a && b == s.b && c == s.c && d == s.d, "tensor contents survive");
-  Check(Throws([&] { std::vector<float> x(3); r.Read(*r.Find("mat"), x.data(), 12); }),
-        "Read() with the wrong destination size is rejected");
+    bool aligned = true, sizesOk = true;
+    for (const auto& t : r.Tensors())
+    {
+      aligned &= (t.begin % DTypeSize(t.dtype)) == 0;
+      sizesOk &= t.ByteSize() == DTypeSize(t.dtype) * [&] { size_t n = 1; for (size_t d : t.shape) n *= d; return n; }();
+    }
+    Check(aligned, "every tensor is aligned to its element size");
+    Check(sizesOk, "byte sizes match shape and dtype");
+
+    std::vector<float> a(15);
+    r.Read(*r.Find("mat"), a.data(), a.size() * 4);
+    std::vector<uint16_t> b(7);
+    r.Read(*r.Find("half"), b.data(), b.size() * 2);
+    std::vector<uint8_t> c(11);
+    r.Read(*r.Find("bytes"), c.data(), c.size());
+    std::vector<double> d(4);
+    r.Read(*r.Find("wide"), d.data(), d.size() * 8);
+    Check(a == s.a && b == s.b && c == s.c && d == s.d, "tensor contents survive");
+    Check(Throws([&] { std::vector<float> x(3); r.Read(*r.Find("mat"), x.data(), 12); }),
+          "Read() with the wrong destination size is rejected");
+  }
 
   // Overwriting an existing file works and stays atomic.
   w.Write(path);

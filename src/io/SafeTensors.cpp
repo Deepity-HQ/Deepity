@@ -197,8 +197,9 @@ void SafeTensorsWriter::Write(const std::string& path) const
   std::filesystem::rename(tmp, path, ec);
   if (ec)
   {
+    const std::string reason = ec.message();
     std::filesystem::remove(tmp, ec);
-    Fail(path, "cannot move the finished file into place");
+    Fail(path, "cannot move the finished file into place (" + reason + "); on Windows a file that is open or memory-mapped cannot be replaced");
   }
 }
 
