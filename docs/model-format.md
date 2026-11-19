@@ -354,3 +354,24 @@ can crash the reader, as with any mmap; write models by replacing the file, as `
 data region (every byte after the header), as lowercase hex. Loaders verify it when present, and offer a flag to skip verification for
 trusted local files. (Decided 2026-11-14; SHA-256 replaced by BLAKE3 on 2026-11-17 for speed. Files with a
 `deepity.content_sha256` key from drafts are not supported.)
+
+## Load speed
+
+Measured with `experiments/benchmark_model_io.py 512` on an OSC Ascend node (a0104), 2026-11-18: one
+512 MiB file of 8 float32 tensors, a full load that touches every byte, best of 5, warm page cache.
+Cold-disk loads will be slower. Reproduce with
+`OMP_WAIT_POLICY=PASSIVE GOMP_SPINCOUNT=0 uv run --with safetensors python experiments/benchmark_model_io.py 512`.
+
+| Load | Time | Throughput |
+|---|---|---|
+| Deepity file, mmap, verify off | 101.6 ms | 5.28 GB/s |
+| `deepity.read_tensors`, mmap, verify off | 115.1 ms | 4.66 GB/s |
+| `safetensors.numpy.load_file` | 189.2 ms | 2.84 GB/s |
+| `deepity.read_tensors`, copy, verify off | 201.2 ms | 2.67 GB/s |
+| Deepity file, mmap, verify on (BLAKE3) | 334.7 ms | 1.60 GB/s |
+| `np.load` (`.npz`) | 356.1 ms | 1.51 GB/s |
+
+Mapping makes a load about 1.7 times faster than stock safetensors, and the copying path is on par with it.
+Checking the BLAKE3 hash adds about 230 ms here (roughly 2.2 GB/s of hashing), so pass the skip-verification
+flag for a trusted local file when load time matters. The direct-to-device CUDA load is not in this table
+because the script does not time it yet.
