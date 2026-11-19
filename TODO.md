@@ -109,10 +109,10 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 ## Phase 4: sources and speed
 
-- [x] Sources (`deepity/_sources.py`): path, `file://`, `https://`, `s3://` (boto3 or public HTTPS) and bytes, resolved
-      through a download cache with ETag revalidation, size cap, hash check and shard sets. Tested against local
-      servers (`tests/pySourcesVerify.py`, in CI). Not built: uploading (Sink), `hf://`, a no-disk C++ memory reader,
-      resuming a partial download; real S3 is untested (a real server, Hugging Face, passes: `tests/pyRealFilesVerify.py`).
+- [x] Sources (`deepity/_sources.py`): path, `file://`, `https://`, `s3://` (boto3 or public HTTPS), `hf://` and bytes, resolved
+      through a download cache with ETag revalidation, size cap, hash check, shard sets and resume of cut-short downloads
+      (Range plus If-Range). Tested against local servers (`tests/pySourcesVerify.py`, in CI) and a real one, Hugging Face
+      (`tests/pyRealFilesVerify.py`, not in CI). Not built: uploading (Sink), a no-disk C++ memory reader; real S3 is untested.
 - [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies: a float tensor loads straight
       from the mapped file to the device in one copy (was device to host, file to host, host to device). Tested
       on the CPU with `ForceDeviceStaging()` and on an A100 through `tests/pyGpuCheckpointVerify.py`.
@@ -153,4 +153,13 @@ covers every read quant and writes F32/F16/BF16/F64/ints and the Q and K quants.
 ## Housekeeping
 
 - [x] Root cleanup committed.
-- [ ] `pyrightconfig.json` is tracked but also listed in `.gitignore`. Pick one.
+- [x] `pyrightconfig.json` is untracked and ignored.
+
+## Still open
+
+- GPU: `GaussSeidelPCN` (Python `device=` added, test case written, not yet run), `SequentialPCN` (its Python class has no
+  `device` and the native base takes no batch size with a device) and `FullConvPCNetwork` (native only).
+- `dp.load` builds and randomizes a network, then overwrites it: about 1.6 s of a 2.0 s load of a 512 MiB model is that
+  initialization (`configure`), the weight load itself is about 0.4 s. Skipping it needs care for Psi in inference artifacts.
+- No upload (Sink), no C++ memory-buffer reader, no big-endian host support (BLAKE3 and GGUF reader are little-endian only),
+  no IQ-quant GGUF writing, real S3 untested.

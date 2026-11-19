@@ -332,18 +332,27 @@ takes a path, and resolves it to a local file first (`deepity/_sources.py`):
 | a path | used as is, no cost |
 | `file://...` | the local path |
 | `http://`, `https://` | downloaded to the cache, then loaded through mmap |
+| `hf://owner/repo/path` | a Hugging Face file (`owner/repo@revision/path` for a branch, tag or commit; default `main`); `$HF_TOKEN` is sent as a bearer token for private repositories |
 | `s3://bucket/key` | through `boto3` when installed (private buckets, your credentials), else the bucket's public HTTPS address |
 | `bytes`, `bytearray`, `memoryview` | written once to the cache under their content hash |
 
 The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
 
 - A finished download is checked before it is put in place (structure and the content hash when the file has
-  one), by an atomic rename, so an interrupted or corrupt download leaves nothing behind.
+  one), by an atomic rename, so a corrupt download leaves nothing behind. A download that is merely cut short
+  (connection reset, timeout, early close) keeps the bytes it received as a hidden `.partial-NAME` file with the
+  server's validator.
 - A cached file is revalidated with the server's ETag on every load (an unchanged model costs one small
   request, not a download). When a redirect carries `x-linked-etag` (Hugging Face), that is the validator
   kept, because the origin answers a conditional request by it and not by the CDN's own `etag`. With no network the cached copy is used with a warning. A server that sends no
   validator is trusted as is; `fetch(url, refresh=True)` forces a download. `DEEPITY_OFFLINE=1` never
   touches the network.
+- The next fetch of that URL sends `Range: bytes=N-` with `If-Range: <validator>` and appends the reply. If the
+  file changed (the server answers 200 whole), ignores ranges, answers 416, or resumes at the wrong offset, the
+  kept bytes are dropped and the file is downloaded whole (the wrong offset is an error). The finished file is
+  checked as always, so a resume can never produce an unchecked file. Two processes never share a partial: one
+  claims it by renaming it. A partial from a process killed mid-download can be left behind as `.claimed-*`.
+  S3 through `boto3` does not resume (it restarts).
 - `deepity.fetch(url, ...)` takes `headers`, `timeout`, `max_bytes` (also `$DEEPITY_MAX_DOWNLOAD_BYTES`, default
   256 GiB, enforced with or without a `Content-Length`) and `sha256` (the expected hash of the file).
 - A `.safetensors.index.json` URL downloads the index and then every shard it names from the same
@@ -354,11 +363,12 @@ The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
   sharded model needs an unsigned base URL.
 
 Checked against a real server: Hugging Face model files (two redirects, the second to a signed CDN URL),
-including revalidation, in `tests/pyRealFilesVerify.py` (not in CI). S3 is still tested only against a fake
+including revalidation and a real interrupted-and-resumed download through `hf://`, in
+`tests/pyRealFilesVerify.py` (not in CI). S3 is still tested only against a fake
 `boto3`.
 
-Not built: uploading (no Sink), `hf://`, a C++ memory-buffer reader (bytes are written to the cache, then
-mapped), and resuming a partial download.
+Not built: uploading (no Sink) and a C++ memory-buffer reader (bytes are written to the cache, then
+mapped).
 
 ## Memory mapping
 

@@ -59,5 +59,33 @@ with tempfile.TemporaryDirectory() as tmp:
     dp.write_gguf(again, {"w": tensors[first]}, None, "q4_0")
     check(np.array_equal(dp.read_gguf(again)[0]["w"], tensors[first]), "requantizing llama.cpp's Q4_0 weights with this writer reproduces them exactly")
 
+    # hf:// names the same file, and a download interrupted partway resumes against the real CDN.
+    import deepity._sources as sources
+
+    os.environ["DEEPITY_CACHE_DIR"] = os.path.join(tmp, "cache2")
+    original = sources._Response.read
+    seen = {"bytes": 0, "cut": True}
+
+    def flaky(self, n):
+        if seen["cut"] and seen["bytes"] >= 4_000_000:
+            raise ConnectionResetError("simulated cut")
+        chunk = original(self, n)
+        seen["bytes"] += len(chunk)
+        return chunk
+
+    sources._Response.read = flaky
+    url = "hf://ggml-org/models/tinyllamas/stories15M-q4_0.gguf"
+    try:
+        dp.fetch(url)
+        check(False, "the interrupted download raised")
+    except OSError as error:
+        check("cut short" in str(error), "a download cut at 4 MB of 19 MB is reported and its bytes are kept")
+    seen["cut"] = False
+    sources._Response.read = original
+    resumed = dp.fetch(url)
+    reference = dp.fetch(BASE + "stories15M-q4_0.gguf")
+    check(os.path.getsize(resumed) == 19077344 and open(resumed, "rb").read() == open(reference, "rb").read(), "hf:// resumes with a real Range request and the file is identical to a straight download")
+    check(np.array_equal(dp.read_gguf(resumed)[0][first], tensors[first]), "and it decodes")
+
 print("PASSED" if not failures else f"FAILED: {failures} check(s)")
 sys.exit(1 if failures else 0)

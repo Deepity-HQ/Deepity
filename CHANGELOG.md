@@ -14,6 +14,12 @@ earlier history.
 
 ### Added
 
+- `hf://owner/repo/path` (and `owner/repo@revision/path`) sources for Hugging Face files, with `$HF_TOKEN` for private repositories.
+
+- Downloads cut short (connection reset, timeout, early close) keep their bytes and the next fetch resumes them with `Range` and `If-Range`, falling back to a whole download when the file changed or the server cannot resume. Verified against local servers and a real interrupted Hugging Face download.
+
+- `GaussSeidelPCN(..., device="cuda")` is exposed from Python, and `tests/pyGpuCheckpointVerify.py` covers it (not yet run on a GPU). `experiments/benchmark_model_io.py` also times `deepity.load` onto the CPU and, with CUDA, the GPU.
+
 - GGUF writing for every block quantization except the IQ family: `dtype` (and `deepity convert --dtype`) now takes `q4_0`, `q4_1`, `q5_0`, `q5_1`, `q8_0`, `q2_k`, `q3_k`, `q4_k`, `q5_k` and `q6_k`. The quantizers are this library's own (`deepity/_gguf_quant.py`); all ten decode identically in the reference `gguf` package, and re-quantizing a real llama.cpp model's Q4_0 weights reproduces them exactly.
 
 - ONNX export of unrolled settling for `SimpleConvolutionalPCN` and `ConvolutionalPCN` (`export_onnx(..., settling_steps=N)` matches `predict(x, N)` to about 1e-8), including strided layers and learned precisions. Conv networks no longer raise `NotImplementedError` there.

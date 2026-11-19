@@ -176,7 +176,9 @@ with tempfile.TemporaryDirectory() as tmp:
 
     site.routes["/short.safetensors"] = short
     text = error_text(lambda: dp.fetch(site.url + "/short.safetensors"))
-    check("cut short" in text and leftovers(site.url + "/short.safetensors") == [], "a download cut short is refused, nothing is kept")
+    kept = leftovers(site.url + "/short.safetensors")
+    check("cut short" in text and not any(f == "short.safetensors" for f in kept), "a download cut short is refused and no model file is put in place")
+    check(sorted(kept) == [".partial-short.safetensors", ".partial-short.safetensors.meta"], "its 100 bytes are kept to resume later, and nothing else")
 
     flipped = bytearray(body_a)
     flipped[-3] ^= 0x40
@@ -199,6 +201,114 @@ with tempfile.TemporaryDirectory() as tmp:
         b'{"metadata": {}, "weight_map": {"layers.0.weight": "../outside.safetensors"}}', '"e"')
     check("plain file name" in error_text(lambda: dp.fetch(site.url + "/evil/m.safetensors.index.json")),
           "an index naming a shard outside its folder is refused")
+
+    print("--- resuming a cut-short download ---")
+    state = {"cut": 0, "etag": '"r1"', "body": body_a, "mode": "ranges"}
+
+    def ranged(h):
+        body, etag = state["body"], state["etag"]
+        want = h.headers.get("Range")
+        if state["mode"] == "416" and want:
+            state["mode"] = "ranges"
+            return h.reply(416, b"", {"Content-Range": f"bytes */{len(body)}"})
+        if want and state["mode"] != "ignore" and h.headers.get("If-Range") in (None, etag):
+            start = int(want.split("=")[1].rstrip("-"))
+            offset = start + 1 if state["mode"] == "wrong" else start
+            return h.reply(206, body[start:], {"ETag": etag, "Content-Range": f"bytes {offset}-{len(body) - 1}/{len(body)}"})
+        if state["cut"]:
+            cut, state["cut"] = state["cut"], 0
+            h.reply(200, body[:cut], {"ETag": etag}, length=len(body))
+            h.close_connection = True
+            return None
+        return h.reply(200, body, {"ETag": etag})
+
+    import hashlib
+
+    site.routes["/r.safetensors"] = ranged
+    ru = site.url + "/r.safetensors"
+    folder = os.path.join(cache, hashlib.sha256(ru.encode()).hexdigest()[:2], hashlib.sha256(ru.encode()).hexdigest())
+    half = len(body_a) // 2
+
+    def reset():
+        for f in leftovers(ru):
+            os.unlink(os.path.join(folder, f))
+
+    def parts():
+        return [f for f in leftovers(ru) if f.startswith(".part")]
+
+    state["cut"] = half
+    text = error_text(lambda: dp.fetch(ru))
+    check("cut short" in text and "resumes" in text, "the first attempt is cut short and says the bytes are kept")
+    check(os.path.getsize(os.path.join(folder, ".partial-r.safetensors")) == half, f"the {half} bytes received are kept")
+    got = dp.fetch(ru)
+    asked = [(c, hd) for p_, hd, c in site.log if p_ == "/r.safetensors" and hd.get("range")]
+    check(asked and asked[-1][1]["range"] == f"bytes={half}-" and asked[-1][1]["if-range"] == '"r1"' and asked[-1][0] == 206,
+          "the next fetch asks for the rest with Range and If-Range")
+    check(open(got, "rb").read() == body_a and not parts(), "the resumed file is complete and byte for byte right, and the partial is gone")
+    check(np.array_equal(dp.load(ru).predict(x, 2), want_a), "and it loads")
+
+    reset()
+    gguf_path = os.path.join(tmp, "r.gguf")
+    dp.write_gguf(gguf_path, {"w": x}, None)
+    gbody = open(gguf_path, "rb").read()
+    site.routes["/r.gguf"] = lambda h: ranged_for(h, gbody)
+    gstate = {"cut": len(gbody) // 2}
+
+    def ranged_for(h, body):
+        want = h.headers.get("Range")
+        if want:
+            start = int(want.split("=")[1].rstrip("-"))
+            return h.reply(206, body[start:], {"ETag": '"g"', "Content-Range": f"bytes {start}-{len(body) - 1}/{len(body)}"})
+        if gstate["cut"]:
+            cut, gstate["cut"] = gstate["cut"], 0
+            h.reply(200, body[:cut], {"ETag": '"g"'}, length=len(body))
+            h.close_connection = True
+            return None
+        return h.reply(200, body, {"ETag": '"g"'})
+
+    error_text(lambda: dp.fetch(site.url + "/r.gguf"))
+    got = dp.fetch(site.url + "/r.gguf")
+    check(open(got, "rb").read() == gbody and np.array_equal(dp.read_gguf(got)[0]["w"], x), "a cut-short .gguf resumes and is validated as GGUF")
+
+    reset()
+    state.update(cut=half, etag='"r2"', body=body_a, mode="ranges")
+    error_text(lambda: dp.fetch(ru))
+    state.update(etag='"r3"', body=body_b)  # the file changed while the partial waited
+    check(open(dp.fetch(ru), "rb").read() == body_b, "a file that changed between attempts is downloaded whole, not stitched")
+
+    reset()
+    state.update(cut=half, etag='"r4"', body=body_a, mode="ranges")
+    error_text(lambda: dp.fetch(ru))
+    state["mode"] = "ignore"
+    check(open(dp.fetch(ru), "rb").read() == body_a, "a server that ignores Range sends the whole file and it is used")
+
+    reset()
+    state.update(cut=half, etag='"r5"', body=body_a, mode="ranges")
+    error_text(lambda: dp.fetch(ru))
+    state["mode"] = "wrong"
+    text = error_text(lambda: dp.fetch(ru))
+    check("wrong offset" in text and not parts(), "a reply that resumes at the wrong offset is refused and the bytes dropped")
+
+    reset()
+    state.update(cut=half, etag='"r6"', body=body_a, mode="ranges")
+    error_text(lambda: dp.fetch(ru))
+    state["mode"] = "416"
+    check(open(dp.fetch(ru), "rb").read() == body_a, "a 416 drops the kept bytes and downloads from the start")
+
+    reset()
+    state.update(cut=half, etag='"r7"', body=body_a, mode="ranges")
+    error_text(lambda: dp.fetch(ru))
+    text = error_text(lambda: dp.fetch(ru, sha256="0" * 64))
+    check("SHA-256" in text and not parts(), "a resumed file that fails its hash is refused and nothing is kept")
+
+    import deepity._sources as sources
+
+    check(sources._hf_url("hf://owner/repo/path/to/m.safetensors") == "https://huggingface.co/owner/repo/resolve/main/path/to/m.safetensors", "hf:// names a file on the main branch")
+    check(sources._hf_url("hf://owner/repo@v1.0/dir/m.gguf") == "https://huggingface.co/owner/repo/resolve/v1.0/dir/m.gguf", "hf:// takes a revision after the repository")
+    check(error_text(lambda: sources._hf_url("hf://owner/repo")) != "", "hf:// without a file is refused")
+    os.environ["HF_TOKEN"] = "secret"
+    check(sources._hf_headers() == {"Authorization": "Bearer secret"}, "HF_TOKEN is sent as a bearer token")
+    os.environ.pop("HF_TOKEN")
 
     print("--- a redirecting origin that validates by its own etag (Hugging Face style) ---")
     # Like the real CDN, this one reports an etag but does not honour a conditional request.

@@ -43,8 +43,10 @@ class GaussSeidelPCN(ModelFileMixin, dy.GaussSeidelPCNetwork):
         self,
         *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
+        device: str = "cpu",
     ) -> None:
         self.architecture = architecture
+        self.device = device
         # NOTE: batch_size is NOT stored as a plain attribute here,
         # dy.GaussSeidelPCNetwork (the C++ base class) exposes `batch_size`
         # as a READ-ONLY property (def_prop_ro, no setter at all). Use a
@@ -65,7 +67,7 @@ class GaussSeidelPCN(ModelFileMixin, dy.GaussSeidelPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(resolved_batch_size)
+        super().__init__(resolved_batch_size, device)
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""

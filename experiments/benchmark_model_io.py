@@ -2,6 +2,7 @@
 
   OMP_WAIT_POLICY=PASSIVE GOMP_SPINCOUNT=0 uv run --with safetensors python experiments/benchmark_model_io.py [MiB]
 
+Also times `deepity.load` onto the CPU and, with a CUDA build, onto the GPU.
 Writes one file of random float32 tensors (default 512 MiB) in each format, then times a full
 load that touches every byte (sum of each tensor), best of 5. Timings are warm-cache: drop the page
 cache as root (`echo 3 > /proc/sys/vm/drop_caches`) between runs for cold numbers.
@@ -70,10 +71,18 @@ def main():
             ("deepity file, mmap, verify off", lambda: touch(dy.read_tensors(dp_path, False, True))),
             ("deepity file, mmap, verify on (BLAKE3)", lambda: touch(dy.read_tensors(dp_path, True, True))),
         ]
+        # Whole-model loads onto a device, which rebuild the network: the CPU run is the baseline for the CUDA one
+        # (the single mapped-file-to-device copy). Skipped without a usable CUDA build.
+        cases.append(("deepity.load, device=cpu (BLAKE3 checked)", lambda: dp.load(dp_path, device="cpu")))
+        try:
+            dp.FullPCN(dp.Linear(4, 4), batch_size=1, device="cuda").configure(learning_rate=1e-3)
+            cases.append(("deepity.load, device=cuda (BLAKE3 checked)", lambda: dp.load(dp_path, device="cuda")))
+        except Exception as error:  # noqa: BLE001
+            print(f"no CUDA device ({type(error).__name__}), skipping the device load cases")
         for name, fn in cases:
             t = best(fn)
-            nbytes = size if name.startswith("deepity file") else total
-            print(f"{name:42s} {t * 1000:9.1f} ms {nbytes / t / 1e9:7.2f} GB/s")
+            nbytes = size if name.startswith(("deepity file", "deepity.load")) else total
+            print(f"{name:44s} {t * 1000:9.1f} ms {nbytes / t / 1e9:7.2f} GB/s")
 
 
 if __name__ == "__main__":
