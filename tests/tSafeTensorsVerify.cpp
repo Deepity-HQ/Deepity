@@ -601,6 +601,7 @@ void TestGolden()
 
 int main(int argc, char** argv)
 {
+  setvbuf(stdout, nullptr, _IONBF, 0);
   if (argc == 3 && std::string(argv[1]) == "--write-golden")
   {
     Sample s;
@@ -616,15 +617,23 @@ int main(int argc, char** argv)
     printf("wrote %s\n", argv[2]);
     return 0;
   }
-  TestBlake3();
-  TestRoundTrip();
-  TestWriterRejects();
-  TestHash();
-  TestMalformed();
-  TestDTypes();
-  TestMmap();
-  TestGolden();
-  TestBigEndianHost();
+  try
+  {
+    TestBlake3();
+    TestRoundTrip();
+    TestWriterRejects();
+    TestHash();
+    TestMalformed();
+    TestDTypes();
+    TestMmap();
+    TestGolden();
+    TestBigEndianHost();
+  }
+  catch (const std::exception& e)
+  {
+    printf("FAILED: uncaught exception: %s\n", e.what());
+    return 1;
+  }
   printf(failures == 0 ? "PASSED: SafeTensors reader/writer\n" : "FAILED: %d check(s)\n", failures);
   return failures == 0 ? 0 : 1;
 }

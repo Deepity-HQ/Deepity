@@ -696,6 +696,7 @@ template <typename Net, typename Make, typename S = float> bool CheckpointResume
 
 int main()
 {
+  setvbuf(stdout, nullptr, _IONBF, 0);
   const auto path = (std::filesystem::temp_directory_path() / "deepity_modelio_verify.safetensors").string();
   auto src = MakeNet(1), dst = MakeNet(2);
 
