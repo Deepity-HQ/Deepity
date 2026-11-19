@@ -78,7 +78,9 @@ earlier history.
 
 ### Removed
 
--
+- Experimental libxsmm (`DEEPITY_USE_LIBXSMM`) and Halide (`DEEPITY_USE_HALIDE`) GEMM paths. Both were off by default and measured slower than oneDNN.
+- GGUF reading and writing, URL/`s3://`/`hf://` model sources with a download cache, PyTorch `.pt` import (`import_weights`) and unrolled ONNX settling. The model format is safetensors plus plain forward ONNX export; `load_weights(rename=...)` still loads foreign safetensors files.
+- The generated `docs/python` Doxygen output (now git-ignored), stale examples and experiments, unused benchmark images and profiler dumps.
 
 ### Fixed
 

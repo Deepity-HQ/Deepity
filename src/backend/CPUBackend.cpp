@@ -26,15 +26,6 @@
 #include <tuple>
 #endif
 
-#ifdef DEEPITY_USE_LIBXSMM
-#include "CPUBackendLibxsmm.h"
-#endif
-
-#ifdef DEEPITY_USE_HALIDE
-#include "HalideBuffer.h"
-#include "deepity_feedback_update_sigmoid.h"
-#endif
-
 namespace Deep
 {
 #ifdef DEEPITY_USE_ONEDNN
@@ -370,19 +361,8 @@ bool CPUBackend::TryFusedMatMulBias(bool transA, bool transB, int M, int N, int 
   }
   catch (const dnnl::error&)
   {
-    // falls through to libxsmm/false below, same as !DEEPITY_USE_ONEDNN
+    // falls through to false below, same as !DEEPITY_USE_ONEDNN
   }
-#endif
-#ifdef DEEPITY_USE_LIBXSMM
-  // Fallback, not first choice: oneDNN's dnnl::matmul above already
-  // internally parallelizes and consistently beat a hand-rolled
-  // OpenMP-row-blocked libxsmm dispatch loop at every shape this
-  // project actually uses when measured head to head (~13% slower
-  // overall on a full MNIST profiling pass) -- see CPUBackendLibxsmm.h.
-  // Kept as a fallback for builds without oneDNN, where libxsmm still
-  // beats plain cblas_sgemm's per-call dispatch overhead.
-  if (TryLibxsmmMatMul(transA, transB, M, N, K, A, lda, B, ldb, C, ldc, bias))
-    return true;
 #endif
   return false; // caller falls back to MatMul()+AddBiasBroadcast()
 }
@@ -442,17 +422,8 @@ bool CPUBackend::TryFusedMatMul(bool transA, bool transB, int M, int N, int K, f
   }
   catch (const dnnl::error&)
   {
-    // falls through to libxsmm/false below, same as !DEEPITY_USE_ONEDNN
+    // falls through to false below, same as !DEEPITY_USE_ONEDNN
   }
-#endif
-#ifdef DEEPITY_USE_LIBXSMM
-  // Fallback, not first choice -- see TryFusedMatMulBias()'s matching
-  // comment. libxsmm's JIT'd kernels also bake alpha=1 in at dispatch
-  // time (no runtime scalar), so this only ever applies when the
-  // caller's alpha is exactly 1 (true for UpdateState()'s feedback
-  // GEMM, not for UpdateWeights()'s grad_scale=-1 GEMM).
-  if (alpha == 1.0f && TryLibxsmmMatMul(transA, transB, M, N, K, A, lda, B, ldb, C, ldc))
-    return true;
 #endif
   return false; // caller falls back to MatMul()
 }
@@ -469,8 +440,7 @@ bool CPUBackend::TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int
   // it -- same kernel, same thread pool as every other matmul in this
   // file, no separate elementwise pass and no second thread pool
   // competing with this one (see this method's @copydoc in
-  // IComputeBackend.h for why that second-thread-pool problem is exactly
-  // what sank the Halide fallback below). This mirrors what XLA's CPU
+  // IComputeBackend.h). This mirrors what XLA's CPU
   // backend does for jpc/JAX's matmul+elementwise fusions (confirmed via
   // strings in jaxlib's own binary: PopulateOneDnnPostOps,
   // OneDnnFusionConfig).
@@ -483,8 +453,7 @@ bool CPUBackend::TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int
     // (unscaled), with the ir scale and the -e subtraction folded into
     // the chain itself instead of a second/third precompute pass.
     // ActivationDerivativeInto() handles every ActivationType this
-    // project has (see To_dFn2()'s switch), unlike the Halide kernel
-    // below which only ever covered SIGMOID.
+    // project has (see To_dFn2()'s switch).
     ActivationDerivativeInto(dType, derivScratch, z, n);
 
     auto key = std::make_tuple(batchSize, size, nextSize);
@@ -546,29 +515,7 @@ bool CPUBackend::TryFusedFeedbackUpdate(ActivationType dType, int batchSize, int
   }
   catch (const dnnl::error&)
   {
-    // falls through to Halide/false below
-  }
-#endif
-
-#ifdef DEEPITY_USE_HALIDE
-  // Secondary fallback only: this project's first attempt at this
-  // fusion, kept because it's verified correct, not because it's fast
-  // -- see this method's @copydoc in IComputeBackend.h. Only SIGMOID has
-  // an AOT kernel, and only for nextSize>=64 (a short reduction doesn't
-  // amortize the tiled schedule's overhead).
-  if (dType == ActivationType::dSIGMOID && nextSize >= 64)
-  {
-    Halide::Runtime::Buffer<const float> eAboveBuf(eAbove, nextSize, batchSize);
-    Halide::Runtime::Buffer<const float> wBuf(W, size, nextSize);
-    Halide::Runtime::Buffer<const float> zInBuf(z, size, batchSize);
-    Halide::Runtime::Buffer<const float> eBuf(e, size, batchSize);
-    Halide::Runtime::Buffer<float> scratchBuf(scratch, size, batchSize);
-
-    if (deepity_feedback_update_sigmoid(eAboveBuf, wBuf, zInBuf, eBuf, ir, scratchBuf) == 0)
-    {
-      std::memcpy(z, scratch, (size_t)batchSize * size * sizeof(float));
-      return true;
-    }
+    // falls through to false below
   }
 #endif
 

@@ -34,6 +34,5 @@ CMakeLists.txt text eol=lf
 data/**                         linguist-generated=true
 resources/**                    linguist-generated=true
 **/__pycache__/**                linguist-generated=true
-experiments/step-tuning/**       linguist-generated=true
 docs/html/**                     linguist-generated=true
 docs/latex/**                    linguist-generated=true
