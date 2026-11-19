@@ -28,7 +28,7 @@ class SimpleConvolutionalPCN(ModelFileMixin, dy.SimpleConvPCNetwork):
     ) -> None:
         bsz = dy.auto_batch_size() if batch_size is None else batch_size
         self.device = device
-        super().__init__(bsz, device)
+        super().__init__(bsz, device)  # pyright: ignore[reportCallIssue]
 
         self.architecture = architecture
         self.input_shape = input_shape

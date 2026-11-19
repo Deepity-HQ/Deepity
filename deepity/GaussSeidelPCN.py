@@ -67,7 +67,7 @@ class GaussSeidelPCN(ModelFileMixin, dy.GaussSeidelPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(resolved_batch_size, device)
+        super().__init__(resolved_batch_size, device)  # pyright: ignore[reportCallIssue]
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""

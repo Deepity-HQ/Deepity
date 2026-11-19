@@ -65,7 +65,7 @@ class SimplePCN(ModelFileMixin, dy.SimplePCNetwork):
         # The backend must currently be initialized during construction.
         # Keep this here until the C++/pybind11 lifecycle is changed to allow
         # deferred initialization from configure().
-        super().__init__(resolved_batch_size, self.device)
+        super().__init__(resolved_batch_size, self.device)  # pyright: ignore[reportCallIssue]
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""

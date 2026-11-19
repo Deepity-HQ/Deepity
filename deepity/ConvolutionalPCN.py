@@ -51,7 +51,7 @@ class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(batch_size, device)
+        super().__init__(batch_size, device)  # pyright: ignore[reportCallIssue]
 
     def _validate_architecture(self) -> None:
         if not self.architecture:

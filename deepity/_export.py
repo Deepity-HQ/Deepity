@@ -30,8 +30,8 @@ def export_onnx(net: Any, path: str, dynamic_batch: bool = True) -> None:
     is `[batch, out]`. With `dynamic_batch` the batch size is left free. Raises if `onnx` is missing.
     """
     try:
-        import onnx
-        from onnx import TensorProto, helper, numpy_helper
+        import onnx  # type: ignore[import-not-found]
+        from onnx import TensorProto, helper, numpy_helper  # type: ignore[import-not-found]
     except ImportError as error:
         raise ImportError("ONNX export needs the onnx package (pip install onnx).") from error
 

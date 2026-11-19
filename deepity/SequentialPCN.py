@@ -46,7 +46,7 @@ class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
         resolved_batch_size = (
             dy.auto_batch_size() if batch_size is None else batch_size
         )
-        super().__init__(resolved_batch_size)
+        super().__init__(resolved_batch_size)  # pyright: ignore[reportCallIssue]
 
         self.architecture = architecture
 
