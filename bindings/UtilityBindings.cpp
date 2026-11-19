@@ -23,7 +23,6 @@
 #include <string>
 
 #include <deepity/backend/Backend.h>
-#include <deepity/io/GGUF.h>
 #include <deepity/io/SafeTensors.h>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/ModelIO.h>
@@ -101,60 +100,20 @@ void WriteTensors(const std::string& path, nb::dict tensors, const std::map<std:
   else writer.Write(path);
 }
 
-/// @brief Reads a GGUF file: float tensors (including the block-quantized ones this reader can
-/// decode) as float32 arrays, integer tensors as int64, plus the metadata as a JSON string.
-std::pair<nb::dict, std::string> ReadGguf(const std::string& path)
-{
-  using namespace Deep::io;
-  GGUFReader reader(path);
-  nb::dict out;
-  for (const auto& t : reader.Tensors())
-  {
-    std::vector<size_t> shape = t.shape;
-    if (t.integer)
-    {
-      auto* buf = new int64_t[std::max<size_t>(t.Elements(), 1)];
-      reader.ReadInt64(t, buf);
-      nb::capsule owner(buf, [](void* p) noexcept { delete[] static_cast<int64_t*>(p); });
-      out[t.name.c_str()] = nb::cast(nb::ndarray<nb::numpy, int64_t>(buf, shape.size(), shape.data(), owner));
-    }
-    else
-    {
-      auto* buf = new float[std::max<size_t>(t.Elements(), 1)];
-      try { reader.ReadFloat32(t, buf); } catch (...) { delete[] buf; throw; }
-      nb::capsule owner(buf, [](void* p) noexcept { delete[] static_cast<float*>(p); });
-      out[t.name.c_str()] = nb::cast(nb::ndarray<nb::numpy, float>(buf, shape.size(), shape.data(), owner));
-    }
-  }
-  return {out, reader.MetadataJson()};
-}
-
-/// @brief Describes a file without decoding any tensor: format, metadata and a tensor table.
+/// @brief Describes a file without decoding any tensor: metadata and a tensor table.
 nb::dict FileTable(const std::string& path, bool verifyHash)
 {
   using namespace Deep::io;
   nb::dict out;
   nb::list tensors;
-  if (path.size() > 5 && path.compare(path.size() - 5, 5, ".gguf") == 0)
-  {
-    GGUFReader r(path);
-    out["format"] = "gguf";
-    out["version"] = r.Version();
-    out["metadata_json"] = r.MetadataJson();
-    for (const auto& t : r.Tensors())
-      tensors.append(nb::make_tuple(t.name, t.typeName, t.shape, t.byteSize));
-  }
-  else
-  {
-    SafeTensorsReader r(path, verifyHash);
-    out["format"] = "safetensors";
-    out["version"] = 1;
-    out["shards"] = r.ShardCount();
-    out["metadata"] = r.Metadata();
-    out["hash_verified"] = verifyHash && r.Metadata().count(kHashKey) == 1;
-    for (const auto& t : r.Tensors())
-      tensors.append(nb::make_tuple(t.name, t.dtype, t.shape, t.ByteSize()));
-  }
+  SafeTensorsReader r(path, verifyHash);
+  out["format"] = "safetensors";
+  out["version"] = 1;
+  out["shards"] = r.ShardCount();
+  out["metadata"] = r.Metadata();
+  out["hash_verified"] = verifyHash && r.Metadata().count(kHashKey) == 1;
+  for (const auto& t : r.Tensors())
+    tensors.append(nb::make_tuple(t.name, t.dtype, t.shape, t.ByteSize()));
   out["tensors"] = tensors;
   return out;
 }
@@ -340,12 +299,8 @@ void bind_utilities(nb::module_& m)
         "(GPU randomizes into a device buffer and copies the result back; "
         "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
-  m.def("read_gguf", &ReadGguf, nb::arg("filepath"),
-        "Reads a GGUF file (versions 2 and 3). Returns (tensors, metadata_json): float tensors, "
-        "including Q4_0/Q4_1/Q5_0/Q5_1/Q8_0, as float32 numpy arrays in row-major shape; integer "
-        "tensors as int64. K-quants raise a clear error. Raises on any malformed or truncated file.");
   m.def("file_table", &FileTable, nb::arg("filepath"), nb::arg("verify_hash") = true,
-        "Validates a safetensors file, shard index or GGUF file and returns a dict with its format, "
+        "Validates a safetensors file or shard index and returns a dict with its format, "
         "metadata and a (name, dtype, shape, bytes) table, without decoding any tensor.");
   m.def("convert_safetensors", &ConvertSafetensors, nb::arg("src"), nb::arg("dst"), nb::arg("max_shard_bytes") = 0,
         nb::arg("for_inference") = false,

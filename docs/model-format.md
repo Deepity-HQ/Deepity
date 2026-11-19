@@ -6,7 +6,7 @@ mmap and the converters are described below. Open items are in `TODO.md`.
 
 ## Goals
 
-- A model is one file that can be moved between machines, downloaded, paused and resumed.
+- A model is one file that can be moved between machines, paused and resumed.
 - Loading needs no hand-built architecture: the file describes it.
 - Readable by the stock `safetensors` library in any language, with zero-copy mmap.
 - Safe to load from an untrusted source.
@@ -94,7 +94,7 @@ written today); `"forward"` is reserved for a forward-only export. A file with a
 ## Importing weights from other files
 
 `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) fills a network
-from any safetensors file, such as a PyTorch export. `rename` maps each file tensor name to a
+from any safetensors file, such as one exported from another framework. `rename` maps each file tensor name to a
 Deepity name (`layers.0.weight`). Dtype and shape must match. With `strict=True` any missing or
 unused tensor raises, naming all of them; with `strict=False` the call returns
 `(missing, unexpected)` and loads the rest. Optimizer tensors in a checkpoint are not "unexpected".
@@ -167,7 +167,7 @@ Every dtype is a row in the registry (`include/deepity/io/DType.h`): a logical n
 - A reader validates the overlay against the header: the tensor exists, is stored as 1-D `U8`, the
   logical dtype is a packed type it knows, and the byte count equals the block arithmetic for the
   logical shape. Anything else is rejected.
-- A new block type (for example a GGUF-style quantization) is one registry row plus its codec.
+- A new block type is one registry row plus its codec.
 - Files from 0.1.0a8 that wrote these names directly as header dtypes (one byte per element) still
   load.
 
@@ -181,9 +181,9 @@ as stored, so it is the same on every host.
 
 **Big-endian hosts are not supported yet.** The swap logic is tested by simulating such a host
 (`SimulateBigEndianHost()`, which must write byte-identical files, single and sharded, and read them
-back swapped), but two parts read little-endian data in host order and are unfinished: BLAKE3
-(`Blake3.cpp` refuses to compile on a big-endian target) and the GGUF reader (throws at open).
-Making them correct needs byte-swapped loads and a real big-endian machine or emulator to test on.
+back swapped), but one part reads little-endian data in host order and is unfinished: BLAKE3
+(`Blake3.cpp` refuses to compile on a big-endian target).
+Making it correct needs byte-swapped loads and a real big-endian machine or emulator to test on.
 
 ## Validation (every reader)
 
@@ -230,15 +230,6 @@ A large model may be split across files with an index, as Hugging Face does. `Mo
   is not a plain file name beside the index, a tensor present in a different shard than the index
   says, an indexed tensor that no shard holds, and an index with no tensors.
 
-## Importing from PyTorch
-
-`deepity.import_weights(net, source, rename=None, strict=False)` accepts a `state_dict`, a `.pt` file
-(loaded with `weights_only=True`), a safetensors file or a dict of arrays, and loads it through the
-same C++ path as `load_weights`. `rename="sequential"` maps each module's `weight` and `bias`, in
-file order, to `layers.0`, `layers.1`, ...; PyTorch `Linear.weight` is `[out, in]`, as here. Feedback
-weights (`psi`) are never expected from a foreign file. The terminal layer's own tensors are reported
-missing, since a PyTorch model has no counterpart.
-
 ## Exporting to ONNX
 
 `deepity.export_onnx(net, path)` writes `act(x W0^T + b0) W1^T + b1 ...` as Gemm and activation nodes
@@ -249,53 +240,13 @@ settling, so it can differ from `predict` with the model's default steps. Convol
 stays the flattened `[batch, C*H*W]` and the reference is `predict_with_projection(x, 0)`, because their
 plain `predict(x, 0)` leaves the output at zero. Mixing dense and convolution layers is not supported.
 
-`export_onnx(net, path, settling_steps=N)` makes the graph match `net.predict(x, N)`. `SimplePCN` and
-`SequentialPCN` predict from a cleared state, so their output depends on the step count and the settling is
-unrolled into the graph (about 15 nodes per layer per step; verified against `predict` to 1e-7 for relu, tanh,
-sigmoid and gelu at 1, 5 and 20 steps, batch size dynamic). `SequentialPCN`'s learned per-feature precisions
-(`layers.i.p`) are baked in as constants. `FullPCN`, `DKPPCN` and `GaussSeidelPCN` predict from the forward pass, where every error is
-already zero, so settling changes nothing and the plain forward graph is exact for any N.
-
-`SimpleConvolutionalPCN` and `ConvolutionalPCN` are unrolled the same way, from zero beliefs, so the graph
-matches their plain `predict(x, N)` (not the forward-projected `predict_with_projection` that the
-`settling_steps=0` graph matches). Each step is Conv nodes for the predictions, then ConvTranspose nodes for
-the bottom-up drive; a strided layer that leaves a few pixels uncovered gets `output_padding` so the
-transposed convolution returns to the layer's own size. `ConvolutionalPCN`'s learned per-feature precisions
-are baked in as constants. Verified against `predict` to about 1e-8 (outputs near 0.3) for relu, tanh, sigmoid
-and gelu at 1, 5 and 20 steps, including a stride-2 layer, with a dynamic batch. `FullConvPCNetwork` has no
-Python class and is not exported.
+`SimplePCN` and `SequentialPCN` predict by settling from a cleared state, so their plain `predict` is not the
+forward path and the exported graph is only a forward approximation of them; `FullPCN`, `DKPPCN` and
+`GaussSeidelPCN` predict from the forward pass, where every error is already zero, so the graph matches
+`predict` at any step count. The iterative settling itself is not exported.
 
 A `GaussSeidelPCN` has no separate terminal layer, so its `predict` returns the last layer's belief, the
 previous layer's prediction; its exported graph therefore leaves the last `Linear` out and ends one layer earlier.
-
-## Reading GGUF
-
-`deepity.read_gguf(path)` returns `(tensors, metadata)` for GGUF versions 2 and 3. Decoded types:
-F32, F16, BF16, F64, I8..I64 and the block formats Q4_0, Q4_1, Q5_0, Q5_1, Q8_0 and the K-quants
-Q2_K, Q3_K, Q4_K, Q5_K, Q6_K, Q8_K and the IQ quants IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL, IQ4_XS (all checked against the reference `gguf` package; the IQ lookup grids in `src/io/GGUFTables.cpp` are generated from it). Floats come back as
-float32, integers as int64, shapes reversed to row-major. Other types (Q8_1, the ternary TQ formats, MXFP4) raise an
-error naming the type. Reading is bounds checked: counts, string and
-array lengths and every tensor range must fit the file, names must be unique, and alignment must be
-a power of two. GGUF is not a Deepity format; weights still need `import_weights` and a name map.
-
-## Writing GGUF
-
-`deepity.write_gguf(path, tensors, metadata, dtype)` writes numpy arrays as GGUF v3 (32-byte alignment,
-atomic write). Floats are stored as F32 or F16 by default, F64 is kept, and `dtype` can force `"f32"`,
-`"f16"`, `"bf16"` or a block quantization for every float tensor: `"q4_0"`, `"q4_1"`, `"q5_0"`, `"q5_1"`,
-`"q8_0"` (block of 32) and `"q2_k"`, `"q3_k"`, `"q4_k"`, `"q5_k"`, `"q6_k"` (block of 256). A quantized
-write leaves 1-D tensors and widths that are not a whole number of blocks as F32, as llama.cpp does. Integer tensors keep their width. Names are limited to 64 bytes and shapes to 4
-dimensions, GGUF's own limits, and empty tensors are rejected. Metadata values may be str, int, float,
-bool, homogeneous lists, or dicts (stored as JSON strings); `general.architecture` defaults to
-`"deepity"`. `deepity.export_gguf(net, path, dtype)` writes a network's weights with its description under
-`deepity.model`, and `deepity convert SRC out.gguf [--dtype q4_k]` does the same from a safetensors file.
-The quantizers are this library's own (`deepity/_gguf_quant.py`): they pick scales with a short
-least-squares search, not llama.cpp's exact procedure, so the bytes differ from llama.cpp's but are valid
-GGUF. All ten decode identically in the reference `gguf` package (type, size and values checked in
-`tests/pyGgufVerify.py`), and the relative RMS error on Gaussian data is about 0.09 for Q4_0, 0.08 for Q4_K,
-0.04 for Q5_K, 0.017 for Q6_K and 0.29 for Q2_K. Re-quantizing the Q4_0 weights of a real llama.cpp model
-reproduces them exactly. The IQ quants are read-only (they need codebooks and importance data). A Deepity GGUF file loads back with `import_weights`; llama.cpp has no
-loader for Deepity architectures, so the file is for exchange and inspection, not for running there.
 
 ## Model card (`deepity.card`)
 
@@ -308,67 +259,18 @@ re-save keeps it. No field is required and loaders ignore ones they do not know.
 
 ```
 deepity inspect model.safetensors [--json] [--no-verify]
-deepity convert model.gguf model.safetensors
 deepity convert model.safetensors model.safetensors.index.json --max-shard-size 500MB
 ```
 
 `inspect` validates the file (hash included unless `--no-verify`) and prints the network, layers,
-card, metadata and a tensor table. `convert` reads a safetensors file, shard set or GGUF file.
+card, metadata and a tensor table. `convert` converts between a single safetensors file and a shard set, or strips a checkpoint down to an
+inference file (`--inference`).
 
 ## Plain tensor files
 
 `deepity.write_tensors` and `deepity.read_tensors` use the same container for arbitrary numpy data
 with no model attached (no `deepity.kind`, only the metadata you pass and the content hash).
 Supported: float16/32/64, int8..64, uint8..64 and bool (stored as `BOOL`, one byte).
-
-## Sources
-
-Every Python loader (`deepity.load`, `resume`, `net.load_weights`, `net.load_checkpoint`, `read_tensors`,
-`read_card`, `import_weights`, `read_gguf`, `deepity inspect` and `convert`) accepts any of these where it
-takes a path, and resolves it to a local file first (`deepity/_sources.py`):
-
-| Source | Behaviour |
-|---|---|
-| a path | used as is, no cost |
-| `file://...` | the local path |
-| `http://`, `https://` | downloaded to the cache, then loaded through mmap |
-| `hf://owner/repo/path` | a Hugging Face file (`owner/repo@revision/path` for a branch, tag or commit; default `main`); `$HF_TOKEN` is sent as a bearer token for private repositories |
-| `s3://bucket/key` | through `boto3` when installed (private buckets, your credentials), else the bucket's public HTTPS address |
-| `bytes`, `bytearray`, `memoryview` | written once to the cache under their content hash |
-
-The cache is `$DEEPITY_CACHE_DIR`, else `~/.cache/deepity`. Rules:
-
-- A finished download is checked before it is put in place (structure and the content hash when the file has
-  one), by an atomic rename, so a corrupt download leaves nothing behind. A download that is merely cut short
-  (connection reset, timeout, early close) keeps the bytes it received as a hidden `.partial-NAME` file with the
-  server's validator.
-- A cached file is revalidated with the server's ETag on every load (an unchanged model costs one small
-  request, not a download). When a redirect carries `x-linked-etag` (Hugging Face), that is the validator
-  kept, because the origin answers a conditional request by it and not by the CDN's own `etag`. With no network the cached copy is used with a warning. A server that sends no
-  validator is trusted as is; `fetch(url, refresh=True)` forces a download. `DEEPITY_OFFLINE=1` never
-  touches the network.
-- The next fetch of that URL sends `Range: bytes=N-` with `If-Range: <validator>` and appends the reply. If the
-  file changed (the server answers 200 whole), ignores ranges, answers 416, or resumes at the wrong offset, the
-  kept bytes are dropped and the file is downloaded whole (the wrong offset is an error). The finished file is
-  checked as always, so a resume can never produce an unchecked file. Two processes never share a partial: one
-  claims it by renaming it. A partial from a process killed mid-download can be left behind as `.claimed-*`.
-  S3 through `boto3` does not resume (it restarts).
-- `deepity.fetch(url, ...)` takes `headers`, `timeout`, `max_bytes` (also `$DEEPITY_MAX_DOWNLOAD_BYTES`, default
-  256 GiB, enforced with or without a `Content-Length`) and `sha256` (the expected hash of the file).
-- A `.safetensors.index.json` URL downloads the index and then every shard it names from the same
-  folder. A shard name that is not a plain file name is refused, as in the local reader.
-- Redirects are followed only over http(s), never from https down to http, and credentials are dropped when
-  a redirect goes to another host.
-- A signed URL's query string is part of its cache key, so a fresh signature downloads again, and a
-  sharded model needs an unsigned base URL.
-
-Checked against a real server: Hugging Face model files (two redirects, the second to a signed CDN URL),
-including revalidation and a real interrupted-and-resumed download through `hf://`, in
-`tests/pyRealFilesVerify.py` (not in CI). S3 is still tested only against a fake
-`boto3`.
-
-Not built: uploading (no Sink) and a C++ memory-buffer reader (bytes are written to the cache, then
-mapped).
 
 ## Memory mapping
 

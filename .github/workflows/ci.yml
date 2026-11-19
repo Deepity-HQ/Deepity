@@ -90,13 +90,6 @@ jobs:
           GOMP_SPINCOUNT: "0"
         run: python tests/pyModelFilesVerify.py
 
-      - name: Model sources (URLs, s3, cache)
-        # Local HTTP servers only; no internet needed.
-        env:
-          OMP_WAIT_POLICY: PASSIVE
-          GOMP_SPINCOUNT: "0"
-        run: python tests/pySourcesVerify.py
-
       - name: CLI and model cards
         env:
           OMP_WAIT_POLICY: PASSIVE
@@ -104,31 +97,13 @@ jobs:
         run: python tests/pyCliVerify.py
 
       - name: ONNX export round trip
-        # Deepity -> ONNX -> onnxruntime must match predict(x, 0).
+        # Deepity -> ONNX -> onnxruntime must match the forward path.
         env:
           OMP_WAIT_POLICY: PASSIVE
           GOMP_SPINCOUNT: "0"
         run: |
           uv pip install --system onnx onnxruntime
           python tests/pyOnnxVerify.py
-
-      - name: GGUF reader
-        # Hand-built and hostile files, plus the reference gguf package as the oracle.
-        env:
-          OMP_WAIT_POLICY: PASSIVE
-          GOMP_SPINCOUNT: "0"
-        run: |
-          uv pip install --system gguf
-          python tests/pyGgufVerify.py
-
-      - name: PyTorch import
-        # Real .pt/.pth files from a CPU-only torch, checked against torch's own forward pass.
-        env:
-          OMP_WAIT_POLICY: PASSIVE
-          GOMP_SPINCOUNT: "0"
-        run: |
-          uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
-          python tests/pyTorchImportVerify.py
 
       - name: Upload build log
         if: always()

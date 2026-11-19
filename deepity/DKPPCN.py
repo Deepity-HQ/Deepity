@@ -7,7 +7,7 @@ import numpy.typing as npt
 
 from ._backend import dy
 from ._interop import InputArray, to_numpy
-from ._sources import resolve
+from ._serialization import as_path
 from ._serialization import build_metadata, for_inference_metadata, read_training_state, shard_bytes, training_metadata
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
@@ -322,7 +322,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         network. Returns the `training_state` dict that was saved with it (empty if none)."""
         self._require_configured()
 
-        filepath = resolve(filepath)
+        filepath = as_path(filepath)
         super().load_checkpoint(filepath)
 
         return read_training_state(filepath)

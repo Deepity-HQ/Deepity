@@ -6,7 +6,6 @@ import contextlib
 import io
 import json
 import os
-import struct
 import subprocess
 import sys
 import tempfile
@@ -84,28 +83,7 @@ with tempfile.TemporaryDirectory() as tmp:
     merged = os.path.join(tmp, "merged.safetensors")
     check(run("convert", index, merged)[0] == 0 and np.array_equal(dp.load(merged).predict(x), dp.load(path).predict(x)), "a shard set merges back")
     check(dp.read_card(merged) == dp.read_card(path) and dp.read_card(path)["license"] == "MIT", "conversion keeps the metadata")
-    gg = os.path.join(tmp, "out.gguf")
-    check(run("convert", path, gg, "--dtype", "f16")[0] == 0 and "layers.0.weight" in dp.read_gguf(gg)[0], "convert to GGUF")
     check(run("convert", path, os.path.join(tmp, "p.safetensors"), "--max-shard-size", "1MB")[0] == 1, "a shard size without an index destination is an error")
-    q = os.path.join(tmp, "q.safetensors")
-    dp.write_tensors(os.path.join(tmp, "f.safetensors"), {"a": np.arange(4, dtype=np.float32)})
-
-    def gguf_blob():
-        def s(t): return struct.pack("<Q", len(t)) + t.encode()
-        data = np.arange(8, dtype=np.float32).tobytes()
-        head = b"GGUF" + struct.pack("<IQQ", 3, 1, 1) + s("general.name") + struct.pack("<I", 8) + s("tiny")
-        head += s("w") + struct.pack("<I", 2) + struct.pack("<QQ", 4, 2) + struct.pack("<IQ", 0, 0)
-        head += b"\0" * ((-len(head)) % 32)
-        return head + data
-    g = os.path.join(tmp, "t.gguf")
-    open(g, "wb").write(gguf_blob())
-    code, out, _ = run("inspect", g)
-    check(code == 0 and "gguf" in out and "tiny" in out, "inspect reads a GGUF file")
-    out_st = os.path.join(tmp, "from_gguf.safetensors")
-    check(run("convert", g, out_st)[0] == 0, "convert GGUF to safetensors")
-    t = dp.read_tensors(out_st)["w"]
-    check(t.shape == (2, 4) and np.array_equal(t.ravel(), np.arange(8)), "GGUF tensor values and shape survive")
-    check(json.loads(dy_meta := dp._backend.dy.read_model_metadata(out_st)["gguf.metadata"])["general.name"] == "tiny", "GGUF metadata is kept")
 
     print("--- sizes ---")
     check(cli.parse_size("2GiB") == 2 << 30 and cli.parse_size("500MB") == 500 * 10**6 and cli.parse_size("1024") == 1024, "size strings parse")

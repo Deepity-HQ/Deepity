@@ -13,8 +13,9 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       cross-platform support, zero-copy mmap and adoption.
 - [x] **Settling settings are part of the artifact** (`inference_steps`, inference rate, per-layer
       activations) and are the defaults after loading. Callers can override them.
-- [x] **Both import and export.** Models should move in and out (ONNX, GGUF, PyTorch state_dict),
-      and training must be able to pause and resume.
+- [x] **Scope is safetensors plus ONNX export.** Training must be able to pause and resume. GGUF (read, write,
+      quantizers), URL/s3/hf:// sources with a cache and resume, PyTorch `.pt` import and unrolled ONNX settling were
+      built and then removed on 2026-11-18 as outside the goal; the last commit that has them is `c199170`.
 - [x] **Audience: Python users building products, not only researchers.** Priorities are reliable
       loading, fast cold start, small files (quantization) and clear errors.
 - [x] **Speed rule:** all bulk tensor work happens in C++. Python passes paths and buffers, never
@@ -81,12 +82,11 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 
 - [x] Registry that records logical type, storage layout, block size and bytes per block
       (`include/deepity/io/DType.h`). fp4 and posit4 now store packed, half the bytes, as `U8` plus
-      `deepity.dtypes`; stock `safetensors` opens them. GGUF-style block quant (Q4_K and similar)
-      is one more registry row plus codec each, added in Phase 5.
+      `deepity.dtypes`; stock `safetensors` opens them. A further block type is one more registry row plus codec.
 - [x] Endianness policy: little endian on disk. The header length field is now explicitly little endian,
       and a simulated big-endian host (`SimulateBigEndianHost()`) drives the real swap code and writes
-      byte-identical files. Still open: BLAKE3 and GGUF reading assume a little-endian host (the build
-      refuses a big-endian target for BLAKE3), and nothing has run on real big-endian hardware.
+      byte-identical files. Still open: BLAKE3 assumes a little-endian host (the build
+      refuses a big-endian target for it), and nothing has run on real big-endian hardware.
 
 ## Phase 3: self-describing models
 
@@ -107,12 +107,8 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 - [x] Make settling semantics explicit in the file (`deepity.inference.mode`; only "iterative" is written). An exported model says whether it is the full
       iterative model or a forward-only or unrolled approximation.
 
-## Phase 4: sources and speed
+## Phase 4: speed
 
-- [x] Sources (`deepity/_sources.py`): path, `file://`, `https://`, `s3://` (boto3 or public HTTPS), `hf://` and bytes, resolved
-      through a download cache with ETag revalidation, size cap, hash check, shard sets and resume of cut-short downloads
-      (Range plus If-Range). Tested against local servers (`tests/pySourcesVerify.py`, in CI) and a real one, Hugging Face
-      (`tests/pyRealFilesVerify.py`, not in CI). Not built: uploading (Sink), a no-disk C++ memory reader; real S3 is untested.
 - [x] mmap fast path (`MappedFile`, zero-copy `Bytes()`). Direct-to-device copies: a float tensor loads straight
       from the mapped file to the device in one copy (was device to host, file to host, host to device). Tested
       on the CPU with `ForceDeviceStaging()` and on an A100 through `tests/pyGpuCheckpointVerify.py`.
@@ -121,25 +117,17 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
       the README and `docs/model-format.md`. The script does not time the direct-to-device CUDA load yet.
 - [x] Sharding plus an index file (C++ `SaveSharded`, Python `save(path, max_shard_bytes=...)`).
 
-## Phase 5: converters (separate from the core)
+## Phase 5: ONNX export
 
-- [x] Import: safetensors and PyTorch `state_dict` with name mapping (`deepity.import_weights`). Checked against real
-      `torch.save` files (`tests/pyTorchImportVerify.py`, CI): Sequential and Conv2d state dicts, `{"state_dict": ...}`
-      checkpoints, fp16 and bf16, matching torch's own forward pass; a whole pickled model and a malicious pickle are refused.
-- [x] Export: ONNX for the forward path (dense and convolutional) and unrolled settling for `SimplePCN`, `SequentialPCN`,
-      `SimpleConvolutionalPCN` and `ConvolutionalPCN` (`deepity.export_onnx`, relu/sigmoid/tanh/gelu, strided layers
-      via `output_padding`); the other dense classes need no settling. `FullConvPCNetwork` is native only.
-- [x] GGUF read (`deepity.read_gguf`, `import_weights(.gguf)`): every type but Q8_1, TQ and MXFP4, checked against the
-      reference `gguf` package and on real llama.cpp models (`tests/pyRealFilesVerify.py`, not in CI). GGUF write
-      (`deepity.write_gguf`, `export_gguf`, `convert ... .gguf`): F32/F16/BF16/F64/ints and Q4_0, Q4_1, Q5_0, Q5_1, Q8_0,
-      Q2_K to Q6_K (own quantizers, `deepity/_gguf_quant.py`). The IQ quants are read-only.
-- [x] Round-trip test: Deepity to ONNX to onnxruntime within 1e-5 (`tests/pyOnnxVerify.py`, CI).
+- [x] `deepity.export_onnx(net, path)`: the forward path of a dense or convolutional network (relu, sigmoid, tanh, gelu;
+      dynamic batch), verified against onnxruntime (`tests/pyOnnxVerify.py`, CI). The iterative settling is not exported.
+- [x] Foreign weights come in through `net.load_weights(path, strict, rename)` on a safetensors file.
 
 ## Phase 6: ecosystem polish
 
 - [x] Model card metadata: `net.card = {...}` is stored as `deepity.card`, restored by `deepity.load`, read by `deepity.read_card`.
-- [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, GGUF both ways).
-- [x] Mutation fuzzing of the safetensors, shard index and GGUF parsers (`FormatFuzz`, found one real bug: invalid UTF-8 in a GGUF string).
+- [x] CLI: `deepity inspect` and `deepity convert` (safetensors, shard sets, `--inference`).
+- [x] Mutation fuzzing of the safetensors and shard index parsers (`FormatFuzz`, clean so far).
       Security note in `SECURITY.md`. Also run under ASan/UBSan (`FormatFuzzSanitized`, `-DDEEPITY_BUILD_FUZZ=ON`, in CI) and as a libFuzzer
       target (`FuzzFormats`, clang/icpx): 818k runs in two minutes, no findings.
 - [x] CHANGELOG entries and docs.
@@ -147,8 +135,7 @@ and move between formats, with IO fast enough that nobody writes a Python loop o
 ## Open questions
 
 None open. Decided: positional tensor names, one file with metadata (no sidecar), `FullPCN`/`DKPPCN`
-first and now every Python class, `*NetworkT` templates save tensors without a description, GGUF
-covers every read quant and writes F32/F16/BF16/F64/ints and the Q and K quants.
+first and now every Python class, `*NetworkT` templates save tensors without a description.
 
 ## Housekeeping
 
@@ -161,5 +148,4 @@ covers every read quant and writes F32/F16/BF16/F64/ints and the Q and K quants.
   `device` and the native base takes no batch size with a device) and `FullConvPCNetwork` (native only).
 - `dp.load` builds and randomizes a network, then overwrites it: about 1.6 s of a 2.0 s load of a 512 MiB model is that
   initialization (`configure`), the weight load itself is about 0.4 s. Skipping it needs care for Psi in inference artifacts.
-- No upload (Sink), no C++ memory-buffer reader, no big-endian host support (BLAKE3 and GGUF reader are little-endian only),
-  no IQ-quant GGUF writing, real S3 untested.
+- No big-endian host support (BLAKE3 is little-endian only).

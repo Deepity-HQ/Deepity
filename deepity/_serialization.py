@@ -8,10 +8,11 @@ Weights never pass through Python: C++ writes and reads them.
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Optional
 
 from ._backend import dy
-from ._sources import resolve
+
 from .layer import Activation, Convolution, GeLU, Layer, Linear, ReLU, Sigmoid, TanH
 
 FORMAT_VERSION = 1
@@ -24,6 +25,16 @@ _ACTIVATIONS: dict[str, type[Activation]] = {
     "tanh": TanH,
     "gelu": GeLU,
 }
+
+
+def as_path(path: Any) -> str:
+    """`path` as a string, so a `pathlib.Path` works wherever a file name does."""
+    return os.fspath(path)
+
+
+def read_tensors(path: Any, verify_hash: bool = True, mmap: bool = True) -> dict[str, Any]:
+    """Reads every tensor of a safetensors file or shard index as numpy arrays. Zero-copy when mapped."""
+    return dy.read_tensors(as_path(path), verify_hash, mmap)
 
 
 def _network_classes() -> dict[str, type]:
@@ -118,7 +129,7 @@ def card_to_json(card: dict[str, Any]) -> str:
 
 def read_card(path: str) -> dict[str, Any]:
     """The model card stored in a model file (path, URL or bytes), or `{}` if it has none."""
-    return json.loads(dy.read_model_metadata(resolve(path)).get("deepity.card", "{}"))
+    return json.loads(dy.read_model_metadata(as_path(path)).get("deepity.card", "{}"))
 
 
 def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtype: Optional[str]) -> dict[str, str]:
@@ -274,14 +285,14 @@ class ModelFileMixin:
         """Restore weights and optimizer state from a checkpoint into this configured network.
         Returns the `training_state` dict that was saved with it (empty if none)."""
         self._require_configured()  # type: ignore[attr-defined]
-        filepath = resolve(filepath)
+        filepath = as_path(filepath)
         self._load_checkpoint(filepath)  # type: ignore[attr-defined]
         return read_training_state(filepath)
 
     def load_weights(self, filepath: str, strict: bool = True, rename=None):
-        """Load weights from any safetensors file; see `deepity.import_weights` for PyTorch sources."""
+        """Load weights from any safetensors file, renaming tensors with the function `rename` if the names differ."""
         self._require_configured()  # type: ignore[attr-defined]
-        return self._load_weights(resolve(filepath), strict, rename)  # type: ignore[attr-defined]
+        return self._load_weights(as_path(filepath), strict, rename)  # type: ignore[attr-defined]
 
 
 def load(path: str, device: Optional[str] = None, batch_size: Optional[int] = None) -> Any:
@@ -291,7 +302,7 @@ def load(path: str, device: Optional[str] = None, batch_size: Optional[int] = No
     on a GPU machine onto a CPU). Works on a checkpoint too (weights only). Raises if the file is
     missing, corrupt, from a newer Deepity, or describes a network this build does not know.
     """
-    path = resolve(path)
+    path = as_path(path)
     net, _ = _build(path, device, batch_size)
     net.load(path)
     return net
@@ -301,7 +312,7 @@ def resume(path: str, device: Optional[str] = None, batch_size: Optional[int] = 
     """Rebuilds a network from a checkpoint written by `net.save_checkpoint(...)` and restores
     its weights and optimizer state. Returns `(net, training_state)`, where `training_state` is
     the dict passed to `save_checkpoint` (epoch, step, RNG state, ...), or `{}` if none was given."""
-    path = resolve(path)
+    path = as_path(path)
     net, meta = _build(path, device, batch_size)
     return net, net.load_checkpoint(path)
 
@@ -348,4 +359,4 @@ def training_metadata(training_state: Optional[dict[str, Any]]) -> dict[str, str
 
 
 def read_training_state(path: str) -> dict[str, Any]:
-    return json.loads(dy.read_model_metadata(resolve(path)).get("deepity.training", "{}"))
+    return json.loads(dy.read_model_metadata(as_path(path)).get("deepity.training", "{}"))

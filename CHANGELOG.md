@@ -14,27 +14,15 @@ earlier history.
 
 ### Added
 
-- `hf://owner/repo/path` (and `owner/repo@revision/path`) sources for Hugging Face files, with `$HF_TOKEN` for private repositories.
-
-- Downloads cut short (connection reset, timeout, early close) keep their bytes and the next fetch resumes them with `Range` and `If-Range`, falling back to a whole download when the file changed or the server cannot resume. Verified against local servers and a real interrupted Hugging Face download.
-
 - `GaussSeidelPCN(..., device="cuda")` is exposed from Python, and `tests/pyGpuCheckpointVerify.py` covers it (not yet run on a GPU). `experiments/benchmark_model_io.py` also times `deepity.load` onto the CPU and, with CUDA, the GPU.
 
-- GGUF writing for every block quantization except the IQ family: `dtype` (and `deepity convert --dtype`) now takes `q4_0`, `q4_1`, `q5_0`, `q5_1`, `q8_0`, `q2_k`, `q3_k`, `q4_k`, `q5_k` and `q6_k`. The quantizers are this library's own (`deepity/_gguf_quant.py`); all ten decode identically in the reference `gguf` package, and re-quantizing a real llama.cpp model's Q4_0 weights reproduces them exactly.
-
-- ONNX export of unrolled settling for `SimpleConvolutionalPCN` and `ConvolutionalPCN` (`export_onnx(..., settling_steps=N)` matches `predict(x, N)` to about 1e-8), including strided layers and learned precisions. Conv networks no longer raise `NotImplementedError` there.
-
-- Tests on real files: `tests/pyTorchImportVerify.py` (real `torch.save` files, CI) and `tests/pyRealFilesVerify.py` (two llama.cpp models from Hugging Face, not in CI).
-
 - Model file load speed benchmark results (512 MiB, OSC Ascend node) added to the README and `docs/model-format.md`: memory-mapped loads run at 5.28 GB/s, about 1.7x stock safetensors; BLAKE3 verification costs about 230 ms for 512 MiB.
-
-- Model sources: every loader accepts `http(s)://` and `s3://` URLs, `file://` and raw bytes wherever it took a path. Remote files go through a download cache (`$DEEPITY_CACHE_DIR`, default `~/.cache/deepity`) with ETag revalidation, a size cap, content-hash validation before a download is kept, shard sets from an index URL, and safe redirects (no credentials to another host, no https to http). New `deepity.fetch(url, headers=, timeout=, max_bytes=, sha256=, refresh=)`; `deepity inspect` and `convert` take URLs. Standard library only; `s3://` uses `boto3` when installed.
 
 - Loading onto a GPU copies each float tensor straight from the mapped file to the device, skipping a device-to-host copy and a host staging copy.
 
 - Inference artifacts: `net.save(path, for_inference=True)` (`DKPPCN`, `FullPCN` and the mixin classes) leaves out the DKP feedback weights Psi, which `predict()` never reads, and marks the file `deepity.training_tensors = "omitted"`. `deepity convert SRC DST --inference` makes one from any model file or checkpoint, also dropping optimizer tensors and saved training state (a small DKPPCN checkpoint went from 2.6 MB to 0.8 MB). A plain `save()` is unchanged. A network loaded from such a file starts training again with a fresh Psi.
 
-- The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target and the GGUF reader throws there, instead of producing wrong hashes or misreading files.
+- The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target instead of producing hashes nothing else can verify.
 
 - Model files: `deepity.format_version` is now checked on every load path, not only metadata reads. A
   newer version is refused with both versions named, a malformed one is refused, and a missing one
@@ -50,7 +38,7 @@ earlier history.
 
 - Training checkpoints for `DKPPCN` and `FullPCN` (CPU): `net.save_checkpoint(path, training_state)` stores the weights, Adam/AdamW moments and step counters plus any JSON dict you pass (epoch, step, RNG state), and `deepity.resume(path)` returns `(net, training_state)` ready to continue training bit-for-bit. In C++ it also works for `DirectKPPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork` and `ConvPCNetwork` (no Python wrappers for those yet). In C++: `ModelIO::SaveCheckpoint` / `LoadCheckpoint`, backed by new `Layer::GetOptimizerStateDict()`, `GetOptimizerCounters()` and `SupportsCheckpoint()`. Other networks and GPU networks throw a clear error instead of writing a checkpoint that would not resume.
 
-- `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) loads weights from any safetensors file, such as a PyTorch export, mapping names with `rename` and reporting or rejecting names that do not line up.
+- `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) loads weights from any safetensors file, such as one exported from another framework, mapping names with `rename` and reporting or rejecting names that do not line up.
 - `deepity.inference` now records `mode` (`"iterative"`), and `deepity.load` rejects a mode it does not know.
 
 - Model files are memory mapped on read by default, and `deepity.read_tensors(path)` returns every tensor as a numpy array in one call (zero-copy read-only views when mapped).
@@ -58,16 +46,12 @@ earlier history.
 
 - `deepity.write_tensors(path, {name: array}, metadata=None, max_shard_bytes=None)` writes numpy arrays to a safetensors file in one call, atomically and with a content hash, sharding when `path` ends in `.safetensors.index.json`.
 
-- `deepity.import_weights(net, source, rename=None, strict=False)` loads weights from a PyTorch `state_dict`, a `.pt`/`.pth` file, a safetensors file or a dict of arrays. `rename="sequential"` pairs each module's weight and bias with layers 0, 1, 2; conv weights are flattened and half precision floats converted.
-
 - `deepity.export_onnx(net, path)` writes the forward path of a dense or convolutional network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
 
-- `deepity.read_gguf(path)` reads GGUF files (llama.cpp format, versions 2 and 3): float tensors including Q4_0, Q4_1, Q5_0, Q5_1 and Q8_0 and the K-quants Q2_K to Q6_K decode to float32, metadata comes back as a dict, and the file is bounds-checked for untrusted input. `import_weights` accepts a `.gguf` path. 
-
-- `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file, shard set or GGUF file, and convert between them (GGUF in, shards in either direction, dtypes and metadata kept).
+- `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file or shard set, and convert between them (shards in either direction, dtypes and metadata kept; `--inference` strips a checkpoint down to an inference file).
 - Model cards: set `net.card = {"license": ..., "description": ..., "metrics": ...}` before saving; it is stored as `deepity.card`, restored by `deepity.load` and shown by `inspect`. `deepity.read_card(path)` reads it.
-- `FormatFuzz` test: seeded mutation fuzzing of the safetensors, shard index and GGUF parsers. It found that a GGUF file with invalid UTF-8 in a string made the reader throw a non-GGUF exception; that is fixed.
-- `-DDEEPITY_BUILD_FUZZ=ON` adds `FormatFuzzSanitized` (the mutation fuzzer under ASan and UBSan, run by ctest and CI) and, with clang or icpx, `FuzzFormats`, a libFuzzer target for the three parsers.
+- `FormatFuzz` test: seeded mutation fuzzing of the safetensors and shard index parsers.
+- `-DDEEPITY_BUILD_FUZZ=ON` adds `FormatFuzzSanitized` (the mutation fuzzer under ASan and UBSan, run by ctest and CI) and, with clang or icpx, `FuzzFormats`, a libFuzzer target for the two parsers.
 - `SECURITY.md` explains what loading an untrusted model does and does not guarantee.
 
 - `SimplePCNetwork`, `SimpleConvPCNetwork` and their `T` forms can now save, load and write resumable checkpoints (CPU backends; a GPU Simple network refuses with an error).
@@ -77,12 +61,6 @@ earlier history.
 - `SimplePCN`, `SimpleConvolutionalPCN`, `GaussSeidelPCN`, `SequentialPCN` and `ConvolutionalPCN` now have the self-describing `save`, `save_checkpoint`, `load_checkpoint` and `load_weights` that `DKPPCN` and `FullPCN` have, so `deepity.load` and `deepity.resume` rebuild them from a file. `SequentialPCN.save` now writes a model file, not a directory.
 
 - GPU networks can write and load weights and checkpoints: layers expose `DeviceStateBackend()` and `ModelIO` stages device tensors and Adam step counters through the backend (`CopyCounterToHost`/`CopyCounterFromHost` are new). Untested on a GPU so far. Simple networks on a GPU no longer return an empty state dict.
-
-- GGUF reading decodes the IQ quants: IQ1_S, IQ1_M, IQ2_XXS, IQ2_XS, IQ2_S, IQ3_XXS, IQ3_S, IQ4_NL and IQ4_XS.
-
-- `deepity.write_gguf`, `deepity.export_gguf` and `deepity convert SRC out.gguf [--dtype f32|f16|bf16|q8_0]` write GGUF files (F32, F16, BF16, F64, integers, Q8_0; atomic; metadata incl. the architecture under `deepity.model`). Checked against the reference `gguf` reader and its Q8_0 decoder.
-
-- `export_onnx(net, path, settling_steps=N)` unrolls settling into the graph for `SimplePCN` and `SequentialPCN` (with its learned precisions) so it matches `predict(x, N)`; for `FullPCN`, `DKPPCN` and `GaussSeidelPCN`, whose settling is a no-op from the forward pass, the forward graph already matches.
 
 ### Changed
 
@@ -103,10 +81,6 @@ earlier history.
 -
 
 ### Fixed
-
-- ETag revalidation never worked against Hugging Face: the origin answers a conditional request by `x-linked-etag` on its redirect, but the cache kept the CDN's own `etag`, so every load downloaded the file again (19 MB in 2.2 s instead of a 0.24 s 304). The validator from the redirect is now kept. Found by fetching real models; the local-server tests could not show it.
-
-- `deepity.read_gguf`'s docstring said K-quants raise an error; they have decoded since earlier in this release.
 
 - `ModelIO::Load()` and `LoadCheckpoint()` silently skipped a tensor missing from the file, leaving random weights. They now throw, naming the tensor. (A file marked as an inference artifact may still lack Psi, and empty tensors are never written.)
 

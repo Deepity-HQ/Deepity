@@ -1,6 +1,6 @@
 /**
  * @file FuzzFormats.cpp
- * @brief libFuzzer target for the safetensors, shard index and GGUF parsers (clang only).
+ * @brief libFuzzer target for the safetensors and shard index parsers (clang only).
  *
  * The first input byte picks the parser, the rest is the file. Anything but a clean parse or the
  * format's own error type aborts, and AddressSanitizer/UBSan report memory errors.
@@ -8,7 +8,6 @@
  */
 #include <cstdint>
 #include <cstdio>
-#include <deepity/io/GGUF.h>
 #include <deepity/io/SafeTensors.h>
 #include <filesystem>
 #include <unistd.h>
@@ -49,7 +48,7 @@ extern "C" int LLVMFuzzerInitialize(int*, char***)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
   if (size == 0) return 0;
-  const uint8_t which = data[0] % 3;
+  const uint8_t which = data[0] % 2;
   ++data;
   --size;
   try
@@ -75,28 +74,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
       Put(p, data, size);
       SafeTensorsReader r(p.string());
     }
-    else
-    {
-      const fs::path p = Dir() / "f.gguf";
-      Put(p, data, size);
-      GGUFReader r(p.string());
-      for (const auto& t : r.Tensors())
-      {
-        if (!GGUFReader::CanDecode(t) || t.Elements() > (1u << 22)) continue;
-        if (t.integer)
-        {
-          std::vector<int64_t> v(t.Elements());
-          r.ReadInt64(t, v.data());
-        }
-        else
-        {
-          std::vector<float> v(t.Elements());
-          r.ReadFloat32(t, v.data());
-        }
-      }
-    }
   }
   catch (const SafeTensorsError&) {}
-  catch (const GGUFError&) {}
   return 0;
 }

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ._backend import dy
 from ._serialization import ModelFileMixin
-from ._sources import resolve
+from ._serialization import as_path
 from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
@@ -490,4 +490,4 @@ class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
     def load(self, path: str) -> bool:
         """Load weights from a model file written by `save`."""
         self._require_configured()
-        return super().load(resolve(path))
+        return super().load(as_path(path))

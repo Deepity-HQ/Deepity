@@ -25,15 +25,11 @@ content. Loading one cannot run code. What it does do:
   corruption, but it is not a signature: a hash stored inside a file proves nothing about who wrote
   it. Check the download against a hash or signature you obtained separately if provenance matters.
 - A shard index may only name plain file names beside itself, never paths.
-- GGUF files are parsed with the same bounds checks: counts, string and array lengths and tensor
-  ranges must fit the file. All three parsers are mutation-fuzzed in CI, including under AddressSanitizer and UBSan
-  (`tests/tFormatFuzz.cpp`, `-DDEEPITY_BUILD_FUZZ=ON`), and a libFuzzer target
+- Both parsers (safetensors and the shard index) are mutation-fuzzed in CI, including under AddressSanitizer
+  and UBSan (`tests/tFormatFuzz.cpp`, `-DDEEPITY_BUILD_FUZZ=ON`), and a libFuzzer target
   (`tests/fuzz/FuzzFormats.cpp`) is available for longer runs.
 - Memory-mapped files must not be truncated or rewritten in place while open; doing so can crash the
   reader. Replace the file instead, as `Save` does.
-- PyTorch `.pt` and `.pth` files are pickles. `deepity.import_weights` loads them with
-  `torch.load(weights_only=True)`, which refuses arbitrary objects, but prefer safetensors for files
-  you do not trust.
 - Model metadata (`deepity.model`, `deepity.card`) is data. A loader only reads the layer kinds,
   sizes and hyperparameters it knows, and a model that asks for a network class this build does not
   have is rejected.

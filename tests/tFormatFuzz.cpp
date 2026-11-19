@@ -1,6 +1,6 @@
 /**
  * @file tFormatFuzz.cpp
- * @brief Mutation fuzzing of the three file parsers (safetensors, shard index, GGUF).
+ * @brief Mutation fuzzing of the two file parsers (safetensors and shard index).
  *
  * Starts from valid files and applies thousands of seeded random mutations (byte flips, truncation,
  * overwritten numbers, spliced chunks, appended junk). Each mutant must either parse or throw the
@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
-#include <deepity/io/GGUF.h>
 #include <deepity/io/SafeTensors.h>
 #include <chrono>
 #include <filesystem>
@@ -92,7 +91,6 @@ template <typename Parse> void Fuzz(const char* name, const std::vector<char>& s
       ++parsed;
     }
     catch (const SafeTensorsError&) { ++rejected; }
-    catch (const GGUFError&) { ++rejected; }
     catch (const std::exception& e)
     {
       printf("  [FAILED] %s: mutant %zu threw an unexpected exception: %s\n", name, i, e.what());
@@ -102,10 +100,6 @@ template <typename Parse> void Fuzz(const char* name, const std::vector<char>& s
   }
   printf("  [PASSED] %s: %zu mutants, %zu rejected cleanly, %zu still valid\n", name, rounds, rejected, parsed);
 }
-
-void WriteU32(std::vector<char>& v, uint32_t x) { v.insert(v.end(), reinterpret_cast<char*>(&x), reinterpret_cast<char*>(&x) + 4); }
-void WriteU64(std::vector<char>& v, uint64_t x) { v.insert(v.end(), reinterpret_cast<char*>(&x), reinterpret_cast<char*>(&x) + 8); }
-void WriteStr(std::vector<char>& v, const std::string& s) { WriteU64(v, s.size()); v.insert(v.end(), s.begin(), s.end()); }
 } // namespace
 
 int main()
@@ -143,45 +137,6 @@ int main()
   w.WriteSharded(index, 20);
   Fuzz("shard index", Slurp(index), (dir / "fuzz.safetensors.index.json").string(), 4000,
        [&](const std::string& p) { SafeTensorsReader r(p); });
-
-  // Seed 3: a GGUF file with metadata, an F32, a Q8_0 and a Q4_K tensor.
-  std::vector<char> g{'G', 'G', 'U', 'F'};
-  WriteU32(g, 3);
-  WriteU64(g, 3);
-  WriteU64(g, 2);
-  WriteStr(g, "general.name"); WriteU32(g, 8); WriteStr(g, "fuzz");
-  WriteStr(g, "tokens"); WriteU32(g, 9); WriteU32(g, 8); WriteU64(g, 2); WriteStr(g, "a"); WriteStr(g, "b");
-  const struct { const char* n; uint32_t type; uint64_t ne, bytes; } ts[] = {{"f", 0, 4, 16}, {"q8", 8, 32, 34}, {"k", 12, 256, 144}};
-  uint64_t off = 0;
-  for (const auto& t : ts)
-  {
-    WriteStr(g, t.n); WriteU32(g, 1); WriteU64(g, t.ne); WriteU32(g, t.type); WriteU64(g, off);
-    off += (t.bytes + 31) / 32 * 32;
-  }
-  while (g.size() % 32) g.push_back(0);
-  for (const auto& t : ts)
-  {
-    for (uint64_t i = 0; i < (t.bytes + 31) / 32 * 32; ++i) g.push_back(static_cast<char>(i * 7));
-  }
-  Fuzz("gguf", g, (dir / "fuzz.gguf").string(), 8000,
-       [](const std::string& p)
-       {
-         GGUFReader r(p);
-         for (const auto& t : r.Tensors())
-         {
-           if (!GGUFReader::CanDecode(t)) continue;
-           if (t.integer)
-           {
-             std::vector<int64_t> v(t.Elements());
-             r.ReadInt64(t, v.data());
-           }
-           else
-           {
-             std::vector<float> v(t.Elements());
-             r.ReadFloat32(t, v.data());
-           }
-         }
-       });
 
   fs::remove_all(dir);
   printf(failures == 0 ? "PASSED: format fuzzing\n" : "FAILED: format fuzzing\n");
