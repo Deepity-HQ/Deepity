@@ -119,7 +119,7 @@ def main() -> None:
           f"lr={LR}, decay_rate={DECAY_RATE}...\n")
     print("Reference: ngc-learn's own pc_discrim exhibit (same 784-512-512-10 "
           "architecture, classic settling, T=20, mb_size=250, 100 epochs), run "
-          "unmodified on this same machine -- see logs/ngclearn_pc_discrim_mnist.txt: "
+          "unmodified on this same machine -- see research/benchmark_logs/ngclearn_pc_discrim_mnist.txt: "
           "best dev acc = 98%, 1707.7s total (17.0s/epoch).\n")
 
     rng = np.random.default_rng(SEED)

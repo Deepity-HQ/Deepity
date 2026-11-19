@@ -103,6 +103,21 @@ std::map<std::string, TensorDescriptor> ConvPCLayer::GetStateDict() const
           {"p", {p, {(size_t)inChannels * inHeight * inWidth}}}};
 }
 
+std::map<std::string, TensorDescriptor> ConvPCLayer::GetOptimizerStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"weight.m", {m_W, {(size_t)outChannels, (size_t)(inChannels * kernelH * kernelW)}}}, {"weight.v", {v_W, {(size_t)outChannels, (size_t)(inChannels * kernelH * kernelW)}}},
+          {"bias.m", {m_b, {(size_t)outChannels}}},   {"bias.v", {v_b, {(size_t)outChannels}}}};
+}
+
+std::map<std::string, int*> ConvPCLayer::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", t_device}};
+}
+
 template <typename ArenaT> void ConvPCLayer::BindMemory(ArenaT& arena)
 {
   size_t ownSize = (size_t)inChannels * inHeight * inWidth;

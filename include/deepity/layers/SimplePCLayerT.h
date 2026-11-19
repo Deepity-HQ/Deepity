@@ -2,6 +2,8 @@
 
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/layers/Layer.h>
+#include <map>
+#include <deepity/layers/Layer.h>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/utils/DeviceMemoryArena.h>
@@ -245,5 +247,14 @@ public:
 
   size_t GetRequiredElements() const noexcept;
   template <typename ArenaT> void BindMemory(ArenaT& arena);
+
+  std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Adam/AdamW moments (AccumT) for a checkpoint, see FullPCLayerT::GetOptimizerStateDict().
+  std::map<std::string, TensorDescriptorT<AccumT>> GetOptimizerStateDict() const;
+  std::map<std::string, int*> GetOptimizerCounters() const;
+  bool SupportsCheckpoint() const noexcept
+  {
+    return true;
+  }
 };
 } // namespace Deep

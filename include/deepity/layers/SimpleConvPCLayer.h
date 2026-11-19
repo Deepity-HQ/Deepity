@@ -129,6 +129,20 @@ public:
     return backend.get();
   }
 
+  /// @brief W and b for ModelIO. Empty on a GPU backend, whose buffers are not host memory.
+  std::map<std::string, TensorDescriptor> GetStateDict() const override;
+  std::map<std::string, TensorDescriptor> GetOptimizerStateDict() const override;
+  std::map<std::string, int*> GetOptimizerCounters() const override;
+  bool SupportsCheckpoint() const noexcept override
+  {
+    return true;
+  }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
+
   /// @brief Returns the current learning rate.
   float GetLearningRate() const noexcept
   {

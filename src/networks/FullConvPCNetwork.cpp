@@ -356,14 +356,14 @@ std::vector<float> FullConvPCNetwork::GetAllLayerDiagnostics() const noexcept
   return result;
 }
 
-bool FullConvPCNetwork::Save(const std::string& filepath) const noexcept
+bool FullConvPCNetwork::Save(const std::string& filepath) const
 {
   for (auto& l : layers)
     l->SyncStateDictFromDevice();
   return ModelIO::Save(*this, filepath);
 }
 
-bool FullConvPCNetwork::Load(const std::string& filepath) noexcept
+bool FullConvPCNetwork::Load(const std::string& filepath)
 {
   if (!ModelIO::Load(*this, filepath))
     return false;

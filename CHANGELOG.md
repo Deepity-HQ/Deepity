@@ -14,11 +14,63 @@ earlier history.
 
 ### Added
 
+- `GaussSeidelPCN(..., device="cuda")` is exposed from Python, and `tests/pyGpuCheckpointVerify.py` covers it (not yet run on a GPU). `experiments/benchmark_model_io.py` also times `deepity.load` onto the CPU and, with CUDA, the GPU.
+
+- Model file load speed benchmark results (512 MiB, OSC Ascend node) added to the README and `docs/model-format.md`: memory-mapped loads run at 5.28 GB/s, about 1.7x stock safetensors; BLAKE3 verification costs about 230 ms for 512 MiB.
+
+- Loading onto a GPU copies each float tensor straight from the mapped file to the device, skipping a device-to-host copy and a host staging copy.
+
+- Inference artifacts: `net.save(path, for_inference=True)` (`DKPPCN`, `FullPCN` and the mixin classes) leaves out the DKP feedback weights Psi, which `predict()` never reads, and marks the file `deepity.training_tensors = "omitted"`. `deepity convert SRC DST --inference` makes one from any model file or checkpoint, also dropping optimizer tensors and saved training state (a small DKPPCN checkpoint went from 2.6 MB to 0.8 MB). A plain `save()` is unchanged. A network loaded from such a file starts training again with a fresh Psi.
+
+- The safetensors header length field is now written and read as explicit little endian, so the format does not depend on the host. Big-endian hosts are tested through a simulation (`SimulateBigEndianHost()`) of the byte-swap paths; BLAKE3 refuses to compile on a big-endian target instead of producing hashes nothing else can verify.
+
+- Model files: `deepity.format_version` is now checked on every load path, not only metadata reads. A
+  newer version is refused with both versions named, a malformed one is refused, and a missing one
+  loads. Unknown metadata keys, tensors and JSON fields are ignored; a hyperparameter this version
+  cannot take is dropped with a warning. A bad model description (unknown layer kind, missing field,
+  malformed JSON) is an error that names the problem.
+- Test fixture `tests/data/golden_v1_dtypes.safetensors`: one tensor for each of the 17 dtypes, with exact
+  bytes checked. The Windows CI job now runs the file-format tests.
+
 - `DKPPCN.configure(psi_decay=...)` (and `set_psi_decay()` on `DirectKPPCNetwork` / `DirectKPPCLayer`): a decay applied to the direct feedback weights Psi alone, separate from `lmbda`, which keeps governing W. The default (`None`) keeps the previous behavior exactly: no decay on Psi under SGD, `lmbda` under AdamW. Only the float DKP family has it; `DirectKPPCNetworkT` / `DirectKPPCLayerT` do not yet.
+
+- Self-describing model files for `DKPPCN` and `FullPCN`: `net.save(path)` stores the architecture, hyperparameters and default settling steps next to the weights, and `deepity.load(path)` rebuilds the network from the file alone. `predict()` now defaults to the model's `default_inference_steps` (1 for a new model; a loaded file restores its saved value). New `deepity.dy.read_model_metadata(path)` reads a file's metadata without loading weights, and every native network's `save()` accepts an optional `metadata` map.
+
+- Training checkpoints for `DKPPCN` and `FullPCN` (CPU): `net.save_checkpoint(path, training_state)` stores the weights, Adam/AdamW moments and step counters plus any JSON dict you pass (epoch, step, RNG state), and `deepity.resume(path)` returns `(net, training_state)` ready to continue training bit-for-bit. In C++ it also works for `DirectKPPCNetworkT`, `FullConvPCNetwork`, `GaussSeidelPCNetwork(T)`, `DiscriminativePCNetwork` and `ConvPCNetwork` (no Python wrappers for those yet). In C++: `ModelIO::SaveCheckpoint` / `LoadCheckpoint`, backed by new `Layer::GetOptimizerStateDict()`, `GetOptimizerCounters()` and `SupportsCheckpoint()`. Other networks and GPU networks throw a clear error instead of writing a checkpoint that would not resume.
+
+- `net.load_weights(path, strict=True, rename=None)` (C++: `ModelIO::LoadWeights`) loads weights from any safetensors file, such as one exported from another framework, mapping names with `rename` and reporting or rejecting names that do not line up.
+- `deepity.inference` now records `mode` (`"iterative"`), and `deepity.load` rejects a mode it does not know.
+
+- Model files are memory mapped on read by default, and `deepity.read_tensors(path)` returns every tensor as a numpy array in one call (zero-copy read-only views when mapped).
+- Sharded models: `ModelIO::SaveSharded` and `SaveCheckpointSharded` split a model over several safetensors files with a `*.safetensors.index.json`; `Load`, `LoadCheckpoint` and `deepity.load` open the index path like a file. From Python, `net.save(path, max_shard_bytes=...)` and `save_checkpoint` shard when `path` ends in `.safetensors.index.json`.
+
+- `deepity.write_tensors(path, {name: array}, metadata=None, max_shard_bytes=None)` writes numpy arrays to a safetensors file in one call, atomically and with a content hash, sharding when `path` ends in `.safetensors.index.json`.
+
+- `deepity.export_onnx(net, path)` writes the forward path of a dense or convolutional network (the prediction with zero settling steps) as an ONNX model with a dynamic batch size; needs the optional `onnx` package.
+
+- `deepity inspect FILE` and `deepity convert SRC DST` (also `python -m deepity`): validate and describe a safetensors file or shard set, and convert between them (shards in either direction, dtypes and metadata kept; `--inference` strips a checkpoint down to an inference file).
+- Model cards: set `net.card = {"license": ..., "description": ..., "metrics": ...}` before saving; it is stored as `deepity.card`, restored by `deepity.load` and shown by `inspect`. `deepity.read_card(path)` reads it.
+- `FormatFuzz` test: seeded mutation fuzzing of the safetensors and shard index parsers.
+- `-DDEEPITY_BUILD_FUZZ=ON` adds `FormatFuzzSanitized` (the mutation fuzzer under ASan and UBSan, run by ctest and CI) and, with clang or icpx, `FuzzFormats`, a libFuzzer target for the two parsers.
+- `SECURITY.md` explains what loading an untrusted model does and does not guarantee.
+
+- `SimplePCNetwork`, `SimpleConvPCNetwork` and their `T` forms can now save, load and write resumable checkpoints (CPU backends; a GPU Simple network refuses with an error).
+
+- `ConvPCNetworkT` and `FullConvPCNetworkT` can now save, load and write resumable checkpoints, so every network class has a state dict. `Load` also rebuilds the cached log-precision of layers that keep one (the conv and discriminative layers) from the loaded p.
+
+- `SimplePCN`, `SimpleConvolutionalPCN`, `GaussSeidelPCN`, `SequentialPCN` and `ConvolutionalPCN` now have the self-describing `save`, `save_checkpoint`, `load_checkpoint` and `load_weights` that `DKPPCN` and `FullPCN` have, so `deepity.load` and `deepity.resume` rebuild them from a file. `SequentialPCN.save` now writes a model file, not a directory.
+
+- GPU networks can write and load weights and checkpoints: layers expose `DeviceStateBackend()` and `ModelIO` stages device tensors and Adam step counters through the backend (`CopyCounterToHost`/`CopyCounterFromHost` are new). Untested on a GPU so far. Simple networks on a GPU no longer return an empty state dict.
 
 ### Changed
 
--
+- `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
+
+- `ModelIO::Save/Load` (and the network `Save/Load` wrappers) now report failure by exception with the reason instead of returning `false`; they return `true` on success. `FullConvPCNetwork::Save/Load` and `DiscriminativePCNetwork::Save/Load` are no longer `noexcept`, because a corrupt file would otherwise terminate the process.
+
+- `ModelIO::Save()` now throws instead of writing an empty file when a network exposes no weights (for example a GPU Simple network). Before, it silently produced a model with no tensors.
+
+- 4-bit weight types (`fp4_e2m1`, `posit4_0/1/2`) now save packed, two codes per byte, as a 1-D `U8` tensor plus a `deepity.dtypes` entry, so those model files are about half the size and still open in stock safetensors readers. Files from 0.1.0a8 that stored them one byte per element still load. Model files are little endian on every host; big-endian hosts byte-swap on read and write.
 
 ### Deprecated
 
@@ -26,11 +78,16 @@ earlier history.
 
 ### Removed
 
--
+- Experimental libxsmm (`DEEPITY_USE_LIBXSMM`) and Halide (`DEEPITY_USE_HALIDE`) GEMM paths. Both were off by default and measured slower than oneDNN.
+- GGUF reading and writing, URL/`s3://`/`hf://` model sources with a download cache, PyTorch `.pt` import (`import_weights`) and unrolled ONNX settling. The model format is safetensors plus plain forward ONNX export; `load_weights(rename=...)` still loads foreign safetensors files.
+- The generated `docs/python` Doxygen output (now git-ignored), stale examples and experiments, unused benchmark images and profiler dumps.
 
 ### Fixed
 
--
+- `ModelIO::Load()` and `LoadCheckpoint()` silently skipped a tensor missing from the file, leaving random weights. They now throw, naming the tensor. (A file marked as an inference artifact may still lack Psi, and empty tensors are never written.)
+
+- `ModelIO::Save()` truncated every `Psi` tensor (DKP and FullPC feedback weights) whenever a layer's size differed from the next layer's: the state dict labeled Psi `[nextSize, terminal]` while the buffer is `[size, terminal]`, so rows were dropped and a resumed run loaded partly wrong feedback weights. Affects `DirectKPPCLayer`, `DirectKPPCLayerT`, `FullPCLayer` and `FullPCLayerT` (the last also staged too few Psi rows on the host). Files written by 0.1.0a8 and earlier still load; their missing rows keep the network's current values.
+- `ModelIO::Load()` now throws on a tensor shape mismatch instead of reading mismatched bytes.
 
 ### Security
 

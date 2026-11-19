@@ -81,7 +81,7 @@ body:
     attributes:
       label: Relevant log output
       description: >
-        Paste relevant output from `logs/build.log`, a stack trace, or (for
+        Paste relevant output from `build/build.log`, a stack trace, or (for
         performance regressions) `tests/tBenchmark.cpp` / `tests/tProfile.cpp`
         output. This will be automatically formatted as code, no need for
         backticks.

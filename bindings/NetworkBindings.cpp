@@ -7,6 +7,9 @@
 #include "NetworkBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/pair.h>
+#include <nanobind/stl/function.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
@@ -35,6 +38,46 @@
 // ============================================================================
 namespace
 {
+
+/// @brief Adds the file-IO methods the self-describing Python classes build on (`_save`,
+/// `_save_checkpoint`, `_load_checkpoint`, `_load_weights`) to an already registered network class.
+/// Underscore names keep them apart from each class's own `save`/`load`.
+template <typename NetT> void BindModelFiles(nb::module_& m, const char* className)
+{
+  auto cls = nb::borrow<nb::class_<NetT>>(m.attr(className));
+  cls.def(
+         "_save",
+         [](const NetT& self, const std::string& filepath, const std::map<std::string, std::string>& metadata,
+            uint64_t maxShardBytes)
+         {
+           return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                    : Deep::ModelIO::Save(self, filepath, metadata);
+         },
+         nb::arg("filepath"), nb::arg("metadata"), nb::arg("max_shard_bytes") = 0)
+      .def(
+          "_save_checkpoint",
+          [](const NetT& self, const std::string& filepath, const std::map<std::string, std::string>& metadata,
+             uint64_t maxShardBytes)
+          {
+            return maxShardBytes > 0
+                       ? Deep::ModelIO::SaveCheckpointSharded(self, filepath, maxShardBytes, metadata)
+                       : Deep::ModelIO::SaveCheckpoint(self, filepath, metadata);
+          },
+          nb::arg("filepath"), nb::arg("metadata"), nb::arg("max_shard_bytes") = 0)
+      .def(
+          "_load_checkpoint",
+          [](NetT& self, const std::string& filepath) { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"))
+      .def(
+          "_load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none());
+}
 
 template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const char* className)
 {
@@ -84,14 +127,30 @@ template <typename NetT> void BindCommonPCNetwork(nb::class_<NetT>& cls, const c
           "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+          "Save this network's weights to filepath, with optional string metadata entries "
+          "(e.g. 'deepity.model'). Raises on any failure.")
       .def(
           "load",
           [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -297,15 +356,47 @@ void BindFullPCNetworkT(nb::module_& m, const char* className)
       .def("get_terminal_layer", &NetT::GetTerminalLayer, nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveCheckpointSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](NetT& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const NetT& self, const std::string& filepath) { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const NetT& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+          "Save this network's weights to filepath, with optional string metadata entries "
+          "(e.g. 'deepity.model'). Raises on any failure.")
       .def(
           "load",
           [](NetT& self, const std::string& filepath) { return Deep::ModelIO::Load(self, filepath); },
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](NetT& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const NetT& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -692,9 +783,11 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::GaussSeidelPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::GaussSeidelPCNetwork& self, const std::string& filepath)
@@ -702,6 +795,17 @@ void bind_networks(nb::module_& m)
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](Deep::GaussSeidelPCNetwork& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__",
            [](const Deep::GaussSeidelPCNetwork& self) { return self.GetLayers().size(); })
       .def(
@@ -890,10 +994,28 @@ void bind_networks(nb::module_& m)
            nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveCheckpointSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](Deep::DirectKPPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::DirectKPPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::DirectKPPCNetwork& self, const std::string& filepath)
@@ -901,6 +1023,17 @@ void bind_networks(nb::module_& m)
           nb::arg("filepath"),
           "Load weights from filepath into this already-compiled network; raises on a dtype "
           "mismatch.")
+      .def(
+          "load_weights",
+          [](Deep::DirectKPPCNetwork& self, const std::string& filepath, bool strict,
+             const std::function<std::string(const std::string&)>& rename)
+          {
+            const auto r = Deep::ModelIO::LoadWeights(self, filepath, strict, rename);
+            return std::make_pair(r.missing, r.unexpected);
+          },
+          nb::arg("filepath"), nb::arg("strict") = true, nb::arg("rename") = nb::none(),
+          "Load weights from any safetensors file. rename(file_name) -> deepity name. Returns "
+          "(missing, unexpected) names; with strict=True any mismatch raises.")
       .def("__len__", [](const Deep::DirectKPPCNetwork& self) { return self.GetLayers().size(); })
       .def(
           "__getitem__",
@@ -1162,10 +1295,28 @@ void bind_networks(nb::module_& m)
       .def("get_terminal_layer", &Deep::FullPCNetwork::GetTerminalLayer, nb::rv_policy::reference,
            "Returns the last layer.")
       .def(
+          "save_checkpoint",
+          [](const Deep::FullPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveCheckpointSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::SaveCheckpoint(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+          "Save weights plus optimizer state (Adam/AdamW moments and step counters) so training "
+          "can resume exactly. CPU networks only. Raises on any failure.")
+      .def(
+          "load_checkpoint",
+          [](Deep::FullPCNetwork& self, const std::string& filepath)
+          { return Deep::ModelIO::LoadCheckpoint(self, filepath); },
+          nb::arg("filepath"),
+          "Restore weights and optimizer state from a file written by save_checkpoint(). Raises if "
+          "the file is not a checkpoint or does not match this network.")
+      .def(
           "save",
-          [](const Deep::FullPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::FullPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::FullPCNetwork& self, const std::string& filepath)
@@ -1463,9 +1614,11 @@ void bind_networks(nb::module_& m)
            "Returns the last layer.")
       .def(
           "save",
-          [](const Deep::FullConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"),
+          [](const Deep::FullConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
           "Save this network's weights to filepath. Safe on a CUDA-device network -- syncs "
           "device-resident parameters to host before writing.")
       .def(
@@ -1640,9 +1793,11 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::ConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::ConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::ConvPCNetwork& self, const std::string& filepath)
@@ -1843,9 +1998,11 @@ void bind_networks(nb::module_& m)
                    "List of layer objects owned by the network.")
       .def(
           "save",
-          [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath)
-          { return Deep::ModelIO::Save(self, filepath); },
-          nb::arg("filepath"), "Save this network's weights to filepath.")
+          [](const Deep::SimpleConvPCNetwork& self, const std::string& filepath,
+             const std::map<std::string, std::string>& metadata, uint64_t maxShardBytes)
+          { return maxShardBytes > 0 ? Deep::ModelIO::SaveSharded(self, filepath, maxShardBytes, metadata)
+                                      : Deep::ModelIO::Save(self, filepath, metadata); },
+          nb::arg("filepath"), nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0, "Save this network's weights to filepath.")
       .def(
           "load",
           [](Deep::SimpleConvPCNetwork& self, const std::string& filepath)
@@ -1882,6 +2039,12 @@ void bind_networks(nb::module_& m)
            "Seeds hidden layers from a genuine forward pass through current "
            "weights, instead of zero-init. Call after clamp_input(), before "
            "the settling loop.");
+
+  BindModelFiles<Deep::DiscriminativePCNetwork>(m, "DiscriminativePCNetwork");
+  BindModelFiles<Deep::SimplePCNetwork>(m, "SimplePCNetwork");
+  BindModelFiles<Deep::GaussSeidelPCNetwork>(m, "GaussSeidelPCNetwork");
+  BindModelFiles<Deep::ConvPCNetwork>(m, "ConvPCNetwork");
+  BindModelFiles<Deep::SimpleConvPCNetwork>(m, "SimpleConvPCNetwork");
 
   BindFullPCNetworkT<float, float>(m, "FullPCNetwork_f32");
   BindFullPCNetworkT<double, double>(m, "FullPCNetwork_f64");

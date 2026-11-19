@@ -8,6 +8,11 @@
 #include "UtilityBindings.h"
 #include "BindingHelpers.h"
 
+#include <nanobind/ndarray.h>
+#include <nanobind/stl/map.h>
+#include <nanobind/stl/vector.h>
+#include <nanobind/stl/tuple.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string.h>
 
@@ -18,13 +23,163 @@
 #include <string>
 
 #include <deepity/backend/Backend.h>
+#include <deepity/io/SafeTensors.h>
 #include <deepity/utils/Activations.h>
+#include <deepity/utils/ModelIO.h>
 #include <deepity/utils/Optimize.h>
 #include <deepity/utils/RandomizeDistribution.h>
 #include <deepity/utils/StreamAlignedBatcher.h>
 
 namespace
 {
+/// @brief One tensor as a numpy array. Zero-copy (a read-only view that keeps the file mapped)
+/// when the file is mapped and the bytes are aligned; otherwise a private copy.
+template <typename T>
+nb::object TensorToNumpy(const Deep::io::SafeTensorsReader& reader, const Deep::io::TensorEntry& e)
+{
+  const void* bytes = reader.Bytes(e);
+  if (e.shape.size() > 8)
+    throw nb::value_error(("tensor '" + e.name + "' has more than 8 dimensions").c_str());
+  size_t dims[8];
+  for (size_t i = 0; i < e.shape.size(); ++i)
+    dims[i] = e.shape[i];
+  if (bytes != nullptr && reinterpret_cast<uintptr_t>(bytes) % alignof(T) == 0)
+  {
+    auto mapping = new std::shared_ptr<const Deep::io::MappedFile>(reader.Mapping(e));
+    nb::capsule owner(mapping, [](void* p) noexcept { delete static_cast<std::shared_ptr<const Deep::io::MappedFile>*>(p); });
+    return nb::cast(nb::ndarray<nb::numpy, const T>(static_cast<const T*>(bytes), e.shape.size(), dims, owner));
+  }
+  auto* copy = new T[std::max<size_t>(e.ByteSize() / sizeof(T), 1)];
+  reader.Read(e, copy, e.ByteSize());
+  nb::capsule owner(copy, [](void* p) noexcept { delete[] static_cast<T*>(p); });
+  return nb::cast(nb::ndarray<nb::numpy, T>(copy, e.shape.size(), dims, owner));
+}
+
+/// @brief Safetensors dtype name of a numpy-style dtype, or "" if the format has none.
+std::string DTypeName(const nb::dlpack::dtype& d)
+{
+  const uint8_t code = d.code;
+  const std::string bits = std::to_string(d.bits);
+  if (d.lanes != 1) return "";
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Float) && (d.bits == 16 || d.bits == 32 || d.bits == 64))
+    return "F" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Int) && d.bits >= 8 && d.bits <= 64)
+    return "I" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::UInt) && d.bits >= 8 && d.bits <= 64)
+    return "U" + bits;
+  if (code == static_cast<uint8_t>(nb::dlpack::dtype_code::Bool) && d.bits == 8) return "BOOL";
+  return "";
+}
+
+using AnyArray = nb::ndarray<nb::c_contig, nb::device::cpu, nb::ro>;
+
+void WriteTensors(const std::string& path, nb::dict tensors, const std::map<std::string, std::string>& metadata,
+                  uint64_t maxShardBytes)
+{
+  using namespace Deep::io;
+  if (tensors.size() == 0) throw nb::value_error("write_tensors needs at least one tensor");
+  std::vector<AnyArray> keep; // holds the (possibly converted) arrays until the write finishes
+  keep.reserve(tensors.size());
+  SafeTensorsWriter writer;
+  for (const auto& [key, value] : metadata) writer.SetMetadata(key, value);
+  for (auto item : tensors)
+  {
+    const std::string name = nb::cast<std::string>(item.first);
+    AnyArray arr;
+    if (!nb::try_cast(item.second, arr, /*convert=*/true))
+      throw nb::type_error(("tensor '" + name + "' is not a CPU array").c_str());
+    const std::string dtype = DTypeName(arr.dtype());
+    if (dtype.empty())
+      throw nb::type_error(("tensor '" + name + "' has a dtype safetensors cannot store (use float16/32/64, int or uint)").c_str());
+    std::vector<size_t> shape(arr.ndim());
+    for (size_t i = 0; i < shape.size(); ++i) shape[i] = arr.shape(i);
+    writer.AddTensor(name, dtype, shape, arr.data(), arr.nbytes());
+    keep.push_back(std::move(arr));
+  }
+  if (maxShardBytes > 0) writer.WriteSharded(path, maxShardBytes);
+  else writer.Write(path);
+}
+
+/// @brief Describes a file without decoding any tensor: metadata and a tensor table.
+nb::dict FileTable(const std::string& path, bool verifyHash)
+{
+  using namespace Deep::io;
+  nb::dict out;
+  nb::list tensors;
+  SafeTensorsReader r(path, verifyHash);
+  out["format"] = "safetensors";
+  out["version"] = 1;
+  out["shards"] = r.ShardCount();
+  out["metadata"] = r.Metadata();
+  out["hash_verified"] = verifyHash && r.Metadata().count(kHashKey) == 1;
+  for (const auto& t : r.Tensors())
+    tensors.append(nb::make_tuple(t.name, t.dtype, t.shape, t.ByteSize()));
+  out["tensors"] = tensors;
+  return out;
+}
+
+/// @brief Copies every tensor of a safetensors file or shard index into a new file or shard set,
+/// keeping dtypes (packed ones included) and metadata. Used to merge, split and re-hash models.
+void ConvertSafetensors(const std::string& src, const std::string& dst, uint64_t maxShardBytes, bool forInference)
+{
+  using namespace Deep::io;
+  SafeTensorsReader reader(src);
+  SafeTensorsWriter writer;
+  for (const auto& [key, value] : reader.Metadata())
+  {
+    if (key == kHashKey || key == kDTypesKey) continue;
+    if (forInference && (key == "deepity.training" || key == "deepity.kind" || key == kTrainingTensorsKey)) continue;
+    writer.SetMetadata(key, value);
+  }
+  if (forInference)
+  {
+    writer.SetMetadata("deepity.kind", "inference");
+    writer.SetMetadata(kTrainingTensorsKey, "omitted");
+  }
+  std::vector<std::vector<char>> copies; // only for tensors that cannot be viewed in place
+  copies.reserve(reader.Tensors().size());
+  for (const auto& t : reader.Tensors())
+  {
+    if (forInference && IsTrainingOnlyTensor(t.name)) continue;
+    const void* data = reader.Bytes(t);
+    if (data == nullptr)
+    {
+      copies.emplace_back(t.ByteSize());
+      reader.Read(t, copies.back().data(), copies.back().size());
+      data = copies.back().data();
+    }
+    writer.AddTensor(t.name, t.dtype, t.shape, data, t.ByteSize());
+  }
+  if (maxShardBytes > 0) writer.WriteSharded(dst, maxShardBytes);
+  else writer.Write(dst);
+}
+
+nb::dict ReadTensors(const std::string& path, bool verifyHash, bool mmap)
+{
+  using namespace Deep::io;
+  SafeTensorsReader reader(path, verifyHash, mmap);
+  nb::dict out;
+  for (const auto& e : reader.Tensors())
+  {
+    nb::object a;
+    if (e.packed || e.dtype == "BF16" || e.dtype == "F16")
+      throw nb::value_error(("tensor '" + e.name + "' has dtype " + e.dtype + ", which numpy cannot hold here; "
+                             "use ModelIO to load it into a network").c_str());
+    else if (e.dtype == "F32") a = TensorToNumpy<float>(reader, e);
+    else if (e.dtype == "F64") a = TensorToNumpy<double>(reader, e);
+    else if (e.dtype == "I64") a = TensorToNumpy<int64_t>(reader, e);
+    else if (e.dtype == "I32") a = TensorToNumpy<int32_t>(reader, e);
+    else if (e.dtype == "I16") a = TensorToNumpy<int16_t>(reader, e);
+    else if (e.dtype == "I8") a = TensorToNumpy<int8_t>(reader, e);
+    else if (e.dtype == "U64") a = TensorToNumpy<uint64_t>(reader, e);
+    else if (e.dtype == "U32") a = TensorToNumpy<uint32_t>(reader, e);
+    else if (e.dtype == "U16") a = TensorToNumpy<uint16_t>(reader, e);
+    else if (e.dtype == "U8" || e.dtype == "BOOL") a = TensorToNumpy<uint8_t>(reader, e);
+    out[e.name.c_str()] = a;
+  }
+  return out;
+}
+
 /// @brief Fills `x` in place via Deep::RandomizeWithDistribution(), picking
 /// the backend (and therefore the RNG: OpenMP-parallel Mersenne Twister on
 /// CPU, curand/host-fallback on GPU -- see CUDABackendT's
@@ -144,6 +299,26 @@ void bind_utilities(nb::module_& m)
         "(GPU randomizes into a device buffer and copies the result back; "
         "worthwhile once `x` has on the order of 1e5+ elements, see issue #67).");
 
+  m.def("file_table", &FileTable, nb::arg("filepath"), nb::arg("verify_hash") = true,
+        "Validates a safetensors file or shard index and returns a dict with its format, "
+        "metadata and a (name, dtype, shape, bytes) table, without decoding any tensor.");
+  m.def("convert_safetensors", &ConvertSafetensors, nb::arg("src"), nb::arg("dst"), nb::arg("max_shard_bytes") = 0,
+        nb::arg("for_inference") = false,
+        "Copies every tensor of a safetensors file or shard index to a new file (or, with "
+        "max_shard_bytes and an index path, a new shard set), keeping dtypes and metadata.");
+  m.def("write_tensors", &WriteTensors, nb::arg("filepath"), nb::arg("tensors"),
+        nb::arg("metadata") = std::map<std::string, std::string>{}, nb::arg("max_shard_bytes") = 0,
+        "Writes a dict of numpy arrays (float16/32/64, int8..64, uint8..64, bool) to a safetensors "
+        "file in one call: atomic, 64-byte aligned, with a BLAKE3 hash. A max_shard_bytes above "
+        "zero writes a sharded model and needs an index path.");
+  m.def("read_tensors", &ReadTensors, nb::arg("filepath"), nb::arg("verify_hash") = true, nb::arg("mmap") = true,
+        "Reads every tensor of a safetensors file into a dict of numpy arrays in one call. With "
+        "mmap the arrays are read-only views of the mapped file (no copy, nothing read until "
+        "touched); the mapping stays alive as long as any array does. F16, BF16 and packed 4-bit "
+        "tensors raise; load those into a network instead.");
+  m.def("read_model_metadata", &Deep::ModelIO::ReadMetadata, nb::arg("filepath"),
+        "Validates a model file and returns its string metadata (architecture, inference defaults, "
+        "format version) without reading the weights. Raises on a missing or corrupt file.");
   m.def("get_l2_cache_bytes", &Deep::GetL2CacheBytes,
         "Queries the size of this CPU's L2 cache (per-core, level 2), "
         "falling back to 512 KiB on platforms where it can't be queried.");

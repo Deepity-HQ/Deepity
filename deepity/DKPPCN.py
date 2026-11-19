@@ -7,6 +7,8 @@ import numpy.typing as npt
 
 from ._backend import dy
 from ._interop import InputArray, to_numpy
+from ._serialization import as_path
+from ._serialization import build_metadata, for_inference_metadata, read_training_state, shard_bytes, training_metadata
 from .layer import Activation, Layer, Linear
 from .utils import _fit_with_progress
 
@@ -53,6 +55,9 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self._lambda: Optional[float] = None
         self._optimizer: Optional[str] = None
         self._psi_optimizer: Optional[str] = None
+        self._flags: dict = {}
+        self.default_inference_steps: int = 1
+        self.card: Optional[dict] = None
 
         self._validate_architecture()
 
@@ -205,6 +210,7 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self.randomize_weights()
         self.set_center_weights(center_weights)
         self.set_psi_decay(-1.0 if psi_decay is None else psi_decay)
+        self._flags = {"center_weights": center_weights, "psi_decay": psi_decay}
 
         return self
 
@@ -219,9 +225,25 @@ class DKPPCN(dy.DirectKPPCNetwork):
         """Set the optimizer used for the forward weights W."""
         super().set_optimizer(optimizer)
 
+        self._optimizer = optimizer
+
     def set_psi_optimizer(self, optimizer: str) -> None:
         """Set the optimizer used for the feedback weights Psi."""
         super().set_psi_optimizer(optimizer)
+
+        self._psi_optimizer = optimizer
+
+    def set_center_weights(self, enabled: bool) -> None:
+        """Re-center each hidden layer's W rows after every weight update."""
+        super().set_center_weights(enabled)
+
+        self._flags["center_weights"] = enabled
+
+    def set_psi_decay(self, decay: float) -> None:
+        """Set the weight decay for the feedback weights Psi (negative keeps the optimizer default)."""
+        super().set_psi_decay(decay)
+
+        self._flags["psi_decay"] = None if decay < 0 else decay
 
     def set_learning_rate(self, learning_rate: float) -> None:
         """Set the learning rate for the forward weights W."""
@@ -254,6 +276,57 @@ class DKPPCN(dy.DirectKPPCNetwork):
         layer's own existing init)."""
         super().randomize_weights(seed, dist)
 
+    def _current_hyperparameters(self) -> dict:
+        return {
+            "learning_rate": self._learning_rate,
+            "inference_rate": self._inference_rate,
+            "feedback_rate": self._feedback_rate,
+            "lmbda": self._lambda,
+            "optimizer": self._optimizer,
+            "psi_optimizer": self._psi_optimizer,
+            **self._flags,
+        }
+
+    def save(self, filepath: str, max_shard_bytes: Optional[int] = None, for_inference: bool = False) -> bool:
+        """Write a self-describing model file: weights, architecture, hyperparameters and the
+        default settling steps. `deepity.load(filepath)` rebuilds the network from it.
+        A path ending in `.safetensors.index.json` writes a sharded model (shards of at most
+        `max_shard_bytes`, default 2 GiB) that `deepity.load` opens through the index.
+        If `for_inference`, the file leaves out what only training uses (the DKP feedback weights Psi), so it is
+        smaller. It loads and predicts identically; a model loaded from it that trains again starts with a fresh Psi.
+        Raises on any failure."""
+        self._require_configured()
+
+        meta = for_inference_metadata(build_metadata(self, "DKPPCN", self._current_hyperparameters(), None), for_inference)
+        return super().save(filepath, meta, shard_bytes(filepath, max_shard_bytes))
+
+    def save_checkpoint(
+        self, filepath: str, training_state: Optional[dict] = None, max_shard_bytes: Optional[int] = None
+    ) -> bool:
+        """Write a training checkpoint: everything `save` writes plus the optimizer state (Adam/AdamW
+        moments and step counters), so `deepity.resume(filepath)` continues training exactly.
+        `training_state` is any JSON-serializable dict you want back on resume (epoch, global step,
+        learning-rate schedule position, RNG state). A `.safetensors.index.json` path shards it as `save`
+        does. CPU networks only. Raises on any failure."""
+        self._require_configured()
+
+        metadata = {
+            **build_metadata(self, "DKPPCN", self._current_hyperparameters(), None),
+            **training_metadata(training_state),
+        }
+
+        return super().save_checkpoint(filepath, metadata, shard_bytes(filepath, max_shard_bytes))
+
+    def load_checkpoint(self, filepath: str) -> dict:
+        """Restore weights and optimizer state from a checkpoint into this already-configured
+        network. Returns the `training_state` dict that was saved with it (empty if none)."""
+        self._require_configured()
+
+        filepath = as_path(filepath)
+        super().load_checkpoint(filepath)
+
+        return read_training_state(filepath)
+
     def train_step(
         self,
         X: InputArray,
@@ -275,16 +348,17 @@ class DKPPCN(dy.DirectKPPCNetwork):
     def predict(
         self,
         X: InputArray,
-        inference_steps: int = 1,
+        inference_steps: Optional[int] = None,
     ) -> npt.NDArray[np.float32]:
-        """Run inference on `X`, settling for `inference_steps` iterations.
+        """Run inference on `X`, settling for `inference_steps` iterations (default: the model's
+        `default_inference_steps`, which a loaded model file sets).
         @return The terminal layer's beliefs."""
         self._require_configured()
 
         return np.asarray(
             super().predict(
                 to_numpy(X, np.float32).flatten(),
-                inference_steps,
+                self.default_inference_steps if inference_steps is None else inference_steps,
             )
         )
 

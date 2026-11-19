@@ -202,12 +202,9 @@ void SimplePCLayer::UpdateState() noexcept
     // overhead at this shape -- see IComputeBackend::TryFusedMatMul.
     // TryFusedFeedbackUpdate fuses this GEMM directly into the
     // elementwise state update below, welding it on as oneDNN post-ops
-    // on the SAME matmul primitive (DEEPITY_USE_ONEDNN, the default) or,
-    // failing that, an AOT Halide kernel (DEEPITY_USE_HALIDE, off by
-    // default -- verified correct but slower, kept only as a documented
-    // dead end) -- see IComputeBackend::TryFusedFeedbackUpdate for which
-    // mechanism actually ran and why. Falls back to the separate GEMM +
-    // FusedStateUpdate pair otherwise.
+    // on the SAME matmul primitive (DEEPITY_USE_ONEDNN, the default) --
+    // see IComputeBackend::TryFusedFeedbackUpdate. Falls back to the
+    // separate GEMM + FusedStateUpdate pair otherwise.
     if (backend->TryFusedFeedbackUpdate(ToDerivativeType(activationType), (int)batchSize,
                                         (int)size, (int)nextSize, e_above, W, z, e, ir,
                                         feedbackScratch, feedbackDerivScratch))
@@ -447,6 +444,26 @@ template <typename ArenaT> void SimplePCLayer::BindMemory(ArenaT& arena)
     BindLearningRateState(arena, backend.get(), t_device, lr_device, lr);
   }
   ReleaseLocalArenaIfForeign(localArena, arena);
+}
+
+std::map<std::string, TensorDescriptor> SimplePCLayer::GetStateDict() const
+{
+  return {{"W", {W, {(size_t)nextSize, (size_t)size}}}, {"b", {b, {(size_t)nextSize}}}};
+}
+
+std::map<std::string, TensorDescriptor> SimplePCLayer::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"weight.m", {m_W, {(size_t)nextSize, (size_t)size}}}, {"weight.v", {v_W, {(size_t)nextSize, (size_t)size}}},
+          {"bias.m", {m_b, {(size_t)nextSize}}},   {"bias.v", {v_b, {(size_t)nextSize}}}};
+}
+
+std::map<std::string, int*> SimplePCLayer::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", t_device}};
 }
 
 template void SimplePCLayer::BindMemory<MemoryArena>(MemoryArena& arena);

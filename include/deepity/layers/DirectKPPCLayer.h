@@ -205,6 +205,17 @@ public:
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptor> GetStateDict() const override;
+  std::map<std::string, TensorDescriptor> GetOptimizerStateDict() const override;
+  std::map<std::string, int*> GetOptimizerCounters() const override;
+  bool SupportsCheckpoint() const noexcept override
+  {
+    return true;
+  }
+  /// @copydoc Deep::Layer::DeviceStateBackend
+  IComputeBackend* DeviceStateBackend() const noexcept override
+  {
+    return backend->GetDeviceType() == DeviceType::DEVICE_CPU && !ForceDeviceStaging() ? nullptr : backend.get();
+  }
 
   /// @brief Sets the layer immediately above this one in the network.
   void SetLayerAbove(DirectKPPCLayer* l) noexcept

@@ -38,6 +38,9 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
 ]
 
+[project.scripts]
+deepity = "deepity.cli:main"
+
 # `pip install pydeepity[cuda]` -- pulls the CUDA runtime/cuBLAS shared
 # libraries DeepityCUDA.so/.dll (bundled in the wheel itself, see
 # CMakeLists.txt's DeepityCUDA target) dlopen()s at the moment GPU
@@ -61,7 +64,13 @@ Issues = "https://github.com/Deepity-HQ/Deepity/issues"
 
 # Dev-only deps; install with `uv sync --group dev --no-install-project`
 # (use build.py to actually build the C++ extension, see README.md).
+# `build` is the only group uv installs by default: just what build.py's
+# CMake step needs (nanobind), so a bare `uv run python build.py ...` never
+# pulls torch.
 [dependency-groups]
+build = [
+    "nanobind>=2.13.0",
+]
 dev = [
     "torch>=2.8.0",
     "torchvision",
@@ -75,6 +84,19 @@ dev = [
 # ══════════════════════════════════════════════════════════════════════════
 # scikit-build-core: how `pip install .` / `pip wheel .` invokes CMake
 # ══════════════════════════════════════════════════════════════════════════
+# uv-only settings; pip, scikit-build-core and cibuildwheel ignore this table.
+# package = false: `uv run`/`uv sync` never build or install pydeepity itself,
+# the extension is always built by build.py. default-groups: see above.
+[tool.pyright]
+# experiments/ and research/ are throwaway scripts with heavy optional deps (jax, jpc) and no
+# type discipline. The compiled extension is absent in CI (--no-install-project), so its missing
+# symbols are not reported either.
+exclude = ["experiments", "research", "build", ".venv*", "**/__pycache__"]
+
+[tool.uv]
+package = false
+default-groups = ["build"]
+
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 build-dir = "build/{wheel_tag}"

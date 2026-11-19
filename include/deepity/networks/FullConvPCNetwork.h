@@ -135,13 +135,13 @@ public:
   /// FullConvPCLayer::GetStateDict()) to `filepath`, as a single
   /// safetensors-format file (see ModelIO.h). Safe under any backend:
   /// syncs device-resident parameters to host first.
-  /// @return false if `filepath` couldn't be opened for writing.
-  bool Save(const std::string& filepath) const noexcept;
+  /// @return true. Failures (unwritable path, missing or corrupt file, shape or dtype mismatch) throw with the reason.
+  bool Save(const std::string& filepath) const;
   /// @brief The reverse of Save(): loads weights and Adam moments from
   /// `filepath` into this (already-compiled) network, pushing them back
   /// to device memory afterward if this network's backend needs that.
-  /// @return false if `filepath` couldn't be opened for reading.
-  bool Load(const std::string& filepath) noexcept;
+  /// @return true. Failures (unwritable path, missing or corrupt file, shape or dtype mismatch) throw with the reason.
+  bool Load(const std::string& filepath);
 
   /// @brief Runs one training step.
   /// @param computeEnergy If false, skips the per-layer energy readout

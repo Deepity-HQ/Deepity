@@ -629,6 +629,28 @@ void SimpleConvPCLayer::UnclampState() noexcept
   isClamped = false;
 }
 
+std::map<std::string, TensorDescriptor> SimpleConvPCLayer::GetStateDict() const
+{
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  return {{"W", {W, {(size_t)outChannels, rowLen}}}, {"b", {b, {(size_t)outChannels}}}};
+}
+
+std::map<std::string, TensorDescriptor> SimpleConvPCLayer::GetOptimizerStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  return {{"weight.m", {m_W, {(size_t)outChannels, rowLen}}}, {"weight.v", {v_W, {(size_t)outChannels, rowLen}}},
+          {"bias.m", {m_b, {(size_t)outChannels}}},   {"bias.v", {v_b, {(size_t)outChannels}}}};
+}
+
+std::map<std::string, int*> SimpleConvPCLayer::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", t_device}};
+}
+
 template void SimpleConvPCLayer::BindMemory<MemoryArena>(MemoryArena& arena);
 #if defined(DEEPITY_USE_CUDA)
 template void SimpleConvPCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena& arena);

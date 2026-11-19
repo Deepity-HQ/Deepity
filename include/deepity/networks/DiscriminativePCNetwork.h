@@ -235,11 +235,11 @@ public:
   /// @brief Saves the network's learned parameters to disk.
   /// @param filename The destination file path.
   /// @return True on success, false otherwise.
-  bool Save(const std::string& filename) const noexcept;
+  bool Save(const std::string& filename) const;
   /// @brief Loads the network's learned parameters from disk.
   /// @param filename The source file path.
   /// @return True on success, false otherwise.
-  bool Load(const std::string& filename) noexcept;
+  bool Load(const std::string& filename);
 
   /// @brief Sums every layer's required float count into a single
   /// contiguous arena and binds each layer into it. Call after all

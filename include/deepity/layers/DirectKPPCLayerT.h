@@ -112,6 +112,13 @@ public:
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 
   std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Adam/AdamW moments (AccumT) for a checkpoint, see FullPCLayerT::GetOptimizerStateDict().
+  std::map<std::string, TensorDescriptorT<AccumT>> GetOptimizerStateDict() const;
+  std::map<std::string, int*> GetOptimizerCounters() const;
+  bool SupportsCheckpoint() const noexcept
+  {
+    return true;
+  }
 
   void SetLayerAbove(DirectKPPCLayerT* l) noexcept
   {

@@ -184,7 +184,7 @@ void FullPCLayerT<T, AccumT>::EnsureStateDictStaging() const noexcept
 {
   hostW.resize(nextSize * size);
   hostB.resize(nextSize);
-  hostPsi.resize(nextSize * terminalSize);
+  hostPsi.resize((nextSize > 0 ? size : 0) * terminalSize);
 }
 
 template <typename T, typename AccumT>
@@ -193,7 +193,27 @@ std::map<std::string, TensorDescriptorT<T>> FullPCLayerT<T, AccumT>::GetStateDic
   EnsureStateDictStaging();
   return {{"W", {hostW.data(), std::vector<size_t>{nextSize, size}}},
           {"b", {hostB.data(), std::vector<size_t>{nextSize}}},
-          {"Psi", {hostPsi.data(), std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {hostPsi.data(), std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> FullPCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const std::vector<size_t> wShape{nextSize, size}, bShape{nextSize}, psiShape{size, terminalSize};
+  return {{"weight.m", {ptr(m_W), wShape}},   {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},     {"bias.v", {ptr(v_b), bShape}},
+          {"psi.m", {ptr(m_Psi), psiShape}},  {"psi.v", {ptr(v_Psi), psiShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> FullPCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}, {"psi_step", const_cast<int*>(&tPsi_device)}};
 }
 
 template <typename T, typename AccumT>

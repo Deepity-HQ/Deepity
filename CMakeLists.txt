@@ -1,6 +1,3 @@
-# 3.28 is Halide's own declared floor (see DEEPITY_USE_HALIDE below);
-# CMake 4.x is what's actually installed on every machine this project
-# builds on today, so this costs nothing in practice.
 cmake_minimum_required(VERSION 3.26.5)
 
 # Must be set before project() -- CMake only reads this launcher var here.
@@ -32,60 +29,6 @@ option(DEEPITY_USE_ONEDNN "Use Intel oneDNN for a fused GEMM+bias epilogue, avoi
 # (e.g. Fedora's onednn-devel) instead, falling back to source if not
 # found. For local dev only -- wheel builds want the static source build.
 option(DEEPITY_ONEDNN_SYSTEM "Prefer a system-installed oneDNN (via find_package) over building one from source" OFF)
-# Experimental: JIT-compiles shape-specialized small-matrix GEMM kernels
-# for SimplePCLayer's feedback and weight-gradient GEMMs (both bias-free,
-# unlike the mu GEMM above), avoiding cblas_sgemm's generic-large-GEMM
-# dispatch overhead at these small shapes (CPU only; falls back to the
-# existing MatMul() path automatically if OFF or dispatch fails).
-option(DEEPITY_USE_LIBXSMM "Use libxsmm for small-matrix GEMMs instead of cblas_sgemm (experimental)" OFF)
-# Experimental, measured SLOWER -- kept OFF by default, see below. Fuses
-# SimplePCLayer::UpdateState()'s feedback GEMM (feedbackScratch = e_above
-# @ W) directly into its own elementwise state update (z +=
-# ir*(f'(z)*feedbackScratch - e)) via an ahead-of-time-compiled Halide
-# kernel, so feedbackScratch is never materialized to memory at all -- a
-# structural fusion oneDNN/libxsmm can't express (both are GEMM
-# dispatchers, not schedulable compilers). Building Halide itself requires
-# LLVM (uses the system install via find_package, not a from-source build
-# -- see cmake/PatchHalideForNewerLLVM.cmake's file comment for the one
-# compatibility patch that needs).
-#
-# Verified correct (direct reference comparison at the real MNIST shapes,
-# plus a finite-difference gradient check through a real UpdateWeights()
-# call). Two rounds measured:
-#
-# Round 1 (plain RDom reduction, no tiling): ~4x SLOWER than the oneDNN
-# baseline for this GEMM bucket alone (1.54s vs. 0.24s+0.13s combined, same
-# 40-batch run) -- oneDNN's cache-blocked multi-threaded GEMM comfortably
-# beat an untiled hand-scheduled reduction, same as the libxsmm result
-# above.
-#
-# Round 2 (register-tiled schedule adapted from Halide's own
-# test/performance/matrix_multiplication.cpp, see FeedbackUpdateGenerator.cpp):
-# closed almost all of that gap in isolation -- a standalone GEMM-only probe
-# at the real (M,N,K) shapes measured this schedule at parity with MKL
-# single-threaded and only ~1.6-2x behind multi-threaded. But wiring it into
-# the real training loop made things *worse* than round 1's raw number would
-# suggest (total time ~1.8-1.9x the oneDNN baseline), and crucially degraded
-# *unrelated* oneDNN GEMM calls elsewhere in the same loop (muGemmSeconds,
-# which never touches Halide, rose ~40-60%) -- i.e. the regression is not
-# (only) schedule quality anymore, it's Halide's own thread pool and
-# oneDNN's thread pool oversubscribing the same cores when interleaved in
-# one hot loop. Forcing Halide down to 1 thread (HL_NUM_THREADS=1) restored
-# the unrelated oneDNN buckets to baseline but made the fused GEMM itself
-# ~13x slower solo -- every thread-count tried nets out worse than baseline
-# end to end. A real fix would mean routing Halide's parallel-for through
-# oneDNN's own thread pool instead of spinning up a second one
-# (halide_do_par_for override) -- a substantially bigger undertaking than
-# schedule tuning, not attempted yet.
-#
-# Kept as an experimental, off-by-default option (same convention as
-# DEEPITY_USE_LIBXSMM above) rather than deleted. CPU only; falls back to
-# the existing separate-calls path automatically if OFF, dispatch fails,
-# the activation isn't SIGMOID (the only one with an AOT kernel today), or
-# nextSize < 64 (the tiled schedule's reduction-tile overhead doesn't
-# amortize for the output layer's short nextSize=10 feedback GEMM).
-option(DEEPITY_USE_HALIDE "Use an AOT Halide kernel to fuse the feedback GEMM with its state update (experimental, measured slower than the oneDNN baseline)" OFF)
-
 # AMD ROCm Coming soon...
 
 # These are set automatically in build.py based on --native/distributed/fast
@@ -551,7 +494,7 @@ FetchContent_MakeAvailable(highway)
 # their own small static library instead, built without
 # DEEPITY_TARGET_COMPILE_OPTIONS's -march pin, then linked into Deepity
 # like any other dependency (sleef, hwy itself).
-add_library(DeepityHighwayKernels STATIC src/backend/CPUBackendHighway.cpp)
+add_library(DeepityHighwayKernels STATIC src/backend/CPUBackendHighway.cpp src/io/Blake3.cpp)
 target_include_directories(DeepityHighwayKernels PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 # HWY_TARGET_INCLUDE ("backend/CPUBackendHighway.cpp") must resolve via
 # an include search path -- add src/ so it does.
@@ -642,75 +585,6 @@ if(DEEPITY_USE_ONEDNN)
     endif()
 endif()
 
-if(DEEPITY_USE_LIBXSMM)
-    # libxsmm's own CMake configure step shells out to a Python script
-    # (scripts/libxsmm_config.py) to generate libxsmm_version.h.
-    find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    # Not needed and pulls in a gfortran requirement for nothing -- we
-    # only use the C dispatch API.
-    set(LIBXSMM_FORTRAN OFF CACHE BOOL "" FORCE)
-
-    FetchContent_Declare(
-        libxsmm
-        GIT_REPOSITORY https://github.com/libxsmm/libxsmm.git
-        GIT_TAG 2.1.0
-    )
-    FetchContent_MakeAvailable(libxsmm)
-
-    # Isolated into its own target, deliberately never linked against
-    # MKL: libxsmm's CMake build (unlike its GNU Make build) hardcodes
-    # LP64 (32-bit libxsmm_blasint) with no option to request ILP64
-    # through this path, and its headers refuse to compile at all if
-    # MKL_ILP64 is visible alongside that mismatch -- see
-    # CPUBackendLibxsmm.h's file comment for the full reasoning. Mirrors
-    # DeepityHighwayKernels' existing use of a separate target for the
-    # same kind of per-translation-unit compilation isolation.
-    add_library(DeepityLibxsmm STATIC src/backend/CPUBackendLibxsmm.cpp)
-    target_include_directories(DeepityLibxsmm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-    # OpenMP, not MKL: libxsmm's dispatched kernels are deliberately
-    # single-threaded per call (see CPUBackendLibxsmm.cpp) -- the
-    # caller supplies parallelism itself, here via a row-blocked
-    # #pragma omp parallel for across the batch dimension.
-    target_link_libraries(DeepityLibxsmm PRIVATE libxsmm::libxsmm OpenMP::OpenMP_CXX)
-endif()
-
-if(DEEPITY_USE_HALIDE)
-    # Not needed and would otherwise pull in flatbuffers/wabt for nothing --
-    # Deepity only uses Halide's AOT Generator workflow (plain
-    # add_halide_library() static libs), never JIT, serialization, the
-    # WASM backend, or the Python bindings.
-    set(WITH_SERIALIZATION OFF CACHE BOOL "" FORCE)
-    set(Halide_WASM_BACKEND OFF CACHE STRING "" FORCE)
-    set(WITH_PYTHON_BINDINGS OFF CACHE BOOL "" FORCE)
-    set(WITH_TESTS OFF CACHE BOOL "" FORCE)
-    set(WITH_TUTORIALS OFF CACHE BOOL "" FORCE)
-    set(WITH_DOCS OFF CACHE BOOL "" FORCE)
-
-    FetchContent_Declare(
-        halide
-        GIT_REPOSITORY https://github.com/halide/Halide.git
-        GIT_TAG v21.0.0
-        PATCH_COMMAND ${CMAKE_COMMAND}
-            "-DDEEPITY_HALIDE_SRC_DIR=${CMAKE_BINARY_DIR}/_deps/halide-src"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/PatchHalideForNewerLLVM.cmake"
-        UPDATE_DISCONNECTED TRUE
-    )
-    FetchContent_MakeAvailable(halide)
-
-    # The generator program: runs at BUILD time only (links Halide +
-    # LLVM), never shipped. Its output (below) has no such dependency --
-    # see IComputeBackend.h's TryFusedFeedbackUpdate comment.
-    add_executable(DeepityHalideGenerators src/backend/halide/FeedbackUpdateGenerator.cpp)
-    target_link_libraries(DeepityHalideGenerators PRIVATE Halide::Generator)
-
-    add_halide_library(deepity_feedback_update_sigmoid
-        FROM DeepityHalideGenerators
-        GENERATOR deepity_feedback_update_sigmoid
-        FUNCTION_NAME deepity_feedback_update_sigmoid
-    )
-endif()
-
 # --- Deepity library ------------------------------------------------
 
 set(DEEPITY_SOURCES
@@ -733,6 +607,9 @@ set(DEEPITY_SOURCES
     src/networks/SimpleConvPCNetwork.cpp
     src/networks/DirectKPPCNetwork.cpp
     src/utils/StreamAlignedBatcher.cpp
+    src/io/SafeTensors.cpp
+    src/io/DType.cpp
+    src/io/MappedFile.cpp
     src/backend/Backend.cpp
     src/backend/CPUBackend.cpp
     src/backend/CPUBackendT.cpp
@@ -845,16 +722,6 @@ endif()
 if(DEEPITY_USE_ONEDNN)
     target_link_libraries(Deepity PRIVATE ${DEEPITY_DNNL_TARGET})
     target_compile_definitions(Deepity PUBLIC DEEPITY_USE_ONEDNN)
-endif()
-
-if(DEEPITY_USE_LIBXSMM)
-    target_link_libraries(Deepity PRIVATE DeepityLibxsmm)
-    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_LIBXSMM)
-endif()
-
-if(DEEPITY_USE_HALIDE)
-    target_link_libraries(Deepity PRIVATE deepity_feedback_update_sigmoid)
-    target_compile_definitions(Deepity PUBLIC DEEPITY_USE_HALIDE)
 endif()
 
 target_compile_definitions(Deepity PUBLIC SLEEF_STATIC_LIBS)
@@ -977,6 +844,7 @@ endif()
 # --- Tests -----------------------------------------------------------
 
 option(DEEPITY_BUILD_TESTS "Build test/verification executables" ON)
+option(DEEPITY_BUILD_FUZZ "Build the sanitizer-instrumented format fuzz test and (clang) the libFuzzer target" OFF)
 
 # Without this, every add_test() below is silently inert -- ctest reports
 # "No tests were found" regardless of how many are registered, since no
@@ -1053,12 +921,66 @@ if(DEEPITY_BUILD_TESTS)
     add_test(NAME WeightCenteringVerify COMMAND WeightCenteringVerify)
     list(APPEND DEEPITY_TEST_TARGETS WeightCenteringVerify)
 
+    # ModelIO save/load round trip (every W, b and Psi value must survive).
+    add_executable(ModelIOVerify tests/tModelIOVerify.cpp)
+    target_link_libraries(ModelIOVerify PRIVATE Deepity)
+    set_target_properties(ModelIOVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME ModelIOVerify COMMAND ModelIOVerify)
+    list(APPEND DEEPITY_TEST_TARGETS ModelIOVerify)
+
+    # Standalone safetensors reader/writer: round trips, validation, golden files.
+    add_executable(SafeTensorsVerify tests/tSafeTensorsVerify.cpp)
+    target_link_libraries(SafeTensorsVerify PRIVATE Deepity)
+    target_compile_definitions(SafeTensorsVerify PRIVATE
+        DEEPITY_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
+    set_target_properties(SafeTensorsVerify PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME SafeTensorsVerify COMMAND SafeTensorsVerify)
+    list(APPEND DEEPITY_TEST_TARGETS SafeTensorsVerify)
+
+    add_executable(FormatFuzz tests/tFormatFuzz.cpp)
+    target_link_libraries(FormatFuzz PRIVATE Deepity)
+    set_target_properties(FormatFuzz PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+    add_test(NAME FormatFuzz COMMAND FormatFuzz)
+    list(APPEND DEEPITY_TEST_TARGETS FormatFuzz)
+
+    # --- Sanitized fuzzing of the file parsers. Off by default. The IO sources are rebuilt
+    # --- on their own with ASan+UBSan (not the whole library), so this stays quick.
+    if(DEEPITY_BUILD_FUZZ AND NOT MSVC)
+        set(DEEPITY_FUZZ_IO_SOURCES
+            src/io/SafeTensors.cpp src/io/DType.cpp src/io/MappedFile.cpp src/io/Blake3.cpp)
+        set(DEEPITY_SAN_FLAGS -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g -O1)
+
+        add_executable(FormatFuzzSanitized tests/tFormatFuzz.cpp ${DEEPITY_FUZZ_IO_SOURCES})
+        target_include_directories(FormatFuzzSanitized PRIVATE include src)
+        target_compile_options(FormatFuzzSanitized PRIVATE ${DEEPITY_SAN_FLAGS})
+        target_link_options(FormatFuzzSanitized PRIVATE ${DEEPITY_SAN_FLAGS})
+        target_link_libraries(FormatFuzzSanitized PRIVATE hwy)
+        set_target_properties(FormatFuzzSanitized PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+        add_test(NAME FormatFuzzSanitized COMMAND FormatFuzzSanitized)
+
+        if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
+            add_executable(FuzzFormats tests/fuzz/FuzzFormats.cpp ${DEEPITY_FUZZ_IO_SOURCES})
+            target_include_directories(FuzzFormats PRIVATE include src)
+            target_compile_options(FuzzFormats PRIVATE -fsanitize=fuzzer-no-link,address,undefined -fno-sanitize-recover=all -g -O1)
+            target_link_options(FuzzFormats PRIVATE -fsanitize=fuzzer,address,undefined)
+            target_link_libraries(FuzzFormats PRIVATE hwy)
+            set_target_properties(FuzzFormats PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+        endif()
+    endif()
+
     # --- Correctness verification tests (CUDA-only: call
     # CreateBackend(DEVICE_GPU), which throws when built without CUDA) -----
 
     if(DEEPITY_CUDA_ENABLED)
         add_executable(CUDALaunchErrorVerify tests/tCUDALaunchErrorVerify.cpp)
-        target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDALaunchErrorVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDALaunchErrorVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1072,14 +994,16 @@ if(DEEPITY_BUILD_TESTS)
         list(APPEND DEEPITY_TEST_TARGETS CUDAIntRoundtripVerify)
 
         add_executable(CUDAIncrementCounterVerify tests/tCUDAIncrementCounterVerify.cpp)
-        target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDAIncrementCounterVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDAIncrementCounterVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS CUDAIncrementCounterVerify)
 
         add_executable(CUDAIncrementCounterSyncVerify tests/tCUDAIncrementCounterSyncVerify.cpp)
-        target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity)
+        # Calls the CUDA runtime directly, so it needs the toolkit's headers and library itself.
+        target_link_libraries(CUDAIncrementCounterSyncVerify PRIVATE Deepity CUDA::cudart)
         set_target_properties(CUDAIncrementCounterSyncVerify PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1118,7 +1042,8 @@ if(DEEPITY_BUILD_TESTS)
         # result to the concrete CUDABackend (not just the abstract
         # interface), so it needs the real symbol, not just the plugin
         # CUDAPluginLoader.cpp dlopen()s transparently at runtime.
-        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(DirectKPPCNetworkDepthScalingVsBP PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(DirectKPPCNetworkDepthScalingVsBP PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1136,7 +1061,8 @@ if(DEEPITY_BUILD_TESTS)
         add_executable(CUDARandomizeBenchmark tests/tCUDARandomizeBenchmark.cpp)
         # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
         # identical comment above -- this one dynamic_casts to CUDABackend too.
-        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(CUDARandomizeBenchmark PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(CUDARandomizeBenchmark PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
@@ -1147,7 +1073,8 @@ if(DEEPITY_BUILD_TESTS)
         add_executable(CUDABatchedGemmDepthScaling tests/tCUDABatchedGemmDepthScaling.cpp)
         # DeepityCUDA directly: see DirectKPPCNetworkDepthScalingVsBP's
         # identical comment above -- this one dynamic_casts to CUDABackend too.
-        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity DeepityCUDA)
+        # CUDABackend.h includes cublas_v2.h, and DeepityCUDA only links the toolkit PRIVATE.
+        target_link_libraries(CUDABatchedGemmDepthScaling PRIVATE Deepity DeepityCUDA CUDA::cublas CUDA::cudart)
         set_target_properties(CUDABatchedGemmDepthScaling PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )

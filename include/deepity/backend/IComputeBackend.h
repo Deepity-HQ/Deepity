@@ -488,6 +488,20 @@ public:
   /// @brief Atomically increments *counter by 1.
   virtual void IncrementCounter(int* counter) noexcept = 0;
 
+  /// @brief Reads a counter (as used by IncrementCounter()) into host memory. Waits for queued
+  /// work first. Host-resident backends just read it.
+  virtual void CopyCounterToHost(int* hostDst, const int* counter) noexcept
+  {
+    Synchronize();
+    *hostDst = *counter;
+  }
+  /// @brief Overwrites a counter from host memory; the reverse of CopyCounterToHost().
+  virtual void CopyCounterFromHost(int* counter, const int* hostSrc) noexcept
+  {
+    Synchronize();
+    *counter = *hostSrc;
+  }
+
   /// @brief Adam update for `n` parameters in place.
   /// @param param Parameters to update, in storage type T.
   /// @param grad Gradient w.r.t. param, in accumulator type AccumT.

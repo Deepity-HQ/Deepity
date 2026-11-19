@@ -2,6 +2,7 @@
 
 #include <deepity/backend/IComputeBackend.h>
 #include <deepity/layers/Layer.h>
+#include <map>
 #include <deepity/utils/Activations.h>
 #include <deepity/utils/AdamOptimizer.h>
 #include <deepity/utils/DeviceMemoryArena.h>
@@ -22,8 +23,8 @@
  * (grad_W/m_W/v_W/..., grad_Psi/m_Psi/v_Psi) still follows the usual
  * AccumT-accumulator convention.
  *
- * Does not inherit from Layer. Does not implement GetStateDict()/
- * SyncStateDict*()/GetDiagnosticStats().
+ * Does not inherit from Layer. Implements GetStateDict() and the checkpoint accessors (no
+ * SyncStateDict*(): the templated backends are host memory) but not GetDiagnosticStats().
  */
 
 namespace Deep
@@ -45,6 +46,16 @@ public:
   ~FullConvPCLayerT() = default;
 
   template <typename ArenaT> void BindMemory(ArenaT& arena);
+
+  /// @brief Weights for ModelIO. Host memory, since the templated backends run on the CPU.
+  std::map<std::string, TensorDescriptorT<T>> GetStateDict() const;
+  /// @brief Adam/AdamW moments (AccumT) for a checkpoint.
+  std::map<std::string, TensorDescriptorT<AccumT>> GetOptimizerStateDict() const;
+  std::map<std::string, int*> GetOptimizerCounters() const;
+  bool SupportsCheckpoint() const noexcept
+  {
+    return true;
+  }
   size_t GetRequiredElements() const noexcept;
   void RandomizeWeights(std::mt19937& seedGenerator, const char* distribution = "normal") noexcept;
 

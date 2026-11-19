@@ -99,7 +99,7 @@ in [Building from source](#building-from-source)). Then:
 ```bash
 git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
-python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ```
 
 This builds the C++ engine, runs the test suite, and builds the `deepity` Python package.
@@ -156,7 +156,7 @@ Run `train_step` in a loop over your data and the energy should fall as the netw
 
 **How to read this section:** the headline comparison pits Deepity against other predictive-coding libraries running exactly the same network, data and training settings, so the only difference is the implementation. A standard PyTorch backpropagation run is included as a reference point.
 
-Development and testing for the CUDA backend happens on the Ohio Supercomputer Center (Project PAS0350), on NVIDIA A100 GPUs. The numbers below are all CPU-only, run on one machine (12th Gen Intel Core i7-12700H, 20 logical threads, native + MKL build), so they measure the engine's single-machine CPU path specifically, not the CUDA backend. Every command below is reproducible from the repo root, and raw output for each run is committed under `logs/`.
+Development and testing for the CUDA backend happens on the Ohio Supercomputer Center (Project PAS0350), on NVIDIA A100 GPUs. The numbers below are all CPU-only, run on one machine (12th Gen Intel Core i7-12700H, 20 logical threads, native + MKL build), so they measure the engine's single-machine CPU path specifically, not the CUDA backend. Every command below is reproducible from the repo root, and raw output for each run is committed under `research/benchmark_logs/`.
 
 ### MNIST, matched configuration
 
@@ -169,15 +169,15 @@ The network is 784&rarr;512&rarr;512&rarr;10 (sigmoid), with T=20 settling steps
 | Test / dev accuracy | **98.21%** | 98.08% | 97.55% | 94.76% | 98% (best dev) | 97.51% | 97.70% |
 | Wall-clock, 100 epochs | 487.5s | **66.8s** | 531.4s | 676.1s | 1707.7s | 627.8s | 61.9s |
 | Command | `python examples/mnist.py 7 100 20` | `python examples/mnist_cuda.py 7 100 20` | `python experiments/benchmark_jpc_mnist.py 7 100` | `python experiments/benchmark_jpc_mnist_cuda.py 7 100` | [ngc-museum](https://github.com/NACLab/ngc-museum)'s `pc_discrim` exhibit, unmodified | `python examples/test_ffnn_deep.py 7 100` | `python examples/test_ffnn_deep_cuda.py 7 100` |
-| Raw log | `logs/mnist_simd_fusion_confirm.txt` | `logs/mnist_cuda_run.txt` | `logs/jpc_mnist_run.txt` | `logs/jpc_mnist_run_cuda.txt` | `logs/ngclearn_pc_discrim_mnist.txt` | `logs/bp_control_mnist.txt` | `logs/bp_control_mnist_cuda.txt` |
+| Raw log | `research/benchmark_logs/mnist_simd_fusion_confirm.txt` | `research/benchmark_logs/mnist_cuda_run.txt` | `research/benchmark_logs/jpc_mnist_run.txt` | `research/benchmark_logs/jpc_mnist_run_cuda.txt` | `research/benchmark_logs/ngclearn_pc_discrim_mnist.txt` | `research/benchmark_logs/bp_control_mnist.txt` | `research/benchmark_logs/bp_control_mnist_cuda.txt` |
 
 - **Deepity vs. jpc** is the closest comparison: both are predictive-coding implementations on the same architecture, settling-step count, batch size, epoch count and optimizer schedule. jpc is built on JAX/XLA; Deepity is hand-tuned C++. Deepity trains faster at matching accuracy.
 - **Deepity vs. ngc-learn:** identical architecture, settling-step count, batch size, epoch count, forward-projection init and optimizer schedule, run as two independent predictive-coding implementations on the same machine. Deepity reaches equal-or-better accuracy in less time.
-- **The CUDA columns** are the same network/hyperparameters as their CPU counterparts, run on a single A100 (OSC Ascend cluster) instead. Deepity goes **~7.3x faster** on GPU; the PyTorch backprop control goes only ~10x faster (627.8s to 61.9s) while Deepity's PC settling loop (T=20 steps/batch, far more GEMM-bound work per batch than one backprop pass) closes most of the CPU-to-GPU gap that separated them on CPU -- the two backends land within 4.9s of each other on GPU versus a 140s gap on CPU. Deepity's per-epoch energy trace climbs in the back half of training (still converges, accuracy stays 99.8-100%) once the batches become perfectly separable; this is the known softmax-cross-entropy-at-the-separable-optimum sensitivity `TERMINAL_FEED_WEIGHT_DECAY` is tuned against (see `examples/mnist_cuda.py`'s own comment), not a CUDA-specific issue -- the same stabilizer constant was carried over unretuned from the CPU run. The CUDA number also reflects a graph-capture fix to `SimplePCNetwork::PredictWithProjection` (previously ungraphed, confirmed via `nsys` to cut per-batch kernel-launch overhead roughly in half for the accuracy-check/eval path) -- a small, real win (68.4s to 66.8s), not a new baseline worth re-deriving the rest of the comparison around. Full `nsys`-driven investigation, including a second confirmed-but-modest overhead source (per-batch energy reporting forces a redundant ungraphed forward/error pass, worth ~2s, not implemented as a permanent fix since it would lose a diagnostic that's had real value) and why the remaining gap to PyTorch (CUDA) looks architecturally inherent rather than fixable: `logs/mnist_cuda_graph_capture_investigation.txt`.
-- **jpc gets SLOWER on GPU, not faster** (531.4s on CPU vs 676.1s on GPU) -- the one case here where CUDA actively hurts. Two compounding reasons: (1) XLA's GEMM-fusion autotuner compiles and benchmarks 325 candidate kernel configs against the GPU once per process (visible in `logs/jpc_mnist_run_cuda.txt`'s own warning), a ~95s fixed cost absorbed entirely by epoch 1 (100.6s vs a steady-state ~5.8s/epoch after); (2) even past that warmup, steady-state throughput is *still* slightly slower on GPU (~5.8s/epoch) than CPU (~5.3s/epoch) for this network -- an A100 is wildly overprovisioned for a 784-512-512-10, batch-250 MLP, so per-operation kernel-launch/dispatch overhead dominates over actual compute. This hits jpc especially hard because `jpc.make_pc_step`'s settling loop is a `diffrax`-integrated ODE solve over 20 sequential steps per batch -- many small, serialized kernel launches, exactly the pattern GPU dispatch overhead punishes, unlike Deepity's hand-written CUDA kernels or PyTorch's single-pass backprop (neither pays a 20-step-per-batch launch tax), which is why those two sped up on GPU while jpc didn't.
+- **The CUDA columns** are the same network/hyperparameters as their CPU counterparts, run on a single A100 (OSC Ascend cluster) instead. Deepity goes **~7.3x faster** on GPU; the PyTorch backprop control goes only ~10x faster (627.8s to 61.9s) while Deepity's PC settling loop (T=20 steps/batch, far more GEMM-bound work per batch than one backprop pass) closes most of the CPU-to-GPU gap that separated them on CPU -- the two backends land within 4.9s of each other on GPU versus a 140s gap on CPU. Deepity's per-epoch energy trace climbs in the back half of training (still converges, accuracy stays 99.8-100%) once the batches become perfectly separable; this is the known softmax-cross-entropy-at-the-separable-optimum sensitivity `TERMINAL_FEED_WEIGHT_DECAY` is tuned against (see `examples/mnist_cuda.py`'s own comment), not a CUDA-specific issue -- the same stabilizer constant was carried over unretuned from the CPU run. The CUDA number also reflects a graph-capture fix to `SimplePCNetwork::PredictWithProjection` (previously ungraphed, confirmed via `nsys` to cut per-batch kernel-launch overhead roughly in half for the accuracy-check/eval path) -- a small, real win (68.4s to 66.8s), not a new baseline worth re-deriving the rest of the comparison around. Full `nsys`-driven investigation, including a second confirmed-but-modest overhead source (per-batch energy reporting forces a redundant ungraphed forward/error pass, worth ~2s, not implemented as a permanent fix since it would lose a diagnostic that's had real value) and why the remaining gap to PyTorch (CUDA) looks architecturally inherent rather than fixable: `research/benchmark_logs/mnist_cuda_graph_capture_investigation.txt`.
+- **jpc gets SLOWER on GPU, not faster** (531.4s on CPU vs 676.1s on GPU) -- the one case here where CUDA actively hurts. Two compounding reasons: (1) XLA's GEMM-fusion autotuner compiles and benchmarks 325 candidate kernel configs against the GPU once per process (visible in `research/benchmark_logs/jpc_mnist_run_cuda.txt`'s own warning), a ~95s fixed cost absorbed entirely by epoch 1 (100.6s vs a steady-state ~5.8s/epoch after); (2) even past that warmup, steady-state throughput is *still* slightly slower on GPU (~5.8s/epoch) than CPU (~5.3s/epoch) for this network -- an A100 is wildly overprovisioned for a 784-512-512-10, batch-250 MLP, so per-operation kernel-launch/dispatch overhead dominates over actual compute. This hits jpc especially hard because `jpc.make_pc_step`'s settling loop is a `diffrax`-integrated ODE solve over 20 sequential steps per batch -- many small, serialized kernel launches, exactly the pattern GPU dispatch overhead punishes, unlike Deepity's hand-written CUDA kernels or PyTorch's single-pass backprop (neither pays a 20-step-per-batch launch tax), which is why those two sped up on GPU while jpc didn't.
 - **The PyTorch columns are a reference point, not a PC run.** It's single-pass backprop (one forward and one backward pass per batch) against the same targets via MSE loss. It does one pass per batch where PC does T=20 settling passes, so it isn't directly comparable to the PC columns.
 
-**The faster option:** `DKPPCN` (784&rarr;512&rarr;10, batch size 1000, only 2 inference steps/batch instead of 20) reaches 95.97% in 49.6s on the same CPU (`python examples/mnist_dkppcn.py 7 50 2 cpu`, `logs/DKPPCN_native_mkl.txt`). That's a different point on the speed/accuracy trade-off curve.
+**The faster option:** `DKPPCN` (784&rarr;512&rarr;10, batch size 1000, only 2 inference steps/batch instead of 20) reaches 95.97% in 49.6s on the same CPU (`python examples/mnist_dkppcn.py 7 50 2 cpu`, `research/benchmark_logs/DKPPCN_native_mkl.txt`). That's a different point on the speed/accuracy trade-off curve.
 
 ### Depth scaling: DKP-PC vs. backpropagation (GPU)
 
@@ -198,7 +198,7 @@ This is a timing benchmark on matched network shapes, not an accuracy comparison
 `tests/tGflopsBenchmark.cpp`, built as the `GflopsBenchmark` target via Google Benchmark, measures sustained GFLOPS for a full PC train step (`SimplePCN`, 784-512-256-64-10, batch 256, T=20):
 
 ```bash
-python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ./build/Release/bin/GflopsBenchmark
 ```
 
@@ -228,9 +228,24 @@ $$
 \text{GFLOPS/s} = \frac{11.54 \times 10^{9}\ \text{FLOPs}}{\text{measured wall time}} \approx \textbf{690 GFLOPS/s}
 $$
 
-See `logs/gflops_benchmark.txt` for the raw runs.
+See `research/benchmark_logs/gflops_benchmark.txt` for the raw runs.
 
 The same FLOP-accounting formula applied to the full [MNIST, matched configuration](#mnist-matched-configuration) run, 329 TFLOP total across 100 epochs (24,000 train steps) at 487.5s wall-clock, gives **675 GFLOPS/s** sustained, end to end.
+
+### Model file load speed
+
+**What this measures:** how long a full load of a saved model takes (every byte touched), for a 512 MiB file of 8 float32 tensors. `experiments/benchmark_model_io.py` writes the same tensors in each format and times the best of 5 loads, warm page cache, on an OSC Ascend node. Details and the command to reproduce are in [docs/model-format.md](docs/model-format.md#load-speed).
+
+| Load | Time | Throughput |
+|---|---|---|
+| Deepity file, mmap, verify off | 101.6 ms | 5.28 GB/s |
+| `deepity.read_tensors`, mmap, verify off | 115.1 ms | 4.66 GB/s |
+| `safetensors.numpy.load_file` | 189.2 ms | 2.84 GB/s |
+| `deepity.read_tensors`, copy, verify off | 201.2 ms | 2.67 GB/s |
+| Deepity file, mmap, verify on (BLAKE3) | 334.7 ms | 1.60 GB/s |
+| `np.load` (`.npz`) | 356.1 ms | 1.51 GB/s |
+
+Memory mapping loads about 1.7x faster than stock safetensors. Verifying the BLAKE3 hash adds about 230 ms here, so skip it for trusted local files when load time matters.
 
 ### Activation-kernel speedup
 
@@ -242,7 +257,7 @@ The same FLOP-accounting formula applied to the full [MNIST, matched configurati
 ./build/Release/bin/ActivationBenchmark
 ```
 
-Throughput in millions of elements/second; speedup = Deepity ÷ naive; raw output in `logs/activation_benchmark.txt`:
+Throughput in millions of elements/second; speedup = Deepity ÷ naive; raw output in `research/benchmark_logs/activation_benchmark.txt`:
 
 **Tanh**
 
@@ -301,12 +316,14 @@ See `CONTRIBUTING.md` for the full prerequisite list and known-working manual CM
 ```bash
 git clone https://github.com/Deepity-HQ/Deepity.git
 cd Deepity
-python build.py Release OpenBLAS --fast
+uv run python build.py Release OpenBLAS --fast
 ```
+
+> Always build through `build.py` (`uv run python build.py ...`), never by calling `cmake` or `ninja` directly. See [CONTRIBUTING.md](CONTRIBUTING.md#building-always-use-buildpy) for the one-time setup.
 
 - `Release` / `Debug` selects the build type.
 - `OpenBLAS` / `MKL` selects the linear-algebra library.
-- `--fast` targets a portable AVX2/FMA baseline. Run `python build.py --list-profiles` for the other options, and `python build.py --help` for CUDA, test and job-count flags.
+- `--fast` targets a portable AVX2/FMA baseline. Run `uv run python build.py --list-profiles` for the other options, and `uv run python build.py --help` for CUDA, test and job-count flags.
 
 The `deepity` Python package is built too, unless you pass `--no-python-bindings`.
 

@@ -187,7 +187,24 @@ std::map<std::string, Deep::TensorDescriptor> Deep::FullPCLayer::GetStateDict() 
 {
   return {{"W", {W, std::vector<size_t>{nextSize, size}}},
           {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}}}};
+          {"Psi", {Psi, std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}}}};
+}
+
+std::map<std::string, Deep::TensorDescriptor> Deep::FullPCLayer::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  const std::vector<size_t> wShape{nextSize, size}, bShape{nextSize}, psiShape{size, terminalSize};
+  return {{"weight.m", {m_W, wShape}}, {"weight.v", {v_W, wShape}}, {"bias.m", {m_b, bShape}},
+          {"bias.v", {v_b, bShape}},   {"psi.m", {m_Psi, psiShape}},
+          {"psi.v", {v_Psi, psiShape}}};
+}
+
+std::map<std::string, int*> Deep::FullPCLayer::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", t_device}, {"psi_step", tPsi_device}};
 }
 
 float FullPCLayer::CalculateState(bool needEnergy) noexcept

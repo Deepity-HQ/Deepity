@@ -6,12 +6,13 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Layer, Linear, Activation
 from .utils import _fit_with_progress
 
 
-class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
+class GaussSeidelPCN(ModelFileMixin, dy.GaussSeidelPCNetwork):
     """
     A Predictive Coding Network with Gauss-Seidel (sequential-sweep)
     settling dynamics.
@@ -42,8 +43,10 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self,
         *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
+        device: str = "cpu",
     ) -> None:
         self.architecture = architecture
+        self.device = device
         # NOTE: batch_size is NOT stored as a plain attribute here,
         # dy.GaussSeidelPCNetwork (the C++ base class) exposes `batch_size`
         # as a READ-ONLY property (def_prop_ro, no setter at all). Use a
@@ -64,7 +67,7 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(resolved_batch_size)
+        super().__init__(resolved_batch_size, device)  # pyright: ignore[reportCallIssue]
 
     def _validate_architecture(self) -> None:
         """Validate the declarative network architecture."""
@@ -183,6 +186,9 @@ class GaussSeidelPCN(dy.GaussSeidelPCNetwork):
         self._configured = True
         self.set_center_weights(center_weights)
 
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "lmbda": self._lambda, "optimizer": self._optimizer, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if not self._configured:

@@ -38,10 +38,10 @@ you hit a build error that looks like it should be obvious, check here first.
 ### Before you push
 
 - **Build both configurations you touched.** At minimum, run
-  `python build.py Release` (and `Debug` if you changed anything
+  `uv run python build.py Release` (and `Debug` if you changed anything
   correctness-sensitive, since Debug enables additional checks). This also
   runs the `DeepityTests` suite automatically, see
-  [`logs/build.log`](logs/build.log) for full output if anything fails.
+  `build/build.log` for full output if anything fails.
 - **Run `pyright`** if you touched `bindings/`, `deepity/`, or anything
   under `examples/`/`experiments/`, see [`pyrightconfig.json`](pyrightconfig.json)
   for the project's type-checking configuration. A change that fails
@@ -96,6 +96,25 @@ Include in the PR description:
   `[dependency-groups]`); `--no-install-project` skips building the C++
   extension through this path, use `build.py` for that instead.
 
+### Building: always use `build.py`
+
+Every build goes through `build.py`, run with `uv`. There is no separate setup step: `uv run`
+creates `.venv` on first use with just numpy, rich and nanobind.
+
+```bash
+uv run python build.py Release OpenBLAS --fast
+```
+
+- **Do not run `cmake`, `ninja` or `cmake --build` by hand.** `build.py` picks the generator, arch
+  flags, CUDA/BLAS options and reconfigure rules together; hand-built trees drift from CI.
+- **Do not use `pip install .` to build.** The `[tool.uv]` table in `pyproject.toml` makes `uv run`
+  skip building pydeepity itself and skip the heavy `dev` group (torch); only the `build` group is
+  installed by default. Add dev tools explicitly with `uv sync --group dev --no-install-project`.
+- Extra CMake options go on the end and are forwarded as-is, e.g.
+  `-DDEEPITY_ONEDNN_SYSTEM=ON` to use a system oneDNN (`dnf install onednn-devel`) instead of
+  compiling one from source. A local tree with system oneDNN and OpenBLAS is about 150 MB.
+- The build log is `build/build.log`.
+
 ### Configuring locally
 
 Use `CMakePresets.json` where possible instead of hand-typing flags in
@@ -103,8 +122,8 @@ whatever shell you happen to be in, shell-specific line-continuation syntax
 (`\` in Bash, `` ` `` in PowerShell, `^` in cmd.exe) is a common source of
 confusing, silent failures that have nothing to do with the actual build.
 
-If you must configure manually on Windows with Clang, the known-working
-invocation is:
+Only if you are debugging `build.py` itself on Windows with Clang, the known-working
+manual invocation is:
 
 ```cmd
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release ^

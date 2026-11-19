@@ -44,7 +44,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.13"  # onnxruntime has no wheels for the newest Python
 
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.2
@@ -56,6 +56,7 @@ jobs:
             cmake \
             ninja-build \
             libopenblas-dev \
+            ccache \
             python3-dev \
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
 
@@ -74,21 +75,54 @@ jobs:
         # --system: install into actions/setup-python's interpreter
         # directly (build.py's own CMake configure step needs nanobind
         # importable from there), not an isolated uv-managed venv.
-        run: uv pip install --system nanobind rich
+        run: uv pip install --system nanobind rich numpy
 
-      - name: Build (Release)
-        # --no-tests: CMakeLists.txt no longer registers any CTest tests
-        # (the old test/benchmark executables were removed), so running
-        # ctest here would just fail on "no tests found" for no useful
-        # reason.
-        run: python build.py Release --no-tests
+      - name: Restore ccache compiler cache
+        # oneDNN and SLEEF compile from source (about the whole build time); CMake picks ccache up
+        # automatically. Keyed per compiler, with the newest earlier cache as the fallback.
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-test-${{ matrix.compiler }}-${{ github.sha }}
+          restore-keys: ccache-test-${{ matrix.compiler }}-
+
+      - name: Build and run C++ tests (Release)
+        env:
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
+        # build.py runs ctest after the build: ModelIO/SafeTensors round
+        # trips, weight centering and the conv diagnostics. DEEPITY_BUILD_FUZZ adds
+        # the ASan/UBSan run of the file-parser mutation fuzzer.
+        run: python build.py Release -DDEEPITY_BUILD_FUZZ=ON
+
+      - name: Python model-file tests
+        # The build leaves the extension next to the deepity package, so
+        # the repo root is the import path.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: python tests/pyModelFilesVerify.py
+
+      - name: CLI and model cards
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: python tests/pyCliVerify.py
+
+      - name: ONNX export round trip
+        # Deepity -> ONNX -> onnxruntime must match the forward path.
+        env:
+          OMP_WAIT_POLICY: PASSIVE
+          GOMP_SPINCOUNT: "0"
+        run: |
+          uv pip install --system onnx onnxruntime
+          python tests/pyOnnxVerify.py
 
       - name: Upload build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: build-log-${{ matrix.compiler }}
-          path: logs/build.log
+          path: build/build.log
           if-no-files-found: warn
 
   build-and-test-windows:
@@ -147,15 +181,33 @@ jobs:
       - name: Install Python build dependencies
         run: uv pip install --system nanobind rich
 
+      - name: Restore ccache compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-test-windows-${{ github.sha }}
+          restore-keys: ccache-test-windows-
+
       - name: Configure (CMake, using the windows-clang preset)
         # Uses CMakePresets.json's "windows-clang" preset directly, rather
         # than retyping the same flags here, so CI exercises the exact
         # preset a human would run locally - if the preset breaks, CI
         # catches it instead of it silently rotting.
-        run: cmake --preset windows-clang 2>&1 | Tee-Object -FilePath windows-configure.log
+        # oneDNN is off here: this job only runs the file-format tests, and building oneDNN from
+        # source is most of the build time. The wheel jobs still build with it.
+        env:
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
+        run: cmake --preset windows-clang -DDEEPITY_USE_ONEDNN=OFF 2>&1 | Tee-Object -FilePath windows-configure.log
 
       - name: Build
-        run: cmake --build build/Release --config Release --parallel 2>&1 | Tee-Object -FilePath windows-build.log
+        env:
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
+        run: cmake --build build/Release --config Release --parallel --target SafeTensorsVerify ModelIOVerify FormatFuzz 2>&1 | Tee-Object -FilePath windows-build.log
+
+      - name: Model file tests
+        # The file-format tests only (reader, writer, mmap via MapViewOfFile, round trips, fuzz). They
+        # are what has never run on Windows. The rest of the suite is not run here yet.
+        run: ctest --test-dir build/Release -C Release --output-on-failure -R "SafeTensorsVerify|ModelIOVerify|FormatFuzz"
 
       - name: Upload logs
         if: always()

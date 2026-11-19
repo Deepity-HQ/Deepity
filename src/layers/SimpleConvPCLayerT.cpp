@@ -417,6 +417,33 @@ template <typename T, typename AccumT> void SimpleConvPCLayerT<T, AccumT>::Uncla
   isClamped = false;
 }
 
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<T>> SimpleConvPCLayerT<T, AccumT>::GetStateDict() const
+{
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  return {{"W", {W, std::vector<size_t>{(size_t)outChannels, rowLen}}}, {"b", {b, std::vector<size_t>{(size_t)outChannels}}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, TensorDescriptorT<AccumT>> SimpleConvPCLayerT<T, AccumT>::GetOptimizerStateDict() const
+{
+  if (outChannels == 0)
+    return {};
+  auto ptr = [](const std::vector<AccumT>& v) { return const_cast<AccumT*>(v.data()); };
+  const size_t rowLen = (size_t)inChannels * kernelH * kernelW;
+  const std::vector<size_t> wShape{(size_t)outChannels, rowLen}, bShape{(size_t)outChannels};
+  return {{"weight.m", {ptr(m_W), wShape}}, {"weight.v", {ptr(v_W), wShape}},
+          {"bias.m", {ptr(m_b), bShape}},   {"bias.v", {ptr(v_b), bShape}}};
+}
+
+template <typename T, typename AccumT>
+std::map<std::string, int*> SimpleConvPCLayerT<T, AccumT>::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", const_cast<int*>(&t_device)}};
+}
+
 template class SimpleConvPCLayerT<float, float>;
 template class SimpleConvPCLayerT<double, double>;
 template class SimpleConvPCLayerT<Fp4E2M1Value, float>;
@@ -439,4 +466,23 @@ template void SimpleConvPCLayerT<Posit4_1Value, float>::BindMemory<MemoryArenaT<
     MemoryArenaT<Posit4_1Value>& arena);
 template void SimpleConvPCLayerT<Posit4_2Value, float>::BindMemory<MemoryArenaT<Posit4_2Value>>(
     MemoryArenaT<Posit4_2Value>& arena);
+
+#if defined(DEEPITY_USE_CUDA)
+// The network's GPU branch calls BindMemory<DeviceMemoryArenaT<...>> for every explicitly instantiated
+// type, even though only float and double have a CUDA backend, so these must exist to link.
+template void SimpleConvPCLayerT<float, float>::BindMemory<DeviceMemoryArenaT<float, float>>(
+    DeviceMemoryArenaT<float, float>& arena);
+template void SimpleConvPCLayerT<double, double>::BindMemory<DeviceMemoryArenaT<double, double>>(
+    DeviceMemoryArenaT<double, double>& arena);
+template void SimpleConvPCLayerT<Fp4E2M1Value, float>::BindMemory<DeviceMemoryArenaT<Fp4E2M1Value, float>>(
+    DeviceMemoryArenaT<Fp4E2M1Value, float>& arena);
+template void SimpleConvPCLayerT<hwy::float16_t, float>::BindMemory<DeviceMemoryArenaT<hwy::float16_t, float>>(
+    DeviceMemoryArenaT<hwy::float16_t, float>& arena);
+template void SimpleConvPCLayerT<Posit4_0Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_0Value, float>>(
+    DeviceMemoryArenaT<Posit4_0Value, float>& arena);
+template void SimpleConvPCLayerT<Posit4_1Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_1Value, float>>(
+    DeviceMemoryArenaT<Posit4_1Value, float>& arena);
+template void SimpleConvPCLayerT<Posit4_2Value, float>::BindMemory<DeviceMemoryArenaT<Posit4_2Value, float>>(
+    DeviceMemoryArenaT<Posit4_2Value, float>& arena);
+#endif
 } // namespace Deep

@@ -237,6 +237,22 @@ void CUDABackend::CopyToHost(float* hostDst, const float* deviceSrc, size_t numF
     cudaMemcpy(hostDst, deviceSrc, numFloats * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
+void CUDABackend::CopyCounterToHost(int* hostDst, const int* counter) noexcept
+{
+  if (!hostDst || !counter)
+    return;
+  cudaStreamSynchronize(stream);
+  cudaMemcpy(hostDst, counter, sizeof(int), cudaMemcpyDeviceToHost);
+}
+
+void CUDABackend::CopyCounterFromHost(int* counter, const int* hostSrc) noexcept
+{
+  if (!counter || !hostSrc)
+    return;
+  cudaStreamSynchronize(stream);
+  cudaMemcpy(counter, hostSrc, sizeof(int), cudaMemcpyHostToDevice);
+}
+
 __global__ void normal_generation(curandState* state, float* random_numbers, size_t n, float mean,
                                   float stddev, uint32_t seed)
 {

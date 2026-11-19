@@ -432,9 +432,9 @@ def main(argv: list[str] | None = None) -> None:
     # ────────────────────────────────────────────────────────────────────
     # Setup logging
     # ────────────────────────────────────────────────────────────────────
-    log_dir = Path("logs")
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / "build.log"
+    # Outside build_dir: configure wipes build_dir on a fresh checkout, mid-run.
+    log_file = config.build_root / "build.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with log_file.open("w", encoding="utf-8") as f:
         f.write(f"--- Deepity Build Log ({config.build_type}, arch={config.arch_profile}) ---\n\n")

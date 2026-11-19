@@ -428,12 +428,12 @@ void DiscriminativePCNetwork::Compile()
 #endif
 }
 
-bool DiscriminativePCNetwork::Save(const std::string& filename) const noexcept
+bool DiscriminativePCNetwork::Save(const std::string& filename) const
 {
   return ModelIO::Save(*this, filename);
 }
 
-bool DiscriminativePCNetwork::Load(const std::string& filename) noexcept
+bool DiscriminativePCNetwork::Load(const std::string& filename)
 {
   return ModelIO::Load(*this, filename);
 }

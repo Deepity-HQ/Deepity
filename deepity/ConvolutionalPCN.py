@@ -4,12 +4,13 @@ import numpy as np
 import numpy.typing as npt
 
 from ._backend import dy
+from ._serialization import ModelFileMixin
 from ._interop import InputArray, to_numpy
 from .layer import Activation, Convolution, Layer
 from .utils import _fit_with_progress
 
 
-class ConvolutionalPCN(dy.ConvPCNetwork):
+class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
     """
     Precision-weighted Convolutional Predictive Coding Network.
 
@@ -24,12 +25,15 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         *architecture: Layer | Activation,
         input_shape: tuple[int, int, int],
         batch_size: int,
+        device: str = "cpu",
     ) -> None:
         """
         @param architecture Convolution/Activation objects describing the layer stack.
         @param input_shape (channels, height, width) of a single input image.
         @param batch_size Number of samples processed per train_step()/predict() call.
+        @param device "cpu" or "cuda".
         """
+        self.device = device
         self.architecture = architecture
         self.input_shape = input_shape
         # NOTE: batch_size is NOT stored as a plain attribute here,
@@ -47,7 +51,7 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
 
         self._validate_architecture()
 
-        super().__init__(batch_size)
+        super().__init__(batch_size, device)  # pyright: ignore[reportCallIssue]
 
     def _validate_architecture(self) -> None:
         if not self.architecture:
@@ -145,6 +149,9 @@ class ConvolutionalPCN(dy.ConvPCNetwork):
         self.set_center_weights(center_weights)
 
         return self
+
+    def _current_hyperparameters(self) -> dict:
+        return {"learning_rate": self._learning_rate, "inference_rate": self._inference_rate, "precision_rate": self._precision_rate, "lmbda": self._lambda, "center_weights": self._center_weights}
 
     def _require_configured(self) -> None:
         if self._learning_rate is None:

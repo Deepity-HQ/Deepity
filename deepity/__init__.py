@@ -25,6 +25,11 @@ from .GaussSeidelPCN import GaussSeidelPCN
 from .DKPPCN import DKPPCN
 from .FullPCN import FullPCN
 
+# Model files
+from ._export import export_onnx
+from ._serialization import load, read_card, read_tensors, resume, write_tensors
+from ._backend import dy as _dy
+
 # Architecture
 from .layer import (
     Layer,
@@ -60,6 +65,13 @@ dsigmoid = dy.dsigmoid
 
 
 __all__ = [
+    "export_onnx",
+    "read_card",
+    "read_tensors",
+    "write_tensors",
+    # Model files
+    "load",
+    "resume",
     # Networks
     "SequentialPCN",
     "SimplePCN",

@@ -345,6 +345,21 @@ std::map<std::string, TensorDescriptor> GaussSeidelPCLayer::GetStateDict() const
           {"E", {E, {(size_t)nextSize, (size_t)size}}}};
 }
 
+std::map<std::string, TensorDescriptor> GaussSeidelPCLayer::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"weight.m", {m_W, {(size_t)nextSize, (size_t)size}}}, {"weight.v", {v_W, {(size_t)nextSize, (size_t)size}}},
+          {"bias.m", {m_b, {(size_t)nextSize}}},   {"bias.v", {v_b, {(size_t)nextSize}}}};
+}
+
+std::map<std::string, int*> GaussSeidelPCLayer::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", t_device}};
+}
+
 template void GaussSeidelPCLayer::BindMemory<MemoryArena>(MemoryArena& arena);
 #if defined(DEEPITY_USE_CUDA)
 template void GaussSeidelPCLayer::BindMemory<DeviceMemoryArena>(DeviceMemoryArena& arena);

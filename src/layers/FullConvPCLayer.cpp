@@ -1017,6 +1017,13 @@ void FullConvPCLayer::EnsureStateDictStaging() const noexcept
   hostV_Psi.resize(Psisz);
 }
 
+std::map<std::string, int*> FullConvPCLayer::GetOptimizerCounters() const
+{
+  if (outChannels == 0)
+    return {};
+  return {{"step", t_device}, {"psi_step", tPsi_device}};
+}
+
 std::map<std::string, TensorDescriptor> FullConvPCLayer::GetStateDict() const
 {
   if (outChannels == 0)

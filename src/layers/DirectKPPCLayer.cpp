@@ -220,7 +220,24 @@ std::map<std::string, Deep::TensorDescriptor> Deep::DirectKPPCLayer::GetStateDic
 {
   return {{"W", {W, std::vector<size_t>{nextSize, size}}},
           {"b", {b, std::vector<size_t>{nextSize}}},
-          {"Psi", {Psi, std::vector<size_t>{nextSize, terminalSize}, psiStride}}};
+          {"Psi", {Psi, std::vector<size_t>{nextSize > 0 ? size : 0, terminalSize}, psiStride}}};
+}
+
+std::map<std::string, Deep::TensorDescriptor> Deep::DirectKPPCLayer::GetOptimizerStateDict() const
+{
+  if (nextSize == 0)
+    return {};
+  const std::vector<size_t> wShape{nextSize, size}, bShape{nextSize}, psiShape{size, terminalSize};
+  return {{"weight.m", {m_W, wShape}}, {"weight.v", {v_W, wShape}}, {"bias.m", {m_b, bShape}},
+          {"bias.v", {v_b, bShape}},   {"psi.m", {m_Psi, psiShape, psiStride}},
+          {"psi.v", {v_Psi, psiShape, psiStride}}};
+}
+
+std::map<std::string, int*> Deep::DirectKPPCLayer::GetOptimizerCounters() const
+{
+  if (nextSize == 0)
+    return {};
+  return {{"step", t_device}, {"psi_step", tPsi_device}};
 }
 
 float DirectKPPCLayer::CalculateState(bool needEnergy) noexcept
