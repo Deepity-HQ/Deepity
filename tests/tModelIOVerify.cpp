@@ -648,8 +648,8 @@ bool DirectDeviceLoad(const std::string& path)
   io::SafeTensorsWriter w2;
   w2.AddTensor("t", "F32", {3, 3}, want.data(), 9 * sizeof(float));
   w2.Write(path);
-  io::SafeTensorsReader small(path);
-  detail::ReadTensorIntoStaged(backend.get(), small, *small.Find("t"), {3, 3}, taller);
+  io::SafeTensorsReader smallFile(path);
+  detail::ReadTensorIntoStaged(backend.get(), smallFile, *smallFile.Find("t"), {3, 3}, taller);
   bool shortOk = true;
   for (size_t i = 0; i < 15; ++i)
     shortOk &= longer[i] == (i < 9 ? want[i] : -9.f);
