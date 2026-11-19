@@ -442,6 +442,18 @@ void bind_networks(nb::module_& m)
           nb::arg("device") = "cpu",
           "Construct a network with automatic batch-size detection, on the given device.")
       .def(
+          "__init__",
+          [](Deep::DiscriminativePCNetwork* self, int batch_size, const std::string& device)
+          {
+            Deep::DeviceType dt = (device == "cuda" || device == "gpu")
+                                      ? Deep::DeviceType::DEVICE_GPU
+                                      : Deep::DeviceType::DEVICE_CPU;
+            new (self) Deep::DiscriminativePCNetwork(batch_size, dt);
+          },
+          nb::arg("batch_size"),
+          nb::arg("device") = "cpu",
+          "Construct a network with a fixed batch size and device (\"cpu\" or \"cuda\"/\"gpu\").")
+      .def(
           "add_layer",
           [](Deep::DiscriminativePCNetwork& self,
              int size,

@@ -144,7 +144,8 @@ class ConvolutionalPCN(ModelFileMixin, dy.ConvPCNetwork):
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
-        self.randomize_weights()
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            self.randomize_weights()
 
         self.set_center_weights(center_weights)
 

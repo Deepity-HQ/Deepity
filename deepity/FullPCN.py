@@ -327,7 +327,8 @@ class FullPCN:
         self._impl.set_psi_optimizer(psi_optimizer)
 
         self.compile()
-        self.randomize_weights(seed=seed, dist=dist)
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            self.randomize_weights(seed=seed, dist=dist)
 
         self._configured = True
 

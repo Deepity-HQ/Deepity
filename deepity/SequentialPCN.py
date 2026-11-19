@@ -35,7 +35,9 @@ class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
         self,
         *architecture: Layer | Activation,
         batch_size: Optional[int] = None,
+        device: str = "cpu",
     ) -> None:
+        self.device = device
         # NOTE: batch_size is NOT stored as a plain attribute here,
         # dy.DiscriminativePCNetwork (the C++ base class) exposes
         # `batch_size` as a READ-ONLY property (def_prop_ro, no setter at
@@ -46,7 +48,7 @@ class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
         resolved_batch_size = (
             dy.auto_batch_size() if batch_size is None else batch_size
         )
-        super().__init__(resolved_batch_size)  # pyright: ignore[reportCallIssue]
+        super().__init__(resolved_batch_size, device)  # pyright: ignore[reportCallIssue]
 
         self.architecture = architecture
 
@@ -146,7 +148,8 @@ class SequentialPCN(ModelFileMixin, dy.DiscriminativePCNetwork):
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
-        self.randomize_weights()
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            self.randomize_weights()
 
         self._configured = True
 

@@ -1030,6 +1030,13 @@ if(DEEPITY_BUILD_TESTS)
         )
         list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTModelIOCudaVerify)
 
+        add_executable(FullConvPCNetworkModelIOCudaVerify tests/tFullConvPCNetworkModelIOCudaVerify.cpp)
+        target_link_libraries(FullConvPCNetworkModelIOCudaVerify PRIVATE Deepity)
+        set_target_properties(FullConvPCNetworkModelIOCudaVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS FullConvPCNetworkModelIOCudaVerify)
+
         add_executable(DirectKPBatchedGPUVerify tests/tDirectKPBatchedGPUVerify.cpp)
         target_link_libraries(DirectKPBatchedGPUVerify PRIVATE Deepity)
         set_target_properties(DirectKPBatchedGPUVerify PROPERTIES

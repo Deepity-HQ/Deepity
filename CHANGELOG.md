@@ -14,6 +14,10 @@ earlier history.
 
 ### Added
 
+- `SequentialPCN(..., device="cuda")`, and a `DiscriminativePCNetwork(batch_size, device)` binding. `tests/pyGpuCheckpointVerify.py` covers it (not yet run on a GPU).
+
+- `tests/tFullConvPCNetworkModelIOCudaVerify.cpp`: a GPU checkpoint-resume check for `FullConvPCNetwork` (CUDA builds only, run by hand; not yet run on a GPU).
+
 - `GaussSeidelPCN(..., device="cuda")` is exposed from Python, and `tests/pyGpuCheckpointVerify.py` covers it (not yet run on a GPU). `experiments/benchmark_model_io.py` also times `deepity.load` onto the CPU and, with CUDA, the GPU.
 
 - Model file load speed benchmark results (512 MiB, OSC Ascend node) added to the README and `docs/model-format.md`: memory-mapped loads run at 5.28 GB/s, about 1.7x stock safetensors; BLAKE3 verification costs about 230 ms for 512 MiB.
@@ -63,6 +67,8 @@ earlier history.
 - GPU networks can write and load weights and checkpoints: layers expose `DeviceStateBackend()` and `ModelIO` stages device tensors and Adam step counters through the backend (`CopyCounterToHost`/`CopyCounterFromHost` are new). Untested on a GPU so far. Simple networks on a GPU no longer return an empty state dict.
 
 ### Changed
+
+- `deepity.load` and `deepity.resume` skip the initial weight randomization that the load overwrites, about halving the load time of a large model. A file without the training-only tensors still randomizes them.
 
 - `ModelIO::Save()` now writes a validated, aligned safetensors file atomically (temp file plus rename) with a BLAKE3 content hash (`deepity.content_blake3`), `deepity.format_version` and `deepity.kind` metadata, and tensor names `layers.{i}.weight|bias|psi`. `ModelIO::Load()` verifies the file (header limits, offsets, dtypes, hash) before reading, throws `SafeTensorsError` on a corrupt file, and still reads 0.1.0a8 and earlier files (`layer_{i}.W|b|Psi`).
 

@@ -144,8 +144,8 @@ first and now every Python class, `*NetworkT` templates save tensors without a d
 
 ## Still open
 
-- GPU: `GaussSeidelPCN` (Python `device=` added, test case written, not yet run), `SequentialPCN` (its Python class has no
-  `device` and the native base takes no batch size with a device) and `FullConvPCNetwork` (native only).
-- `dp.load` builds and randomizes a network, then overwrites it: about 1.6 s of a 2.0 s load of a 512 MiB model is that
-  initialization (`configure`), the weight load itself is about 0.4 s. Skipping it needs care for Psi in inference artifacts.
+- Needs an Ascend run: `tests/pyGpuCheckpointVerify.py` (now also `SequentialPCN`, `GaussSeidelPCN`) and the new C++
+  `FullConvPCNetworkModelIOCudaVerify` (`FullConvPCNetwork` has no Python class, so it is native only).
+- `dp.load` no longer randomizes weights it is about to overwrite (a 257 MiB `FullPCN` loads in about 1.0 s, was 2.1 s).
+  An inference file without Psi still randomizes, since Psi is not loaded. The rest is allocation and the read.
 - No big-endian host support (BLAKE3 is little-endian only).

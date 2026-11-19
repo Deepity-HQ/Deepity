@@ -60,7 +60,7 @@ DATA = {
 }
 
 with tempfile.TemporaryDirectory() as tmp:
-    for cls in (dp.FullPCN, dp.DKPPCN, dp.SimplePCN, dp.GaussSeidelPCN, dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
+    for cls in (dp.FullPCN, dp.DKPPCN, dp.SimplePCN, dp.GaussSeidelPCN, dp.SequentialPCN, dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
         print(f"--- {cls.__name__} on cuda ---")
         x, y = DATA[cls in (dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN)]
         gpu = make(cls, "cuda")
