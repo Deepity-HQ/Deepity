@@ -210,7 +210,8 @@ class SimplePCN(ModelFileMixin, dy.SimplePCNetwork):
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
         super().compile()
-        super().randomize_weights(seed, dist)
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            super().randomize_weights(seed, dist)
 
         self._configured = True
         self.set_center_weights(center_weights)

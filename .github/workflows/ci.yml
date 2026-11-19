@@ -217,6 +217,8 @@ jobs:
           path: |
             windows-configure.log
             windows-build.log
+            build/Release/CMakeFiles/CMakeError.log
+            build/Release/CMakeFiles/CMakeOutput.log
           if-no-files-found: ignore
 
   typecheck:

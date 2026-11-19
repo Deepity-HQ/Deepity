@@ -207,7 +207,8 @@ class DKPPCN(dy.DirectKPPCNetwork):
         self.set_psi_optimizer(psi_optimizer)
 
         self.compile()
-        self.randomize_weights()
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            self.randomize_weights()
         self.set_center_weights(center_weights)
         self.set_psi_decay(-1.0 if psi_decay is None else psi_decay)
         self._flags = {"center_weights": center_weights, "psi_decay": psi_decay}

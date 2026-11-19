@@ -139,7 +139,8 @@ class SimpleConvolutionalPCN(ModelFileMixin, dy.SimpleConvPCNetwork):
         # own small, independently-sized arena pre-compile, so randomizing
         # first writes into a buffer Compile() then discards/reorganizes.
         self.compile()
-        self.randomize_weights()
+        if not getattr(self, "_defer_randomize", False):  # set by dp.load, which overwrites every weight
+            self.randomize_weights()
 
         self._configured = True
         self.set_center_weights(center_weights)

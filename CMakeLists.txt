@@ -481,6 +481,12 @@ set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "" FORCE)
 set(HWY_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 
+# Highway's FindAtomics probe compiles a std::atomic program and aborts the configure if that fails. x86-64
+# always has lock-free 64-bit atomics, so answer it up front instead of letting a toolchain quirk stop the build.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|x86_64)$")
+    set(ATOMICS_LOCK_FREE_INSTRUCTIONS TRUE CACHE INTERNAL "answered by Deepity, x86-64 atomics are lock free")
+endif()
+
 FetchContent_Declare(
     highway
     GIT_REPOSITORY https://github.com/google/highway.git
@@ -1029,6 +1035,13 @@ if(DEEPITY_BUILD_TESTS)
             RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
         )
         list(APPEND DEEPITY_TEST_TARGETS FullPCNetworkTModelIOCudaVerify)
+
+        add_executable(FullConvPCNetworkModelIOCudaVerify tests/tFullConvPCNetworkModelIOCudaVerify.cpp)
+        target_link_libraries(FullConvPCNetworkModelIOCudaVerify PRIVATE Deepity)
+        set_target_properties(FullConvPCNetworkModelIOCudaVerify PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        list(APPEND DEEPITY_TEST_TARGETS FullConvPCNetworkModelIOCudaVerify)
 
         add_executable(DirectKPBatchedGPUVerify tests/tDirectKPBatchedGPUVerify.cpp)
         target_link_libraries(DirectKPBatchedGPUVerify PRIVATE Deepity)

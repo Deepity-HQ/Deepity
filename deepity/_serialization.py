@@ -167,9 +167,12 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     }
 
 
+TRAINING_TENSORS_KEY = "deepity.training_tensors"
+
+
 def for_inference_metadata(metadata: dict[str, str], for_inference: bool) -> dict[str, str]:
     """Adds the marker that makes a save leave out training-only tensors."""
-    return {**metadata, "deepity.training_tensors": "omitted"} if for_inference else metadata
+    return {**metadata, TRAINING_TENSORS_KEY: "omitted"} if for_inference else metadata
 
 
 def _json_field(meta: dict[str, str], key: str, path: str, default: Optional[str] = None) -> dict[str, Any]:
@@ -229,7 +232,13 @@ def _build(path: str, device: Optional[str], batch_size: Optional[int]) -> tuple
         kwargs["input_shape"] = tuple(model["input_shape"])
 
     net = classes[name](*architecture_from_json(model["layers"]), **kwargs)
-    net.configure(**_known_hyperparameters(net, model.get("hyperparameters", {}), path))
+    # The load that follows overwrites every weight, so the initial randomization (about 80% of a large
+    # load) is skipped. A file without the training-only tensors (Psi) leaves those unset, so it keeps it.
+    net._defer_randomize = meta.get(TRAINING_TENSORS_KEY) != "omitted"
+    try:
+        net.configure(**_known_hyperparameters(net, model.get("hyperparameters", {}), path))
+    finally:
+        net._defer_randomize = False
 
     if "deepity.card" in meta:
         net.card = json.loads(meta["deepity.card"])
