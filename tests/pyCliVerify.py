@@ -49,7 +49,7 @@ with tempfile.TemporaryDirectory() as tmp:
     net.save(os.path.join(tmp, "nocard.safetensors"))
     check(dp.read_card(os.path.join(tmp, "nocard.safetensors")) == {}, "no card means an empty card")
     for bad, what in (({"x": object()}, "non-JSON card"), ({"x": "a" * 70000}, "oversized card"), ("text", "non-dict card")):
-        net.card = bad
+        net.card = bad  # type: ignore[assignment]
         try:
             net.save(os.path.join(tmp, "bad.safetensors"))
             check(False, f"{what} is rejected")

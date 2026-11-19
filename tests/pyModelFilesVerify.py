@@ -268,15 +268,15 @@ with tempfile.TemporaryDirectory() as tmp:
                    "fc2.weight": own["layers.1.weight"], "fc2.bias": own["layers.1.bias"]}
         other = os.path.join(tmp, name + ".foreign.safetensors")
         dp.write_tensors(other, foreign)
-        names = {"fc1.weight": "layers.0.weight", "fc1.bias": "layers.0.bias", "fc2.weight": "layers.1.weight", "fc2.bias": "layers.1.bias"}
-        missing, unexpected = dst.load_weights(other, False, lambda n: names.get(n, n))
+        rename_map = {"fc1.weight": "layers.0.weight", "fc1.bias": "layers.0.bias", "fc2.weight": "layers.1.weight", "fc2.bias": "layers.1.bias"}
+        missing, unexpected = dst.load_weights(other, False, lambda n: rename_map.get(n, n))
         check(not unexpected and all(m.startswith("layers.2") or m.endswith(".psi") for m in missing), f"{name}: a rename function maps foreign names to layers; only the terminal layer and the feedback weights are missing")
         check(np.array_equal(src.predict(x), dst.predict(x)), f"{name}: renamed weights reproduce predictions")
         check(raises(lambda: make().configure(learning_rate=1e-3).load_weights(other, True, None)), f"{name}: strict loading of unmapped names raises")
         wrong = dict(foreign, **{"fc1.weight": np.zeros((9, 12), dtype=np.float32)})
         bad = os.path.join(tmp, name + ".wrong.safetensors")
         dp.write_tensors(bad, wrong)
-        check(raises(lambda: make().configure(learning_rate=1e-3).load_weights(bad, False, lambda n: names.get(n, n))), f"{name}: a wrong shape raises even when not strict")
+        check(raises(lambda: make().configure(learning_rate=1e-3).load_weights(bad, False, lambda n: rename_map.get(n, n))), f"{name}: a wrong shape raises even when not strict")
 
 with tempfile.TemporaryDirectory() as tmp:
     print("--- format versions and unknown fields ---")

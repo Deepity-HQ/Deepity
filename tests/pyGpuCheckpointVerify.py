@@ -6,6 +6,7 @@ so resumed runs are compared with a tolerance, and the CPU-vs-GPU comparisons wi
 """
 import os
 import sys
+from typing import Any
 import tempfile
 
 import numpy as np
@@ -37,7 +38,7 @@ def P(net):
 def make(cls, device):
     if cls in (dp.SimpleConvolutionalPCN, dp.ConvolutionalPCN):
         net = cls(*conv(), input_shape=(1, 8, 8), batch_size=8, device=device)
-        extra = dict(optimizer="ADAM") if cls is dp.SimpleConvolutionalPCN else dict(precision_rate=0.01)
+        extra: dict[str, Any] = dict(optimizer="ADAM") if cls is dp.SimpleConvolutionalPCN else dict(precision_rate=0.01)
         net.configure(learning_rate=1e-3, inference_rate=0.1, **extra)
         return net
     net = cls(*dense(), batch_size=8, device=device)

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import deepity as dp  # noqa: E402
 
 try:
-    import onnxruntime as ort
+    import onnxruntime as ort  # type: ignore[import-not-found]
 except ImportError:
     print("SKIPPED: onnx/onnxruntime not installed")
     sys.exit(0)

@@ -85,7 +85,7 @@ def architecture_from_json(layers: list[dict[str, Any]]) -> tuple[Layer | Activa
     architecture: list[Layer | Activation] = []
     for entry in layers:
         kind = entry.get("kind")
-        needed = {"linear": ("in", "out"), "convolution": ("out_channels", "kernel", "stride", "pad")}.get(kind)
+        needed = {"linear": ("in", "out"), "convolution": ("out_channels", "kernel", "stride", "pad")}.get(str(kind))
         if needed is None:
             raise ValueError(f"Unknown layer kind {kind!r} in model file. This version knows: linear, convolution.")
         missing = [k for k in needed if k not in entry]
@@ -156,7 +156,7 @@ def build_metadata(net: Any, network: str, hyperparameters: dict[str, Any], dtyp
     card = getattr(net, "card", None)
 
     # Only networks that carry a default settling count record one; the others take `steps` per call.
-    inference = {"mode": "iterative"}
+    inference: dict[str, Any] = {"mode": "iterative"}
     if hasattr(net, "default_inference_steps"):
         inference["inference_steps"] = int(net.default_inference_steps)
     return {

@@ -22,9 +22,6 @@ dependencies = [
     "rich",
 ]
 
-[project.scripts]
-deepity = "deepity.cli:main"
-
 # Not "License :: OSI Approved :: MIT License" alongside this -- PEP 639's
 # `license` field above is the modern replacement for that classifier,
 # and pairing both is a deprecated pattern some build backends warn on.
@@ -40,6 +37,9 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
 ]
+
+[project.scripts]
+deepity = "deepity.cli:main"
 
 # `pip install pydeepity[cuda]` -- pulls the CUDA runtime/cuBLAS shared
 # libraries DeepityCUDA.so/.dll (bundled in the wheel itself, see
@@ -87,6 +87,12 @@ dev = [
 # uv-only settings; pip, scikit-build-core and cibuildwheel ignore this table.
 # package = false: `uv run`/`uv sync` never build or install pydeepity itself,
 # the extension is always built by build.py. default-groups: see above.
+[tool.pyright]
+# experiments/ and research/ are throwaway scripts with heavy optional deps (jax, jpc) and no
+# type discipline. The compiled extension is absent in CI (--no-install-project), so its missing
+# symbols are not reported either.
+exclude = ["experiments", "research", "build", ".venv*", "**/__pycache__"]
+
 [tool.uv]
 package = false
 default-groups = ["build"]
