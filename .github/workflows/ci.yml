@@ -56,6 +56,7 @@ jobs:
             cmake \
             ninja-build \
             libopenblas-dev \
+            ccache \
             python3-dev \
             ${{ matrix.compiler == 'clang' && 'clang libomp-dev' || '' }}
 
@@ -76,7 +77,18 @@ jobs:
         # importable from there), not an isolated uv-managed venv.
         run: uv pip install --system nanobind rich numpy
 
+      - name: Restore ccache compiler cache
+        # oneDNN and SLEEF compile from source (about the whole build time); CMake picks ccache up
+        # automatically. Keyed per compiler, with the newest earlier cache as the fallback.
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-test-${{ matrix.compiler }}-${{ github.sha }}
+          restore-keys: ccache-test-${{ matrix.compiler }}-
+
       - name: Build and run C++ tests (Release)
+        env:
+          CCACHE_DIR: ${{ github.workspace }}/.ccache
         # build.py runs ctest after the build: ModelIO/SafeTensors round
         # trips, weight centering and the conv diagnostics. DEEPITY_BUILD_FUZZ adds
         # the ASan/UBSan run of the file-parser mutation fuzzer.
@@ -169,15 +181,28 @@ jobs:
       - name: Install Python build dependencies
         run: uv pip install --system nanobind rich
 
+      - name: Restore ccache compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-test-windows-${{ github.sha }}
+          restore-keys: ccache-test-windows-
+
       - name: Configure (CMake, using the windows-clang preset)
         # Uses CMakePresets.json's "windows-clang" preset directly, rather
         # than retyping the same flags here, so CI exercises the exact
         # preset a human would run locally - if the preset breaks, CI
         # catches it instead of it silently rotting.
-        run: cmake --preset windows-clang 2>&1 | Tee-Object -FilePath windows-configure.log
+        # oneDNN is off here: this job only runs the file-format tests, and building oneDNN from
+        # source is most of the build time. The wheel jobs still build with it.
+        env:
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
+        run: cmake --preset windows-clang -DDEEPITY_USE_ONEDNN=OFF 2>&1 | Tee-Object -FilePath windows-configure.log
 
       - name: Build
-        run: cmake --build build/Release --config Release --parallel 2>&1 | Tee-Object -FilePath windows-build.log
+        env:
+          CCACHE_DIR: ${{ github.workspace }}\.ccache
+        run: cmake --build build/Release --config Release --parallel --target SafeTensorsVerify ModelIOVerify FormatFuzz 2>&1 | Tee-Object -FilePath windows-build.log
 
       - name: Model file tests
         # The file-format tests only (reader, writer, mmap via MapViewOfFile, round trips, fuzz). They
