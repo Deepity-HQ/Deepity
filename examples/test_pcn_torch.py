@@ -5,7 +5,7 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 
 # Import the pcn-torch modules based on your setup
-from pcn_torch import PredictiveCodingNetwork, TrainConfig, train_pcn, test_pcn, RichCallback
+from pcn_torch import PredictiveCodingNetwork, TrainConfig, train_pcn, test_pcn, RichCallback  # pyright: ignore[reportMissingImports]
 
 def load_full_mnist_torch():
     print("Fetching full MNIST dataset (70,000 images)...")
